@@ -39,7 +39,7 @@ export async function updateProfile(formData: FormData) {
     return { success: true }
 }
 
-export async function updateProfileInfo(data: { full_name: string; bio: string }) {
+export async function updateProfileInfo(data: { full_name?: string; bio?: string; avatar_url?: string }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -47,13 +47,17 @@ export async function updateProfileInfo(data: { full_name: string; bio: string }
         return { success: false, error: 'Not authenticated' }
     }
 
+    const updates: any = {
+        updated_at: new Date().toISOString()
+    }
+
+    if (data.full_name !== undefined) updates.full_name = data.full_name
+    if (data.bio !== undefined) updates.bio = data.bio
+    if (data.avatar_url !== undefined) updates.avatar_url = data.avatar_url
+
     const { error } = await supabase
         .from('profiles')
-        .update({
-            full_name: data.full_name,
-            bio: data.bio,
-            updated_at: new Date().toISOString()
-        })
+        .update(updates)
         .eq('id', user.id)
 
     if (error) {

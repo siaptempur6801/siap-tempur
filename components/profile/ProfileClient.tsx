@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell } from 'lucide-react'
+import { useState, useTransition, useRef } from 'react'
+import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2 } from 'lucide-react'
 import { updateProfileInfo, updatePassword } from '@/app/actions/profile'
 import { signout } from '@/app/auth/actions'
 import { toast } from 'sonner'
@@ -19,6 +19,10 @@ type UserData = {
     created_at: string
 }
 
+import { createClient } from '@/utils/supabase/client'
+
+// ... imports
+
 export default function ProfileClient({ profile: initialProfile, user }: { profile: Profile, user: UserData }) {
     const [activeTab, setActiveTab] = useState<'profile' | 'stats' | 'history' | 'settings'>('profile')
     const [isEditing, setIsEditing] = useState(false)
@@ -27,6 +31,54 @@ export default function ProfileClient({ profile: initialProfile, user }: { profi
     const [showImagePreview, setShowImagePreview] = useState(false)
     const [isPending, startTransition] = useTransition()
     const [profile, setProfile] = useState(initialProfile)
+
+    // Avatar upload state
+    const [isUploading, setIsUploading] = useState(false)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        // Limit file size (e.g., 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('Ukuran file maksimal 2MB')
+            return
+        }
+
+        setIsUploading(true)
+        const supabase = createClient()
+
+        try {
+            const fileExt = file.name.split('.').pop()
+            const fileName = `${user.email?.replace('@', '_')}_${Math.random()}.${fileExt}`
+            const filePath = `${fileName}`
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file)
+
+            if (uploadError) throw uploadError
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath)
+
+            const result = await updateProfileInfo({ avatar_url: publicUrl })
+
+            if (result.success) {
+                setProfile({ ...profile, avatar_url: publicUrl })
+                toast.success('Foto profil berhasil diperbarui!')
+            } else {
+                toast.error('Gagal memperbarui database')
+            }
+        } catch (error: any) {
+            console.error('Upload error:', error)
+            toast.error('Gagal mengupload foto. Pastikan format sesuai.')
+        } finally {
+            setIsUploading(false)
+        }
+    }
 
     // Password change state
     const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -141,6 +193,7 @@ export default function ProfileClient({ profile: initialProfile, user }: { profi
             // Logout user after password change for security
             setTimeout(async () => {
                 await signout()
+                window.location.href = '/'
             }, 1500) // Delay to show toast message
         } else {
             toast.error(result.error || 'Gagal mengubah password')
@@ -212,8 +265,19 @@ export default function ProfileClient({ profile: initialProfile, user }: { profi
                                         </div>
                                     )}
 
-                                    <button className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition z-10">
-                                        <Camera size={18} />
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleAvatarUpload}
+                                    />
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                        className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition z-10 disabled:opacity-50"
+                                    >
+                                        {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
                                     </button>
                                 </div>
                                 {/* Level Badge */}

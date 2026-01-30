@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { signout } from '@/app/auth/actions'
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
+import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
 
 export default async function DashboardLayout({
     children,
@@ -67,12 +68,7 @@ export default async function DashboardLayout({
                             </div>
                         </div>
                     </div>
-                    <form action={signout}>
-                        <button className="flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg w-full transition">
-                            <LogOut size={18} />
-                            Keluar
-                        </button>
-                    </form>
+                    <SidebarSignoutButton signoutAction={signout} />
                 </div>
             </aside>
 

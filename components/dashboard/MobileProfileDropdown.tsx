@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { LogOut, User, Crown } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 interface MobileProfileDropdownProps {
     user: any
     profile: any
-    signoutAction: () => Promise<void>
+    signoutAction: () => Promise<{ success: boolean }>
 }
 
 export default function MobileProfileDropdown({ user, profile, signoutAction }: MobileProfileDropdownProps) {
@@ -51,8 +52,8 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
 
                         <div className="mt-2.5">
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase inline-flex items-center gap-1 ${isPremium
-                                    ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30'
-                                    : 'bg-secondary text-muted-foreground border border-border'
+                                ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30'
+                                : 'bg-secondary text-muted-foreground border border-border'
                                 }`}>
                                 {isPremium ? <Crown size={10} className="fill-current" /> : null}
                                 {isPremium ? 'PREMIUM MEMBER' : 'FREE MEMBER'}
@@ -70,12 +71,24 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
                             Profil Saya
                         </Link>
 
-                        <form action={signoutAction}>
-                            <button className="flex w-full items-center gap-3 px-3 py-2.5 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
-                                <LogOut size={16} />
-                                Keluar
-                            </button>
-                        </form>
+                        <button
+                            onClick={async () => {
+                                const result = await signoutAction()
+                                if (result?.success) {
+                                    toast.success('Berhasil keluar!', {
+                                        description: 'Sampai jumpa lagi!'
+                                    })
+                                    // Delay redirect to allow toast to be seen
+                                    setTimeout(() => {
+                                        window.location.href = '/'
+                                    }, 1500)
+                                }
+                            }}
+                            className="flex w-full items-center gap-3 px-3 py-2.5 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
+                            <LogOut size={16} />
+                            Keluar
+                        </button>
                     </div>
                 </div>
             )}
