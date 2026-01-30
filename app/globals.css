@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  /* Default to Dark Mode variables */
+  --background: #030712;
+  /* Gray 950 */
+  --foreground: #f9fafb;
+  /* Gray 50 */
+
+  --primary: #6366f1;
+  /* Indigo 500 */
+  --primary-foreground: #ffffff;
+
+  --secondary: #1f2937;
+  /* Gray 800 */
+  --secondary-foreground: #f9fafb;
+
+  --muted: #374151;
+  /* Gray 700 */
+  --muted-foreground: #9ca3af;
+  /* Gray 400 */
+
+  --accent: #0ea5e9;
+  /* Sky 500 */
+  --accent-foreground: #ffffff;
+
+  --border: #1f2937;
+  /* Gray 800 */
+}
+
+/* Light mode overrides if we add a toggle later (using .light class) */
+.light {
+  --background: #ffffff;
+  --foreground: #030712;
+  /* ... */
+}
+
+/* Custom Theme Scrollbar */
+::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+  display: block !important;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--secondary) !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted) !important;
+  border-radius: 5px;
+  border: 2px solid var(--secondary) !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground) !important;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--muted) var(--secondary) !important;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Make all buttons show pointer cursor */
+button,
+[role="button"],
+[type="button"],
+[type="submit"],
+[type="reset"] {
+  cursor: pointer;
+}
+
+
+/* Hide spin buttons for number inputs */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
