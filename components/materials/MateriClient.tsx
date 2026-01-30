@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Lock, PlayCircle, BookOpen, Filter } from 'lucide-react'
+import { Lock, PlayCircle, BookOpen, Filter, Check } from 'lucide-react'
 
 type Material = {
     id: string
@@ -16,10 +16,16 @@ type Material = {
 
 export default function MateriClient({ materials }: { materials: Material[] }) {
     const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
+    const [accessFilter, setAccessFilter] = useState<'ALL' | 'FREE' | 'PREMIUM'>('ALL')
+    const [isFilterOpen, setIsFilterOpen] = useState(false)
 
-    const filteredMaterials = selectedCategory === 'ALL'
-        ? materials
-        : materials.filter(m => m.category === selectedCategory)
+    const filteredMaterials = materials.filter(m => {
+        const categoryMatch = selectedCategory === 'ALL' || m.category === selectedCategory
+        const accessMatch = accessFilter === 'ALL' ||
+            (accessFilter === 'FREE' && !m.is_premium) ||
+            (accessFilter === 'PREMIUM' && m.is_premium)
+        return categoryMatch && accessMatch
+    })
 
     const categories = [
         { id: 'ALL', name: 'Semua Materi', color: 'text-foreground' },
@@ -27,7 +33,6 @@ export default function MateriClient({ materials }: { materials: Material[] }) {
         { id: 'TIU', name: 'TIU', color: 'text-blue-500' },
         { id: 'TKP', name: 'TKP', color: 'text-green-500' }
     ]
-
     const stats = {
         total: materials.length,
         twk: materials.filter(m => m.category === 'TWK').length,
@@ -70,25 +75,73 @@ export default function MateriClient({ materials }: { materials: Material[] }) {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-2 px-2">
-                <Filter size={16} className="text-muted-foreground flex-shrink-0 md:w-[18px] md:h-[18px]" />
-                {categories.map(cat => (
+            <div className="flex items-start gap-2 -mx-2 px-2 md:-mx-0 md:px-0">
+                <div className="relative flex-shrink-0 z-10">
                     <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(cat.id)}
-                        className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap ${selectedCategory === cat.id
-                            ? 'bg-primary text-primary-foreground shadow-lg'
-                            : 'bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground'
+                        onClick={() => setIsFilterOpen(!isFilterOpen)}
+                        className={`p-1.5 md:p-2 rounded-lg border transition-colors ${accessFilter !== 'ALL' || isFilterOpen
+                            ? 'bg-primary/10 border-primary text-primary'
+                            : 'bg-background border-border text-muted-foreground hover:bg-secondary'
                             }`}
                     >
-                        {cat.name}
-                        {cat.id !== 'ALL' && (
-                            <span className="ml-1.5 md:ml-2 opacity-70">
-                                ({cat.id === 'TWK' ? stats.twk : cat.id === 'TIU' ? stats.tiu : stats.tkp})
-                            </span>
+                        <Filter size={16} className="md:w-[18px] md:h-[18px]" />
+                        {accessFilter !== 'ALL' && (
+                            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-background" />
                         )}
                     </button>
-                ))}
+
+                    {isFilterOpen && (
+                        <>
+                            <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setIsFilterOpen(false)}
+                            />
+                            <div className="absolute left-0 top-full mt-2 w-48 bg-card border border-border rounded-xl shadow-xl z-50 p-1.5 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="text-xs font-bold text-muted-foreground px-2 py-1.5 mb-1">Filter Akses</div>
+                                {[
+                                    { id: 'ALL', label: 'Semua Akses' },
+                                    { id: 'FREE', label: 'Gratis Only' },
+                                    { id: 'PREMIUM', label: 'Premium Only' }
+                                ].map((opt) => (
+                                    <button
+                                        key={opt.id}
+                                        onClick={() => {
+                                            setAccessFilter(opt.id as any)
+                                            setIsFilterOpen(false)
+                                        }}
+                                        className={`w-full text-left px-2 py-2 rounded-lg text-sm flex items-center justify-between ${accessFilter === opt.id
+                                            ? 'bg-primary/10 text-primary font-medium'
+                                            : 'hover:bg-secondary text-foreground'
+                                            }`}
+                                    >
+                                        {opt.label}
+                                        {accessFilter === opt.id && <Check size={14} />}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                <div className="flex-1 overflow-x-auto pb-2 flex items-start gap-2">
+                    {categories.map(cat => (
+                        <button
+                            key={cat.id}
+                            onClick={() => setSelectedCategory(cat.id)}
+                            className={`px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all whitespace-nowrap flex-shrink-0 ${selectedCategory === cat.id
+                                ? 'bg-primary text-primary-foreground shadow-lg'
+                                : 'bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground'
+                                }`}
+                        >
+                            {cat.name}
+                            {cat.id !== 'ALL' && (
+                                <span className="ml-1.5 md:ml-2 opacity-70">
+                                    ({cat.id === 'TWK' ? stats.twk : cat.id === 'TIU' ? stats.tiu : stats.tkp})
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Materials Grid */}
