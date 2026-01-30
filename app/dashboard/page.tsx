@@ -39,7 +39,7 @@ export default function DashboardPage() {
                     <h3 className="text-xl font-bold mb-4">Lanjut Belajar</h3>
                     <div className="space-y-4">
                         <form action={startPracticeSession.bind(null, 'TWK')}>
-                            <button className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border hover:border-primary/50 transition cursor-pointer w-full text-left">
+                            <button disabled className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border hover:border-primary/50 transition cursor-not-allowed w-full text-left opacity-50">
                                 <div className="p-3 rounded-full bg-primary/20 text-primary">
                                     📖
                                 </div>
@@ -50,7 +50,7 @@ export default function DashboardPage() {
                             </button>
                         </form>
                         <form action={startPracticeSession.bind(null, 'TIU')}>
-                            <button className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border hover:border-primary/50 transition cursor-pointer w-full text-left">
+                            <button disabled className="flex items-center gap-4 p-4 rounded-lg bg-background border border-border hover:border-primary/50 transition cursor-not-allowed w-full text-left opacity-50">
                                 <div className="p-3 rounded-full bg-accent/20 text-accent">
                                     🧮
                                 </div>

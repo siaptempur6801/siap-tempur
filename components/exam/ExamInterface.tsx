@@ -33,6 +33,7 @@ export default function ExamInterface({ sessionId, questions, initialAnswers, en
     const [hasFinished, setHasFinished] = useState(false)
     const [showWarning5Min, setShowWarning5Min] = useState(false)
     const [showWarning1Min, setShowWarning1Min] = useState(false)
+    const [showMobileNav, setShowMobileNav] = useState(false)
 
     const currentQuestion = questions[currentQuestionIndex]
 
@@ -165,6 +166,76 @@ export default function ExamInterface({ sessionId, questions, initialAnswers, en
                 )}
             </AnimatePresence>
 
+            {/* Mobile Navigation Drawer */}
+            <AnimatePresence>
+                {showMobileNav && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 z-50 flex flex-col lg:hidden"
+                        onClick={() => setShowMobileNav(false)}
+                    >
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="bg-background w-3/4 h-full ml-auto p-6 flex flex-col shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="font-bold text-lg flex items-center gap-2">
+                                    <Map size={18} /> Navigasi Soal
+                                </h2>
+                                <button onClick={() => setShowMobileNav(false)} className="p-2 hover:bg-secondary rounded-full">
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-1">
+                                <div className="grid grid-cols-5 gap-2">
+                                    {questions.map((q, idx) => {
+                                        const isAnswered = !!answers[q.id]
+                                        const isCurrent = idx === currentQuestionIndex
+                                        return (
+                                            <button
+                                                key={q.id}
+                                                onClick={() => {
+                                                    setCurrentQuestionIndex(idx)
+                                                    setShowMobileNav(false)
+                                                }}
+                                                className={cn(
+                                                    "aspect-square rounded-lg text-sm font-medium transition-all",
+                                                    isCurrent ? "bg-primary text-white shadow-lg shadow-primary/25" :
+                                                        isAnswered ? "bg-green-500/20 text-green-500 border border-green-500/50" :
+                                                            "bg-secondary/50 text-muted-foreground hover:bg-secondary border border-transparent"
+                                                )}
+                                            >
+                                                {idx + 1}
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="p-4 border-t border-border mt-4">
+                                <button
+                                    onClick={() => {
+                                        setShowMobileNav(false)
+                                        handleFinish()
+                                    }}
+                                    disabled={isSubmitting}
+                                    className="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-bold transition flex items-center justify-center gap-2"
+                                >
+                                    {isSubmitting ? 'Menyimpan...' : 'Selesai Ujian'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Sidebar Navigation */}
             <aside className="w-80 bg-secondary/10 border-r border-border flex flex-col hidden lg:flex">
                 <div className="p-6 border-b border-border">
@@ -206,32 +277,38 @@ export default function ExamInterface({ sessionId, questions, initialAnswers, en
 
             {/* Main Interface */}
             <main className="flex-1 flex flex-col relative">
-                {/* Header */}
-                <header className="h-16 border-b border-border flex items-center justify-between px-8 bg-background/80 backdrop-blur-md sticky top-0 z-10">
-                    <div className="flex items-center gap-4">
-                        <span className="font-bold text-xl">Soal No. {currentQuestionIndex + 1}</span>
-                        <div className={`px-2 py-1 rounded text-xs font-bold ${currentQuestion.type === 'TWK' ? 'bg-red-500/20 text-red-500' :
-                            currentQuestion.type === 'TIU' ? 'bg-blue-500/20 text-blue-500' :
-                                'bg-green-500/20 text-green-500' // TKP
-                            }`}>
-                            {currentQuestion.type}
+                {/* Header - Optimized for Mobile */}
+                <header className="h-14 md:h-16 border-b border-border flex items-center justify-between px-3 md:px-8 bg-background/80 backdrop-blur-md sticky top-0 z-10 transition-all">
+                    <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
+                        <button
+                            onClick={() => setShowMobileNav(true)}
+                            className="lg:hidden p-1.5 rounded-lg bg-secondary text-foreground hover:bg-secondary/80 shrink-0"
+                        >
+                            <Map size={18} className="md:w-5 md:h-5" />
+                        </button>
+
+                        <div className="flex items-baseline gap-2 overflow-hidden">
+                            <span className="font-bold text-sm md:text-xl">#{currentQuestionIndex + 1}</span>
+                            <div className="px-1.5 py-0.5 rounded text-[10px] md:text-xs font-bold shrink-0 bg-secondary border border-border">
+                                {currentQuestion.type}
+                            </div>
                         </div>
                     </div>
+
                     <div className={cn(
-                        "flex items-center gap-2 font-mono text-xl font-bold px-4 py-2 rounded-lg transition-all duration-300",
-                        timeLeftMs <= 60000 ? "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50" : // < 1 min
-                            timeLeftMs <= 300000 ? "bg-orange-500 text-white shadow-lg shadow-orange-500/30" : // < 5 min
-                                timeLeftMs <= 600000 ? "bg-yellow-500 text-gray-900 shadow-lg shadow-yellow-500/30" : // < 10 min
-                                    "bg-primary/10 text-primary"
+                        "flex items-center gap-1.5 md:gap-2 font-mono text-xs md:text-xl font-bold px-2 py-1 md:px-4 md:py-2 rounded-lg transition-all duration-300 shrink-0",
+                        timeLeftMs <= 60000 ? "bg-red-500 text-white animate-pulse" :
+                            timeLeftMs <= 300000 ? "bg-orange-500 text-white" :
+                                "bg-primary/10 text-primary border border-primary/20"
                     )}>
-                        <Clock className="w-5 h-5" />
+                        <Clock className="w-3.5 h-3.5 md:w-5 md:h-5" />
                         {timeLeft}
                     </div>
                 </header>
 
                 {/* Content */}
                 <div className="flex-1 p-8 overflow-y-auto flex flex-col max-w-4xl mx-auto w-full">
-                    <div className="flex-1">
+                    <div>
                         <div className="prose dark:prose-invert max-w-none text-lg mb-8 leading-relaxed">
                             {currentQuestion.content}
                         </div>
@@ -264,22 +341,24 @@ export default function ExamInterface({ sessionId, questions, initialAnswers, en
                         </div>
                     </div>
 
-                    <div className="mt-12 flex justify-between pt-8 border-t border-border">
+
+
+                    <div className={cn("mt-4 md:mt-12 flex justify-between md:pt-8")}>
                         <button
                             onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
                             disabled={currentQuestionIndex === 0}
-                            className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium hover:bg-secondary transition disabled:opacity-50"
+                            className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 rounded-lg font-medium hover:bg-secondary transition disabled:opacity-50 text-sm md:text-base"
                         >
-                            <ChevronLeft className="w-5 h-5" />
+                            <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
                             Sebelumnya
                         </button>
                         <button
                             onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
                             disabled={currentQuestionIndex === questions.length - 1}
-                            className="flex items-center gap-2 px-8 py-3 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition shadow-lg shadow-primary/25 disabled:opacity-50 disabled:shadow-none bg-primary"
+                            className="flex items-center gap-2 px-6 py-2 md:px-8 md:py-3 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition shadow-lg shadow-primary/25 disabled:opacity-50 disabled:shadow-none bg-primary text-sm md:text-base"
                         >
                             Selanjutnya
-                            <ChevronRight className="w-5 h-5" />
+                            <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
                         </button>
                     </div>
                 </div>

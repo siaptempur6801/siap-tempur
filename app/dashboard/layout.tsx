@@ -79,8 +79,18 @@ export default async function DashboardLayout({
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
                 {/* Mobile Header (Hidden on Desktop) */}
                 <div className="md:hidden h-16 border-b border-border flex items-center px-6 justify-between transform sticky top-0 bg-background/80 backdrop-blur-md z-30">
-                    <span className="font-bold">CPNS PRO</span>
-                    <div className="w-8 h-8 bg-secondary rounded-full" />
+                    <Link href="/dashboard" className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
+                        CPNS PRO
+                    </Link>
+                    <Link href="/dashboard/profile">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border border-border">
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-xs font-bold text-primary">{user.email?.[0].toUpperCase()}</span>
+                            )}
+                        </div>
+                    </Link>
                 </div>
 
                 <div className="p-6 md:p-8 max-w-7xl mx-auto">

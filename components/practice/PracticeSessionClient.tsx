@@ -42,6 +42,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     const [showWarning5Min, setShowWarning5Min] = useState(false)
     const [showWarning1Min, setShowWarning1Min] = useState(false)
     const [isPaused, setIsPaused] = useState(false)
+    const [showMobileNav, setShowMobileNav] = useState(false)
 
     // Sort questions by type (TWK -> TIU -> TKP)
     const sortedQuestions = useMemo(() => {
@@ -177,7 +178,68 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     }
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 p-4 md:p-8 h-[calc(100vh-64px)] overflow-hidden relative">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 p-2 md:p-8 h-auto md:h-[calc(100vh-64px)] md:overflow-hidden relative">
+            {/* Mobile Navigation Drawer */}
+            <AnimatePresence>
+                {showMobileNav && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/80 z-50 flex flex-col lg:hidden"
+                        onClick={() => setShowMobileNav(false)}
+                    >
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="bg-background w-3/4 h-full ml-auto p-6 flex flex-col shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="font-bold text-lg flex items-center gap-2">
+                                    <Map size={18} /> Navigasi Soal
+                                </h2>
+                                <button onClick={() => setShowMobileNav(false)} className="p-2 hover:bg-secondary rounded-full">
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-1">
+                                <div className="grid grid-cols-5 gap-2">
+                                    {sortedQuestions.map((q, idx) => (
+                                        <button
+                                            key={q.id}
+                                            onClick={() => {
+                                                setCurrentIndex(idx)
+                                                setShowMobileNav(false)
+                                            }}
+                                            className={cn(
+                                                "aspect-square rounded-lg font-bold text-sm flex items-center justify-center transition-all border",
+                                                currentIndex === idx ? 'ring-2 ring-primary ring-offset-2' : '',
+                                                marked[q.id]
+                                                    ? 'bg-yellow-500 text-white border-yellow-600'
+                                                    : answers[q.id]
+                                                        ? 'bg-primary text-white border-primary'
+                                                        : 'bg-secondary text-muted-foreground border-transparent'
+                                            )}
+                                        >
+                                            {idx + 1}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-secondary/20 text-xs text-muted-foreground border-t border-border space-y-2 mt-4 rounded-lg">
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary"></div><span>Dijawab</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div><span>Ragu-ragu</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-secondary border border-muted-foreground/30"></div><span>Belum dijawab</span></div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
             {/* Warning Modal - 5 Minutes */}
             <AnimatePresence>
                 {isTryout && showWarning5Min && timeLeftMs > 60000 && (
@@ -292,105 +354,151 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
             )}
 
             {/* LEFT: Question Area */}
-            <div className="flex-1 flex flex-col h-full bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                {/* Header */}
-                <div className="p-4 border-b border-border flex justify-between items-center bg-secondary/20">
-                    <div className="flex items-center gap-2">
-                        <h2 className="font-bold text-lg mr-2">Soal {currentIndex + 1} <span className="text-muted-foreground font-normal">/ {sortedQuestions.length}</span></h2>
+            <div className="flex-1 flex flex-col md:h-full bg-card border border-border rounded-xl shadow-sm md:overflow-hidden">
+                {/* Header - Optimized for Mobile */}
+                <div className="border-b border-border bg-secondary/20 p-2 md:p-4">
+                    <div className="flex items-center justify-between gap-2">
+                        {/* Left: Nav & Info */}
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <button
+                                onClick={() => setShowMobileNav(true)}
+                                className="lg:hidden p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
+                            >
+                                <Map size={16} />
+                            </button>
 
-                        {/* Type Badge (TIU/TWK/TKP) */}
-                        <span className="px-2 py-0.5 bg-secondary text-secondary-foreground text-xs font-semibold rounded border border-border">
-                            {currentQuestion.type}
-                        </span>
-
-                        {/* Category Badge (Numerik, etc) */}
-                        {currentQuestion.category && (
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-xs font-semibold rounded border border-blue-200 dark:border-blue-800 uppercase tracking-wider">
-                                {currentQuestion.category}
-                            </span>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={toggleMark}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${marked[currentQuestion.id]
-                                ? 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
-                                : 'bg-background border-border text-muted-foreground hover:bg-secondary'
-                                }`}
-                        >
-                            <Flag size={14} className={marked[currentQuestion.id] ? 'fill-current' : ''} />
-                            {marked[currentQuestion.id] ? 'Ditandai Ragu' : 'Tandai Ragu'}
-                        </button>
-                        {isTryout ? (
-                            <div className={cn(
-                                "px-4 py-1 rounded-full text-sm font-mono flex items-center gap-2 transition-all duration-300 border",
-                                isPaused ? "bg-gray-500 text-white border-gray-600" :
-                                    timeLeftMs <= 60000 ? "bg-red-500 text-white border-red-600 animate-pulse shadow-lg shadow-red-500/50" :
-                                        timeLeftMs <= 300000 ? "bg-orange-500 text-white border-orange-600 shadow-lg shadow-orange-500/30" :
-                                            timeLeftMs <= 600000 ? "bg-yellow-500 text-gray-900 border-yellow-600 shadow-lg shadow-yellow-500/30" :
-                                                "bg-primary/10 text-primary border-primary/20"
-                            )}>
-                                <Clock size={14} />
-                                <span>{isPaused ? `${timeLeft} (Paused)` : timeLeft}</span>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation()
-                                        setIsPaused(!isPaused)
-                                    }}
-                                    className={cn(
-                                        "ml-1 p-1 rounded hover:bg-black/10 transition-colors",
-                                        isPaused && "hover:bg-white/20"
+                            <div className="flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2 overflow-hidden">
+                                <div className="flex items-baseline gap-1">
+                                    <span className="font-bold text-sm md:text-lg">#{currentIndex + 1}</span>
+                                    <span className="text-xs text-muted-foreground md:text-base">/ {sortedQuestions.length}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <span className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[10px] md:text-xs font-semibold rounded border border-border">
+                                        {currentQuestion.type}
+                                    </span>
+                                    {currentQuestion.category && (
+                                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-[10px] md:text-xs font-semibold rounded border border-blue-200 dark:border-blue-800 uppercase tracking-wider">
+                                            {currentQuestion.category}
+                                        </span>
                                     )}
-                                    title={isPaused ? "Resume Timer" : "Pause Timer"}
-                                >
-                                    {isPaused ? <Play size={14} /> : <Pause size={14} />}
-                                </button>
+                                </div>
                             </div>
-                        ) : (
-                            <div className="px-4 py-1.5 bg-background border border-border rounded-full text-sm font-mono flex items-center gap-2">
-                                <Clock size={14} />
-                                Mode Latihan
-                            </div>
-                        )}
+                        </div>
+
+                        {/* Right: Actions & Timer */}
+                        <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+                            <button
+                                onClick={toggleMark}
+                                className={cn(
+                                    "flex items-center justify-center rounded-full border transition-colors",
+                                    "w-8 h-8 md:w-auto md:h-auto md:px-4 md:py-1.5", // Circle on mobile, Pill on desktop
+                                    marked[currentQuestion.id]
+                                        ? 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
+                                        : 'bg-background border-border text-muted-foreground hover:bg-secondary'
+                                )}
+                                title={marked[currentQuestion.id] ? 'Hilangkan tanda ragu' : 'Tandai ragu'}
+                            >
+                                <Flag size={14} className={cn(marked[currentQuestion.id] ? 'fill-current' : '')} />
+                                <span className="hidden md:inline ml-2">{marked[currentQuestion.id] ? 'Ditandai Ragu' : 'Tandai Ragu'}</span>
+                            </button>
+
+                            {isTryout ? (
+                                <div className={cn(
+                                    "px-2 py-1 md:px-4 md:py-1 rounded-full text-xs md:text-sm font-mono flex items-center gap-1.5 transition-all duration-300 border",
+                                    isPaused ? "bg-gray-500 text-white border-gray-600" :
+                                        timeLeftMs <= 60000 ? "bg-red-500 text-white border-red-600 animate-pulse" :
+                                            timeLeftMs <= 300000 ? "bg-orange-500 text-white border-orange-600" :
+                                                "bg-primary/10 text-primary border-primary/20"
+                                )}>
+                                    <Clock size={12} className="md:w-3.5 md:h-3.5" />
+                                    <span>{timeLeft}</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setIsPaused(!isPaused)
+                                        }}
+                                        className="ml-1 md:ml-2 hover:bg-black/10 rounded p-0.5"
+                                    >
+                                        {isPaused ? <Play size={10} /> : <Pause size={10} />}
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="hidden md:flex px-3 py-1 bg-background border border-border rounded-full text-xs md:text-sm font-mono items-center gap-2">
+                                    <Clock size={12} />
+                                    <span>Latihan</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    <div className="prose dark:prose-invert max-w-none mb-8">
-                        <p className="text-lg leading-relaxed">{currentQuestion.content}</p>
+                <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                    <div className="prose dark:prose-invert max-w-none mb-6 md:mb-8">
+                        <p className="text-base md:text-lg leading-relaxed">{currentQuestion.content}</p>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2 md:space-y-3">
                         {currentQuestion.options.map((option) => (
                             <div
                                 key={option.id}
                                 onClick={() => handleSelectOption(option.id)}
                                 className={`
-                                    p-4 rounded-lg border-2 cursor-pointer transition-all flex items-start gap-3
+                                    p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all flex items-start gap-3
                                     ${answers[currentQuestion.id] === option.id
                                         ? 'border-primary bg-primary/5'
                                         : 'border-border hover:border-primary/50 hover:bg-secondary/50'}
                                 `}
                             >
                                 <div className={`
-                                    w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5
+                                    w-6 h-6 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5
                                     ${answers[currentQuestion.id] === option.id
                                         ? 'border-primary bg-primary text-white'
                                         : 'border-muted-foreground'}
                                 `}>
-                                    {answers[currentQuestion.id] === option.id && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
+                                    {answers[currentQuestion.id] === option.id && <div className="w-2 md:w-2.5 h-2 md:h-2.5 bg-white rounded-full" />}
                                 </div>
-                                <span className={answers[currentQuestion.id] === option.id ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                                <span className={`text-sm md:text-base leading-snug md:leading-normal ${answers[currentQuestion.id] === option.id ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
                                     {option.content}
                                 </span>
                             </div>
                         ))}
                     </div>
+
+                    {/* Navigation - Moved here for proximity */}
+                    <div className="mt-4 pt-4 border-t border-border flex justify-between items-center sm:hidden">
+                        <button
+                            onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+                            disabled={currentIndex === 0}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-secondary disabled:opacity-50 transition"
+                        >
+                            <ChevronLeft size={20} />
+                            Sebelumnya
+                        </button>
+
+                        {currentIndex === sortedQuestions.length - 1 ? (
+                            <button
+                                onClick={onFinishClick}
+                                disabled={finishing}
+                                className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition shadow-lg shadow-primary/20"
+                            >
+                                {finishing ? 'Menyimpan...' : 'Selesai'}
+                                <CheckCircle2 size={18} />
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setCurrentIndex(prev => Math.min(sortedQuestions.length - 1, prev + 1))}
+                                className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg hover:opacity-90 transition"
+                            >
+                                Selanjutnya
+                                <ChevronRight size={20} />
+                            </button>
+                        )}
+                    </div>
                 </div>
 
-                {/* Footer Nav */}
-                <div className="p-4 border-t border-border flex justify-between items-center bg-background">
+                {/* Footer Nav - Desktop Only */}
+                <div className="hidden sm:flex p-4 border-t border-border justify-between items-center bg-background">
                     <button
                         onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
                         disabled={currentIndex === 0}
@@ -421,8 +529,8 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                 </div>
             </div>
 
-            {/* RIGHT: Navigation Panel */}
-            <div className="w-full lg:w-80 shrink-0 flex flex-col bg-card border border-border rounded-xl h-full shadow-sm">
+            {/* RIGHT: Navigation Panel - Hidden on Mobile */}
+            <div className="hidden lg:flex w-full lg:w-80 shrink-0 flex-col bg-card border border-border rounded-xl h-full shadow-sm">
                 <div className="p-4 border-b border-border font-semibold flex items-center gap-2">
                     <Map size={18} />
                     Navigasi Soal
