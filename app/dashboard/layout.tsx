@@ -11,6 +11,7 @@ import {
     Zap
 } from 'lucide-react'
 import { signout } from '@/app/auth/actions'
+import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
 
 export default async function DashboardLayout({
     children,
@@ -82,15 +83,7 @@ export default async function DashboardLayout({
                     <Link href="/dashboard" className="font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
                         CPNS PRO
                     </Link>
-                    <Link href="/dashboard/profile">
-                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border border-border">
-                            {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                            ) : (
-                                <span className="text-xs font-bold text-primary">{user.email?.[0].toUpperCase()}</span>
-                            )}
-                        </div>
-                    </Link>
+                    <MobileProfileDropdown user={user} profile={profile} signoutAction={signout} />
                 </div>
 
                 <div className="p-6 md:p-8 max-w-7xl mx-auto">
