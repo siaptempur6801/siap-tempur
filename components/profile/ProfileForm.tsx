@@ -5,11 +5,11 @@ import { createClient } from '@/utils/supabase/client'
 import { updateProfile } from '@/app/actions/profile'
 import { updatePassword } from '@/app/auth/actions'
 import { toast } from 'sonner'
-import { Camera, Loader2, Save, User, Target, BarChart3, Bell, Shield, LogOut, Crown, Sparkles, CreditCard, ChevronDown, Eye, X, Lock } from 'lucide-react'
+import { Camera, Loader2, Save, User, Target, Bell, Shield, Crown, Sparkles, CreditCard, ChevronDown, Eye, X, Lock } from 'lucide-react'
 import { signout } from '@/app/auth/actions'
 import Image from 'next/image'
 
-export default function ProfileForm({ user, profile, stats }: any) {
+export default function ProfileForm({ user, profile }: any) {
     const [loading, setLoading] = useState(false)
     const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url)
     const [uploading, setUploading] = useState(false)

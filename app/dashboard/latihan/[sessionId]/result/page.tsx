@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle2, XCircle, AlertCircle, ArrowLeft, Trophy } from 'lucide-react'
+import { CheckCircle2, ArrowLeft, Trophy } from 'lucide-react'
 import ResultReviewClient from '@/components/practice/ResultReviewClient'
 
 export default async function PracticeResultPage({ params }: { params: Promise<{ sessionId: string }> }) {

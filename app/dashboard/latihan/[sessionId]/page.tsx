@@ -91,7 +91,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
     // Calculate end time for tryout (100 minutes from start)
     let endTime: string | undefined
     if (isTryout && session.start_time) {
-        const endTimeMs = Date.now() + (100 * 60 * 1000) // 30 detik
+        const endTimeMs = new Date(session.start_time).getTime() + (100 * 60 * 1000)
         endTime = new Date(endTimeMs).toISOString()
     }
 

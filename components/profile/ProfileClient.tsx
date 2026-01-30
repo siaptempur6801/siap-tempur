@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { User, Mail, Calendar, Shield, Crown, Trophy, Target, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, AlertTriangle } from 'lucide-react'
+import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell } from 'lucide-react'
 import { updateProfileInfo, updatePassword } from '@/app/actions/profile'
-import { deleteAccount } from '@/app/actions/delete-account'
 import { signout } from '@/app/auth/actions'
 import { toast } from 'sonner'
 
@@ -47,9 +46,7 @@ export default function ProfileClient({ profile: initialProfile, user }: { profi
     const [isSavingNotifications, setIsSavingNotifications] = useState(false)
 
     // Delete account state
-    const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [confirmDeleteText, setConfirmDeleteText] = useState('')
-    const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+
 
     const createdAt = new Date(user.created_at).toLocaleDateString('id-ID', {
         year: 'numeric',

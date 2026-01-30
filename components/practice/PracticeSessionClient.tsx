@@ -93,7 +93,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
             }
         }, 1000)
         return () => clearInterval(interval)
-    }, [endTime, hasFinished, isTryout, isPaused])
+    }, [endTime, hasFinished, isTryout, isPaused, showWarning5Min, showWarning1Min])
 
     // Safety check - prevent crash if no questions available
     if (!currentQuestion || sortedQuestions.length === 0) {

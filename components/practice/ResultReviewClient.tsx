@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Map, Flag } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Map } from 'lucide-react'
 // import { Card } from '@/components/ui/card'
 
 interface Answer {
@@ -97,7 +97,7 @@ export default function ResultReviewClient({ answers }: Props) {
     // In practice mode we randomized them. Here they come from DB join. 
     // They might be in ID order or insertion order. That's fine for review.
 
-    const correctOption = options.find((o: any) => o.is_correct)
+
     const maxScoreOption = options.reduce((prev: any, current: any) => (prev.score_value > current.score_value) ? prev : current, options[0])
 
     return (

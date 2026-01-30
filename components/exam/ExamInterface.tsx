@@ -36,6 +36,13 @@ export default function ExamInterface({ sessionId, questions, initialAnswers, en
 
     const currentQuestion = questions[currentQuestionIndex]
 
+    const handleFinish = async () => {
+        if (hasFinished) return // Prevent double submission
+        setHasFinished(true)
+        setIsSubmitting(true)
+        await finishExam(sessionId)
+    }
+
     // Timer Logic
     useEffect(() => {
         const interval = setInterval(() => {
@@ -77,7 +84,7 @@ export default function ExamInterface({ sessionId, questions, initialAnswers, en
             }
         }, 1000)
         return () => clearInterval(interval)
-    }, [endTime, hasFinished])
+    }, [endTime, hasFinished, showWarning5Min, showWarning1Min])
 
     const handleOptionSelect = async (optionId: string) => {
         const newAnswers = { ...answers, [currentQuestion.id]: optionId }
@@ -92,12 +99,7 @@ export default function ExamInterface({ sessionId, questions, initialAnswers, en
         }
     }
 
-    const handleFinish = async () => {
-        if (hasFinished) return // Prevent double submission
-        setHasFinished(true)
-        setIsSubmitting(true)
-        await finishExam(sessionId)
-    }
+
 
     return (
         <div className="flex h-screen bg-background">
