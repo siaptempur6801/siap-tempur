@@ -17,12 +17,8 @@ export async function updateProfile(formData: FormData) {
     const updates: any = {
         updated_at: new Date().toISOString(),
         full_name: formData.get('fullName') as string,
-        education: formData.get('education') as string,
-        target_score: Number(formData.get('targetScore')) || 0,
-        study_hours_per_day: Number(formData.get('studyHours')) || 0,
-        cpns_year: Number(formData.get('cpnsYear')) || 2024,
-        reminder_enabled: formData.get('reminderEnabled') === 'on',
-        reminder_time: formData.get('reminderTime') as string,
+
+
     }
 
     if (avatarUrl) {

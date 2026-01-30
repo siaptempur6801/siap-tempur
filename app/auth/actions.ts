@@ -16,11 +16,11 @@ export async function login(formData: FormData) {
     })
 
     if (error) {
-        redirect('/login?error=Invalid credentials')
+        return { error: 'Email atau password salah' }
     }
 
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    return { success: true }
 }
 
 export async function signup(formData: FormData) {
@@ -41,11 +41,11 @@ export async function signup(formData: FormData) {
     })
 
     if (error) {
-        redirect('/register?error=Could not authenticate user')
+        return { error: error.message }
     }
 
     revalidatePath('/', 'layout')
-    redirect('/dashboard?message=Check email to continue sign in process')
+    return { success: true }
 }
 
 export async function signout() {

@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import { updateProfile } from '@/app/actions/profile'
 import { updatePassword } from '@/app/auth/actions'
 import { toast } from 'sonner'
-import { Camera, Loader2, Save, User, Target, Bell, Shield, Crown, Sparkles, CreditCard, ChevronDown, Eye, X, Lock } from 'lucide-react'
+import { Camera, Loader2, Save, User, Shield, Crown, Sparkles, CreditCard, Eye, X, Lock } from 'lucide-react'
 import { signout } from '@/app/auth/actions'
 import Image from 'next/image'
 
@@ -62,12 +62,7 @@ export default function ProfileForm({ user, profile }: any) {
                     description: 'Data Anda telah tersimpan dengan aman.'
                 })
 
-                // DATA UPDATED: Re-schedule notification
-                const enabled = formData.get('reminderEnabled') === 'on'
-                const time = formData.get('reminderTime') as string
-                if (enabled && time) {
-                    scheduleNotification(time)
-                }
+
             }
         } catch (e) {
             toast.error('Terjadi kesalahan yang tidak diketahui.')
@@ -76,49 +71,7 @@ export default function ProfileForm({ user, profile }: any) {
         }
     }
 
-    // --- NOTIFICATION LOGIC ---
-    // Request permission on mount if enabled
 
-    useEffect(() => {
-        if (profile?.reminder_enabled && Notification.permission !== 'granted') {
-            Notification.requestPermission()
-        }
-
-        if (profile?.reminder_enabled && profile?.reminder_time) {
-            scheduleNotification(profile.reminder_time)
-        }
-    }, [profile])
-
-    const scheduleNotification = (time: string) => {
-        if (Notification.permission !== 'granted') {
-            Notification.requestPermission()
-        }
-
-        // Clear existing timeouts if we had a proper manager, 
-        // but for now simplest is just check time match or set simple timeout
-
-        const [hours, minutes] = time.split(':').map(Number)
-        const now = new Date()
-        const scheduledTime = new Date()
-        scheduledTime.setHours(hours, minutes, 0, 0)
-
-        if (scheduledTime <= now) {
-            // If time passed today, schedule for tomorrow
-            scheduledTime.setDate(scheduledTime.getDate() + 1)
-        }
-
-        const timeout = scheduledTime.getTime() - now.getTime()
-
-        console.log(`Notification scheduled for ${time} (in ${timeout / 1000 / 60} minutes)`)
-
-        // Clear previous if possible (stored in ref), omitting here for brevity
-        setTimeout(() => {
-            new Notification("Waktunya Belajar CPNS! 📚", {
-                body: "Target skor 450+ menantimu. Yuk latihan soal sekarang!",
-                icon: "/icon.png" // Placeholder
-            })
-        }, timeout)
-    }
 
     return (
         <>
@@ -187,10 +140,7 @@ export default function ProfileForm({ user, profile }: any) {
                                     <label className="text-sm font-medium">Email</label>
                                     <input disabled defaultValue={user.email} className="w-full p-3 rounded-lg border border-input bg-secondary/50 text-muted-foreground cursor-not-allowed" />
                                 </div>
-                                <div className="space-y-2 md:col-span-2">
-                                    <label className="text-sm font-medium">Pendidikan Terakhir (Opsional)</label>
-                                    <input name="education" defaultValue={profile?.education || ''} className="w-full p-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Contoh: S1 Teknik Informatika" />
-                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -246,65 +196,9 @@ export default function ProfileForm({ user, profile }: any) {
                     </div>
                 </section>
 
-                {/* 3. TARGET & PREFERENSI */}
-                <section className="bg-card border border-border rounded-xl overflow-hidden">
-                    <div className="bg-secondary/30 p-4 border-b border-border flex items-center gap-2 font-semibold">
-                        <Target size={18} className="text-accent" />
-                        <h3>Target & Preferensi</h3>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Target Skor SKD</label>
-                            <div className="relative">
-                                <input type="number" name="targetScore" defaultValue={profile?.target_score || 450} className="w-full p-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-accent/20 transition-all outline-none" min="0" max="550" />
-                                <span className="absolute right-3 top-3 text-xs text-muted-foreground">/ 550</span>
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Target Belajar (Jam/Hari)</label>
-                            <div className="relative">
-                                <select name="studyHours" defaultValue={profile?.study_hours_per_day || 1} className="w-full p-3 pr-10 rounded-lg border border-input bg-background focus:ring-2 focus:ring-accent/20 transition-all outline-none appearance-none cursor-pointer">
-                                    <option value="1">1 Jam</option>
-                                    <option value="2">2 Jam</option>
-                                    <option value="3">3 Jam</option>
-                                    <option value="4">4+ Jam</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
-                            </div>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Tahun CPNS</label>
-                            <div className="relative">
-                                <select name="cpnsYear" defaultValue={profile?.cpns_year || 2024} className="w-full p-3 pr-10 rounded-lg border border-input bg-background focus:ring-2 focus:ring-accent/20 transition-all outline-none appearance-none cursor-pointer">
-                                    <option value="2024">2024</option>
-                                    <option value="2025">2025</option>
-                                    <option value="2026">2026</option>
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
-                {/* 5. NOTIFIKASI */}
-                <section className="bg-card border border-border rounded-xl overflow-hidden">
-                    <div className="bg-secondary/30 p-4 border-b border-border flex items-center gap-2 font-semibold">
-                        <Bell size={18} className="text-yellow-500" />
-                        <h3>Notifikasi</h3>
-                    </div>
-                    <div className="p-6 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <input type="checkbox" name="reminderEnabled" defaultChecked={profile?.reminder_enabled} className="w-5 h-5 accent-yellow-500" />
-                            <div>
-                                <label className="font-medium text-lg">Reminder Harian</label>
-                                <p className="text-sm text-muted-foreground">Dapatkan pengingat untuk tetap konsisten belajar.</p>
-                            </div>
-                        </div>
-                        <div>
-                            <input type="time" name="reminderTime" defaultValue={profile?.reminder_time || '19:00'} className="p-2.5 rounded-lg border border-input bg-background focus:ring-2 focus:ring-yellow-500/20 outline-none" />
-                        </div>
-                    </div>
-                </section>
+
+
 
                 {/* 6. KEAMANAN */}
                 <section className="bg-card border border-border rounded-xl overflow-hidden">
