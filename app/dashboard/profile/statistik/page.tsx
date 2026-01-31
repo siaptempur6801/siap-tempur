@@ -93,7 +93,7 @@ export default async function StatisticsPage() {
             </div>
 
             {/* 1. OVERVIEW CARDS */}
-            <StatOverview data={stats} streak={profile?.streak_count || 0} />
+            {stats.all && <StatOverview data={stats.all} streak={profile?.streak_count || 0} />}
 
             {/* AI INSIGHT BOX */}
             <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border-l-4 border-indigo-500 p-6 rounded-r-xl">
@@ -102,7 +102,7 @@ export default async function StatisticsPage() {
                     <h3 className="font-bold text-lg text-foreground">Insight Minggu Ini</h3>
                 </div>
                 <div className="space-y-1">
-                    {stats.insights.map((insight, idx) => (
+                    {(stats.all?.insights || []).map((insight: string, idx: number) => (
                         <p key={idx} className="text-sm md:text-base text-muted-foreground leading-relaxed">
                             • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>') }} />
                         </p>
@@ -114,13 +114,15 @@ export default async function StatisticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 min-h-[400px]">
                     <TrendChart
-                        data={stats.trendData}
-                        trendDirection={stats.trendDirection}
-                        trendPercentage={stats.trendPercentage}
+                        data={stats.all?.trendData || []}
+                        trendDirection={stats.all?.trendDirection || 'flat'}
+                        trendPercentage={stats.all?.trendPercentage || 0}
+                        shortTermTrend={stats.all?.shortTermTrend || 'flat'}
+                        shortTermPercentage={stats.all?.shortTermPercentage || 0}
                     />
                 </div>
                 <div className="min-h-[400px]">
-                    <CategoryChart data={stats.categoryStats} />
+                    <CategoryChart data={stats.all?.categoryStats || []} />
                 </div>
             </div>
 
@@ -128,9 +130,9 @@ export default async function StatisticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
                 {/* Consistency is full width if singular, or split */}
                 <ConsistencyTracker
-                    data={stats.consistencyData}
-                    score={stats.consistencyScore}
-                    activeCount={stats.activeInPeriod}
+                    data={stats.all?.consistencyData || []}
+                    score={stats.all?.consistencyScore || 0}
+                    activeCount={stats.all?.activeInPeriod || 0}
                 />
             </div>
 
