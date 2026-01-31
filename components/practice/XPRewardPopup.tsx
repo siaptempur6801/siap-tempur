@@ -97,7 +97,7 @@ export default function XPRewardPopup({
                         {/* Close button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition text-white/70 hover:text-white"
+                            className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 transition text-white/70 hover:text-white"
                         >
                             <X className="w-5 h-5" />
                         </button>
