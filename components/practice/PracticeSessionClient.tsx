@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -177,6 +177,13 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
         }
     }
 
+    // Exit Confirmation State
+    const [showExitModal, setShowExitModal] = useState(false)
+
+    const handleExit = () => {
+        router.push('/dashboard/latihan')
+    }
+
     return (
         <div className="flex flex-col lg:flex-row gap-4 md:gap-6 p-2 md:p-8 h-auto md:h-[calc(100vh-64px)] md:overflow-hidden relative">
             {/* Mobile Navigation Drawer */}
@@ -231,6 +238,16 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                 </div>
                             </div>
 
+                            {/* Exit ButtonMobile */}
+                            <div className="mt-4 pt-4 border-t border-border">
+                                <button
+                                    onClick={() => setShowExitModal(true)}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-red-500/20 text-red-500 bg-red-500/10 hover:bg-red-500/20 font-bold transition-all"
+                                >
+                                    <LogOut size={18} /> Keluar Latihan
+                                </button>
+                            </div>
+
                             <div className="p-4 bg-secondary/20 text-xs text-muted-foreground border-t border-border space-y-2 mt-4 rounded-lg">
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary"></div><span>Dijawab</span></div>
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div><span>Ragu-ragu</span></div>
@@ -240,6 +257,41 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Exit Confirmation Modal */}
+            {showExitModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-card border border-border rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-2">
+                                <LogOut size={32} className="text-red-600 dark:text-red-400" />
+                            </div>
+
+                            <h3 className="text-xl font-bold">Keluar Latihan?</h3>
+
+                            <p className="text-sm text-muted-foreground">
+                                Progres latihan Anda saat ini akan hilang dan tidak dapat dilanjutkan. Apakah Anda yakin ingin keluar?
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-3 w-full mt-2">
+                                <button
+                                    onClick={() => setShowExitModal(false)}
+                                    className="px-4 py-2 rounded-lg border border-border hover:bg-secondary transition font-medium"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={handleExit}
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition font-bold shadow-lg shadow-red-600/20"
+                                >
+                                    Keluar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Warning Modal - 5 Minutes */}
             <AnimatePresence>
                 {isTryout && showWarning5Min && timeLeftMs > 60000 && (
@@ -557,10 +609,18 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                         ))}
                     </div>
                 </div>
-                <div className="p-4 bg-secondary/20 text-xs text-muted-foreground border-t border-border space-y-1">
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary"></div><span>Dijawab</span></div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div><span>Ragu-ragu</span></div>
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-secondary border border-muted-foreground/30"></div><span>Belum dijawab</span></div>
+                <div className="p-4 border-t border-border">
+                    <button
+                        onClick={() => setShowExitModal(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-500/20 text-red-500 bg-red-500/10 hover:bg-red-500/20 font-bold transition-all text-sm"
+                    >
+                        <LogOut size={16} /> Keluar Latihan
+                    </button>
+                    <div className="mt-4 p-4 bg-secondary/20 text-xs text-muted-foreground space-y-1 rounded-lg">
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary"></div><span>Dijawab</span></div>
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div><span>Ragu-ragu</span></div>
+                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-secondary border border-muted-foreground/30"></div><span>Belum dijawab</span></div>
+                    </div>
                 </div>
             </div>
         </div >

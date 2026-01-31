@@ -1,8 +1,21 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle2, ArrowLeft, Trophy } from 'lucide-react'
+import {
+    CheckCircle2,
+    XCircle,
+    ArrowLeft,
+    Trophy,
+    Clock,
+    Target,
+    BarChart3,
+    RefreshCw,
+    Play,
+    AlertTriangle
+} from 'lucide-react'
 import ResultReviewClient from '@/components/practice/ResultReviewClient'
+import RetakeButton from '@/components/practice/RetakeButton'
+import ScrollToReviewButton from '@/components/practice/ScrollToReviewButton'
 
 export default async function PracticeResultPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const supabase = await createClient()
@@ -20,12 +33,10 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
     }
 
     if (session.status !== 'completed') {
-        // If not completed, redirect back to practice
-        // redirect(`/dashboard/latihan/${sessionId}`)
-        // OR just show a message "Session not finished"
+        // Optional: redirect or show message
     }
 
-    // 2. Fetch Detailed Answers for Review
+    // 2. Fetch Detailed Answers
     const { data: rawAnswers, error: answersError } = await supabase
         .from('test_answers')
         .select(`
@@ -54,111 +65,331 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
         `)
         .eq('session_id', sessionId)
 
-    // Normalize selected_option from array to single object
+    if (answersError) return <div>Error loading results</div>
+
     const answers = rawAnswers?.map((ans: any) => ({
         ...ans,
         selected_option: Array.isArray(ans.selected_option) ? ans.selected_option[0] || null : ans.selected_option
     }))
 
-    if (answersError) return <div>Error loading results</div>
+    // --- DATA PROCESSING ---
 
-    // Helper to determine if answer was "correct" (or high score for TKP)
-    const getReviewStatus = (ans: any) => {
-        const type = ans.questions.type
-        if (type === 'TKP') {
-            const score = ans.selected_option?.score_value || 0
-            if (score === 5) return 'perfect'
-            if (score >= 3) return 'good'
-            return 'bad'
-        } else {
-            return ans.selected_option?.is_correct ? 'correct' : 'wrong'
-        }
+    // 1. Determine Module Type
+    const uniqueTypes = Array.from(new Set(answers.map((a: any) => {
+        const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+        return q.type
+    })))
+    const isCombined = uniqueTypes.length > 1
+    const singleType = isCombined ? null : uniqueTypes[0]
+
+    // 2. Calculate Stats Helper
+    const calculateStats = (filterType?: string) => {
+        const filtered = filterType
+            ? answers.filter((a: any) => (Array.isArray(a.questions) ? a.questions[0] : a.questions).type === filterType)
+            : answers
+
+        const total = filtered.length
+        if (total === 0) return { total: 0, correct: 0, wrong: 0, empty: 0, score: 0, maxScore: 0, accuracy: 0 }
+
+        let correct = 0
+        let score = 0
+        let maxScore = 0
+
+        filtered.forEach((a: any) => {
+            const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+            const type = q.type
+            const isCorrect = a.selected_option?.is_correct
+            const val = a.selected_option?.score_value || 0
+
+            if (type === 'TKP') {
+                score += val
+                maxScore += 5
+                if (val >= 3) correct++ // Loose definition for TKP "success"
+            } else {
+                if (isCorrect) {
+                    correct++
+                    score += 5
+                }
+                maxScore += 5
+            }
+        })
+
+        const wrong = total - correct // This is a simplified view for TKP
+        const accuracy = Math.round((score / maxScore) * 100)
+
+        // Correction for actual correct/wrong counts needed for display
+        const realCorrect = filtered.filter((a: any) => {
+            const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+            if (q.type === 'TKP') return (a.selected_option?.score_value || 0) === 5
+            return a.selected_option?.is_correct
+        }).length
+
+        const realWrong = filtered.length - realCorrect
+
+        return { total, correct: realCorrect, wrong: realWrong, score, maxScore, accuracy }
     }
 
-    // Determine Display Mode
-    const firstQ = answers?.[0]?.questions
-    const qData = Array.isArray(firstQ) ? firstQ[0] : firstQ
-    const practiceType = qData?.type
+    const mainStats = calculateStats(singleType || undefined)
 
-    const showAll = session.mode === 'tryout'
+    // 3. Time Duration
+    const startTime = new Date(session.start_time).getTime()
+    const endTime = session.end_time ? new Date(session.end_time).getTime() : Date.now()
+    const durationMinutes = Math.floor((endTime - startTime) / 60000)
+    const durationSeconds = Math.floor(((endTime - startTime) % 60000) / 1000)
+
+    // 4. Grade Calculation
+    const getGrade = (percentage: number) => {
+        if (percentage >= 80) return { label: 'A', color: 'text-green-500', bg: 'bg-green-500/10', border: 'border-green-500', text: 'Sangat Baik' }
+        if (percentage >= 65) return { label: 'B', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500', text: 'Baik' }
+        if (percentage >= 50) return { label: 'C', color: 'text-yellow-500', bg: 'bg-yellow-500/10', border: 'border-yellow-500', text: 'Cukup' }
+        if (percentage >= 30) return { label: 'D', color: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500', text: 'Kurang' }
+        return { label: 'E', color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500', text: 'Perlu Belajar Lagi' }
+    }
+
+    const grade = getGrade(mainStats.accuracy)
+
+    // 5. Feedback Logic
+    const getFeedback = () => {
+        if (mainStats.accuracy >= 80) return "Luar biasa! Kamu sudah siap untuk menaklukkan soal-soal SKD sesungguhnya. Pertahankan!"
+        if (mainStats.accuracy >= 60) return "Permulaan yang bagus. Ada beberapa materi yang perlu diperdalam lagi agar skor makin maksimal."
+        return "Jangan patah semangat! Perbanyak latihan soal dan pelajari pembahasan untuk meningkatkan pemahamanmu."
+    }
+
+    // --- UI HELPERS ---
+
+    const CategoryCard = ({ type, score, maxScore, total, correct }: any) => {
+        const pct = Math.round((score / maxScore) * 100) || 0
+        const isPassed = type === 'TWK' ? score >= 65 : type === 'TIU' ? score >= 80 : score >= 166
+        const passColor = isPassed ? 'text-green-600' : 'text-red-500'
+
+        return (
+            <div className="bg-card/50 border border-border p-4 rounded-xl flex flex-col gap-2 min-w-[140px] flex-1">
+                <div className="flex justify-between items-center">
+                    <span className="text-xs font-bold text-muted-foreground uppercase">{type}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isPassed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                        {isPassed ? 'Lulus' : 'Belum Lulus'}
+                    </span>
+                </div>
+                <div className="mt-1">
+                    <span className={`text-2xl font-bold ${passColor}`}>{score}</span>
+                    <span className="text-muted-foreground text-sm"> / {maxScore}</span>
+                </div>
+                <div className="text-[10px] text-muted-foreground font-medium">
+                    Benar {correct} dari {total} soal
+                </div>
+                {/* Mini Progress Bar */}
+                <div className="w-full h-1.5 bg-secondary rounded-full mt-2 overflow-hidden">
+                    <div
+                        className={`h-full rounded-full ${isPassed ? 'bg-green-500' : 'bg-red-500'}`}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                </div>
+            </div>
+        )
+    }
 
     return (
-        <div className="max-w-4xl mx-auto p-4 md:p-8 space-y-8 pb-20">
-            {/* Header / Score Card */}
-            <div className="bg-card border border-border rounded-xl p-8 text-center shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-primary to-purple-500" />
+        <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-32">
 
-                <h1 className="text-2xl font-bold mb-6">Hasil Latihan {session.mode === 'practice' ? '' : 'Tryout'}</h1>
+            {/* 1. HERO SECTION */}
+            <div className="relative overflow-hidden rounded-2xl bg-card border border-border shadow-2xl">
+                {/* Background Gradient */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-primary/5 to-purple-600/5" />
+                <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
 
-                <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-16">
-                    {/* Total Score */}
-                    <div className="relative">
-                        <div className="w-32 h-32 rounded-full border-4 border-primary flex items-center justify-center bg-primary/5">
-                            <div>
-                                <span className="text-4xl font-extrabold text-primary">{session.total_score}</span>
-                                <div className="text-xs text-muted-foreground uppercase font-bold mt-1">Total Skor</div>
+                <div className="relative p-6 md:p-10 flex flex-col items-center text-center">
+                    <div className="mb-2">
+                        <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold uppercase tracking-wider">
+                            Hasil {isCombined ? 'Tryout SKD' : `Latihan ${singleType}`}
+                        </span>
+                    </div>
+
+                    <h1 className="text-3xl md:text-4xl font-extrabold mb-1">
+                        {grade.text}
+                    </h1>
+                    <p className="text-muted-foreground max-w-lg mx-auto mb-8">
+                        {getFeedback()}
+                    </p>
+
+                    <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 w-full justify-center">
+
+                        {/* SCORE CIRCLE */}
+                        <div className="relative group">
+                            <div className={`w-40 h-40 md:w-48 md:h-48 rounded-full border-8 ${grade.border} flex flex-col items-center justify-center bg-card shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-transform hover:scale-105`}>
+                                <span className={`text-5xl md:text-6xl font-black ${grade.color} tracking-tight`}>
+                                    {session.total_score}
+                                </span>
+                                <span className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-widest">Total Skor</span>
+                            </div>
+
+                            {/* Grade Badge */}
+                            <div className={`absolute -right-2 -top-2 w-14 h-14 rounded-full ${grade.bg} ${grade.border} border-4 flex items-center justify-center text-2xl font-bold ${grade.color} shadow-lg rotate-12`}>
+                                {grade.label}
                             </div>
                         </div>
-                        {session.is_passed && (
-                            <div className="absolute -top-2 -right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-                                <Trophy size={12} /> LULUS
-                            </div>
-                        )}
-                    </div>
 
-                    {/* Breakdown */}
-                    <div className="flex gap-8 text-left justify-center flex-wrap">
-                        {(showAll || practiceType === 'TWK') && (
-                            <div>
-                                <div className="text-sm text-muted-foreground">TWK</div>
-                                <div className={`text-xl font-bold ${session.score_twk >= 65 ? 'text-green-600' : 'text-red-500'}`}>
-                                    {session.score_twk} <span className="text-xs text-muted-foreground font-normal">/ {
-                                        // Calculate max TWK score dynamically
-                                        (answers?.filter((a: any) => (Array.isArray(a.questions) ? a.questions[0] : a.questions).type === 'TWK').length || 0) * 5
-                                    }</span>
+                        {/* STATS GRID */}
+                        <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
+                            <div className="bg-secondary/30 p-4 rounded-xl border border-secondary flex flex-col items-start min-w-[140px]">
+                                <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase mb-1">
+                                    <Target size={14} /> Akurasi
                                 </div>
+                                <span className="text-2xl font-bold">{mainStats.accuracy}%</span>
+                                <span className="text-[10px] text-muted-foreground">Persentase Kebenaran</span>
                             </div>
-                        )}
-                        {(showAll || practiceType === 'TIU') && (
-                            <div>
-                                <div className="text-sm text-muted-foreground">TIU</div>
-                                <div className={`text-xl font-bold ${session.score_tiu >= 80 ? 'text-green-600' : 'text-red-500'}`}>
-                                    {session.score_tiu} <span className="text-xs text-muted-foreground font-normal">/ {
-                                        // Calculate max TIU score dynamically
-                                        (answers?.filter((a: any) => (Array.isArray(a.questions) ? a.questions[0] : a.questions).type === 'TIU').length || 0) * 5
-                                    }</span>
-                                </div>
-                            </div>
-                        )}
-                        {(showAll || practiceType === 'TKP') && (
-                            <div>
-                                <div className="text-sm text-muted-foreground">TKP</div>
-                                <div className={`text-xl font-bold ${session.score_tkp >= 166 ? 'text-green-600' : 'text-red-500'}`}>
-                                    {session.score_tkp} <span className="text-xs text-muted-foreground font-normal">/ {
-                                        // Calculate max TKP score dynamically (questions * 5)
-                                        (answers?.filter((a: any) => (Array.isArray(a.questions) ? a.questions[0] : a.questions).type === 'TKP').length || 0) * 5
-                                    }</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
 
-                <div className="mt-8 pt-6 border-t border-border flex justify-center">
-                    <Link href="/dashboard/latihan" className="flex items-center gap-2 text-primary hover:underline font-medium">
-                        <ArrowLeft size={16} /> Kembali ke Daftar Latihan
-                    </Link>
+                            <div className="bg-secondary/30 p-4 rounded-xl border border-secondary flex flex-col items-start min-w-[140px]">
+                                <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase mb-1">
+                                    <Clock size={14} /> Waktu
+                                </div>
+                                <span className="text-2xl font-bold">{durationMinutes}<span className="text-sm font-normal text-muted-foreground">m</span> {durationSeconds}<span className="text-sm font-normal text-muted-foreground">d</span></span>
+                                <span className="text-[10px] text-muted-foreground">Durasi Pengerjaan</span>
+                            </div>
+
+                            <div className="bg-secondary/30 p-4 rounded-xl border border-secondary flex flex-col items-start min-w-[140px]">
+                                <div className="flex items-center gap-2 text-green-600 text-xs font-bold uppercase mb-1">
+                                    <CheckCircle2 size={14} /> Benar
+                                </div>
+                                <span className="text-2xl font-bold text-green-600">{mainStats.correct}</span>
+                                <span className="text-[10px] text-muted-foreground">Soal Terjawab Benar</span>
+                            </div>
+
+                            <div className="bg-secondary/30 p-4 rounded-xl border border-secondary flex flex-col items-start min-w-[140px]">
+                                <div className="flex items-center gap-2 text-red-500 text-xs font-bold uppercase mb-1">
+                                    <XCircle size={14} /> Salah
+                                </div>
+                                <span className="text-2xl font-bold text-red-500">{mainStats.wrong}</span>
+                                <span className="text-[10px] text-muted-foreground">Soal Salah / Kosong</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Answer Review Component */}
-            <div className="space-y-6">
-                <h2 className="text-xl font-bold flex items-center gap-2">
-                    <CheckCircle2 className="text-primary" /> Pembahasan Soal
-                </h2>
+            {/* 2. CATEGORY BREAKDOWN (If Combined) */}
+            {isCombined && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <CategoryCard
+                        type="TWK"
+                        score={session.score_twk}
+                        maxScore={calculateStats('TWK').maxScore}
+                        total={calculateStats('TWK').total}
+                        correct={calculateStats('TWK').correct}
+                    />
+                    <CategoryCard
+                        type="TIU"
+                        score={session.score_tiu}
+                        maxScore={calculateStats('TIU').maxScore}
+                        total={calculateStats('TIU').total}
+                        correct={calculateStats('TIU').correct}
+                    />
+                    <CategoryCard
+                        type="TKP"
+                        score={session.score_tkp}
+                        maxScore={calculateStats('TKP').maxScore}
+                        total={calculateStats('TKP').total}
+                        correct={calculateStats('TKP').correct} // Logic for TKP correct might need adjustment
+                    />
+                </div>
+            )}
+
+            {/* 3. RECOMMENDATION CARD */}
+            {/* Refined Logic: Handle multiple failures */}
+            {isCombined && (
+                (() => {
+                    // Calculate pass status for each section
+                    const scores = [
+                        { type: 'TWK', score: session.score_twk, target: 65, passed: session.score_twk >= 65 },
+                        { type: 'TIU', score: session.score_tiu, target: 80, passed: session.score_tiu >= 80 },
+                        { type: 'TKP', score: session.score_tkp, target: 166, passed: session.score_tkp >= 166 }
+                    ]
+
+                    const failedSections = scores.filter(s => !s.passed)
+                    const allPassed = failedSections.length === 0
+
+                    // Determine Message
+                    let title = "Rekomendasi Belajar"
+                    let message: React.ReactNode = ""
+                    let linkText = "Pelajari Materi"
+                    let typeColor = "text-orange-600 dark:text-orange-400"
+                    let bgIcon = "bg-orange-100 dark:bg-orange-900/30"
+
+                    if (allPassed) {
+                        title = "Pertahankan Performamu!"
+                        message = "Selamat! Kamu telah lulus passing grade di semua kategori. Pertahankan konsistensi latihanmu dan coba kerjakan soal-soal yang lebih sulit untuk memantapkan kesiapanmu."
+                        linkText = "Lanjut Latihan Soal"
+                        typeColor = "text-green-600 dark:text-green-400"
+                        bgIcon = "bg-green-100 dark:bg-green-900/30"
+                    } else if (failedSections.length === 3) {
+                        title = "Perlu Evaluasi Menyeluruh"
+                        message = (
+                            <>
+                                Hasil menunjukkan kamu belum memenuhi passing grade di semua kategori (<span className="font-bold text-foreground">TWK, TIU, TKP</span>). Disarankan untuk mempelajari kembali materi dasar secara sistematis dari awal.
+                            </>
+                        )
+                        linkText = "Mulai dari Materi Dasar"
+                        typeColor = "text-red-600 dark:text-red-400"
+                        bgIcon = "bg-red-100 dark:bg-red-900/30"
+                    } else if (failedSections.length >= 1) {
+                        // Build component array with separators
+                        const comps = failedSections.map((s, idx) => {
+                            const isLast = idx === failedSections.length - 1
+                            const isSecondLast = idx === failedSections.length - 2
+                            const suffix = isLast ? '' : isSecondLast ? ' dan ' : ', '
+                            return <span key={s.type}><span className="font-bold text-foreground">{s.type}</span>{suffix}</span>
+                        })
+
+                        title = "Fokus Perbaikan Diperlukan"
+                        message = (
+                            <>
+                                Kamu masih belum memenuhi target di bidang: {comps}. Luangkan waktu lebih banyak untuk memperdalam materi kategori tersebut.
+                            </>
+                        )
+                    }
+
+                    return (
+                        <div className={`bg-gradient-to-r ${allPassed ? 'from-green-500/10 to-blue-500/10 border-green-500/20' : 'from-orange-500/10 to-red-500/10 border-orange-500/20'} border rounded-xl p-6 flex items-start gap-4`}>
+                            <div className={`p-3 rounded-full shrink-0 ${bgIcon} ${typeColor}`}>
+                                {allPassed ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg mb-1">{title}</h3>
+                                <div className="text-muted-foreground text-sm mb-4 leading-relaxed">
+                                    {message}
+                                </div>
+                                <Link href="/dashboard/materi" className={`text-sm font-bold hover:underline flex items-center gap-1 ${typeColor}`}>
+                                    {linkText} &rarr;
+                                </Link>
+                            </div>
+                        </div>
+                    )
+                })()
+            )}
+
+            {/* 4. ACTION BAR (Sticky Bottom or Inline) */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Link
+                    href="/dashboard/latihan"
+                    className="flex justify-center items-center gap-2 px-6 py-3 rounded-xl border border-border bg-card hover:bg-secondary/50 font-bold transition-all"
+                >
+                    <ArrowLeft size={18} /> Daftar Latihan
+                </Link>
+
+                <RetakeButton isCombined={isCombined} singleType={singleType} />
+
+                <ScrollToReviewButton />
+            </div>
+
+            {/* 5. DETAILED ANSWER REVIEW (Existing Component) */}
+            <div id="review-section" className="pt-8 border-t border-border">
+                <div className="flex items-center gap-2 mb-6">
+                    <div className="h-8 w-1 bg-primary rounded-full"></div>
+                    <h2 className="text-2xl font-bold">Pembahasan & Detail Jawaban</h2>
+                </div>
 
                 <ResultReviewClient answers={answers || []} />
             </div>
+
         </div>
     )
 }
