@@ -425,11 +425,11 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                     <span className="text-xs text-muted-foreground md:text-base">/ {sortedQuestions.length}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <span className="px-1.5 py-0.5 bg-secondary text-secondary-foreground text-[10px] md:text-xs font-semibold rounded border border-border">
+                                    <span className="px-1 py-0.5 bg-secondary text-secondary-foreground text-[9px] md:text-[10px] font-medium rounded">
                                         {currentQuestion.type}
                                     </span>
                                     {currentQuestion.category && (
-                                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-[10px] md:text-xs font-semibold rounded border border-blue-200 dark:border-blue-800 uppercase tracking-wider">
+                                        <span className="px-1 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-[9px] md:text-[10px] font-medium rounded truncate max-w-[100px] md:max-w-none">
                                             {currentQuestion.category}
                                         </span>
                                     )}
