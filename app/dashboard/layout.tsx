@@ -7,12 +7,11 @@ import {
     Trophy,
     Calendar,
     User,
-    LogOut,
-    Zap
 } from 'lucide-react'
 import { signout } from '@/app/auth/actions'
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
+import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
 
 export default async function DashboardLayout({
     children,
@@ -42,7 +41,7 @@ export default async function DashboardLayout({
                 <nav className="flex-1 px-4 space-y-2">
                     <NavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
                     <NavItem href="/dashboard/materi" icon={<BookOpen size={20} />} label="Materi Belajar" />
-                    <NavItem href="/dashboard/latihan" icon={<Trophy size={20} />} label="Latihan Soal" />
+                    <NavItem href="/dashboard/latihan" icon={<Trophy size={20} />} label="Latihan Soal" badge="XP" />
                     <NavItem href="/dashboard/tryout" icon={<Calendar size={20} />} label="Tryout Akbar" />
                     <NavItem href="/dashboard/profile" icon={<User size={20} />} label="Profil" />
                 </nav>
@@ -101,29 +100,3 @@ export default async function DashboardLayout({
     )
 }
 
-function NavItem({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) {
-    return (
-        <Link
-            href={href}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-all duration-200 font-medium"
-        >
-            {icon}
-            <span>{label}</span>
-            {label === 'Latihan Soal' && (
-                <span className="ml-auto text-[10px] uppercase font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full">XP</span>
-            )}
-        </Link>
-    )
-}
-
-function MobileNavItem({ href, icon, label }: { href: string, icon: React.ReactNode, label: string }) {
-    return (
-        <Link
-            href={href}
-            className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-all active:scale-95"
-        >
-            {icon}
-            <span className="text-[10px] font-medium">{label}</span>
-        </Link>
-    )
-}
