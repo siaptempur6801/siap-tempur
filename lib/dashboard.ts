@@ -34,23 +34,76 @@ interface DashboardData {
 }
 
 // XP calculation: total_score from all completed sessions
-// Level thresholds
-const LEVEL_THRESHOLDS = [
-    { xp: 0, level: 1, name: 'Pemula' },
-    { xp: 500, level: 2, name: 'Calon ASN' },
-    { xp: 1500, level: 3, name: 'Pejuang NIP' },
-    { xp: 3000, level: 4, name: 'Ahli SKD' },
-    { xp: 5000, level: 5, name: 'Master CPNS' },
-    { xp: 8000, level: 6, name: 'Legenda ASN' },
+// Level thresholds - designed to be motivating with quick early levels
+// and progressively harder levels
+export const LEVEL_THRESHOLDS = [
+    { xp: 0, level: 1, name: 'Calon Pejuang' },          // Starting point
+    { xp: 100, level: 2, name: 'Pelajar Pemula' },       // 1-2 sessions
+    { xp: 250, level: 3, name: 'Siswa Rajin' },          // ~3 sessions
+    { xp: 500, level: 4, name: 'Calon ASN' },            // ~5 sessions
+    { xp: 800, level: 5, name: 'Pejuang SKD' },          // ~8 sessions
+    { xp: 1200, level: 6, name: 'Warrior Muda' },        // ~12 sessions
+    { xp: 1800, level: 7, name: 'Rising Star' },         // ~18 sessions
+    { xp: 2500, level: 8, name: 'Ahli Latihan' },        // ~25 sessions
+    { xp: 3500, level: 9, name: 'Semi Pro' },            // ~35 sessions
+    { xp: 5000, level: 10, name: 'Pro Player' },         // ~50 sessions
+    { xp: 7000, level: 11, name: 'Elite Warrior' },      // ~70 sessions
+    { xp: 10000, level: 12, name: 'Master SKD' },        // ~100 sessions
+    { xp: 15000, level: 13, name: 'Grand Master' },      // ~150 sessions
+    { xp: 22000, level: 14, name: 'Legend CPNS' },       // ~220 sessions
+    { xp: 30000, level: 15, name: 'Dewa ASN' },          // Ultimate level
 ]
 
-function getLevel(xp: number) {
+export function getLevel(xp: number) {
     let current = LEVEL_THRESHOLDS[0]
     for (const threshold of LEVEL_THRESHOLDS) {
         if (xp >= threshold.xp) current = threshold
         else break
     }
     return current
+}
+
+// Get progress to next level (percentage)
+export function getLevelProgress(xp: number) {
+    const currentLevel = getLevel(xp)
+    const currentIndex = LEVEL_THRESHOLDS.findIndex(t => t.level === currentLevel.level)
+    const nextLevel = LEVEL_THRESHOLDS[currentIndex + 1]
+
+    if (!nextLevel) {
+        // Max level reached
+        return { current: currentLevel, next: null, progress: 100, xpToNext: 0 }
+    }
+
+    const xpInCurrentLevel = xp - currentLevel.xp
+    const xpNeededForNext = nextLevel.xp - currentLevel.xp
+    const progress = Math.round((xpInCurrentLevel / xpNeededForNext) * 100)
+
+    return {
+        current: currentLevel,
+        next: nextLevel,
+        progress: Math.min(progress, 100),
+        xpToNext: nextLevel.xp - xp,
+    }
+}
+
+export function getXPInfo(previousTotalXP: number, xpEarned: number) {
+    const newTotalXP = previousTotalXP + xpEarned
+    const previousLevel = getLevel(previousTotalXP)
+    const newLevel = getLevel(newTotalXP)
+    const levelProgress = getLevelProgress(newTotalXP)
+
+    return {
+        previousXP: previousTotalXP,
+        newXP: newTotalXP,
+        xpEarned,
+        previousLevel: previousLevel.level,
+        previousLevelName: previousLevel.name,
+        newLevel: newLevel.level,
+        newLevelName: newLevel.name,
+        leveledUp: newLevel.level > previousLevel.level,
+        progress: levelProgress.progress,
+        xpToNext: levelProgress.xpToNext,
+    }
 }
 
 // Passing grades
