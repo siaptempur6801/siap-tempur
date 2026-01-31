@@ -491,7 +491,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                     </div>
 
                     <div className="space-y-2 md:space-y-3">
-                        {currentQuestion.options.map((option) => (
+                        {currentQuestion.options.map((option, i) => (
                             <div
                                 key={option.id}
                                 onClick={() => handleSelectOption(option.id)}
@@ -511,6 +511,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                     {answers[currentQuestion.id] === option.id && <div className="w-2 md:w-2.5 h-2 md:h-2.5 bg-white rounded-full" />}
                                 </div>
                                 <span className={`text-sm md:text-base leading-snug md:leading-normal ${answers[currentQuestion.id] === option.id ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
+                                    <span className="font-bold mr-2 uppercase">{String.fromCharCode(65 + i)}.</span>
                                     {option.content}
                                 </span>
                             </div>

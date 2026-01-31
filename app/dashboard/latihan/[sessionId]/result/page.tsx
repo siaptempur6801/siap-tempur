@@ -159,7 +159,8 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     const CategoryCard = ({ type, score, maxScore, total, correct }: any) => {
         const pct = Math.round((score / maxScore) * 100) || 0
-        const isPassed = type === 'TWK' ? score >= 65 : type === 'TIU' ? score >= 80 : score >= 166
+        const passingGrade = type === 'TWK' ? 65 : type === 'TIU' ? 80 : 166
+        const isPassed = score >= passingGrade
         const passColor = isPassed ? 'text-green-600' : 'text-red-500'
 
         return (
@@ -174,9 +175,12 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                     <span className={`text-2xl font-bold ${passColor}`}>{score}</span>
                     <span className="text-muted-foreground text-sm"> / {maxScore}</span>
                 </div>
-                <div className="text-[10px] text-muted-foreground font-medium">
-                    Benar {correct} dari {total} soal
+
+                <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
+                    <span>Passing Grade: <span className="text-foreground">{passingGrade}</span></span>
+                    <span>Benar: <span className="text-foreground">{correct}</span>/{total}</span>
                 </div>
+
                 {/* Mini Progress Bar */}
                 <div className="w-full h-1.5 bg-secondary rounded-full mt-2 overflow-hidden">
                     <div
@@ -216,9 +220,16 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                         {/* SCORE CIRCLE */}
                         <div className="relative group">
                             <div className={`w-40 h-40 md:w-48 md:h-48 rounded-full border-8 ${grade.border} flex flex-col items-center justify-center bg-card shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-transform hover:scale-105`}>
-                                <span className={`text-5xl md:text-6xl font-black ${grade.color} tracking-tight`}>
-                                    {session.total_score}
-                                </span>
+                                <div className="flex items-baseline gap-1">
+                                    <span className={`text-5xl md:text-6xl font-black ${grade.color} tracking-tight leading-none`}>
+                                        {session.total_score}
+                                    </span>
+                                    {!isCombined && singleType && (
+                                        <span className="text-lg md:text-xl font-bold text-muted-foreground/40">
+                                            /{singleType === 'TWK' ? 65 : singleType === 'TIU' ? 80 : 166}
+                                        </span>
+                                    )}
+                                </div>
                                 <span className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-widest">Total Skor</span>
                             </div>
 

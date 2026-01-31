@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2 } from 'lucide-react'
+import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2, Sparkles } from 'lucide-react'
 import { updateProfileInfo, updatePassword } from '@/app/actions/profile'
 import { signout } from '@/app/auth/actions'
 import { toast } from 'sonner'
@@ -12,6 +12,7 @@ type Profile = {
     avatar_url: string | null
     bio: string | null
     subscription_status: string
+    streak_count?: number
 }
 
 type UserData = {
@@ -20,10 +21,14 @@ type UserData = {
 }
 
 import { createClient } from '@/utils/supabase/client'
+import StatOverview from '@/components/statistics/StatOverview'
+import TrendChart from '@/components/statistics/TrendChart'
+import CategoryChart from '@/components/statistics/CategoryChart'
+import ConsistencyTracker from '@/components/statistics/ConsistencyTracker'
 
 // ... imports
 
-export default function ProfileClient({ profile: initialProfile, user }: { profile: Profile, user: UserData }) {
+export default function ProfileClient({ profile: initialProfile, user, statsData }: { profile: Profile, user: UserData, statsData: any }) {
     const [activeTab, setActiveTab] = useState<'profile' | 'stats' | 'history' | 'settings'>('profile')
     const [isEditing, setIsEditing] = useState(false)
     const [editedName, setEditedName] = useState(initialProfile.full_name || '')
@@ -35,6 +40,7 @@ export default function ProfileClient({ profile: initialProfile, user }: { profi
     // Avatar upload state
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const [statsFilter, setStatsFilter] = useState<'all' | 'tryout' | 'twk' | 'tiu' | 'tkp'>('tryout')
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -437,59 +443,103 @@ export default function ProfileClient({ profile: initialProfile, user }: { profi
             {/* Statistics Tab */}
             {activeTab === 'stats' && (
                 <div className="space-y-6">
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="p-6 rounded-xl border border-border bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-                            <div className="text-3xl font-bold text-blue-500 mb-2">{stats.totalPractice}</div>
-                            <div className="text-sm text-muted-foreground">Latihan</div>
+                    {/* Filter Tabs - Only show if we have grouped data */}
+                    {statsData?.all && (
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                            {[
+                                { id: 'tryout', label: 'Simulasi SKD' },
+                                { id: 'twk', label: 'Latihan TWK' },
+                                { id: 'tiu', label: 'Latihan TIU' },
+                                { id: 'tkp', label: 'Latihan TKP' },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setStatsFilter(tab.id as any)}
+                                    className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${statsFilter === tab.id
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                                        }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
                         </div>
-                        <div className="p-6 rounded-xl border border-border bg-gradient-to-br from-green-500/10 to-green-500/5">
-                            <div className="text-3xl font-bold text-green-500 mb-2">{stats.totalTryout}</div>
-                            <div className="text-sm text-muted-foreground">Tryout</div>
-                        </div>
-                        <div className="p-6 rounded-xl border border-border bg-gradient-to-br from-yellow-500/10 to-yellow-500/5">
-                            <div className="text-3xl font-bold text-yellow-500 mb-2">{stats.avgScore}</div>
-                            <div className="text-sm text-muted-foreground">Rata-rata</div>
-                        </div>
-                        <div className="p-6 rounded-xl border border-border bg-gradient-to-br from-orange-500/10 to-orange-500/5">
-                            <div className="text-3xl font-bold text-orange-500 mb-2">{stats.studyStreak}</div>
-                            <div className="text-sm text-muted-foreground">Hari Streak</div>
-                        </div>
-                    </div>
+                    )}
 
-                    {/* Progress per Category */}
-                    <div className="rounded-xl border border-border bg-card p-6">
-                        <h4 className="font-bold text-lg mb-6">Progress per Kategori</h4>
-                        <div className="space-y-6">
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-medium">TWK (Tes Wawasan Kebangsaan)</span>
-                                    <span className="text-sm text-muted-foreground">75%</span>
+                    {(() => {
+                        const currentStats = statsData ? (statsData.all ? statsData[statsFilter] : statsData) : null
+
+                        if (!currentStats || (statsData.all && !currentStats.summary.totalSessions && statsFilter !== 'all')) {
+                            // Empty state handling
+                            return (
+                                <div className="flex flex-col items-center justify-center min-h-[300px] border border-dashed rounded-xl p-8 text-center bg-card/50">
+                                    <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4">
+                                        <TrendingUp className="w-8 h-8 text-muted-foreground" />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-2">Belum Ada Data</h3>
+                                    <p className="text-muted-foreground mb-6 max-w-md">
+                                        {statsFilter === 'all'
+                                            ? "Kamu belum menyelesaikan sesi latihan apapun."
+                                            : `Belum ada riwayat latihan untuk kategori ${statsFilter.toUpperCase()}.`}
+                                    </p>
                                 </div>
-                                <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                                    <div className="h-full bg-gradient-to-r from-red-500 to-red-600 rounded-full" style={{ width: '75%' }} />
+                            )
+                        }
+
+                        // Allow showing 'all' even if empty to show the dashboard skeleton or 0 values? 
+                        // Current logic returns null from calculateStats if empty. so !currentStats is correct.
+
+                        return (
+                            <>
+                                {/* 1. OVERVIEW CARDS */}
+                                <StatOverview data={currentStats} streak={profile.streak_count || 0} type={statsFilter} />
+
+                                {/* AI INSIGHT BOX */}
+                                <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border-l-4 border-indigo-500 p-6 rounded-r-xl">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Sparkles className="text-indigo-500 w-5 h-5" />
+                                        <h3 className="font-bold text-lg text-foreground">Insight ({statsFilter === 'all' ? 'Umum' : statsFilter.toUpperCase()})</h3>
+                                    </div>
+                                    <div className="space-y-1">
+                                        {currentStats.insights.map((insight: string, idx: number) => (
+                                            <p key={idx} className="text-sm md:text-base text-muted-foreground leading-relaxed">
+                                                • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>') }} />
+                                            </p>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-medium">TIU (Tes Intelegensi Umum)</span>
-                                    <span className="text-sm text-muted-foreground">82%</span>
+
+                                {/* 2. CHARTS ROW */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="min-h-[400px]">
+                                        <TrendChart
+                                            data={currentStats.trendData}
+                                            trendDirection={currentStats.trendDirection}
+                                            trendPercentage={currentStats.trendPercentage}
+                                            shortTermTrend={currentStats.shortTermTrend}
+                                            shortTermPercentage={currentStats.shortTermPercentage}
+                                        />
+                                    </div>
+                                    <div className="min-h-[400px]">
+                                        <CategoryChart
+                                            data={
+                                                statsFilter === 'tryout' || statsFilter === 'all'
+                                                    ? currentStats.categoryStats
+                                                    : currentStats.categoryStats.filter((c: any) => c.subject.toLowerCase() === statsFilter)
+                                            }
+                                        />
+                                    </div>
                                 </div>
-                                <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                                    <div className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style={{ width: '82%' }} />
-                                </div>
-                            </div>
-                            <div>
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm font-medium">TKP (Tes Karakteristik Pribadi)</span>
-                                    <span className="text-sm text-muted-foreground">68%</span>
-                                </div>
-                                <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                                    <div className="h-full bg-gradient-to-r from-green-500 to-green-600 rounded-full" style={{ width: '68%' }} />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+
+                                {/* 3. CONSISTENCY */}
+                                <ConsistencyTracker
+                                    data={currentStats.consistencyData}
+                                    score={currentStats.consistencyScore}
+                                    activeCount={currentStats.activeInPeriod}
+                                />
+                            </>
+                        )
+                    })()}
                 </div>
             )}
 

@@ -230,7 +230,7 @@ export default function ResultReviewClient({ answers }: Props) {
                     <p className="text-lg md:text-xl leading-relaxed mb-8 max-w-4xl">{question.content}</p>
 
                     <div className="space-y-3 mb-8 max-w-3xl">
-                        {options.map((option: any) => {
+                        {options.map((option: any, i: number) => {
                             const isSelected = currentAnswer.option_id === option.id
                             const isCorrect = option.is_correct
                             const isMaxTKP = type === 'TKP' && option.id === maxScoreOption.id
@@ -279,7 +279,10 @@ export default function ResultReviewClient({ answers }: Props) {
                                     </div>
 
                                     <div className="flex-1">
-                                        <span className={textClass}>{option.content}</span>
+                                        <span className={textClass}>
+                                            <span className="font-bold mr-2 uppercase">{String.fromCharCode(65 + i)}.</span>
+                                            {option.content}
+                                        </span>
 
                                         {/* Status Labels */}
                                         <div className="flex gap-2 mt-1 flex-wrap">
