@@ -19,7 +19,7 @@ interface Stat {
 export default function StatOverview({ data, streak, type }: { data: any, streak: number, type?: string }) {
 
     let avgScoreSub = "Dari Total 550"
-    let avgLabel = "Rata-rata Skor"
+    const avgLabel = "Rata-rata Skor"
 
     // Determine Passing Grade based on Type
     if (type) {

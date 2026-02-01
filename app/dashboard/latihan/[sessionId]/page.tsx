@@ -59,7 +59,26 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
 
     // 3. Format Data for Client
     // We need to transform the joined data into a clean structure
-    const questions = answersData.map((item: any) => {
+    interface Option {
+        id: string
+        content: string
+    }
+
+    interface Question {
+        id: string
+        content: string
+        type: string
+        category: string
+        options: Option[]
+    }
+
+    interface AnswerData {
+        question_id: string
+        option_id: string | null
+        questions: Question | Question[] // Supabase join can return array or single object depending on query
+    }
+
+    const questions = (answersData as unknown as AnswerData[]).map((item) => {
         // Handle if joined data is array or object
         const qRaw = Array.isArray(item.questions) ? item.questions[0] : item.questions
 
@@ -72,20 +91,20 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             category: qRaw.category,
             options: qRaw.options || [] // Ensure array
         }
-    }).filter(Boolean) as any[]
+    }).filter(Boolean) as Question[]
 
 
 
 
     const initialAnswers: Record<string, string> = {}
-    answersData.forEach((item: any) => {
-        if (item.option_id) {
-            initialAnswers[item.question_id] = item.option_id
-        }
-    })
+        ; (answersData as unknown as AnswerData[]).forEach((item) => {
+            if (item.option_id) {
+                initialAnswers[item.question_id] = item.option_id
+            }
+        })
 
     // Check if this is a tryout session (has all three types)
-    const questionTypes = new Set(questions.map((q: any) => q.type))
+    const questionTypes = new Set(questions.map((q) => q.type))
     const isTryout = questionTypes.has('TWK') && questionTypes.has('TIU') && questionTypes.has('TKP')
 
     // Calculate end time for tryout (100 minutes from start)

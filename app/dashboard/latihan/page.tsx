@@ -1,32 +1,69 @@
 'use client'
 
 import { startPractice, startTryout } from '@/app/actions/practice'
-// import { Card } from '@/components/ui/card'
-import { BookOpen, Brain, Users, ArrowRight, Loader2 } from 'lucide-react'
+import { BookOpen, Brain, Users, ArrowRight, Loader2, Sparkles, Target, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
-// Fallback Card if not exists component
-const PracticeCard = ({ title, type, description, icon: Icon, color, onClick, loading }: any) => (
-    <div className="bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden" onClick={() => !loading && onClick(type)}>
-        <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
-            <Icon size={120} />
-        </div>
+// Unified Card Component matching Tryout page style
+interface PracticeCardProps {
+    title: string
+    type: 'TWK' | 'TIU' | 'TKP'
+    description: string
+    icon: any // Icon component type is tricky, keeping any for icon is acceptable or use React.ElementType
+    colorClass: string
+    borderClass: string
+    onClick: (type: 'TWK' | 'TIU' | 'TKP') => void
+    loading: boolean
+}
 
-        <div className="relative z-10 space-y-4">
-            <div className={`w-12 h-12 rounded-lg ${color} bg-opacity-10 flex items-center justify-center`}>
-                <Icon size={24} className={color.replace('bg-', 'text-')} />
+const PracticeCard = ({ title, type, description, icon: Icon, colorClass, borderClass, onClick, loading }: PracticeCardProps) => (
+    <div
+        onClick={() => !loading && onClick(type)}
+        className={cn(
+            "relative group p-6 rounded-xl border transition-all duration-300 cursor-pointer overflow-hidden",
+            "bg-secondary/10 hover:bg-secondary/20 border-border hover:border-primary/50"
+        )}
+    >
+        {/* Background Gradient Effect */}
+        <div className={cn(
+            "absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-20 transition-opacity",
+            colorClass
+        )} />
+
+        <div className="relative z-10 flex flex-col h-full">
+            <div className="flex items-start justify-between mb-4">
+                <div className={cn("p-3 rounded-lg bg-background border border-border/50", borderClass)}>
+                    <Icon size={24} className={colorClass.replace('bg-', 'text-')} />
+                </div>
+                <div className={cn(
+                    "px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                    "bg-background/50 backdrop-blur-sm",
+                    borderClass,
+                    colorClass.replace('bg-', 'text-')
+                )}>
+                    {type}
+                </div>
             </div>
 
-            <div>
-                <h3 className="text-xl font-bold">{title}</h3>
-                <p className="text-muted-foreground text-sm mt-1">{description}</p>
-            </div>
+            <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{title}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-6 flex-1">{description}</p>
 
-            <button disabled={loading} className="w-full mt-4 flex items-center justify-between text-sm font-medium p-2 rounded-lg hover:bg-secondary transition-colors">
+            <button
+                disabled={loading}
+                className={cn(
+                    "w-full flex items-center justify-between text-sm font-bold p-3 rounded-lg transition-all",
+                    "bg-background/50 hover:bg-primary hover:text-primary-foreground border border-border group-hover:border-primary/20"
+                )}
+            >
                 <span>Mulai Latihan</span>
-                {loading ? <Loader2 className="animate-spin" size={16} /> : <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
+                {loading ? (
+                    <Loader2 className="animate-spin" size={16} />
+                ) : (
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                )}
             </button>
         </div>
     </div>
@@ -83,75 +120,132 @@ export default function PracticeListingPage() {
     }
 
     return (
-        <div className="space-y-8 p-8 max-w-7xl mx-auto">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Latihan & Simulasi</h1>
-                <p className="text-muted-foreground mt-2">
-                    Pilih mode latihan parsial atau simulasi lengkap (Tryout) sesuai standar CAT BKN.
-                </p>
-            </div>
-
-            {/* Tryout Banner */}
-            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-10">
-                    <Brain size={200} />
-                </div>
-                <div className="relative z-10 max-w-2xl space-y-4">
-                    <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-medium border border-white/20">
-                        <Loader2 className="animate-spin" size={14} /> Simulasi SKD Lengkap
+        <div className="space-y-8 p-4 md:p-8 max-w-7xl mx-auto">
+            {/* Hero Section - Matching Tryout Page */}
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-accent/5 to-background p-8 md:p-12">
+                <div className="relative z-10 max-w-3xl">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary border border-primary/20 mb-6">
+                        <Target size={16} className="fill-current" />
+                        <span className="text-sm font-bold uppercase tracking-wider">Bank Soal & Simulasi</span>
                     </div>
-                    <h2 className="text-3xl font-bold">Simulasi SKD CPNS Mandiri</h2>
-                    <p className="text-indigo-100 text-lg">
-                        Simulasi lengkap 110 Soal (TWK, TIU, TKP) yang dapat dikerjakan kapan saja. Durasi dan penilaian sesuai standar resmi.
+
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
+                        Latihan & Simulasi SKD
+                    </h1>
+
+                    <p className="text-lg text-muted-foreground mb-8 max-w-2xl">
+                        Asah kemampuanmu dengan latihan parsial atau uji kesiapanmu dengan simulasi lengkap standar CAT BKN.
                     </p>
-                    <button
-                        onClick={handleStartTryout}
-                        disabled={loadingTryout}
-                        className="mt-4 bg-white text-indigo-600 hover:bg-indigo-50 px-6 py-3 rounded-lg font-bold shadow-lg transition-all flex items-center gap-2"
-                    >
-                        {loadingTryout ? 'Menyiapkan Soal...' : 'Mulai Simulasi SKD'}
-                        {!loadingTryout && <ArrowRight size={18} />}
-                    </button>
                 </div>
+
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl translate-y-1/3" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <PracticeCard
-                    title="Tes Wawasan Kebangsaan"
-                    type="TWK"
-                    description="Nasionalisme, Integritas, Bela Negara, Pilar Negara."
-                    icon={BookOpen}
-                    color="text-red-500"
-                    loading={loadingType === 'TWK'}
-                    onClick={handleStart}
-                />
-                <PracticeCard
-                    title="Tes Intelegensi Umum"
-                    type="TIU"
-                    description="Verbal, Numerik, Figural, Logika Analitis."
-                    icon={Brain}
-                    color="text-blue-500"
-                    loading={loadingType === 'TIU'}
-                    onClick={handleStart}
-                />
-                <PracticeCard
-                    title="Tes Karakteristik Pribadi"
-                    type="TKP"
-                    description="Pelayanan Publik, Jejaring Kerja, Sosial Budaya."
-                    icon={Users}
-                    color="text-green-500"
-                    loading={loadingType === 'TKP'}
-                    onClick={handleStart}
-                />
-            </div>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Partial Practices */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-5 h-5 text-primary" />
+                        <h2 className="text-xl font-bold">Latihan Parsial</h2>
+                    </div>
 
-            <div className="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-lg p-4 text-sm text-yellow-800 dark:text-yellow-200">
-                <p className="font-semibold mb-1">Catatan:</p>
-                <ul className="list-disc list-inside space-y-1 opacity-90">
-                    <li>Mode latihan ini tidak memiliki batasan waktu (Timer hanya sebagai penunjuk).</li>
-                    <li>Skor akan dihitung setelah Anda menekan tombol "Selesai".</li>
-                    <li>Jawaban tersimpan otomatis setiap kali Anda memilih opsi.</li>
-                </ul>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <PracticeCard
+                            title="Tes Wawasan Kebangsaan"
+                            type="TWK"
+                            description="Nasionalisme, Integritas, Bela Negara, Pilar Negara."
+                            icon={BookOpen}
+                            colorClass="bg-red-500"
+                            borderClass="border-red-500/20"
+                            loading={loadingType === 'TWK'}
+                            onClick={handleStart}
+                        />
+                        <PracticeCard
+                            title="Tes Intelegensi Umum"
+                            type="TIU"
+                            description="Verbal, Numerik, Figural, Logika Analitis."
+                            icon={Brain}
+                            colorClass="bg-blue-500"
+                            borderClass="border-blue-500/20"
+                            loading={loadingType === 'TIU'}
+                            onClick={handleStart}
+                        />
+                        <PracticeCard
+                            title="Tes Karakteristik Pribadi"
+                            type="TKP"
+                            description="Pelayanan Publik, Jejaring Kerja, Sosial Budaya."
+                            icon={Users}
+                            colorClass="bg-green-500"
+                            borderClass="border-green-500/20"
+                            loading={loadingType === 'TKP'}
+                            onClick={handleStart}
+                        />
+                    </div>
+                </div>
+
+                {/* Right Column: Full Simulation (Highlighted) */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2 mb-2">
+                        <Zap className="w-5 h-5 text-yellow-500" />
+                        <h2 className="text-xl font-bold">Simulasi Lengkap</h2>
+                    </div>
+
+                    <div className="relative overflow-hidden rounded-2xl border border-yellow-500/30 bg-gradient-to-b from-yellow-500/10 to-background p-6 h-fit">
+                        {/* Shimmer/Glow Effect */}
+                        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent" />
+
+                        <div className="relative z-10">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs font-bold border border-yellow-500/20 mb-4">
+                                <Target size={12} />
+                                110 Soal • 100 Menit
+                            </div>
+
+                            <h3 className="text-2xl font-bold mb-2">Simulasi SKD Mandiri</h3>
+                            <p className="text-muted-foreground text-sm mb-6">
+                                Simulasi lengkap dengan komposisi soal dan penilaian sesuai standar resmi CPNS 2024.
+                            </p>
+
+                            <button
+                                onClick={handleStartTryout}
+                                disabled={loadingTryout}
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold shadow-lg transition-all",
+                                    "bg-gradient-to-r from-yellow-500 to-orange-500 text-white hover:shadow-orange-500/25 hover:scale-[1.02] active:scale-[0.98]"
+                                )}
+                            >
+                                {loadingTryout ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={20} />
+                                        Menyiapkan...
+                                    </>
+                                ) : (
+                                    <>
+                                        Mulai Simulasi
+                                        <ArrowRight size={20} />
+                                    </>
+                                )}
+                            </button>
+
+                            <div className="mt-6 pt-6 border-t border-dashed border-border text-xs text-muted-foreground space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                    Bobot nilai sesuai KemenpanRB
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    Timer & Navigasi Real-time
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                                    Pembahasan Lengkap
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     )

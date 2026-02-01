@@ -1,4 +1,5 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// @ts-expect-error - midtrans-client lacks type definitions
 import midtransClient from 'midtrans-client';
 
 // Since we don't have real keys, we'll expose a function that MOCKS the token creation.

@@ -14,11 +14,9 @@ export async function updateProfile(formData: FormData) {
     // Extract Data
     const avatarUrl = formData.get('avatarUrl') as string
 
-    const updates: any = {
+    const updates: Record<string, string | undefined> = {
         updated_at: new Date().toISOString(),
         full_name: formData.get('fullName') as string,
-
-
     }
 
     if (avatarUrl) {
@@ -47,7 +45,7 @@ export async function updateProfileInfo(data: { full_name?: string; bio?: string
         return { success: false, error: 'Not authenticated' }
     }
 
-    const updates: any = {
+    const updates: Record<string, string | undefined> = {
         updated_at: new Date().toISOString()
     }
 

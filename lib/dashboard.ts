@@ -115,27 +115,30 @@ const PASSING_GRADES = {
 
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
     // Fetch profile
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name, streak_count')
-        .eq('id', userId)
-        .single()
+    // Fetch data in parallel to resolve "waterfall" slowness
+    const [profileRes, sessionsRes, allSessionsRes] = await Promise.all([
+        supabase
+            .from('profiles')
+            .select('full_name, streak_count')
+            .eq('id', userId)
+            .single(),
+        supabase
+            .from('test_sessions')
+            .select('id, total_score, score_twk, score_tiu, score_tkp, mode, status, start_time')
+            .eq('user_id', userId)
+            .eq('status', 'completed')
+            .order('start_time', { ascending: false })
+            .limit(10),
+        supabase
+            .from('test_sessions')
+            .select('total_score')
+            .eq('user_id', userId)
+            .eq('status', 'completed')
+    ])
 
-    // Fetch completed sessions (last 10 for stats)
-    const { data: sessions } = await supabase
-        .from('test_sessions')
-        .select('id, total_score, score_twk, score_tiu, score_tkp, mode, status, start_time')
-        .eq('user_id', userId)
-        .eq('status', 'completed')
-        .order('start_time', { ascending: false })
-        .limit(10)
-
-    // Calculate XP from all completed sessions
-    const { data: allSessions } = await supabase
-        .from('test_sessions')
-        .select('total_score')
-        .eq('user_id', userId)
-        .eq('status', 'completed')
+    const profile = profileRes.data
+    const sessions = sessionsRes.data
+    const allSessions = allSessionsRes.data
 
     const totalXp = allSessions?.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXp)

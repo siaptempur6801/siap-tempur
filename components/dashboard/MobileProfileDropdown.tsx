@@ -6,8 +6,17 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 
 interface MobileProfileDropdownProps {
-    user: any
-    profile: any
+    user: {
+        email?: string
+        user_metadata?: {
+            full_name?: string
+        }
+    }
+    profile: {
+        avatar_url?: string
+        full_name?: string
+        subscription_status?: string
+    } | null
     signoutAction: () => Promise<{ success: boolean }>
 }
 

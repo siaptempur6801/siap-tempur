@@ -43,6 +43,8 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     const [showWarning1Min, setShowWarning1Min] = useState(false)
     const [isPaused, setIsPaused] = useState(false)
     const [showMobileNav, setShowMobileNav] = useState(false)
+    const [showConfirmModal, setShowConfirmModal] = useState(false)
+    const [showExitModal, setShowExitModal] = useState(false)
 
     // Sort questions by type (TWK -> TIU -> TKP)
     const sortedQuestions = useMemo(() => {
@@ -130,7 +132,6 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
         }))
     }
 
-    const [showConfirmModal, setShowConfirmModal] = useState(false)
 
     // Calculate Answer Stats
     const totalQuestions = sortedQuestions.length
@@ -176,9 +177,6 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
             setFinishing(false)
         }
     }
-
-    // Exit Confirmation State
-    const [showExitModal, setShowExitModal] = useState(false)
 
     const handleExit = () => {
         router.push('/dashboard/latihan')

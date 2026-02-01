@@ -23,16 +23,20 @@ export function NavItem({ href, icon, label, badge }: NavItemProps) {
         <Link
             href={href}
             className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 font-medium",
+                "flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 group text-sm font-medium",
                 isActive
-                    ? "bg-primary/10 text-primary border-l-4 border-primary"
-                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_-5px_var(--color-primary)]"
+                    : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
             )}
         >
-            {icon}
-            <span>{label}</span>
+            <div className="flex items-center gap-3">
+                <span className={cn("transition-transform group-hover:scale-110", isActive && "text-primary")}>
+                    {icon}
+                </span>
+                <span>{label}</span>
+            </div>
             {badge && (
-                <span className="ml-auto text-[10px] uppercase font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-500 border border-blue-500/30">
                     {badge}
                 </span>
             )}
