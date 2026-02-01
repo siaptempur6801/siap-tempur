@@ -267,13 +267,13 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
 }
 
 export function getGreeting(hour: number): { greeting: string; message: string } {
-    if (hour >= 5 && hour < 12) {
+    if (hour >= 4 && hour < 11) {
         return {
             greeting: 'Selamat Pagi',
             message: 'Pagi yang sempurna untuk memulai belajar! ☀️',
         }
     }
-    if (hour >= 12 && hour < 15) {
+    if (hour >= 11 && hour < 15) {
         return {
             greeting: 'Selamat Siang',
             message: 'Semangat! Lanjutkan progres belajarmu. 💪',

@@ -12,7 +12,14 @@ export default async function DashboardPage() {
     }
 
     // Get current hour for greeting
-    const currentHour = new Date().getHours()
+    // Get current hour for greeting (using Jakarta/WIB time)
+    const currentHour = parseInt(
+        new Date().toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            hour12: false,
+            timeZone: 'Asia/Jakarta',
+        })
+    )
     const greeting = getGreeting(currentHour)
 
     // Fetch dashboard data
