@@ -167,7 +167,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
             }
 
             if (result?.success) {
-                toast.success(isTryout ? 'Simulasi selesai!' : 'Latihan selesai!')
+                toast.success(isTryout ? 'Tryout selesai!' : 'Latihan selesai!')
                 router.push(`/dashboard/latihan/${sessionId}/result`)
             }
         } catch (error) {

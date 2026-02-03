@@ -127,7 +127,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     </h1>
 
                     <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto mb-10 font-handwriting leading-relaxed">
-                        Platform tryout simulasi CAT & UTBK paling
+                        Platform tryout CAT & UTBK paling
                         <span className="bg-green-200 px-1 mx-1">realistis.</span>
                         Beli ketengan, sekali bayar langsung sikat soalnya. Gak pake langganan ribet!
                     </p>
@@ -316,7 +316,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                     <CheckDoodle /> <span>TWK, TIU, TKP (110 Soal)</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>100 Menit (Simulasi CAT)</span>
+                                    <CheckDoodle /> <span>100 Menit (Tryout CAT)</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>Ranking Nasional Real-time</span>
@@ -360,7 +360,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                     <CheckDoodle /> <span>TWK, TIU, TKP (110 Soal)</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>100 Menit (Simulasi CAT)</span>
+                                    <CheckDoodle /> <span>100 Menit (Tryout CAT)</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>Ranking Nasional Real-time</span>

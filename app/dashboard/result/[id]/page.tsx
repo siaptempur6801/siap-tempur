@@ -27,7 +27,7 @@ export default async function ResultPage({ params }: { params: { id: string } })
         <div className="max-w-3xl mx-auto space-y-8">
             <div className="text-center space-y-2">
                 <h2 className="text-3xl font-bold">Hasil Ujian</h2>
-                <p className="text-muted-foreground">{session.mode === 'tryout' ? 'Tryout Akbar' : 'Latihan Mandiri'}</p>
+                <p className="text-muted-foreground">{session.mode === 'tryout' ? 'Tryout SKD' : 'Latihan Mandiri'}</p>
             </div>
 
             <div className={`p-8 rounded-2xl border-2 text-center ${isPassed ? 'bg-green-500/10 border-green-500' : 'bg-red-500/10 border-red-500'}`}>
