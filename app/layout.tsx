@@ -26,10 +26,13 @@ const bodyFont = Work_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Bimbel SKD Premium - Latihan & Simulasi CPNS",
-  description: "Platform belajar SKD CPNS terbaik dengan latihan soal TWK, TIU, TKP dan simulasi CAT realtime.",
-  keywords: ["cpns", "skd", "twk", "tiu", "tkp", "cat bkn", "bimbel online"],
-  authors: [{ name: "Bimbel Team" }],
+  title: {
+    default: "LulusTryout - Tryout CPNS & UTBK",
+    template: "%s - LulusTryout"
+  },
+  description: "Platform belajar CPNS & UTBK terbaik",
+  keywords: ["cpns", "skd", "twk", "tiu", "tkp", "cat bkn", "bimbel online", "tryout cpns", "utbk", "snbt"],
+  authors: [{ name: "LulusTryout Team" }],
 };
 
 export const viewport = {
