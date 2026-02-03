@@ -15,34 +15,38 @@
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-handwriting: var(--font-handwriting);
+  --font-body: var(--font-body);
 }
 
 :root {
-  /* Default to Dark Mode variables */
-  --background: #020617;
-  /* Slate 950 - Deeper, richer black */
-  --foreground: #f8fafc;
-  /* Slate 50 */
+  /* Notebook Theme (Light Mode) */
+  --background: #fdfbf7;
+  /* Creamy Paper */
+  --foreground: #1f2937;
+  /* Gray 800 (Pencil/Ink) */
 
-  --primary: #6366f1;
-  /* Indigo 500 */
+  --primary: #2563eb;
+  /* Blue 600 (Blue Pen) */
   --primary-foreground: #ffffff;
 
-  --secondary: #1e293b;
-  /* Slate 800 */
-  --secondary-foreground: #f8fafc;
+  --secondary: #f3f4f6;
+  /* Gray 100 */
+  --secondary-foreground: #1f2937;
 
-  --muted: #334155;
-  /* Slate 700 */
-  --muted-foreground: #94a3b8;
-  /* Slate 400 */
+  --muted: #e5e7eb;
+  /* Gray 200 */
+  --muted-foreground: #6b7280;
+  /* Gray 500 */
 
-  --accent: #0ea5e9;
-  /* Sky 500 */
-  --accent-foreground: #ffffff;
+  --accent: #facc15;
+  /* Yellow 400 (Highlighter) */
+  --accent-foreground: #1f2937;
 
-  --border: #1e293b;
-  /* Slate 800 */
+  --border: #1f2937;
+  /* Dark Ink Border */
+  --input: #e5e7eb;
+  --ring: #2563eb;
 }
 
 /* Light mode overrides if we add a toggle later (using .light class) */

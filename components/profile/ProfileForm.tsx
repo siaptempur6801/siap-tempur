@@ -42,7 +42,7 @@ export default function ProfileForm({ user, profile }: any) {
 
         } catch (error) {
             toast.error('Gagal mengupload avatar!')
-            console.log(error)
+            console.error('[ProfileForm] Avatar upload error:', error)
         } finally {
             setUploading(false)
         }
@@ -174,8 +174,8 @@ export default function ProfileForm({ user, profile }: any) {
                                     </div>
                                     <p className="text-muted-foreground mt-1 max-w-md">
                                         {profile?.subscription_status === 'premium'
-                                            ? 'Selamat! Anda memiliki akses penuh ke seluruh fitur, materi video eksklusif, dan Tryout Akbar.'
-                                            : 'Saat ini Anda menggunakan fitur dasar. Upgrade untuk membuka 5000+ Bank Soal dan Materi Video.'}
+                                            ? 'Selamat! Anda memiliki akses penuh ke seluruh fitur dan Latihan Premium.'
+                                            : 'Saat ini Anda menggunakan fitur dasar. Upgrade untuk membuka 5000+ Bank Soal.'}
                                     </p>
                                 </div>
                             </div>

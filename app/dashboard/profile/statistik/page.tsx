@@ -50,22 +50,22 @@ export default async function StatisticsPage() {
         return (
             <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
                 <div className="flex items-center gap-4 mb-8">
-                    <Link href="/dashboard/profile" className="p-2 rounded-lg hover:bg-secondary transition">
+                    <Link href="/dashboard/profile" className="p-2 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-100 transition">
                         <ArrowLeft size={20} />
                     </Link>
-                    <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+                    <h1 className="text-2xl md:text-3xl font-black text-gray-900">
                         Statistik Belajar
                     </h1>
                 </div>
-                <div className="flex flex-col items-center justify-center min-h-[400px] border border-dashed rounded-xl p-8 text-center bg-card/50">
-                    <div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4">
-                        <AlertCircle className="w-8 h-8 text-muted-foreground" />
+                <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-gray-400 bg-white p-8 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="w-16 h-16 bg-blue-100 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center mb-4">
+                        <AlertCircle className="w-8 h-8 text-blue-600" />
                     </div>
                     <h3 className="text-xl font-bold mb-2">Belum Cukup Data</h3>
-                    <p className="text-muted-foreground mb-6 max-w-md">
+                    <p className="text-gray-600 mb-6 max-w-md">
                         Kamu belum menyelesaikan sesi latihan apapun. Mulai latihan sekarang untuk melihat analisis performamu di sini!
                     </p>
-                    <Link href="/dashboard/latihan" className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition shadow-lg shadow-primary/20">
+                    <Link href="/dashboard/latihan" className="px-6 py-3 bg-blue-600 text-white border-2 border-gray-900 font-bold hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                         Mulai Latihan Pertama
                     </Link>
                 </div>
@@ -76,18 +76,18 @@ export default async function StatisticsPage() {
     return (
         <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8 pb-32">
 
-            {/* HERADER */}
+            {/* HEADER */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <Link href="/dashboard/profile" className="p-2 rounded-lg hover:bg-secondary transition">
+                    <Link href="/dashboard/profile" className="p-2 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-100 transition">
                         <ArrowLeft size={20} />
                     </Link>
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-bold">Statistik Belajar</h1>
-                        <p className="text-muted-foreground">Analisis performa & progres belajar SKD kamu</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-gray-900">Statistik Belajar</h1>
+                        <p className="text-gray-600">Analisis performa & progres belajar SKD kamu</p>
                     </div>
                 </div>
-                <div className="px-4 py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-full text-xs font-bold flex items-center gap-2 self-start md:self-auto">
+                <div className="px-4 py-2 bg-yellow-300 border-2 border-gray-900 text-gray-900 rounded-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] text-xs font-bold flex items-center gap-2 self-start md:self-auto rotate-1">
                     <Sparkles size={14} /> AI-Powered Analysis
                 </div>
             </div>
@@ -96,15 +96,18 @@ export default async function StatisticsPage() {
             {stats.all && <StatOverview data={stats.all} streak={profile?.streak_count || 0} />}
 
             {/* AI INSIGHT BOX */}
-            <div className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border-l-4 border-indigo-500 p-6 rounded-r-xl">
-                <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="text-indigo-500 w-5 h-5" />
-                    <h3 className="font-bold text-lg text-foreground">Insight Minggu Ini</h3>
+            <div className="bg-white border-2 border-gray-900 p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                {/* Tape Deco */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-blue-100/80 border-l border-r border-white/50 -rotate-1 shadow-sm z-10"></div>
+
+                <div className="flex items-center gap-2 mb-4 relative z-10">
+                    <Sparkles className="text-blue-600 w-5 h-5" />
+                    <h3 className="font-black text-xl text-gray-900 uppercase tracking-tight">Insight Minggu Ini</h3>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-2 relative z-10">
                     {(stats.all?.insights || []).map((insight: string, idx: number) => (
-                        <p key={idx} className="text-sm md:text-base text-muted-foreground leading-relaxed">
-                            • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-foreground">$1</strong>') }} />
+                        <p key={idx} className="text-sm md:text-base text-gray-700 leading-relaxed font-medium">
+                            • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900 border-b-2 border-yellow-200">$1</strong>') }} />
                         </p>
                     ))}
                 </div>

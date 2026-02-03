@@ -2,54 +2,84 @@
 -- Enable necessary extensions
 create extension if not exists "uuid-ossp";
 
--- Role Enum
-create type user_role as enum ('user', 'admin');
--- Subscription Enum
+-- 1. Enums
 create type subscription_status as enum ('free', 'premium');
--- Question Type Enum
 create type question_type as enum ('TWK', 'TIU', 'TKP');
--- Session Mode Enum
 create type session_mode as enum ('practice', 'tryout');
--- Session Status Enum
 create type session_status as enum ('in_progress', 'completed');
+create type transaction_status as enum ('pending', 'settlement', 'expire', 'cancel', 'deny');
 
--- Profiles Table
+-- 2. Profiles Table
 create table profiles (
   id uuid references auth.users not null primary key,
-  email text,
   full_name text,
-  role user_role default 'user',
+  avatar_url text,
+  bio text,
   subscription_status subscription_status default 'free',
+  tryout_quota int default 0,
   streak_count int default 0,
   last_activity_date date,
+  
+  updated_at timestamp with time zone default timezone('utc'::text, now()),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Questions Table
+-- 3. Learning Materials
+create table materials (
+  id uuid default uuid_generate_v4() primary key,
+  title text not null,
+  slug text unique not null,
+  description text,
+  content text, 
+  video_url text,
+  category text, -- TWK, TIU, TKP
+  is_premium boolean default false,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 4. Questions & Options
 create table questions (
   id uuid default uuid_generate_v4() primary key,
   content text not null,
   type question_type not null,
-  category text, -- e.g., 'Nasionalisme', 'Hitung Cepat'
+  category text,
   explanation text,
-  difficulty int default 1,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Options Table
 create table options (
   id uuid default uuid_generate_v4() primary key,
   question_id uuid references questions(id) on delete cascade not null,
   content text not null,
-  is_correct boolean default false, -- For TWK/TIU
-  score_value int default 0, -- For TKP (1-5), others 0 or 5 handled by logic
+  is_correct boolean default false,
+  score_value int default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Test Sessions (Attempts)
+-- 5. Tryout Events
+create table tryouts (
+  id uuid default uuid_generate_v4() primary key,
+  title text not null,
+  description text,
+  start_time timestamp with time zone not null,
+  end_time timestamp with time zone not null,
+  duration_minutes int not null,
+  is_active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+create table tryout_questions (
+  tryout_id uuid references tryouts(id) on delete cascade not null,
+  question_id uuid references questions(id) on delete cascade not null,
+  order_index int not null,
+  primary key (tryout_id, question_id)
+);
+
+-- 6. Test Sessions & Answers
 create table test_sessions (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references profiles(id) on delete cascade not null,
+  tryout_id uuid references tryouts(id),
   mode session_mode default 'practice',
   status session_status default 'in_progress',
   start_time timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -65,42 +95,51 @@ create table test_sessions (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- Test Answers
 create table test_answers (
   id uuid default uuid_generate_v4() primary key,
   session_id uuid references test_sessions(id) on delete cascade not null,
   question_id uuid references questions(id) not null,
-  option_id uuid references options(id), -- Null if skipped?
+  option_id uuid references options(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   
   unique(session_id, question_id)
 );
 
--- RLS Policies (Basic)
+-- 7. Transactions (Midtrans)
+create table transactions (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references profiles(id) on delete cascade not null,
+  order_id text unique not null,
+  amount int not null,
+  status transaction_status default 'pending',
+  package_name text not null,
+  snap_token text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- 8. Policies (RLS)
 alter table profiles enable row level security;
+alter table materials enable row level security;
 alter table questions enable row level security;
 alter table options enable row level security;
+alter table tryouts enable row level security;
 alter table test_sessions enable row level security;
 alter table test_answers enable row level security;
+alter table transactions enable row level security;
 
+-- (Basic Policies - Extend as needed)
 create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
 create policy "Users can update own profile" on profiles for update using (auth.uid() = id);
-
-create policy "Public read questions" on questions for select using (true); -- Maybe restrict to authenticated?
+create policy "Authenticated read materials" on materials for select to authenticated using (true);
+create policy "Public read questions" on questions for select using (true);
 create policy "Public read options" on options for select using (true);
-
 create policy "Users can view own sessions" on test_sessions for select using (auth.uid() = user_id);
 create policy "Users can insert own sessions" on test_sessions for insert with check (auth.uid() = user_id);
 create policy "Users can update own sessions" on test_sessions for update using (auth.uid() = user_id);
+create policy "Users can view own transactions" on transactions for select using (auth.uid() = user_id);
 
-create policy "Users can view own answers" on test_answers for select using (
-  exists (select 1 from test_sessions where id = test_answers.session_id and user_id = auth.uid())
-);
-create policy "Users can insert own answers" on test_answers for insert with check (
-  exists (select 1 from test_sessions where id = session_id and user_id = auth.uid())
-);
-
--- SCORING FUNCTION (The Gold Standard)
+-- 9. Functions
 create or replace function calculate_session_score(session_uuid uuid)
 returns void as $$
 declare
@@ -110,7 +149,6 @@ declare
   v_total int;
   v_passed boolean;
   
-  -- Passing Grades (2024 Standards - Example)
   PASS_TWK int := 65;
   PASS_TIU int := 80;
   PASS_TKP int := 166;
@@ -140,15 +178,8 @@ begin
   where a.session_id = session_uuid;
 
   v_total := v_twk + v_tiu + v_tkp;
+  v_passed := (v_twk >= PASS_TWK and v_tiu >= PASS_TIU and v_tkp >= PASS_TKP);
 
-  -- Determine Passing
-  if v_twk >= PASS_TWK and v_tiu >= PASS_TIU and v_tkp >= PASS_TKP then
-    v_passed := true;
-  else
-    v_passed := false;
-  end if;
-
-  -- Update Session
   update test_sessions
   set 
     score_twk = v_twk,
@@ -159,6 +190,5 @@ begin
     status = 'completed',
     end_time = now()
   where id = session_uuid;
-  
 end;
 $$ language plpgsql security definer;

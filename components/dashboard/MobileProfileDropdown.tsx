@@ -16,6 +16,7 @@ interface MobileProfileDropdownProps {
         avatar_url?: string
         full_name?: string
         subscription_status?: string
+        tryout_quota?: number
     } | null
     signoutAction: () => Promise<{ success: boolean }>
 }
@@ -36,7 +37,10 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
         }
     }, [])
 
-    const displayName = profile?.full_name || user.user_metadata?.full_name || 'User'
+    const displayName = profile?.full_name ||
+        user.user_metadata?.full_name ||
+        (user as any).user_metadata?.name ||
+        'Pejuang Tryout'
     const isPremium = profile?.subscription_status === 'premium'
     const avatarUrl = profile?.avatar_url
 
@@ -44,39 +48,38 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border border-border hover:ring-2 hover:ring-primary/20 transition-all"
+                className="w-10 h-10 rounded-full bg-white border-2 border-gray-900 flex items-center justify-center overflow-hidden hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
                 {avatarUrl ? (
                     <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                    <span className="text-sm font-bold text-primary">{user.email?.[0]?.toUpperCase()}</span>
+                    <span className="text-sm font-bold font-handwriting text-gray-900">{user.email?.[0]?.toUpperCase() || '?'}</span>
                 )}
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-background border border-border rounded-xl shadow-xl z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
-                    <div className="p-4 border-b border-border bg-secondary/10">
-                        <p className="font-bold text-base truncate">{displayName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden font-handwriting">
+                    {/* Pattern Overlay */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
+
+                    <div className="p-4 border-b-2 border-gray-900 bg-yellow-50 relative z-10">
+                        <p className="font-bold text-xl truncate text-gray-900">{displayName}</p>
+                        <p className="text-sm text-gray-600 truncate font-sans">{user.email}</p>
 
                         <div className="mt-2.5">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase inline-flex items-center gap-1 ${isPremium
-                                ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30'
-                                : 'bg-secondary text-muted-foreground border border-border'
-                                }`}>
-                                {isPremium ? <Crown size={10} className="fill-current" /> : null}
-                                {isPremium ? 'PREMIUM MEMBER' : 'FREE MEMBER'}
+                            <span className="text-xs px-2 py-0.5 font-bold uppercase inline-flex items-center gap-1 border-2 bg-blue-200 text-blue-900 border-gray-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                                🎫 {profile?.tryout_quota ?? 0} Tiket
                             </span>
                         </div>
                     </div>
 
-                    <div className="p-2">
+                    <div className="p-2 relative z-10">
                         <Link
                             href="/dashboard/profile"
-                            className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-secondary transition-colors"
+                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"
                             onClick={() => setIsOpen(false)}
                         >
-                            <User size={16} />
+                            <User size={18} />
                             Profil Saya
                         </Link>
 
@@ -93,9 +96,9 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
                                     }, 1500)
                                 }
                             }}
-                            className="flex w-full items-center gap-3 px-3 py-2.5 text-sm text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                            className="flex w-full items-center gap-3 px-3 py-2.5 text-lg font-bold text-red-600 hover:bg-red-50 rounded-md transition-colors"
                         >
-                            <LogOut size={16} />
+                            <LogOut size={18} />
                             Keluar
                         </button>
                     </div>

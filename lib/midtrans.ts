@@ -11,7 +11,7 @@ export const snap = new midtransClient.Snap({
     clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-placeholder'
 });
 
-export async function createTransaction(orderId: string, amount: number) {
+export async function createTransaction(_orderId: string, _amount: number) {
     // REAL LOGIC START (Commented out because no keys)
     /*
     let parameter = {
@@ -28,7 +28,7 @@ export async function createTransaction(orderId: string, amount: number) {
     // REAL LOGIC END
 
     // MOCK LOGIC for Demo
-    console.log(`[Mock Midtrans] Created transaction ${orderId} for ${amount}`);
+
     return {
         token: "mock_token_" + Math.random().toString(36).substring(7),
         redirect_url: "https://app.sandbox.midtrans.com/snap/v2/vtweb/mock"

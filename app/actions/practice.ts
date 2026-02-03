@@ -13,7 +13,7 @@ export async function startPractice(type: 'TWK' | 'TIU' | 'TKP') {
         redirect('/login')
     }
 
-    console.log('[startPractice] Starting for user:', user.id, 'Type:', type)
+
 
     // Call DB Function
     const { data, error } = await supabase.rpc('start_practice_session', {
@@ -27,7 +27,7 @@ export async function startPractice(type: 'TWK' | 'TIU' | 'TKP') {
         return { error: 'Failed to start practice session' }
     }
 
-    console.log('[startPractice] Success. Data:', data)
+
 
     if (!data || data.length === 0) {
         console.error('[startPractice] No data returned from RPC')
@@ -36,7 +36,7 @@ export async function startPractice(type: 'TWK' | 'TIU' | 'TKP') {
 
     // Return session ID for client-side redirect
     const sessionId = data[0].session_id
-    console.log('[startPractice] Session created:', sessionId)
+
     return { success: true, sessionId }
 }
 

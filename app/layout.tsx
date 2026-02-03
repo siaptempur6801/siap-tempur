@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Patrick_Hand, Work_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -14,12 +14,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const handwriting = Patrick_Hand({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-handwriting",
+});
+
+const bodyFont = Work_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
 export const metadata: Metadata = {
   title: "Bimbel SKD Premium - Latihan & Simulasi CPNS",
   description: "Platform belajar SKD CPNS terbaik dengan latihan soal TWK, TIU, TKP dan simulasi CAT realtime.",
   keywords: ["cpns", "skd", "twk", "tiu", "tkp", "cat bkn", "bimbel online"],
   authors: [{ name: "Bimbel Team" }],
-  viewport: "width=device-width, initial-scale=1",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -30,16 +45,29 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${handwriting.variable} ${bodyFont.variable} antialiased`}
       >
         {/* Global Background Gradient Mesh - GPU Accelerated */}
-        <div className="fixed inset-0 z-[-1] bg-background transform-gpu">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[100px] opacity-30 animate-pulse will-change-transform" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent/20 rounded-full blur-[100px] opacity-30 will-change-transform" />
+        {/* Global Background Gradient Mesh - GPU Accelerated */}
+        <div className="fixed inset-0 z-[-1] bg-background transform-gpu pointer-events-none">
+          {/* Paper Texture Overlay */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }}></div>
         </div>
 
         {children}
-        <Toaster position="top-center" richColors theme="system" />
+        <Toaster
+          position="top-center"
+          richColors
+          theme="light"
+          toastOptions={{
+            className: 'font-handwriting border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-[#fdfbf7]',
+            style: {
+              background: '#fdfbf7',
+              color: '#1f2937',
+              fontFamily: 'var(--font-handwriting)',
+            }
+          }}
+        />
         <SpeedInsights />
       </body>
     </html>

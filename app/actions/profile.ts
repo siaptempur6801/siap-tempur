@@ -63,6 +63,8 @@ export async function updateProfileInfo(data: { full_name?: string; bio?: string
         return { success: false, error: error.message }
     }
 
+    revalidatePath('/', 'layout')
+    revalidatePath('/dashboard', 'layout')
     revalidatePath('/dashboard/profile')
     return { success: true }
 }

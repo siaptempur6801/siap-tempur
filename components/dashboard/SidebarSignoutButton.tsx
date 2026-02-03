@@ -27,9 +27,9 @@ export default function SidebarSignoutButton({ signoutAction }: SidebarSignoutBu
     return (
         <button
             onClick={handleSignout}
-            className="flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 rounded-lg w-full transition"
+            className="flex items-center gap-3 px-4 py-2 font-handwriting text-xl font-bold text-red-600 hover:bg-red-50 rounded-md w-full transition border-2 border-transparent hover:border-red-200 hover:shadow-sm"
         >
-            <LogOut size={18} />
+            <LogOut size={20} />
             Keluar
         </button>
     )

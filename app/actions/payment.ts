@@ -15,10 +15,20 @@ export async function createUpgradeTransaction() {
     const amount = 99000 // Rp 99.000
 
     // 1. Log transaction in DB
-    // We haven't created a 'transactions' table yet in the visible schema files,
-    // but assuming it exists or we just create logic.
-    // Let's assume we skip DB log for this strictly frontend demo step
-    // or we'd add a 'transactions' table properly in a migration.
+    const { error: dbError } = await supabase
+        .from('transactions')
+        .insert({
+            user_id: user.id,
+            order_id: orderId,
+            amount: amount,
+            package_name: 'PREMIUM PACKAGE',
+            status: 'pending'
+        })
+
+    if (dbError) {
+        console.error('Failed to log transaction:', dbError)
+        // We continue anyway for the mock, but log it.
+    }
 
     // 2. Call Midtrans
     const transaction = await createTransaction(orderId, amount)

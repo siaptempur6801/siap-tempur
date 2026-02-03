@@ -383,8 +383,8 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                                     <div className="text-muted-foreground text-sm mb-4 leading-relaxed">
                                         {message}
                                     </div>
-                                    <Link href="/dashboard/materi" className={`text-sm font-bold hover:underline flex items-center gap-1 ${typeColor}`}>
-                                        {linkText} &rarr;
+                                    <Link href="/dashboard/latihan" className={`text-sm font-bold hover:underline flex items-center gap-1 ${typeColor}`}>
+                                        {linkText.replace('Materi', 'Latihan')} &rarr;
                                     </Link>
                                 </div>
                             </div>

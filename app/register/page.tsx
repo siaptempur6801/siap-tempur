@@ -6,6 +6,34 @@ import { useRouter } from 'next/navigation'
 import { signup } from '@/app/auth/actions'
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Patrick_Hand, Work_Sans } from "next/font/google";
+
+// 1. Setup Font
+const handwriting = Patrick_Hand({
+    subsets: ["latin"],
+    weight: "400",
+    variable: "--font-handwriting"
+});
+
+const bodyFont = Work_Sans({
+    subsets: ["latin"],
+    variable: "--font-body"
+});
+
+// Komponen Garis Kertas (Background)
+function PaperBackground() {
+    return (
+        <div className="absolute inset-0 pointer-events-none z-0 opacity-30"
+            style={{
+                backgroundImage: "repeating-linear-gradient(transparent, transparent 1.9rem, #9ca3af 2rem)",
+                backgroundSize: "100% 2rem",
+                marginTop: "2rem"
+            }}>
+            {/* Garis Margin Merah Kiri */}
+            <div className="absolute left-8 md:left-24 top-0 bottom-0 w-[2px] bg-red-300/50"></div>
+        </div>
+    );
+}
 
 export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false)
@@ -36,16 +64,21 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-background">
-            <Link href="/" className="absolute top-6 left-6 flex items-center text-sm text-muted-foreground hover:text-white transition">
-                <ArrowLeft className="w-4 h-4 mr-2" />
+        <div className={`${handwriting.variable} ${bodyFont.variable} font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden`}>
+            <PaperBackground />
+
+            <Link href="/" className="absolute top-6 left-6 flex items-center text-sm font-handwriting text-xl font-bold text-gray-800 hover:text-blue-600 transition z-20">
+                <ArrowLeft className="w-5 h-5 mr-2" />
                 Kembali
             </Link>
 
-            <div className="w-full max-w-md space-y-8">
+            <div className="w-full max-w-md space-y-8 relative z-10 bg-white p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl rotate-1">
+                {/* Tape Effect */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-pink-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
+
                 <div className="text-center">
-                    <h2 className="text-3xl font-bold tracking-tight">Buat Akun Baru</h2>
-                    <p className="mt-2 text-muted-foreground">Mulai persiapan CPNS-mu hari ini.</p>
+                    <h2 className="font-handwriting text-4xl font-bold tracking-tight text-gray-900">Buat Akun Baru</h2>
+                    <p className="mt-2 text-gray-600 font-handwriting text-xl">Mulai persiapan CPNS-mu hari ini.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="mt-8 space-y-6">
@@ -57,7 +90,7 @@ export default function RegisterPage() {
                                 name="fullName"
                                 type="text"
                                 required
-                                className="relative block w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm"
+                                className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
                                 placeholder="Nama Lengkap"
                             />
                         </div>
@@ -69,7 +102,7 @@ export default function RegisterPage() {
                                 type="email"
                                 autoComplete="email"
                                 required
-                                className="relative block w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm"
+                                className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
                                 placeholder="Alamat Email"
                             />
                         </div>
@@ -81,15 +114,15 @@ export default function RegisterPage() {
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="new-password"
                                 required
-                                className="relative block w-full rounded-lg border border-border bg-secondary/50 px-4 py-3 pr-12 text-foreground placeholder-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary sm:text-sm"
+                                className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
                                 placeholder="Kata Sandi (Min. 6 karakter)"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition focus:outline-none"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
                             >
-                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
                             </button>
                         </div>
                     </div>
@@ -98,17 +131,17 @@ export default function RegisterPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all shadow-lg shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-xl font-bold font-handwriting text-white hover:bg-blue-600 hover:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all border-2 border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {loading && <Loader2 className="animate-spin" size={18} />}
+                            {loading && <Loader2 className="animate-spin" size={24} />}
                             {loading ? 'Mendaftar...' : 'Daftar Sekarang'}
                         </button>
                     </div>
                 </form>
 
-                <div className="text-center text-sm">
-                    <span className="text-muted-foreground">Sudah punya akun? </span>
-                    <Link href="/login" className="font-medium text-primary hover:text-primary/80">
+                <div className="text-center text-lg font-handwriting">
+                    <span className="text-gray-600">Sudah punya akun? </span>
+                    <Link href="/login" className="font-bold text-blue-600 hover:underline decoration-wavy">
                         Masuk
                     </Link>
                 </div>

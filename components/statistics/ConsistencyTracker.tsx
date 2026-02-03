@@ -6,16 +6,16 @@ import { id } from 'date-fns/locale'
 export default function ConsistencyTracker({ data, score, activeCount }: { data: any[], score: number, activeCount: number }) {
 
     return (
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+        <div className="">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
-                    <h3 className="text-lg font-bold">Konsistensi Belajar</h3>
-                    <p className="text-sm text-muted-foreground">Aktivitas belajar dalam 30 hari terakhir</p>
+                    <h3 className="text-xl font-bold text-gray-900">🔥 Konsistensi Belajar</h3>
+                    <p className="text-sm text-gray-600">Aktivitas belajar dalam 30 hari terakhir</p>
                 </div>
-                <div className="flex items-center gap-4 bg-secondary/30 p-2 rounded-lg">
+                <div className="flex items-center gap-4 bg-green-200 border-2 border-gray-900 p-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     <div className="text-right">
-                        <div className="text-2xl font-bold text-primary">{score}%</div>
-                        <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Consistency Score</div>
+                        <div className="text-2xl font-bold text-green-700">{score}%</div>
+                        <div className="text-xs text-gray-700 uppercase font-bold tracking-wider">Consistency Score</div>
                     </div>
                 </div>
             </div>
@@ -27,23 +27,23 @@ export default function ConsistencyTracker({ data, score, activeCount }: { data:
                         key={idx}
                         title={`${format(new Date(day.date), 'd MMM yyyy', { locale: id })}: ${day.active ? 'Belajar' : 'Tidak'}`}
                         className={`
-                            w-3 h-3 md:w-4 md:h-4 rounded-sm transition-all hover:scale-125
+                            w-4 h-4 md:w-5 md:h-5 transition-all hover:scale-125 border border-gray-400
                             ${day.active
-                                ? 'bg-primary shadow-[0_0_8px_rgba(var(--primary),0.5)]'
-                                : 'bg-secondary/50'}
+                                ? 'bg-blue-500 border-gray-900'
+                                : 'bg-gray-200'}
                         `}
                     />
                 ))}
             </div>
 
             <div className="mt-6 flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total hari aktif: <strong className="text-foreground">{activeCount} hari</strong></span>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="text-gray-700">Total hari aktif: <strong className="text-gray-900">{activeCount} hari</strong></span>
+                <div className="flex items-center gap-2 text-xs text-gray-600">
                     <span>Kurang</span>
                     <div className="flex gap-1">
-                        <div className="w-2 h-2 rounded-sm bg-secondary/50"></div>
-                        <div className="w-2 h-2 rounded-sm bg-primary/40"></div>
-                        <div className="w-2 h-2 rounded-sm bg-primary"></div>
+                        <div className="w-3 h-3 bg-gray-200 border border-gray-400"></div>
+                        <div className="w-3 h-3 bg-blue-300 border border-gray-400"></div>
+                        <div className="w-3 h-3 bg-blue-500 border border-gray-900"></div>
                     </div>
                     <span>Sering</span>
                 </div>
@@ -51,3 +51,4 @@ export default function ConsistencyTracker({ data, score, activeCount }: { data:
         </div>
     )
 }
+

@@ -40,40 +40,44 @@ export default function TrendChart({
     const displayData = viewMode === 'short' ? data.slice(-10) : data
 
     return (
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col h-full">
+        <div className="flex flex-col h-full">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
                 <div>
-                    <h3 className="text-lg font-bold">Trend Nilai</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-xl font-bold text-gray-900">📈 Trend Nilai</h3>
+                    <p className="text-sm text-gray-600">
                         {viewMode === 'long' ? 'Progres skor total latihan' : 'Progres 10 latihan terakhir'}
                     </p>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* View Selector */}
-                    <div className="flex bg-secondary/50 rounded-lg p-1">
+                    {/* View Selector - Notebook Style */}
+                    <div className="flex bg-gray-100 border-2 border-gray-900 p-1">
                         <button
                             onClick={() => setViewMode('long')}
-                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${viewMode === 'long' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+                            className={`px-3 py-1 text-sm font-bold transition-all ${viewMode === 'long'
+                                ? 'bg-blue-300 text-gray-900 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             Total
                         </button>
                         <button
                             onClick={() => setViewMode('short')}
-                            className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${viewMode === 'short' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+                            className={`px-3 py-1 text-sm font-bold transition-all ${viewMode === 'short'
+                                ? 'bg-blue-300 text-gray-900 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             Terbaru
                         </button>
                     </div>
 
-                    {/* Badge */}
-                    <div className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1 border ${isUp
-                        ? 'bg-green-500/10 text-green-600 border-green-500/20'
+                    {/* Badge - Notebook Style */}
+                    <div className={`px-3 py-1.5 text-sm font-bold flex items-center gap-1 border-2 border-gray-900 ${isUp
+                        ? 'bg-green-300 text-green-800'
                         : currentDirection === 'down'
-                            ? 'bg-red-500/10 text-red-600 border-red-500/20'
-                            : 'bg-secondary text-muted-foreground border-transparent'
+                            ? 'bg-red-300 text-red-800'
+                            : 'bg-gray-200 text-gray-700'
                         }`}>
                         {isUp ? (
                             <>📈 +{currentPercentage}%</>
@@ -113,13 +117,13 @@ export default function TrendChart({
                         />
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: 'hsl(var(--card))',
-                                borderRadius: '8px',
-                                border: '1px solid hsl(var(--border))',
-                                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                                backgroundColor: '#fff',
+                                borderRadius: '0',
+                                border: '2px solid #1f2937',
+                                boxShadow: '3px 3px 0px 0px rgba(0,0,0,1)'
                             }}
-                            labelStyle={{ color: 'hsl(var(--muted-foreground))', marginBottom: '4px' }}
-                            itemStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold' }}
+                            labelStyle={{ color: '#374151', marginBottom: '4px', fontWeight: 'bold' }}
+                            itemStyle={{ color: '#1f2937', fontWeight: 'bold' }}
                             formatter={(value: any) => [`${value} Poin`, 'Skor Total']}
                             labelFormatter={(label) => `Latihan #${label}`}
                         />
