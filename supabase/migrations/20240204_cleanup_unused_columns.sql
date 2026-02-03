@@ -10,10 +10,14 @@ DROP COLUMN IF EXISTS cpns_year,
 DROP COLUMN IF EXISTS reminder_enabled,
 DROP COLUMN IF EXISTS reminder_time,
 DROP COLUMN IF EXISTS role,
-DROP COLUMN IF EXISTS email;
+DROP COLUMN IF EXISTS email,
+DROP COLUMN IF EXISTS subscription_status;
 
 ALTER TABLE questions
 DROP COLUMN IF EXISTS difficulty;
 
--- Optional: Drop the unused enum if no other dependencies exist
+DROP TABLE IF EXISTS materials;
+
+-- Optional: Drop unused enums
+-- DROP TYPE IF EXISTS subscription_status;
 -- DROP TYPE IF EXISTS user_role;

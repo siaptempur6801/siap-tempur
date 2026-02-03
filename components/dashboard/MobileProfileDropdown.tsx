@@ -15,7 +15,6 @@ interface MobileProfileDropdownProps {
     profile: {
         avatar_url?: string
         full_name?: string
-        subscription_status?: string
         tryout_quota?: number
     } | null
     signoutAction: () => Promise<{ success: boolean }>
@@ -41,7 +40,6 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
         user.user_metadata?.full_name ||
         (user as any).user_metadata?.name ||
         'Pejuang Tryout'
-    const isPremium = profile?.subscription_status === 'premium'
     const avatarUrl = profile?.avatar_url
 
     return (

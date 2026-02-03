@@ -24,7 +24,6 @@ type Profile = {
     full_name: string | null
     avatar_url: string | null
     bio: string | null
-    subscription_status: string
     streak_count?: number
     tryout_quota?: number
 }

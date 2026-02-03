@@ -28,7 +28,6 @@ interface DashboardShellProps {
     profile: {
         avatar_url?: string
         full_name?: string
-        subscription_status?: string
         tryout_quota?: number
     } | null
     signoutAction: () => Promise<{ success: boolean }>

@@ -3,7 +3,6 @@
 create extension if not exists "uuid-ossp";
 
 -- 1. Enums
-create type subscription_status as enum ('free', 'premium');
 create type question_type as enum ('TWK', 'TIU', 'TKP');
 create type session_mode as enum ('practice', 'tryout');
 create type session_status as enum ('in_progress', 'completed');
@@ -15,7 +14,6 @@ create table profiles (
   full_name text,
   avatar_url text,
   bio text,
-  subscription_status subscription_status default 'free',
   tryout_quota int default 0,
   streak_count int default 0,
   last_activity_date date,
@@ -24,20 +22,7 @@ create table profiles (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- 3. Learning Materials
-create table materials (
-  id uuid default uuid_generate_v4() primary key,
-  title text not null,
-  slug text unique not null,
-  description text,
-  content text, 
-  video_url text,
-  category text, -- TWK, TIU, TKP
-  is_premium boolean default false,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
--- 4. Questions & Options
+-- 3. Questions & Options
 create table questions (
   id uuid default uuid_generate_v4() primary key,
   content text not null,

@@ -2,13 +2,10 @@
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, full_name, role, subscription_status, streak_count)
+  insert into public.profiles (id, full_name, streak_count)
   values (
     new.id,
-    new.email,
     new.raw_user_meta_data->>'full_name',
-    'user',
-    'free',
     0
   );
   return new;

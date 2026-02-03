@@ -146,55 +146,7 @@ export default function ProfileForm({ user, profile }: any) {
                     </div>
                 </section>
 
-                {/* 2. STATUS KEANGGOTAAN (NEW SECTION) */}
-                <section className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-                    <div className="bg-secondary/30 p-4 border-b border-border flex items-center gap-2 font-semibold">
-                        <CreditCard size={18} className="text-blue-500" />
-                        <h3>Status Keanggotaan</h3>
-                    </div>
-                    <div className="p-6">
-                        <div className={`flex flex-col md:flex-row items-center justify-between p-6 rounded-xl border transition-all ${profile?.subscription_status === 'premium'
-                            ? 'bg-gradient-to-r from-yellow-500/10 via-orange-500/5 to-transparent border-yellow-500/30'
-                            : 'bg-secondary/20 border-border'
-                            }`}>
-                            <div className="flex items-center gap-6 mb-4 md:mb-0">
-                                <div className={`flex-shrink-0 w-16 h-16 rounded-full flex items-center justify-center ${profile?.subscription_status === 'premium'
-                                    ? 'bg-gradient-to-br from-yellow-400 to-orange-600 text-white shadow-lg shadow-orange-500/20'
-                                    : 'bg-secondary border border-border text-muted-foreground'
-                                    }`}>
-                                    {profile?.subscription_status === 'premium' ? <Crown size={28} fill="currentColor" /> : <User size={28} />}
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h4 className={`font-bold text-xl ${profile?.subscription_status === 'premium' ? 'text-yellow-600 dark:text-yellow-400' : 'text-foreground'
-                                            }`}>
-                                            {profile?.subscription_status === 'premium' ? 'Premium VIP Member' : 'Akun Basic (Free)'}
-                                        </h4>
-                                        {profile?.subscription_status === 'premium' && <Sparkles size={20} className="text-yellow-500 animate-pulse" />}
-                                    </div>
-                                    <p className="text-muted-foreground mt-1 max-w-md">
-                                        {profile?.subscription_status === 'premium'
-                                            ? 'Selamat! Anda memiliki akses penuh ke seluruh fitur dan Latihan Premium.'
-                                            : 'Saat ini Anda menggunakan fitur dasar. Upgrade untuk membuka 5000+ Bank Soal.'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            {/* Action Button */}
-                            <div>
-                                {profile?.subscription_status !== 'premium' ? (
-                                    <button type="button" className="bg-gradient-to-r from-primary to-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-lg hover:shadow-primary/25 hover:scale-105 transition-all">
-                                        Upgrade Premium
-                                    </button>
-                                ) : (
-                                    <div className="px-4 py-2 bg-yellow-500/10 text-yellow-600 border border-yellow-500/20 rounded-lg text-sm font-medium">
-                                        Aktif Seumur Hidup
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                {/* Quota section is handled in ProfileClient, no need for it here if redundant */}
 
 
 

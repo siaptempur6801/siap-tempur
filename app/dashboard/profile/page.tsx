@@ -44,14 +44,13 @@ export default async function ProfilePage() {
             .from('profiles')
             .insert({
                 id: user.id,
-                full_name: user.user_metadata?.full_name || null,
-                subscription_status: 'free'
+                full_name: user.user_metadata?.full_name || null
             })
             .select()
             .single()
 
         return <ProfileClient
-            profile={newProfile || { id: user.id, full_name: null, avatar_url: null, bio: null, subscription_status: 'free' }}
+            profile={newProfile || { id: user.id, full_name: null, avatar_url: null, bio: null }}
             user={{ email: user.email!, created_at: user.created_at! }}
             statsData={statsData}
         />

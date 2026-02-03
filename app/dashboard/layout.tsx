@@ -33,7 +33,6 @@ export default async function DashboardLayout({
             .insert({
                 id: user.id,
                 full_name: user.user_metadata?.full_name || (user as any).user_metadata?.name || null,
-                subscription_status: 'free',
                 tryout_quota: 0
             })
             .select()
