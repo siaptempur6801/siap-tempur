@@ -19,7 +19,7 @@ export default function BeliPaketPage() {
     }
 
     return (
-        <div className="font-body h-[calc(100vh-5rem)] w-full overflow-hidden flex flex-col relative">
+        <div className="font-body w-full flex flex-col relative">
             <PaperBackground />
 
             {/* Main Content Container - Compact & Centered */}
