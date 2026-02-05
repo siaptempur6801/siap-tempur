@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Map, Sparkles } from 'lucide-react'
 import PaperBackground from '@/components/PaperBackground'
-import { cn } from '@/lib/utils'
+import { cn, formatSubjectName } from '@/lib/utils'
 
 interface Answer {
     id: string
@@ -201,7 +201,7 @@ export default function ResultReviewClient({ answers }: Props) {
                 {/* Header */}
                 <div className="p-3 sm:p-5 border-b-2 border-dashed border-gray-300 flex flex-col sm:flex-row sm:justify-between sm:items-center bg-yellow-50/50 gap-3 relative z-10">
                     <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-1.5">
                             <h2 className="font-bold text-xl sm:text-2xl text-gray-900 leading-tight">
                                 Pembahasan <span className="font-sans">#{currentIndex + 1}</span>
                             </h2>
@@ -211,7 +211,7 @@ export default function ResultReviewClient({ answers }: Props) {
                                 </span>
                                 {question.category && (
                                     <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border-2 border-blue-200 text-[10px] sm:text-xs font-bold rounded-lg -rotate-1 shadow-sm">
-                                        {question.category}
+                                        {formatSubjectName(question.category)}
                                     </span>
                                 )}
                             </div>

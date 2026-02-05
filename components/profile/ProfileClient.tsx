@@ -26,6 +26,7 @@ type Profile = {
     bio: string | null
     streak_count?: number
     tryout_quota?: number
+    tryout_quota_utbk?: number
 }
 
 type UserData = {
@@ -423,9 +424,15 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="text-center px-6 py-3 bg-white border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                    <div className="text-3xl font-bold text-green-600">{profile.tryout_quota ?? 0}</div>
-                                    <div className="text-sm text-gray-600 font-bold">Tiket</div>
+                                <div className="flex gap-4">
+                                    <div className="text-center px-4 py-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="text-2xl font-bold text-green-600">{profile.tryout_quota ?? 0}</div>
+                                        <div className="text-xs text-gray-600 font-bold uppercase">SKD</div>
+                                    </div>
+                                    <div className="text-center px-4 py-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="text-2xl font-bold text-pink-600">{profile.tryout_quota_utbk ?? 0}</div>
+                                        <div className="text-xs text-gray-600 font-bold uppercase">UTBK</div>
+                                    </div>
                                 </div>
                                 <a href="/dashboard/beli-paket" className="px-5 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
                                     + Beli Kuota

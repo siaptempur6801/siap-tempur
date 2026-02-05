@@ -55,6 +55,9 @@ export async function startTryout() {
 
     if (error) {
         console.error('[startTryout] DB Error:', error)
+        if (error.message?.includes('Not enough SKD tickets') || error.details?.includes('Not enough SKD tickets')) {
+            return { error: 'Tiket SKD habis! Silakan beli paket baru.' }
+        }
         return { error: 'Failed to start tryout session' }
     }
 

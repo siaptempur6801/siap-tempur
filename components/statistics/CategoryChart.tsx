@@ -1,5 +1,6 @@
 'use client'
 
+import { formatSubjectName } from '@/lib/utils'
 import {
     BarChart,
     Bar,
@@ -40,11 +41,12 @@ export default function CategoryChart({ data }: { data: any[] }) {
                             dataKey="subject"
                             type="category"
                             stroke="#374151"
-                            fontSize={14}
+                            fontSize={12}
                             fontWeight="bold"
                             tickLine={false}
                             axisLine={false}
-                            width={40}
+                            width={50}
+                            tickFormatter={(value) => formatSubjectName(value)}
                         />
                         <Tooltip
                             cursor={{ fill: '#f3f4f6', opacity: 0.5 }}
@@ -79,7 +81,7 @@ export default function CategoryChart({ data }: { data: any[] }) {
 
                     return (
                         <div key={d.subject} className="text-center flex flex-col items-center justify-start h-full p-2 bg-gray-50 border-2 border-gray-300">
-                            <div className="text-sm text-gray-700 font-bold mb-1">{d.subject}</div>
+                            <div className="text-[10px] text-gray-700 font-bold mb-1 leading-tight">{formatSubjectName(d.subject)}</div>
 
                             <div className="text-xl font-bold leading-none mb-2 text-gray-900">
                                 {d.score} <span className="text-sm text-gray-500 font-normal">/ {d.passing}</span>

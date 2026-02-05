@@ -5,7 +5,7 @@ import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut, Highlighter } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
+import { cn, formatSubjectName } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import PaperBackground from '@/components/PaperBackground'
 
@@ -455,18 +455,18 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                     <Map size={16} />
                                 </button>
 
-                                <div className="flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2 overflow-hidden">
+                                <div className="flex flex-col gap-0.5 md:gap-1 overflow-hidden">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900">Soal #{currentIndex + 1}</span>
+                                        <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900 leading-tight">Soal #{currentIndex + 1}</span>
                                         <span className="font-handwriting text-sm text-gray-500 md:text-lg">/ {sortedQuestions.length}</span>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <span className="px-1 py-0.5 bg-secondary text-secondary-foreground text-[11px] md:text-[12px] font-bold rounded">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[10px] md:text-[11px] font-bold rounded uppercase tracking-wider">
                                             {currentQuestion.type}
                                         </span>
                                         {currentQuestion.category && (
-                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-xs md:text-sm font-bold font-handwriting rounded shadow-sm">
-                                                {currentQuestion.category}
+                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] md:text-xs font-bold font-handwriting rounded shadow-sm">
+                                                {formatSubjectName(currentQuestion.category)}
                                             </span>
                                         )}
                                     </div>

@@ -20,7 +20,7 @@ import ScrollToReviewButton from '@/components/practice/ScrollToReviewButton'
 import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import PaperBackground from '@/components/PaperBackground'
 import { getXPInfo } from '@/lib/dashboard'
-import { cn } from '@/lib/utils'
+import { cn, formatSubjectName } from '@/lib/utils'
 
 export default async function PracticeResultPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const supabase = await createClient()
@@ -224,7 +224,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                     <div className="relative p-6 sm:p-12 flex flex-col items-center text-center z-10">
                         <div className="mb-4">
                             <span className="px-4 py-1.5 rounded-full bg-gray-900 text-white text-sm font-bold uppercase tracking-widest rotate-2 inline-block">
-                                HASIL {isCombined ? 'TRYOUT SKD' : `LATIHAN ${singleType}`} 📝
+                                HASIL {isCombined ? 'TRYOUT SKD' : `LATIHAN ${formatSubjectName(singleType || '')}`} 📝
                             </span>
                         </div>
 

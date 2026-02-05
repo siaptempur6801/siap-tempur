@@ -6,6 +6,7 @@ interface DashboardData {
         name: string
         streak: number
         tryoutQuota: number
+        tryoutQuotaUtbk: number
     }
     stats: {
         totalSessions: number
@@ -120,7 +121,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     const [profileRes, sessionsRes, allSessionsRes] = await Promise.all([
         supabase
             .from('profiles')
-            .select('full_name, streak_count, tryout_quota')
+            .select('full_name, streak_count, tryout_quota, tryout_quota_utbk') // Fetch both quotas
             .eq('id', userId)
             .single(),
         supabase
@@ -237,6 +238,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             name: profile?.full_name || 'Calon ASN',
             streak: profile?.streak_count || 0,
             tryoutQuota: profile?.tryout_quota || 0,
+            tryoutQuotaUtbk: profile?.tryout_quota_utbk || 0,
         },
         stats: {
             totalSessions: recentSessions.length,

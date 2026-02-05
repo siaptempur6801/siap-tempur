@@ -9,6 +9,7 @@ import {
     Calendar,
     User,
     Ticket,
+    GraduationCap,
 } from 'lucide-react'
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
@@ -29,6 +30,7 @@ interface DashboardShellProps {
         avatar_url?: string
         full_name?: string
         tryout_quota?: number
+        tryout_quota_utbk?: number
     } | null
     signoutAction: () => Promise<{ success: boolean }>
 }
@@ -65,7 +67,7 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                 <nav className="flex-1 px-4 space-y-3 relative z-10">
                     <NavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
                     <NavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
-                    <NavItem href="/dashboard/latihan" icon={<Trophy size={20} />} label="Latihan" badge="XP" />
+                    <NavItem href="/dashboard/latihan" icon={<Trophy size={20} />} label="Tryout" badge="XP" />
                     <NavItem href="/dashboard/profile" icon={<User size={20} />} label="Profil" />
                 </nav>
 
@@ -85,10 +87,16 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                                     (user as any).user_metadata?.name ||
                                     'Pejuang Tryout'}
                             </p>
-                            <span className="text-[10px] px-1.5 py-0.5 border-2 border-gray-900 bg-blue-200 text-blue-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]" title="Sisa Kuota Tryout">
-                                <Ticket size={10} className="fill-current" />
-                                {profile?.tryout_quota ?? 0} Tiket
-                            </span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-blue-100 text-blue-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title="Sisa Kuota SKD">
+                                    <Ticket size={12} className="fill-current" />
+                                    {profile?.tryout_quota ?? 0}
+                                </span>
+                                <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-pink-100 text-pink-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title="Sisa Kuota UTBK">
+                                    <GraduationCap size={12} className="fill-current" />
+                                    {profile?.tryout_quota_utbk ?? 0}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <SidebarSignoutButton signoutAction={signoutAction} />
@@ -101,7 +109,7 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                 {/* Mobile Header (Hidden on Desktop) */}
                 <div className="md:hidden h-16 border-b-2 border-gray-900 flex items-center px-6 justify-between transform sticky top-0 bg-[#fdfbf7]/90 backdrop-blur-md z-30 shadow-sm">
                     <Link href="/" className="text-2xl font-handwriting font-bold text-gray-800 rotate-[-1deg]">
-                        Lulus<span className="text-blue-600 underline decoration-wavy decoration-2">Tryout</span>.
+                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                     </Link>
                     <MobileProfileDropdown user={user} profile={profile} signoutAction={signoutAction} />
                 </div>

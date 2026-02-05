@@ -9,9 +9,10 @@ import { cn } from '@/lib/utils'
 
 interface PracticeClientProps {
     quota: number
+    quotaUtbk: number
 }
 
-export default function PracticeClient({ quota }: PracticeClientProps) {
+export default function PracticeClient({ quota, quotaUtbk }: PracticeClientProps) {
     const [loadingTryout, setLoadingTryout] = useState(false)
     const router = useRouter()
 
@@ -152,10 +153,10 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
 
                         <h3 className="text-3xl font-bold mb-4 text-gray-900">Tryout UTBK SNBT</h3>
 
-                        {/* Quota Display (Placeholder) */}
+                        {/* Quota Display */}
                         <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-pink-50 border-2 border-pink-200 border-dashed rounded-lg text-pink-800 font-bold transform rotate-1 mx-auto">
                             <Ticket size={18} />
-                            <span>Sisa Kuota: -</span>
+                            <span>Sisa Kuota: {quotaUtbk} Tiket</span>
                         </div>
 
                         <p className="text-gray-600 text-lg mb-8 leading-relaxed flex-grow">
