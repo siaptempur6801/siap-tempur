@@ -13,9 +13,9 @@ export default function ScrollToReviewButton() {
     return (
         <button
             onClick={scrollToReview}
-            className="flex justify-center items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg shadow-primary/20 transition-all transform hover:-translate-y-1"
+            className="flex justify-center items-center gap-3 px-8 py-4 rounded-2xl bg-gray-900 text-white font-black text-xl transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:bg-gray-800 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
         >
-            <CheckCircle2 size={18} /> Review Jawaban
+            <CheckCircle2 size={24} /> Review Jawaban
         </button>
     )
 }

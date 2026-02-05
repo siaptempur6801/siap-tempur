@@ -46,12 +46,12 @@ export default function RetakeButton({ isCombined, singleType }: RetakeButtonPro
         <button
             onClick={handleRetake}
             disabled={isLoading}
-            className="flex justify-center items-center gap-2 px-6 py-3 rounded-xl border border-primary text-primary hover:bg-primary/5 font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex justify-center items-center gap-3 px-8 py-4 rounded-2xl border-2 border-gray-900 bg-white hover:bg-gray-50 text-gray-900 font-black text-xl transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
         >
             {isLoading ? (
-                <Loader2 size={18} className="animate-spin" />
+                <Loader2 size={24} className="animate-spin" />
             ) : (
-                <RefreshCw size={18} />
+                <RefreshCw size={24} />
             )}
             {isLoading ? 'Memulai...' : 'Ulangi Latihan'}
         </button>

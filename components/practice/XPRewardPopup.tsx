@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Zap, Trophy, Star, Sparkles, X } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import PaperBackground from '@/components/PaperBackground'
 
 interface XPRewardPopupProps {
     xpEarned: number
@@ -92,19 +93,21 @@ export default function XPRewardPopup({
                         animate={{ scale: 1, y: 0 }}
                         exit={{ scale: 0.8, y: 50 }}
                         transition={{ type: "spring", damping: 15 }}
-                        className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 max-w-sm w-full shadow-2xl border border-yellow-500/20 overflow-hidden"
+                        className="relative bg-[#fff9c4] border-2 border-gray-900 rounded-3xl p-8 max-w-sm w-full shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] overflow-hidden font-handwriting"
                     >
+                        <PaperBackground />
                         {/* Close button */}
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white/10 hover:bg-white/20 transition text-white/70 hover:text-white"
+                            className="absolute top-4 right-4 z-50 p-2 rounded-full bg-black/5 hover:bg-black/10 transition text-gray-700 hover:text-black"
                         >
                             <X className="w-5 h-5" />
                         </button>
 
-                        {/* Background glow */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-transparent to-purple-500/10" />
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-yellow-500/30 rounded-full blur-3xl" />
+                        {/* Background doodle/decor */}
+                        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                            <Sparkles className="w-12 h-12 text-gray-900" />
+                        </div>
 
                         {/* XP Earned Step */}
                         {step === 'xp' && (
@@ -115,47 +118,47 @@ export default function XPRewardPopup({
                             >
                                 <motion.div
                                     animate={{
-                                        scale: [1, 1.2, 1],
-                                        rotate: [0, 5, -5, 0]
+                                        scale: [1, 1.1, 1],
+                                        rotate: [0, 3, -3, 0]
                                     }}
                                     transition={{
                                         duration: 0.5,
                                         repeat: Infinity,
                                         repeatDelay: 1
                                     }}
-                                    className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg shadow-yellow-500/30"
+                                    className="w-20 h-20 mx-auto mb-4 bg-yellow-400 border-2 border-gray-900 rounded-full flex items-center justify-center shadow-md rotate-3"
                                 >
-                                    <Zap className="w-10 h-10 text-white" />
+                                    <Zap className="w-10 h-10 text-gray-900 fill-current" />
                                 </motion.div>
 
-                                <h2 className="text-lg font-semibold text-yellow-400 mb-2">XP Diraih!</h2>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-2">XP Diraih! ✨</h2>
 
                                 <motion.div
-                                    className="text-6xl font-black text-white mb-2"
+                                    className="text-7xl font-black text-gray-900 mb-2 font-sans tracking-tight"
                                     animate={{ scale: displayXP === xpEarned ? [1, 1.1, 1] : 1 }}
                                 >
                                     +{displayXP}
                                 </motion.div>
 
-                                <p className="text-muted-foreground text-sm">
-                                    Total XP: {previousXP.toLocaleString()} → {newXP.toLocaleString()}
+                                <p className="text-gray-600 text-lg font-bold">
+                                    Total: <span className="font-sans">{previousXP.toLocaleString()}</span> → <span className="font-sans">{newXP.toLocaleString()}</span>
                                 </p>
 
                                 {/* Progress bar to next level */}
-                                <div className="mt-6">
-                                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                <div className="mt-8">
+                                    <div className="flex justify-between text-base font-bold text-gray-700 mb-2">
                                         <span>Level {newLevel}</span>
                                         <span>{xpToNext > 0 ? `${xpToNext.toLocaleString()} XP lagi` : 'MAX'}</span>
                                     </div>
-                                    <div className="h-2.5 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-5 bg-white/50 border-2 border-gray-900 rounded-full overflow-hidden shadow-inner">
                                         <motion.div
-                                            className="h-full bg-gradient-to-r from-yellow-400 to-amber-500"
+                                            className="h-full bg-blue-500 border-r-2 border-gray-900"
                                             initial={{ width: '0%' }}
                                             animate={{ width: leveledUp ? '100%' : `${progress}%` }}
                                             transition={{ duration: 1, delay: 0.5 }}
                                         />
                                     </div>
-                                    <p className="text-xs text-center text-muted-foreground mt-1">
+                                    <p className="text-sm text-center text-gray-500 mt-2 italic font-medium">
                                         {progress}% menuju Level {newLevel + 1}
                                     </p>
                                 </div>
@@ -166,9 +169,9 @@ export default function XPRewardPopup({
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         onClick={onClose}
-                                        className="mt-6 px-8 py-3 bg-gradient-to-r from-yellow-500 to-amber-600 text-white font-bold rounded-xl hover:from-yellow-600 hover:to-amber-700 transition-all shadow-lg shadow-yellow-500/30"
+                                        className="mt-8 px-10 py-3 bg-blue-600 text-white border-2 border-gray-900 font-bold text-xl rounded-xl hover:bg-blue-700 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                     >
-                                        Lanjutkan
+                                        Lanjutkan ✨
                                     </motion.button>
                                 )}
                             </motion.div>
@@ -190,21 +193,21 @@ export default function XPRewardPopup({
                                         duration: 0.8,
                                         repeat: Infinity,
                                     }}
-                                    className="w-24 h-24 mx-auto mb-4"
+                                    className="w-24 h-24 mx-auto mb-6"
                                 >
                                     <div className="relative">
-                                        <div className="w-24 h-24 bg-gradient-to-br from-purple-500 via-pink-500 to-yellow-500 rounded-full flex items-center justify-center shadow-2xl shadow-purple-500/50">
+                                        <div className="w-24 h-24 bg-purple-500 border-2 border-gray-900 rounded-full flex items-center justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rotate-3">
                                             <Trophy className="w-12 h-12 text-white" />
                                         </div>
                                         {/* Sparkles around */}
                                         <motion.div
                                             animate={{ rotate: 360 }}
-                                            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                                             className="absolute inset-0"
                                         >
-                                            <Star className="absolute -top-2 left-1/2 w-4 h-4 text-yellow-400 fill-yellow-400" />
-                                            <Star className="absolute top-1/2 -right-2 w-3 h-3 text-pink-400 fill-pink-400" />
-                                            <Star className="absolute -bottom-1 left-1/4 w-3 h-3 text-purple-400 fill-purple-400" />
+                                            <Star className="absolute -top-3 left-1/2 w-6 h-6 text-yellow-500 fill-yellow-500 -translate-x-1/2" />
+                                            <Star className="absolute top-1/2 -right-3 w-4 h-4 text-orange-500 fill-orange-500 -translate-y-1/2" />
+                                            <Star className="absolute -bottom-2 left-1/4 w-5 h-5 text-purple-600 fill-purple-600" />
                                         </motion.div>
                                     </div>
                                 </motion.div>
@@ -212,30 +215,30 @@ export default function XPRewardPopup({
                                 <motion.h2
                                     animate={{ scale: [1, 1.05, 1] }}
                                     transition={{ duration: 0.5, repeat: Infinity }}
-                                    className="text-2xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400 bg-clip-text text-transparent mb-2"
+                                    className="text-4xl font-black text-purple-700 mb-2 drop-shadow-sm"
                                 >
-                                    LEVEL UP!
+                                    LEVEL UP! 🎉
                                 </motion.h2>
 
-                                <div className="flex items-center justify-center gap-4 my-4">
+                                <div className="flex items-center justify-center gap-6 my-6 bg-white/40 border-2 border-dashed border-gray-400 p-4 rounded-2xl">
                                     <div className="text-center">
-                                        <div className="text-3xl font-bold text-muted-foreground">{previousLevel}</div>
-                                        <div className="text-xs text-muted-foreground">Before</div>
+                                        <div className="text-3xl font-bold text-gray-400 line-through decoration-red-400 font-sans">{previousLevel}</div>
+                                        <div className="text-xs text-gray-500 uppercase font-bold tracking-widest">Dulu</div>
                                     </div>
                                     <motion.div
                                         animate={{ x: [0, 5, 0] }}
                                         transition={{ duration: 0.5, repeat: Infinity }}
                                     >
-                                        <Sparkles className="w-6 h-6 text-yellow-400" />
+                                        <Sparkles className="w-8 h-8 text-yellow-500" />
                                     </motion.div>
                                     <div className="text-center">
-                                        <div className="text-4xl font-black text-white">{newLevel}</div>
-                                        <div className="text-xs text-primary font-bold">{newLevelName}</div>
+                                        <div className="text-5xl font-black text-gray-900 font-sans">{newLevel}</div>
+                                        <div className="text-sm text-blue-600 font-bold mt-1 px-2 py-0.5 bg-blue-50 rounded border border-blue-200">{newLevelName}</div>
                                     </div>
                                 </div>
 
-                                <p className="text-muted-foreground text-sm mb-6">
-                                    Selamat! Kamu naik ke level {newLevel}! 🎉
+                                <p className="text-gray-700 text-lg font-medium mb-8 leading-tight">
+                                    Gokil! Kamu baru saja naik ke level baru. Terus semangat ya! 💪⚡
                                 </p>
 
                                 {/* Close button */}
@@ -244,9 +247,9 @@ export default function XPRewardPopup({
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5 }}
                                     onClick={onClose}
-                                    className="px-8 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-lg shadow-purple-500/30"
+                                    className="px-10 py-4 bg-purple-600 text-white border-2 border-gray-900 font-bold text-2xl rounded-2xl hover:bg-purple-700 transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
-                                    Mantap! 🚀
+                                    Gaskan Lagi! 🚀
                                 </motion.button>
                             </motion.div>
                         )}

@@ -3,10 +3,11 @@
 import { useState, useMemo, useEffect } from 'react'
 import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut, Highlighter } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import PaperBackground from '@/components/PaperBackground'
 
 interface Question {
     id: string
@@ -45,6 +46,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     const [showMobileNav, setShowMobileNav] = useState(false)
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [showExitModal, setShowExitModal] = useState(false)
+    const [showNav, setShowNav] = useState(true) // Toggleable desktop side nav
 
     // Sort questions by type (TWK -> TIU -> TKP)
     const sortedQuestions = useMemo(() => {
@@ -183,7 +185,9 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     }
 
     return (
-        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 p-2 md:p-8 h-auto md:h-[calc(100vh-64px)] md:overflow-hidden relative">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 p-2 md:p-8 h-auto md:h-[calc(100vh-64px)] md:overflow-hidden relative font-body">
+            <PaperBackground />
+
             {/* Mobile Navigation Drawer */}
             <AnimatePresence>
                 {showMobileNav && (
@@ -202,9 +206,9 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                             className="bg-background w-3/4 h-full ml-auto p-6 flex flex-col shadow-2xl"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="font-bold text-lg flex items-center gap-2">
-                                    <Map size={18} /> Navigasi Soal
+                            <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-dashed border-gray-300">
+                                <h2 className="font-bold text-xl flex items-center gap-2 font-handwriting text-gray-800">
+                                    <Map size={20} /> Navigasi Soal
                                 </h2>
                                 <button onClick={() => setShowMobileNav(false)} className="p-2 hover:bg-secondary rounded-full">
                                     <ChevronRight size={20} />
@@ -212,7 +216,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-1">
-                                <div className="grid grid-cols-5 gap-2">
+                                <div className="grid grid-cols-5 md:grid-cols-8 gap-2.5">
                                     {sortedQuestions.map((q, idx) => (
                                         <button
                                             key={q.id}
@@ -221,13 +225,13 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                                 setShowMobileNav(false)
                                             }}
                                             className={cn(
-                                                "aspect-square rounded-lg font-bold text-sm flex items-center justify-center transition-all border",
-                                                currentIndex === idx ? 'ring-2 ring-primary ring-offset-2' : '',
+                                                "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]",
+                                                currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-2 border-blue-600 z-10' : '',
                                                 marked[q.id]
-                                                    ? 'bg-yellow-500 text-white border-yellow-600'
+                                                    ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
                                                     : answers[q.id]
-                                                        ? 'bg-primary text-white border-primary'
-                                                        : 'bg-secondary text-muted-foreground border-transparent'
+                                                        ? 'bg-blue-500 text-white border-blue-700'
+                                                        : 'bg-white text-gray-500 border-gray-300 hover:border-gray-500'
                                             )}
                                         >
                                             {idx + 1}
@@ -237,19 +241,19 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                             </div>
 
                             {/* Exit ButtonMobile */}
-                            <div className="mt-4 pt-4 border-t border-border">
+                            <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-300 bg-gray-50/50 rounded-lg p-4">
                                 <button
                                     onClick={() => setShowExitModal(true)}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-red-500/20 text-red-500 bg-red-500/10 hover:bg-red-500/20 font-bold transition-all"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-handwriting font-bold transition-all"
                                 >
                                     <LogOut size={18} /> Keluar Latihan
                                 </button>
-                            </div>
 
-                            <div className="p-4 bg-secondary/20 text-xs text-muted-foreground border-t border-border space-y-2 mt-4 rounded-lg">
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary"></div><span>Dijawab</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div><span>Ragu-ragu</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-secondary border border-muted-foreground/30"></div><span>Belum dijawab</span></div>
+                                <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
+                                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
+                                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ragu-ragu</span></div>
+                                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
@@ -259,28 +263,29 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
             {/* Exit Confirmation Modal */}
             {showExitModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-card border border-border rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200">
-                        <div className="flex flex-col items-center text-center space-y-4">
-                            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-2">
-                                <LogOut size={32} className="text-red-600 dark:text-red-400" />
+                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                        <PaperBackground />
+                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
+                            <div className="w-16 h-16 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mb-2 rotate-3 shadow-sm">
+                                <LogOut size={32} className="text-red-600" />
                             </div>
 
-                            <h3 className="text-xl font-bold">Keluar Latihan?</h3>
+                            <h3 className="text-3xl font-bold text-gray-900">Keluar Latihan?</h3>
 
-                            <p className="text-sm text-muted-foreground">
-                                Progres latihan Anda saat ini akan hilang dan tidak dapat dilanjutkan. Apakah Anda yakin ingin keluar?
+                            <p className="text-lg text-gray-700 font-medium">
+                                Progres latihan Anda saat ini akan hilang. Apakah Anda yakin ingin menyerah? 📝
                             </p>
 
-                            <div className="grid grid-cols-2 gap-3 w-full mt-2">
+                            <div className="grid grid-cols-2 gap-4 w-full mt-4">
                                 <button
                                     onClick={() => setShowExitModal(false)}
-                                    className="px-4 py-2 rounded-lg border border-border hover:bg-secondary transition font-medium"
+                                    className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={handleExit}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition font-bold shadow-lg shadow-red-600/20"
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
                                     Keluar
                                 </button>
@@ -304,18 +309,23 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="bg-orange-500 text-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center"
+                            className="bg-[#fff9c4] border-2 border-gray-900 p-10 rounded-2xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] max-w-md w-full text-center relative overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <Clock className="w-16 h-16 mx-auto mb-4" />
-                            <h3 className="text-2xl font-bold mb-2">Peringatan Waktu!</h3>
-                            <p className="text-lg mb-6">Waktu tersisa kurang dari 5 menit. Segera selesaikan jawaban Anda!</p>
-                            <button
-                                onClick={() => setShowWarning5Min(false)}
-                                className="bg-white text-orange-500 px-8 py-3 rounded-lg font-bold hover:bg-orange-50 transition"
-                            >
-                                Mengerti
-                            </button>
+                            <PaperBackground />
+                            <div className="relative z-10 font-handwriting">
+                                <div className="w-20 h-20 bg-orange-100 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 -rotate-3 shadow-md">
+                                    <Clock className="w-12 h-12 text-orange-500" />
+                                </div>
+                                <h3 className="text-3xl font-bold mb-4 text-gray-900">Waktu Tipis! ⏳</h3>
+                                <p className="text-xl mb-8 text-gray-700 font-medium leading-relaxed">Waktu tersisa kurang dari 5 menit nih. Gas pol selesaikan semua soalnya!</p>
+                                <button
+                                    onClick={() => setShowWarning5Min(false)}
+                                    className="bg-orange-500 text-white px-10 py-3 rounded-lg border-2 border-gray-900 font-bold text-xl hover:bg-orange-600 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                >
+                                    Siap Mandraguna!
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -335,18 +345,23 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="bg-red-500 text-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center animate-pulse"
+                            className="bg-[#fff9c4] border-2 border-gray-900 p-10 rounded-2xl shadow-[10px_10px_0px_0px_rgba(239,68,68,0.5)] max-w-md w-full text-center relative overflow-hidden animate-bounce-subtle"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <Clock className="w-16 h-16 mx-auto mb-4" />
-                            <h3 className="text-3xl font-bold mb-2">WAKTU HAMPIR HABIS!</h3>
-                            <p className="text-xl mb-6">Tinggal 1 menit! Ujian akan otomatis selesai saat waktu habis.</p>
-                            <button
-                                onClick={() => setShowWarning1Min(false)}
-                                className="bg-white text-red-500 px-8 py-3 rounded-lg font-bold hover:bg-red-50 transition"
-                            >
-                                Mengerti
-                            </button>
+                            <PaperBackground />
+                            <div className="relative z-10 font-handwriting">
+                                <div className="w-24 h-24 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mx-auto mb-6 rotate-6 shadow-lg animate-pulse">
+                                    <Clock className="w-14 h-14 text-red-600" />
+                                </div>
+                                <h3 className="text-4xl font-bold mb-4 text-red-600">DARURAT! 🚨</h3>
+                                <p className="text-2xl mb-8 text-gray-800 font-bold leading-tight">Tinggal 1 menit lagi! Buruan klik Selesai sebelum auto-submit!</p>
+                                <button
+                                    onClick={() => setShowWarning1Min(false)}
+                                    className="bg-red-600 text-white px-10 py-4 rounded-lg border-2 border-gray-900 font-bold text-2xl hover:bg-red-700 transition shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                >
+                                    OKE OKE!!
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -355,47 +370,52 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
             {/* Custom Confirmation Modal */}
             {showConfirmModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 animate-in zoom-in-95 duration-200">
-                        <div className="flex flex-col items-center text-center space-y-4">
-                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-2">
-                                <CheckCircle2 size={32} className="text-blue-600 dark:text-blue-400" />
+                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] max-w-md w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                        <PaperBackground />
+                        {/* Tape effect on modal */}
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-white/40 border border-gray-200 shadow-sm -rotate-2 z-20 pointer-events-none"></div>
+
+                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
+                            <div className="w-16 h-16 bg-blue-100 border-2 border-blue-600 rounded-full flex items-center justify-center mb-2 rotate-2 shadow-md">
+                                <CheckCircle2 size={32} className="text-blue-600" />
                             </div>
 
-                            <h3 className="text-2xl font-bold">Selesaikan Latihan?</h3>
+                            <h3 className="text-3xl font-bold text-gray-900">Selesaikan Latihan?</h3>
 
-                            <div className="text-muted-foreground w-full space-y-3 bg-secondary/30 p-4 rounded-lg text-sm text-left">
-                                <div className="flex justify-between items-center">
-                                    <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-blue-500"></div> Total Soal</span>
-                                    <span className="font-bold">{totalQuestions}</span>
+                            <div className="w-full space-y-4 bg-white/60 border-2 border-gray-900 p-6 rounded-xl text-lg text-left shadow-inner relative">
+                                <div className="absolute top-0 left-0 w-full h-1 bg-blue-500/10"></div>
+                                <div className="flex justify-between items-center pb-2 border-b border-dashed border-gray-300">
+                                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div> Total Soal</span>
+                                    <span className="font-bold text-2xl">{totalQuestions}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-green-600 dark:text-green-400">
-                                    <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-500"></div> Dijawab</span>
-                                    <span className="font-bold">{answeredCount}</span>
+                                <div className="flex justify-between items-center text-green-700 font-bold">
+                                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500 border border-green-700"></div> Dijawab</span>
+                                    <span className="text-2xl">{answeredCount}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-yellow-600 dark:text-yellow-400">
-                                    <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-yellow-500"></div> Masih Ragu</span>
-                                    <span className="font-bold">{markedCount}</span>
+                                <div className="flex justify-between items-center text-yellow-700 font-bold">
+                                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div> Ragu-ragu</span>
+                                    <span className="text-2xl">{markedCount}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-red-600 dark:text-red-400">
-                                    <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div> Belum Dijawab</span>
-                                    <span className="font-bold">{unansweredCount}</span>
+                                <div className="flex justify-between items-center text-red-600 font-bold">
+                                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500 border border-red-700"></div> Belum Dijawab</span>
+                                    <span className="text-2xl">{unansweredCount}</span>
                                 </div>
                             </div>
 
-                            <p className="text-xs text-muted-foreground">Pastikan tidak ada jawaban yang terlewat sebelum mengumpulkan.</p>
+                            <p className="text-lg text-gray-700 font-medium italic">"Jangan lupa cek lagi ya, teliti itu kunci kelulusan!" 🗝️✨</p>
 
-                            <div className="grid grid-cols-2 gap-3 w-full mt-4">
+                            <div className="grid grid-cols-2 gap-4 w-full mt-6">
                                 <button
                                     onClick={() => setShowConfirmModal(false)}
-                                    className="px-4 py-2 rounded-lg border border-border hover:bg-secondary transition font-medium"
+                                    className="px-4 py-3 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={handleConfirmFinish}
-                                    className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition font-bold shadow-lg shadow-primary/20"
+                                    className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
-                                    Ya, Selesai!
+                                    Siap Lulus!
                                 </button>
                             </div>
                         </div>
@@ -403,125 +423,188 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                 </div>
             )}
 
-            {/* LEFT: Question Area */}
-            <div className="flex-1 flex flex-col md:h-full bg-card border border-border rounded-xl shadow-sm md:overflow-hidden">
-                {/* Header - Optimized for Mobile */}
-                <div className="border-b border-border bg-secondary/20 p-2 md:p-4">
-                    <div className="flex items-center justify-between gap-2">
-                        {/* Left: Nav & Info */}
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <button
-                                onClick={() => setShowMobileNav(true)}
-                                className="lg:hidden p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
-                            >
-                                <Map size={16} />
-                            </button>
+            {/* LEFT: Question Area Wrapper */}
+            <div className={cn(
+                "flex-1 flex flex-col md:h-full relative transition-all duration-500",
+                showNav ? "" : "lg:max-w-4xl lg:mx-auto"
+            )}>
+                {/* Desktop Floating Toggle Tab */}
+                <button
+                    onClick={() => setShowNav(!showNav)}
+                    className="hidden lg:flex absolute top-20 -right-4 z-20 items-center justify-center w-8 h-10 bg-yellow-100 border-2 border-l-0 border-gray-900 rounded-r-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:w-10 transition-all group overflow-hidden"
+                    title={showNav ? "Sembunyikan Navigasi" : "Tampilkan Navigasi"}
+                >
+                    <motion.div
+                        animate={{ rotate: showNav ? 0 : 180 }}
+                        className={cn("transition-colors", showNav ? "text-gray-500" : "text-blue-600")}
+                    >
+                        <Map size={16} />
+                    </motion.div>
+                </button>
 
-                            <div className="flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2 overflow-hidden">
-                                <div className="flex items-baseline gap-1">
-                                    <span className="font-bold text-sm md:text-lg">#{currentIndex + 1}</span>
-                                    <span className="text-xs text-muted-foreground md:text-base">/ {sortedQuestions.length}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <span className="px-1 py-0.5 bg-secondary text-secondary-foreground text-[9px] md:text-[10px] font-medium rounded">
-                                        {currentQuestion.type}
-                                    </span>
-                                    {currentQuestion.category && (
-                                        <span className="px-1 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 text-[9px] md:text-[10px] font-medium rounded truncate max-w-[100px] md:max-w-none">
-                                            {currentQuestion.category}
+                <div className="flex-1 flex flex-col bg-white/80 backdrop-blur-sm border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] md:overflow-hidden relative">
+                    {/* Header - Optimized for Mobile */}
+                    <div className="border-b-2 border-dashed border-gray-300 bg-yellow-50/50 p-2 md:p-4">
+                        <div className="flex items-center justify-between gap-2">
+                            {/* Left: Nav & Info */}
+                            <div className="flex items-center gap-2 overflow-hidden">
+                                <button
+                                    onClick={() => setShowMobileNav(true)}
+                                    className="lg:hidden p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
+                                >
+                                    <Map size={16} />
+                                </button>
+
+                                <div className="flex flex-col md:flex-row md:items-center gap-0.5 md:gap-2 overflow-hidden">
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900">Soal #{currentIndex + 1}</span>
+                                        <span className="font-handwriting text-sm text-gray-500 md:text-lg">/ {sortedQuestions.length}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="px-1 py-0.5 bg-secondary text-secondary-foreground text-[11px] md:text-[12px] font-bold rounded">
+                                            {currentQuestion.type}
                                         </span>
-                                    )}
+                                        {currentQuestion.category && (
+                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-xs md:text-sm font-bold font-handwriting rounded shadow-sm">
+                                                {currentQuestion.category}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+
+                            {/* Right: Actions & Timer */}
+                            <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+                                <button
+                                    onClick={toggleMark}
+                                    className={cn(
+                                        "flex items-center justify-center rounded-full border transition-colors",
+                                        "w-8 h-8 md:w-auto md:h-auto md:px-4 md:py-1.5 font-handwriting font-bold", // Circle on mobile, Pill on desktop
+                                        marked[currentQuestion.id]
+                                            ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400 rotate-1 shadow-sm'
+                                            : 'bg-white border-2 border-gray-300 text-gray-500 hover:bg-gray-50 hover:border-gray-400'
+                                    )}
+                                    title={marked[currentQuestion.id] ? 'Hilangkan tanda ragu' : 'Tandai ragu'}
+                                >
+                                    <Flag size={14} className={cn(marked[currentQuestion.id] ? 'fill-current' : '')} />
+                                    <span className="hidden md:inline ml-2">{marked[currentQuestion.id] ? 'Ditandai Ragu' : 'Tandai Ragu'}</span>
+                                </button>
+
+                                {isTryout ? (
+                                    <div className={cn(
+                                        "px-2 py-1 md:px-4 md:py-1 rounded-full text-xs md:text-sm font-mono flex items-center gap-1.5 transition-all duration-300 border",
+                                        isPaused ? "bg-gray-500 text-white border-gray-600" :
+                                            timeLeftMs <= 60000 ? "bg-red-50 text-red-600 border-red-500 animate-pulse border-2 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]" :
+                                                timeLeftMs <= 300000 ? "bg-orange-50 text-orange-600 border-orange-500 border-2 shadow-[2px_2px_0px_0px_rgba(249,115,22,1)]" :
+                                                    "bg-blue-50 text-blue-700 border-blue-900 border-2 shadow-[2px_2px_0px_0px_rgba(30,58,138,1)]"
+                                    )}>
+                                        <Clock size={12} className="md:w-3.5 md:h-3.5" />
+                                        <span>{timeLeft}</span>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setIsPaused(!isPaused)
+                                            }}
+                                            className="ml-1 md:ml-2 hover:bg-black/10 rounded p-0.5"
+                                        >
+                                            {isPaused ? <Play size={10} /> : <Pause size={10} />}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="hidden md:flex px-4 py-1.5 bg-white border-2 border-gray-900 rounded-full text-xs md:text-sm font-handwriting font-bold items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <Clock size={14} />
+                                        <span>Latihan Santai</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                        <div className="prose dark:prose-invert max-w-none mb-6 md:mb-8 font-handwriting text-gray-900">
+                            <p className="text-xl md:text-2xl leading-relaxed font-bold">{currentQuestion.content}</p>
                         </div>
 
-                        {/* Right: Actions & Timer */}
-                        <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
+                        <div className="space-y-2 md:space-y-3">
+                            {currentQuestion.options.map((option, i) => {
+                                const isSelected = answers[currentQuestion.id] === option.id;
+                                return (
+                                    <div
+                                        key={option.id}
+                                        onClick={() => handleSelectOption(option.id)}
+                                        className={cn(
+                                            "p-3 md:p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden",
+                                            isSelected
+                                                ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] transform translate-x-[1px] translate-y-[1px]'
+                                                : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-[2px_2px_0px_0px_rgba(59,130,246,0.2)]'
+                                        )}
+                                    >
+                                        {/* Ink Highlighter Effect */}
+                                        {isSelected && (
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: '100%' }}
+                                                className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/30 -z-10"
+                                                style={{ originX: 0 }}
+                                            />
+                                        )}
+
+                                        <div className={cn(
+                                            "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-handwriting font-bold text-lg transition-colors",
+                                            isSelected
+                                                ? 'border-blue-600 bg-blue-600 text-white'
+                                                : 'border-gray-400 text-gray-400 group-hover:border-blue-400 group-hover:text-blue-400'
+                                        )}>
+                                            {String.fromCharCode(65 + i)}
+                                        </div>
+                                        <span className={cn(
+                                            "text-base md:text-lg leading-relaxed font-handwriting",
+                                            isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
+                                        )}>
+                                            {option.content}
+                                        </span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Mobile Navigation - Slimmed Down */}
+                        <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-300 flex justify-between items-center sm:hidden gap-3">
                             <button
-                                onClick={toggleMark}
-                                className={cn(
-                                    "flex items-center justify-center rounded-full border transition-colors",
-                                    "w-8 h-8 md:w-auto md:h-auto md:px-4 md:py-1.5", // Circle on mobile, Pill on desktop
-                                    marked[currentQuestion.id]
-                                        ? 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800'
-                                        : 'bg-background border-border text-muted-foreground hover:bg-secondary'
-                                )}
-                                title={marked[currentQuestion.id] ? 'Hilangkan tanda ragu' : 'Tandai ragu'}
+                                onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+                                disabled={currentIndex === 0}
+                                className="flex items-center justify-center w-12 h-12 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 disabled:opacity-50 transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             >
-                                <Flag size={14} className={cn(marked[currentQuestion.id] ? 'fill-current' : '')} />
-                                <span className="hidden md:inline ml-2">{marked[currentQuestion.id] ? 'Ditandai Ragu' : 'Tandai Ragu'}</span>
+                                <ChevronLeft size={24} />
                             </button>
 
-                            {isTryout ? (
-                                <div className={cn(
-                                    "px-2 py-1 md:px-4 md:py-1 rounded-full text-xs md:text-sm font-mono flex items-center gap-1.5 transition-all duration-300 border",
-                                    isPaused ? "bg-gray-500 text-white border-gray-600" :
-                                        timeLeftMs <= 60000 ? "bg-red-500 text-white border-red-600 animate-pulse" :
-                                            timeLeftMs <= 300000 ? "bg-orange-500 text-white border-orange-600" :
-                                                "bg-primary/10 text-primary border-primary/20"
-                                )}>
-                                    <Clock size={12} className="md:w-3.5 md:h-3.5" />
-                                    <span>{timeLeft}</span>
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            setIsPaused(!isPaused)
-                                        }}
-                                        className="ml-1 md:ml-2 hover:bg-black/10 rounded p-0.5"
-                                    >
-                                        {isPaused ? <Play size={10} /> : <Pause size={10} />}
-                                    </button>
-                                </div>
+                            {currentIndex === sortedQuestions.length - 1 ? (
+                                <button
+                                    onClick={onFinishClick}
+                                    disabled={finishing}
+                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                >
+                                    {finishing ? '...' : 'Selesai'}
+                                    <CheckCircle2 size={20} />
+                                </button>
                             ) : (
-                                <div className="hidden md:flex px-3 py-1 bg-background border border-border rounded-full text-xs md:text-sm font-mono items-center gap-2">
-                                    <Clock size={12} />
-                                    <span>Latihan</span>
-                                </div>
+                                <button
+                                    onClick={() => setCurrentIndex(prev => Math.min(sortedQuestions.length - 1, prev + 1))}
+                                    className="flex items-center justify-center w-12 h-12 bg-gray-900 text-white rounded-xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(30,58,138,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                >
+                                    <ChevronRight size={24} />
+                                </button>
                             )}
                         </div>
                     </div>
-                </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                    <div className="prose dark:prose-invert max-w-none mb-6 md:mb-8">
-                        <p className="text-base md:text-lg leading-relaxed">{currentQuestion.content}</p>
-                    </div>
-
-                    <div className="space-y-2 md:space-y-3">
-                        {currentQuestion.options.map((option, i) => (
-                            <div
-                                key={option.id}
-                                onClick={() => handleSelectOption(option.id)}
-                                className={`
-                                    p-3 md:p-4 rounded-lg border-2 cursor-pointer transition-all flex items-start gap-3
-                                    ${answers[currentQuestion.id] === option.id
-                                        ? 'border-primary bg-primary/5'
-                                        : 'border-border hover:border-primary/50 hover:bg-secondary/50'}
-                                `}
-                            >
-                                <div className={`
-                                    w-6 h-6 md:w-6 md:h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5
-                                    ${answers[currentQuestion.id] === option.id
-                                        ? 'border-primary bg-primary text-white'
-                                        : 'border-muted-foreground'}
-                                `}>
-                                    {answers[currentQuestion.id] === option.id && <div className="w-2 md:w-2.5 h-2 md:h-2.5 bg-white rounded-full" />}
-                                </div>
-                                <span className={`text-sm md:text-base leading-snug md:leading-normal ${answers[currentQuestion.id] === option.id ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>
-                                    <span className="font-bold mr-2 uppercase">{String.fromCharCode(65 + i)}.</span>
-                                    {option.content}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Navigation - Moved here for proximity */}
-                    <div className="mt-4 pt-4 border-t border-border flex justify-between items-center sm:hidden">
+                    {/* Footer Nav - Desktop Only - Styled */}
+                    <div className="hidden sm:flex p-4 border-t-2 border-dashed border-gray-300 justify-between items-center bg-white/50 backdrop-blur-sm">
                         <button
                             onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
                             disabled={currentIndex === 0}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-secondary disabled:opacity-50 transition"
+                            className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-handwriting font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                         >
                             <ChevronLeft size={20} />
                             Sebelumnya
@@ -531,15 +614,15 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                             <button
                                 onClick={onFinishClick}
                                 disabled={finishing}
-                                className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition shadow-lg shadow-primary/20"
+                                className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)]"
                             >
-                                {finishing ? 'Menyimpan...' : 'Selesai'}
-                                <CheckCircle2 size={18} />
+                                {finishing ? 'Menyimpan...' : 'Selesai & Hitung'}
+                                <CheckCircle2 size={20} />
                             </button>
                         ) : (
                             <button
                                 onClick={() => setCurrentIndex(prev => Math.min(sortedQuestions.length - 1, prev + 1))}
-                                className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg hover:opacity-90 transition"
+                                className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg hover:bg-gray-800 transition font-handwriting font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             >
                                 Selanjutnya
                                 <ChevronRight size={20} />
@@ -547,81 +630,61 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                         )}
                     </div>
                 </div>
-
-                {/* Footer Nav - Desktop Only */}
-                <div className="hidden sm:flex p-4 border-t border-border justify-between items-center bg-background">
-                    <button
-                        onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
-                        disabled={currentIndex === 0}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-secondary disabled:opacity-50 transition"
-                    >
-                        <ChevronLeft size={20} />
-                        Sebelumnya
-                    </button>
-
-                    {currentIndex === sortedQuestions.length - 1 ? (
-                        <button
-                            onClick={onFinishClick}
-                            disabled={finishing}
-                            className="flex items-center gap-2 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition shadow-lg shadow-primary/20"
-                        >
-                            {finishing ? 'Menyimpan...' : 'Selesai & Hitung Skor'}
-                            <CheckCircle2 size={18} />
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => setCurrentIndex(prev => Math.min(sortedQuestions.length - 1, prev + 1))}
-                            className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg hover:opacity-90 transition"
-                        >
-                            Selanjutnya
-                            <ChevronRight size={20} />
-                        </button>
-                    )}
-                </div>
             </div>
 
-            {/* RIGHT: Navigation Panel - Hidden on Mobile */}
-            <div className="hidden lg:flex w-full lg:w-80 shrink-0 flex-col bg-card border border-border rounded-xl h-full shadow-sm">
-                <div className="p-4 border-b border-border font-semibold flex items-center gap-2">
-                    <Map size={18} />
-                    Navigasi Soal
-                </div>
-                <div className="p-4 flex-1 overflow-y-auto">
-                    <div className="grid grid-cols-5 gap-2">
-                        {sortedQuestions.map((q, idx) => (
+            {/* RIGHT: Navigation Panel - Hidden on Mobile - Styled */}
+            <AnimatePresence>
+                {showNav && (
+                    <motion.div
+                        initial={{ x: 300, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: 300, opacity: 0 }}
+                        className="hidden lg:flex w-full lg:w-80 shrink-0 flex-col bg-white/90 border-2 border-gray-900 rounded-xl h-full shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] z-10 relative"
+                    >
+                        {/* Tape Effect */}
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/60 border border-white/40 shadow-sm rotate-2 z-20 pointer-events-none"></div>
+
+                        <div className="p-4 border-b-2 border-dashed border-gray-300 font-handwriting font-bold text-xl flex items-center gap-2 text-gray-800">
+                            <Map size={20} />
+                            Navigasi Soal
+                        </div>
+                        <div className="p-4 flex-1 overflow-y-auto">
+                            <div className="grid grid-cols-5 gap-2.5">
+                                {sortedQuestions.map((q, idx) => (
+                                    <button
+                                        key={q.id}
+                                        onClick={() => setCurrentIndex(idx)}
+                                        className={cn(
+                                            "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]",
+                                            currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-2 border-blue-600 z-10' : '',
+                                            marked[q.id]
+                                                ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
+                                                : answers[q.id]
+                                                    ? 'bg-blue-500 text-white border-blue-700'
+                                                    : 'bg-white text-gray-500 border-gray-300 hover:border-gray-500'
+                                        )}
+                                    >
+                                        {idx + 1}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="p-4 border-t-2 border-dashed border-gray-300 bg-gray-50/50 rounded-b-lg">
                             <button
-                                key={q.id}
-                                onClick={() => setCurrentIndex(idx)}
-                                className={`
-                                    aspect-square rounded-lg font-bold text-sm flex items-center justify-center transition-all border
-                                    ${currentIndex === idx ? 'ring-2 ring-primary ring-offset-2' : ''}
-                                    ${marked[q.id]
-                                        ? 'bg-yellow-500 text-white border-yellow-600 hover:bg-yellow-600'
-                                        : answers[q.id]
-                                            ? 'bg-primary text-white border-primary'
-                                            : 'bg-secondary text-muted-foreground border-transparent hover:bg-secondary/80'
-                                    }
-                                `}
+                                onClick={() => setShowExitModal(true)}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-handwriting font-bold transition-all text-base dashed"
                             >
-                                {idx + 1}
+                                <LogOut size={18} /> Keluar Latihan
                             </button>
-                        ))}
-                    </div>
-                </div>
-                <div className="p-4 border-t border-border">
-                    <button
-                        onClick={() => setShowExitModal(true)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-red-500/20 text-red-500 bg-red-500/10 hover:bg-red-500/20 font-bold transition-all text-sm"
-                    >
-                        <LogOut size={16} /> Keluar Latihan
-                    </button>
-                    <div className="mt-4 p-4 bg-secondary/20 text-xs text-muted-foreground space-y-1 rounded-lg">
-                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-primary"></div><span>Dijawab</span></div>
-                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div><span>Ragu-ragu</span></div>
-                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-secondary border border-muted-foreground/30"></div><span>Belum dijawab</span></div>
-                    </div>
-                </div>
-            </div>
+                            <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ragu-ragu</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div >
     )
 }

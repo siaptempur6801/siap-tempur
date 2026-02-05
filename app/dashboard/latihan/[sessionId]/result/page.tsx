@@ -11,13 +11,16 @@ import {
     BarChart3,
     RefreshCw,
     Play,
-    AlertTriangle
+    AlertTriangle,
+    Sparkles
 } from 'lucide-react'
 import ResultReviewClient from '@/components/practice/ResultReviewClient'
 import RetakeButton from '@/components/practice/RetakeButton'
 import ScrollToReviewButton from '@/components/practice/ScrollToReviewButton'
 import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
+import PaperBackground from '@/components/PaperBackground'
 import { getXPInfo } from '@/lib/dashboard'
+import { cn } from '@/lib/utils'
 
 export default async function PracticeResultPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const supabase = await createClient()
@@ -164,9 +167,9 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     // 5. Feedback Logic
     const getFeedback = () => {
-        if (mainStats.accuracy >= 80) return "Luar biasa! Kamu sudah siap untuk menaklukkan soal-soal SKD sesungguhnya. Pertahankan!"
-        if (mainStats.accuracy >= 60) return "Permulaan yang bagus. Ada beberapa materi yang perlu diperdalam lagi agar skor makin maksimal."
-        return "Jangan patah semangat! Perbanyak latihan soal dan pelajari pembahasan untuk meningkatkan pemahamanmu."
+        if (mainStats.accuracy >= 80) return "Luar biasa! Kamu sudah siap untuk menaklukkan soal-soal SKD sesungguhnya. Pertahankan! 🏆"
+        if (mainStats.accuracy >= 60) return "Permulaan yang bagus. Ada beberapa materi yang perlu diperdalam lagi agar skor makin maksimal. 💪"
+        return "Jangan patah semangat! Perbanyak latihan soal dan pelajari pembahasan untuk meningkatkan pemahamanmu. 🔥"
     }
 
     // --- UI HELPERS ---
@@ -178,27 +181,31 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
         const passColor = isPassed ? 'text-green-600' : 'text-red-500'
 
         return (
-            <div className="bg-card/50 border border-border p-4 rounded-xl flex flex-col gap-2 min-w-[140px] flex-1">
-                <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-muted-foreground uppercase">{type}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${isPassed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                        {isPassed ? 'Lulus' : 'Belum Lulus'}
+            <div className="bg-white border-2 border-gray-900 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group hover:scale-[1.02] transition-transform font-handwriting">
+                <PaperBackground />
+                <div className="flex justify-between items-center relative z-10">
+                    <span className="text-sm font-bold text-gray-800 uppercase tracking-widest">{type}</span>
+                    <span className={cn(
+                        "text-[10px] px-2.5 py-1 rounded-full font-bold border-2 rotate-3",
+                        isPassed ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"
+                    )}>
+                        {isPassed ? 'LULUS ✨' : 'BELUM LULUS'}
                     </span>
                 </div>
-                <div className="mt-1">
-                    <span className={`text-2xl font-bold ${passColor}`}>{score}</span>
-                    <span className="text-muted-foreground text-sm"> / {maxScore}</span>
+                <div className="mt-2 relative z-10">
+                    <span className={cn("text-4xl font-black font-sans", passColor)}>{score}</span>
+                    <span className="text-gray-400 text-lg font-sans"> / {maxScore}</span>
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] font-medium text-muted-foreground">
-                    <span>Passing Grade: <span className="text-foreground">{passingGrade}</span></span>
-                    <span>Benar: <span className="text-foreground">{correct}</span>/{total}</span>
+                <div className="flex flex-col gap-1 text-xs font-bold text-gray-500 relative z-10 font-sans">
+                    <div className="flex justify-between"><span>Passing Grade:</span> <span className="text-gray-900">{passingGrade}</span></div>
+                    <div className="flex justify-between"><span>Benar:</span> <span className="text-gray-900">{correct}/{total} Soal</span></div>
                 </div>
 
                 {/* Mini Progress Bar */}
-                <div className="w-full h-1.5 bg-secondary rounded-full mt-2 overflow-hidden">
+                <div className="w-full h-3 bg-gray-100 border-2 border-gray-900 rounded-full mt-2 overflow-hidden relative z-10">
                     <div
-                        className={`h-full rounded-full ${isPassed ? 'bg-green-500' : 'bg-red-500'}`}
+                        className={cn("h-full rounded-full border-r-2 border-gray-900 transition-all duration-1000", isPassed ? 'bg-green-500' : 'bg-red-500')}
                         style={{ width: `${Math.min(pct, 100)}%` }}
                     />
                 </div>
@@ -208,84 +215,87 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     return (
         <ResultXPWrapper xpInfo={xpInfo}>
-            <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-32">
+            <div className="max-w-5xl mx-auto p-3 sm:p-8 space-y-6 sm:space-y-8 pb-32 font-handwriting">
 
                 {/* 1. HERO SECTION */}
-                <div className="relative overflow-hidden rounded-2xl bg-card border border-border shadow-2xl">
-                    {/* Background Gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-primary/5 to-purple-600/5" />
-                    <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+                <div className="relative overflow-hidden rounded-3xl bg-[#fff9c4] border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                    <PaperBackground />
 
-                    <div className="relative p-6 md:p-10 flex flex-col items-center text-center">
-                        <div className="mb-2">
-                            <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-semibold uppercase tracking-wider">
-                                Hasil {isCombined ? 'Tryout SKD' : `Latihan ${singleType}`}
+                    <div className="relative p-6 sm:p-12 flex flex-col items-center text-center z-10">
+                        <div className="mb-4">
+                            <span className="px-4 py-1.5 rounded-full bg-gray-900 text-white text-sm font-bold uppercase tracking-widest rotate-2 inline-block">
+                                HASIL {isCombined ? 'TRYOUT SKD' : `LATIHAN ${singleType}`} 📝
                             </span>
                         </div>
 
-                        <h1 className="text-3xl md:text-4xl font-extrabold mb-1">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 text-gray-900 drop-shadow-sm">
                             {grade.text}
                         </h1>
-                        <p className="text-muted-foreground max-w-lg mx-auto mb-8">
-                            {getFeedback()}
+                        <p className="text-gray-700 text-lg md:text-xl max-w-2xl mx-auto mb-10 italic font-medium">
+                            "{getFeedback()}"
                         </p>
 
-                        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 w-full justify-center">
+                        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-20 w-full justify-center">
 
                             {/* SCORE CIRCLE */}
                             <div className="relative group">
-                                <div className={`w-40 h-40 md:w-48 md:h-48 rounded-full border-8 ${grade.border} flex flex-col items-center justify-center bg-card shadow-[0_0_30px_rgba(0,0,0,0.1)] dark:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-transform hover:scale-105`}>
+                                <div className={cn(
+                                    "w-44 h-44 sm:w-56 sm:h-56 rounded-full border-4 border-gray-900 flex flex-col items-center justify-center bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-transform hover:scale-105 relative",
+                                    grade.border
+                                )}>
                                     <div className="flex items-baseline gap-1">
-                                        <span className={`text-5xl md:text-6xl font-black ${grade.color} tracking-tight leading-none`}>
+                                        <span className={cn("text-7xl md:text-8xl font-black tracking-tighter leading-none font-sans", grade.color)}>
                                             {session.total_score}
                                         </span>
-                                        {!isCombined && singleType && (
-                                            <span className="text-lg md:text-xl font-bold text-muted-foreground/40">
-                                                /{singleType === 'TWK' ? 65 : singleType === 'TIU' ? 80 : 166}
-                                            </span>
-                                        )}
                                     </div>
-                                    <span className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-widest">Total Skor</span>
+                                    <span className="text-sm text-gray-500 font-bold mt-2 uppercase tracking-widest">Skor Akhir</span>
+
+                                    {/* Doodle around score */}
+                                    <div className="absolute -top-2 -right-2 opacity-20">
+                                        <Sparkles size={40} className="text-gray-900" />
+                                    </div>
                                 </div>
 
                                 {/* Grade Badge */}
-                                <div className={`absolute -right-2 -top-2 w-14 h-14 rounded-full ${grade.bg} ${grade.border} border-4 flex items-center justify-center text-2xl font-bold ${grade.color} shadow-lg rotate-12`}>
+                                <div className={cn(
+                                    "absolute -right-4 -top-4 w-20 h-20 rounded-xl border-4 border-gray-900 flex items-center justify-center text-4xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-12",
+                                    grade.bg, grade.color
+                                )}>
                                     {grade.label}
                                 </div>
                             </div>
 
-                            {/* STATS GRID */}
-                            <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
-                                <div className="bg-secondary/30 p-4 rounded-xl border border-secondary flex flex-col items-start min-w-[140px]">
-                                    <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase mb-1">
-                                        <Target size={14} /> Akurasi
+                            <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full md:w-auto">
+                                <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[140px] -rotate-1">
+                                    <div className="flex items-center gap-2 text-gray-500 text-[10px] sm:text-sm font-bold uppercase mb-0.5 sm:mb-1">
+                                        <Target size={14} className="text-blue-500 sm:w-4 sm:h-4" /> Akurasi
                                     </div>
-                                    <span className="text-2xl font-bold">{mainStats.accuracy}%</span>
-                                    <span className="text-[10px] text-muted-foreground">Persentase Kebenaran</span>
+                                    <span className="text-2xl sm:text-3xl font-black text-gray-900 font-sans">{mainStats.accuracy}%</span>
+                                    <span className="text-[10px] sm:text-xs text-gray-400 font-medium whitespace-nowrap">Banyak Benernya</span>
                                 </div>
 
-                                <div className="bg-secondary/30 p-4 rounded-xl border border-secondary flex flex-col items-start min-w-[140px]">
-                                    <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold uppercase mb-1">
-                                        <Clock size={14} /> Waktu
+                                <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[140px] rotate-1">
+                                    <div className="flex items-center gap-2 text-gray-500 text-[10px] sm:text-sm font-bold uppercase mb-0.5 sm:mb-1">
+                                        <Clock size={14} className="text-orange-500 sm:w-4 sm:h-4" /> Waktu
                                     </div>
-                                    <span className="text-2xl font-bold">{durationMinutes}<span className="text-sm font-normal text-muted-foreground">m</span> {durationSeconds}<span className="text-sm font-normal text-muted-foreground">d</span></span>
-                                    <span className="text-[10px] text-muted-foreground">Durasi Pengerjaan</span>
+                                    <span className="text-2xl sm:text-3xl font-black text-gray-900 font-sans">{durationMinutes}<span className="text-base sm:text-lg">m</span> {durationSeconds}<span className="text-base sm:text-lg">d</span></span>
+                                    <span className="text-[10px] sm:text-xs text-gray-400 font-medium whitespace-nowrap">Lama Mikirnya</span>
                                 </div>
 
-                                <div className="bg-secondary/30 p-4 rounded-xl border border-secondary flex flex-col items-start min-w-[140px]">
-                                    <div className="flex items-center gap-2 text-green-600 text-xs font-bold uppercase mb-1">
-                                        <CheckCircle2 size={14} /> Benar
+                                <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[140px] rotate-1">
+                                    <div className="flex items-center gap-2 text-green-600 text-[10px] sm:text-sm font-bold uppercase mb-0.5 sm:mb-1">
+                                        <CheckCircle2 size={14} className="sm:w-4 sm:h-4" /> Benar
                                     </div>
-                                    <span className="text-2xl font-bold text-green-600">{mainStats.correct}</span>
-                                    <span className="text-[10px] text-muted-foreground">Soal Terjawab Benar</span>
+                                    <span className="text-2xl sm:text-3xl font-black text-green-600 font-sans">{mainStats.correct}</span>
+                                    <span className="text-[10px] sm:text-xs text-gray-400 font-medium whitespace-nowrap">Berhasil HJ</span>
                                 </div>
 
-                                <div className="bg-secondary/30 p-4 rounded-xl border border-secondary flex flex-col items-start min-w-[140px]">
-                                    <div className="flex items-center gap-2 text-red-500 text-xs font-bold uppercase mb-1">
-                                        <XCircle size={14} /> Salah
+                                <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[140px] -rotate-1">
+                                    <div className="flex items-center gap-2 text-red-500 text-[10px] sm:text-sm font-bold uppercase mb-0.5 sm:mb-1">
+                                        <XCircle size={14} className="sm:w-4 sm:h-4" /> Salah
                                     </div>
-                                    <span className="text-2xl font-bold text-red-500">{mainStats.wrong}</span>
-                                    <span className="text-[10px] text-muted-foreground">Soal Salah / Kosong</span>
+                                    <span className="text-2xl sm:text-3xl font-black text-red-500 font-sans">{mainStats.wrong}</span>
+                                    <span className="text-[10px] sm:text-xs text-gray-400 font-medium whitespace-nowrap">Zonk / Skip</span>
                                 </div>
                             </div>
                         </div>
@@ -374,31 +384,46 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                         }
 
                         return (
-                            <div className={`bg-gradient-to-r ${allPassed ? 'from-green-500/10 to-blue-500/10 border-green-500/20' : 'from-orange-500/10 to-red-500/10 border-orange-500/20'} border rounded-xl p-6 flex items-start gap-4`}>
-                                <div className={`p-3 rounded-full shrink-0 ${bgIcon} ${typeColor}`}>
-                                    {allPassed ? <CheckCircle2 size={24} /> : <AlertTriangle size={24} />}
+                            <div className={cn(
+                                "border-2 rounded-2xl p-5 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
+                                allPassed ? 'bg-green-50 border-green-600' : 'bg-[#fff740] border-gray-900'
+                            )}>
+                                <PaperBackground />
+                                <div className={cn(
+                                    "p-3 rounded-full shrink-0 relative z-10 border-2 shadow-sm",
+                                    allPassed ? "bg-green-500 text-white border-green-700" : "bg-orange-500 text-white border-orange-700"
+                                )}>
+                                    {allPassed ? <CheckCircle2 size={24} className="sm:w-8 sm:h-8" /> : <AlertTriangle size={24} className="sm:w-8 sm:h-8" />}
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-lg mb-1">{title}</h3>
-                                    <div className="text-muted-foreground text-sm mb-4 leading-relaxed">
+                                <div className="relative z-10 text-center sm:text-left">
+                                    <h3 className="font-black text-xl sm:text-2xl mb-1 sm:mb-2 text-gray-900">{title}</h3>
+                                    <div className="text-gray-800 text-base sm:text-lg mb-4 sm:mb-6 leading-relaxed font-medium">
                                         {message}
                                     </div>
-                                    <Link href="/dashboard/latihan" className={`text-sm font-bold hover:underline flex items-center gap-1 ${typeColor}`}>
+                                    <Link href="/dashboard/latihan" className={cn(
+                                        "inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 font-black transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none",
+                                        allPassed ? "bg-green-600 text-white border-green-800" : "bg-gray-900 text-white border-black"
+                                    )}>
                                         {linkText.replace('Materi', 'Latihan')} &rarr;
                                     </Link>
                                 </div>
+                                {allPassed && (
+                                    <div className="absolute top-2 right-4 opacity-20 relative z-10">
+                                        <Sparkles size={60} className="text-green-700" />
+                                    </div>
+                                )}
                             </div>
                         )
                     })()
                 )}
 
                 {/* 4. ACTION BAR (Sticky Bottom or Inline) */}
-                <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-4 sm:pt-8 px-2 sm:px-0">
                     <Link
                         href="/dashboard/latihan"
-                        className="flex justify-center items-center gap-2 px-6 py-3 rounded-xl border border-border bg-card hover:bg-secondary/50 font-bold transition-all"
+                        className="flex justify-center items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-2 border-gray-900 bg-white hover:bg-gray-50 font-black text-lg sm:text-xl transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                     >
-                        <ArrowLeft size={18} /> Daftar Latihan
+                        <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> Daftar Latihan
                     </Link>
 
                     <RetakeButton isCombined={isCombined} singleType={singleType} />
@@ -408,9 +433,9 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
                 {/* 5. DETAILED ANSWER REVIEW (Existing Component) */}
                 <div id="review-section" className="pt-8 border-t border-border">
-                    <div className="flex items-center gap-2 mb-6">
-                        <div className="h-8 w-1 bg-primary rounded-full"></div>
-                        <h2 className="text-2xl font-bold">Pembahasan & Detail Jawaban</h2>
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="h-10 w-2 bg-gray-900 rounded-full rotate-3"></div>
+                        <h2 className="text-3xl font-black text-gray-900 uppercase tracking-widest">Pembahasan Lengkap</h2>
                     </div>
 
                     <ResultReviewClient answers={answers || []} />
