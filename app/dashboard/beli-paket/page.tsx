@@ -32,10 +32,10 @@ export default function BeliPaketPage() {
                 </div>
 
                 {/* Cards Grid - Single Column for Tablets, 4 Columns for Desktop */}
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-10 md:gap-12 w-full max-w-2xl xl:max-w-none items-stretch">
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 xl:gap-6 w-full max-w-xl xl:max-w-none items-stretch">
 
                     {/* PRODUK 1: UTBK Satuan */}
-                    <div className="relative bg-white p-6 md:p-10 border-2 border-gray-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col rounded-xl group min-h-[400px]">
+                    <div className="relative bg-white p-6 xl:p-8 border-2 border-gray-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col rounded-xl group">
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm rotate-1 group-hover:rotate-0 transition-transform"></div>
 
                         <h3 className="font-handwriting text-3xl font-bold text-gray-800 border-b-2 border-blue-50 pb-2 mb-4">
@@ -60,7 +60,7 @@ export default function BeliPaketPage() {
                     </div>
 
                     {/* PRODUK 2: UTBK Bundle (Highlight) */}
-                    <div className="relative bg-white p-6 md:p-10 border-2 border-blue-600 shadow-[8px_8px_0px_0px_rgba(37,99,235,0.1)] hover:shadow-[12px_12px_0px_0px_rgba(37,99,235,0.15)] transition-all duration-300 flex flex-col rounded-xl xl:scale-[1.05] z-10 group min-h-[400px]">
+                    <div className="relative bg-white p-6 xl:p-8 border-2 border-blue-600 shadow-[8px_8px_0px_0px_rgba(37,99,235,0.1)] hover:shadow-[12px_12px_0px_0px_rgba(37,99,235,0.15)] transition-all duration-300 flex flex-col rounded-xl xl:scale-[1.05] z-10 group">
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-28 h-8 bg-yellow-200/90 border-l border-r border-white/50 shadow-sm -rotate-2 group-hover:rotate-0 transition-transform"></div>
                         <div className="absolute top-2 right-2 text-red-600 font-handwriting text-xs md:text-sm font-bold border-2 border-red-600 px-3 py-1 rounded rotate-[-12deg] bg-white">BEST SELLER</div>
 
@@ -89,11 +89,11 @@ export default function BeliPaketPage() {
                     </div>
 
                     {/* PRODUK 3: CPNS Satuan */}
-                    <div className="relative bg-white p-6 md:p-10 border-2 border-gray-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col rounded-xl group min-h-[400px]">
+                    <div className="relative bg-white p-6 xl:p-8 border-2 border-gray-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col rounded-xl group">
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-101/80 border-l border-r border-white/50 shadow-sm rotate-2 group-hover:rotate-0 transition-transform"></div>
 
                         <h3 className="font-handwriting text-3xl font-bold text-gray-800 border-b-2 border-indigo-50 pb-2 mb-4">
-                            CPNS Satuan
+                            SKD Satuan
                         </h3>
 
                         <div className="mb-6 font-handwriting">
@@ -102,24 +102,24 @@ export default function BeliPaketPage() {
                         </div>
 
                         <div className="space-y-4 mb-8 font-handwriting text-gray-700 flex-grow text-lg md:text-xl">
-                            <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>TWK, TIU, TKP (110 Soal)</span></div>
+                            <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>TWK, TIU, TKP</span></div>
                             <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>100 Menit (Simulasi CAT)</span></div>
                             <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>Ranking Nasional</span></div>
                             <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>Analisis Passing Grade</span></div>
                         </div>
 
-                        <button onClick={() => handleBuy('CPNS Satuan')} className="w-full py-4 font-handwriting text-2xl font-bold bg-indigo-50 text-indigo-600 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
+                        <button onClick={() => handleBuy('SKD Satuan')} className="w-full py-4 font-handwriting text-2xl font-bold bg-indigo-50 text-indigo-600 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
                             Beli Sekarang
                         </button>
                     </div>
 
                     {/* PRODUK 4: CPNS Bundle */}
-                    <div className="relative bg-white p-6 md:p-10 border-2 border-indigo-600 shadow-[8px_8px_0px_0px_rgba(79,70,229,0.1)] hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.15)] transition-all duration-300 flex flex-col rounded-xl xl:scale-[1.05] z-10 group min-h-[400px]">
+                    <div className="relative bg-white p-6 xl:p-8 border-2 border-indigo-600 shadow-[8px_8px_0px_0px_rgba(79,70,229,0.1)] hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.15)] transition-all duration-300 flex flex-col rounded-xl xl:scale-[1.05] z-10 group">
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-28 h-8 bg-yellow-200/90 border-l border-r border-white/50 shadow-sm -rotate-1 group-hover:rotate-0 transition-transform"></div>
                         <div className="absolute top-2 right-2 text-red-600 font-handwriting text-xs md:text-sm font-bold border-2 border-red-600 px-3 py-1 rounded rotate-[-12deg] bg-white">BEST SELLER</div>
 
                         <h3 className="font-handwriting text-3xl md:text-4xl font-bold text-gray-800 border-b-2 border-indigo-100 pb-2 mb-4">
-                            CPNS Paket 3x
+                            SKD Paket 3x
                         </h3>
 
                         <div className="mb-2 font-handwriting">
@@ -131,13 +131,13 @@ export default function BeliPaketPage() {
                         </p>
 
                         <div className="space-y-4 mb-8 font-handwriting text-gray-700 flex-grow text-lg md:text-xl">
-                            <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>TWK, TIU, TKP (110 Soal)</span></div>
+                            <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>TWK, TIU, TKP</span></div>
                             <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>100 Menit (Simulasi CAT)</span></div>
                             <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>Ranking Nasional</span></div>
                             <div className="flex items-start gap-2.5"><CheckDoodle className="w-6 h-6 mt-1" /> <span>Analisis Passing Grade</span></div>
                         </div>
 
-                        <button onClick={() => handleBuy('CPNS Paket 3x')} className="w-full py-4 font-handwriting text-2xl md:text-3xl font-bold bg-indigo-600 text-white border-2 border-gray-900 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+                        <button onClick={() => handleBuy('SKD Paket 3x')} className="w-full py-4 font-handwriting text-2xl md:text-3xl font-bold bg-indigo-600 text-white border-2 border-gray-900 rounded-lg shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
                             Ambil Promo
                         </button>
                     </div>

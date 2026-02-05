@@ -78,7 +78,7 @@ export default function RegisterPage() {
 
                 <div className="text-center">
                     <h2 className="font-handwriting text-4xl font-bold tracking-tight text-gray-900">Buat Akun Baru</h2>
-                    <p className="mt-2 text-gray-600 font-handwriting text-xl">Mulai persiapan CPNS-mu hari ini.</p>
+                    <p className="mt-2 text-gray-600 font-handwriting text-xl">Mulai persiapan SKD-mu hari ini.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="mt-8 space-y-6">

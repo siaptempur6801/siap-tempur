@@ -268,8 +268,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <span className="text-4xl font-bold text-blue-600">Rp 25k</span>
                                 <span className="text-gray-500 text-lg">/ 3x Tryout</span>
                             </div>
-                            <p className="font-handwriting text-green-600 text-sm mb-4 bg-green-100 inline-flex px-2 transform -rotate-1 items-center gap-1">
-                                Hemat Rp 5k! <Sparkles className="w-4 h-4" />
+                            <p className="font-handwriting text-green-700 text-sm md:text-base mb-6 bg-green-100 inline-flex px-4 py-1.5 rounded-full items-center gap-2 w-fit shadow-sm">
+                                Hemat Rp 5k! <Sparkles className="w-5 h-5" />
                             </p>
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
@@ -303,7 +303,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
 
                             <h3 className="font-handwriting text-2xl font-bold text-gray-800 border-b-2 border-indigo-200 pb-2 mb-2">
-                                CPNS Satuan
+                                SKD Satuan
                             </h3>
 
                             <div className="mb-4 font-handwriting">
@@ -313,13 +313,13 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>TWK, TIU, TKP (110 Soal)</span>
+                                    <CheckDoodle /> <span>TWK, TIU, TKP</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>100 Menit (Tryout CAT)</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Ranking Nasional Real-time</span>
+                                    <CheckDoodle /> <span>Ranking Nasional</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>Analisis Passing Grade</span>
@@ -346,24 +346,24 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             </div>
 
                             <h3 className="font-handwriting text-2xl font-bold text-gray-800 border-b-2 border-indigo-200 pb-2 mb-2">
-                                CPNS Paket 3x
+                                SKD Paket 3x
                             </h3>
 
                             <div className="mb-1 font-handwriting">
                                 <span className="text-4xl font-bold text-indigo-600">Rp 25k</span>
                                 <span className="text-gray-500 text-lg">/ 3x Tryout</span>
                             </div>
-                            <p className="font-handwriting text-green-600 text-sm mb-4 bg-green-100 inline-flex px-2 transform rotate-1 items-center gap-1">Hemat Rp 5k! <Sparkles className="w-4 h-4" /></p>
+                            <p className="font-handwriting text-green-700 text-sm md:text-base mb-6 bg-green-100 inline-flex px-4 py-1.5 rounded-full items-center gap-2 w-fit shadow-sm">Hemat Rp 5k! <Sparkles className="w-5 h-5" /></p>
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>TWK, TIU, TKP (110 Soal)</span>
+                                    <CheckDoodle /> <span>TWK, TIU, TKP</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>100 Menit (Tryout CAT)</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Ranking Nasional Real-time</span>
+                                    <CheckDoodle /> <span>Ranking Nasional</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>Analisis Passing Grade</span>
@@ -402,7 +402,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         <div className="w-full md:w-80 bg-[#ff7eb9] p-6 shadow-md rotate-[3deg] font-handwriting text-xl text-gray-900 relative">
                             {/* Tape */}
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-20 h-6 bg-white/40 rotate-2"></div>
-                            <p className="mb-4">"Buat yang mau tes CPNS, latihan Time Management disini ngebantu banget. Soal TKP-nya menjebak abis!"</p>
+                            <p className="mb-4">"Buat yang mau tes SKD, latihan Time Management disini ngebantu banget. Soal TKP-nya menjebak abis!"</p>
                             <p className="font-bold text-right">- Sarah, Pejuang NIP</p>
                         </div>
 

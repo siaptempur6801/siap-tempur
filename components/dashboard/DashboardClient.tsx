@@ -97,7 +97,7 @@ const UTBK_SUBTESTS = [
 
 
 export default function DashboardClient({ data, greeting }: Props) {
-    const [activeTracker, setActiveTracker] = useState<'cpns' | 'utbk'>('cpns')
+    const [activeTracker, setActiveTracker] = useState<'skd' | 'utbk'>('skd')
 
     const containerVariants: Variants = {
         hidden: { opacity: 0 },
@@ -175,7 +175,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                                         <Building2 className="w-8 h-8 text-gray-900" />
                                     </div>
                                     <div>
-                                        <h3 className="text-2xl font-black text-gray-900 mb-1">Latihan CPNS</h3>
+                                        <h3 className="text-2xl font-black text-gray-900 mb-1">Latihan SKD</h3>
                                         <p className="text-gray-600">TWK • TIU • TKP</p>
                                     </div>
                                 </div>
@@ -227,16 +227,16 @@ export default function DashboardClient({ data, greeting }: Props) {
                             {/* Tab Buttons */}
                             <div className="flex gap-2 sm:ml-auto">
                                 <button
-                                    onClick={() => setActiveTracker('cpns')}
+                                    onClick={() => setActiveTracker('skd')}
                                     className={cn(
                                         "flex items-center gap-2 px-4 py-2 font-bold text-sm border-2 border-gray-900 transition-all",
-                                        activeTracker === 'cpns'
+                                        activeTracker === 'skd'
                                             ? "bg-indigo-500 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
                                             : "bg-white text-gray-700 hover:bg-gray-50"
                                     )}
                                 >
                                     <Building2 className="w-4 h-4" />
-                                    CPNS
+                                    SKD
                                 </button>
                                 <button
                                     onClick={() => setActiveTracker('utbk')}
@@ -254,7 +254,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                         </div>
 
                         {/* CPNS Progress */}
-                        {activeTracker === 'cpns' && (
+                        {activeTracker === 'skd' && (
                             <div className="flex flex-col gap-4 relative z-10 font-sans">
                                 {(['twk', 'tiu', 'tkp'] as const).map((type, idx) => {
                                     const progress = data.progress[type]

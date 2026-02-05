@@ -55,7 +55,7 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [statsFilter, setStatsFilter] = useState<'all' | 'tryout' | 'twk' | 'tiu' | 'tkp'>('tryout')
-    const [statsProgram, setStatsProgram] = useState<'cpns' | 'utbk'>('cpns')
+    const [statsProgram, setStatsProgram] = useState<'skd' | 'utbk'>('skd')
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -474,14 +474,14 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                     {/* Program Toggle - CPNS / UTBK - Notebook Style */}
                     <div className="flex gap-3 p-2 bg-gray-100 border-2 border-gray-900 w-fit shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                         <button
-                            onClick={() => setStatsProgram('cpns')}
-                            className={`flex items-center gap-2 px-5 py-2.5 text-base font-bold transition-all border-2 border-gray-900 ${statsProgram === 'cpns'
+                            onClick={() => setStatsProgram('skd')}
+                            className={`flex items-center gap-2 px-5 py-2.5 text-base font-bold transition-all border-2 border-gray-900 ${statsProgram === 'skd'
                                 ? 'bg-indigo-400 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
                                 : 'bg-white text-gray-600 hover:bg-gray-50'
                                 }`}
                         >
                             <Shield size={18} />
-                            CPNS
+                            SKD
                         </button>
                         <button
                             onClick={() => setStatsProgram('utbk')}
@@ -496,7 +496,7 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                     </div>
 
                     {/* CPNS Statistics */}
-                    {statsProgram === 'cpns' && (
+                    {statsProgram === 'skd' && (
                         <>
 
                             {(() => {

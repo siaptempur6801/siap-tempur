@@ -27,11 +27,11 @@ const bodyFont = Work_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Siap Tempur - Tryout CPNS & UTBK",
+    default: "Siap Tempur - Tryout SKD & UTBK",
     template: "%s - Siap Tempur"
   },
-  description: "Platform belajar CPNS & UTBK terbaik",
-  keywords: ["cpns", "skd", "twk", "tiu", "tkp", "cat bkn", "bimbel online", "tryout cpns", "utbk", "snbt"],
+  description: "Platform belajar SKD & UTBK terbaik",
+  keywords: ["skd", "twk", "tiu", "tkp", "cat bkn", "bimbel online", "tryout skd", "utbk", "snbt"],
   authors: [{ name: "Siap Tempur Team" }],
 };
 

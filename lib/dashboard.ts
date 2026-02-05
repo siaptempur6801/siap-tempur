@@ -51,7 +51,7 @@ export const LEVEL_THRESHOLDS = [
     { xp: 7000, level: 11, name: 'Elite Warrior' },      // ~70 sessions
     { xp: 10000, level: 12, name: 'Master SKD' },        // ~100 sessions
     { xp: 15000, level: 13, name: 'Grand Master' },      // ~150 sessions
-    { xp: 22000, level: 14, name: 'Legend CPNS' },       // ~220 sessions
+    { xp: 22000, level: 14, name: 'Legend SKD' },       // ~220 sessions
     { xp: 30000, level: 15, name: 'Dewa ASN' },          // Ultimate level
 ]
 

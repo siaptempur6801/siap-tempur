@@ -84,7 +84,7 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                             <Zap size={32} className="fill-current" />
                         </div>
 
-                        <h3 className="text-3xl font-bold mb-4 text-gray-900">Tryout SKD CPNS</h3>
+                        <h3 className="text-3xl font-bold mb-4 text-gray-900">Tryout SKD</h3>
 
                         {/* Quota Display */}
                         <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border-2 border-blue-200 border-dashed rounded-lg text-blue-800 font-bold transform -rotate-1 mx-auto">
