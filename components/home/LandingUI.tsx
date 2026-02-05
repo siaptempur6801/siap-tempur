@@ -47,7 +47,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
 
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-3xl font-handwriting font-bold text-gray-800 rotate-[-2deg] cursor-pointer hover:rotate-0 transition-transform pl-0 md:pl-0">
-                        Lulus<span className="text-blue-600 underline decoration-wavy decoration-2">Tryout</span>.
+                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                     </button>
 
                     {/* Desktop Navigation (Centered) */}
@@ -420,7 +420,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
             {/* --- FOOTER (Doodle Border) --- */}
             <footer className="bg-gray-900 text-white py-12 border-t-8 border-gray-800 border-dashed relative overflow-hidden">
                 <div className="container mx-auto px-4 text-center relative z-10">
-                    <h2 className="font-handwriting text-4xl font-bold mb-6">Siap Lulus Tahun Ini?</h2>
+                    <h2 className="font-handwriting text-4xl font-bold mb-6">Siap Tempur Tahun Ini?</h2>
                     <p className="text-gray-400 mb-8 max-w-lg mx-auto">Jangan cuma dibayangin, kerjain soalnya sekarang.</p>
 
                     <button
@@ -429,8 +429,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         Mulai Latihan Sekarang! 🚀
                     </button>
 
-                    <div className="mt-16 text-sm text-gray-500 font-mono">
-                        &copy; 2026 LulusTryout.
+                    <div className="mt-16 text-sm text-gray-400 font-handwriting text-lg">
+                        &copy; 2026 Siap Tempur.
                     </div>
                 </div>
             </footer>

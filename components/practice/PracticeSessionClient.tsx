@@ -415,7 +415,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                     onClick={handleConfirmFinish}
                                     className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
-                                    Siap Lulus!
+                                    Siap Tempur!
                                 </button>
                             </div>
                         </div>

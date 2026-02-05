@@ -57,15 +57,15 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                 <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
 
                 <div className="p-6 relative z-10">
-                    <Link href="/" className="text-3xl font-bold text-gray-800 rotate-[-2deg] block hover:scale-105 transition-transform">
-                        Lulus<span className="text-blue-600 underline decoration-wavy decoration-2">Tryout</span>.
+                    <Link href="/" className="text-3xl font-handwriting font-bold text-gray-800 rotate-[-2deg] block hover:scale-105 transition-transform">
+                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                     </Link>
                 </div>
 
                 <nav className="flex-1 px-4 space-y-3 relative z-10">
                     <NavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
                     <NavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
-                    <NavItem href="/dashboard/latihan" icon={<Trophy size={20} />} label="Tryout" badge="XP" />
+                    <NavItem href="/dashboard/latihan" icon={<Trophy size={20} />} label="Latihan" badge="XP" />
                     <NavItem href="/dashboard/profile" icon={<User size={20} />} label="Profil" />
                 </nav>
 
