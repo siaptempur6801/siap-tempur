@@ -99,11 +99,12 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                             </div>
                         </div>
                     </div>
-                    <SidebarSignoutButton signoutAction={signoutAction} />
+                    <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t-2 border-gray-900">
+                        <SidebarSignoutButton signoutAction={signoutAction} />
+                    </div>
                 </div>
             </aside>
 
-            {/* Main Content */}
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0 relative scrollbar-hide">
                 {/* Mobile Header (Hidden on Desktop) */}

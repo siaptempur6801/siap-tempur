@@ -347,15 +347,15 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                         let title = "Rekomendasi Belajar"
                         let message: React.ReactNode = ""
                         let linkText = "Pelajari Materi"
-                        let typeColor = "text-orange-600 dark:text-orange-400"
-                        let bgIcon = "bg-orange-100 dark:bg-orange-900/30"
+                        let typeColor = "text-orange-600"
+                        let bgIcon = "bg-orange-100"
 
                         if (allPassed) {
                             title = "Pertahankan Performamu!"
                             message = "Selamat! Kamu telah lulus passing grade di semua kategori. Pertahankan konsistensi latihanmu dan coba kerjakan soal-soal yang lebih sulit untuk memantapkan kesiapanmu."
                             linkText = "Lanjut Latihan Soal"
-                            typeColor = "text-green-600 dark:text-green-400"
-                            bgIcon = "bg-green-100 dark:bg-green-900/30"
+                            typeColor = "text-green-600"
+                            bgIcon = "bg-green-100"
                         } else if (failedSections.length === 3) {
                             title = "Perlu Evaluasi Menyeluruh"
                             message = (
@@ -364,8 +364,8 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                                 </>
                             )
                             linkText = "Mulai dari Materi Dasar"
-                            typeColor = "text-red-600 dark:text-red-400"
-                            bgIcon = "bg-red-100 dark:bg-red-900/30"
+                            typeColor = "text-red-600"
+                            bgIcon = "bg-red-100"
                         } else if (failedSections.length >= 1) {
                             // Build component array with separators
                             const comps = failedSections.map((s, idx) => {

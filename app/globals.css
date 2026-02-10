@@ -49,12 +49,7 @@
   --ring: #2563eb;
 }
 
-/* Light mode overrides if we add a toggle later (using .light class) */
-.light {
-  --background: #ffffff;
-  --foreground: #030712;
-  /* ... */
-}
+
 
 /* Custom Theme Scrollbar */
 ::-webkit-scrollbar {

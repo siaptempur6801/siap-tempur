@@ -194,6 +194,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                             </Link>
 
                             {/* UTBK Card */}
+                            {/* UTBK Card */}
                             <button
                                 onClick={() => toast.info('Materi UTBK sedang disiapkan! Nantikan segera ya pejuang UTBK. 💪')}
                                 className="group relative p-6 bg-gradient-to-br from-purple-100 to-purple-50 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all text-left w-full cursor-pointer"

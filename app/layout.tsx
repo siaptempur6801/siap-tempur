@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -65,8 +66,8 @@ export default function RootLayout({
           toastOptions={{
             className: 'font-handwriting border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-[#fdfbf7]',
             style: {
-              background: '#fdfbf7',
-              color: '#1f2937',
+              background: 'var(--background)',
+              color: 'var(--foreground)',
               fontFamily: 'var(--font-handwriting)',
             }
           }}

@@ -97,32 +97,41 @@ export default function PracticeClient({ quota, quotaUtbk }: PracticeClientProps
                             Tryout standar CAT BKN untuk CPNS & Sekolah Kedinasan. Pastikan kamu siap fokus selama 100 menit.
                         </p>
 
-                        <button
-                            onClick={handleStartTryout}
-                            disabled={loadingTryout}
-                            className={cn(
-                                "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
-                                "bg-blue-600 hover:bg-blue-700 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]",
-                                loadingTryout && "opacity-70 cursor-not-allowed",
-                                quota <= 0 && "bg-gray-400 hover:bg-gray-400 cursor-not-allowed hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0 hover:translate-y-0"
-                            )}
-                        >
-                            {loadingTryout ? (
-                                <>
-                                    <Loader2 className="animate-spin" size={24} />
-                                    Menyiapkan...
-                                </>
-                            ) : quota <= 0 ? (
-                                <>
-                                    Kuota Habis
-                                </>
-                            ) : (
-                                <>
-                                    Mulai Tryout SKD
-                                    <ArrowRight size={24} />
-                                </>
-                            )}
-                        </button>
+                        {quota <= 0 ? (
+                            <a
+                                href="/dashboard/beli-paket"
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
+                                    "bg-orange-500 hover:bg-orange-600 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]"
+                                )}
+                            >
+                                <Ticket size={24} />
+                                Beli Kuota
+                                <ArrowRight size={24} />
+                            </a>
+                        ) : (
+                            <button
+                                onClick={handleStartTryout}
+                                disabled={loadingTryout}
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
+                                    "bg-blue-600 hover:bg-blue-700 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]",
+                                    loadingTryout && "opacity-70 cursor-not-allowed"
+                                )}
+                            >
+                                {loadingTryout ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={24} />
+                                        Menyiapkan...
+                                    </>
+                                ) : (
+                                    <>
+                                        Mulai Tryout SKD
+                                        <ArrowRight size={24} />
+                                    </>
+                                )}
+                            </button>
+                        )}
 
                         <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-300 grid grid-cols-3 gap-2 text-[10px] md:text-sm font-bold text-gray-600">
                             <div className="flex flex-col items-center justify-center gap-1">
@@ -163,16 +172,30 @@ export default function PracticeClient({ quota, quotaUtbk }: PracticeClientProps
                             Tryout lengkap Potensi Kognitif, Penalaran Matematika, Literasi Bahasa. Siap masuk PTN Impian?
                         </p>
 
-                        <button
-                            onClick={() => toast.info("Segera Hadir!", { description: "Tryout UTBK sedang dalam tahap akhir pengembangan. Ditunggu ya! 🚀" })}
-                            className={cn(
-                                "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
-                                "bg-pink-600 hover:bg-pink-700 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]"
-                            )}
-                        >
-                            Mulai Tryout UTBK
-                            <ArrowRight size={24} />
-                        </button>
+                        {quotaUtbk <= 0 ? (
+                            <a
+                                href="/dashboard/beli-paket"
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
+                                    "bg-orange-500 hover:bg-orange-600 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]"
+                                )}
+                            >
+                                <Ticket size={24} />
+                                Beli Kuota
+                                <ArrowRight size={24} />
+                            </a>
+                        ) : (
+                            <button
+                                onClick={() => toast.info("Segera Hadir!", { description: "Tryout UTBK sedang dalam tahap akhir pengembangan. Ditunggu ya! 🚀" })}
+                                className={cn(
+                                    "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
+                                    "bg-pink-600 hover:bg-pink-700 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]"
+                                )}
+                            >
+                                Mulai Tryout UTBK
+                                <ArrowRight size={24} />
+                            </button>
+                        )}
 
                         <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-300 grid grid-cols-3 gap-2 text-[10px] md:text-sm font-bold text-gray-600">
                             <div className="flex flex-col items-center justify-center gap-1">

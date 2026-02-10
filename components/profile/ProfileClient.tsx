@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2, Sparkles } from 'lucide-react'
-import { updateProfileInfo, updatePassword } from '@/app/actions/profile'
+import { updateProfileInfo, updatePassword, updateNotificationSettings } from '@/app/actions/profile'
 import { signout } from '@/app/auth/actions'
 import { toast } from 'sonner'
 import { Patrick_Hand, Work_Sans } from 'next/font/google'
@@ -27,6 +27,12 @@ type Profile = {
     streak_count?: number
     tryout_quota?: number
     tryout_quota_utbk?: number
+    notification_settings?: {
+        emailNotifications: boolean
+        reminderNotifications: boolean
+        achievementNotifications: boolean
+        weeklyReport: boolean
+    }
 }
 
 type UserData = {
@@ -112,7 +118,7 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
 
     // Notification settings state
     const [showNotificationModal, setShowNotificationModal] = useState(false)
-    const [notificationSettings, setNotificationSettings] = useState({
+    const [notificationSettings, setNotificationSettings] = useState(initialProfile.notification_settings || {
         emailNotifications: true,
         reminderNotifications: true,
         achievementNotifications: true,
@@ -226,13 +232,20 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
 
     const handleSaveNotifications = async () => {
         setIsSavingNotifications(true)
-
-        // Simulate saving to database
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
-        setIsSavingNotifications(false)
-        toast.success('Pengaturan notifikasi berhasil disimpan!')
-        setShowNotificationModal(false)
+        try {
+            const result = await updateNotificationSettings(notificationSettings)
+            if (result.success) {
+                toast.success('Pengaturan notifikasi berhasil disimpan!')
+                setShowNotificationModal(false)
+                router.refresh()
+            } else {
+                toast.error(result.error || 'Gagal menyimpan pengaturan')
+            }
+        } catch (error) {
+            toast.error('Terjadi kesalahan')
+        } finally {
+            setIsSavingNotifications(false)
+        }
     }
 
     return (
@@ -507,7 +520,7 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                         <>
 
                             {(() => {
-                                const currentStats = statsData ? (statsData.all ? statsData[statsFilter] : statsData) : null
+                                const currentStats = (statsData && statsData.all) ? statsData[statsFilter] : null
 
                                 if (!currentStats || (statsData.all && !currentStats.summary.totalSessions && statsFilter !== 'all')) {
                                     // Empty state handling - Notebook Style
@@ -543,7 +556,7 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                                                 <h3 className="font-bold text-xl text-gray-900">💡 Insight Tryout</h3>
                                             </div>
                                             <div className="space-y-2">
-                                                {currentStats.insights.map((insight: string, idx: number) => (
+                                                {currentStats?.insights?.map((insight: string, idx: number) => (
                                                     <p key={idx} className="text-base text-gray-700 leading-relaxed">
                                                         • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>') }} />
                                                     </p>
@@ -705,7 +718,6 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                 </div>
             )}
 
-            {/* Notification Settings Modal */}
             {
                 showNotificationModal && (
                     <div
@@ -713,103 +725,108 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                         onClick={() => setShowNotificationModal(false)}
                     >
                         <div
-                            className="relative max-w-md w-full bg-card rounded-2xl p-6 border border-border"
+                            className="relative max-w-md w-full bg-[#fdfbf7] p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none rotate-1"
                             onClick={(e) => e.stopPropagation()}
                         >
+                            {/* Tape Effect */}
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
+
                             {/* Header */}
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center gap-2">
-                                    <Bell size={20} className="text-primary" />
-                                    <h3 className="text-xl font-bold">Pengaturan Notifikasi</h3>
+                            <div className="flex items-center justify-between mb-8 relative z-10">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-green-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <Bell size={24} className="text-gray-900" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold font-handwriting text-gray-900">Pengaturan Notifikasi</h3>
                                 </div>
                                 <button
                                     onClick={() => setShowNotificationModal(false)}
-                                    className="p-2 rounded-lg hover:bg-secondary transition"
+                                    className="p-2 hover:bg-red-100 transition border-2 border-transparent hover:border-gray-900 rounded-full"
                                 >
-                                    <X size={20} />
+                                    <X size={24} className="text-gray-900" />
                                 </button>
                             </div>
 
                             {/* Settings */}
-                            <div className="space-y-4">
+                            <div className="space-y-4 font-handwriting">
                                 {/* Email Notifications */}
-                                <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                <div className="flex items-center justify-between p-4 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <div className="flex-1">
-                                        <div className="font-medium mb-1">Email Notifikasi</div>
-                                        <div className="text-sm text-muted-foreground">Terima notifikasi melalui email</div>
+                                        <div className="font-bold text-lg text-gray-900 mb-1">Email Notifikasi</div>
+                                        <div className="text-base text-gray-600">Terima notifikasi melalui email</div>
                                     </div>
                                     <button
                                         onClick={() => setNotificationSettings(prev => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
-                                        className={`relative w-12 h-6 rounded-full transition ${notificationSettings.emailNotifications ? 'bg-primary' : 'bg-secondary'
+                                        className={`relative w-14 h-8 transition-colors border-2 border-gray-900 ${notificationSettings.emailNotifications ? 'bg-green-400' : 'bg-gray-200'
                                             }`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${notificationSettings.emailNotifications ? 'translate-x-6' : 'translate-x-0'
+                                        <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-gray-900 transition-transform ${notificationSettings.emailNotifications ? 'translate-x-6' : 'translate-x-0'
                                             }`} />
                                     </button>
                                 </div>
 
                                 {/* Reminder Notifications */}
-                                <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                <div className="flex items-center justify-between p-4 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <div className="flex-1">
-                                        <div className="font-medium mb-1">Pengingat Belajar</div>
-                                        <div className="text-sm text-muted-foreground">Ingatkan untuk belajar setiap hari</div>
+                                        <div className="font-bold text-lg text-gray-900 mb-1">Pengingat Belajar</div>
+                                        <div className="text-base text-gray-600">Ingatkan untuk belajar setiap hari</div>
                                     </div>
                                     <button
                                         onClick={() => setNotificationSettings(prev => ({ ...prev, reminderNotifications: !prev.reminderNotifications }))}
-                                        className={`relative w-12 h-6 rounded-full transition ${notificationSettings.reminderNotifications ? 'bg-primary' : 'bg-secondary'
+                                        className={`relative w-14 h-8 transition-colors border-2 border-gray-900 ${notificationSettings.reminderNotifications ? 'bg-green-400' : 'bg-gray-200'
                                             }`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${notificationSettings.reminderNotifications ? 'translate-x-6' : 'translate-x-0'
+                                        <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-gray-900 transition-transform ${notificationSettings.reminderNotifications ? 'translate-x-6' : 'translate-x-0'
                                             }`} />
                                     </button>
                                 </div>
 
                                 {/* Achievement Notifications */}
-                                <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                <div className="flex items-center justify-between p-4 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <div className="flex-1">
-                                        <div className="font-medium mb-1">Notifikasi Achievement</div>
-                                        <div className="text-sm text-muted-foreground">Dapatkan pemberitahuan pencapaian baru</div>
+                                        <div className="font-bold text-lg text-gray-900 mb-1">Notifikasi Achievement</div>
+                                        <div className="text-base text-gray-600">Dapatkan pemberitahuan pencapaian baru</div>
                                     </div>
                                     <button
                                         onClick={() => setNotificationSettings(prev => ({ ...prev, achievementNotifications: !prev.achievementNotifications }))}
-                                        className={`relative w-12 h-6 rounded-full transition ${notificationSettings.achievementNotifications ? 'bg-primary' : 'bg-secondary'
+                                        className={`relative w-14 h-8 transition-colors border-2 border-gray-900 ${notificationSettings.achievementNotifications ? 'bg-green-400' : 'bg-gray-200'
                                             }`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${notificationSettings.achievementNotifications ? 'translate-x-6' : 'translate-x-0'
+                                        <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-gray-900 transition-transform ${notificationSettings.achievementNotifications ? 'translate-x-6' : 'translate-x-0'
                                             }`} />
                                     </button>
                                 </div>
 
                                 {/* Weekly Report */}
-                                <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                                <div className="flex items-center justify-between p-4 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                     <div className="flex-1">
-                                        <div className="font-medium mb-1">Laporan Mingguan</div>
-                                        <div className="text-sm text-muted-foreground">Ringkasan progress belajar mingguan</div>
+                                        <div className="font-bold text-lg text-gray-900 mb-1">Laporan Mingguan</div>
+                                        <div className="text-base text-gray-600">Ringkasan progress belajar mingguan</div>
                                     </div>
                                     <button
                                         onClick={() => setNotificationSettings(prev => ({ ...prev, weeklyReport: !prev.weeklyReport }))}
-                                        className={`relative w-12 h-6 rounded-full transition ${notificationSettings.weeklyReport ? 'bg-primary' : 'bg-secondary'
+                                        className={`relative w-14 h-8 transition-colors border-2 border-gray-900 ${notificationSettings.weeklyReport ? 'bg-green-400' : 'bg-gray-200'
                                             }`}
                                     >
-                                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${notificationSettings.weeklyReport ? 'translate-x-6' : 'translate-x-0'
+                                        <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-gray-900 transition-transform ${notificationSettings.weeklyReport ? 'translate-x-6' : 'translate-x-0'
                                             }`} />
                                     </button>
                                 </div>
                             </div>
 
                             {/* Buttons */}
-                            <div className="flex gap-3 pt-6">
+                            <div className="flex gap-4 pt-8">
                                 <button
                                     onClick={handleSaveNotifications}
                                     disabled={isSavingNotifications}
-                                    className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 px-6 py-3 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-handwriting text-xl"
                                 >
                                     {isSavingNotifications ? 'Menyimpan...' : 'Simpan Pengaturan'}
                                 </button>
                                 <button
                                     onClick={() => setShowNotificationModal(false)}
                                     disabled={isSavingNotifications}
-                                    className="px-4 py-2.5 rounded-lg border border-border hover:bg-secondary transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-6 py-3 bg-white text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed font-handwriting text-xl"
                                 >
                                     Batal
                                 </button>
@@ -827,51 +844,59 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                         onClick={() => setShowPasswordModal(false)}
                     >
                         <div
-                            className="relative max-w-md w-full bg-card rounded-2xl p-6 border border-border"
+                            className="relative max-w-md w-full bg-[#fdfbf7] p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none -rotate-1"
                             onClick={(e) => e.stopPropagation()}
                         >
+                            {/* Tape Effect */}
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-blue-100/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
+
                             {/* Header */}
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-bold">Ubah Password</h3>
+                            <div className="flex items-center justify-between mb-8 relative z-10">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-yellow-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <Shield size={24} className="text-gray-900" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold font-handwriting text-gray-900">Ubah Password</h3>
+                                </div>
                                 <button
                                     onClick={() => setShowPasswordModal(false)}
-                                    className="p-2 rounded-lg hover:bg-secondary transition"
+                                    className="p-2 hover:bg-red-100 transition border-2 border-transparent hover:border-gray-900 rounded-full"
                                 >
-                                    <X size={20} />
+                                    <X size={24} className="text-gray-900" />
                                 </button>
                             </div>
 
                             {/* Form */}
-                            <div className="space-y-4">
+                            <div className="space-y-6 font-handwriting">
                                 <div>
-                                    <label className="text-sm text-muted-foreground mb-2 block">Password Baru</label>
+                                    <label className="text-lg font-bold text-gray-900 mb-2 block">Password Baru</label>
                                     <input
                                         type="password"
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
-                                        className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-3 border-2 border-gray-900 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg placeholder-gray-400"
                                         placeholder="Minimal 6 karakter"
                                         disabled={isChangingPassword}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="text-sm text-muted-foreground mb-2 block">Konfirmasi Password Baru</label>
+                                    <label className="text-lg font-bold text-gray-900 mb-2 block">Konfirmasi Password Baru</label>
                                     <input
                                         type="password"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-3 border-2 border-gray-900 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg placeholder-gray-400"
                                         placeholder="Ketik ulang password baru"
                                         disabled={isChangingPassword}
                                     />
                                 </div>
 
-                                <div className="flex gap-3 pt-4">
+                                <div className="flex gap-4 pt-4">
                                     <button
                                         onClick={handleChangePassword}
                                         disabled={isChangingPassword}
-                                        className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="flex-1 px-6 py-3 bg-blue-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-handwriting text-xl"
                                     >
                                         {isChangingPassword ? 'Mengubah...' : 'Ubah Password'}
                                     </button>
@@ -882,7 +907,7 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                                             setConfirmPassword('')
                                         }}
                                         disabled={isChangingPassword}
-                                        className="px-4 py-2.5 rounded-lg border border-border hover:bg-secondary transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="px-6 py-3 bg-white text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed font-handwriting text-xl"
                                     >
                                         Batal
                                     </button>
