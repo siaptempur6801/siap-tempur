@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Sparkles, AlertCircle } from 'lucide-react'
+import { Sparkles, AlertCircle, Flame, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import PaperBackground from '@/components/PaperBackground'
 import CheckDoodle from '@/components/CheckDoodle'
@@ -90,7 +90,7 @@ export default function BeliPaketPage() {
                     {/* PRODUK 3: SKD Paket 5x + PDF (BEST SELLER) */}
                     <div className="relative bg-[#ffffeb] p-6 xl:p-8 border-4 border-indigo-600 shadow-[10px_10px_0px_0px_rgba(79,70,229,0.15)] hover:shadow-[15px_15px_0px_0px_rgba(79,70,229,0.2)] transition-all duration-300 flex flex-col rounded-xl lg:scale-[1.08] z-10 group">
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-28 h-8 bg-yellow-300 border-l border-r border-white/50 shadow-sm rotate-2 group-hover:rotate-0 transition-transform"></div>
-                        <div className="absolute top-2 right-2 text-red-600 font-handwriting text-xs md:text-sm font-bold border-2 border-red-600 px-3 py-1 rounded rotate-[-12deg] bg-white animate-pulse">BEST SELLER 🔥</div>
+                        <div className="absolute top-2 right-2 text-red-600 font-handwriting text-xs md:text-sm font-bold border-2 border-red-600 px-3 py-1 rounded rotate-[-12deg] bg-white animate-pulse flex items-center gap-1">BEST SELLER <Flame className="w-3 h-3 fill-red-600" /></div>
 
                         <h3 className="font-handwriting text-3xl md:text-4xl font-bold text-gray-900 border-b-2 border-indigo-200 pb-2 mb-4">
                             SKD Paket 5x
@@ -124,7 +124,7 @@ export default function BeliPaketPage() {
                     <div className="inline-block bg-[#fff740] p-6 md:p-8 shadow-md rotate-1 font-handwriting text-xl sm:text-2xl max-w-4xl relative rounded-xl border-2 border-gray-900 overflow-hidden">
                         <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-500 shadow-sm z-10 border border-red-700"></div>
                         <p className="text-gray-900 leading-relaxed px-2 sm:px-4">
-                            <strong>Catatan Admin:</strong> Kalau bingung mau pilih yang mana, ambil yang <strong>Paket 3x</strong> aja. Lebih hemat dan bisa buat latihan berkali-kali sampai bosen (tapi jangan bosen deng, nanti gak lulus hehe). 👋🦾
+                            <strong>Catatan Admin:</strong> Kalau bingung mau pilih yang mana, ambil yang <strong>Paket 3x</strong> aja. Lebih hemat dan bisa buat latihan berkali-kali sampai bosen (tapi jangan bosen deng, nanti gak lulus hehe). <Zap className="w-4 h-4 inline text-yellow-600" />
                         </p>
                         {/* Doodle lines for extra notebook effect */}
                         <div className="absolute bottom-1 right-2 opacity-20">

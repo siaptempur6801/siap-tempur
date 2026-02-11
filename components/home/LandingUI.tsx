@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 
 import Link from "next/link";
-import { Target, Timer, BarChart3, ChevronDown, ArrowRight, HelpCircle, Sparkles, Menu, X, AlertCircle } from "lucide-react";
+import { Target, Timer, BarChart3, ChevronDown, ArrowRight, HelpCircle, Sparkles, Menu, X, AlertCircle, Flame, Rocket } from "lucide-react";
 import { toast } from 'sonner'
 import PaperBackground from "@/components/PaperBackground";
 import CheckDoodle from "@/components/CheckDoodle";
@@ -300,8 +300,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <div className="w-2 h-6 bg-gray-400/50 rounded-full"></div>
                             </div>
 
-                            <div className="absolute -top-4 right-4 bg-red-600 text-white font-handwriting text-sm font-bold px-4 py-1.5 -rotate-6 rounded shadow-lg animate-pulse">
-                                BEST SELLER 🔥
+                            <div className="absolute -top-4 right-4 bg-red-600 text-white font-handwriting text-sm font-bold px-4 py-1.5 -rotate-6 rounded shadow-lg animate-pulse flex items-center gap-1">
+                                BEST SELLER <Flame className="w-4 h-4 fill-current" />
                             </div>
 
                             <h3 className="font-handwriting text-3xl font-bold text-gray-900 border-b-2 border-indigo-300 pb-2 mb-4 flex items-center gap-2">
@@ -391,8 +391,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                     <button
                         onClick={() => user ? router.push("/dashboard") : router.push("/login")}
-                        className="px-10 py-3 font-handwriting text-2xl font-bold text-gray-900 bg-white rounded-md border-b-4 border-gray-400 active:border-b-0 active:translate-y-1 transition-all cursor-pointer">
-                        Lulus CPNS Sekarang! 🚀
+                        className="px-10 py-3 font-handwriting text-2xl font-bold text-gray-900 bg-white rounded-md border-b-4 border-gray-400 active:border-b-0 active:translate-y-1 transition-all cursor-pointer flex items-center justify-center gap-2 mx-auto">
+                        Lulus CPNS Sekarang! <Rocket className="w-6 h-6" />
                     </button>
 
                     <div className="mt-16 text-sm text-gray-400 font-handwriting text-lg">

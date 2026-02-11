@@ -12,6 +12,7 @@ import {
     AreaChart
 } from 'recharts'
 import { useState } from 'react'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 export default function TrendChart({
     data,
@@ -43,7 +44,9 @@ export default function TrendChart({
         <div className="flex flex-col h-full">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-900">📈 Trend Nilai</h3>
+                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <TrendingUp className="w-6 h-6" /> Trend Nilai
+                    </h3>
                     <p className="text-sm text-gray-600">
                         {viewMode === 'long' ? 'Progres skor total latihan' : 'Progres 10 latihan terakhir'}
                     </p>
@@ -80,11 +83,11 @@ export default function TrendChart({
                             : 'bg-gray-200 text-gray-700'
                         }`}>
                         {isUp ? (
-                            <>📈 +{currentPercentage}%</>
+                            <><TrendingUp className="w-4 h-4" /> +{currentPercentage}%</>
                         ) : currentDirection === 'down' ? (
-                            <>📉 -{currentPercentage}%</>
+                            <><TrendingDown className="w-4 h-4" /> -{currentPercentage}%</>
                         ) : (
-                            <>➡️ 0%</>
+                            <><Minus className="w-4 h-4" /> 0%</>
                         )}
                     </div>
                 </div>

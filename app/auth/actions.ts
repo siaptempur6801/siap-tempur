@@ -63,11 +63,33 @@ export async function signout() {
 export async function updatePassword(formData: FormData) {
     const supabase = await createClient()
     const password = formData.get('password') as string
+    const oldPassword = formData.get('oldPassword') as string
 
     if (!password || password.length < 6) {
-        return { error: 'Password too short' }
+        return { error: 'Password baru minimal 6 karakter' }
     }
 
+    if (!oldPassword) {
+        return { error: 'Password lama harus diisi' }
+    }
+
+    // 1. Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user || !user.email) {
+        return { error: 'User tidak ditemukan' }
+    }
+
+    // 2. Verify old password by signing in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: oldPassword
+    })
+
+    if (signInError) {
+        return { error: 'Password lama salah' }
+    }
+
+    // 3. Update password
     const { error } = await supabase.auth.updateUser({
         password: password
     })

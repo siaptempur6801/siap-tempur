@@ -99,6 +99,16 @@ export async function finishPractice(sessionId: string) {
         return { error: 'Failed to finish session' }
     }
 
+    if (error) {
+        console.error('Error finishing practice:', error)
+        return { error: 'Failed to finish session' }
+    }
+
+    // Leaderboard is now updated via pg_cron (Materialized View) every ~2-5 mins
+    // No need to trigger manual refresh here to save DB resources.
+
     revalidatePath(`/dashboard/latihan/${sessionId}/result`)
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/ranking')
     return { success: true }
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
+export const dynamic = 'force-dynamic'
 import { redirect } from 'next/navigation'
 import LeaderboardClient from '@/components/dashboard/LeaderboardClient'
 

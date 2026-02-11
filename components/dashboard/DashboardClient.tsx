@@ -18,7 +18,9 @@ import {
     Brain,
     User,
     GraduationCap,
-    Building2
+    Building2,
+    Rocket,
+    Ticket
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -44,6 +46,16 @@ interface DashboardData {
         tiu: { score: number; target: number; passed: boolean }
         tkp: { score: number; target: number; passed: boolean }
     }
+    leaderboard: Array<{
+        rank_pos: number
+        full_name: string
+        avatar_url: string | null
+        top_score: number
+    }>
+    nextTryout: {
+        name: string
+        daysLeft: number
+    } | null
 }
 
 interface Props {
@@ -120,7 +132,7 @@ export default function DashboardClient({ data, greeting }: Props) {
             {/* 1. HERO HEADER */}
             <motion.div variants={itemVariants} className="relative z-10">
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 mb-2">
-                    {greeting.greeting}, <span className="text-blue-600 underline decoration-wavy decoration-2">{data.user.name}</span>! ✏️
+                    {greeting.greeting}, <span className="text-blue-600 underline decoration-wavy decoration-2">{data.user.name}</span>!
                 </h1>
                 <p className="text-gray-600 text-xl font-medium">{greeting.message}</p>
             </motion.div>
@@ -141,28 +153,28 @@ export default function DashboardClient({ data, greeting }: Props) {
 
                     <div className="relative z-10">
                         {/* Status Bar */}
-                        <div className="flex flex-wrap items-center gap-4 mb-8">
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-green-300 border-2 border-gray-900 text-gray-900 text-sm font-bold uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform -rotate-1">
-                                🚀 Siap Tempur
+                        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 max-w-6xl mx-auto">
+                            <div className="flex items-center gap-4">
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-green-300 border-2 border-gray-900 text-gray-900 text-sm font-bold uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform -rotate-1">
+                                    <Rocket className="w-4 h-4 fill-current" /> Siap Tempur
+                                </div>
+
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-200 border-2 border-gray-900 text-gray-900 text-sm font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform rotate-1">
+                                    <Trophy className="w-4 h-4 text-yellow-700 fill-current" /> Rank: {data.stats.rank ? `#${data.stats.rank}` : '-'}
+                                </div>
                             </div>
 
-                            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-200 border-2 border-gray-900 text-gray-900 text-sm font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform rotate-1">
-                                🏆 Rank: {data.stats.rank ? `#${data.stats.rank}` : '-'}
-                            </div>
-
-                            <div className="flex-1 flex justify-end">
-                                <Link
-                                    href="/dashboard/beli-paket"
-                                    className="inline-flex items-center gap-3 px-4 py-2 bg-blue-100 border-2 border-gray-900 text-gray-900 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-sm group"
-                                >
-                                    🎫 <span className="text-xl text-blue-700">{data.user.tryoutQuota}</span> <span>Tiket Sisa</span>
-                                    <Sparkles className="w-4 h-4 text-blue-500 group-hover:animate-spin" />
-                                </Link>
-                            </div>
+                            <Link
+                                href="/dashboard/beli-paket"
+                                className="inline-flex items-center gap-3 px-4 py-2 bg-blue-100 border-2 border-gray-900 text-gray-900 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-sm group"
+                            >
+                                <Ticket className="w-5 h-5 text-blue-600 -rotate-12" /> <span className="text-xl text-blue-700">{data.user.tryoutQuota}</span> <span>Tiket Sisa</span>
+                                <Sparkles className="w-4 h-4 text-blue-500 group-hover:animate-spin" />
+                            </Link>
                         </div>
 
                         {/* Two Columns Layout for Primary Actions */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
                             {/* Main CTA: Latihan */}
                             <Link
                                 href="/dashboard/latihan"
@@ -375,6 +387,61 @@ export default function DashboardClient({ data, greeting }: Props) {
                         <Sparkles className="absolute -top-3 -right-3 w-8 h-8 text-blue-400 rotate-12 opacity-50" />
                         "Kunci kelulusan SKD adalah **konsistensi**. Luangkan waktu setiap hari untuk latihan!"
                     </div>
+
+                    {/* TOP RANKING PREVIEW - RESTORED FEATURE */}
+                    <motion.div
+                        variants={itemVariants}
+                        className="bg-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 relative"
+                    >
+                        {/* Tape decoration */}
+                        <div className="absolute -top-3 left-6 w-12 h-5 bg-blue-200/80 rotate-[-2deg] shadow-sm"></div>
+
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-bold text-xl flex items-center gap-2 text-gray-900">
+                                <Trophy className="text-yellow-500" size={20} />
+                                Top Pejuang
+                            </h4>
+                            <Link href="/dashboard/ranking" className="text-xs font-bold text-blue-600 hover:underline decoration-wavy">
+                                Lihat Semua
+                            </Link>
+                        </div>
+
+                        <div className="space-y-4">
+                            {data.leaderboard.map((entry, idx) => (
+                                <div key={idx} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-6 h-6 rounded-full border border-gray-900 flex items-center justify-center text-[10px] font-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
+                                            idx === 0 ? "bg-yellow-400" : idx === 1 ? "bg-gray-200" : idx === 2 ? "bg-orange-300" : "bg-white"
+                                        )}>
+                                            {entry.rank_pos}
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full border border-gray-400 overflow-hidden bg-gray-50">
+                                            {entry.avatar_url ? (
+                                                <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-400">
+                                                    {entry.full_name[0]?.toUpperCase() || '?'}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-sm font-bold text-gray-700 truncate max-w-[100px] md:max-w-[120px]">
+                                            {entry.full_name || 'Anonim'}
+                                        </span>
+                                    </div>
+                                    <div className="text-sm font-black text-gray-900">
+                                        {entry.top_score}
+                                    </div>
+                                </div>
+                            ))}
+
+                            {data.leaderboard.length === 0 && (
+                                <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
+                                    <p className="text-xs text-gray-400 italic">Belum ada data ranking</p>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
 
                 </motion.div>
             </div>

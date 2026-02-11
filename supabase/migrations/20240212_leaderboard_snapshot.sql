@@ -52,10 +52,10 @@ BEGIN
         WHERE status = 'completed'
         ORDER BY user_id, total_score DESC, end_time ASC
     )
-    SELECT 
+    SELECT
         ROW_NUMBER() OVER (ORDER BY total_score DESC, end_time ASC) as rank_pos,
         ubs.user_id,
-        p.full_name,
+        COALESCE(p.full_name, 'Pejuang SKD'),
         p.avatar_url,
         ubs.total_score,
         ubs.score_twk,
@@ -63,7 +63,7 @@ BEGIN
         ubs.score_tkp,
         now()
     FROM UserBestScores ubs
-    JOIN public.profiles p ON ubs.user_id = p.id
+    LEFT JOIN public.profiles p ON ubs.user_id = p.id
     ORDER BY ubs.total_score DESC, ubs.end_time ASC;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

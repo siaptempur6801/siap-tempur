@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileClient from '@/components/profile/ProfileClient'
 import { processStatistics, SessionData } from '@/lib/statistics'
+import { getLevel } from '@/lib/dashboard'
 
 export default async function ProfilePage() {
     const supabase = await createClient()
@@ -38,6 +39,10 @@ export default async function ProfilePage() {
     // 3. Process Statistics
     const statsData = processStatistics(rawSessions as unknown as SessionData[])
 
+    // 3.1 Calculate XP and Level
+    const totalXP = rawSessions?.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
+    const levelInfo = getLevel(totalXP)
+
     // 4. Fetch Transactions for Purchase History
     const { data: transactions } = await supabase
         .from('transactions')
@@ -67,18 +72,22 @@ export default async function ProfilePage() {
 
         return <ProfileClient
             profile={newProfile || { id: user.id, full_name: null, avatar_url: null, bio: null }}
-            user={{ email: user.email!, created_at: user.created_at! }}
+            user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
             statsData={statsData}
             transactions={transactions || []}
             usageSessions={usageSessions || []}
+            totalXP={totalXP}
+            level={levelInfo.level}
         />
     }
 
     return <ProfileClient
         profile={profile}
-        user={{ email: user.email!, created_at: user.created_at! }}
+        user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
         statsData={statsData}
         transactions={transactions || []}
         usageSessions={usageSessions || []}
+        totalXP={totalXP}
+        level={levelInfo.level}
     />
 }

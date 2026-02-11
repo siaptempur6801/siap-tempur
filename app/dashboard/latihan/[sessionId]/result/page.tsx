@@ -11,8 +11,12 @@ import {
     BarChart3,
     RefreshCw,
     Play,
+
     AlertTriangle,
-    Sparkles
+    Sparkles,
+    Flame,
+    ClipboardList,
+    Zap
 } from 'lucide-react'
 import ResultReviewClient from '@/components/practice/ResultReviewClient'
 import RetakeButton from '@/components/practice/RetakeButton'
@@ -191,9 +195,9 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     // 5. Feedback Logic
     const getFeedback = () => {
-        if (mainStats.accuracy >= 80) return "Luar biasa! Kamu sudah siap untuk menaklukkan soal-soal SKD sesungguhnya. Pertahankan! 🏆"
-        if (mainStats.accuracy >= 60) return "Permulaan yang bagus. Ada beberapa materi yang perlu diperdalam lagi agar skor makin maksimal. 💪"
-        return "Jangan patah semangat! Perbanyak latihan soal dan pelajari pembahasan untuk meningkatkan pemahamanmu. 🔥"
+        if (mainStats.accuracy >= 80) return <span>Luar biasa! Kamu sudah siap untuk menaklukkan soal-soal SKD sesungguhnya. Pertahankan! <Trophy className="inline-block w-5 h-5 text-yellow-500 align-text-bottom ml-1" /></span>
+        if (mainStats.accuracy >= 60) return <span>Permulaan yang bagus. Ada beberapa materi yang perlu diperdalam lagi agar skor makin maksimal. <Zap className="inline-block w-5 h-5 text-blue-500 align-text-bottom ml-1" /></span>
+        return <span>Jangan patah semangat! Perbanyak latihan soal dan pelajari pembahasan untuk meningkatkan pemahamanmu. <Flame className="inline-block w-5 h-5 text-orange-500 align-text-bottom ml-1" /></span>
     }
 
     // --- UI HELPERS ---
@@ -214,7 +218,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                         "text-[10px] px-2.5 py-1 rounded-full font-bold border-2 rotate-3",
                         isPassed ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"
                     )}>
-                        {isPassed ? 'LULUS ✨' : 'BELUM LULUS'}
+                        {isPassed ? <span className="inline-flex items-center gap-1">LULUS <Sparkles className="w-3 h-3" /></span> : 'BELUM LULUS'}
                     </span>
                 </div>
                 <div className="mt-2 relative z-10">
@@ -248,8 +252,8 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
                     <div className="relative p-6 sm:p-12 flex flex-col items-center text-center z-10">
                         <div className="mb-4">
-                            <span className="px-4 py-1.5 rounded-full bg-gray-900 text-white text-sm font-bold uppercase tracking-widest rotate-2 inline-block">
-                                HASIL {isCombined ? 'TRYOUT SKD' : `LATIHAN ${formatSubjectName(singleType || '')}`} 📝
+                            <span className="px-4 py-1.5 rounded-full bg-gray-900 text-white text-sm font-bold uppercase tracking-widest rotate-2 inline-flex items-center gap-1">
+                                HASIL {isCombined ? 'TRYOUT SKD' : `LATIHAN ${formatSubjectName(singleType || '')}`} <ClipboardList className="w-4 h-4" />
                             </span>
                         </div>
 

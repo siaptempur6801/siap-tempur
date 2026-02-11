@@ -35,6 +35,12 @@ interface DashboardData {
         name: string
         daysLeft: number
     } | null
+    leaderboard: Array<{
+        rank_pos: number
+        full_name: string
+        avatar_url: string | null
+        top_score: number
+    }>
 }
 
 // XP calculation: total_score from all completed sessions
@@ -97,7 +103,7 @@ export function getXPInfo(previousTotalXP: number, xpEarned: number) {
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
     // Fetch profile
     // Fetch data in parallel to resolve "waterfall" slowness
-    const [profileRes, sessionsRes, allSessionsRes, rankRes] = await Promise.all([
+    const [profileRes, sessionsRes, allSessionsRes, rankRes, topRankingsRes] = await Promise.all([
         supabase
             .from('profiles')
             .select('full_name, streak_count, tryout_quota') // Fetch SKD quota
@@ -119,7 +125,12 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .from('leaderboard_snapshot')
             .select('rank_pos')
             .eq('user_id', userId)
-            .maybeSingle()
+            .maybeSingle(),
+        supabase
+            .from('leaderboard_snapshot')
+            .select('rank_pos, full_name, avatar_url, top_score')
+            .order('rank_pos', { ascending: true })
+            .limit(3)
     ])
 
     const profile = profileRes.data
@@ -256,6 +267,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         },
         recommendations: recommendations.slice(0, 2),
         nextTryout: null, // Will be implemented when tryout scheduling exists
+        leaderboard: topRankingsRes.data || []
     }
 }
 
@@ -263,23 +275,23 @@ export function getGreeting(hour: number): { greeting: string; message: string }
     if (hour >= 4 && hour < 11) {
         return {
             greeting: 'Selamat Pagi',
-            message: 'Pagi yang sempurna untuk memulai belajar! ☀️',
+            message: 'Pagi yang sempurna untuk memulai belajar!',
         }
     }
     if (hour >= 11 && hour < 15) {
         return {
             greeting: 'Selamat Siang',
-            message: 'Semangat! Lanjutkan progres belajarmu. 💪',
+            message: 'Semangat! Lanjutkan progres belajarmu.',
         }
     }
     if (hour >= 15 && hour < 18) {
         return {
             greeting: 'Selamat Sore',
-            message: 'Waktu yang tepat untuk review materi. 📚',
+            message: 'Waktu yang tepat untuk review materi.',
         }
     }
     return {
         greeting: 'Selamat Malam',
-        message: 'Latihan sebelum tidur bisa memperkuat ingatan! 🌙',
+        message: 'Latihan sebelum tidur bisa memperkuat ingatan!',
     }
 }

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut, Highlighter } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut, Highlighter, Key, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -277,8 +277,8 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
                             <h3 className="text-3xl font-bold text-gray-900">Keluar Latihan?</h3>
 
-                            <p className="text-lg text-gray-700 font-medium">
-                                Progres latihan Anda saat ini akan hilang. Apakah Anda yakin ingin menyerah? 📝
+                            <p className="text-lg text-gray-700 font-medium flex items-center justify-center gap-2">
+                                Progres latihan Anda saat ini akan hilang. Apakah Anda yakin ingin menyerah?
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-4">
@@ -322,7 +322,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                 <div className="w-20 h-20 bg-orange-100 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 -rotate-3 shadow-md">
                                     <Clock className="w-12 h-12 text-orange-500" />
                                 </div>
-                                <h3 className="text-3xl font-bold mb-4 text-gray-900">Waktu Tipis! ⏳</h3>
+                                <h3 className="text-3xl font-bold mb-4 text-gray-900 flex items-center justify-center gap-2">Waktu Tipis! <Clock className="w-8 h-8 animate-pulse text-orange-600" /></h3>
                                 <p className="text-xl mb-8 text-gray-700 font-medium leading-relaxed">Waktu tersisa kurang dari 5 menit nih. Gas pol selesaikan semua soalnya!</p>
                                 <button
                                     onClick={() => setShowWarning5Min(false)}
@@ -358,7 +358,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                 <div className="w-24 h-24 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mx-auto mb-6 rotate-6 shadow-lg animate-pulse">
                                     <Clock className="w-14 h-14 text-red-600" />
                                 </div>
-                                <h3 className="text-4xl font-bold mb-4 text-red-600">DARURAT! 🚨</h3>
+                                <h3 className="text-4xl font-bold mb-4 text-red-600 flex items-center justify-center gap-2">DARURAT! <Clock className="w-10 h-10 animate-ping" /></h3>
                                 <p className="text-2xl mb-8 text-gray-800 font-bold leading-tight">Tinggal 1 menit lagi! Buruan klik Selesai sebelum auto-submit!</p>
                                 <button
                                     onClick={() => setShowWarning1Min(false)}
@@ -407,7 +407,9 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                 </div>
                             </div>
 
-                            <p className="text-lg text-gray-700 font-medium italic">"Jangan lupa cek lagi ya, teliti itu kunci kelulusan!" 🗝️✨</p>
+                            <p className="text-lg text-gray-700 font-medium italic flex items-center justify-center gap-2">
+                                "Jangan lupa cek lagi ya, teliti itu kunci kelulusan!" <Key className="w-5 h-5 text-yellow-600" /> <Sparkles className="w-5 h-5 text-blue-400" />
+                            </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-6">
                                 <button

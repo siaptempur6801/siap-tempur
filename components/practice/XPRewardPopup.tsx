@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Zap, Trophy, Star, Sparkles, X } from 'lucide-react'
+import { Zap, Trophy, Star, Sparkles, X, ArrowRight, Flame, Rocket, PartyPopper } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import PaperBackground from '@/components/PaperBackground'
 
@@ -148,7 +148,9 @@ export default function XPRewardPopup({
                                     <Zap className="w-10 h-10 text-gray-900 fill-current" />
                                 </motion.div>
 
-                                <h2 className="text-2xl font-bold text-gray-800 mb-2">XP Diraih! ✨</h2>
+                                <h2 className="text-2xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-2">
+                                    XP Diraih! <Sparkles className="w-6 h-6 text-yellow-500" />
+                                </h2>
 
                                 <motion.div
                                     className="text-7xl font-black text-gray-900 mb-2 font-sans tracking-tight"
@@ -186,9 +188,9 @@ export default function XPRewardPopup({
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         onClick={onClose}
-                                        className="mt-8 px-10 py-3 bg-blue-600 text-white border-2 border-gray-900 font-bold text-xl rounded-xl hover:bg-blue-700 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                        className="mt-8 px-10 py-3 bg-blue-600 text-white border-2 border-gray-900 font-bold text-xl rounded-xl hover:bg-blue-700 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-2 mx-auto"
                                     >
-                                        Lanjutkan ✨
+                                        Lanjutkan <ArrowRight className="w-6 h-6" />
                                     </motion.button>
                                 )}
                             </motion.div>
@@ -220,8 +222,8 @@ export default function XPRewardPopup({
                                     </div>
                                 </motion.div>
 
-                                <h2 className="text-4xl font-black text-orange-600 mb-2 drop-shadow-sm">
-                                    STREAK! 🔥
+                                <h2 className="text-4xl font-black text-orange-600 mb-2 drop-shadow-sm flex items-center justify-center gap-2">
+                                    STREAK! <Flame className="w-10 h-10 text-orange-500 fill-orange-500 animate-pulse" />
                                 </h2>
 
                                 <div className="text-7xl font-black text-gray-900 mb-2 font-sans tabular-nums">
@@ -229,7 +231,7 @@ export default function XPRewardPopup({
                                 </div>
 
                                 <p className="text-gray-700 text-xl font-bold bg-white/50 py-2 rounded-xl mb-6">
-                                    Makin gigih, makin deket <br />jadi ASN! 🦾
+                                    Makin gigih, makin deket <br />jadi ASN!
                                 </p>
 
                                 {animationDone && !leveledUp && (
@@ -237,9 +239,9 @@ export default function XPRewardPopup({
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         onClick={onClose}
-                                        className="mt-4 px-10 py-3 bg-orange-600 text-white border-2 border-gray-800 font-bold text-xl rounded-xl hover:bg-orange-700 transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                        className="mt-4 px-10 py-3 bg-orange-600 text-white border-2 border-gray-800 font-bold text-xl rounded-xl hover:bg-orange-700 transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-2 mx-auto"
                                     >
-                                        Goo! 🚀
+                                        Goo! <Rocket className="w-6 h-6" />
                                     </motion.button>
                                 )}
                             </motion.div>
@@ -283,9 +285,9 @@ export default function XPRewardPopup({
                                 <motion.h2
                                     animate={{ scale: [1, 1.05, 1] }}
                                     transition={{ duration: 0.5, repeat: Infinity }}
-                                    className="text-4xl font-black text-purple-700 mb-2 drop-shadow-sm"
+                                    className="text-4xl font-black text-purple-700 mb-2 drop-shadow-sm flex items-center justify-center gap-2"
                                 >
-                                    LEVEL UP! 🎉
+                                    LEVEL UP! <PartyPopper className="w-10 h-10 text-purple-500" />
                                 </motion.h2>
 
                                 <div className="flex items-center justify-center gap-6 my-6 bg-white/40 border-2 border-dashed border-gray-400 p-4 rounded-2xl">
@@ -312,8 +314,8 @@ export default function XPRewardPopup({
                                     </div>
                                 </div>
 
-                                <p className="text-gray-700 text-lg font-medium mb-8 leading-tight">
-                                    Gokil! Kamu baru saja naik ke level baru. Terus semangat ya! 💪⚡
+                                <p className="text-gray-700 text-lg font-medium mb-8 leading-tight flex items-center justify-center gap-2">
+                                    Gokil! Kamu baru saja naik ke level baru. Terus semangat ya! <Zap className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                                 </p>
 
                                 {/* Close button */}
@@ -322,9 +324,9 @@ export default function XPRewardPopup({
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5 }}
                                     onClick={onClose}
-                                    className="px-10 py-4 bg-purple-600 text-white border-2 border-gray-900 font-bold text-2xl rounded-2xl hover:bg-purple-700 transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="px-10 py-4 bg-purple-600 text-white border-2 border-gray-900 font-bold text-2xl rounded-2xl hover:bg-purple-700 transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-2 mx-auto"
                                 >
-                                    Gaskan Lagi! 🚀
+                                    Gaskan Lagi! <Rocket className="w-6 h-6" />
                                 </motion.button>
                             </motion.div>
                         )}

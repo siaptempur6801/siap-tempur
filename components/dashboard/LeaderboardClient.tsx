@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Trophy, Medal, Search, User, BarChart3 } from 'lucide-react'
+import { Trophy, Medal, Search, User, BarChart3, SearchX } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import PaperBackground from '@/components/PaperBackground'
@@ -170,8 +170,8 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
 
                         {filteredData.length === 0 && (
                             <div className="p-12 text-center flex flex-col items-center gap-4">
-                                <div className="w-16 h-16 bg-gray-50 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center grayscale text-3xl">
-                                    🤔
+                                <div className="w-16 h-16 bg-gray-50 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-gray-400">
+                                    <SearchX size={32} />
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold text-gray-900 mb-1">Nama Tidak Ditemukan</h3>

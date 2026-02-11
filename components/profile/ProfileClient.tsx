@@ -3,9 +3,10 @@
 import { useState, useTransition, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2, Sparkles } from 'lucide-react'
-import { updateProfileInfo, updatePassword, updateNotificationSettings } from '@/app/actions/profile'
-import { signout } from '@/app/auth/actions'
+import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2, Sparkles, Target, Flame, ClipboardList, Ticket, Rocket, Lightbulb, CreditCard, Coins, ShoppingCart, FileText, Settings, Lock, Trash2, BarChart3 } from 'lucide-react'
+import ImageCropper from '@/components/ui/ImageCropper'
+import { updateProfileInfo, updateNotificationSettings } from '@/app/actions/profile'
+import { signout, updatePassword } from '@/app/auth/actions'
 import { toast } from 'sonner'
 import { Patrick_Hand, Work_Sans } from 'next/font/google'
 
@@ -37,6 +38,7 @@ type Profile = {
 }
 
 type UserData = {
+    id: string
     email: string
     created_at: string
 }
@@ -69,13 +71,17 @@ export default function ProfileClient({
     user,
     statsData,
     transactions,
-    usageSessions
+    usageSessions,
+    totalXP,
+    level
 }: {
     profile: Profile,
     user: UserData,
     statsData: any,
     transactions: Transaction[],
-    usageSessions: UsageSession[]
+    usageSessions: UsageSession[],
+    totalXP: number,
+    level: number
 }) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<'profile' | 'stats' | 'history' | 'settings'>('profile')
@@ -91,30 +97,48 @@ export default function ProfileClient({
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [statsFilter, setStatsFilter] = useState<'all' | 'tryout' | 'twk' | 'tiu' | 'tkp'>('tryout')
 
+    const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-
-        // Limit file size (e.g., 2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error('Ukuran file maksimal 2MB')
+        console.log('File input changed')
+        if (!e.target.files || e.target.files.length === 0) {
+            console.log('No files selected')
             return
         }
 
-        setIsUploading(true)
-        const supabase = createClient()
+        const file = e.target.files[0]
+        console.log('File selected:', file.name, file.size)
 
+        const reader = new FileReader()
+        reader.addEventListener('load', () => {
+            console.log('File reader loaded')
+            setSelectedImage(reader.result?.toString() || null)
+        })
+        reader.readAsDataURL(file)
+        e.target.value = '' // Reset input
+    }
+
+    const onCropComplete = async (croppedBlob: Blob) => {
+        console.log('Crop complete, blob size:', croppedBlob.size)
         try {
-            const fileExt = file.name.split('.').pop()
-            const fileName = `${user.email?.replace('@', '_')}_${Math.random()}.${fileExt}`
+            setIsUploading(true)
+            setSelectedImage(null) // Close cropper
+
+            const fileExt = 'jpg'
+            const fileName = `${user.id}-${Math.random()}.${fileExt}`
             const filePath = `${fileName}`
 
+            const supabase = createClient()
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, file)
+                .upload(filePath, croppedBlob, {
+                    upsert: true,
+                    contentType: 'image/jpeg'
+                })
 
-            if (uploadError) throw uploadError
+            if (uploadError) {
+                throw uploadError
+            }
 
             const { data: { publicUrl } } = supabase.storage
                 .from('avatars')
@@ -125,13 +149,13 @@ export default function ProfileClient({
             if (result.success) {
                 setProfile({ ...profile, avatar_url: publicUrl })
                 toast.success('Foto profil berhasil diperbarui!')
-                router.refresh() // Refresh layout to update sidebar
+                router.refresh()
             } else {
                 toast.error('Gagal memperbarui database')
             }
         } catch (error: any) {
             console.error('Upload error:', error)
-            toast.error('Gagal mengupload foto. Pastikan format sesuai.')
+            toast.error('Gagal mengupload foto.')
         } finally {
             setIsUploading(false)
         }
@@ -139,7 +163,7 @@ export default function ProfileClient({
 
     // Password change state
     const [showPasswordModal, setShowPasswordModal] = useState(false)
-    const [currentPassword, setCurrentPassword] = useState('')
+    const [oldPassword, setOldPassword] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [isChangingPassword, setIsChangingPassword] = useState(false)
@@ -170,22 +194,22 @@ export default function ProfileClient({
         { id: 'settings', label: 'Pengaturan', icon: <Shield size={18} /> }
     ] as const
 
-    // Mock data - replace with real data later
+    // Real data from props
     const stats = {
-        totalPractice: 24,
-        totalTryout: 5,
-        avgScore: 78,
-        studyStreak: 7,
-        totalXP: 1250,
-        level: 5,
-        achievements: 12
+        totalPractice: statsData.all?.summary.totalSessions || 0,
+        totalTryout: statsData.tryout?.summary.totalSessions || 0,
+        avgScore: statsData.all?.summary.avgScore || 0,
+        studyStreak: profile.streak_count || 0,
+        totalXP: totalXP,
+        level: level,
+        achievements: 4 // Keep this for now or calculate from actual data
     }
 
     const achievements = [
-        { id: 1, name: 'First Step', desc: 'Selesaikan latihan pertama', icon: '🎯', unlocked: true },
-        { id: 2, name: 'Speed Demon', desc: 'Jawab 10 soal < 30 detik', icon: '⚡', unlocked: true },
-        { id: 3, name: 'Perfect Score', desc: 'Dapatkan nilai 100', icon: '💯', unlocked: false },
-        { id: 4, name: 'Week Warrior', desc: 'Belajar 7 hari berturut', icon: '🔥', unlocked: true },
+        { id: 1, name: 'First Step', desc: 'Selesaikan latihan pertama', icon: <Target className="w-6 h-6 text-blue-500" />, unlocked: true },
+        { id: 2, name: 'Speed Demon', desc: 'Jawab 10 soal < 30 detik', icon: <Zap className="w-6 h-6 text-yellow-500" />, unlocked: true },
+        { id: 3, name: 'Perfect Score', desc: 'Dapatkan nilai 100', icon: <Award className="w-6 h-6 text-purple-500" />, unlocked: false },
+        { id: 4, name: 'Week Warrior', desc: 'Belajar 7 hari berturut', icon: <Flame className="w-6 h-6 text-orange-500" />, unlocked: true },
     ]
 
     const handleSave = async () => {
@@ -228,16 +252,25 @@ export default function ProfileClient({
             return
         }
 
+        if (!oldPassword) {
+            toast.error('Harap isi password lama')
+            return
+        }
+
         setIsChangingPassword(true)
 
-        const result = await updatePassword({ newPassword })
+        const formData = new FormData()
+        formData.append('password', newPassword)
+        formData.append('oldPassword', oldPassword)
+
+        const result = await updatePassword(formData)
 
         setIsChangingPassword(false)
 
         if (result.success) {
             toast.success('Password berhasil diubah! Silakan login kembali.')
             setShowPasswordModal(false)
-            setCurrentPassword('')
+            setOldPassword('')
             setNewPassword('')
             setConfirmPassword('')
 
@@ -273,9 +306,12 @@ export default function ProfileClient({
         <div className={`${handwriting.variable} ${bodyFont.variable} font-handwriting space-y-6`}>
             {/* Header with Tabs - Notebook Style */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="transform -rotate-1">
-                    <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">📋 Profil Saya</h2>
-                    <p className="text-lg text-gray-600">Kelola akun dan lihat progress belajar kamu</p>
+                <div className="transform -rotate-1 flex items-center gap-3">
+                    <ClipboardList className="w-8 h-8 md:w-10 md:h-10 text-gray-900" />
+                    <div>
+                        <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Profil Saya</h2>
+                        <p className="text-lg text-gray-600">Kelola akun dan lihat progress belajar kamu</p>
+                    </div>
                 </div>
             </div>
 
@@ -448,7 +484,7 @@ export default function ProfileClient({
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-yellow-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="text-3xl">🎫</span>
+                                    <Ticket className="w-8 h-8 text-gray-900" />
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-xl text-gray-900">Kuota Tryout</h4>
@@ -457,15 +493,13 @@ export default function ProfileClient({
                                     </p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <div className="flex gap-4">
-                                    <div className="text-center px-4 py-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                        <div className="text-2xl font-bold text-green-600">{profile.tryout_quota ?? 0}</div>
-                                        <div className="text-xs text-gray-600 font-bold uppercase">Token SKD</div>
-                                    </div>
+                            <div className="flex items-stretch gap-4">
+                                <div className="text-center px-6 py-3 bg-white border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] min-w-[120px] flex flex-col justify-center">
+                                    <div className="text-2xl font-bold text-green-600 leading-none mb-1">{profile.tryout_quota ?? 0}</div>
+                                    <div className="text-[10px] text-gray-600 font-extrabold uppercase tracking-tight">Token SKD</div>
                                 </div>
 
-                                <Link href="/dashboard/beli-paket" className="px-5 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                <Link href="/dashboard/beli-paket" className="px-6 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center">
                                     + Beli Kuota
                                 </Link>
                             </div>
@@ -480,7 +514,7 @@ export default function ProfileClient({
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="font-bold text-xl flex items-center gap-2 text-gray-900">
                                 <Award className="text-pink-500" size={24} />
-                                🏆 Achievements
+                                Achievements
                             </h4>
                             <span className="px-3 py-1 bg-pink-300 text-gray-900 font-bold border-2 border-gray-900 text-sm">
                                 {achievements.filter(a => a.unlocked).length}/{achievements.length}
@@ -495,7 +529,7 @@ export default function ProfileClient({
                                         : 'border-gray-300 bg-gray-100 opacity-60'
                                         } ${idx % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}
                                 >
-                                    <div className="text-4xl mb-2">{ach.icon}</div>
+                                    <div className="flex justify-center mb-2">{ach.icon}</div>
                                     <div className="font-bold text-base mb-1 text-gray-900">{ach.name}</div>
                                     <div className="text-sm text-gray-600">{ach.desc}</div>
                                 </div>
@@ -526,12 +560,14 @@ export default function ProfileClient({
                                         <div className="w-20 h-20 bg-blue-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                             <TrendingUp className="w-10 h-10 text-blue-700" />
                                         </div>
-                                        <h3 className="text-2xl font-bold mb-2 text-gray-900">📊 Belum Ada Data</h3>
+                                        <h3 className="text-2xl font-bold mb-2 text-gray-900 flex items-center gap-2">
+                                            <BarChart3 className="w-6 h-6" /> Belum Ada Data
+                                        </h3>
                                         <p className="text-lg text-gray-600 mb-6 max-w-md">
                                             Kamu belum menyelesaikan sesi tryout apapun. Ayo mulai latihan!
                                         </p>
-                                        <Link href="/dashboard/latihan" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
-                                            Mulai Tryout 🚀
+                                        <Link href="/dashboard/latihan" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2">
+                                            Mulai Tryout <Rocket className="w-4 h-4" />
                                         </Link>
                                     </div>
                                 )
@@ -549,7 +585,7 @@ export default function ProfileClient({
                                             <div className="p-2 bg-purple-300 border-2 border-gray-900">
                                                 <Sparkles className="text-purple-700 w-5 h-5" />
                                             </div>
-                                            <h3 className="font-bold text-xl text-gray-900">💡 Insight Tryout</h3>
+                                            <h3 className="font-bold text-xl text-gray-900">Insight Tryout</h3>
                                         </div>
                                         <div className="space-y-2">
                                             {currentStats?.insights?.map((insight: string, idx: number) => (
@@ -611,7 +647,9 @@ export default function ProfileClient({
                         {/* Tape decoration */}
                         <div className="absolute -top-3 left-8 w-14 h-5 bg-green-200/80 rotate-[-2deg] shadow-sm"></div>
 
-                        <h4 className="font-bold text-xl mb-6 text-gray-900">💳 Riwayat Pembelian Kuota</h4>
+                        <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
+                            <CreditCard className="w-6 h-6" /> Riwayat Pembelian Kuota
+                        </h4>
 
                         {transactions.length > 0 ? (
                             <div className="space-y-3">
@@ -619,7 +657,7 @@ export default function ProfileClient({
                                     <div key={tx.id} className="flex items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 bg-blue-100 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                                <span className="text-xl">💰</span>
+                                                <Coins className="w-6 h-6 text-gray-900" />
                                             </div>
                                             <div>
                                                 <div className="font-bold text-base text-gray-900">{tx.package_name}</div>
@@ -641,7 +679,7 @@ export default function ProfileClient({
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
                                 <div className="w-16 h-16 bg-green-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="text-3xl">🛒</span>
+                                    <ShoppingCart className="w-8 h-8 text-gray-900" />
                                 </div>
                                 <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
                                 <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
@@ -657,7 +695,9 @@ export default function ProfileClient({
                         {/* Tape decoration */}
                         <div className="absolute -top-3 right-8 w-14 h-5 bg-orange-200/80 rotate-[2deg] shadow-sm"></div>
 
-                        <h4 className="font-bold text-xl mb-6 text-gray-900">🎫 Riwayat Pemakaian Kuota</h4>
+                        <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
+                            <Ticket className="w-6 h-6" /> Riwayat Pemakaian Kuota
+                        </h4>
 
                         {/* Show usage from usageSessions */}
                         {usageSessions.length > 0 ? (
@@ -666,7 +706,7 @@ export default function ProfileClient({
                                     <div key={session.id} className="flex items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 bg-orange-200 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                                <span className="text-xl">📝</span>
+                                                <FileText className="w-6 h-6 text-gray-900" />
                                             </div>
                                             <div>
                                                 <div className="font-bold text-base text-gray-900">
@@ -686,7 +726,7 @@ export default function ProfileClient({
                         ) : (
                             <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
                                 <div className="w-16 h-16 bg-orange-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <span className="text-3xl">📋</span>
+                                    <ClipboardList className="w-8 h-8 text-gray-900" />
                                 </div>
                                 <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pemakaian</p>
                                 <p className="text-sm text-gray-500">Riwayat pemakaian kuota akan muncul di sini</p>
@@ -703,24 +743,32 @@ export default function ProfileClient({
                         {/* Tape decoration */}
                         <div className="absolute -top-3 right-8 w-14 h-5 bg-purple-200/80 rotate-[3deg] shadow-sm"></div>
 
-                        <h4 className="font-bold text-xl mb-6 text-gray-900">⚙️ Pengaturan Akun</h4>
+                        <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
+                            <Settings className="w-6 h-6" /> Pengaturan Akun
+                        </h4>
                         <div className="space-y-4">
                             <button
                                 onClick={() => setShowPasswordModal(true)}
                                 className="w-full text-left p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all group"
                             >
-                                <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-blue-600">🔐 Ubah Password</div>
+                                <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-blue-600 flex items-center gap-2">
+                                    <Lock className="w-4 h-4" /> Ubah Password
+                                </div>
                                 <div className="text-sm text-gray-600">Update password akun Anda</div>
                             </button>
                             <button
                                 onClick={() => setShowNotificationModal(true)}
                                 className="w-full text-left p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all group"
                             >
-                                <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-green-600">🔔 Notifikasi</div>
+                                <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-green-600 flex items-center gap-2">
+                                    <Bell className="w-4 h-4" /> Notifikasi
+                                </div>
                                 <div className="text-sm text-gray-600">Atur preferensi notifikasi</div>
                             </button>
                             <button className="w-full text-left p-4 bg-red-50 border-2 border-red-300 hover:border-red-600 hover:shadow-[2px_2px_0px_0px_rgba(220,38,38,1)] transition-all group">
-                                <div className="font-bold text-base mb-1 text-red-600">🗑️ Hapus Akun</div>
+                                <div className="font-bold text-base mb-1 text-red-600 flex items-center gap-2">
+                                    <Trash2 className="w-4 h-4" /> Hapus Akun
+                                </div>
                                 <div className="text-sm text-red-400">Hapus akun dan semua data Anda</div>
                             </button>
                         </div>
@@ -879,6 +927,18 @@ export default function ProfileClient({
                             {/* Form */}
                             <div className="space-y-6 font-handwriting">
                                 <div>
+                                    <label className="text-lg font-bold text-gray-900 mb-2 block">Password Lama</label>
+                                    <input
+                                        type="password"
+                                        value={oldPassword}
+                                        onChange={(e) => setOldPassword(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-900 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg placeholder-gray-400"
+                                        placeholder="Masukkan password saat ini"
+                                        disabled={isChangingPassword}
+                                    />
+                                </div>
+
+                                <div>
                                     <label className="text-lg font-bold text-gray-900 mb-2 block">Password Baru</label>
                                     <input
                                         type="password"
@@ -913,6 +973,7 @@ export default function ProfileClient({
                                     <button
                                         onClick={() => {
                                             setShowPasswordModal(false)
+                                            setOldPassword('')
                                             setNewPassword('')
                                             setConfirmPassword('')
                                         }}
@@ -965,6 +1026,15 @@ export default function ProfileClient({
                     </div>
                 )
             }
+
+            {/* Image Cropper Modal */}
+            {selectedImage && (
+                <ImageCropper
+                    imageSrc={selectedImage}
+                    onCancel={() => setSelectedImage(null)}
+                    onCropComplete={onCropComplete}
+                />
+            )}
         </div >
     )
 }

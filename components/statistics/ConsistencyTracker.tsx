@@ -2,6 +2,7 @@
 
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
+import { Flame } from 'lucide-react'
 
 export default function ConsistencyTracker({ data, score, activeCount }: { data: any[], score: number, activeCount: number }) {
 
@@ -9,7 +10,9 @@ export default function ConsistencyTracker({ data, score, activeCount }: { data:
         <div className="">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-900">🔥 Konsistensi Belajar</h3>
+                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <Flame className="w-5 h-5 text-orange-500 fill-orange-500" /> Konsistensi Belajar
+                    </h3>
                     <p className="text-sm text-gray-600">Aktivitas belajar dalam 30 hari terakhir</p>
                 </div>
                 <div className="flex items-center gap-4 bg-green-200 border-2 border-gray-900 p-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
