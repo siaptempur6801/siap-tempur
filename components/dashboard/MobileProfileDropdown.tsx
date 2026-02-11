@@ -16,8 +16,8 @@ interface MobileProfileDropdownProps {
         avatar_url?: string
         full_name?: string
         tryout_quota?: number
-        tryout_quota_utbk?: number
     } | null
+
     signoutAction: () => Promise<{ success: boolean }>
 }
 
@@ -68,12 +68,9 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
                         <div className="mt-2.5 flex items-center gap-2">
                             <span className="text-xs px-2 py-0.5 font-bold uppercase inline-flex items-center gap-1 border border-gray-900 bg-blue-100 text-blue-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                                 <Ticket size={12} className="fill-current" />
-                                {profile?.tryout_quota ?? 0}
+                                {profile?.tryout_quota ?? 0} Token
                             </span>
-                            <span className="text-xs px-2 py-0.5 font-bold uppercase inline-flex items-center gap-1 border border-gray-900 bg-pink-100 text-pink-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
-                                <GraduationCap size={12} className="fill-current" />
-                                {profile?.tryout_quota_utbk ?? 0}
-                            </span>
+
                         </div>
                     </div>
 

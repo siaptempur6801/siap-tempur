@@ -13,6 +13,8 @@ interface XPInfo {
     leveledUp: boolean
     progress: number
     xpToNext: number
+    streakCount?: number
+    isStreak?: boolean
 }
 
 interface ResultXPWrapperProps {
@@ -49,6 +51,8 @@ export default function ResultXPWrapper({ children, xpInfo }: ResultXPWrapperPro
                 newLevelName={xpInfo.newLevelName}
                 progress={xpInfo.progress}
                 xpToNext={xpInfo.xpToNext}
+                streakCount={xpInfo.streakCount}
+                isStreak={xpInfo.isStreak}
                 onClose={() => setShowPopup(false)}
             />
         </>

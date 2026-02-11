@@ -1,7 +1,7 @@
 'use client'
 
 import { startTryout } from '@/app/actions/practice'
-import { ArrowRight, Loader2, Target, Zap, Ticket, BookOpen } from 'lucide-react'
+import { ArrowRight, Loader2, Target, Zap, Ticket, BookOpen, Trophy, AlertCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -9,10 +9,9 @@ import { cn } from '@/lib/utils'
 
 interface PracticeClientProps {
     quota: number
-    quotaUtbk: number
 }
 
-export default function PracticeClient({ quota, quotaUtbk }: PracticeClientProps) {
+export default function PracticeClient({ quota }: PracticeClientProps) {
     const [loadingTryout, setLoadingTryout] = useState(false)
     const router = useRouter()
 
@@ -49,168 +48,151 @@ export default function PracticeClient({ quota, quotaUtbk }: PracticeClientProps
     }
 
     return (
-        <div className="space-y-8 p-4 md:p-8 max-w-7xl mx-auto font-handwriting">
-            {/* Hero Section - Matching Tryout Page */}
-            <div className="relative overflow-hidden rounded-sm border-2 border-gray-900 bg-[#fdfbf7] p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                {/* Paper Lines Background */}
-                <div className="absolute inset-0 z-0 opacity-20 pointer-events-none"
-                    style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 1.9rem, #9ca3af 2rem)", backgroundSize: "100% 2rem", marginTop: "1rem" }}
-                />
+        <div className="space-y-10 p-4 md:p-8 max-w-6xl mx-auto font-handwriting pb-20">
+            {/* Header Section */}
+            <div className="relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 border-2 border-gray-900 text-blue-700 text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-4 transform -rotate-1">
+                    <BookOpen size={14} className="fill-current" />
+                    <span>Pusat Tryout SKD</span>
+                </div>
+                <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                    Siap Ujian Hari Ini?
+                </h1>
+                <p className="text-xl text-gray-600 max-w-2xl leading-relaxed italic">
+                    "Kesuksesan adalah 1% bakat dan 99% latihan soal yang konsisten."
+                </p>
+            </div>
 
-                <div className="relative z-10 max-w-3xl">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-300 border-2 border-gray-900 text-gray-900 text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-3 transform -rotate-1">
-                        <Target size={14} className="fill-current" />
-                        <span>Tryout Mandiri</span>
+            {/* Main Content Box */}
+            <div className="relative group">
+                {/* Decorative Elements */}
+                <div className="absolute -top-6 -right-6 w-32 h-32 bg-yellow-100 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none rotate-6 flex items-center justify-center -z-10 opacity-50 group-hover:rotate-12 transition-transform">
+                    <Target className="w-16 h-16 text-blue-500 opacity-30" />
+                </div>
+
+                <div className="relative overflow-hidden bg-white border-4 border-gray-900 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] p-8 md:p-12">
+                    {/* Paper Grid Pattern */}
+                    <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
+                        style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "20px 20px" }}
+                    />
+
+                    <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
+                        {/* Left: Info & Stats */}
+                        <div className="space-y-8">
+                            <div>
+                                <h2 className="text-4xl font-black text-gray-900 mb-4 underline decoration-blue-500/30 decoration-8 underline-offset-4">
+                                    Simulasi Terstandar
+                                </h2>
+                                <p className="text-lg text-gray-600 leading-relaxed font-sans">
+                                    Format soal, waktu, dan sistem penilaian disesuaikan dengan standar <strong className="text-gray-900">CAT BKN 2024/2025</strong>.
+                                    Satu kuota (1 Tiket) untuk satu kali pengerjaan simulasi full.
+                                </p>
+                            </div>
+
+                            {/* Feature Checklist */}
+                            <div className="space-y-3 font-sans">
+                                <div className="flex items-center gap-3 text-gray-700">
+                                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 border border-green-200">
+                                        <ArrowRight size={14} />
+                                    </div>
+                                    <span className="font-bold">Mencakup TWK, TIU, & TKP</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-gray-700">
+                                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 border border-green-200">
+                                        <ArrowRight size={14} />
+                                    </div>
+                                    <span className="font-bold">Passing Grade Terupdate</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-gray-700">
+                                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700 border border-green-200">
+                                        <ArrowRight size={14} />
+                                    </div>
+                                    <span className="font-bold">Ranking Nasional Otomatis</span>
+                                </div>
+                            </div>
+
+                            {/* Ticket Balance */}
+                            <div className="inline-flex items-center gap-4 p-4 bg-gray-50 border-2 border-gray-300 border-dashed transform rotate-[-0.5deg]">
+                                <div className="w-12 h-12 bg-white border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <Ticket className="text-blue-600 w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">Sisa Tiket</div>
+                                    <div className="text-2xl font-black text-gray-900">{quota} <span className="text-sm">Tiket</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right: Actions */}
+                        <div className="flex flex-col items-center justify-center">
+                            <div className="w-full space-y-4">
+                                {quota > 0 ? (
+                                    <button
+                                        onClick={handleStartTryout}
+                                        disabled={loadingTryout}
+                                        className={cn(
+                                            "w-full group relative py-6 flex flex-col items-center justify-center bg-blue-600 text-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all",
+                                            loadingTryout && "opacity-80 pointer-events-none"
+                                        )}
+                                    >
+                                        {loadingTryout ? (
+                                            <div className="flex items-center gap-2">
+                                                <Loader2 className="animate-spin" />
+                                                <span className="text-2xl font-black">Menyiapkan Sesi...</span>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <Zap className="absolute top-2 right-2 w-8 h-8 text-yellow-300 opacity-20 group-hover:opacity-100 transition-opacity" />
+                                                <span className="text-4xl font-black mb-1">Mulai Ujian</span>
+                                                <span className="text-sm font-bold opacity-80 uppercase tracking-widest flex items-center gap-2">
+                                                    110 Soal • 100 Menit <ArrowRight size={14} />
+                                                </span>
+                                            </>
+                                        )}
+                                    </button>
+                                ) : (
+                                    <a
+                                        href="/dashboard/beli-paket"
+                                        className="w-full group relative py-6 flex flex-col items-center justify-center bg-orange-100 text-orange-700 border-2 border-orange-500 border-dashed hover:bg-orange-200 transition-all"
+                                    >
+                                        <span className="text-4xl font-black mb-1 uppercase italic">Ticket Habis!</span>
+                                        <span className="text-sm font-bold opacity-80 uppercase tracking-widest underline decoration-2 underline-offset-4 flex items-center gap-2">
+                                            Isi Tiket Sekarang <Zap size={14} />
+                                        </span>
+                                    </a>
+                                )}
+
+                                <p className="text-center text-sm font-sans text-gray-400 italic">
+                                    *Pastikan koneksi internet stabil selama pengerjaan.
+                                </p>
+                            </div>
+
+                            {/* Score Breakdown Pills */}
+                            <div className="mt-12 flex flex-wrap justify-center gap-3">
+                                <div className="px-4 py-2 bg-red-50 text-red-700 border-2 border-red-200 font-bold rounded-lg text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]">
+                                    TWK: 30 Soal
+                                </div>
+                                <div className="px-4 py-2 bg-yellow-50 text-yellow-800 border-2 border-yellow-200 font-bold rounded-lg text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]">
+                                    TIU: 35 Soal
+                                </div>
+                                <div className="px-4 py-2 bg-blue-50 text-blue-700 border-2 border-blue-200 font-bold rounded-lg text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.05)]">
+                                    TKP: 45 Soal
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
-                    <h1 className="text-3xl md:text-4xl font-bold mb-2 text-gray-900">
-                        Menu Tryout
-                    </h1>
-
-                    <p className="text-lg text-gray-700 max-w-2xl leading-relaxed">
-                        Pilih jenis ujian yang ingin kamu kerjakan. Pastikan waktu dan koneksimu aman ya!
-                    </p>
                 </div>
             </div>
 
-            {/* Main Content - Grid System */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-                {/* CARD 1: SKD Tryout */}
-                <div className="relative overflow-hidden p-8 bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1 transition-transform duration-300 flex flex-col h-full transform origin-center">
-                    {/* Tape Effect */}
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/90 border-l border-r border-white/50 -rotate-1 shadow-sm opacity-80 z-20"></div>
-
-                    <div className="relative z-10 text-center flex flex-col h-full">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 border-2 border-gray-900 text-blue-600 mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mx-auto">
-                            <Zap size={32} className="fill-current" />
-                        </div>
-
-                        <h3 className="text-3xl font-bold mb-4 text-gray-900">Tryout SKD</h3>
-
-                        {/* Quota Display */}
-                        <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border-2 border-blue-200 border-dashed rounded-lg text-blue-800 font-bold transform -rotate-1 mx-auto">
-                            <Ticket size={18} />
-                            <span>Sisa Kuota: {quota} Tiket</span>
-                        </div>
-
-                        <p className="text-gray-600 text-lg mb-8 leading-relaxed flex-grow">
-                            Tryout standar CAT BKN untuk CPNS & Sekolah Kedinasan. Pastikan kamu siap fokus selama 100 menit.
+            {/* Warning Section */}
+            <div className="p-6 bg-red-50 border-2 border-gray-900 text-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-[-0.5deg]">
+                <div className="flex items-start gap-4">
+                    <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+                    <div>
+                        <h4 className="font-bold text-lg mb-1 italic">Perhatian:</h4>
+                        <p className="text-sm md:text-base font-sans leading-relaxed">
+                            Jangan keluar dari halaman ujian sebelum menekan tombol <strong>"Akhiri Sesi"</strong>. Keluar di tengah jalan akan dianggap telah menyelesaikan ujian dan tiket tidak dapat dikembalikan.
                         </p>
-
-                        {quota <= 0 ? (
-                            <a
-                                href="/dashboard/beli-paket"
-                                className={cn(
-                                    "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
-                                    "bg-orange-500 hover:bg-orange-600 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]"
-                                )}
-                            >
-                                <Ticket size={24} />
-                                Beli Kuota
-                                <ArrowRight size={24} />
-                            </a>
-                        ) : (
-                            <button
-                                onClick={handleStartTryout}
-                                disabled={loadingTryout}
-                                className={cn(
-                                    "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
-                                    "bg-blue-600 hover:bg-blue-700 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]",
-                                    loadingTryout && "opacity-70 cursor-not-allowed"
-                                )}
-                            >
-                                {loadingTryout ? (
-                                    <>
-                                        <Loader2 className="animate-spin" size={24} />
-                                        Menyiapkan...
-                                    </>
-                                ) : (
-                                    <>
-                                        Mulai Tryout SKD
-                                        <ArrowRight size={24} />
-                                    </>
-                                )}
-                            </button>
-                        )}
-
-                        <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-300 grid grid-cols-3 gap-2 text-[10px] md:text-sm font-bold text-gray-600">
-                            <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-green-500 border border-gray-900" />
-                                110 Soal
-                            </div>
-                            <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-blue-500 border border-gray-900" />
-                                100 Menit
-                            </div>
-                            <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-purple-500 border border-gray-900" />
-                                Pembahasan
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* CARD 2: UTBK Tryout */}
-                <div className="relative overflow-hidden p-8 bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-rotate-1 transition-transform duration-300 flex flex-col h-full transform origin-center">
-                    {/* Tape Effect */}
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-pink-100/90 border-l border-r border-white/50 -rotate-2 shadow-sm opacity-80 z-20"></div>
-
-                    <div className="relative z-10 text-center flex flex-col h-full">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-100 border-2 border-gray-900 text-pink-600 mb-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] mx-auto">
-                            <BookOpen size={32} className="fill-current" />
-                        </div>
-
-                        <h3 className="text-3xl font-bold mb-4 text-gray-900">Tryout UTBK SNBT</h3>
-
-                        {/* Quota Display */}
-                        <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-pink-50 border-2 border-pink-200 border-dashed rounded-lg text-pink-800 font-bold transform rotate-1 mx-auto">
-                            <Ticket size={18} />
-                            <span>Sisa Kuota: {quotaUtbk} Tiket</span>
-                        </div>
-
-                        <p className="text-gray-600 text-lg mb-8 leading-relaxed flex-grow">
-                            Tryout lengkap Potensi Kognitif, Penalaran Matematika, Literasi Bahasa. Siap masuk PTN Impian?
-                        </p>
-
-                        {quotaUtbk <= 0 ? (
-                            <a
-                                href="/dashboard/beli-paket"
-                                className={cn(
-                                    "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
-                                    "bg-orange-500 hover:bg-orange-600 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]"
-                                )}
-                            >
-                                <Ticket size={24} />
-                                Beli Kuota
-                                <ArrowRight size={24} />
-                            </a>
-                        ) : (
-                            <button
-                                onClick={() => toast.info("Segera Hadir!", { description: "Tryout UTBK sedang dalam tahap akhir pengembangan. Ditunggu ya! 🚀" })}
-                                className={cn(
-                                    "w-full flex items-center justify-center gap-3 py-4 text-xl font-bold text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-all",
-                                    "bg-pink-600 hover:bg-pink-700 hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] active:scale-[0.98]"
-                                )}
-                            >
-                                Mulai Tryout UTBK
-                                <ArrowRight size={24} />
-                            </button>
-                        )}
-
-                        <div className="mt-8 pt-6 border-t-2 border-dashed border-gray-300 grid grid-cols-3 gap-2 text-[10px] md:text-sm font-bold text-gray-600">
-                            <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-green-500 border border-gray-900" />
-                                155 Soal
-                            </div>
-                            <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-blue-500 border border-gray-900" />
-                                195 Menit
-                            </div>
-                            <div className="flex flex-col items-center justify-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-purple-500 border border-gray-900" />
-                                IRT Score
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import PaperBackground from '@/components/PaperBackground'
+import { SUBJECTS } from '@/lib/constants'
 
 interface Question {
     id: string
@@ -50,9 +51,13 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
     // Sort questions by type (TWK -> TIU -> TKP)
     const sortedQuestions = useMemo(() => {
-        const typeOrder = { 'TWK': 1, 'TIU': 2, 'TKP': 3 }
+        const typeOrder: Record<string, number> = {
+            [SUBJECTS.TWK.short]: 1,
+            [SUBJECTS.TIU.short]: 2,
+            [SUBJECTS.TKP.short]: 3
+        }
         return [...questions].sort((a, b) => {
-            return (typeOrder[a.type as keyof typeof typeOrder] || 99) - (typeOrder[b.type as keyof typeof typeOrder] || 99)
+            return (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99)
         })
     }, [questions])
 

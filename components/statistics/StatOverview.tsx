@@ -6,6 +6,7 @@ import {
     Zap,
     TrendingUp
 } from 'lucide-react'
+import { PASSING_GRADES, SUBJECTS } from '@/lib/constants'
 
 interface Stat {
     label: string
@@ -19,15 +20,16 @@ interface Stat {
 
 export default function StatOverview({ data, streak, type }: { data: any, streak: number, type?: string }) {
 
-    let avgScoreSub = "Dari Total 550"
+    const totalFullMark = SUBJECTS.TWK.fullMark + SUBJECTS.TIU.fullMark + SUBJECTS.TKP.fullMark
+    let avgScoreSub = `Dari Total ${totalFullMark}`
     const avgLabel = "Rata-rata Skor"
 
     // Determine Passing Grade based on Type
     if (type) {
-        if (type === 'twk') avgScoreSub = "/ 65 (Passing Grade)"
-        else if (type === 'tiu') avgScoreSub = "/ 80 (Passing Grade)"
-        else if (type === 'tkp') avgScoreSub = "/ 166 (Passing Grade)"
-        else if (type === 'tryout') avgScoreSub = "/ 550 (SKD)"
+        if (type === 'twk') avgScoreSub = `/ ${PASSING_GRADES.TWK} (Passing Grade)`
+        else if (type === 'tiu') avgScoreSub = `/ ${PASSING_GRADES.TIU} (Passing Grade)`
+        else if (type === 'tkp') avgScoreSub = `/ ${PASSING_GRADES.TKP} (Passing Grade)`
+        else if (type === 'tryout') avgScoreSub = `/ ${totalFullMark} (SKD)`
     }
 
     const stats: Stat[] = [

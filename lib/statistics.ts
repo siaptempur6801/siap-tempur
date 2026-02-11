@@ -1,5 +1,6 @@
 import { format, subDays, isSameDay, startOfDay } from 'date-fns'
 import { id } from 'date-fns/locale'
+import { PASSING_GRADES, SUBJECTS } from './constants'
 
 export interface SessionData {
     id: string
@@ -23,17 +24,6 @@ const calculateStats = (sessions: SessionData[], type: 'ALL' | 'TWK' | 'TIU' | '
     const maxScore = Math.max(...sessions.map(s => s.total_score || 0))
 
     // 2. Category Stats (Average)
-    // Fix: Denominators must depend on "relevance".
-
-    // For 'ALL' or 'TRYOUT', we analyze everything.
-    // However, if we mix in Practice sessions where some scores are naturally 0 (because they are different modules),
-    // we must NOT count those 0s in the average denominator for the other modules.
-
-    // Logic: A session counts towards a category average IF:
-    // 1. It is a TRYOUT (contains all)
-    // 2. OR It is a PRACTICE session where that category score > 0
-    // 3. OR It is a PRACTICE session that is technically for this category but score is 0? (We ignore this edge case to avoid dilution)
-
     const twkSessions = sessions.filter(s => s.mode === 'tryout' || s.score_twk > 0)
     const tiuSessions = sessions.filter(s => s.mode === 'tryout' || s.score_tiu > 0)
     const tkpSessions = sessions.filter(s => s.mode === 'tryout' || s.score_tkp > 0)
@@ -48,20 +38,20 @@ const calculateStats = (sessions: SessionData[], type: 'ALL' | 'TWK' | 'TIU' | '
         {
             subject: 'TWK',
             score: Math.round(catSum.twk / (twkSessions.length || 1)),
-            fullMark: 150,
-            passing: 65
+            fullMark: SUBJECTS.TWK.fullMark,
+            passing: PASSING_GRADES.TWK
         },
         {
             subject: 'TIU',
             score: Math.round(catSum.tiu / (tiuSessions.length || 1)),
-            fullMark: 175,
-            passing: 80
+            fullMark: SUBJECTS.TIU.fullMark,
+            passing: PASSING_GRADES.TIU
         },
         {
             subject: 'TKP',
             score: Math.round(catSum.tkp / (tkpSessions.length || 1)),
-            fullMark: 225,
-            passing: 166
+            fullMark: SUBJECTS.TKP.fullMark,
+            passing: PASSING_GRADES.TKP
         },
     ]
 
@@ -81,8 +71,6 @@ const calculateStats = (sessions: SessionData[], type: 'ALL' | 'TWK' | 'TIU' | '
     }))
 
     // Trend Direction
-    // Trend Analysis
-    // 1. Long Term (Default): Compare second half vs first half of recent history
     let trendDirection: 'up' | 'down' | 'flat' = 'flat'
     let trendPercentage = 0
     if (recentSessions.length >= 2) {
@@ -96,35 +84,27 @@ const calculateStats = (sessions: SessionData[], type: 'ALL' | 'TWK' | 'TIU' | '
         trendPercentage = Math.round((Math.abs(diff) / (avgFirst || 1)) * 100)
     }
 
-    // 2. Short Term: Compare Last 5 vs Previous 5 (or less if not enough data)
+    // Short Term Trend
     let shortTermTrend: 'up' | 'down' | 'flat' = 'flat'
     let shortTermPercentage = 0
     if (recentSessions.length >= 4) {
-        // Take last 10 sessions max
         const last10 = recentSessions.slice(-10)
         const mid = Math.floor(last10.length / 2)
-        // e.g., if 6 sessions: split 3 vs 3. if 10: 5 vs 5.
-
         const firstHalf = last10.slice(0, mid)
         const secondHalf = last10.slice(mid)
         const avgFirst = firstHalf.reduce((acc, s) => acc + s.total_score, 0) / firstHalf.length
         const avgSecond = secondHalf.reduce((acc, s) => acc + s.total_score, 0) / secondHalf.length
         const diff = avgSecond - avgFirst
-
         shortTermTrend = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat'
         shortTermPercentage = Math.round((Math.abs(diff) / (avgFirst || 1)) * 100)
     } else {
-        // Fallback to main trend if very few data points
         shortTermTrend = trendDirection
         shortTermPercentage = trendPercentage
     }
 
     // 4. Consistency
     const today = new Date()
-    const last30Days = Array.from({ length: 30 }, (_, i) => {
-        const d = subDays(today, 29 - i)
-        return d
-    })
+    const last30Days = Array.from({ length: 30 }, (_, i) => subDays(today, 29 - i))
     const activeDaysSet = new Set(sessions.map(s => startOfDay(new Date(s.start_time)).toISOString()))
     const activeInPeriod = Array.from(activeDaysSet).filter(d => {
         const date = new Date(d)
@@ -144,20 +124,17 @@ const calculateStats = (sessions: SessionData[], type: 'ALL' | 'TWK' | 'TIU' | '
     // 5. Generate Insight
     const insights = []
 
-    // Only generate trend insights if reasonable data exists
     if (type === 'ALL' || type === 'TRYOUT') {
         if (recentSessions.length > 1) {
             if (trendDirection === 'up') insights.push(`Grafik nilaimu **menanjak naik (${trendPercentage}%)**. Pertahankan momentum!`)
             else if (trendDirection === 'down') insights.push(`Performa sedang **turun (${trendPercentage}%)**. Ayo evaluasi lagi.`)
         }
 
-        // Find weakest link
         const weakest = learningGap.reduce((prev, curr) => (prev.gap > curr.gap) ? prev : curr)
         if (!weakest.isPassed) insights.push(`Fokus utamamu saat ini: Kejar **${weakest.gap} poin** lagi di **${weakest.subject}**.`)
         else insights.push("Semua kategori aman! Coba tingkatkan skor untuk masuk peringkat atas.")
 
     } else {
-        // Module specific insight
         const modStat = learningGap.find(c => c.subject === type)
         if (modStat) {
             if (!modStat.isPassed) insights.push(`Kamu masih kurang **${modStat.gap} poin** di ${type}. Perbanyak latihan soal tipe ini.`)
@@ -171,7 +148,7 @@ const calculateStats = (sessions: SessionData[], type: 'ALL' | 'TWK' | 'TIU' | '
         summary: { totalSessions, avgScore, maxScore },
         categoryStats,
         trendData,
-        trendDirection, // Long term
+        trendDirection,
         trendPercentage,
         shortTermTrend,
         shortTermPercentage,
@@ -183,25 +160,16 @@ const calculateStats = (sessions: SessionData[], type: 'ALL' | 'TWK' | 'TIU' | '
 }
 
 export const processStatistics = (sessions: SessionData[]) => {
-    // 1. Initial Filtering: Only meaningful sessions (score > 0)
-    // This prevents abandoned 0-score sessions from dragging down all averages
     const validSessions = sessions.filter(s => s.total_score > 0)
-
-    // Partition sessions
     const tryoutSessions = validSessions.filter(s => s.mode === 'tryout')
-
-    // For practice, filter strictly by non-zero component score
     const practiceSessions = validSessions.filter(s => s.mode === 'practice')
 
     const twkSessions = practiceSessions.filter(s => s.score_twk > 0)
     const tiuSessions = practiceSessions.filter(s => s.score_tiu > 0)
     const tkpSessions = practiceSessions.filter(s => s.score_tkp > 0)
 
-    // Note: This logic now correctly excludes a TIU-only practice from the 'twkSessions' list.
-    // And 'validSessions' excludes 0-score abandoned runs.
-
     return {
-        all: calculateStats(validSessions, 'ALL'), // 'ALL' will now use smart denominators logic inside
+        all: calculateStats(validSessions, 'ALL'),
         tryout: calculateStats(tryoutSessions, 'TRYOUT'),
         twk: calculateStats(twkSessions, 'TWK'),
         tiu: calculateStats(tiuSessions, 'TIU'),

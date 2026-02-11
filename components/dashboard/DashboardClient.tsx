@@ -11,6 +11,7 @@ import {
     Trophy,
     BookOpen,
     TrendingUp,
+    BarChart3,
     CheckCircle2,
     AlertCircle,
     Sparkles,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { SUBJECTS } from '@/lib/constants'
 
 interface DashboardData {
     user: {
@@ -28,13 +30,14 @@ interface DashboardData {
         name: string
         streak: number
         tryoutQuota: number
-        tryoutQuotaUtbk: number
     }
+
     stats: {
         totalSessions: number
         xp: number
         level: number
         levelName: string
+        rank: number | null
     }
     progress: {
         twk: { score: number; target: number; passed: boolean }
@@ -78,27 +81,14 @@ const TYPE_ICONS = {
     TKP: <User className="w-5 h-5" />,
 }
 
-const TYPE_NAMES = {
-    TWK: 'Tes Wawasan Kebangsaan',
-    TIU: 'Tes Intelegensia Umum',
-    TKP: 'Tes Karakteristik Pribadi',
-}
+// TYPE_NAMES is now derived from SUBJECTS constant
 
-// UTBK Subtests (Placeholder - will be replaced with real data later)
-const UTBK_SUBTESTS = [
-    { key: 'pu', name: 'Penalaran Umum', icon: <Brain className="w-4 h-4" />, color: 'bg-indigo-100 text-indigo-700' },
-    { key: 'pk', name: 'Pengetahuan Kuantitatif', icon: <Target className="w-4 h-4" />, color: 'bg-cyan-100 text-cyan-700' },
-    { key: 'pm', name: 'Penalaran Matematika', icon: <TrendingUp className="w-4 h-4" />, color: 'bg-teal-100 text-teal-700' },
-    { key: 'lbi', name: 'Literasi B. Indonesia', icon: <BookOpen className="w-4 h-4" />, color: 'bg-rose-100 text-rose-700' },
-    { key: 'lbe', name: 'Literasi B. Inggris', icon: <BookOpen className="w-4 h-4" />, color: 'bg-violet-100 text-violet-700' },
-    { key: 'pb', name: 'Pemahaman Bacaan', icon: <BookOpen className="w-4 h-4" />, color: 'bg-orange-100 text-orange-700' },
-    { key: 'pku', name: 'Pengetahuan Umum', icon: <GraduationCap className="w-4 h-4" />, color: 'bg-emerald-100 text-emerald-700' },
-]
+
 
 
 
 export default function DashboardClient({ data, greeting }: Props) {
-    const [activeTracker, setActiveTracker] = useState<'skd' | 'utbk'>('skd')
+
 
     const containerVariants: Variants = {
         hidden: { opacity: 0 },
@@ -138,7 +128,7 @@ export default function DashboardClient({ data, greeting }: Props) {
             {/* 2. HERO CARD - QUICK START */}
             <motion.div variants={itemVariants}>
                 <motion.div
-                    whileHover={{ scale: 1.01, rotate: 0.5 }}
+                    whileHover={{ scale: 1.01 }}
                     className={cn(
                         "relative overflow-hidden p-8 md:p-10 transition-all duration-300",
                         "bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
@@ -150,69 +140,69 @@ export default function DashboardClient({ data, greeting }: Props) {
                     />
 
                     <div className="relative z-10">
-                        {/* Header with Quota Badge */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                        {/* Status Bar */}
+                        <div className="flex flex-wrap items-center gap-4 mb-8">
                             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-green-300 border-2 border-gray-900 text-gray-900 text-sm font-bold uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform -rotate-1">
-                                🚀 Quick Start
+                                🚀 Siap Tempur
                             </div>
-                            <Link
-                                href="/dashboard/beli-paket"
-                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-200 border-2 border-gray-900 text-gray-900 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
-                            >
-                                {activeTracker === 'skd' ? (
-                                    <>
-                                        🎫 <span className="text-2xl text-blue-700">{data.user.tryoutQuota}</span> <span className="text-sm">Tiket SKD</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        🎫 <span className="text-2xl text-purple-700">{data.user.tryoutQuotaUtbk}</span> <span className="text-sm">Tiket UTBK</span>
-                                    </>
-                                )}
-                                <ArrowRight className="w-4 h-4" />
-                            </Link>
+
+                            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-200 border-2 border-gray-900 text-gray-900 text-sm font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform rotate-1">
+                                🏆 Rank: {data.stats.rank ? `#${data.stats.rank}` : '-'}
+                            </div>
+
+                            <div className="flex-1 flex justify-end">
+                                <Link
+                                    href="/dashboard/beli-paket"
+                                    className="inline-flex items-center gap-3 px-4 py-2 bg-blue-100 border-2 border-gray-900 text-gray-900 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-sm group"
+                                >
+                                    🎫 <span className="text-xl text-blue-700">{data.user.tryoutQuota}</span> <span>Tiket Sisa</span>
+                                    <Sparkles className="w-4 h-4 text-blue-500 group-hover:animate-spin" />
+                                </Link>
+                            </div>
                         </div>
 
-                        {/* Quick Start Buttons */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* CPNS Card */}
+                        {/* Two Columns Layout for Primary Actions */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                            {/* Main CTA: Latihan */}
                             <Link
                                 href="/dashboard/latihan"
-                                className="group relative p-6 bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all"
+                                className="group relative p-8 bg-blue-600 text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex flex-col justify-between min-h-[160px]"
                             >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-blue-400 border-2 border-gray-900 flex items-center justify-center text-3xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                        <Building2 className="w-8 h-8 text-gray-900" />
+                                <div>
+                                    <div className="w-12 h-12 bg-white border-2 border-gray-900 flex items-center justify-center text-blue-600 mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
+                                        <Building2 className="w-6 h-6" />
                                     </div>
-                                    <div>
-                                        <h3 className="text-2xl font-black text-gray-900 mb-1">Latihan SKD</h3>
-                                        <p className="text-gray-600">TWK • TIU • TKP</p>
-                                    </div>
+                                    <h3 className="text-3xl font-black mb-1">Mulai Latihan</h3>
+                                    <p className="text-blue-100 font-medium">Asah kemampuan TWK, TIU, TKP</p>
                                 </div>
-                                <div className="absolute bottom-4 right-4">
-                                    <ArrowRight className="w-6 h-6 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                                <div className="absolute top-6 right-6 opacity-20 group-hover:opacity-40 transition-opacity">
+                                    <ArrowRight size={48} />
                                 </div>
                             </Link>
 
-                            {/* UTBK Card */}
-                            {/* UTBK Card */}
-                            <button
-                                onClick={() => toast.info('Materi UTBK sedang disiapkan! Nantikan segera ya pejuang UTBK. 💪')}
-                                className="group relative p-6 bg-gradient-to-br from-purple-100 to-purple-50 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all text-left w-full cursor-pointer"
+                            {/* Secondary CTA: Ranking */}
+                            <Link
+                                href="/dashboard/ranking"
+                                className="group relative p-8 bg-white text-gray-900 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex flex-col justify-between min-h-[160px]"
                             >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-purple-400 border-2 border-gray-900 flex items-center justify-center text-3xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                        <GraduationCap className="w-8 h-8 text-gray-900" />
+                                <div>
+                                    <div className="w-12 h-12 bg-yellow-400 border-2 border-gray-900 flex items-center justify-center text-gray-900 mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
+                                        <BarChart3 className="w-6 h-6" />
                                     </div>
-                                    <div>
-                                        <h3 className="text-2xl font-black text-gray-900 mb-1">Latihan UTBK</h3>
-                                        <p className="text-gray-600">PU • PBM • PPU • LBI • LBE</p>
-                                    </div>
+                                    <h3 className="text-3xl font-black mb-1">Ranking Nasional</h3>
+                                    <p className="text-gray-500 font-medium tracking-tight">Cek posisimu di antara {data.stats.rank ? 'peserta lain' : 'pejuang ASN'}</p>
                                 </div>
-                                <div className="absolute bottom-4 right-4 text-gray-400 group-hover:text-purple-600 group-hover:translate-x-1 transition-all">
-                                    <ArrowRight className="w-6 h-6" />
+                                <div className="absolute bottom-6 right-6">
+                                    <motion.div
+                                        animate={{ y: [0, -4, 0] }}
+                                        transition={{ repeat: Infinity, duration: 2 }}
+                                    >
+                                        <ArrowRight className="w-8 h-8 text-gray-300 group-hover:text-yellow-500 transition-colors" />
+                                    </motion.div>
                                 </div>
-                            </button>
+                            </Link>
                         </div>
+
                     </div>
                 </motion.div>
             </motion.div>
@@ -225,7 +215,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                         {/* Tape effect */}
                         <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/90 border-l border-r border-white/50 rotate-1 shadow-sm opacity-80 z-20"></div>
 
-                        {/* Header with Tabs */}
+                        {/* Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 relative z-10">
                             <div className="flex items-center gap-4">
                                 <div className="p-2 bg-green-100 border-2 border-gray-900 text-green-700 rounded-md">
@@ -233,204 +223,158 @@ export default function DashboardClient({ data, greeting }: Props) {
                                 </div>
                                 <h3 className="font-bold text-2xl text-gray-900">Progress Tracker</h3>
                             </div>
-
-                            {/* Tab Buttons */}
-                            <div className="flex gap-2 sm:ml-auto">
-                                <button
-                                    onClick={() => setActiveTracker('skd')}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 font-bold text-sm border-2 border-gray-900 transition-all",
-                                        activeTracker === 'skd'
-                                            ? "bg-indigo-500 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-                                            : "bg-white text-gray-700 hover:bg-gray-50"
-                                    )}
-                                >
-                                    <Building2 className="w-4 h-4" />
-                                    SKD
-                                </button>
-                                <button
-                                    onClick={() => setActiveTracker('utbk')}
-                                    className={cn(
-                                        "flex items-center gap-2 px-4 py-2 font-bold text-sm border-2 border-gray-900 transition-all",
-                                        activeTracker === 'utbk'
-                                            ? "bg-pink-500 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-                                            : "bg-white text-gray-700 hover:bg-gray-50"
-                                    )}
-                                >
-                                    <GraduationCap className="w-4 h-4" />
-                                    UTBK
-                                </button>
-                            </div>
                         </div>
 
+
                         {/* CPNS Progress */}
-                        {activeTracker === 'skd' && (
-                            <div className="flex flex-col gap-4 relative z-10 font-sans">
-                                {(['twk', 'tiu', 'tkp'] as const).map((type, idx) => {
-                                    const progress = data.progress[type]
-                                    const percentage = Math.min((progress.score / progress.target) * 100, 100)
-                                    const typeUpper = type.toUpperCase() as 'TWK' | 'TIU' | 'TKP'
-                                    const colors = TYPE_COLORS[typeUpper]
+                        <div className="flex flex-col gap-4 relative z-10 font-sans">
+                            {(['twk', 'tiu', 'tkp'] as const).map((type, idx) => {
+                                const progress = data.progress[type]
+                                const percentage = Math.min((progress.score / progress.target) * 100, 100)
+                                const typeUpper = type.toUpperCase() as 'TWK' | 'TIU' | 'TKP'
 
-                                    return (
-                                        <motion.div
-                                            key={type}
-                                            whileHover={{ scale: 1.01 }}
-                                            className="relative p-4 rounded-lg bg-gray-50 border-2 border-gray-300 hover:border-gray-900 transition-colors group"
-                                        >
-                                            <div className="flex items-start gap-4">
-                                                <div className={cn(
-                                                    "w-12 h-12 rounded-lg flex items-center justify-center text-xl border-2 border-gray-900 flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-                                                    type === 'twk' ? 'bg-red-100 text-red-700' :
-                                                        type === 'tiu' ? 'bg-yellow-100 text-yellow-700' :
-                                                            'bg-blue-100 text-blue-700'
-                                                )}>
-                                                    {TYPE_ICONS[typeUpper]}
+                                return (
+                                    <motion.div
+                                        key={type}
+                                        whileHover={{ scale: 1.01 }}
+                                        className="relative p-4 rounded-lg bg-gray-50 border-2 border-gray-300 hover:border-gray-900 transition-colors group"
+                                    >
+                                        <div className="flex items-start gap-4">
+                                            <div className={cn(
+                                                "w-12 h-12 rounded-lg flex items-center justify-center text-xl border-2 border-gray-900 flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                                                type === 'twk' ? 'bg-red-100 text-red-700' :
+                                                    type === 'tiu' ? 'bg-yellow-100 text-yellow-700' :
+                                                        'bg-blue-100 text-blue-700'
+                                            )}>
+                                                {TYPE_ICONS[typeUpper]}
+                                            </div>
+
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div>
+                                                        <span className="font-bold text-lg text-gray-900 block">{SUBJECTS[typeUpper].name}</span>
+                                                    </div>
+                                                    {progress.passed ? (
+                                                        <div className="flex items-center gap-1.5 bg-green-100 px-2 py-1 rounded border-2 border-green-600">
+                                                            <CheckCircle2 className="w-4 h-4 text-green-700" />
+                                                            <span className="text-xs font-bold text-green-800 uppercase">Lulus</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-1.5 bg-red-100 px-2 py-1 rounded border-2 border-red-600">
+                                                            <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                                                            <span className="text-xs font-bold text-red-800 uppercase">Belum Lulus</span>
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between mb-2">
-                                                        <div>
-                                                            <span className="font-bold text-lg text-gray-900 block">{TYPE_NAMES[typeUpper]}</span>
-                                                        </div>
-                                                        {progress.passed ? (
-                                                            <div className="flex items-center gap-1.5 bg-green-100 px-2 py-1 rounded border-2 border-green-600">
-                                                                <CheckCircle2 className="w-4 h-4 text-green-700" />
-                                                                <span className="text-xs font-bold text-green-800 uppercase">Lulus</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-1.5 bg-red-100 px-2 py-1 rounded border-2 border-red-600">
-                                                                <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-                                                                <span className="text-xs font-bold text-red-800 uppercase">Belum Lulus</span>
-                                                            </div>
-                                                        )}
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-end">
+                                                        <span className="text-xs font-bold text-gray-500 uppercase">Score Progress</span>
+                                                        <span className="text-base font-bold text-gray-600">
+                                                            <span className={cn("text-xl", progress.passed ? "text-green-600" : "text-gray-900")}>{progress.score}</span>
+                                                            <span className="text-gray-400 mx-1">/</span>
+                                                            {progress.target}
+                                                        </span>
                                                     </div>
-
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between items-end">
-                                                            <span className="text-xs font-bold text-gray-500 uppercase">Score Progress</span>
-                                                            <span className="text-base font-bold text-gray-600">
-                                                                <span className={cn("text-xl", progress.passed ? "text-green-600" : "text-gray-900")}>{progress.score}</span>
-                                                                <span className="text-gray-400 mx-1">/</span>
-                                                                {progress.target}
-                                                            </span>
-                                                        </div>
-                                                        <div className="h-4 bg-white border-2 border-gray-900 rounded-full overflow-hidden p-[2px]">
-                                                            <motion.div
-                                                                className={cn(
-                                                                    "h-full rounded-full border border-black/10 relative",
-                                                                    progress.passed ? "bg-green-500" :
-                                                                        type === 'twk' ? 'bg-red-500' :
-                                                                            type === 'tiu' ? 'bg-yellow-400' : 'bg-blue-500'
-                                                                )}
-                                                                style={{ backgroundImage: "linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)", backgroundSize: "1rem 1rem" }}
-                                                                initial={{ width: 0 }}
-                                                                animate={{ width: `${percentage}%` }}
-                                                                transition={{ duration: 1, ease: "easeOut", delay: idx * 0.2 }}
-                                                            />
-                                                        </div>
+                                                    <div className="h-4 bg-white border-2 border-gray-900 rounded-full overflow-hidden p-[2px]">
+                                                        <motion.div
+                                                            className={cn(
+                                                                "h-full rounded-full border border-black/10 relative",
+                                                                progress.passed ? "bg-green-500" :
+                                                                    type === 'twk' ? 'bg-red-500' :
+                                                                        type === 'tiu' ? 'bg-yellow-400' : 'bg-blue-500'
+                                                            )}
+                                                            style={{ backgroundImage: "linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)", backgroundSize: "1rem 1rem" }}
+                                                            initial={{ width: 0 }}
+                                                            animate={{ width: `${percentage}%` }}
+                                                            transition={{ duration: 1, ease: "easeOut", delay: idx * 0.2 }}
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
-                                        </motion.div>
-                                    )
-                                })}
-                            </div>
-                        )}
+                                        </div>
+                                    </motion.div>
+                                )
+                            })}
+                        </div>
 
-                        {/* UTBK Progress */}
-                        {activeTracker === 'utbk' && (
-                            <div className="flex flex-col gap-3 relative z-10 font-sans">
-                                <div className="bg-pink-50 border-2 border-pink-200 rounded-lg p-3 mb-2">
-                                    <p className="text-pink-700 text-sm font-medium flex items-center gap-2">
-                                        <AlertCircle className="w-4 h-4" />
-                                        Fitur UTBK Tryout sedang dalam pengembangan. Segera hadir!
-                                    </p>
-                                </div>
-                                {UTBK_SUBTESTS.map((subtest, idx) => {
-                                    // Hardcoded 0s since it's coming soon
-                                    const score = 0;
-                                    const target = 700;
-                                    const percentage = 0;
 
-                                    return (
-                                        <motion.div
-                                            key={subtest.key}
-                                            whileHover={{ scale: 1.01 }}
-                                            className="relative p-3 rounded-lg bg-gray-50 border-2 border-gray-200 hover:border-gray-400 transition-colors group opacity-60"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={cn(
-                                                    "w-10 h-10 rounded-lg flex items-center justify-center border-2 border-gray-300 flex-shrink-0",
-                                                    subtest.color
-                                                )}>
-                                                    {subtest.icon}
-                                                </div>
 
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="font-bold text-sm text-gray-700">{subtest.name}</span>
-                                                        <span className="text-xs text-gray-400">Segera Hadir</span>
-                                                    </div>
-                                                    <div className="h-2 bg-gray-200 border border-gray-300 rounded-full overflow-hidden">
-                                                        <div className="h-full w-0 bg-gray-300 rounded-full" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )
-                                })}
-                            </div>
-                        )}
                     </div>
                 </motion.div>
 
                 {/* STATS & RECOMMENDATIONS COLUMN */}
-                <motion.div variants={itemVariants} className="space-y-8">
-                    {/* XP CARD */}
+                <motion.div variants={itemVariants} className="space-y-6">
+                    {/* XP & LEVEL CARD - PREMIUM LOOK */}
                     <motion.div
-                        whileHover={{ scale: 1.02, rotate: 2 }}
-                        className="p-6 rounded-none bg-yellow-400 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative transform rotate-1"
+                        whileHover={{ scale: 1.02 }}
+                        className="p-6 bg-yellow-400 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden"
                     >
-                        <div className="absolute top-2 right-2 opacity-20">
-                            <Zap size={60} className="text-black" />
+                        {/* Decorative Zap */}
+                        <div className="absolute top-0 right-0 p-2 opacity-10">
+                            <Zap size={100} className="text-black" />
                         </div>
+
                         <div className="relative z-10">
-                            <span className="text-xs font-black text-gray-900 uppercase tracking-widest border-b-2 border-gray-900 pb-1">Total XP</span>
-                            <div className="text-5xl font-black text-gray-900 mt-2 tracking-tighter">
-                                {data.stats.xp.toLocaleString()}
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="px-2 py-0.5 bg-black text-white text-[10px] font-black uppercase tracking-widest">
+                                    Current Rank
+                                </div>
                             </div>
-                            <div className="mt-4 inline-block px-3 py-1 bg-white border-2 border-gray-900 text-gray-900 text-xs font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                Rank: {data.stats.levelName}
+
+                            <div className="text-5xl font-black text-gray-900 tracking-tighter mb-1">
+                                {data.stats.levelName}
+                            </div>
+                            <div className="text-sm font-bold text-gray-800 uppercase tracking-tight opacity-80">
+                                Level {data.stats.level} • {data.stats.xp.toLocaleString()} XP
+                            </div>
+
+                            {/* Small Progress to Next Level (Visual Only for now) */}
+                            <div className="mt-6 h-2 bg-black/10 rounded-full overflow-hidden border border-black/5">
+                                <motion.div
+                                    className="h-full bg-black"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '65%' }} // Placeholder progress
+                                    transition={{ duration: 1.5, delay: 0.5 }}
+                                />
                             </div>
                         </div>
                     </motion.div>
 
-                    {/* STREAK & LEVEL GRID */}
+                    {/* STATS GRID */}
                     <div className="grid grid-cols-2 gap-4">
-                        <motion.div
-                            whileHover={{ scale: 1.05, rotate: -2 }}
-                            className="p-4 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center justify-center text-center gap-2"
-                        >
-                            <Flame className="w-8 h-8 text-orange-500 fill-current animate-bounce" />
-                            <div>
-                                <div className="text-3xl font-black text-gray-900">{data.user.streak}</div>
-                                <div className="text-[10px] uppercase font-bold text-gray-500">Streak</div>
-                            </div>
-                        </motion.div>
+                        {/* Ranking Card */}
+                        <Link href="/dashboard/ranking" className="block group">
+                            <motion.div
+                                whileHover={{ scale: 1.05, rotate: -1 }}
+                                className="p-4 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:shadow-none group-hover:translate-x-0.5 group-hover:translate-y-0.5 transition-all text-center flex flex-col items-center gap-1"
+                            >
+                                <BarChart3 className="w-6 h-6 text-yellow-500 mb-1" />
+                                <div className="text-2xl font-black text-gray-900 leading-none">
+                                    #{data.stats.rank || '-'}
+                                </div>
+                                <div className="text-[10px] uppercase font-bold text-gray-500 tracking-tighter">Posisi Nasional</div>
+                            </motion.div>
+                        </Link>
 
+                        {/* Streak Card */}
                         <motion.div
-                            whileHover={{ scale: 1.05, rotate: 2 }}
-                            className="p-4 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center justify-center text-center gap-2"
+                            whileHover={{ scale: 1.05, rotate: 1 }}
+                            className="p-4 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-center flex flex-col items-center gap-1"
                         >
-                            <Trophy className="w-8 h-8 text-yellow-500 fill-current" />
-                            <div>
-                                <div className="text-3xl font-black text-gray-900">Lv.{data.stats.level}</div>
-                                <div className="text-[10px] uppercase font-bold text-gray-500">Level</div>
+                            <Flame className="w-6 h-6 text-orange-500 fill-current animate-pulse mb-1" />
+                            <div className="text-2xl font-black text-gray-900 leading-none">
+                                {data.user.streak}
                             </div>
+                            <div className="text-[10px] uppercase font-bold text-gray-500 tracking-tighter">Hari Beruntun</div>
                         </motion.div>
                     </div>
 
+                    {/* CALLOUT CARD */}
+                    <div className="p-4 bg-blue-50 border-2 border-blue-200 border-dashed text-blue-700 font-bold text-sm leading-relaxed relative">
+                        <Sparkles className="absolute -top-3 -right-3 w-8 h-8 text-blue-400 rotate-12 opacity-50" />
+                        "Kunci kelulusan SKD adalah **konsistensi**. Luangkan waktu setiap hari untuk latihan!"
+                    </div>
 
                 </motion.div>
             </div>

@@ -9,8 +9,10 @@ import {
     Calendar,
     User,
     Ticket,
-    GraduationCap,
+    Target,
+    BarChart3,
 } from 'lucide-react'
+
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
 import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
@@ -30,8 +32,8 @@ interface DashboardShellProps {
         avatar_url?: string
         full_name?: string
         tryout_quota?: number
-        tryout_quota_utbk?: number
     } | null
+
     signoutAction: () => Promise<{ success: boolean }>
 }
 
@@ -66,8 +68,10 @@ export default function DashboardShell({ children, user, profile, signoutAction 
 
                 <nav className="flex-1 px-4 space-y-3 relative z-10">
                     <NavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
+                    <NavItem href="/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
                     <NavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
-                    <NavItem href="/dashboard/latihan" icon={<Trophy size={20} />} label="Tryout" badge="XP" />
+                    <NavItem href="/dashboard/latihan" icon={<Target size={20} />} label="Tryout" badge="XP" />
+
                     <NavItem href="/dashboard/profile" icon={<User size={20} />} label="Profil" />
                 </nav>
 
@@ -88,14 +92,11 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                                     'Pejuang Tryout'}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-blue-100 text-blue-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title="Sisa Kuota SKD">
+                                <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-blue-100 text-blue-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title="Sisa Token SKD">
                                     <Ticket size={12} className="fill-current" />
-                                    {profile?.tryout_quota ?? 0}
+                                    {profile?.tryout_quota ?? 0} Token
                                 </span>
-                                <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-pink-100 text-pink-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title="Sisa Kuota UTBK">
-                                    <GraduationCap size={12} className="fill-current" />
-                                    {profile?.tryout_quota_utbk ?? 0}
-                                </span>
+
                             </div>
                         </div>
                     </div>
@@ -125,7 +126,7 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                 <div className="grid grid-cols-4 gap-1 px-2 py-2">
                     <MobileNavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Home" />
                     <MobileNavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
-                    <MobileNavItem href="/dashboard/latihan" icon={<Trophy size={20} />} label="Tryout" />
+                    <MobileNavItem href="/dashboard/latihan" icon={<Target size={20} />} label="Tryout" />
 
                     {/* Dynamic Profile Icon */}
                     <MobileNavItem

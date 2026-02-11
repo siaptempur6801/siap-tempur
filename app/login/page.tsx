@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { login } from '@/app/auth/actions'
+import { login, resendVerificationEmail } from '@/app/auth/actions'
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Patrick_Hand, Work_Sans } from "next/font/google";
@@ -41,10 +41,6 @@ export default function LoginPage() {
     const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
     const router = useRouter()
 
-    // Import resend action dynamically or at top level if component is client
-    // Since actions are server-side, we can import them directly in client component
-    // But to resolve import cycle or ensure correct usage:
-    const { resendVerificationEmail } = require('@/app/auth/actions')
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()

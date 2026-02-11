@@ -112,11 +112,11 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                 <div className="container mx-auto px-4 text-center relative z-10">
                     {/* Label Stabilo */}
                     <span className="inline-block px-4 py-1 mb-6 font-handwriting text-xl font-bold bg-yellow-200 -rotate-2 border-2 border-gray-800 rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                        #PejuangPTN & #CalonASN
+                        #CalonASN
                     </span>
 
                     <h1 className="font-handwriting text-6xl md:text-8xl font-bold mb-6 leading-[0.9]">
-                        Uji Kemampuan <br />
+                        Lulus SKD CPNS <br />
                         <span className="relative inline-block mt-2">
                             Tanpa Drama.
                             {/* Coretan bawah */}
@@ -127,7 +127,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     </h1>
 
                     <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto mb-10 font-handwriting leading-relaxed">
-                        Platform tryout CAT & UTBK paling
+                        Platform tryout CAT SKD CPNS paling
                         <span className="bg-green-200 px-1 mx-1">realistis.</span>
                         Beli ketengan, sekali bayar langsung sikat soalnya. Gak pake langganan ribet!
                     </p>
@@ -137,13 +137,13 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <button
                                 onClick={() => scrollToSection("products")}
                                 className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
-                                Pilih Paket Tryout <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                                Mulai Latihan SKD Sekarang <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                             </button>
 
                             <button
                                 onClick={() => scrollToSection("features")}
                                 className="px-8 py-4 font-handwriting text-2xl font-bold bg-white text-gray-900 rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
-                                Cara Kerjanya? <HelpCircle className="w-6 h-6" />
+                                Lihat Simulasi CAT <HelpCircle className="w-6 h-6" />
                             </button>
                         </div>
 
@@ -169,8 +169,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
                                 <Target className="w-12 h-12 text-blue-600 -rotate-6" strokeWidth={2.5} />
                             </div>
-                            <h3 className="font-handwriting text-2xl font-bold mb-2">Mirip Aslinya</h3>
-                            <p className="text-gray-700">Tampilan CAT BKN & UTBK SNBT disamain persis. Biar mental kamu siap tempur.</p>
+                            <h3 className="font-handwriting text-2xl font-bold mb-2">Sistem Terstandar</h3>
+                            <p className="text-gray-700">Simulasi pengerjaan & sistem penilaian sesuai standar CAT BKN. Biar mental kamu siap tempur menghadapi ujian aslinya.</p>
                         </div>
 
                         {/* Card 2 */}
@@ -178,8 +178,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
                                 <Timer className="w-12 h-12 text-red-500 rotate-6" strokeWidth={2.5} />
                             </div>
-                            <h3 className="font-handwriting text-2xl font-bold mb-2">Blocking Time</h3>
-                            <p className="text-gray-700">Latihan manajemen waktu. Gak bisa balik ke subtes sebelumnya kalau waktu habis!</p>
+                            <h3 className="font-handwriting text-2xl font-bold mb-2">Simulasi Real-time</h3>
+                            <p className="text-gray-700">Latihan manajemen waktu. Gak bisa santai-santai karena ada timer yang terus berjalan!</p>
                         </div>
 
                         {/* Card 3 */}
@@ -187,8 +187,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
                                 <BarChart3 className="w-12 h-12 text-green-600 -rotate-3" strokeWidth={2.5} />
                             </div>
-                            <h3 className="font-handwriting text-2xl font-bold mb-2">Analisis Lengkap</h3>
-                            <p className="text-gray-700">Dapet skor IRT (buat UTBK) & perankingan nasional real-time setelah submit.</p>
+                            <h3 className="font-handwriting text-2xl font-bold mb-2">Analisis SKD</h3>
+                            <p className="text-gray-700">Dapet skor per subtes (TWK, TIU, TKP) & perankingan nasional real-time setelah submit.</p>
                         </div>
                     </div>
                 </div>
@@ -210,94 +210,9 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         <p className="font-handwriting text-2xl text-gray-600">Pilih menu latihanmu hari ini.</p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-6 max-w-7xl mx-auto">
+                    <div className="grid md:grid-cols-3 gap-10 lg:gap-8 max-w-6xl mx-auto">
 
-                        {/* PRODUK 1: UTBK Satuan */}
-                        <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[-1deg] hover:rotate-0 transition-transform duration-300 flex flex-col">
-                            {/* Tape Effect */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm rotate-1"></div>
-
-                            <h3 className="font-handwriting text-2xl font-bold text-gray-800 border-b-2 border-blue-200 pb-2 mb-2">
-                                UTBK Satuan
-                            </h3>
-
-                            <div className="mb-4 font-handwriting">
-                                <span className="text-4xl font-bold text-blue-600">Rp 10k</span>
-                                <span className="text-gray-500 text-lg">/ 1x Tryout</span>
-                            </div>
-
-                            <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Full 7 Subtes</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>195 Menit (Full Simulasi)</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Sistem IRT Penilaian</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Soal HOTS update 2026</span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => toast.info("Fitur Keranjang belum tersedia.", {
-                                    description: "Sistem pembayaran sedang kami siapkan. Pantau terus ya!",
-                                    icon: <AlertCircle className="text-blue-500" />
-                                })}
-                                className="w-full py-2 font-handwriting text-xl font-bold bg-blue-50 text-blue-700 border-2 border-blue-200 border-dashed rounded-lg hover:bg-blue-100 hover:border-blue-400 transition cursor-pointer">
-                                + Beli Sekarang
-                            </button>
-                        </div>
-
-                        {/* PRODUK 2: UTBK Bundle 3x (BEST SELLER) */}
-                        <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[1deg] hover:rotate-0 transition-transform duration-300 scale-105 z-10 flex flex-col">
-                            {/* Tape Effect */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm -rotate-1"></div>
-
-                            <div className="absolute top-2 right-2 text-red-500 font-handwriting text-sm font-bold border-2 border-red-500 px-2 py-0.5 -rotate-12 rounded opacity-80">
-                                BEST SELLER
-                            </div>
-
-                            <h3 className="font-handwriting text-2xl font-bold text-gray-800 border-b-2 border-blue-200 pb-2 mb-2">
-                                UTBK Paket 3x
-                            </h3>
-
-                            <div className="mb-1 font-handwriting">
-                                <span className="text-4xl font-bold text-blue-600">Rp 25k</span>
-                                <span className="text-gray-500 text-lg">/ 3x Tryout</span>
-                            </div>
-                            <p className="font-handwriting text-green-700 text-sm md:text-base mb-6 bg-green-100 inline-flex px-4 py-1.5 rounded-full items-center gap-2 w-fit shadow-sm">
-                                Hemat Rp 5k! <Sparkles className="w-5 h-5" />
-                            </p>
-
-                            <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Full 7 Subtes</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>195 Menit (Full Simulasi)</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Sistem IRT Penilaian</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Soal HOTS update 2026</span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => toast.info("Fitur Keranjang belum tersedia.", {
-                                    description: "Sistem pembayaran sedang kami siapkan. Pantau terus ya!",
-                                    icon: <AlertCircle className="text-blue-500" />
-                                })}
-                                className="w-full py-2 font-handwriting text-xl font-bold bg-blue-600 text-white border-2 border-gray-900 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
-                                + Ambil Promo
-                            </button>
-                        </div>
-
-                        {/* PRODUK 3: CPNS Satuan */}
+                        {/* PRODUK 1: SKD Satuan */}
                         <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[1deg] hover:rotate-0 transition-transform duration-300 flex flex-col">
                             {/* Tape Effect */}
                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
@@ -308,21 +223,21 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <div className="mb-4 font-handwriting">
                                 <span className="text-4xl font-bold text-indigo-600">Rp 10k</span>
-                                <span className="text-gray-500 text-lg">/ 1x Tryout</span>
+                                <span className="text-gray-500 text-lg">/ 1 Token</span>
                             </div>
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>TWK, TIU, TKP</span>
+                                    <CheckDoodle /> <span>Tryout CAT (TWK, TIU, TKP)</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>100 Menit (Tryout CAT)</span>
+                                    <CheckDoodle /> <span>Kunci & Pembahasan Lengkap</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Ranking Nasional</span>
+                                    <CheckDoodle /> <span>Ranking Nasional Real-time</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Analisis Passing Grade</span>
+                                    <CheckDoodle /> <span>Analisis Skor & Passing Grade</span>
                                 </div>
                             </div>
 
@@ -332,18 +247,14 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                     icon: <AlertCircle className="text-blue-500" />
                                 })}
                                 className="w-full py-2 font-handwriting text-xl font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
-                                + Beli Sekarang
+                                Coba Latihan Satuan
                             </button>
                         </div>
 
-                        {/* PRODUK 4: CPNS Bundle 3x (BEST SELLER) */}
-                        <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[-2deg] hover:rotate-0 transition-transform duration-300 scale-105 z-10 flex flex-col">
+                        {/* PRODUK 2: SKD Paket 3x */}
+                        <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[-1deg] hover:rotate-0 transition-transform duration-300 flex flex-col">
                             {/* Tape Effect */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm -rotate-1"></div>
-
-                            <div className="absolute top-2 right-2 text-red-500 font-handwriting text-sm font-bold border-2 border-red-500 px-2 py-0.5 -rotate-12 rounded opacity-80">
-                                BEST SELLER
-                            </div>
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-101/80 border-l border-r border-white/50 shadow-sm rotate-1"></div>
 
                             <h3 className="font-handwriting text-2xl font-bold text-gray-800 border-b-2 border-indigo-200 pb-2 mb-2">
                                 SKD Paket 3x
@@ -351,22 +262,24 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <div className="mb-1 font-handwriting">
                                 <span className="text-4xl font-bold text-indigo-600">Rp 25k</span>
-                                <span className="text-gray-500 text-lg">/ 3x Tryout</span>
+                                <span className="text-gray-500 text-lg">/ 3 Token</span>
                             </div>
-                            <p className="font-handwriting text-green-700 text-sm md:text-base mb-6 bg-green-100 inline-flex px-4 py-1.5 rounded-full items-center gap-2 w-fit shadow-sm">Hemat Rp 5k! <Sparkles className="w-5 h-5" /></p>
+                            <p className="font-handwriting text-green-700 text-sm mb-6 bg-green-100 inline-flex px-4 py-1 rounded-full items-center gap-2">
+                                Hemat Rp 5k! <Sparkles className="w-4 h-4" />
+                            </p>
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>TWK, TIU, TKP</span>
+                                    <CheckDoodle /> <span>3 Tiket Tryout CAT</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>100 Menit (Tryout CAT)</span>
+                                    <CheckDoodle /> <span>Kunci & Pembahasan Lengkap</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Ranking Nasional</span>
+                                    <CheckDoodle /> <span>Ranking Nasional Real-time</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Analisis Passing Grade</span>
+                                    <CheckDoodle /> <span>Masa Aktif Selamanya</span>
                                 </div>
                             </div>
 
@@ -375,8 +288,60 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                     description: "Sistem pembayaran sedang kami siapkan. Pantau terus ya!",
                                     icon: <AlertCircle className="text-blue-500" />
                                 })}
-                                className="w-full py-2 font-handwriting text-xl font-bold bg-indigo-600 text-white border-2 border-gray-900 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
-                                + Ambil Promo
+                                className="w-full py-2 font-handwriting text-xl font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
+                                Pilih Paket Hemat
+                            </button>
+                        </div>
+
+                        {/* PRODUK 3: SKD Paket 5x + PDF (BEST SELLER) */}
+                        <div className="relative bg-[#fffdeb] p-8 border-4 border-indigo-600 shadow-2xl rotate-[0deg] transition-transform duration-300 scale-110 z-20 flex flex-col rounded-xl">
+                            {/* Paper Clip Effect */}
+                            <div className="absolute -top-6 left-10 w-8 h-12 bg-gray-300/80 rounded-full border-2 border-gray-400 rotate-12 flex items-center justify-center pt-4">
+                                <div className="w-2 h-6 bg-gray-400/50 rounded-full"></div>
+                            </div>
+
+                            <div className="absolute -top-4 right-4 bg-red-600 text-white font-handwriting text-sm font-bold px-4 py-1.5 -rotate-6 rounded shadow-lg animate-pulse">
+                                BEST SELLER 🔥
+                            </div>
+
+                            <h3 className="font-handwriting text-3xl font-bold text-gray-900 border-b-2 border-indigo-300 pb-2 mb-4 flex items-center gap-2">
+                                SKD Paket 5x
+                            </h3>
+
+                            <div className="mb-2 font-handwriting">
+                                <span className="text-5xl font-bold text-indigo-700">Rp 40k</span>
+                                <span className="text-gray-600 text-xl">/ 5 Token</span>
+                            </div>
+                            <p className="font-handwriting text-green-700 text-md mb-8 bg-green-200 inline-flex px-6 py-2 rounded-full items-center gap-2 w-fit shadow-md">
+                                Hemat Rp 10k! <Sparkles className="w-6 h-6 fill-current" />
+                            </p>
+
+                            <div className="space-y-3 mb-8 font-handwriting text-xl text-gray-800 flex-grow">
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-1"><CheckDoodle /></div>
+                                    <span className="font-bold underline decoration-wavy decoration-indigo-400">5 Tiket Tryout CAT</span>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-1"><CheckDoodle /></div>
+                                    <span>Kunci & Pembahasan Lengkap</span>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-1"><CheckDoodle /></div>
+                                    <span>Ranking Nasional Real-time</span>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="mt-1"><CheckDoodle /></div>
+                                    <span>Materi Ringkasan Terupdate</span>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => toast.info("Fitur Keranjang belum tersedia.", {
+                                    description: "Sistem pembayaran sedang kami siapkan. Pantau terus ya!",
+                                    icon: <AlertCircle className="text-blue-500" />
+                                })}
+                                className="w-full py-4 font-handwriting text-2xl font-bold bg-indigo-600 text-white border-2 border-gray-900 rounded-lg shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer">
+                                Ambil Paket Hemat 5x Token
                             </button>
                         </div>
 
@@ -394,8 +359,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         <div className="w-full md:w-80 bg-[#fff740] p-6 shadow-md rotate-[-2deg] font-handwriting text-xl text-gray-800 relative">
                             {/* Pin */}
                             <div className="absolute -top-3 left-1/2 w-4 h-4 rounded-full bg-red-500 shadow-sm border border-red-700 z-10"></div>
-                            <p className="mb-4">"Woi parah sih mirip banget sama asli! Kemarin UTBK kaget soalnya tipe-tipenya sama persis kayak latihan disini."</p>
-                            <p className="font-bold text-right">- Andi, Camaba UI</p>
+                            <p className="mb-4">"Woi parah sih mirip banget sama asli! Kemarin simulasi kaget soalnya tipe-tipenya sama persis kayak latihan disini."</p>
+                            <p className="font-bold text-right">- Andi, Calon ASN</p>
                         </div>
 
                         {/* Note 2 - Pink */}
@@ -411,11 +376,12 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             {/* Pin */}
                             <div className="absolute -top-3 left-1/2 w-4 h-4 rounded-full bg-black shadow-sm z-10"></div>
                             <p className="mb-4">"Enak banget bisa beli ketengan. Pas lagi bokek tapi pengen tryout, tinggal beli satu token aja. Makasih min!"</p>
-                            <p className="font-bold text-right">- Budi, Anak Kos</p>
+                            <p className="font-bold text-right">- Budi, Pejuang CPNS</p>
                         </div>
                     </div>
                 </div>
             </section>
+
 
             {/* --- FOOTER (Doodle Border) --- */}
             <footer className="bg-gray-900 text-white py-12 border-t-8 border-gray-800 border-dashed relative overflow-hidden">
@@ -426,7 +392,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     <button
                         onClick={() => user ? router.push("/dashboard") : router.push("/login")}
                         className="px-10 py-3 font-handwriting text-2xl font-bold text-gray-900 bg-white rounded-md border-b-4 border-gray-400 active:border-b-0 active:translate-y-1 transition-all cursor-pointer">
-                        Mulai Latihan Sekarang! 🚀
+                        Lulus CPNS Sekarang! 🚀
                     </button>
 
                     <div className="mt-16 text-sm text-gray-400 font-handwriting text-lg">

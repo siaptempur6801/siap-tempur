@@ -89,7 +89,7 @@ export async function updatePassword(data: { newPassword: string }) {
     return { success: true }
 }
 
-export async function updateNotificationSettings(settings: any) {
+export async function updateNotificationSettings(settings: Record<string, boolean>) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 

@@ -38,6 +38,22 @@ export default async function ProfilePage() {
     // 3. Process Statistics
     const statsData = processStatistics(rawSessions as unknown as SessionData[])
 
+    // 4. Fetch Transactions for Purchase History
+    const { data: transactions } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+    // 5. Fetch All Sessions for Usage History (Consume Quota)
+    // Here we fetch all sessions because a session consumes a ticket even if not completed
+    const { data: usageSessions } = await supabase
+        .from('test_sessions')
+        .select('id, start_time, mode')
+        .eq('user_id', user.id)
+        .eq('mode', 'tryout') // Quota usage is usually for full tryouts
+        .order('start_time', { ascending: false })
+
     if (!profile) {
         // Create default profile if not exists
         const { data: newProfile } = await supabase
@@ -53,6 +69,8 @@ export default async function ProfilePage() {
             profile={newProfile || { id: user.id, full_name: null, avatar_url: null, bio: null }}
             user={{ email: user.email!, created_at: user.created_at! }}
             statsData={statsData}
+            transactions={transactions || []}
+            usageSessions={usageSessions || []}
         />
     }
 
@@ -60,5 +78,7 @@ export default async function ProfilePage() {
         profile={profile}
         user={{ email: user.email!, created_at: user.created_at! }}
         statsData={statsData}
+        transactions={transactions || []}
+        usageSessions={usageSessions || []}
     />
 }

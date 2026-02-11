@@ -14,12 +14,12 @@ export default async function PracticeListingPage() {
     // Fetch profile for quota
     const { data: profile } = await supabase
         .from('profiles')
-        .select('tryout_quota, tryout_quota_utbk')
+        .select('tryout_quota')
         .eq('id', user.id)
         .single()
 
     const quota = profile?.tryout_quota ?? 0
-    const quotaUtbk = profile?.tryout_quota_utbk ?? 0
 
-    return <PracticeClient quota={quota} quotaUtbk={quotaUtbk} />
+    return <PracticeClient quota={quota} />
 }
+

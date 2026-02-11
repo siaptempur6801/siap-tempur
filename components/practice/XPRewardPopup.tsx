@@ -16,6 +16,8 @@ interface XPRewardPopupProps {
     progress: number  // Percentage to next level
     xpToNext: number  // XP needed for next level
     show: boolean
+    streakCount?: number
+    isStreak?: boolean
     onClose: () => void
 }
 
@@ -29,14 +31,16 @@ export default function XPRewardPopup({
     progress,
     xpToNext,
     show,
+    streakCount,
+    isStreak,
     onClose
 }: XPRewardPopupProps) {
-    const [step, setStep] = useState<'xp' | 'levelup'>('xp')
+    const [step, setStep] = useState<'xp' | 'streak' | 'levelup'>('xp')
     const [displayXP, setDisplayXP] = useState(0)
     const [animationDone, setAnimationDone] = useState(false)
     const leveledUp = newLevel > previousLevel
 
-    // Animate XP counter
+    // Sequence controller
     useEffect(() => {
         if (!show) {
             setStep('xp')
@@ -48,36 +52,49 @@ export default function XPRewardPopup({
         const duration = 1500
         const steps = 30
         const increment = xpEarned / steps
-        let current = 0
         let count = 0
 
         const timer = setInterval(() => {
             count++
-            current += increment
-            setDisplayXP(Math.min(Math.round(current), xpEarned))
+            setDisplayXP(Math.min(Math.round(increment * count), xpEarned))
 
             if (count >= steps) {
                 clearInterval(timer)
                 setDisplayXP(xpEarned)
 
-                // After XP animation, check for level up
+                // Sequence Transition
                 setTimeout(() => {
-                    if (leveledUp) {
+                    if (isStreak) {
+                        setStep('streak')
+                        // Auto transition to levelup after streak if applicable
+                        setTimeout(() => {
+                            if (leveledUp) {
+                                setStep('levelup')
+                                confetti({
+                                    particleCount: 100,
+                                    spread: 70,
+                                    origin: { y: 0.6 }
+                                })
+                            }
+                            setAnimationDone(true)
+                        }, 2500)
+                    } else if (leveledUp) {
                         setStep('levelup')
-                        // Fire confetti for level up
                         confetti({
                             particleCount: 100,
                             spread: 70,
                             origin: { y: 0.6 }
                         })
+                        setAnimationDone(true)
+                    } else {
+                        setAnimationDone(true)
                     }
-                    setAnimationDone(true)
-                }, 800)
+                }, 1000)
             }
         }, duration / steps)
 
         return () => clearInterval(timer)
-    }, [show, xpEarned, leveledUp])
+    }, [show, xpEarned, leveledUp, isStreak])
 
     return (
         <AnimatePresence>
@@ -164,7 +181,7 @@ export default function XPRewardPopup({
                                 </div>
 
                                 {/* Close button - only show after animation */}
-                                {animationDone && !leveledUp && (
+                                {animationDone && !isStreak && !leveledUp && (
                                     <motion.button
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
@@ -172,6 +189,57 @@ export default function XPRewardPopup({
                                         className="mt-8 px-10 py-3 bg-blue-600 text-white border-2 border-gray-900 font-bold text-xl rounded-xl hover:bg-blue-700 transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                     >
                                         Lanjutkan ✨
+                                    </motion.button>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {/* Streak Step */}
+                        {step === 'streak' && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9, rotate: -5 }}
+                                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                className="relative z-10 text-center"
+                            >
+                                <motion.div
+                                    animate={{
+                                        scale: [1, 1.2, 1],
+                                        y: [0, -10, 0]
+                                    }}
+                                    transition={{ duration: 1, repeat: Infinity }}
+                                    className="w-24 h-24 mx-auto mb-6 bg-orange-500 border-4 border-gray-800 rounded-2xl flex items-center justify-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rotate-3"
+                                >
+                                    <div className="relative">
+                                        <Sparkles className="absolute -top-6 -right-6 w-8 h-8 text-yellow-400 animate-pulse" />
+                                        <motion.div
+                                            animate={{ opacity: [1, 0.5, 1] }}
+                                            transition={{ duration: 0.5, repeat: Infinity }}
+                                        >
+                                            <Trophy className="w-12 h-12 text-white" />
+                                        </motion.div>
+                                    </div>
+                                </motion.div>
+
+                                <h2 className="text-4xl font-black text-orange-600 mb-2 drop-shadow-sm">
+                                    STREAK! 🔥
+                                </h2>
+
+                                <div className="text-7xl font-black text-gray-900 mb-2 font-sans tabular-nums">
+                                    {streakCount} <span className="text-2xl text-gray-400 font-handwriting">Hari</span>
+                                </div>
+
+                                <p className="text-gray-700 text-xl font-bold bg-white/50 py-2 rounded-xl mb-6">
+                                    Makin gigih, makin deket <br />jadi ASN! 🦾
+                                </p>
+
+                                {animationDone && !leveledUp && (
+                                    <motion.button
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        onClick={onClose}
+                                        className="mt-4 px-10 py-3 bg-orange-600 text-white border-2 border-gray-800 font-bold text-xl rounded-xl hover:bg-orange-700 transition-all shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    >
+                                        Goo! 🚀
                                     </motion.button>
                                 )}
                             </motion.div>
@@ -222,8 +290,10 @@ export default function XPRewardPopup({
 
                                 <div className="flex items-center justify-center gap-6 my-6 bg-white/40 border-2 border-dashed border-gray-400 p-4 rounded-2xl">
                                     <div className="text-center">
-                                        <div className="text-3xl font-bold text-gray-400 line-through decoration-red-400 font-sans">{previousLevel}</div>
-                                        <div className="text-xs text-gray-500 uppercase font-bold tracking-widest">Dulu</div>
+                                        <div className="text-3xl font-bold text-gray-400 line-through decoration-red-400 font-sans">
+                                            Level {previousLevel}
+                                        </div>
+                                        <div className="text-xs text-gray-400 uppercase font-bold tracking-widest mt-1">Dulu</div>
                                     </div>
                                     <motion.div
                                         animate={{ x: [0, 5, 0] }}
@@ -232,8 +302,13 @@ export default function XPRewardPopup({
                                         <Sparkles className="w-8 h-8 text-yellow-500" />
                                     </motion.div>
                                     <div className="text-center">
-                                        <div className="text-5xl font-black text-gray-900 font-sans">{newLevel}</div>
-                                        <div className="text-sm text-blue-600 font-bold mt-1 px-2 py-0.5 bg-blue-50 rounded border border-blue-200">{newLevelName}</div>
+                                        <div className="text-5xl font-black text-gray-900 font-sans">
+                                            Level {newLevel}
+                                        </div>
+                                        <div className="text-sm text-blue-600 font-bold mt-1 px-2 py-0.5 bg-blue-50 rounded border border-blue-200">
+                                            {newLevelName}
+                                        </div>
+                                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mt-1">Sekarang!</div>
                                     </div>
                                 </div>
 

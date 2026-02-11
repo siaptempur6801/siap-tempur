@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Map, Sparkles } from 'lucide-react'
 import PaperBackground from '@/components/PaperBackground'
 import { cn, formatSubjectName } from '@/lib/utils'
+import { SUBJECTS } from '@/lib/constants'
 
 interface Answer {
     id: string
@@ -63,11 +64,15 @@ export default function ResultReviewClient({ answers }: Props) {
 
     // Sort answers by question type (TWK -> TIU -> TKP)
     const sortedAnswers = useMemo(() => {
-        const typeOrder = { 'TWK': 1, 'TIU': 2, 'TKP': 3 }
+        const typeOrder: Record<string, number> = {
+            [SUBJECTS.TWK.short]: 1,
+            [SUBJECTS.TIU.short]: 2,
+            [SUBJECTS.TKP.short]: 3
+        }
         return [...answers].sort((a, b) => {
             const qA = Array.isArray(a.questions) ? a.questions[0] : a.questions
             const qB = Array.isArray(b.questions) ? b.questions[0] : b.questions
-            return (typeOrder[qA.type as keyof typeof typeOrder] || 99) - (typeOrder[qB.type as keyof typeof typeOrder] || 99)
+            return (typeOrder[qA.type] || 99) - (typeOrder[qB.type] || 99)
         })
     }, [answers])
 
@@ -122,8 +127,8 @@ export default function ResultReviewClient({ answers }: Props) {
 
                 <div className="p-6 relative z-10">
                     <div className="flex flex-col gap-6">
-                        {/* Group questions by type */}
-                        {['TWK', 'TIU', 'TKP'].map((questionType) => {
+                        {/* Group questions by type using centralized SUBJECTS */}
+                        {[SUBJECTS.TWK.short, SUBJECTS.TIU.short, SUBJECTS.TKP.short].map((questionType) => {
                             const filteredAnswers = sortedAnswers
                                 .map((ans, idx) => ({ ans, idx }))
                                 .filter(({ ans }) => {
@@ -134,19 +139,16 @@ export default function ResultReviewClient({ answers }: Props) {
                             if (filteredAnswers.length === 0) return null
 
                             // Calculate offset for display numbering dynamically
-                            // Based on cumulative count of previous question types
                             let numberOffset = 0
-                            if (questionType === 'TIU') {
-                                // TIU starts after all TWK questions
+                            if (questionType === SUBJECTS.TIU.short) {
                                 numberOffset = sortedAnswers.filter(a => {
                                     const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-                                    return q.type === 'TWK'
+                                    return q.type === SUBJECTS.TWK.short
                                 }).length
-                            } else if (questionType === 'TKP') {
-                                // TKP starts after all TWK + TIU questions
+                            } else if (questionType === SUBJECTS.TKP.short) {
                                 numberOffset = sortedAnswers.filter(a => {
                                     const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-                                    return q.type === 'TWK' || q.type === 'TIU'
+                                    return q.type === SUBJECTS.TWK.short || q.type === SUBJECTS.TIU.short
                                 }).length
                             }
 

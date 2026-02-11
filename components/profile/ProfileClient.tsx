@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2, Sparkles } from 'lucide-react'
 import { updateProfileInfo, updatePassword, updateNotificationSettings } from '@/app/actions/profile'
@@ -26,8 +27,8 @@ type Profile = {
     bio: string | null
     streak_count?: number
     tryout_quota?: number
-    tryout_quota_utbk?: number
     notification_settings?: {
+
         emailNotifications: boolean
         reminderNotifications: boolean
         achievementNotifications: boolean
@@ -40,6 +41,21 @@ type UserData = {
     created_at: string
 }
 
+type Transaction = {
+    id: string
+    created_at: string
+    amount: number
+    status: 'pending' | 'settlement' | 'expire' | 'cancel' | 'deny'
+    package_name: string
+    order_id: string
+}
+
+type UsageSession = {
+    id: string
+    start_time: string
+    mode: string
+}
+
 import { createClient } from '@/utils/supabase/client'
 import StatOverview from '@/components/statistics/StatOverview'
 import TrendChart from '@/components/statistics/TrendChart'
@@ -48,7 +64,19 @@ import ConsistencyTracker from '@/components/statistics/ConsistencyTracker'
 
 // ... imports
 
-export default function ProfileClient({ profile: initialProfile, user, statsData }: { profile: Profile, user: UserData, statsData: any }) {
+export default function ProfileClient({
+    profile: initialProfile,
+    user,
+    statsData,
+    transactions,
+    usageSessions
+}: {
+    profile: Profile,
+    user: UserData,
+    statsData: any,
+    transactions: Transaction[],
+    usageSessions: UsageSession[]
+}) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<'profile' | 'stats' | 'history' | 'settings'>('profile')
     const [isEditing, setIsEditing] = useState(false)
@@ -62,7 +90,7 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
     const [isUploading, setIsUploading] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [statsFilter, setStatsFilter] = useState<'all' | 'tryout' | 'twk' | 'tiu' | 'tkp'>('tryout')
-    const [statsProgram, setStatsProgram] = useState<'skd' | 'utbk'>('skd')
+
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -158,13 +186,6 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
         { id: 2, name: 'Speed Demon', desc: 'Jawab 10 soal < 30 detik', icon: '⚡', unlocked: true },
         { id: 3, name: 'Perfect Score', desc: 'Dapatkan nilai 100', icon: '💯', unlocked: false },
         { id: 4, name: 'Week Warrior', desc: 'Belajar 7 hari berturut', icon: '🔥', unlocked: true },
-    ]
-
-    const recentActivity = [
-        { date: '2024-01-29', activity: 'Latihan TWK - Pancasila', score: 85 },
-        { date: '2024-01-28', activity: 'Tryout SKD Batch 3', score: 78 },
-        { date: '2024-01-27', activity: 'Latihan TIU - Deret Angka', score: 92 },
-        { date: '2024-01-26', activity: 'Materi: UUD 1945', score: null },
     ]
 
     const handleSave = async () => {
@@ -440,16 +461,13 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
                                 <div className="flex gap-4">
                                     <div className="text-center px-4 py-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         <div className="text-2xl font-bold text-green-600">{profile.tryout_quota ?? 0}</div>
-                                        <div className="text-xs text-gray-600 font-bold uppercase">SKD</div>
-                                    </div>
-                                    <div className="text-center px-4 py-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                        <div className="text-2xl font-bold text-pink-600">{profile.tryout_quota_utbk ?? 0}</div>
-                                        <div className="text-xs text-gray-600 font-bold uppercase">UTBK</div>
+                                        <div className="text-xs text-gray-600 font-bold uppercase">Token SKD</div>
                                     </div>
                                 </div>
-                                <a href="/dashboard/beli-paket" className="px-5 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+
+                                <Link href="/dashboard/beli-paket" className="px-5 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
                                     + Beli Kuota
-                                </a>
+                                </Link>
                             </div>
                         </div>
                     </div>
@@ -491,135 +509,97 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
             {/* Statistics Tab */}
             {activeTab === 'stats' && (
                 <div className="space-y-6">
-                    {/* Program Toggle - CPNS / UTBK - Notebook Style */}
-                    <div className="flex gap-3 p-2 bg-gray-100 border-2 border-gray-900 w-fit shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                        <button
-                            onClick={() => setStatsProgram('skd')}
-                            className={`flex items-center gap-2 px-5 py-2.5 text-base font-bold transition-all border-2 border-gray-900 ${statsProgram === 'skd'
-                                ? 'bg-indigo-400 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                : 'bg-white text-gray-600 hover:bg-gray-50'
-                                }`}
-                        >
-                            <Shield size={18} />
-                            SKD
-                        </button>
-                        <button
-                            onClick={() => setStatsProgram('utbk')}
-                            className={`flex items-center gap-2 px-5 py-2.5 text-base font-bold transition-all border-2 border-gray-900 ${statsProgram === 'utbk'
-                                ? 'bg-pink-400 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
-                                : 'bg-white text-gray-600 hover:bg-gray-50'
-                                }`}
-                        >
-                            <Trophy size={18} />
-                            UTBK
-                        </button>
-                    </div>
 
-                    {/* CPNS Statistics */}
-                    {statsProgram === 'skd' && (
-                        <>
 
-                            {(() => {
-                                const currentStats = (statsData && statsData.all) ? statsData[statsFilter] : null
+                    {/* SKD Statistics */}
+                    <div className="space-y-6">
 
-                                if (!currentStats || (statsData.all && !currentStats.summary.totalSessions && statsFilter !== 'all')) {
-                                    // Empty state handling - Notebook Style
-                                    return (
-                                        <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-gray-400 p-8 text-center bg-gray-50 relative">
-                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-5 bg-yellow-200 rotate-1 shadow-sm"></div>
-                                            <div className="w-20 h-20 bg-blue-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                                <TrendingUp className="w-10 h-10 text-blue-700" />
-                                            </div>
-                                            <h3 className="text-2xl font-bold mb-2 text-gray-900">📊 Belum Ada Data</h3>
-                                            <p className="text-lg text-gray-600 mb-6 max-w-md">
-                                                Kamu belum menyelesaikan sesi tryout apapun. Ayo mulai latihan!
-                                            </p>
-                                            <a href="/dashboard/latihan" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
-                                                Mulai Tryout 🚀
-                                            </a>
-                                        </div>
-                                    )
-                                }
 
+                        {(() => {
+                            const currentStats = (statsData && statsData.all) ? statsData[statsFilter] : null
+
+                            if (!currentStats || (statsData.all && !currentStats.summary.totalSessions && statsFilter !== 'all')) {
+                                // Empty state handling - Notebook Style
                                 return (
-                                    <>
-                                        {/* 1. OVERVIEW CARDS */}
-                                        <StatOverview data={currentStats} streak={profile.streak_count || 0} type={statsFilter} />
-
-                                        {/* AI INSIGHT BOX - Notebook Style */}
-                                        <div className="bg-yellow-100 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                                            <div className="absolute -top-3 left-6 w-12 h-5 bg-pink-200/80 rotate-[-2deg] shadow-sm"></div>
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <div className="p-2 bg-purple-300 border-2 border-gray-900">
-                                                    <Sparkles className="text-purple-700 w-5 h-5" />
-                                                </div>
-                                                <h3 className="font-bold text-xl text-gray-900">💡 Insight Tryout</h3>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {currentStats?.insights?.map((insight: string, idx: number) => (
-                                                    <p key={idx} className="text-base text-gray-700 leading-relaxed">
-                                                        • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>') }} />
-                                                    </p>
-                                                ))}
-                                            </div>
+                                    <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-gray-400 p-8 text-center bg-gray-50 relative">
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-5 bg-yellow-200 rotate-1 shadow-sm"></div>
+                                        <div className="w-20 h-20 bg-blue-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                            <TrendingUp className="w-10 h-10 text-blue-700" />
                                         </div>
+                                        <h3 className="text-2xl font-bold mb-2 text-gray-900">📊 Belum Ada Data</h3>
+                                        <p className="text-lg text-gray-600 mb-6 max-w-md">
+                                            Kamu belum menyelesaikan sesi tryout apapun. Ayo mulai latihan!
+                                        </p>
+                                        <Link href="/dashboard/latihan" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                            Mulai Tryout 🚀
+                                        </Link>
+                                    </div>
+                                )
+                            }
 
-                                        {/* 2. CHARTS ROW - Notebook Style */}
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <div className="min-h-[400px] bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
-                                                <div className="absolute -top-3 left-8 w-14 h-5 bg-blue-200/80 rotate-[-1deg] shadow-sm"></div>
-                                                <TrendChart
-                                                    data={currentStats.trendData}
-                                                    trendDirection={currentStats.trendDirection}
-                                                    trendPercentage={currentStats.trendPercentage}
-                                                    shortTermTrend={currentStats.shortTermTrend}
-                                                    shortTermPercentage={currentStats.shortTermPercentage}
-                                                />
+                            return (
+                                <>
+                                    {/* 1. OVERVIEW CARDS */}
+                                    <StatOverview data={currentStats} streak={profile.streak_count || 0} type={statsFilter} />
+
+                                    {/* AI INSIGHT BOX - Notebook Style */}
+                                    <div className="bg-yellow-100 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
+                                        <div className="absolute -top-3 left-6 w-12 h-5 bg-pink-200/80 rotate-[-2deg] shadow-sm"></div>
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <div className="p-2 bg-purple-300 border-2 border-gray-900">
+                                                <Sparkles className="text-purple-700 w-5 h-5" />
                                             </div>
-                                            <div className="min-h-[400px] bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
-                                                <div className="absolute -top-3 right-8 w-14 h-5 bg-green-200/80 rotate-[1deg] shadow-sm"></div>
-                                                <CategoryChart
-                                                    data={
-                                                        statsFilter === 'tryout' || statsFilter === 'all'
-                                                            ? currentStats.categoryStats
-                                                            : currentStats.categoryStats.filter((c: any) => c.subject.toLowerCase() === statsFilter)
-                                                    }
-                                                />
-                                            </div>
+                                            <h3 className="font-bold text-xl text-gray-900">💡 Insight Tryout</h3>
                                         </div>
+                                        <div className="space-y-2">
+                                            {currentStats?.insights?.map((insight: string, idx: number) => (
+                                                <p key={idx} className="text-base text-gray-700 leading-relaxed">
+                                                    • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>') }} />
+                                                </p>
+                                            ))}
+                                        </div>
+                                    </div>
 
-                                        {/* 3. CONSISTENCY - Wrapped in notebook style */}
-                                        <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
-                                            <div className="absolute -top-3 left-10 w-16 h-5 bg-orange-200/80 rotate-[-1deg] shadow-sm"></div>
-                                            <ConsistencyTracker
-                                                data={currentStats.consistencyData}
-                                                score={currentStats.consistencyScore}
-                                                activeCount={currentStats.activeInPeriod}
+                                    {/* 2. CHARTS ROW - Notebook Style */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="min-h-[400px] bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
+                                            <div className="absolute -top-3 left-8 w-14 h-5 bg-blue-200/80 rotate-[-1deg] shadow-sm"></div>
+                                            <TrendChart
+                                                data={currentStats.trendData}
+                                                trendDirection={currentStats.trendDirection}
+                                                trendPercentage={currentStats.trendPercentage}
+                                                shortTermTrend={currentStats.shortTermTrend}
+                                                shortTermPercentage={currentStats.shortTermPercentage}
                                             />
                                         </div>
-                                    </>
-                                )
-                            })()}
-                        </>
-                    )}
+                                        <div className="min-h-[400px] bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
+                                            <div className="absolute -top-3 right-8 w-14 h-5 bg-green-200/80 rotate-[1deg] shadow-sm"></div>
+                                            <CategoryChart
+                                                data={
+                                                    statsFilter === 'tryout' || statsFilter === 'all'
+                                                        ? currentStats.categoryStats
+                                                        : currentStats.categoryStats.filter((c: any) => c.subject.toLowerCase() === statsFilter)
+                                                }
+                                            />
+                                        </div>
+                                    </div>
 
-                    {/* UTBK Statistics - Coming Soon - Notebook Style */}
-                    {statsProgram === 'utbk' && (
-                        <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-pink-400 p-8 text-center bg-gradient-to-br from-pink-50 to-yellow-50 relative">
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-6 bg-pink-200 rotate-1 shadow-sm"></div>
-                            <div className="w-24 h-24 bg-pink-300 border-4 border-gray-900 flex items-center justify-center mb-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-3">
-                                <Trophy className="w-12 h-12 text-pink-700" />
-                            </div>
-                            <h3 className="text-3xl font-bold mb-3 text-pink-700">🎓 UTBK Statistics</h3>
-                            <p className="text-lg text-gray-600 mb-6 max-w-md">
-                                Fitur statistik UTBK sedang dalam pengembangan. Segera hadir untuk melacak progress tryout UTBK kamu!
-                            </p>
-                            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-pink-300 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                <Sparkles size={18} />
-                                ✨ Segera Hadir
-                            </div>
-                        </div>
-                    )}
+                                    {/* 3. CONSISTENCY - Wrapped in notebook style */}
+                                    <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
+                                        <div className="absolute -top-3 left-10 w-16 h-5 bg-orange-200/80 rotate-[-1deg] shadow-sm"></div>
+                                        <ConsistencyTracker
+                                            data={currentStats.consistencyData}
+                                            score={currentStats.consistencyScore}
+                                            activeCount={currentStats.activeInPeriod}
+                                        />
+                                    </div>
+                                </>
+                            )
+                        })()}
+                    </div>
+
+
+
                 </div>
             )}
 
@@ -633,17 +613,43 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
 
                         <h4 className="font-bold text-xl mb-6 text-gray-900">💳 Riwayat Pembelian Kuota</h4>
 
-                        {/* Empty state - will be populated from database later */}
-                        <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
-                            <div className="w-16 h-16 bg-green-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                <span className="text-3xl">🛒</span>
+                        {transactions.length > 0 ? (
+                            <div className="space-y-3">
+                                {transactions.map((tx) => (
+                                    <div key={tx.id} className="flex items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 bg-blue-100 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                <span className="text-xl">💰</span>
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-base text-gray-900">{tx.package_name}</div>
+                                                <div className="text-sm text-gray-500">
+                                                    {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-bold text-gray-900">Rp {tx.amount.toLocaleString('id-ID')}</div>
+                                            <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-gray-900 ${tx.status === 'settlement' ? 'bg-green-300' : 'bg-yellow-300'
+                                                }`}>
+                                                {tx.status === 'settlement' ? 'Berhasil' : tx.status}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
-                            <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
-                            <a href="/dashboard/beli-paket" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
-                                Beli Kuota Sekarang
-                            </a>
-                        </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
+                                <div className="w-16 h-16 bg-green-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <span className="text-3xl">🛒</span>
+                                </div>
+                                <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
+                                <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
+                                <Link href="/dashboard/beli-paket" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                    Beli Kuota Sekarang
+                                </Link>
+                            </div>
+                        )}
                     </div>
 
                     {/* Riwayat Pemakaian Kuota */}
@@ -653,18 +659,22 @@ export default function ProfileClient({ profile: initialProfile, user, statsData
 
                         <h4 className="font-bold text-xl mb-6 text-gray-900">🎫 Riwayat Pemakaian Kuota</h4>
 
-                        {/* Show usage from test_sessions */}
-                        {recentActivity.length > 0 ? (
+                        {/* Show usage from usageSessions */}
+                        {usageSessions.length > 0 ? (
                             <div className="space-y-3">
-                                {recentActivity.map((item, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                {usageSessions.map((session) => (
+                                    <div key={session.id} className="flex items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 bg-orange-200 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                                 <span className="text-xl">📝</span>
                                             </div>
                                             <div>
-                                                <div className="font-bold text-base text-gray-900">{item.activity}</div>
-                                                <div className="text-sm text-gray-500">{new Date(item.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                                                <div className="font-bold text-base text-gray-900">
+                                                    {session.mode === 'tryout' ? 'Tryout SKD Full' : 'Latihan Soal'}
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    {new Date(session.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="text-base font-bold text-red-500 bg-red-100 px-3 py-1 border-2 border-gray-900">

@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
 
 interface DashboardData {
     user: {
@@ -6,13 +7,14 @@ interface DashboardData {
         name: string
         streak: number
         tryoutQuota: number
-        tryoutQuotaUtbk: number
     }
+
     stats: {
         totalSessions: number
         xp: number
         level: number
         levelName: string
+        rank: number | null
     }
     progress: {
         twk: { score: number; target: number; passed: boolean }
@@ -36,28 +38,10 @@ interface DashboardData {
 }
 
 // XP calculation: total_score from all completed sessions
-// Level thresholds - designed to be motivating with quick early levels
-// and progressively harder levels
-export const LEVEL_THRESHOLDS = [
-    { xp: 0, level: 1, name: 'Calon Pejuang' },          // Starting point
-    { xp: 100, level: 2, name: 'Pelajar Pemula' },       // 1-2 sessions
-    { xp: 250, level: 3, name: 'Siswa Rajin' },          // ~3 sessions
-    { xp: 500, level: 4, name: 'Calon ASN' },            // ~5 sessions
-    { xp: 800, level: 5, name: 'Pejuang SKD' },          // ~8 sessions
-    { xp: 1200, level: 6, name: 'Warrior Muda' },        // ~12 sessions
-    { xp: 1800, level: 7, name: 'Rising Star' },         // ~18 sessions
-    { xp: 2500, level: 8, name: 'Ahli Latihan' },        // ~25 sessions
-    { xp: 3500, level: 9, name: 'Semi Pro' },            // ~35 sessions
-    { xp: 5000, level: 10, name: 'Pro Player' },         // ~50 sessions
-    { xp: 7000, level: 11, name: 'Elite Warrior' },      // ~70 sessions
-    { xp: 10000, level: 12, name: 'Master SKD' },        // ~100 sessions
-    { xp: 15000, level: 13, name: 'Grand Master' },      // ~150 sessions
-    { xp: 22000, level: 14, name: 'Legend SKD' },       // ~220 sessions
-    { xp: 30000, level: 15, name: 'Dewa ASN' },          // Ultimate level
-]
+// Level thresholds are now imported from constants.ts
 
 export function getLevel(xp: number) {
-    let current = LEVEL_THRESHOLDS[0]
+    let current: typeof LEVEL_THRESHOLDS[number] = LEVEL_THRESHOLDS[0]
     for (const threshold of LEVEL_THRESHOLDS) {
         if (xp >= threshold.xp) current = threshold
         else break
@@ -108,20 +92,15 @@ export function getXPInfo(previousTotalXP: number, xpEarned: number) {
     }
 }
 
-// Passing grades
-const PASSING_GRADES = {
-    TWK: 65,
-    TIU: 80,
-    TKP: 166,
-}
+// Passing grades are now imported from constants.ts
 
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
     // Fetch profile
     // Fetch data in parallel to resolve "waterfall" slowness
-    const [profileRes, sessionsRes, allSessionsRes] = await Promise.all([
+    const [profileRes, sessionsRes, allSessionsRes, rankRes] = await Promise.all([
         supabase
             .from('profiles')
-            .select('full_name, streak_count, tryout_quota, tryout_quota_utbk') // Fetch both quotas
+            .select('full_name, streak_count, tryout_quota') // Fetch SKD quota
             .eq('id', userId)
             .single(),
         supabase
@@ -135,12 +114,18 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .from('test_sessions')
             .select('total_score')
             .eq('user_id', userId)
-            .eq('status', 'completed')
+            .eq('status', 'completed'),
+        supabase
+            .from('leaderboard_snapshot')
+            .select('rank_pos')
+            .eq('user_id', userId)
+            .maybeSingle()
     ])
 
     const profile = profileRes.data
     const sessions = sessionsRes.data
     const allSessions = allSessionsRes.data
+    const rankData = rankRes.data
 
     const totalXp = allSessions?.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXp)
@@ -238,13 +223,14 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             name: profile?.full_name || 'Calon ASN',
             streak: profile?.streak_count || 0,
             tryoutQuota: profile?.tryout_quota || 0,
-            tryoutQuotaUtbk: profile?.tryout_quota_utbk || 0,
         },
+
         stats: {
             totalSessions: recentSessions.length,
             xp: totalXp,
             level: levelInfo.level,
             levelName: levelInfo.name,
+            rank: rankData?.rank_pos || null,
         },
         progress: {
             twk: {

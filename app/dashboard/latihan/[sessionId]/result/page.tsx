@@ -21,6 +21,7 @@ import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import PaperBackground from '@/components/PaperBackground'
 import { getXPInfo } from '@/lib/dashboard'
 import { cn, formatSubjectName } from '@/lib/utils'
+import { PASSING_GRADES, SUBJECTS } from '@/lib/constants'
 
 export default async function PracticeResultPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const supabase = await createClient()
@@ -41,17 +42,40 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
         // Optional: redirect or show message
     }
 
-    // Fetch user's total XP before this session (for XP popup)
-    const { data: allPreviousSessions } = await supabase
-        .from('test_sessions')
-        .select('total_score')
-        .eq('user_id', session.user_id)
-        .eq('status', 'completed')
-        .neq('id', sessionId) // Exclude current session
+    // Fetch user's total XP and metadata before this session (for popups)
+    const [prevSessionsRes, profileRes] = await Promise.all([
+        supabase
+            .from('test_sessions')
+            .select('total_score, end_time')
+            .eq('user_id', session.user_id)
+            .eq('status', 'completed')
+            .neq('id', sessionId), // Exclude current session
+        supabase
+            .from('profiles')
+            .select('streak_count, last_activity_date')
+            .eq('id', session.user_id)
+            .single()
+    ])
 
-    const previousTotalXP = allPreviousSessions?.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
+    const allPreviousSessions = prevSessionsRes.data || []
+    const profile = profileRes.data
+
+    const previousTotalXP = allPreviousSessions.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
     const xpEarned = session.total_score || 0
     const xpInfo = getXPInfo(previousTotalXP, xpEarned)
+
+    // Streak Logic: Show streak popup if this is the first session completed today
+    const today = new Date().toISOString().split('T')[0]
+    const otherSessionsToday = allPreviousSessions.filter(s =>
+        s.end_time && new Date(s.end_time).toISOString().split('T')[0] === today
+    )
+    const isFirstSessionToday = otherSessionsToday.length === 0
+
+    const enrichedXPInfo = {
+        ...xpInfo,
+        streakCount: profile?.streak_count || 0,
+        isStreak: isFirstSessionToday
+    }
 
     // 2. Fetch Detailed Answers
     const { data: rawAnswers, error: answersError } = await supabase
@@ -84,9 +108,9 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     if (answersError) return <div>Error loading results</div>
 
-    const answers = rawAnswers?.map((ans: any) => ({
+    const answers = (rawAnswers || []).map((ans: any) => ({
         ...ans,
-        selected_option: Array.isArray(ans.selected_option) ? ans.selected_option[0] || null : ans.selected_option
+        selected_option: Array.isArray(ans.selected_option) ? ans.selected_option[0] || null : (ans.selected_option as any)
     }))
 
     // --- DATA PROCESSING ---
@@ -121,7 +145,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
             if (type === 'TKP') {
                 score += val
                 maxScore += 5
-                if (val >= 3) correct++ // Loose definition for TKP "success"
+                if (val >= 3) correct++
             } else {
                 if (isCorrect) {
                     correct++
@@ -174,9 +198,10 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     // --- UI HELPERS ---
 
-    const CategoryCard = ({ type, score, maxScore, total, correct }: any) => {
+    const CategoryCard = ({ type, score, maxScore, total, correct }: { type: string; score: number; maxScore: number; total: number; correct: number }) => {
         const pct = Math.round((score / maxScore) * 100) || 0
-        const passingGrade = type === 'TWK' ? 65 : type === 'TIU' ? 80 : 166
+        const typeUpper = type.toUpperCase() as keyof typeof PASSING_GRADES
+        const passingGrade = PASSING_GRADES[typeUpper]
         const isPassed = score >= passingGrade
         const passColor = isPassed ? 'text-green-600' : 'text-red-500'
 
@@ -214,7 +239,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
     }
 
     return (
-        <ResultXPWrapper xpInfo={xpInfo}>
+        <ResultXPWrapper xpInfo={enrichedXPInfo}>
             <div className="max-w-5xl mx-auto p-3 sm:p-8 space-y-6 sm:space-y-8 pb-32 font-handwriting">
 
                 {/* 1. HERO SECTION */}
@@ -333,11 +358,11 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                 {/* Refined Logic: Handle multiple failures */}
                 {isCombined && (
                     (() => {
-                        // Calculate pass status for each section
+                        // Calculate pass status for each section using centralized constants
                         const scores = [
-                            { type: 'TWK', score: session.score_twk, target: 65, passed: session.score_twk >= 65 },
-                            { type: 'TIU', score: session.score_tiu, target: 80, passed: session.score_tiu >= 80 },
-                            { type: 'TKP', score: session.score_tkp, target: 166, passed: session.score_tkp >= 166 }
+                            { type: 'TWK', score: session.score_twk, target: PASSING_GRADES.TWK, passed: session.score_twk >= PASSING_GRADES.TWK },
+                            { type: 'TIU', score: session.score_tiu, target: PASSING_GRADES.TIU, passed: session.score_tiu >= PASSING_GRADES.TIU },
+                            { type: 'TKP', score: session.score_tkp, target: PASSING_GRADES.TKP, passed: session.score_tkp >= PASSING_GRADES.TKP }
                         ]
 
                         const failedSections = scores.filter(s => !s.passed)
@@ -348,14 +373,12 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                         let message: React.ReactNode = ""
                         let linkText = "Pelajari Materi"
                         let typeColor = "text-orange-600"
-                        let bgIcon = "bg-orange-100"
 
                         if (allPassed) {
                             title = "Pertahankan Performamu!"
                             message = "Selamat! Kamu telah lulus passing grade di semua kategori. Pertahankan konsistensi latihanmu dan coba kerjakan soal-soal yang lebih sulit untuk memantapkan kesiapanmu."
                             linkText = "Lanjut Latihan Soal"
                             typeColor = "text-green-600"
-                            bgIcon = "bg-green-100"
                         } else if (failedSections.length === 3) {
                             title = "Perlu Evaluasi Menyeluruh"
                             message = (
@@ -365,7 +388,6 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                             )
                             linkText = "Mulai dari Materi Dasar"
                             typeColor = "text-red-600"
-                            bgIcon = "bg-red-100"
                         } else if (failedSections.length >= 1) {
                             // Build component array with separators
                             const comps = failedSections.map((s, idx) => {
@@ -400,12 +422,14 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                                     <div className="text-gray-800 text-base sm:text-lg mb-4 sm:mb-6 leading-relaxed font-medium">
                                         {message}
                                     </div>
-                                    <Link href="/dashboard/latihan" className={cn(
-                                        "inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 font-black transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none",
-                                        allPassed ? "bg-green-600 text-white border-green-800" : "bg-gray-900 text-white border-black"
-                                    )}>
-                                        {linkText.replace('Materi', 'Latihan')} &rarr;
-                                    </Link>
+                                    {allPassed && (
+                                        <Link href="/dashboard/latihan" className={cn(
+                                            "inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 font-black transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none",
+                                            allPassed ? "bg-green-600 text-white border-green-800" : "bg-gray-900 text-white border-black"
+                                        )}>
+                                            {linkText.replace('Materi', 'Latihan')} &rarr;
+                                        </Link>
+                                    )}
                                 </div>
                                 {allPassed && (
                                     <div className="absolute top-2 right-4 opacity-20 relative z-10">
@@ -423,7 +447,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                         href="/dashboard/latihan"
                         className="flex justify-center items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-2 border-gray-900 bg-white hover:bg-gray-50 font-black text-lg sm:text-xl transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                     >
-                        <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> Daftar Latihan
+                        <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> Dashboard
                     </Link>
 
                     <RetakeButton isCombined={isCombined} singleType={singleType} />
