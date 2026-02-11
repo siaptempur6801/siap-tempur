@@ -123,7 +123,7 @@ export default function DashboardShell({ children, user, profile, signoutAction 
 
             {/* Mobile Bottom Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#fdfbf7]/90 backdrop-blur-xl border-t-2 border-gray-900 z-40">
-                <div className="grid grid-cols-4 gap-1 px-2 py-2">
+                <div className="grid grid-cols-5 gap-1 px-2 py-2">
                     <MobileNavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Home" />
                     <MobileNavItem href="/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking" />
                     <MobileNavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />

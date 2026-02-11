@@ -62,7 +62,6 @@ interface ImageCropperProps {
 }
 
 export default function ImageCropper({ imageSrc, onCancel, onCropComplete }: ImageCropperProps) {
-    console.log('ImageCropper MOUNTED with source')
     const [crop, setCrop] = useState({ x: 0, y: 0 })
     const [zoom, setZoom] = useState(1)
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
@@ -73,11 +72,7 @@ export default function ImageCropper({ imageSrc, onCancel, onCropComplete }: Ima
     }, [])
 
     const handleSave = async () => {
-        console.log('Save clicked in Cropper')
-        if (!croppedAreaPixels) {
-            console.log('No cropped area yet')
-            return
-        }
+        if (!croppedAreaPixels) return
 
         setIsProcessing(true)
         try {

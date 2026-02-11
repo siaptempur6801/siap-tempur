@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut, Highlighter, Key, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut, Key, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -105,6 +105,19 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
         return () => clearInterval(interval)
     }, [endTime, hasFinished, isTryout, isPaused, showWarning5Min, showWarning1Min])
 
+    // Warn on browser refresh/close
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (!finishing && !hasFinished) {
+                e.preventDefault()
+                e.returnValue = '' // Chrome requires returnValue to be set
+            }
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    }, [finishing, hasFinished])
+
     // Safety check - prevent crash if no questions available
     if (!currentQuestion || sortedQuestions.length === 0) {
         return (
@@ -119,6 +132,8 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
     const handleSelectOption = async (optionId: string) => {
         if (submitting) return
+        if (answers[currentQuestion.id] === optionId) return // Prevent double click on same option
+
 
         // Optimistic update
         setAnswers(prev => ({ ...prev, [currentQuestion.id]: optionId }))
@@ -161,6 +176,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     }
 
     const handleFinishSession = async () => {
+        if (finishing) return // Prevent double click
         if (hasFinished && isTryout) return
         if (isTryout) setHasFinished(true)
         setFinishing(true)
@@ -460,6 +476,14 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                     className="lg:hidden p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
                                 >
                                     <Map size={16} />
+                                </button>
+
+                                <button
+                                    onClick={() => setShowExitModal(true)}
+                                    className="lg:hidden p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 shrink-0 border border-red-200 ml-2"
+                                    title="Keluar"
+                                >
+                                    <LogOut size={16} />
                                 </button>
 
                                 <div className="flex flex-col gap-0.5 md:gap-1 overflow-hidden">

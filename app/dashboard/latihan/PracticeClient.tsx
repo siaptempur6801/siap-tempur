@@ -66,10 +66,7 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
 
             {/* Main Content Box */}
             <PageAnimateItem className="relative group">
-                {/* Decorative Elements */}
-                <div className="absolute -top-6 -right-6 w-32 h-32 bg-yellow-100 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none rotate-6 flex items-center justify-center -z-10 opacity-50 group-hover:rotate-12 transition-transform">
-                    <Target className="w-16 h-16 text-blue-500 opacity-30" />
-                </div>
+                {/* Decorative Elements Removed */}
 
                 <div className="relative overflow-hidden bg-white border-4 border-gray-900 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] p-8 md:p-12">
                     {/* Paper Grid Pattern */}

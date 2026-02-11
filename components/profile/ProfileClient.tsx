@@ -3,29 +3,17 @@
 import { useState, useTransition, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2, Sparkles, Target, Flame, ClipboardList, Ticket, Rocket, Lightbulb, CreditCard, Coins, ShoppingCart, FileText, Settings, Lock, Trash2, BarChart3 } from 'lucide-react'
+import { User, Mail, Calendar, Shield, Crown, Trophy, Zap, TrendingUp, Award, Clock, Edit, Camera, Save, X, Eye, Bell, Loader2, Sparkles, Target, Flame, ClipboardList, Ticket, Rocket, CreditCard, Coins, ShoppingCart, FileText, Settings, Lock, Trash2, BarChart3 } from 'lucide-react'
 import ImageCropper from '@/components/ui/ImageCropper'
 import { updateProfileInfo, updateNotificationSettings } from '@/app/actions/profile'
 import { signout, updatePassword } from '@/app/auth/actions'
 import { toast } from 'sonner'
-import { Patrick_Hand, Work_Sans } from 'next/font/google'
 import { createClient } from '@/utils/supabase/client'
 import StatOverview from '@/components/statistics/StatOverview'
 import TrendChart from '@/components/statistics/TrendChart'
 import CategoryChart from '@/components/statistics/CategoryChart'
 import ConsistencyTracker from '@/components/statistics/ConsistencyTracker'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
-
-const handwriting = Patrick_Hand({
-    subsets: ['latin'],
-    weight: '400',
-    variable: '--font-handwriting'
-})
-
-const bodyFont = Work_Sans({
-    subsets: ['latin'],
-    variable: '--font-body'
-})
 
 type Profile = {
     id: string
@@ -275,7 +263,7 @@ export default function ProfileClient({
     }
 
     return (
-        <PageAnimateContainer className={`${handwriting.variable} ${bodyFont.variable} font-handwriting space-y-6`}>
+        <PageAnimateContainer className="font-handwriting space-y-6">
             {/* Header with Tabs - Notebook Style */}
             <PageAnimateItem className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="transform -rotate-1 flex items-center gap-3">
@@ -306,9 +294,9 @@ export default function ProfileClient({
 
             {/* Profile Tab */}
             {activeTab === 'profile' && (
-                <div className="space-y-6">
+                <div className="space-y-6 animate-in fade-in zoom-in duration-300">
                     {/* Profile Card - Notebook Style */}
-                    <PageAnimateItem className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 relative transform rotate-0 hover:rotate-0">
+                    <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 relative transform rotate-0 hover:rotate-0">
                         <div className="absolute -top-3 left-8 w-16 h-6 bg-yellow-200/80 rotate-[-5deg] shadow-sm"></div>
                         <div className="absolute -top-3 right-8 w-16 h-6 bg-blue-200/80 rotate-[5deg] shadow-sm"></div>
 
@@ -439,10 +427,10 @@ export default function ProfileClient({
                                 )}
                             </div>
                         </div>
-                    </PageAnimateItem>
+                    </div>
 
                     {/* Quota Card - Sticky Note Style */}
-                    <PageAnimateItem className="bg-green-200 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative transform rotate-1">
+                    <div className="bg-green-200 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative transform rotate-1">
                         <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-4 bg-blue-400 rounded-b-sm shadow-sm"></div>
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
@@ -466,10 +454,10 @@ export default function ProfileClient({
                                 </Link>
                             </div>
                         </div>
-                    </PageAnimateItem>
+                    </div>
 
                     {/* Achievements Preview - Notebook Style */}
-                    <PageAnimateItem className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
+                    <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
                         <div className="absolute -top-3 left-6 w-12 h-5 bg-green-200/80 rotate-[-3deg] shadow-sm"></div>
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="font-bold text-xl flex items-center gap-2 text-gray-900">
@@ -495,364 +483,389 @@ export default function ProfileClient({
                                 </div>
                             ))}
                         </div>
-                    </PageAnimateItem>
+                    </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Statistics Tab */}
-            {activeTab === 'stats' && (
-                <PageAnimateItem className="space-y-6">
-                    <div className="space-y-6">
-                        {(() => {
-                            const currentStats = (statsData && statsData.all) ? statsData[statsFilter] : null
-                            if (!currentStats || (statsData.all && !currentStats.summary.totalSessions && statsFilter !== 'all')) {
-                                return (
-                                    <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-gray-400 p-8 text-center bg-gray-50 relative">
-                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-5 bg-yellow-200 rotate-1 shadow-sm"></div>
-                                        <div className="w-20 h-20 bg-blue-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                            <TrendingUp className="w-10 h-10 text-blue-700" />
-                                        </div>
-                                        <h3 className="text-2xl font-bold mb-2 text-gray-900 flex items-center gap-2">
-                                            <BarChart3 className="w-6 h-6" /> Belum Ada Data
-                                        </h3>
-                                        <p className="text-lg text-gray-600 mb-6 max-w-md">
-                                            Kamu belum menyelesaikan sesi tryout apapun. Ayo mulai latihan!
-                                        </p>
-                                        <Link href="/dashboard/latihan" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2">
-                                            Mulai Tryout <Rocket className="w-4 h-4" />
-                                        </Link>
-                                    </div>
-                                )
-                            }
-                            return (
-                                <>
-                                    <StatOverview data={currentStats} streak={profile.streak_count || 0} type={statsFilter} />
-                                    <div className="bg-yellow-100 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                                        <div className="absolute -top-3 left-6 w-12 h-5 bg-pink-200/80 rotate-[-2deg] shadow-sm"></div>
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <div className="p-2 bg-purple-300 border-2 border-gray-900">
-                                                <Sparkles className="text-purple-700 w-5 h-5" />
+            {/* Statistics Tab */}
+            {
+                activeTab === 'stats' && (
+                    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
+                        <div className="space-y-6">
+                            {(() => {
+                                const currentStats = (statsData && statsData.all) ? statsData[statsFilter] : null
+                                if (!currentStats || (statsData.all && !currentStats.summary.totalSessions && statsFilter !== 'all')) {
+                                    return (
+                                        <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-gray-400 p-8 text-center bg-gray-50 relative">
+                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-5 bg-yellow-200 rotate-1 shadow-sm"></div>
+                                            <div className="w-20 h-20 bg-blue-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                                <TrendingUp className="w-10 h-10 text-blue-700" />
                                             </div>
-                                            <h3 className="font-bold text-xl text-gray-900">Insight Tryout</h3>
+                                            <h3 className="text-2xl font-bold mb-2 text-gray-900 flex items-center gap-2">
+                                                <BarChart3 className="w-6 h-6" /> Belum Ada Data
+                                            </h3>
+                                            <p className="text-lg text-gray-600 mb-6 max-w-md">
+                                                Kamu belum menyelesaikan sesi tryout apapun. Ayo mulai latihan!
+                                            </p>
+                                            <Link href="/dashboard/latihan" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2">
+                                                Mulai Tryout <Rocket className="w-4 h-4" />
+                                            </Link>
                                         </div>
-                                        <div className="space-y-2">
-                                            {currentStats?.insights?.map((insight: string, idx: number) => (
-                                                <p key={idx} className="text-base text-gray-700 leading-relaxed">
-                                                    • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>') }} />
-                                                </p>
-                                            ))}
+                                    )
+                                }
+
+                                // Explicit data check for Chart
+                                const safeCategoryData = currentStats.categoryStats || []
+                                if (safeCategoryData.length === 0) {
+                                    return <div className="p-4 bg-orange-100 text-orange-900 border-2 border-orange-200">Category Stats Array is Empty</div>
+                                }
+
+                                return (
+                                    <>
+                                        <StatOverview data={currentStats} streak={profile.streak_count || 0} type={statsFilter} />
+                                        <div className="bg-yellow-100 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
+                                            <div className="absolute -top-3 left-6 w-12 h-5 bg-pink-200/80 rotate-[-2deg] shadow-sm"></div>
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <div className="p-2 bg-purple-300 border-2 border-gray-900">
+                                                    <Sparkles className="text-purple-700 w-5 h-5" />
+                                                </div>
+                                                <h3 className="font-bold text-xl text-gray-900">Insight Tryout</h3>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {currentStats?.insights?.map((insight: string, idx: number) => (
+                                                    <p key={idx} className="text-base text-gray-700 leading-relaxed">
+                                                        • <span dangerouslySetInnerHTML={{ __html: insight.replace(/\*\*(.*?)\*\*/g, '<strong class="text-gray-900">$1</strong>') }} />
+                                                    </p>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        <div className="min-h-[400px] bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
-                                            <div className="absolute -top-3 left-8 w-14 h-5 bg-blue-200/80 rotate-[-1deg] shadow-sm"></div>
-                                            <TrendChart
-                                                data={currentStats.trendData}
-                                                trendDirection={currentStats.trendDirection}
-                                                trendPercentage={currentStats.trendPercentage}
-                                                shortTermTrend={currentStats.shortTermTrend}
-                                                shortTermPercentage={currentStats.shortTermPercentage}
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            <div className="min-h-[400px] bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
+                                                <div className="absolute -top-3 left-8 w-14 h-5 bg-blue-200/80 rotate-[-1deg] shadow-sm"></div>
+                                                <TrendChart
+                                                    data={currentStats.trendData}
+                                                    trendDirection={currentStats.trendDirection}
+                                                    trendPercentage={currentStats.trendPercentage}
+                                                    shortTermTrend={currentStats.shortTermTrend}
+                                                    shortTermPercentage={currentStats.shortTermPercentage}
+                                                />
+                                            </div>
+                                            <div className="min-h-[400px] bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
+                                                <div className="absolute -top-3 right-8 w-14 h-5 bg-green-200/80 rotate-[1deg] shadow-sm"></div>
+                                                <CategoryChart
+                                                    data={
+                                                        statsFilter === 'tryout' || statsFilter === 'all'
+                                                            ? safeCategoryData
+                                                            : safeCategoryData.filter((c: any) => c.subject.toLowerCase() === statsFilter)
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
+                                            <div className="absolute -top-3 left-10 w-16 h-5 bg-orange-200/80 rotate-[-1deg] shadow-sm"></div>
+                                            <ConsistencyTracker
+                                                data={currentStats.consistencyData}
+                                                score={currentStats.consistencyScore}
+                                                activeCount={currentStats.activeInPeriod}
                                             />
                                         </div>
-                                        <div className="min-h-[400px] bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
-                                            <div className="absolute -top-3 right-8 w-14 h-5 bg-green-200/80 rotate-[1deg] shadow-sm"></div>
-                                            <CategoryChart
-                                                data={
-                                                    statsFilter === 'tryout' || statsFilter === 'all'
-                                                        ? currentStats.categoryStats
-                                                        : currentStats.categoryStats.filter((c: any) => c.subject.toLowerCase() === statsFilter)
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 relative">
-                                        <div className="absolute -top-3 left-10 w-16 h-5 bg-orange-200/80 rotate-[-1deg] shadow-sm"></div>
-                                        <ConsistencyTracker
-                                            data={currentStats.consistencyData}
-                                            score={currentStats.consistencyScore}
-                                            activeCount={currentStats.activeInPeriod}
-                                        />
-                                    </div>
-                                </>
-                            )
-                        })()}
+                                    </>
+                                )
+                            })()}
+                        </div>
                     </div>
-                </PageAnimateItem>
-            )}
+                )
+            }
 
             {/* History Tab */}
-            {activeTab === 'history' && (
-                <PageAnimateItem className="space-y-6">
-                    <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                        <div className="absolute -top-3 left-8 w-14 h-5 bg-green-200/80 rotate-[-2deg] shadow-sm"></div>
-                        <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
-                            <CreditCard className="w-6 h-6" /> Riwayat Pembelian Kuota
-                        </h4>
-                        {transactions.length > 0 ? (
-                            <div className="space-y-3">
-                                {transactions.map((tx) => (
-                                    <div key={tx.id} className="flex items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-blue-100 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                                <Coins className="w-6 h-6 text-gray-900" />
+            {
+                activeTab === 'history' && (
+                    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
+                        <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
+                            <div className="absolute -top-3 left-8 w-14 h-5 bg-green-200/80 rotate-[-2deg] shadow-sm"></div>
+                            <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
+                                <CreditCard className="w-6 h-6" /> Riwayat Pembelian Kuota
+                            </h4>
+                            {transactions.length > 0 ? (
+                                <div className="space-y-3">
+                                    {transactions.map((tx) => (
+                                        <div key={tx.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all gap-4 sm:gap-0">
+                                            <div className="flex items-start sm:items-center gap-4">
+                                                <div className="w-12 h-12 bg-blue-100 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0">
+                                                    <Coins className="w-6 h-6 text-gray-900" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-base text-gray-900">{tx.package_name}</div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="font-bold text-base text-gray-900">{tx.package_name}</div>
-                                                <div className="text-sm text-gray-500">
-                                                    {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                            <div className="text-left sm:text-right pl-[64px] sm:pl-0">
+                                                <div className="font-bold text-gray-900">Rp {tx.amount.toLocaleString('id-ID')}</div>
+                                                <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-gray-900 inline-block mt-1 ${tx.status === 'settlement' ? 'bg-green-300' : 'bg-yellow-300'}`}>
+                                                    {tx.status === 'settlement' ? 'Berhasil' : tx.status}
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="font-bold text-gray-900">Rp {tx.amount.toLocaleString('id-ID')}</div>
-                                            <div className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 border border-gray-900 ${tx.status === 'settlement' ? 'bg-green-300' : 'bg-yellow-300'}`}>
-                                                {tx.status === 'settlement' ? 'Berhasil' : tx.status}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
-                                <div className="w-16 h-16 bg-green-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <ShoppingCart className="w-8 h-8 text-gray-900" />
+                                    ))}
                                 </div>
-                                <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
-                                <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
-                                <Link href="/dashboard/beli-paket" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
-                                    Beli Kuota Sekarang
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-                    <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                        <div className="absolute -top-3 right-8 w-14 h-5 bg-orange-200/80 rotate-[2deg] shadow-sm"></div>
-                        <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
-                            <Ticket className="w-6 h-6" /> Riwayat Pemakaian Kuota
-                        </h4>
-                        {usageSessions.length > 0 ? (
-                            <div className="space-y-3">
-                                {usageSessions.map((session) => (
-                                    <div key={session.id} className="flex items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 bg-orange-200 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                                <FileText className="w-6 h-6 text-gray-900" />
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-base text-gray-900">
-                                                    {session.mode === 'tryout' ? 'Tryout SKD Full' : 'Latihan Soal'}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {new Date(session.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="text-base font-bold text-red-500 bg-red-100 px-3 py-1 border-2 border-gray-900">
-                                            -1 Tiket
-                                        </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
+                                    <div className="w-16 h-16 bg-green-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <ShoppingCart className="w-8 h-8 text-gray-900" />
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
-                                <div className="w-16 h-16 bg-orange-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <ClipboardList className="w-8 h-8 text-gray-900" />
+                                    <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
+                                    <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
+                                    <Link href="/dashboard/beli-paket" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                        Beli Kuota Sekarang
+                                    </Link>
                                 </div>
-                                <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pemakaian</p>
-                                <p className="text-sm text-gray-500">Riwayat pemakaian kuota akan muncul di sini</p>
-                            </div>
-                        )}
+                            )}
+                        </div>
+                        <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
+                            <div className="absolute -top-3 right-8 w-14 h-5 bg-orange-200/80 rotate-[2deg] shadow-sm"></div>
+                            <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
+                                <Ticket className="w-6 h-6" /> Riwayat Pemakaian Kuota
+                            </h4>
+                            {usageSessions.length > 0 ? (
+                                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {usageSessions.map((session) => (
+                                        <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all gap-3 sm:gap-0">
+                                            <div className="flex items-start sm:items-center gap-4">
+                                                <div className="w-12 h-12 bg-orange-200 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0">
+                                                    <FileText className="w-6 h-6 text-gray-900" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-base text-gray-900">
+                                                        {session.mode === 'tryout' ? 'Tryout SKD Full' : 'Latihan Soal'}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {new Date(session.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="pl-[64px] sm:pl-0">
+                                                <span className="text-base font-bold text-red-500 bg-red-100 px-3 py-1 border-2 border-gray-900 inline-block">
+                                                    -1 Tiket
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
+                                    <div className="w-16 h-16 bg-orange-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <ClipboardList className="w-8 h-8 text-gray-900" />
+                                    </div>
+                                    <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pemakaian</p>
+                                    <p className="text-sm text-gray-500">Riwayat pemakaian kuota akan muncul di sini</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </PageAnimateItem>
-            )}
+                )
+            }
 
             {/* Settings Tab */}
-            {activeTab === 'settings' && (
-                <PageAnimateItem className="space-y-6">
-                    <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                        <div className="absolute -top-3 right-8 w-14 h-5 bg-purple-200/80 rotate-[3deg] shadow-sm"></div>
-                        <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
-                            <Settings className="w-6 h-6" /> Pengaturan Akun
-                        </h4>
-                        <div className="space-y-4">
-                            <button
-                                onClick={() => setShowPasswordModal(true)}
-                                className="w-full text-left p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all group"
-                            >
-                                <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-blue-600 flex items-center gap-2">
-                                    <Lock className="w-4 h-4" /> Ubah Password
-                                </div>
-                                <div className="text-sm text-gray-600">Update password akun Anda</div>
-                            </button>
-                            <button
-                                onClick={() => setShowNotificationModal(true)}
-                                className="w-full text-left p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all group"
-                            >
-                                <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-green-600 flex items-center gap-2">
-                                    <Bell className="w-4 h-4" /> Notifikasi
-                                </div>
-                                <div className="text-sm text-gray-600">Atur preferensi notifikasi</div>
-                            </button>
-                            <button className="w-full text-left p-4 bg-red-50 border-2 border-red-300 hover:border-red-600 hover:shadow-[2px_2px_0px_0px_rgba(220,38,38,1)] transition-all group">
-                                <div className="font-bold text-base mb-1 text-red-600 flex items-center gap-2">
-                                    <Trash2 className="w-4 h-4" /> Hapus Akun
-                                </div>
-                                <div className="text-sm text-red-400">Hapus akun dan semua data Anda</div>
-                            </button>
+            {
+                activeTab === 'settings' && (
+                    <div className="space-y-6 animate-in fade-in zoom-in duration-300">
+                        <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
+                            <div className="absolute -top-3 right-8 w-14 h-5 bg-purple-200/80 rotate-[3deg] shadow-sm"></div>
+                            <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
+                                <Settings className="w-6 h-6" /> Pengaturan Akun
+                            </h4>
+                            <div className="space-y-4">
+                                <button
+                                    onClick={() => setShowPasswordModal(true)}
+                                    className="w-full text-left p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                                >
+                                    <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-blue-600 flex items-center gap-2">
+                                        <Lock className="w-4 h-4" /> Ubah Password
+                                    </div>
+                                    <div className="text-sm text-gray-600">Update password akun Anda</div>
+                                </button>
+                                <button
+                                    onClick={() => setShowNotificationModal(true)}
+                                    className="w-full text-left p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                                >
+                                    <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-green-600 flex items-center gap-2">
+                                        <Bell className="w-4 h-4" /> Notifikasi
+                                    </div>
+                                    <div className="text-sm text-gray-600">Atur preferensi notifikasi</div>
+                                </button>
+                                <button className="w-full text-left p-4 bg-red-50 border-2 border-red-300 hover:border-red-600 hover:shadow-[2px_2px_0px_0px_rgba(220,38,38,1)] transition-all group">
+                                    <div className="font-bold text-base mb-1 text-red-600 flex items-center gap-2">
+                                        <Trash2 className="w-4 h-4" /> Hapus Akun
+                                    </div>
+                                    <div className="text-sm text-red-400">Hapus akun dan semua data Anda</div>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </PageAnimateItem>
-            )}
+                )
+            }
 
             {/* Modals */}
-            {showNotificationModal && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-                    onClick={() => setShowNotificationModal(false)}
-                >
+            {
+                showNotificationModal && (
                     <div
-                        className="relative max-w-md w-full bg-[#fdfbf7] p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none rotate-1"
-                        onClick={(e) => e.stopPropagation()}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                        onClick={() => setShowNotificationModal(false)}
                     >
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-101/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
-                        <div className="flex items-center justify-between mb-8 relative z-10">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-green-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <Bell size={24} className="text-gray-900" />
-                                </div>
-                                <h3 className="text-2xl font-bold font-handwriting text-gray-900">Pengaturan Notifikasi</h3>
-                            </div>
-                            <button onClick={() => setShowNotificationModal(false)} className="p-2 hover:bg-red-100 transition rounded-full">
-                                <X size={24} className="text-gray-900" />
-                            </button>
-                        </div>
-                        <div className="space-y-4 font-handwriting">
-                            {[
-                                { id: 'emailNotifications', label: 'Email Notifikasi', desc: 'Terima notifikasi melalui email' },
-                                { id: 'reminderNotifications', label: 'Pengingat Belajar', desc: 'Ingatkan untuk belajar setiap hari' },
-                                { id: 'achievementNotifications', label: 'Notifikasi Achievement', desc: 'Dapatkan pemberitahuan pencapaian baru' },
-                                { id: 'weeklyReport', label: 'Laporan Mingguan', desc: 'Ringkasan progress belajar mingguan' }
-                            ].map((s) => (
-                                <div key={s.id} className="flex items-center justify-between p-4 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <div className="flex-1">
-                                        <div className="font-bold text-lg text-gray-900 mb-1">{s.label}</div>
-                                        <div className="text-base text-gray-600">{s.desc}</div>
+                        <div
+                            className="relative max-w-md w-full bg-[#fdfbf7] p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none rotate-1"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-101/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
+                            <div className="flex items-center justify-between mb-8 relative z-10">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-green-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <Bell size={24} className="text-gray-900" />
                                     </div>
-                                    <button
-                                        onClick={() => setNotificationSettings((prev: any) => ({ ...prev, [s.id]: !prev[s.id as keyof typeof notificationSettings] }))}
-                                        className={`relative w-14 h-8 transition-colors border-2 border-gray-900 ${notificationSettings[s.id as keyof typeof notificationSettings] ? 'bg-green-400' : 'bg-gray-200'}`}
-                                    >
-                                        <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-gray-900 transition-transform ${notificationSettings[s.id as keyof typeof notificationSettings] ? 'translate-x-6' : 'translate-x-0'}`} />
-                                    </button>
+                                    <h3 className="text-2xl font-bold font-handwriting text-gray-900">Pengaturan Notifikasi</h3>
                                 </div>
-                            ))}
-                        </div>
-                        <div className="flex gap-4 pt-8">
-                            <button onClick={handleSaveNotifications} disabled={isSavingNotifications} className="flex-1 px-6 py-3 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
-                                {isSavingNotifications ? 'Menyimpan...' : 'Simpan Pengaturan'}
-                            </button>
-                            <button onClick={() => setShowNotificationModal(false)} disabled={isSavingNotifications} className="px-6 py-3 bg-white text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
-                                Batal
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showPasswordModal && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-                    onClick={() => setShowPasswordModal(false)}
-                >
-                    <div
-                        className="relative max-w-md w-full bg-[#fdfbf7] p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none -rotate-1"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-blue-101/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
-                        <div className="flex items-center justify-between mb-8 relative z-10">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-yellow-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <Shield size={24} className="text-gray-900" />
-                                </div>
-                                <h3 className="text-2xl font-bold font-handwriting text-gray-900">Ubah Password</h3>
-                            </div>
-                            <button onClick={() => setShowPasswordModal(false)} className="p-2 hover:bg-red-100 transition rounded-full">
-                                <X size={24} className="text-gray-900" />
-                            </button>
-                        </div>
-                        <div className="space-y-6 font-handwriting">
-                            <div>
-                                <label className="text-lg font-bold text-gray-900 mb-2 block">Password Lama</label>
-                                <input
-                                    type="password"
-                                    value={oldPassword}
-                                    onChange={(e) => setOldPassword(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
-                                    placeholder="Masukkan password saat ini"
-                                    disabled={isChangingPassword}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-lg font-bold text-gray-900 mb-2 block">Password Baru</label>
-                                <input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
-                                    placeholder="Minimal 6 karakter"
-                                    disabled={isChangingPassword}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-lg font-bold text-gray-900 mb-2 block">Konfirmasi Password Baru</label>
-                                <input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
-                                    placeholder="Ketik ulang password baru"
-                                    disabled={isChangingPassword}
-                                />
-                            </div>
-                            <div className="flex gap-4 pt-4">
-                                <button onClick={handleChangePassword} disabled={isChangingPassword} className="flex-1 px-6 py-3 bg-blue-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
-                                    {isChangingPassword ? 'Mengubah...' : 'Ubah Password'}
+                                <button onClick={() => setShowNotificationModal(false)} className="p-2 hover:bg-red-100 transition rounded-full">
+                                    <X size={24} className="text-gray-900" />
                                 </button>
-                                <button onClick={() => { setShowPasswordModal(false); setOldPassword(''); setNewPassword(''); setConfirmPassword(''); }} disabled={isChangingPassword} className="px-6 py-3 bg-white text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
+                            </div>
+                            <div className="space-y-4 font-handwriting">
+                                {[
+                                    { id: 'emailNotifications', label: 'Email Notifikasi', desc: 'Terima notifikasi melalui email' },
+                                    { id: 'reminderNotifications', label: 'Pengingat Belajar', desc: 'Ingatkan untuk belajar setiap hari' },
+                                    { id: 'achievementNotifications', label: 'Notifikasi Achievement', desc: 'Dapatkan pemberitahuan pencapaian baru' },
+                                    { id: 'weeklyReport', label: 'Laporan Mingguan', desc: 'Ringkasan progress belajar mingguan' }
+                                ].map((s) => (
+                                    <div key={s.id} className="flex items-center justify-between p-4 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="flex-1">
+                                            <div className="font-bold text-lg text-gray-900 mb-1">{s.label}</div>
+                                            <div className="text-base text-gray-600">{s.desc}</div>
+                                        </div>
+                                        <button
+                                            onClick={() => setNotificationSettings((prev: any) => ({ ...prev, [s.id]: !prev[s.id as keyof typeof notificationSettings] }))}
+                                            className={`relative w-14 h-8 transition-colors border-2 border-gray-900 ${notificationSettings[s.id as keyof typeof notificationSettings] ? 'bg-green-400' : 'bg-gray-200'}`}
+                                        >
+                                            <div className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white border-2 border-gray-900 transition-transform ${notificationSettings[s.id as keyof typeof notificationSettings] ? 'translate-x-6' : 'translate-x-0'}`} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex gap-4 pt-8">
+                                <button onClick={handleSaveNotifications} disabled={isSavingNotifications} className="flex-1 px-6 py-3 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
+                                    {isSavingNotifications ? 'Menyimpan...' : 'Simpan Pengaturan'}
+                                </button>
+                                <button onClick={() => setShowNotificationModal(false)} disabled={isSavingNotifications} className="px-6 py-3 bg-white text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
                                     Batal
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {showImagePreview && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShowImagePreview(false)}>
-                    <div className="relative max-w-2xl w-full">
-                        <button onClick={() => setShowImagePreview(false)} className="absolute -top-12 right-0 p-2 text-white">
-                            <X size={24} />
-                        </button>
-                        <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                            {profile.avatar_url ? (
-                                <img src={profile.avatar_url} alt="Avatar Preview" className="w-full h-auto max-h-[80vh] object-contain" />
-                            ) : (
-                                <div className="w-96 h-96 flex items-center justify-center">
-                                    <span className="text-9xl font-bold text-white">{user.email[0].toUpperCase()}</span>
+            {
+                showPasswordModal && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                        onClick={() => setShowPasswordModal(false)}
+                    >
+                        <div
+                            className="relative max-w-md w-full bg-[#fdfbf7] p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none -rotate-1"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-blue-101/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
+                            <div className="flex items-center justify-between mb-8 relative z-10">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-yellow-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <Shield size={24} className="text-gray-900" />
+                                    </div>
+                                    <h3 className="text-2xl font-bold font-handwriting text-gray-900">Ubah Password</h3>
                                 </div>
-                            )}
+                                <button onClick={() => setShowPasswordModal(false)} className="p-2 hover:bg-red-100 transition rounded-full">
+                                    <X size={24} className="text-gray-900" />
+                                </button>
+                            </div>
+                            <div className="space-y-6 font-handwriting">
+                                <div>
+                                    <label className="text-lg font-bold text-gray-900 mb-2 block">Password Lama</label>
+                                    <input
+                                        type="password"
+                                        value={oldPassword}
+                                        onChange={(e) => setOldPassword(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
+                                        placeholder="Masukkan password saat ini"
+                                        disabled={isChangingPassword}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-lg font-bold text-gray-900 mb-2 block">Password Baru</label>
+                                    <input
+                                        type="password"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
+                                        placeholder="Minimal 6 karakter"
+                                        disabled={isChangingPassword}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-lg font-bold text-gray-900 mb-2 block">Konfirmasi Password Baru</label>
+                                    <input
+                                        type="password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
+                                        placeholder="Ketik ulang password baru"
+                                        disabled={isChangingPassword}
+                                    />
+                                </div>
+                                <div className="flex gap-4 pt-4">
+                                    <button onClick={handleChangePassword} disabled={isChangingPassword} className="flex-1 px-6 py-3 bg-blue-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
+                                        {isChangingPassword ? 'Mengubah...' : 'Ubah Password'}
+                                    </button>
+                                    <button onClick={() => { setShowPasswordModal(false); setOldPassword(''); setNewPassword(''); setConfirmPassword(''); }} disabled={isChangingPassword} className="px-6 py-3 bg-white text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
+                                        Batal
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
-            {selectedImage && (
-                <ImageCropper
-                    imageSrc={selectedImage}
-                    onCancel={() => setSelectedImage(null)}
-                    onCropComplete={onCropComplete}
-                />
-            )}
-        </PageAnimateContainer>
+            {
+                showImagePreview && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setShowImagePreview(false)}>
+                        <div className="relative max-w-2xl w-full">
+                            <button onClick={() => setShowImagePreview(false)} className="absolute -top-12 right-0 p-2 text-white">
+                                <X size={24} />
+                            </button>
+                            <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                {profile.avatar_url ? (
+                                    <img src={profile.avatar_url} alt="Avatar Preview" className="w-full h-auto max-h-[80vh] object-contain" />
+                                ) : (
+                                    <div className="w-96 h-96 flex items-center justify-center">
+                                        <span className="text-9xl font-bold text-white">{user.email[0].toUpperCase()}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                selectedImage && (
+                    <ImageCropper
+                        imageSrc={selectedImage}
+                        onCancel={() => setSelectedImage(null)}
+                        onCropComplete={onCropComplete}
+                    />
+                )
+            }
+        </PageAnimateContainer >
     )
 }

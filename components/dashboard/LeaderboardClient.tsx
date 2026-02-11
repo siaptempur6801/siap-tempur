@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Trophy, Medal, Search, User, BarChart3, SearchX } from 'lucide-react'
+import { Medal, Search, User, BarChart3, SearchX } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import PaperBackground from '@/components/PaperBackground'
@@ -83,7 +83,7 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                     </div>
 
                     {/* User Rows */}
-                    <div className="divide-y-2 divide-gray-100 flex flex-col">
+                    <div className="flex flex-col">
                         {filteredData.map((entry, idx) => {
                             const isCurrentUser = entry.user_id === currentUserId
 
@@ -94,75 +94,110 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: idx * 0.05 }}
                                     className={cn(
-                                        "grid grid-cols-1 md:grid-cols-12 items-center p-4 transition-colors hover:bg-gray-50/50 relative overflow-hidden",
-                                        isCurrentUser && "bg-blue-50/80 border-y-2 border-blue-600 z-10"
+                                        "relative border-b-2 border-gray-100 transition-all hover:bg-gray-50/50 overflow-hidden",
+                                        isCurrentUser && "bg-blue-50/30 border-l-4 border-l-blue-600 z-10",
+                                        "md:grid md:grid-cols-12 md:items-center"
                                     )}
                                 >
                                     {isCurrentUser && (
-                                        <div className="absolute top-0 right-0 py-1 px-3 bg-blue-600 text-white text-[10px] font-black uppercase rotate-[-45deg] translate-x-4 -translate-y-1 shadow-sm">
+                                        <div className="absolute top-0 right-0 py-1 px-4 bg-blue-600 text-white text-[10px] font-black uppercase rotate-[-45deg] translate-x-5 -translate-y-1 shadow-sm z-30">
                                             Anda
                                         </div>
                                     )}
 
-                                    {/* Position (Mobile & Desktop) */}
-                                    <div className="col-span-1 flex items-center justify-center mb-2 md:mb-0">
-                                        <div className="md:hidden text-xs font-bold text-gray-400 mr-2 uppercase">Peringkat:</div>
-                                        {getRankIcon(entry.rank_pos)}
+                                    {/* --- MOBILE LAYOUT (< 768px) --- */}
+                                    <div className="md:hidden p-4 flex items-start gap-4">
+                                        {/* Rank */}
+                                        <div className="w-8 flex-shrink-0 flex justify-center pt-1">
+                                            {getRankIcon(entry.rank_pos)}
+                                        </div>
+
+                                        {/* Main Content Area */}
+                                        <div className="flex-1 min-w-0">
+                                            {/* Header: Avatar, Name & Total */}
+                                            <div className="flex items-start gap-3 mb-3">
+                                                <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                                    {entry.avatar_url ? (
+                                                        <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <User className="text-gray-400 w-7 h-7" />
+                                                    )}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0 flex flex-col pt-0.5">
+                                                    <div className={cn(
+                                                        "text-base font-black truncate leading-tight",
+                                                        isCurrentUser ? "text-blue-700" : "text-gray-900"
+                                                    )}>
+                                                        {entry.full_name || 'Pejuang Tanpa Nama'}
+                                                    </div>
+                                                    <div className="mt-1 flex items-center gap-2">
+                                                        <span className="text-[10px] uppercase font-black text-gray-400">Total Score</span>
+                                                        <span className="text-lg font-black text-gray-900">{entry.top_score}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Score Details: Compact Badges */}
+                                            <div className="grid grid-cols-3 gap-2 p-2 bg-gray-50 rounded-sm border border-gray-100">
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-[8px] font-black text-blue-500 uppercase leading-none mb-1">TWK</span>
+                                                    <span className="text-xs font-bold text-gray-700">{entry.score_twk}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center border-x border-gray-200">
+                                                    <span className="text-[8px] font-black text-green-500 uppercase leading-none mb-1">TIU</span>
+                                                    <span className="text-xs font-bold text-gray-700">{entry.score_tiu}</span>
+                                                </div>
+                                                <div className="flex flex-col items-center">
+                                                    <span className="text-[8px] font-black text-orange-500 uppercase leading-none mb-1">TKP</span>
+                                                    <span className="text-xs font-bold text-gray-700">{entry.score_tkp}</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {/* Profile & Name */}
-                                    <div className="col-span-5 px-0 md:px-4 flex items-center gap-3 mb-4 md:mb-0">
-                                        <div className="w-10 h-10 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-                                            {entry.avatar_url ? (
-                                                <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <User className="text-gray-400 w-6 h-6" />
-                                            )}
+                                    {/* --- DESKTOP & TABLET LAYOUT (>= 768px) --- */}
+                                    <div className="hidden md:contents">
+                                        {/* Rank Column */}
+                                        <div className="col-span-1 flex items-center justify-center py-4">
+                                            {getRankIcon(entry.rank_pos)}
                                         </div>
-                                        <div className="overflow-hidden">
+
+                                        {/* Profile Column */}
+                                        <div className="col-span-5 px-4 flex items-center gap-3 py-4">
+                                            <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                                {entry.avatar_url ? (
+                                                    <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <User className="text-gray-400 w-7 h-7" />
+                                                )}
+                                            </div>
                                             <div className={cn(
-                                                "text-lg font-black truncate leading-tight",
+                                                "text-lg font-black truncate",
                                                 isCurrentUser ? "text-blue-700" : "text-gray-900"
                                             )}>
                                                 {entry.full_name || 'Pejuang Tanpa Nama'}
                                             </div>
-                                            <div className="text-[10px] text-gray-400 md:hidden uppercase font-bold tracking-tighter">
-                                                Tap untuk dibil detail &rarr;
-                                            </div>
                                         </div>
-                                    </div>
 
-                                    {/* Desktop Score Breakdown */}
-                                    <div className="hidden md:contents">
-                                        <div className="col-span-1 text-center font-bold text-gray-500">{entry.score_twk}</div>
-                                        <div className="col-span-1 text-center font-bold text-gray-500">{entry.score_tiu}</div>
-                                        <div className="col-span-1 text-center font-bold text-gray-500">{entry.score_tkp}</div>
-                                        <div className="col-span-3 text-center">
-                                            <span className="inline-flex items-center gap-2 px-6 py-2 bg-gray-900 text-white font-black text-xl shadow-[3px_3px_0px_0px_rgba(59,130,246,0.5)]">
-                                                {entry.top_score}
-                                            </span>
+                                        {/* Score Columns */}
+                                        <div className="col-span-1 text-center py-4">
+                                            <span className="text-base font-bold text-gray-600">{entry.score_twk}</span>
                                         </div>
-                                    </div>
+                                        <div className="col-span-1 text-center py-4">
+                                            <span className="text-base font-bold text-gray-600">{entry.score_tiu}</span>
+                                        </div>
+                                        <div className="col-span-1 text-center py-4">
+                                            <span className="text-base font-bold text-gray-600">{entry.score_tkp}</span>
+                                        </div>
 
-                                    {/* Mobile Score Breakdown */}
-                                    <div className="md:hidden flex items-center justify-between mt-2 pt-4 border-t border-dashed border-gray-200">
-                                        <div className="flex gap-4">
-                                            <div className="text-center">
-                                                <div className="text-[10px] uppercase font-black text-gray-400 mb-1">TWK</div>
-                                                <div className="font-bold text-sm bg-gray-100 px-2 rounded">{entry.score_twk}</div>
+                                        {/* Total Score Column */}
+                                        <div className="col-span-3 text-center py-4">
+                                            <div className="inline-flex flex-col items-center">
+                                                <span className="px-6 py-2 bg-gray-900 text-white font-black text-2xl shadow-[4px_4px_0px_0px_rgba(59,130,246,0.5)]">
+                                                    {entry.top_score}
+                                                </span>
                                             </div>
-                                            <div className="text-center">
-                                                <div className="text-[10px] uppercase font-black text-gray-400 mb-1">TIU</div>
-                                                <div className="font-bold text-sm bg-gray-100 px-2 rounded">{entry.score_tiu}</div>
-                                            </div>
-                                            <div className="text-center">
-                                                <div className="text-[10px] uppercase font-black text-gray-400 mb-1">TKP</div>
-                                                <div className="font-bold text-sm bg-gray-100 px-2 rounded">{entry.score_tkp}</div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-[10px] uppercase font-black text-blue-600 mb-1">Total Score</div>
-                                            <div className="text-2xl font-black text-gray-900">{entry.top_score}</div>
                                         </div>
                                     </div>
                                 </motion.div>

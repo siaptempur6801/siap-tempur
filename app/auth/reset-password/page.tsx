@@ -5,31 +5,7 @@ import { useRouter } from 'next/navigation'
 import { updatePassword } from '@/app/auth/actions'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Patrick_Hand, Work_Sans } from "next/font/google";
-
-const handwriting = Patrick_Hand({
-    subsets: ["latin"],
-    weight: "400",
-    variable: "--font-handwriting"
-});
-
-const bodyFont = Work_Sans({
-    subsets: ["latin"],
-    variable: "--font-body"
-});
-
-function PaperBackground() {
-    return (
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-30"
-            style={{
-                backgroundImage: "repeating-linear-gradient(transparent, transparent 1.9rem, #9ca3af 2rem)",
-                backgroundSize: "100% 2rem",
-                marginTop: "2rem"
-            }}>
-            <div className="absolute left-8 md:left-24 top-0 bottom-0 w-[2px] bg-red-300/50"></div>
-        </div>
-    );
-}
+import PaperBackground from '@/components/PaperBackground'
 
 export default function ResetPasswordPage() {
     const [showPassword, setShowPassword] = useState(false)
@@ -59,8 +35,8 @@ export default function ResetPasswordPage() {
     }
 
     return (
-        <div className={`${handwriting.variable} ${bodyFont.variable} font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden`}>
-            <PaperBackground />
+        <div className="font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden">
+            <PaperBackground variant="light" />
 
             <div className="w-full max-w-md space-y-8 relative z-10 bg-white p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl rotate-1">
                 {/* Tape Effect */}

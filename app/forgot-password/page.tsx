@@ -5,31 +5,8 @@ import Link from 'next/link'
 import { forgotPassword } from '@/app/auth/actions'
 import { ArrowLeft, Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
-import { Patrick_Hand, Work_Sans } from "next/font/google";
+import PaperBackground from '@/components/PaperBackground'
 
-const handwriting = Patrick_Hand({
-    subsets: ["latin"],
-    weight: "400",
-    variable: "--font-handwriting"
-});
-
-const bodyFont = Work_Sans({
-    subsets: ["latin"],
-    variable: "--font-body"
-});
-
-function PaperBackground() {
-    return (
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-30"
-            style={{
-                backgroundImage: "repeating-linear-gradient(transparent, transparent 1.9rem, #9ca3af 2rem)",
-                backgroundSize: "100% 2rem",
-                marginTop: "2rem"
-            }}>
-            <div className="absolute left-8 md:left-24 top-0 bottom-0 w-[2px] bg-red-300/50"></div>
-        </div>
-    );
-}
 
 export default function ForgotPasswordPage() {
     const [loading, setLoading] = useState(false)
@@ -58,8 +35,8 @@ export default function ForgotPasswordPage() {
     }
 
     return (
-        <div className={`${handwriting.variable} ${bodyFont.variable} font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden`}>
-            <PaperBackground />
+        <div className="font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden">
+            <PaperBackground variant="light" />
 
             <Link href="/login" className="absolute top-6 left-6 flex items-center text-sm font-handwriting text-xl font-bold text-gray-800 hover:text-blue-600 transition z-20">
                 <ArrowLeft className="w-5 h-5 mr-2" />

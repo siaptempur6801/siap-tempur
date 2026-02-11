@@ -6,34 +6,8 @@ import { useRouter } from 'next/navigation'
 import { signup } from '@/app/auth/actions'
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Patrick_Hand, Work_Sans } from "next/font/google";
 
-// 1. Setup Font
-const handwriting = Patrick_Hand({
-    subsets: ["latin"],
-    weight: "400",
-    variable: "--font-handwriting"
-});
-
-const bodyFont = Work_Sans({
-    subsets: ["latin"],
-    variable: "--font-body"
-});
-
-// Komponen Garis Kertas (Background)
-function PaperBackground() {
-    return (
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-30"
-            style={{
-                backgroundImage: "repeating-linear-gradient(transparent, transparent 1.9rem, #9ca3af 2rem)",
-                backgroundSize: "100% 2rem",
-                marginTop: "2rem"
-            }}>
-            {/* Garis Margin Merah Kiri */}
-            <div className="absolute left-8 md:left-24 top-0 bottom-0 w-[2px] bg-red-300/50"></div>
-        </div>
-    );
-}
+import PaperBackground from '@/components/PaperBackground'
 
 export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false)
@@ -66,8 +40,8 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className={`${handwriting.variable} ${bodyFont.variable} font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden`}>
-            <PaperBackground />
+        <div className="font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden">
+            <PaperBackground variant="light" />
 
             <Link href="/" className="absolute top-6 left-6 flex items-center text-sm font-handwriting text-xl font-bold text-gray-800 hover:text-blue-600 transition z-20">
                 <ArrowLeft className="w-5 h-5 mr-2" />

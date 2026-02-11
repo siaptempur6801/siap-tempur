@@ -13,11 +13,9 @@ import {
     TrendingUp,
     BarChart3,
     CheckCircle2,
-    AlertCircle,
     Sparkles,
     Brain,
     User,
-    GraduationCap,
     Building2,
     Rocket,
     Ticket
@@ -93,7 +91,7 @@ const TYPE_ICONS = {
     TKP: <User className="w-5 h-5" />,
 }
 
-// TYPE_NAMES is now derived from SUBJECTS constant
+
 
 
 
