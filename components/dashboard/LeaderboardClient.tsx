@@ -5,6 +5,7 @@ import { Trophy, Medal, Search, User, BarChart3, SearchX } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import PaperBackground from '@/components/PaperBackground'
+import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 
 interface LeaderboardEntry {
     rank_pos: number
@@ -40,9 +41,9 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
         <div className="w-full flex flex-col relative min-h-screen">
             <PaperBackground />
 
-            <div className="flex-1 px-4 sm:px-6 py-6 sm:py-10 relative z-10 w-full max-w-5xl mx-auto">
+            <PageAnimateContainer className="flex-1 px-4 sm:px-6 py-6 sm:py-10 relative z-10 w-full max-w-5xl mx-auto space-y-0">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                <PageAnimateItem className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div>
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-200 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-1 mb-4">
                             <BarChart3 className="w-4 h-4 text-gray-900" />
@@ -67,10 +68,10 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                             className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none transition-all outline-none font-bold italic"
                         />
                     </div>
-                </div>
+                </PageAnimateItem>
 
                 {/* Table Layout */}
-                <div className="bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                <PageAnimateItem className="bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
                     {/* Header Row */}
                     <div className="hidden md:grid grid-cols-12 bg-gray-900 text-white p-4 font-black text-sm uppercase tracking-widest border-b-2 border-gray-900">
                         <div className="col-span-1 text-center">Pos</div>
@@ -197,8 +198,8 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </PageAnimateItem>
+            </PageAnimateContainer>
         </div>
     )
 }

@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 
 interface PracticeClientProps {
     quota: number
@@ -48,9 +49,9 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
     }
 
     return (
-        <div className="space-y-10 p-4 md:p-8 max-w-6xl mx-auto font-handwriting pb-20">
+        <PageAnimateContainer className="space-y-10 p-4 md:p-8 max-w-6xl mx-auto font-handwriting pb-20">
             {/* Header Section */}
-            <div className="relative z-10">
+            <PageAnimateItem className="relative z-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 border-2 border-gray-900 text-blue-700 text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-4 transform -rotate-1">
                     <BookOpen size={14} className="fill-current" />
                     <span>Pusat Tryout SKD</span>
@@ -61,10 +62,10 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                 <p className="text-xl text-gray-600 max-w-2xl leading-relaxed italic">
                     "Kesuksesan adalah 1% bakat dan 99% latihan soal yang konsisten."
                 </p>
-            </div>
+            </PageAnimateItem>
 
             {/* Main Content Box */}
-            <div className="relative group">
+            <PageAnimateItem className="relative group">
                 {/* Decorative Elements */}
                 <div className="absolute -top-6 -right-6 w-32 h-32 bg-yellow-100 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none rotate-6 flex items-center justify-center -z-10 opacity-50 group-hover:rotate-12 transition-transform">
                     <Target className="w-16 h-16 text-blue-500 opacity-30" />
@@ -151,15 +152,15 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                                         )}
                                     </button>
                                 ) : (
-                                    <a
-                                        href="/dashboard/beli-paket"
-                                        className="w-full group relative py-6 flex flex-col items-center justify-center bg-orange-100 text-orange-700 border-2 border-orange-500 border-dashed hover:bg-orange-200 transition-all"
+                                    <button
+                                        onClick={() => router.push('/dashboard/beli-paket')}
+                                        className="w-full group relative py-6 flex flex-col items-center justify-center bg-orange-100 text-orange-700 border-2 border-orange-500 border-dashed hover:bg-orange-200 transition-all font-bold"
                                     >
                                         <span className="text-4xl font-black mb-1 uppercase italic">Ticket Habis!</span>
                                         <span className="text-sm font-bold opacity-80 uppercase tracking-widest underline decoration-2 underline-offset-4 flex items-center gap-2">
                                             Isi Tiket Sekarang <Zap size={14} />
                                         </span>
-                                    </a>
+                                    </button>
                                 )}
 
                                 <p className="text-center text-sm font-sans text-gray-400 italic">
@@ -182,10 +183,29 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                         </div>
                     </div>
                 </div>
-            </div>
+            </PageAnimateItem>
+
+            {/* Tips Section */}
+            <PageAnimateItem className="grid md:grid-cols-3 gap-6">
+                <div className="p-6 bg-yellow-50 border-2 border-dashed border-gray-900 flex flex-col items-center text-center rotate-1">
+                    <Zap className="text-yellow-500 mb-3" size={32} />
+                    <h4 className="font-bold text-gray-900 mb-1 italic">Tips Ujian</h4>
+                    <p className="text-sm text-gray-600">Kerjakan soal yang paling mudah terlebih dahulu untuk menghemat waktu.</p>
+                </div>
+                <div className="p-6 bg-pink-50 border-2 border-dashed border-gray-900 flex flex-col items-center text-center -rotate-1">
+                    <Trophy className="text-pink-500 mb-3" size={32} />
+                    <h4 className="font-bold text-gray-900 mb-1 italic">Target Lulus</h4>
+                    <p className="text-sm text-gray-600">Fokus pada ambang batas skor (Passing Grade) di setiap kategori.</p>
+                </div>
+                <div className="p-6 bg-blue-50 border-2 border-dashed border-gray-900 flex flex-col items-center text-center rotate-1">
+                    <AlertCircle className="text-blue-500 mb-3" size={32} />
+                    <h4 className="font-bold text-gray-900 mb-1 italic">Persiapan</h4>
+                    <p className="text-sm text-gray-600">Berdoa dan tarik nafas dalam-dalam sebelum menekan tombol GAS!</p>
+                </div>
+            </PageAnimateItem>
 
             {/* Warning Section */}
-            <div className="p-6 bg-red-50 border-2 border-gray-900 text-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-[-0.5deg]">
+            <PageAnimateItem className="p-6 bg-red-50 border-2 border-gray-900 text-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-[-0.5deg]">
                 <div className="flex items-start gap-4">
                     <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
                     <div>
@@ -195,7 +215,7 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                         </p>
                     </div>
                 </div>
-            </div>
-        </div>
+            </PageAnimateItem>
+        </PageAnimateContainer>
     )
 }
