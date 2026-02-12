@@ -92,7 +92,7 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                                     'Pejuang Tryout'}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-blue-100 text-blue-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title="Sisa Token SKD">
+                                <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-blue-100 text-blue-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title="Sisa Token SKD CPNS & Kedinasan">
                                     <Ticket size={12} className="fill-current" />
                                     {profile?.tryout_quota ?? 0} Token
                                 </span>
@@ -109,7 +109,7 @@ export default function DashboardShell({ children, user, profile, signoutAction 
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0 relative scrollbar-hide">
                 {/* Mobile Header (Hidden on Desktop) */}
-                <div className="md:hidden h-16 border-b-2 border-gray-900 flex items-center px-6 justify-between transform sticky top-0 bg-[#fdfbf7]/90 backdrop-blur-md z-30 shadow-sm">
+                <div className="md:hidden h-16 border-b-2 border-gray-900 flex items-center px-6 justify-between sticky top-0 bg-[#fdfbf7]/90 backdrop-blur-md z-30 shadow-sm">
                     <Link href="/" className="text-2xl font-handwriting font-bold text-gray-800 rotate-[-1deg]">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                     </Link>

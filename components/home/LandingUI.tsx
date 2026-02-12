@@ -112,11 +112,12 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                 <div className="container mx-auto px-4 text-center relative z-10">
                     {/* Label Stabilo */}
                     <span className="inline-block px-4 py-1 mb-6 font-handwriting text-xl font-bold bg-yellow-200 -rotate-2 border-2 border-gray-800 rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                        #CalonASN
+                        #CalonASN #Kedinasan
                     </span>
 
-                    <h1 className="font-handwriting text-6xl md:text-8xl font-bold mb-6 leading-[0.9]">
+                    <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-[0.9]">
                         Lulus SKD CPNS <br />
+                        <span className="text-blue-600">&</span> Kedinasan <br />
                         <span className="relative inline-block mt-2">
                             Tanpa Drama.
                             {/* Coretan bawah */}
@@ -127,7 +128,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     </h1>
 
                     <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto mb-10 font-handwriting leading-relaxed">
-                        Platform tryout CAT SKD CPNS paling
+                        Platform tryout CAT SKD <strong>CPNS & Sekolah Kedinasan</strong> paling
                         <span className="bg-green-200 px-1 mx-1">realistis.</span>
                         Beli ketengan, sekali bayar langsung sikat soalnya. Gak pake langganan ribet!
                     </p>
@@ -137,7 +138,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <button
                                 onClick={() => scrollToSection("products")}
                                 className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
-                                Mulai Latihan SKD Sekarang <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                                Mulai Latihan SKD Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                             </button>
 
                             <button
@@ -170,7 +171,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <Target className="w-12 h-12 text-blue-600 -rotate-6" strokeWidth={2.5} />
                             </div>
                             <h3 className="font-handwriting text-2xl font-bold mb-2">Sistem Terstandar</h3>
-                            <p className="text-gray-700">Simulasi pengerjaan & sistem penilaian sesuai standar CAT BKN. Biar mental kamu siap tempur menghadapi ujian aslinya.</p>
+                            <p className="text-gray-700">Simulasi pengerjaan & sistem penilaian sesuai standar CAT BKN. Cocok untuk persiapan <strong>CPNS</strong> maupun <strong>Sekolah Kedinasan</strong>.</p>
                         </div>
 
                         {/* Card 2 */}
@@ -188,7 +189,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <BarChart3 className="w-12 h-12 text-green-600 -rotate-3" strokeWidth={2.5} />
                             </div>
                             <h3 className="font-handwriting text-2xl font-bold mb-2">Analisis SKD</h3>
-                            <p className="text-gray-700">Dapet skor per subtes (TWK, TIU, TKP) & perankingan nasional real-time setelah submit.</p>
+                            <p className="text-gray-700">Dapet skor per subtes (TWK, TIU, TKP) & perankingan nasional real-time. Format sama untuk CPNS & Kedinasan!</p>
                         </div>
                     </div>
                 </div>
@@ -207,7 +208,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                 <div className="container mx-auto px-4">
                     <div className="text-center mb-16">
                         <h2 className="font-handwriting text-5xl font-bold mb-4">Menu "Ketengan"</h2>
-                        <p className="font-handwriting text-2xl text-gray-600">Pilih menu latihanmu hari ini.</p>
+                        <p className="font-handwriting text-2xl text-gray-600">Pilih menu latihanmu hari ini. Cocok untuk <span className="bg-blue-100 px-1">CPNS</span> & <span className="bg-green-100 px-1">Kedinasan</span>!</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-10 lg:gap-8 max-w-6xl mx-auto">
@@ -228,7 +229,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Tryout CAT (TWK, TIU, TKP)</span>
+                                    <CheckDoodle /> <span>Tryout CAT SKD (TWK, TIU, TKP)</span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>Kunci & Pembahasan Lengkap</span>
@@ -237,7 +238,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                     <CheckDoodle /> <span>Ranking Nasional Real-time</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Analisis Skor & Passing Grade</span>
+                                    <CheckDoodle /> <span>Cocok CPNS & Kedinasan</span>
                                 </div>
                             </div>
 
@@ -378,6 +379,14 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <p className="mb-4">"Enak banget bisa beli ketengan. Pas lagi bokek tapi pengen tryout, tinggal beli satu token aja. Makasih min!"</p>
                             <p className="font-bold text-right">- Budi, Pejuang CPNS</p>
                         </div>
+
+                        {/* Note 4 - Lavender */}
+                        <div className="w-full md:w-80 bg-[#e8d5f5] p-6 shadow-md rotate-[2deg] font-handwriting text-xl text-gray-900 relative">
+                            {/* Tape */}
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-20 h-6 bg-white/40 -rotate-1"></div>
+                            <p className="mb-4">"Gue mau masuk STAN, soal SKD-nya sama persis sama CPNS. Latihan disini bener-bener ngebantu buat persiapan Kedinasan!"</p>
+                            <p className="font-bold text-right">- Rizky, Calon Taruna</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -386,13 +395,13 @@ export default function Home({ user: initialUser }: { user: User | null }) {
             {/* --- FOOTER (Doodle Border) --- */}
             <footer className="bg-gray-900 text-white py-12 border-t-8 border-gray-800 border-dashed relative overflow-hidden">
                 <div className="container mx-auto px-4 text-center relative z-10">
-                    <h2 className="font-handwriting text-4xl font-bold mb-6">Siap Tempur Tahun Ini?</h2>
-                    <p className="text-gray-400 mb-8 max-w-lg mx-auto">Jangan cuma dibayangin, kerjain soalnya sekarang.</p>
+                    <h2 className="font-handwriting text-4xl font-bold mb-6">Siap Tempur CPNS & Kedinasan?</h2>
+                    <p className="text-gray-400 mb-8 max-w-lg mx-auto">Mau CPNS atau Kedinasan? Format SKD-nya sama. Latihan sekarang!</p>
 
                     <button
                         onClick={() => user ? router.push("/dashboard") : router.push("/login")}
                         className="px-10 py-3 font-handwriting text-2xl font-bold text-gray-900 bg-white rounded-md border-b-4 border-gray-400 active:border-b-0 active:translate-y-1 transition-all cursor-pointer flex items-center justify-center gap-2 mx-auto">
-                        Lulus CPNS Sekarang! <Rocket className="w-6 h-6" />
+                        Gas Tempur Sekarang! <Rocket className="w-6 h-6" />
                     </button>
 
                     <div className="mt-16 text-sm text-gray-400 font-handwriting text-lg">

@@ -57,13 +57,13 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                 <PageAnimateItem className="relative z-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 border-2 border-gray-900 text-blue-700 text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mb-4 transform -rotate-1">
                         <BookOpen size={14} className="fill-current" />
-                        <span>Pusat Tryout SKD</span>
+                        <span>Pusat Tryout SKD CPNS & Kedinasan</span>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
                         Siap Ujian Hari Ini?
                     </h1>
                     <p className="text-xl text-gray-600 max-w-2xl leading-relaxed italic">
-                        "Kesuksesan adalah 1% bakat dan 99% latihan soal yang konsisten."
+                        "Kesuksesan adalah 1% bakat dan 99% latihan soal yang konsisten. Mau CPNS atau Kedinasan, persiapannya dimulai dari sini."
                     </p>
                 </PageAnimateItem>
 
@@ -85,8 +85,8 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                                         Simulasi Terstandar
                                     </h2>
                                     <p className="text-lg text-gray-600 leading-relaxed font-sans">
-                                        Format soal, waktu, dan sistem penilaian disesuaikan dengan standar <strong className="text-gray-900">CAT BKN 2024/2025</strong>.
-                                        Satu kuota (1 Tiket) untuk satu kali pengerjaan simulasi full.
+                                        Format soal, waktu, dan sistem penilaian disesuaikan dengan standar <strong className="text-gray-900">CAT BKN 2025/2026</strong>.
+                                        Cocok untuk persiapan <strong className="text-gray-900">CPNS</strong> maupun <strong className="text-gray-900">Sekolah Kedinasan</strong>. Satu kuota (1 Tiket) untuk satu kali pengerjaan simulasi full.
                                     </p>
                                 </div>
 

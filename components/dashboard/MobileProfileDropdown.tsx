@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { LogOut, User, Crown, Ticket, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -25,9 +26,11 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
     const [isOpen, setIsOpen] = useState(false)
     const [showModal, setShowModal] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
+    const [mounted, setMounted] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
+        setMounted(true)
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false)
@@ -116,9 +119,8 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
                 </div>
             )}
 
-            {/* Logout Confirmation Modal - Rendered outside dropdown but still inside component */}
-            {showModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 font-sans">
+            {showModal && mounted && createPortal(
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 font-sans">
                     <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-red-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
@@ -152,7 +154,8 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     )

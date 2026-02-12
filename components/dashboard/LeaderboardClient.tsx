@@ -71,7 +71,7 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                 </PageAnimateItem>
 
                 {/* Table Layout */}
-                <PageAnimateItem className="bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                <PageAnimateItem className="bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative">
                     {/* Header Row */}
                     <div className="hidden xl:grid grid-cols-12 bg-gray-900 text-white p-4 font-black text-sm uppercase tracking-widest border-b-2 border-gray-900">
                         <div className="col-span-1 text-center">Pos</div>
@@ -94,7 +94,7 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: idx * 0.05 }}
                                     className={cn(
-                                        "relative border-b-2 border-gray-100 transition-all hover:bg-gray-50/50 overflow-hidden",
+                                        "relative border-b-2 border-gray-100 transition-all hover:bg-gray-50/50",
                                         isCurrentUser && "bg-blue-50/30 border-l-4 border-l-blue-600 z-10",
                                         "xl:grid xl:grid-cols-12 xl:items-center"
                                     )}

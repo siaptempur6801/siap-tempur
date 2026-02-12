@@ -14,6 +14,7 @@ interface DashboardData {
         xp: number
         level: number
         levelName: string
+        levelProgress: number
         rank: number | null
     }
     progress: {
@@ -22,6 +23,14 @@ interface DashboardData {
         tkp: { score: number; target: number; passed: boolean }
     }
     lastExam: {
+        date: string
+        score_twk: number
+        score_tiu: number
+        score_tkp: number
+        total_score: number
+        passed: boolean
+    } | null
+    bestExam: {
         date: string
         score_twk: number
         score_tiu: number
@@ -111,7 +120,7 @@ export function getXPInfo(previousTotalXP: number, xpEarned: number) {
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
     // Fetch profile
     // Fetch data in parallel to resolve "waterfall" slowness
-    const [profileRes, sessionsRes, allSessionsRes, rankRes, topRankingsRes] = await Promise.all([
+    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankRes, topRankingsRes] = await Promise.all([
         supabase
             .from('profiles')
             .select('full_name, streak_count, tryout_quota') // Fetch SKD quota
@@ -124,6 +133,13 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .eq('status', 'completed')
             .order('start_time', { ascending: false })
             .limit(10),
+        supabase
+            .from('test_sessions')
+            .select('id, total_score, score_twk, score_tiu, score_tkp, mode, status, start_time')
+            .eq('user_id', userId)
+            .eq('status', 'completed')
+            .order('total_score', { ascending: false })
+            .limit(1),
         supabase
             .from('test_sessions')
             .select('total_score')
@@ -143,6 +159,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
 
     const profile = profileRes.data
     const sessions = sessionsRes.data
+    const bestSession = bestSessionRes.data?.[0]
     const allSessions = allSessionsRes.data
     const rankData = rankRes.data
 
@@ -253,6 +270,21 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         passed: (lastSession.total_score || 0) >= (PASSING_GRADES.TWK + PASSING_GRADES.TIU + PASSING_GRADES.TKP)
     } : null
 
+    const bestExam = bestSession ? {
+        date: new Date(bestSession.start_time).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }),
+        score_twk: bestSession.score_twk || 0,
+        score_tiu: bestSession.score_tiu || 0,
+        score_tkp: bestSession.score_tkp || 0,
+        total_score: bestSession.total_score || 0,
+        passed: (bestSession.total_score || 0) >= (PASSING_GRADES.TWK + PASSING_GRADES.TIU + PASSING_GRADES.TKP)
+    } : null
+
     return {
         user: {
             id: userId,
@@ -266,6 +298,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             xp: totalXp,
             level: levelInfo.level,
             levelName: levelInfo.name,
+            levelProgress: getLevelProgress(totalXp).progress,
             rank: rankData?.rank_pos || null,
         },
         progress: {
@@ -286,6 +319,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             },
         },
         lastExam,
+        bestExam,
         priorityFocus: {
             type: priorityType,
             reason: allPassed ? 'Semua kategori sudah lulus! Pertahankan performamu.' : priorityReasons[priorityType],

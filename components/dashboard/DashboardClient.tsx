@@ -1,6 +1,6 @@
 'use client'
 
-
+import { useState } from 'react'
 import { motion, Variants } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -37,6 +37,7 @@ interface DashboardData {
         xp: number
         level: number
         levelName: string
+        levelProgress: number
         rank: number | null
     }
     progress: {
@@ -45,6 +46,14 @@ interface DashboardData {
         tkp: { score: number; target: number; passed: boolean }
     }
     lastExam: {
+        date: string
+        score_twk: number
+        score_tiu: number
+        score_tkp: number
+        total_score: number
+        passed: boolean
+    } | null
+    bestExam: {
         date: string
         score_twk: number
         score_tiu: number
@@ -106,6 +115,7 @@ const TYPE_ICONS = {
 
 
 export default function DashboardClient({ data, greeting }: Props) {
+    const [activeTab, setActiveTab] = useState<'last' | 'best'>('last')
 
 
     const containerVariants: Variants = {
@@ -235,38 +245,72 @@ export default function DashboardClient({ data, greeting }: Props) {
                             {/* Tape effect */}
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/90 border-l border-r border-white/50 rotate-1 shadow-sm opacity-80 z-20"></div>
 
-                            {/* Header */}
+                            {/* Header & Tabs */}
                             <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 relative z-10">
                                 <div className="flex items-center gap-4">
                                     <div className="p-2 bg-green-100 border-2 border-gray-900 text-green-700 rounded-md">
                                         <TrendingUp className="w-6 h-6" />
                                     </div>
-                                    <h3 className="font-bold text-2xl text-gray-900">Hasil Ujian Terakhir</h3>
+                                    <h3 className="font-bold text-2xl text-gray-900">Hasil Ujian</h3>
                                 </div>
-                                {data.lastExam && (
+
+                                {/* Tab Switcher */}
+                                <div className="flex items-center gap-2 p-1 bg-gray-100 border-2 border-gray-900 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <button
+                                        onClick={() => setActiveTab('last')}
+                                        className={cn(
+                                            "px-4 py-1.5 text-xs font-bold transition-all rounded-md",
+                                            activeTab === 'last'
+                                                ? "bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-gray-900"
+                                                : "text-gray-500 hover:text-gray-900"
+                                        )}
+                                    >
+                                        Terakhir
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('best')}
+                                        className={cn(
+                                            "px-4 py-1.5 text-xs font-bold transition-all rounded-md",
+                                            activeTab === 'best'
+                                                ? "bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-gray-900"
+                                                : "text-gray-500 hover:text-gray-900"
+                                        )}
+                                    >
+                                        Tertinggi
+                                    </button>
+                                </div>
+
+                                {activeTab === 'last' && data.lastExam && (
                                     <div className="ml-auto text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-300">
                                         {data.lastExam.date}
+                                    </div>
+                                )}
+                                {activeTab === 'best' && data.bestExam && (
+                                    <div className="ml-auto text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-300">
+                                        {data.bestExam.date}
                                     </div>
                                 )}
                             </div>
 
 
-                            {/* Last Exam Result */}
+                            {/* Exam Result Display */}
                             <div className="flex flex-col gap-4 relative z-10 font-sans">
-                                {data.lastExam ? (
+                                {((activeTab === 'last' && data.lastExam) || (activeTab === 'best' && data.bestExam)) ? (
                                     <>
                                         {/* Total Score Banner */}
                                         <div className="p-4 bg-gray-900 text-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] mb-2 flex items-center justify-between">
                                             <div>
                                                 <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Skor</div>
-                                                <div className="text-4xl font-black tracking-tight text-white">{data.lastExam.total_score}</div>
+                                                <div className="text-4xl font-black tracking-tight text-white">
+                                                    {activeTab === 'last' ? data.lastExam?.total_score : data.bestExam?.total_score}
+                                                </div>
                                             </div>
                                             <div className="text-right">
                                                 <div className={cn(
                                                     "px-3 py-1 text-xs font-bold uppercase rounded-full inline-block mb-1",
-                                                    data.lastExam.passed ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                                                    (activeTab === 'last' ? data.lastExam?.passed : data.bestExam?.passed) ? "bg-green-500 text-white" : "bg-red-500 text-white"
                                                 )}>
-                                                    {data.lastExam.passed ? "LULUS SKD" : "BELUM LULUS"}
+                                                    {(activeTab === 'last' ? data.lastExam?.passed : data.bestExam?.passed) ? "LULUS SKD" : "BELUM LULUS"}
                                                 </div>
                                                 <div className="text-xs text-gray-400">Passing Grade: 311</div>
                                             </div>
@@ -275,7 +319,8 @@ export default function DashboardClient({ data, greeting }: Props) {
                                         {/* Score Breakdown */}
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                             {(['twk', 'tiu', 'tkp'] as const).map((type) => {
-                                                const score = data.lastExam![`score_${type}`]
+                                                const exam = activeTab === 'last' ? data.lastExam : data.bestExam
+                                                const score = exam ? exam[`score_${type}`] : 0
                                                 const target = data.progress[type].target // Reuse target from constants
                                                 const passed = score >= target
                                                 const typeUpper = type.toUpperCase() as 'TWK' | 'TIU' | 'TKP'
@@ -425,7 +470,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                                 <motion.div
                                     className="h-full bg-black"
                                     initial={{ width: 0 }}
-                                    animate={{ width: '65%' }} // Placeholder progress
+                                    animate={{ width: `${data.stats.levelProgress}%` }}
                                     transition={{ duration: 1.5, delay: 0.5 }}
                                 />
                             </div>
