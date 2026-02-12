@@ -8,9 +8,6 @@ import {
     Trophy,
     Clock,
     Target,
-    BarChart3,
-    RefreshCw,
-    Play,
 
     AlertTriangle,
     Sparkles,
@@ -376,13 +373,10 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                         let title = "Rekomendasi Belajar"
                         let message: React.ReactNode = ""
                         let linkText = "Pelajari Materi"
-                        let typeColor = "text-orange-600"
-
                         if (allPassed) {
                             title = "Pertahankan Performamu!"
                             message = "Selamat! Kamu telah lulus passing grade di semua kategori. Pertahankan konsistensi latihanmu dan coba kerjakan soal-soal yang lebih sulit untuk memantapkan kesiapanmu."
                             linkText = "Lanjut Latihan Soal"
-                            typeColor = "text-green-600"
                         } else if (failedSections.length === 3) {
                             title = "Perlu Evaluasi Menyeluruh"
                             message = (
@@ -391,7 +385,6 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                                 </>
                             )
                             linkText = "Mulai dari Materi Dasar"
-                            typeColor = "text-red-600"
                         } else if (failedSections.length >= 1) {
                             // Build component array with separators
                             const comps = failedSections.map((s, idx) => {

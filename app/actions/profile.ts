@@ -37,7 +37,16 @@ export async function updateProfile(formData: FormData) {
     return { success: true }
 }
 
-export async function updateProfileInfo(data: { full_name?: string; bio?: string; avatar_url?: string }) {
+export async function updateProfileInfo(data: {
+    full_name?: string;
+    bio?: string;
+    avatar_url?: string;
+    phone_number?: string;
+    birth_date?: string;
+    gender?: string;
+    education_level?: string;
+    target_instance?: string;
+}) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -52,6 +61,11 @@ export async function updateProfileInfo(data: { full_name?: string; bio?: string
     if (data.full_name !== undefined) updates.full_name = data.full_name
     if (data.bio !== undefined) updates.bio = data.bio
     if (data.avatar_url !== undefined) updates.avatar_url = data.avatar_url
+    if (data.phone_number !== undefined) updates.phone_number = data.phone_number
+    if (data.birth_date !== undefined) updates.birth_date = data.birth_date
+    if (data.gender !== undefined) updates.gender = data.gender
+    if (data.education_level !== undefined) updates.education_level = data.education_level
+    if (data.target_instance !== undefined) updates.target_instance = data.target_instance
 
     const { error } = await supabase
         .from('profiles')
@@ -89,27 +103,4 @@ export async function updatePassword(data: { newPassword: string }) {
     return { success: true }
 }
 
-export async function updateNotificationSettings(settings: Record<string, boolean>) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-        return { success: false, error: 'Not authenticated' }
-    }
-
-    const { error } = await supabase
-        .from('profiles')
-        .update({
-            notification_settings: settings,
-            updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-
-    if (error) {
-        console.error('Update notification settings error', error)
-        return { success: false, error: error.message }
-    }
-
-    revalidatePath('/dashboard/profile')
-    return { success: true }
-}

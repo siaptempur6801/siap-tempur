@@ -4,7 +4,13 @@ import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 import { Flame } from 'lucide-react'
 
-export default function ConsistencyTracker({ data, score, activeCount }: { data: any[], score: number, activeCount: number }) {
+interface ConsistencyDay {
+    date: Date | string
+    active: boolean
+    dayLabel: string
+}
+
+export default function ConsistencyTracker({ data, score, activeCount }: { data: ConsistencyDay[], score: number, activeCount: number }) {
 
     return (
         <div className="">
@@ -25,7 +31,7 @@ export default function ConsistencyTracker({ data, score, activeCount }: { data:
 
             {/* GitHub-like Calendar Grid (Simplified for mobile) */}
             <div className="flex flex-wrap gap-1.5 justify-center md:justify-start">
-                {data.map((day: any, idx: number) => (
+                {data.map((day, idx) => (
                     <div
                         key={idx}
                         title={`${format(new Date(day.date), 'd MMM yyyy', { locale: id })}: ${day.active ? 'Belajar' : 'Tidak'}`}
@@ -42,13 +48,14 @@ export default function ConsistencyTracker({ data, score, activeCount }: { data:
             <div className="mt-6 flex items-center justify-between text-sm">
                 <span className="text-gray-700">Total hari aktif: <strong className="text-gray-900">{activeCount} hari</strong></span>
                 <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <span>Kurang</span>
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-1">
                         <div className="w-3 h-3 bg-gray-200 border border-gray-400"></div>
-                        <div className="w-3 h-3 bg-blue-300 border border-gray-400"></div>
-                        <div className="w-3 h-3 bg-blue-500 border border-gray-900"></div>
+                        <span>Tidak Aktif</span>
                     </div>
-                    <span>Sering</span>
+                    <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-blue-500 border border-gray-900"></div>
+                        <span>Aktif</span>
+                    </div>
                 </div>
             </div>
         </div>

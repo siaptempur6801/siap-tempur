@@ -1,8 +1,6 @@
 'use client'
 
 import {
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -14,6 +12,13 @@ import {
 import { useState } from 'react'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
+interface TrendDataPoint {
+    attempt: number
+    date: string
+    score: number
+    fullDate: string
+}
+
 export default function TrendChart({
     data,
     trendDirection,
@@ -21,7 +26,7 @@ export default function TrendChart({
     shortTermTrend,
     shortTermPercentage
 }: {
-    data: any[],
+    data: TrendDataPoint[],
     trendDirection: string,
     trendPercentage: number,
     shortTermTrend?: string,

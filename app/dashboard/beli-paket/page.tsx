@@ -31,8 +31,8 @@ export default function BeliPaketPage() {
                     <p className="font-handwriting text-xl sm:text-2xl md:text-3xl text-gray-600">Pilih "menu" latihanmu hari ini:</p>
                 </div>
 
-                {/* Cards Grid - 3 Columns for Desktop */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-8 w-full max-w-6xl items-stretch">
+                {/* Cards Grid - 1 Column for Mobile/Tablet/iPad Pro (Portrait), 3 for Desktop (XL) */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 lg:gap-8 w-full max-w-6xl items-stretch">
 
                     {/* PRODUK 1: SKD Satuan */}
                     <div className="relative bg-white p-6 xl:p-8 border-2 border-gray-300 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,0.1)] transition-all duration-300 flex flex-col rounded-xl group">

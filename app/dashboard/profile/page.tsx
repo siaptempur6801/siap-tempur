@@ -1,7 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileClient from '@/components/profile/ProfileClient'
-import { processStatistics, SessionData } from '@/lib/statistics'
 import { getLevel } from '@/lib/dashboard'
 
 export default async function ProfilePage() {
@@ -12,52 +11,46 @@ export default async function ProfilePage() {
         redirect('/login')
     }
 
-    // 1. Fetch Profile Data
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+    // Parallel Fetching for Performance
+    const [profileResult, rawSessionsResult, transactionsResult, usageSessionsResult] = await Promise.all([
+        // 1. Fetch Profile Data
+        supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single(),
 
-    // 2. Fetch Sessions for Statistics
-    const { data: rawSessions } = await supabase
-        .from('test_sessions')
-        .select(`
-            id,
-            start_time,
-            total_score,
-            score_twk,
-            score_tiu,
-            score_tkp,
-            status,
-            mode
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'completed')
-        .order('start_time', { ascending: true })
+        // 2. Fetch Sessions for Statistics (XP)
+        supabase
+            .from('test_sessions')
+            .select('total_score')
+            .eq('user_id', user.id)
+            .eq('status', 'completed'),
 
-    // 3. Process Statistics
-    const statsData = processStatistics(rawSessions as unknown as SessionData[])
+        // 3. Fetch Transactions
+        supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false }),
 
-    // 3.1 Calculate XP and Level
+        // 4. Fetch Usage History
+        supabase
+            .from('test_sessions')
+            .select('id, start_time, mode')
+            .eq('user_id', user.id)
+            .eq('mode', 'tryout')
+            .order('start_time', { ascending: false })
+    ])
+
+    const { data: profile } = profileResult
+    const { data: rawSessions } = rawSessionsResult
+    const { data: transactions } = transactionsResult
+    const { data: usageSessions } = usageSessionsResult
+
+    // Calculate XP and Level
     const totalXP = rawSessions?.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXP)
-
-    // 4. Fetch Transactions for Purchase History
-    const { data: transactions } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-
-    // 5. Fetch All Sessions for Usage History (Consume Quota)
-    // Here we fetch all sessions because a session consumes a ticket even if not completed
-    const { data: usageSessions } = await supabase
-        .from('test_sessions')
-        .select('id, start_time, mode')
-        .eq('user_id', user.id)
-        .eq('mode', 'tryout') // Quota usage is usually for full tryouts
-        .order('start_time', { ascending: false })
 
     if (!profile) {
         // Create default profile if not exists
@@ -73,7 +66,6 @@ export default async function ProfilePage() {
         return <ProfileClient
             profile={newProfile || { id: user.id, full_name: null, avatar_url: null, bio: null }}
             user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
-            statsData={statsData}
             transactions={transactions || []}
             usageSessions={usageSessions || []}
             totalXP={totalXP}
@@ -84,7 +76,6 @@ export default async function ProfilePage() {
     return <ProfileClient
         profile={profile}
         user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
-        statsData={statsData}
         transactions={transactions || []}
         usageSessions={usageSessions || []}
         totalXP={totalXP}

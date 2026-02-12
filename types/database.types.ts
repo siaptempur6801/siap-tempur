@@ -12,33 +12,45 @@ export interface Database {
             profiles: {
                 Row: {
                     id: string
-                    email: string | null
                     full_name: string | null
-                    role: 'user' | 'admin'
-                    subscription_status: 'free' | 'premium'
                     streak_count: number
                     last_activity_date: string | null
                     created_at: string
+                    // New columns
+                    phone_number: string | null
+                    birth_date: string | null
+                    gender: string | null
+                    education_level: string | null
+                    target_instance: string | null
+                    tryout_quota: number
                 }
                 Insert: {
                     id: string
-                    email?: string | null
                     full_name?: string | null
-                    role?: 'user' | 'admin'
-                    subscription_status?: 'free' | 'premium'
                     streak_count?: number
                     last_activity_date?: string | null
                     created_at?: string
+                    // New columns
+                    phone_number?: string | null
+                    birth_date?: string | null
+                    gender?: string | null
+                    education_level?: string | null
+                    target_instance?: string | null
+                    tryout_quota?: number
                 }
                 Update: {
                     id?: string
-                    email?: string | null
                     full_name?: string | null
-                    role?: 'user' | 'admin'
-                    subscription_status?: 'free' | 'premium'
                     streak_count?: number
                     last_activity_date?: string | null
                     created_at?: string
+                    // New columns
+                    phone_number?: string | null
+                    birth_date?: string | null
+                    gender?: string | null
+                    education_level?: string | null
+                    target_instance?: string | null
+                    tryout_quota?: number
                 }
             }
             questions: {

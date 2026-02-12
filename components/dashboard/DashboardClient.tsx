@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+
 import { motion, Variants } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -44,6 +44,14 @@ interface DashboardData {
         tiu: { score: number; target: number; passed: boolean }
         tkp: { score: number; target: number; passed: boolean }
     }
+    lastExam: {
+        date: string
+        score_twk: number
+        score_tiu: number
+        score_tkp: number
+        total_score: number
+        passed: boolean
+    } | null
     leaderboard: Array<{
         rank_pos: number
         full_name: string
@@ -219,99 +227,172 @@ export default function DashboardClient({ data, greeting }: Props) {
 
             {/* 3. GRID LAYOUT */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* PROGRESS SECTION */}
-                <motion.div variants={itemVariants} className="lg:col-span-2">
-                    <div className="h-full bg-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 relative">
-                        {/* Tape effect */}
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/90 border-l border-r border-white/50 rotate-1 shadow-sm opacity-80 z-20"></div>
+                {/* LEFT COLUMN (Last Exam + Leaderboard) */}
+                <div className="lg:col-span-2 space-y-8">
+                    {/* PROGRESS SECTION */}
+                    <motion.div variants={itemVariants}>
+                        <div className="h-full bg-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 relative">
+                            {/* Tape effect */}
+                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/90 border-l border-r border-white/50 rotate-1 shadow-sm opacity-80 z-20"></div>
 
-                        {/* Header */}
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 relative z-10">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-green-100 border-2 border-gray-900 text-green-700 rounded-md">
-                                    <TrendingUp className="w-6 h-6" />
+                            {/* Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-2 bg-green-100 border-2 border-gray-900 text-green-700 rounded-md">
+                                        <TrendingUp className="w-6 h-6" />
+                                    </div>
+                                    <h3 className="font-bold text-2xl text-gray-900">Hasil Ujian Terakhir</h3>
                                 </div>
-                                <h3 className="font-bold text-2xl text-gray-900">Progress Tracker</h3>
+                                {data.lastExam && (
+                                    <div className="ml-auto text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-300">
+                                        {data.lastExam.date}
+                                    </div>
+                                )}
                             </div>
-                        </div>
 
 
-                        {/* CPNS Progress */}
-                        <div className="flex flex-col gap-4 relative z-10 font-sans">
-                            {(['twk', 'tiu', 'tkp'] as const).map((type, idx) => {
-                                const progress = data.progress[type]
-                                const percentage = Math.min((progress.score / progress.target) * 100, 100)
-                                const typeUpper = type.toUpperCase() as 'TWK' | 'TIU' | 'TKP'
-
-                                return (
-                                    <motion.div
-                                        key={type}
-                                        whileHover={{ scale: 1.01 }}
-                                        className="relative p-4 rounded-lg bg-gray-50 border-2 border-gray-300 hover:border-gray-900 transition-colors group"
-                                    >
-                                        <div className="flex items-start gap-4">
-                                            <div className={cn(
-                                                "w-12 h-12 rounded-lg flex items-center justify-center text-xl border-2 border-gray-900 flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-                                                type === 'twk' ? 'bg-red-100 text-red-700' :
-                                                    type === 'tiu' ? 'bg-yellow-100 text-yellow-700' :
-                                                        'bg-blue-100 text-blue-700'
-                                            )}>
-                                                {TYPE_ICONS[typeUpper]}
+                            {/* Last Exam Result */}
+                            <div className="flex flex-col gap-4 relative z-10 font-sans">
+                                {data.lastExam ? (
+                                    <>
+                                        {/* Total Score Banner */}
+                                        <div className="p-4 bg-gray-900 text-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] mb-2 flex items-center justify-between">
+                                            <div>
+                                                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Skor</div>
+                                                <div className="text-4xl font-black tracking-tight text-white">{data.lastExam.total_score}</div>
                                             </div>
-
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <div>
-                                                        <span className="font-bold text-lg text-gray-900 block">{SUBJECTS[typeUpper].name}</span>
-                                                    </div>
-                                                    {progress.passed ? (
-                                                        <div className="flex items-center gap-1.5 bg-green-100 px-2 py-1 rounded border-2 border-green-600">
-                                                            <CheckCircle2 className="w-4 h-4 text-green-700" />
-                                                            <span className="text-xs font-bold text-green-800 uppercase">Lulus</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-1.5 bg-red-100 px-2 py-1 rounded border-2 border-red-600">
-                                                            <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-                                                            <span className="text-xs font-bold text-red-800 uppercase">Belum Lulus</span>
-                                                        </div>
-                                                    )}
+                                            <div className="text-right">
+                                                <div className={cn(
+                                                    "px-3 py-1 text-xs font-bold uppercase rounded-full inline-block mb-1",
+                                                    data.lastExam.passed ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                                                )}>
+                                                    {data.lastExam.passed ? "LULUS SKD" : "BELUM LULUS"}
                                                 </div>
-
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-end">
-                                                        <span className="text-xs font-bold text-gray-500 uppercase">Score Progress</span>
-                                                        <span className="text-base font-bold text-gray-600">
-                                                            <span className={cn("text-xl", progress.passed ? "text-green-600" : "text-gray-900")}>{progress.score}</span>
-                                                            <span className="text-gray-400 mx-1">/</span>
-                                                            {progress.target}
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-4 bg-white border-2 border-gray-900 rounded-full overflow-hidden p-[2px]">
-                                                        <motion.div
-                                                            className={cn(
-                                                                "h-full rounded-full border border-black/10 relative",
-                                                                progress.passed ? "bg-green-500" :
-                                                                    type === 'twk' ? 'bg-red-500' :
-                                                                        type === 'tiu' ? 'bg-yellow-400' : 'bg-blue-500'
-                                                            )}
-                                                            style={{ backgroundImage: "linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent)", backgroundSize: "1rem 1rem" }}
-                                                            initial={{ width: 0 }}
-                                                            animate={{ width: `${percentage}%` }}
-                                                            transition={{ duration: 1, ease: "easeOut", delay: idx * 0.2 }}
-                                                        />
-                                                    </div>
-                                                </div>
+                                                <div className="text-xs text-gray-400">Passing Grade: 311</div>
                                             </div>
                                         </div>
-                                    </motion.div>
-                                )
-                            })}
+
+                                        {/* Score Breakdown */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            {(['twk', 'tiu', 'tkp'] as const).map((type) => {
+                                                const score = data.lastExam![`score_${type}`]
+                                                const target = data.progress[type].target // Reuse target from constants
+                                                const passed = score >= target
+                                                const typeUpper = type.toUpperCase() as 'TWK' | 'TIU' | 'TKP'
+
+                                                return (
+                                                    <div key={type} className={cn(
+                                                        "p-4 rounded-xl border-2 transition-all",
+                                                        passed
+                                                            ? "bg-white border-green-200"
+                                                            : "bg-white border-red-200"
+                                                    )}>
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <div className={cn(
+                                                                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                                                                type === 'twk' ? 'bg-red-100 text-red-700' :
+                                                                    type === 'tiu' ? 'bg-yellow-100 text-yellow-700' :
+                                                                        'bg-blue-100 text-blue-700'
+                                                            )}>
+                                                                {TYPE_ICONS[typeUpper]}
+                                                            </div>
+                                                            <span className="font-bold text-gray-700">{typeUpper}</span>
+                                                        </div>
+
+                                                        <div className="flex items-end gap-1">
+                                                            <span className={cn(
+                                                                "text-2xl font-black",
+                                                                passed ? "text-gray-900" : "text-red-600"
+                                                            )}>{score}</span>
+                                                            <span className="text-xs text-gray-500 font-bold mb-1">/ {target}</span>
+                                                        </div>
+
+                                                        <div className="mt-2 text-[10px] font-bold uppercase tracking-wide">
+                                                            {passed ? (
+                                                                <span className="text-green-600 flex items-center gap-1">
+                                                                    <CheckCircle2 size={12} /> Lulus
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-red-500 flex items-center gap-1">
+                                                                    Target Belum Tercapai
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl">
+                                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                                            <BarChart3 className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                        <h3 className="font-bold text-lg text-gray-900 mb-1">Belum Ada Riwayat Ujian</h3>
+                                        <p className="text-gray-500 text-sm max-w-xs mx-auto mb-6">
+                                            Kamu belum mengerjakan Tryout atau Latihan Soal. Yuk mulai sekarang!
+                                        </p>
+                                        <Link href="/dashboard/latihan" className="px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">
+                                            Mulai Ujian Pertama
+                                        </Link>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    {/* TOP RANKING PREVIEW - MOVED HERE */}
+                    <div className="bg-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 relative">
+                        {/* Tape decoration */}
+                        <div className="absolute -top-3 left-6 w-12 h-5 bg-blue-200/80 rotate-[-2deg] shadow-sm"></div>
+
+                        <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-bold text-xl flex items-center gap-2 text-gray-900">
+                                <Trophy className="text-yellow-500" size={20} />
+                                Top Pejuang
+                            </h4>
+                            <Link href="/dashboard/ranking" className="text-xs font-bold text-blue-600 hover:underline decoration-wavy">
+                                Lihat Semua
+                            </Link>
                         </div>
 
+                        <div className="space-y-4">
+                            {data.leaderboard.map((entry, idx) => (
+                                <div key={idx} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn(
+                                            "w-6 h-6 rounded-full border border-gray-900 flex items-center justify-center text-[10px] font-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
+                                            idx === 0 ? "bg-yellow-400" : idx === 1 ? "bg-gray-200" : idx === 2 ? "bg-orange-300" : "bg-white"
+                                        )}>
+                                            {entry.rank_pos}
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full border border-gray-400 overflow-hidden bg-gray-50">
+                                            {entry.avatar_url ? (
+                                                <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-400">
+                                                    {entry.full_name[0]?.toUpperCase() || '?'}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <span className="text-sm font-bold text-gray-700 truncate max-w-[100px] md:max-w-[120px]">
+                                            {entry.full_name || 'Anonim'}
+                                        </span>
+                                    </div>
+                                    <div className="text-sm font-black text-gray-900">
+                                        {entry.top_score}
+                                    </div>
+                                </div>
+                            ))}
 
-
+                            {data.leaderboard.length === 0 && (
+                                <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
+                                    <p className="text-xs text-gray-400 italic">Belum ada data ranking</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </motion.div>
+                </div>
 
                 {/* STATS & RECOMMENDATIONS COLUMN */}
                 <motion.div variants={itemVariants} className="space-y-6">
@@ -385,62 +466,6 @@ export default function DashboardClient({ data, greeting }: Props) {
                         <Sparkles className="absolute -top-3 -right-3 w-8 h-8 text-blue-400 rotate-12 opacity-50" />
                         "Kunci kelulusan SKD adalah **konsistensi**. Luangkan waktu setiap hari untuk latihan!"
                     </div>
-
-                    {/* TOP RANKING PREVIEW - RESTORED FEATURE */}
-                    <motion.div
-                        variants={itemVariants}
-                        className="bg-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 relative"
-                    >
-                        {/* Tape decoration */}
-                        <div className="absolute -top-3 left-6 w-12 h-5 bg-blue-200/80 rotate-[-2deg] shadow-sm"></div>
-
-                        <div className="flex items-center justify-between mb-4">
-                            <h4 className="font-bold text-xl flex items-center gap-2 text-gray-900">
-                                <Trophy className="text-yellow-500" size={20} />
-                                Top Pejuang
-                            </h4>
-                            <Link href="/dashboard/ranking" className="text-xs font-bold text-blue-600 hover:underline decoration-wavy">
-                                Lihat Semua
-                            </Link>
-                        </div>
-
-                        <div className="space-y-4">
-                            {data.leaderboard.map((entry, idx) => (
-                                <div key={idx} className="flex items-center justify-between group">
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                            "w-6 h-6 rounded-full border border-gray-900 flex items-center justify-center text-[10px] font-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
-                                            idx === 0 ? "bg-yellow-400" : idx === 1 ? "bg-gray-200" : idx === 2 ? "bg-orange-300" : "bg-white"
-                                        )}>
-                                            {entry.rank_pos}
-                                        </div>
-                                        <div className="w-8 h-8 rounded-full border border-gray-400 overflow-hidden bg-gray-50">
-                                            {entry.avatar_url ? (
-                                                <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-400">
-                                                    {entry.full_name[0]?.toUpperCase() || '?'}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-sm font-bold text-gray-700 truncate max-w-[100px] md:max-w-[120px]">
-                                            {entry.full_name || 'Anonim'}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm font-black text-gray-900">
-                                        {entry.top_score}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {data.leaderboard.length === 0 && (
-                                <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
-                                    <p className="text-xs text-gray-400 italic">Belum ada data ranking</p>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-
                 </motion.div>
             </div>
         </motion.div>

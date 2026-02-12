@@ -73,7 +73,7 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                 {/* Table Layout */}
                 <PageAnimateItem className="bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
                     {/* Header Row */}
-                    <div className="hidden md:grid grid-cols-12 bg-gray-900 text-white p-4 font-black text-sm uppercase tracking-widest border-b-2 border-gray-900">
+                    <div className="hidden xl:grid grid-cols-12 bg-gray-900 text-white p-4 font-black text-sm uppercase tracking-widest border-b-2 border-gray-900">
                         <div className="col-span-1 text-center">Pos</div>
                         <div className="col-span-5 px-4 text-left">Nama Lengkap</div>
                         <div className="col-span-1 text-center">TWK</div>
@@ -96,7 +96,7 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                                     className={cn(
                                         "relative border-b-2 border-gray-100 transition-all hover:bg-gray-50/50 overflow-hidden",
                                         isCurrentUser && "bg-blue-50/30 border-l-4 border-l-blue-600 z-10",
-                                        "md:grid md:grid-cols-12 md:items-center"
+                                        "xl:grid xl:grid-cols-12 xl:items-center"
                                     )}
                                 >
                                     {isCurrentUser && (
@@ -105,8 +105,8 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                                         </div>
                                     )}
 
-                                    {/* --- MOBILE LAYOUT (< 768px) --- */}
-                                    <div className="md:hidden p-4 flex items-start gap-4">
+                                    {/* --- MOBILE LAYOUT (< 1280px) --- */}
+                                    <div className="xl:hidden p-4 flex items-start gap-4">
                                         {/* Rank */}
                                         <div className="w-8 flex-shrink-0 flex justify-center pt-1">
                                             {getRankIcon(entry.rank_pos)}
@@ -156,8 +156,8 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                                         </div>
                                     </div>
 
-                                    {/* --- DESKTOP & TABLET LAYOUT (>= 768px) --- */}
-                                    <div className="hidden md:contents">
+                                    {/* --- DESKTOP LAYOUT (>= 1280px) --- */}
+                                    <div className="hidden xl:contents">
                                         {/* Rank Column */}
                                         <div className="col-span-1 flex items-center justify-center py-4">
                                             {getRankIcon(entry.rank_pos)}

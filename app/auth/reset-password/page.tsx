@@ -27,7 +27,7 @@ export default function ResetPasswordPage() {
                 })
                 router.push('/login')
             }
-        } catch (error) {
+        } catch {
             toast.error('Gagal mengubah password')
         } finally {
             setLoading(false)

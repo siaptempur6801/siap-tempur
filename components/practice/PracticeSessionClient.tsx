@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
 import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut, Key, Sparkles } from 'lucide-react'
@@ -63,6 +63,37 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
     const currentQuestion = sortedQuestions[currentIndex]
 
+    const handleFinishSession = useCallback(async () => {
+        if (finishing) return // Prevent double click
+        if (hasFinished && isTryout) return
+        if (isTryout) setHasFinished(true)
+        setFinishing(true)
+
+        try {
+            const result = await finishPractice(sessionId)
+
+            if (result?.error) {
+                toast.error(result.error)
+                return
+            }
+
+            if (result?.success) {
+                toast.success(isTryout ? 'Tryout selesai!' : 'Latihan selesai!')
+                router.push(`/dashboard/latihan/${sessionId}/result`)
+            }
+        } catch (error) {
+            console.error('Error finishing practice:', error)
+            toast.error('Gagal menyelesaikan latihan')
+        } finally {
+            setFinishing(false)
+        }
+    }, [finishing, hasFinished, isTryout, sessionId, router])
+
+    const handleAutoFinish = useCallback(async () => {
+        toast.info('Waktu habis! Ujian diselesaikan otomatis.')
+        await handleFinishSession()
+    }, [handleFinishSession])
+
     // Timer Logic for Tryout Mode
     useEffect(() => {
         if (!isTryout || !endTime) return
@@ -103,7 +134,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
             }
         }, 1000)
         return () => clearInterval(interval)
-    }, [endTime, hasFinished, isTryout, isPaused, showWarning5Min, showWarning1Min])
+    }, [endTime, hasFinished, isTryout, isPaused, showWarning5Min, showWarning1Min, handleAutoFinish])
 
     // Warn on browser refresh/close
     useEffect(() => {
@@ -137,10 +168,12 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
         // Optimistic update
         setAnswers(prev => ({ ...prev, [currentQuestion.id]: optionId }))
+        setSubmitting(true)
 
         // Server action
         // Silent update/debounce could be better, but direct call is safer for consistency
         const result = await submitAnswer(sessionId, currentQuestion.id, optionId)
+        setSubmitting(false)
 
         if (result?.error) {
             toast.error('Gagal menyimpan jawaban')
@@ -170,36 +203,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
         await handleFinishSession()
     }
 
-    const handleAutoFinish = async () => {
-        toast.info('Waktu habis! Ujian diselesaikan otomatis.')
-        await handleFinishSession()
-    }
 
-    const handleFinishSession = async () => {
-        if (finishing) return // Prevent double click
-        if (hasFinished && isTryout) return
-        if (isTryout) setHasFinished(true)
-        setFinishing(true)
-
-        try {
-            const result = await finishPractice(sessionId)
-
-            if (result?.error) {
-                toast.error(result.error)
-                return
-            }
-
-            if (result?.success) {
-                toast.success(isTryout ? 'Tryout selesai!' : 'Latihan selesai!')
-                router.push(`/dashboard/latihan/${sessionId}/result`)
-            }
-        } catch (error) {
-            console.error('Error finishing practice:', error)
-            toast.error('Gagal menyelesaikan latihan')
-        } finally {
-            setFinishing(false)
-        }
-    }
 
     const handleExit = () => {
         router.push('/dashboard/latihan')

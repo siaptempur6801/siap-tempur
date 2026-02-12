@@ -21,6 +21,14 @@ interface DashboardData {
         tiu: { score: number; target: number; passed: boolean }
         tkp: { score: number; target: number; passed: boolean }
     }
+    lastExam: {
+        date: string
+        score_twk: number
+        score_tiu: number
+        score_tkp: number
+        total_score: number
+        passed: boolean
+    } | null
     priorityFocus: {
         type: 'TWK' | 'TIU' | 'TKP'
         reason: string
@@ -228,6 +236,23 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         })
     }
 
+    // Prepare Last Exam Data
+    const lastSession = sessions && sessions.length > 0 ? sessions[0] : null
+    const lastExam = lastSession ? {
+        date: new Date(lastSession.start_time).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }),
+        score_twk: lastSession.score_twk || 0,
+        score_tiu: lastSession.score_tiu || 0,
+        score_tkp: lastSession.score_tkp || 0,
+        total_score: lastSession.total_score || 0,
+        passed: (lastSession.total_score || 0) >= (PASSING_GRADES.TWK + PASSING_GRADES.TIU + PASSING_GRADES.TKP)
+    } : null
+
     return {
         user: {
             id: userId,
@@ -260,6 +285,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
                 passed: avgScores.tkp >= PASSING_GRADES.TKP,
             },
         },
+        lastExam,
         priorityFocus: {
             type: priorityType,
             reason: allPassed ? 'Semua kategori sudah lulus! Pertahankan performamu.' : priorityReasons[priorityType],

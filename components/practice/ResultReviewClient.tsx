@@ -6,53 +6,28 @@ import PaperBackground from '@/components/PaperBackground'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { SUBJECTS } from '@/lib/constants'
 
+interface Option {
+    id: string
+    content: string
+    is_correct: boolean
+    score_value: number
+}
+
+interface Question {
+    id: string
+    content: string
+    explanation: string
+    type: string
+    category: string
+    options: Option[]
+}
+
 interface Answer {
     id: string
     question_id: string
     option_id: string
-    questions: {
-        id: string
-        content: string
-        explanation: string
-        type: string
-        category: string
-        options: {
-            id: string
-            content: string
-            is_correct: boolean
-            score_value: number
-        }[]
-    } | {
-        id: string
-        content: string
-        explanation: string
-        type: string
-        category: string
-        options: {
-            id: string
-            content: string
-            is_correct: boolean
-            score_value: number
-        }[]
-    }[] | {
-        id: string
-        content: string
-        explanation: string
-        type: string
-        category: string
-        options: {
-            id: string
-            content: string
-            is_correct: boolean
-            score_value: number
-        }[]
-    }[]
-    selected_option: {
-        id: string
-        content: string
-        is_correct: boolean
-        score_value: number
-    } | null
+    questions: Question | Question[]
+    selected_option: Option | null
 }
 
 interface Props {
@@ -85,7 +60,7 @@ export default function ResultReviewClient({ answers }: Props) {
     const type = question.type
 
     // Helper to determine status
-    const getReviewStatus = (ans: Answer, q: any) => {
+    const getReviewStatus = (ans: Answer, q: Question) => {
         if (q.type === 'TKP') {
             const score = ans.selected_option?.score_value || 0
             if (score === 5) return 'perfect'
@@ -104,7 +79,7 @@ export default function ResultReviewClient({ answers }: Props) {
     // They might be in ID order or insertion order. That's fine for review.
 
 
-    const maxScoreOption = options.reduce((prev: any, current: any) => (prev.score_value > current.score_value) ? prev : current, options[0])
+    const maxScoreOption = options.reduce((prev: Option, current: Option) => (prev.score_value > current.score_value) ? prev : current, options[0])
 
     return (
         <div className="flex flex-col gap-8 min-h-[500px] font-handwriting">
@@ -247,7 +222,7 @@ export default function ResultReviewClient({ answers }: Props) {
                     </div>
 
                     <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10 max-w-4xl">
-                        {options.map((option: any, i: number) => {
+                        {options.map((option: Option, i: number) => {
                             const isSelected = currentAnswer.option_id === option.id
                             const isCorrect = option.is_correct
                             const isMaxTKP = type === 'TKP' && option.id === maxScoreOption.id

@@ -9,8 +9,9 @@ import {
     CartesianGrid,
     Tooltip,
     Cell,
+    ResponsiveContainer,
 } from 'recharts'
-import { BarChart3, CheckCircle2 } from 'lucide-react'
+import { BarChart3 } from 'lucide-react'
 
 interface CategoryData {
     subject: string
@@ -24,7 +25,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
 
     useEffect(() => {
         setMounted(true)
-    }, [])
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     const getBarColor = (score: number, passing: number) => {
         if (score >= passing) return '#22c55e' // Green
@@ -52,23 +53,23 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
                 </div>
             </div>
 
-            <div className="flex justify-center items-center py-4 bg-white border-2 border-gray-100 mb-6">
-                <BarChart
-                    width={400}
-                    height={220}
-                    data={data}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                    <XAxis dataKey="subject" tick={{ fill: '#4b5563', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <Tooltip />
-                    <Bar dataKey="score" isAnimationActive={false}>
-                        {data.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={getBarColor(entry.score, entry.passing)} />
-                        ))}
-                    </Bar>
-                </BarChart>
+            <div className="h-[250px] w-full py-4 bg-white border-2 border-gray-100 mb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={data}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                        <XAxis dataKey="subject" tick={{ fill: '#4b5563', fontWeight: 'bold' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: '#9ca3af', fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <Tooltip />
+                        <Bar dataKey="score" isAnimationActive={false}>
+                            {data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={getBarColor(entry.score, entry.passing)} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
             </div>
 
             <div className="grid grid-cols-3 gap-2 mt-auto">
