@@ -395,8 +395,11 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         Gas Tempur Sekarang! <Rocket className="w-6 h-6" />
                     </button>
 
-                    <div className="mt-16 text-sm text-gray-400 font-handwriting text-lg">
-                        &copy; 2026 Siap Tempur.
+                    <div className="mt-16 flex flex-col md:flex-row items-center justify-center gap-6 text-sm text-gray-400 font-handwriting text-lg">
+                        <Link href="/syarat-ketentuan" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
+                        <Link href="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
+                        <Link href="/kebijakan-pengembalian" className="hover:text-white transition-colors">Kebijakan Pengembalian</Link>
+                        <span>&copy; 2026 Siap Tempur.</span>
                     </div>
                 </div>
             </footer>
