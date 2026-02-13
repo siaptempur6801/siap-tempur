@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, Variants } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
     Flame,
     Zap,
@@ -61,12 +62,6 @@ interface DashboardData {
         total_score: number
         passed: boolean
     } | null
-    leaderboard: Array<{
-        rank_pos: number
-        full_name: string
-        avatar_url: string | null
-        top_score: number
-    }>
     nextTryout: {
         name: string
         daysLeft: number
@@ -386,57 +381,6 @@ export default function DashboardClient({ data, greeting }: Props) {
                         </div>
                     </motion.div>
 
-                    {/* TOP RANKING PREVIEW - MOVED HERE */}
-                    <div className="bg-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                        {/* Tape decoration */}
-                        <div className="absolute -top-3 left-6 w-12 h-5 bg-blue-200/80 rotate-[-2deg] shadow-sm"></div>
-
-                        <div className="flex items-center justify-between mb-4">
-                            <h4 className="font-bold text-xl flex items-center gap-2 text-gray-900">
-                                <Trophy className="text-yellow-500" size={20} />
-                                Top Pejuang
-                            </h4>
-                            <Link href="/dashboard/ranking" className="text-xs font-bold text-blue-600 hover:underline decoration-wavy">
-                                Lihat Semua
-                            </Link>
-                        </div>
-
-                        <div className="space-y-4">
-                            {data.leaderboard.map((entry, idx) => (
-                                <div key={idx} className="flex items-center justify-between group">
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn(
-                                            "w-6 h-6 rounded-full border border-gray-900 flex items-center justify-center text-[10px] font-black shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]",
-                                            idx === 0 ? "bg-yellow-400" : idx === 1 ? "bg-gray-200" : idx === 2 ? "bg-orange-300" : "bg-white"
-                                        )}>
-                                            {entry.rank_pos}
-                                        </div>
-                                        <div className="w-8 h-8 rounded-full border border-gray-400 overflow-hidden bg-gray-50">
-                                            {entry.avatar_url ? (
-                                                <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-400">
-                                                    {entry.full_name[0]?.toUpperCase() || '?'}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-sm font-bold text-gray-700 truncate max-w-[100px] md:max-w-[120px]">
-                                            {entry.full_name || 'Anonim'}
-                                        </span>
-                                    </div>
-                                    <div className="text-sm font-black text-gray-900">
-                                        {entry.top_score}
-                                    </div>
-                                </div>
-                            ))}
-
-                            {data.leaderboard.length === 0 && (
-                                <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
-                                    <p className="text-xs text-gray-400 italic">Belum ada data ranking</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
                 </div>
 
                 {/* STATS & RECOMMENDATIONS COLUMN */}

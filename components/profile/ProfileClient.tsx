@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { User, Mail, Calendar, Shield, Trophy, Zap, Clock, Edit, Camera, Save, X, Loader2, ClipboardList, Ticket, Coins, Lock, Trash2, BookOpen, Eye, Target, CreditCard, ShoppingCart, FileText, Settings } from 'lucide-react'
 import ImageCropper from '@/components/ui/ImageCropper'
@@ -276,9 +277,16 @@ export default function ProfileClient({
                                 {/* Avatar Section */}
                                 <div className="flex-shrink-0">
                                     <div className="relative w-32 h-32 mx-auto md:mx-0 group">
-                                        <div className="w-full h-full rounded-full border-4 border-gray-900 bg-gradient-to-br from-yellow-100 to-pink-100 flex items-center justify-center text-4xl font-bold overflow-hidden cursor-pointer shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                        <div className="w-full h-full rounded-full border-4 border-gray-900 bg-gradient-to-br from-yellow-100 to-pink-100 flex items-center justify-center text-4xl font-bold overflow-hidden cursor-pointer shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] relative">
                                             {profile.avatar_url ? (
-                                                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                                <Image
+                                                    src={profile.avatar_url}
+                                                    alt="Avatar"
+                                                    fill
+                                                    priority
+                                                    className="object-cover"
+                                                    sizes="(max-width: 768px) 128px, 128px"
+                                                />
                                             ) : (
                                                 <span className="text-gray-900">{user.email[0].toUpperCase()}</span>
                                             )}

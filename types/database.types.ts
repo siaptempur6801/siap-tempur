@@ -60,7 +60,6 @@ export interface Database {
                     type: 'TWK' | 'TIU' | 'TKP'
                     category: string | null
                     explanation: string | null
-                    difficulty: number
                     created_at: string
                 }
                 Insert: {

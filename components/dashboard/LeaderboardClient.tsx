@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { Medal, Search, User, BarChart3, SearchX } from 'lucide-react'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import PaperBackground from '@/components/PaperBackground'
@@ -116,9 +117,15 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                                         <div className="flex-1 min-w-0">
                                             {/* Header: Avatar, Name & Total */}
                                             <div className="flex items-start gap-3 mb-3">
-                                                <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                                <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
                                                     {entry.avatar_url ? (
-                                                        <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                        <Image
+                                                            src={entry.avatar_url}
+                                                            alt={entry.full_name}
+                                                            fill
+                                                            className="object-cover"
+                                                            sizes="48px"
+                                                        />
                                                     ) : (
                                                         <User className="text-gray-400 w-7 h-7" />
                                                     )}
@@ -165,9 +172,15 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
 
                                         {/* Profile Column */}
                                         <div className="col-span-5 px-4 flex items-center gap-3 py-4">
-                                            <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                                            <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
                                                 {entry.avatar_url ? (
-                                                    <img src={entry.avatar_url} alt="" className="w-full h-full object-cover" />
+                                                    <Image
+                                                        src={entry.avatar_url}
+                                                        alt={entry.full_name}
+                                                        fill
+                                                        className="object-cover"
+                                                        sizes="48px"
+                                                    />
                                                 ) : (
                                                     <User className="text-gray-400 w-7 h-7" />
                                                 )}

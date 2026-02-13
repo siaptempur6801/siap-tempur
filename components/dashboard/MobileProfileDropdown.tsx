@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { LogOut, User, Crown, Ticket, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { toast } from 'sonner'
 
 interface MobileProfileDropdownProps {
@@ -71,7 +72,14 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
                 className="w-10 h-10 rounded-full bg-white border-2 border-gray-900 flex items-center justify-center overflow-hidden hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
                 {avatarUrl ? (
-                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                    <Image
+                        src={avatarUrl}
+                        alt="Profile"
+                        fill
+                        priority
+                        className="object-cover"
+                        sizes="40px"
+                    />
                 ) : (
                     <span className="text-sm font-bold font-handwriting text-gray-900">{user.email?.[0]?.toUpperCase() || '?'}</span>
                 )}

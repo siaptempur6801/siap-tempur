@@ -1,5 +1,6 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient, createClient } from '@supabase/supabase-js'
 import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
+import { unstable_cache } from 'next/cache'
 
 interface DashboardData {
     user: {
@@ -52,12 +53,6 @@ interface DashboardData {
         name: string
         daysLeft: number
     } | null
-    leaderboard: Array<{
-        rank_pos: number
-        full_name: string
-        avatar_url: string | null
-        top_score: number
-    }>
 }
 
 // XP calculation: total_score from all completed sessions
@@ -117,10 +112,13 @@ export function getXPInfo(previousTotalXP: number, xpEarned: number) {
 
 // Passing grades are now imported from constants.ts
 
+// Cache the global leaderboard top 3 for 5 minutes
+// Passing grades are now imported from constants.ts
+
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
     // Fetch profile
     // Fetch data in parallel to resolve "waterfall" slowness
-    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankRes, topRankingsRes] = await Promise.all([
+    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankRes] = await Promise.all([
         supabase
             .from('profiles')
             .select('full_name, streak_count, tryout_quota') // Fetch SKD quota
@@ -128,14 +126,14 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .single(),
         supabase
             .from('test_sessions')
-            .select('id, total_score, score_twk, score_tiu, score_tkp, mode, status, start_time')
+            .select('id, total_score, score_twk, score_tiu, score_tkp, start_time')
             .eq('user_id', userId)
             .eq('status', 'completed')
             .order('start_time', { ascending: false })
             .limit(10),
         supabase
             .from('test_sessions')
-            .select('id, total_score, score_twk, score_tiu, score_tkp, mode, status, start_time')
+            .select('id, total_score, score_twk, score_tiu, score_tkp, start_time')
             .eq('user_id', userId)
             .eq('status', 'completed')
             .order('total_score', { ascending: false })
@@ -149,12 +147,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .from('leaderboard_snapshot')
             .select('rank_pos')
             .eq('user_id', userId)
-            .maybeSingle(),
-        supabase
-            .from('leaderboard_snapshot')
-            .select('rank_pos, full_name, avatar_url, top_score')
-            .order('rank_pos', { ascending: true })
-            .limit(3)
+            .maybeSingle()
     ])
 
     const profile = profileRes.data
@@ -327,7 +320,6 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         },
         recommendations: recommendations.slice(0, 2),
         nextTryout: null, // Will be implemented when tryout scheduling exists
-        leaderboard: topRankingsRes.data || []
     }
 }
 

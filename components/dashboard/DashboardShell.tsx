@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
     LayoutDashboard,
     BookOpen,
@@ -79,7 +80,13 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                     <div className="flex items-center gap-3 mb-4 px-2 p-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-1 hover:rotate-0 transition-transform">
                         <div className="w-10 h-10 border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold overflow-hidden relative bg-yellow-200">
                             {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt="Ava" className="w-full h-full object-cover" />
+                                <Image
+                                    src={profile.avatar_url}
+                                    alt="Ava"
+                                    fill
+                                    className="object-cover"
+                                    sizes="40px"
+                                />
                             ) : (
                                 <span className="text-lg">{user.email?.[0]?.toUpperCase() || '?'}</span>
                             )}
@@ -135,10 +142,12 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                         icon={
                             profile?.avatar_url ? (
                                 <div className="w-5 h-5 rounded-full overflow-hidden border border-gray-900 relative">
-                                    <img
+                                    <Image
                                         src={profile.avatar_url}
                                         alt="Profile"
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        className="object-cover"
+                                        sizes="20px"
                                     />
                                 </div>
                             ) : (
