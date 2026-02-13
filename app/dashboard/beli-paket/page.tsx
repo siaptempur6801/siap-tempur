@@ -167,7 +167,7 @@ export default function BeliPaketPage() {
                                 <span className="text-gray-400 text-lg">/ {pkg.tokens} Token</span>
                             </div>
 
-                            {pkg.savings && (
+                            {pkg.savings > 0 && (
                                 <p className="font-handwriting text-green-700 text-sm md:text-base mb-6 bg-green-100 inline-flex px-4 py-1.5 rounded-full items-center gap-2 w-fit shadow-sm">
                                     Hemat Rp {(pkg.savings / 1000).toLocaleString()}k! <Sparkles className="w-5 h-5" />
                                 </p>
