@@ -229,24 +229,21 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Tryout CAT SKD (TWK, TIU, TKP)</span>
+                                    <CheckDoodle /> <span>Tryout SKD Premium</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Kunci & Pembahasan Lengkap</span>
+                                    <CheckDoodle /> <span>Pembahasan Lengkap</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Ranking Nasional Real-time</span>
+                                    <CheckDoodle /> <span>Perankingan Nasional</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Cocok CPNS & Kedinasan</span>
+                                    <CheckDoodle /> <span>Token Aktif Selamanya</span>
                                 </div>
                             </div>
 
                             <button
-                                onClick={() => toast.info("Fitur Keranjang belum tersedia.", {
-                                    description: "Sistem pembayaran sedang kami siapkan. Pantau terus ya!",
-                                    icon: <AlertCircle className="text-blue-500" />
-                                })}
+                                onClick={() => router.push('/dashboard/beli-paket')}
                                 className="w-full py-2 font-handwriting text-xl font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
                                 Coba Latihan Satuan
                             </button>
@@ -271,24 +268,21 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>3 Tiket Tryout CAT</span>
+                                    <CheckDoodle /> <span>Tryout SKD Premium</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Kunci & Pembahasan Lengkap</span>
+                                    <CheckDoodle /> <span>Pembahasan Lengkap</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Ranking Nasional Real-time</span>
+                                    <CheckDoodle /> <span>Perankingan Nasional</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Masa Aktif Selamanya</span>
+                                    <CheckDoodle /> <span>Token Aktif Selamanya</span>
                                 </div>
                             </div>
 
                             <button
-                                onClick={() => toast.info("Fitur Keranjang belum tersedia.", {
-                                    description: "Sistem pembayaran sedang kami siapkan. Pantau terus ya!",
-                                    icon: <AlertCircle className="text-blue-500" />
-                                })}
+                                onClick={() => router.push('/dashboard/beli-paket')}
                                 className="w-full py-2 font-handwriting text-xl font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
                                 Pilih Paket Hemat
                             </button>
@@ -320,27 +314,24 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <div className="space-y-3 mb-8 font-handwriting text-xl text-gray-800 flex-grow">
                                 <div className="flex items-start gap-3">
                                     <div className="mt-1"><CheckDoodle /></div>
-                                    <span className="font-bold underline decoration-wavy decoration-indigo-400">5 Tiket Tryout CAT</span>
+                                    <span className="font-bold underline decoration-wavy decoration-indigo-400">Tryout SKD Premium</span>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="mt-1"><CheckDoodle /></div>
-                                    <span>Kunci & Pembahasan Lengkap</span>
+                                    <span>Pembahasan Lengkap</span>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="mt-1"><CheckDoodle /></div>
-                                    <span>Ranking Nasional Real-time</span>
+                                    <span>Perankingan Nasional</span>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="mt-1"><CheckDoodle /></div>
-                                    <span>Materi Ringkasan Terupdate</span>
+                                    <span className="font-bold">Token Aktif Selamanya</span>
                                 </div>
                             </div>
 
                             <button
-                                onClick={() => toast.info("Fitur Keranjang belum tersedia.", {
-                                    description: "Sistem pembayaran sedang kami siapkan. Pantau terus ya!",
-                                    icon: <AlertCircle className="text-blue-500" />
-                                })}
+                                onClick={() => router.push('/dashboard/beli-paket')}
                                 className="w-full py-4 font-handwriting text-2xl font-bold bg-indigo-600 text-white border-2 border-gray-900 rounded-lg shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer">
                                 Ambil Paket Hemat 5x Token
                             </button>

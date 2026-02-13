@@ -1,6 +1,5 @@
-import { SupabaseClient, createClient } from '@supabase/supabase-js'
+import { SupabaseClient } from '@supabase/supabase-js'
 import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
-import { unstable_cache } from 'next/cache'
 
 interface DashboardData {
     user: {
@@ -55,9 +54,6 @@ interface DashboardData {
     } | null
 }
 
-// XP calculation: total_score from all completed sessions
-// Level thresholds are now imported from constants.ts
-
 export function getLevel(xp: number) {
     let current: typeof LEVEL_THRESHOLDS[number] = LEVEL_THRESHOLDS[0]
     for (const threshold of LEVEL_THRESHOLDS) {
@@ -74,7 +70,6 @@ export function getLevelProgress(xp: number) {
     const nextLevel = LEVEL_THRESHOLDS[currentIndex + 1]
 
     if (!nextLevel) {
-        // Max level reached
         return { current: currentLevel, next: null, progress: 100, xpToNext: 0 }
     }
 
@@ -110,18 +105,11 @@ export function getXPInfo(previousTotalXP: number, xpEarned: number) {
     }
 }
 
-// Passing grades are now imported from constants.ts
-
-// Cache the global leaderboard top 3 for 5 minutes
-// Passing grades are now imported from constants.ts
-
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
-    // Fetch profile
-    // Fetch data in parallel to resolve "waterfall" slowness
     const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankRes] = await Promise.all([
         supabase
             .from('profiles')
-            .select('full_name, streak_count, tryout_quota') // Fetch SKD quota
+            .select('full_name, streak_count, tryout_quota')
             .eq('id', userId)
             .single(),
         supabase
@@ -156,16 +144,11 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     const allSessions = allSessionsRes.data
     const rankData = rankRes.data
 
-    const totalXp = allSessions?.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
+    const totalXp = allSessions?.reduce((sum: number, s: any) => sum + (s.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXp)
 
-    // Calculate average scores from recent sessions
     const recentSessions = sessions || []
-    const avgScores = {
-        twk: 0,
-        tiu: 0,
-        tkp: 0,
-    }
+    const avgScores = { twk: 0, tiu: 0, tkp: 0 }
 
     if (recentSessions.length > 0) {
         const twkSessions = recentSessions.filter(s => s.score_twk > 0)
@@ -183,7 +166,6 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         }
     }
 
-    // Determine priority focus (weakest category relative to passing grade)
     const gaps = {
         TWK: PASSING_GRADES.TWK - avgScores.twk,
         TIU: PASSING_GRADES.TIU - avgScores.tiu,
@@ -201,7 +183,6 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         priorityType = 'TKP'
     }
 
-    // If all passed, pick random or default
     const allPassed = avgScores.twk >= PASSING_GRADES.TWK &&
         avgScores.tiu >= PASSING_GRADES.TIU &&
         avgScores.tkp >= PASSING_GRADES.TKP
@@ -212,50 +193,24 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         TKP: 'TKP butuh latihan lebih untuk capai target',
     }
 
-    // Generate recommendations based on weak areas
     const recommendations: DashboardData['recommendations'] = []
-
     if (avgScores.twk < PASSING_GRADES.TWK) {
-        recommendations.push({
-            type: 'TWK',
-            title: 'Latihan TWK',
-            description: `Tingkatkan skor dari ${avgScores.twk} ke ${PASSING_GRADES.TWK}`,
-        })
+        recommendations.push({ type: 'TWK', title: 'Latihan TWK', description: `Tingkatkan skor dari ${avgScores.twk} ke ${PASSING_GRADES.TWK}` })
     }
     if (avgScores.tiu < PASSING_GRADES.TIU) {
-        recommendations.push({
-            type: 'TIU',
-            title: 'Latihan TIU',
-            description: `Tingkatkan skor dari ${avgScores.tiu} ke ${PASSING_GRADES.TIU}`,
-        })
+        recommendations.push({ type: 'TIU', title: 'Latihan TIU', description: `Tingkatkan skor dari ${avgScores.tiu} ke ${PASSING_GRADES.TIU}` })
     }
     if (avgScores.tkp < PASSING_GRADES.TKP) {
-        recommendations.push({
-            type: 'TKP',
-            title: 'Latihan TKP',
-            description: `Tingkatkan skor dari ${avgScores.tkp} ke ${PASSING_GRADES.TKP}`,
-        })
+        recommendations.push({ type: 'TKP', title: 'Latihan TKP', description: `Tingkatkan skor dari ${avgScores.tkp} ke ${PASSING_GRADES.TKP}` })
     }
 
-    // If no recommendations (all passed), suggest maintenance
     if (recommendations.length === 0) {
-        recommendations.push({
-            type: 'TWK',
-            title: 'Pertahankan TWK',
-            description: 'Jaga konsistensi dengan latihan rutin',
-        })
+        recommendations.push({ type: 'TWK', title: 'Pertahankan TWK', description: 'Jaga konsistensi dengan latihan rutin' })
     }
 
-    // Prepare Last Exam Data
     const lastSession = sessions && sessions.length > 0 ? sessions[0] : null
     const lastExam = lastSession ? {
-        date: new Date(lastSession.start_time).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }),
+        date: new Date(lastSession.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         score_twk: lastSession.score_twk || 0,
         score_tiu: lastSession.score_tiu || 0,
         score_tkp: lastSession.score_tkp || 0,
@@ -264,13 +219,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     } : null
 
     const bestExam = bestSession ? {
-        date: new Date(bestSession.start_time).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }),
+        date: new Date(bestSession.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         score_twk: bestSession.score_twk || 0,
         score_tiu: bestSession.score_tiu || 0,
         score_tkp: bestSession.score_tkp || 0,
@@ -279,37 +228,12 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     } : null
 
     return {
-        user: {
-            id: userId,
-            name: profile?.full_name || 'Calon ASN',
-            streak: profile?.streak_count || 0,
-            tryoutQuota: profile?.tryout_quota || 0,
-        },
-
-        stats: {
-            totalSessions: recentSessions.length,
-            xp: totalXp,
-            level: levelInfo.level,
-            levelName: levelInfo.name,
-            levelProgress: getLevelProgress(totalXp).progress,
-            rank: rankData?.rank_pos || null,
-        },
+        user: { id: userId, name: profile?.full_name || 'Calon ASN', streak: profile?.streak_count || 0, tryoutQuota: profile?.tryout_quota || 0 },
+        stats: { totalSessions: recentSessions.length, xp: totalXp, level: levelInfo.level, levelName: levelInfo.name, levelProgress: getLevelProgress(totalXp).progress, rank: rankData?.rank_pos || null },
         progress: {
-            twk: {
-                score: avgScores.twk,
-                target: PASSING_GRADES.TWK,
-                passed: avgScores.twk >= PASSING_GRADES.TWK,
-            },
-            tiu: {
-                score: avgScores.tiu,
-                target: PASSING_GRADES.TIU,
-                passed: avgScores.tiu >= PASSING_GRADES.TIU,
-            },
-            tkp: {
-                score: avgScores.tkp,
-                target: PASSING_GRADES.TKP,
-                passed: avgScores.tkp >= PASSING_GRADES.TKP,
-            },
+            twk: { score: avgScores.twk, target: PASSING_GRADES.TWK, passed: avgScores.twk >= PASSING_GRADES.TWK },
+            tiu: { score: avgScores.tiu, target: PASSING_GRADES.TIU, passed: avgScores.tiu >= PASSING_GRADES.TIU },
+            tkp: { score: avgScores.tkp, target: PASSING_GRADES.TKP, passed: avgScores.tkp >= PASSING_GRADES.TKP },
         },
         lastExam,
         bestExam,
@@ -319,31 +243,13 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             target: allPassed ? 'Konsistensi' : `Target: ${PASSING_GRADES[priorityType]} poin`,
         },
         recommendations: recommendations.slice(0, 2),
-        nextTryout: null, // Will be implemented when tryout scheduling exists
+        nextTryout: null,
     }
 }
 
 export function getGreeting(hour: number): { greeting: string; message: string } {
-    if (hour >= 4 && hour < 11) {
-        return {
-            greeting: 'Selamat Pagi',
-            message: 'Pagi yang sempurna untuk memulai belajar!',
-        }
-    }
-    if (hour >= 11 && hour < 15) {
-        return {
-            greeting: 'Selamat Siang',
-            message: 'Semangat! Lanjutkan progres belajarmu.',
-        }
-    }
-    if (hour >= 15 && hour < 18) {
-        return {
-            greeting: 'Selamat Sore',
-            message: 'Waktu yang tepat untuk review materi.',
-        }
-    }
-    return {
-        greeting: 'Selamat Malam',
-        message: 'Latihan sebelum tidur bisa memperkuat ingatan!',
-    }
+    if (hour >= 4 && hour < 11) return { greeting: 'Selamat Pagi', message: 'Pagi yang sempurna untuk memulai belajar!' }
+    if (hour >= 11 && hour < 15) return { greeting: 'Selamat Siang', message: 'Semangat! Lanjutkan progres belajarmu.' }
+    if (hour >= 15 && hour < 18) return { greeting: 'Selamat Sore', message: 'Waktu yang tepat untuk review materi.' }
+    return { greeting: 'Selamat Malam', message: 'Latihan sebelum tidur bisa memperkuat ingatan!' }
 }

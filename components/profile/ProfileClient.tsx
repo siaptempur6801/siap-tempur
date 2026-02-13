@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { User, Mail, Calendar, Shield, Trophy, Zap, Clock, Edit, Camera, Save, X, Loader2, ClipboardList, Ticket, Coins, Lock, Trash2, BookOpen, Eye, Target, CreditCard, ShoppingCart, FileText, Settings } from 'lucide-react'
 import ImageCropper from '@/components/ui/ImageCropper'
-import { updateProfileInfo } from '@/app/actions/profile'
+import { updateProfileInfo, deleteAccount } from '@/app/actions/profile'
 import { signout, updatePassword } from '@/app/auth/actions'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
@@ -76,6 +76,9 @@ export default function ProfileClient({
     const [showImagePreview, setShowImagePreview] = useState(false)
     const [isPending, startTransition] = useTransition()
     const [profile, setProfile] = useState(initialProfile)
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
     // Avatar upload state
     const [isUploading, setIsUploading] = useState(false)
@@ -665,7 +668,10 @@ export default function ProfileClient({
                                         <div className="text-sm text-gray-600">Update password akun Anda</div>
                                     </button>
 
-                                    <button className="w-full text-left p-4 bg-red-50 border-2 border-red-300 hover:border-red-600 hover:shadow-[2px_2px_0px_0px_rgba(220,38,38,1)] transition-all group">
+                                    <button
+                                        onClick={() => setShowDeleteModal(true)}
+                                        className="w-full text-left p-4 bg-red-50 border-2 border-red-300 hover:border-red-600 hover:shadow-[2px_2px_0px_0px_rgba(220,38,38,1)] transition-all group"
+                                    >
                                         <div className="font-bold text-base mb-1 text-red-600 flex items-center gap-2">
                                             <Trash2 className="w-4 h-4" /> Hapus Akun
                                         </div>
@@ -776,6 +782,101 @@ export default function ProfileClient({
                             onCancel={() => setSelectedImage(null)}
                             onCropComplete={onCropComplete}
                         />
+                    )
+                }
+
+                {/* Delete Account Modal */}
+                {
+                    showDeleteModal && (
+                        <div
+                            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200"
+                            onClick={() => !isDeleting && setShowDeleteModal(false)}
+                        >
+                            <div
+                                className="relative max-w-md w-full bg-white p-8 border-4 border-gray-900 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] rounded-none rotate-1"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-40 h-10 bg-red-500 border-2 border-gray-900 shadow-sm flex items-center justify-center -rotate-2">
+                                    <span className="text-white font-black uppercase tracking-widest text-sm">Peringatan Keras!</span>
+                                </div>
+
+                                <div className="flex flex-col items-center text-center mt-6 space-y-4">
+                                    <div className="w-20 h-20 bg-red-100 border-2 border-gray-900 flex items-center justify-center rounded-full shadow-[4px_4px_0px_0px_rgba(220,38,38,0.2)]">
+                                        <Trash2 size={40} className="text-red-600" />
+                                    </div>
+
+                                    <h3 className="text-3xl font-black text-gray-900">Hapus Akun?</h3>
+
+                                    <div className="space-y-3 w-full">
+                                        <p className="text-gray-600 font-bold italic leading-relaxed">
+                                            "Tindakan ini tidak bisa dibatalkan."
+                                        </p>
+                                        <div className="bg-red-50 p-4 border-2 border-red-100 rounded-xl space-y-2">
+                                            <p className="text-sm font-black text-red-800">Efek Penghapusan:</p>
+                                            <ul className="text-xs text-red-700 font-bold space-y-1 text-left list-disc pl-4">
+                                                <li>Semua riwayat ujian akan hilang</li>
+                                                <li>Sisa kuota tryout akan hangus</li>
+                                                <li>Data profil akan dihapus permanen</li>
+                                                <li>Akses login akan dicabut selamanya</li>
+                                            </ul>
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <label className="text-[10px] font-black uppercase text-gray-400 mb-1 block text-left">
+                                                Ketik <span className="text-red-600">HAPUS</span> untuk konfirmasi
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={deleteConfirmText}
+                                                onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                                                className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-center font-black text-xl tracking-widest outline-none focus:bg-red-50 focus:border-red-600 transition-colors"
+                                                placeholder="Ketik di sini..."
+                                                disabled={isDeleting}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col w-full gap-3 pt-4">
+                                        <button
+                                            onClick={async () => {
+                                                if (deleteConfirmText !== 'HAPUS') return
+                                                setIsDeleting(true)
+                                                try {
+                                                    const res = await deleteAccount()
+                                                    if (res.success) {
+                                                        toast.success('Akun berhasil dihapus. Sampai jumpa!')
+                                                        setTimeout(() => {
+                                                            window.location.href = '/login'
+                                                        }, 2000)
+                                                    } else {
+                                                        toast.error(res.error || 'Gagal menghapus akun')
+                                                        setIsDeleting(false)
+                                                    }
+                                                } catch (err) {
+                                                    toast.error('Terjadi kesalahan sistem')
+                                                    setIsDeleting(false)
+                                                }
+                                            }}
+                                            disabled={isDeleting || deleteConfirmText !== 'HAPUS'}
+                                            className="w-full py-4 bg-red-600 text-white font-black text-xl border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
+                                        >
+                                            {isDeleting ? <Loader2 className="animate-spin" /> : <Shield size={22} />}
+                                            Ya, Hapus Permanen
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowDeleteModal(false)
+                                                setDeleteConfirmText('')
+                                            }}
+                                            disabled={isDeleting}
+                                            className="w-full py-3 bg-white text-gray-700 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition disabled:opacity-50"
+                                        >
+                                            Batalkan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     )
                 }
             </PageAnimateContainer >

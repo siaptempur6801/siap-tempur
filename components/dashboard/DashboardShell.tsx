@@ -12,6 +12,7 @@ import {
     Ticket,
     Target,
     BarChart3,
+    Shield,
 } from 'lucide-react'
 
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
@@ -36,9 +37,10 @@ interface DashboardShellProps {
     } | null
 
     signoutAction: () => Promise<{ success: boolean }>
+    isAdmin?: boolean
 }
 
-export default function DashboardShell({ children, user, profile, signoutAction }: DashboardShellProps) {
+export default function DashboardShell({ children, user, profile, signoutAction, isAdmin = false }: DashboardShellProps) {
     const pathname = usePathname()
 
     // Check if we're on a practice session page (mengerjakan soal atau result)
@@ -74,6 +76,12 @@ export default function DashboardShell({ children, user, profile, signoutAction 
                     <NavItem href="/dashboard/latihan" icon={<Target size={20} />} label="Tryout" badge="XP" />
 
                     <NavItem href="/dashboard/profile" icon={<User size={20} />} label="Profil" />
+
+                    {isAdmin && (
+                        <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
+                            <NavItem href="/dashboard/admin" icon={<Shield size={20} />} label="Admin" />
+                        </div>
+                    )}
                 </nav>
 
                 <div className="p-4 border-t-2 border-gray-900 relative z-10">

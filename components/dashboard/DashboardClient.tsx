@@ -453,7 +453,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                     {/* CALLOUT CARD */}
                     <div className="p-4 bg-blue-50 border-2 border-blue-200 border-dashed text-blue-700 font-bold text-sm leading-relaxed relative">
                         <Sparkles className="absolute -top-3 -right-3 w-8 h-8 text-blue-400 rotate-12 opacity-50" />
-                        "Kunci kelulusan SKD adalah **konsistensi**. Luangkan waktu setiap hari untuk latihan!"
+                        "Kunci kelulusan SKD adalah KONSISTENSI. Luangkan waktu setiap hari untuk latihan!"
                     </div>
                 </motion.div>
             </div>

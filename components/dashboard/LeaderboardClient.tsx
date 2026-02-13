@@ -233,7 +233,7 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                     {/* Legend / Footer */}
                     <div className="p-6 bg-gray-50 border-t-2 border-gray-900 flex flex-col md:flex-row items-center justify-between gap-4">
                         <p className="text-xs text-gray-400 italic">
-                            Data diperbarui setiap 5 menit. Selesaikan tryout dengan skor maksimal untuk naik ke puncak klasemen!
+                            Pantau Terus Posisimu! Skor tertinggi dari mode Tryout akan membawamu ke puncak klasemen.
                         </p>
                         <div className="flex gap-4">
                             <div className="flex items-center gap-2">

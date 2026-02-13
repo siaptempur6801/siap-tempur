@@ -45,8 +45,10 @@ export default async function DashboardLayout({
         }
     }
 
+    const isAdminUser = profile?.role === 'admin'
+
     return (
-        <DashboardShell user={user} profile={profile} signoutAction={signout}>
+        <DashboardShell user={user} profile={profile} signoutAction={signout} isAdmin={isAdminUser}>
             {children}
         </DashboardShell>
     )

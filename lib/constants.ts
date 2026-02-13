@@ -51,3 +51,54 @@ export const LEVEL_THRESHOLDS = [
     { xp: 22000, level: 14, name: 'Legend SKD' },
     { xp: 30000, level: 15, name: 'Dewa ASN' },
 ] as const;
+
+/**
+ * Pricing Packages for Tryout Tokens
+ */
+export const PRICING_PACKAGES = [
+    {
+        id: 'skd-satuan',
+        name: 'SKD Satuan',
+        price: 10000,
+        tokens: 1,
+        bestSeller: false,
+        savings: 0,
+        description: '1 Token Tryout SKD CAT',
+        features: [
+            'Tryout SKD Premium',
+            'Pembahasan Lengkap',
+            'Perankingan Nasional',
+            'Token Aktif Selamanya'
+        ]
+    },
+    {
+        id: 'skd-paket-3',
+        name: 'SKD Paket 3x',
+        price: 25000,
+        tokens: 3,
+        bestSeller: false,
+        savings: 5000,
+        description: '3 Token Tryout SKD CAT',
+        features: [
+            'Tryout SKD Premium',
+            'Pembahasan Lengkap',
+            'Perankingan Nasional',
+            'Token Aktif Selamanya'
+        ]
+    },
+    {
+        id: 'skd-paket-5',
+        name: 'SKD Paket 5x',
+        price: 40000,
+        tokens: 5,
+        bestSeller: true,
+        savings: 10000,
+        description: '5 Token Tryout SKD CAT + Ringkasan',
+        features: [
+            'Tryout SKD Premium',
+            'Pembahasan Lengkap',
+            'Perankingan Nasional',
+            'Token Aktif Selamanya'
+        ]
+    }
+] as const;
