@@ -91,7 +91,7 @@ export default function RegisterPage() {
                                 autoComplete="new-password"
                                 required
                                 className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
-                                placeholder="Kata Sandi (Min. 6 karakter)"
+                                placeholder="Kata Sandi (Min. 8 karakter)"
                             />
                             <button
                                 type="button"

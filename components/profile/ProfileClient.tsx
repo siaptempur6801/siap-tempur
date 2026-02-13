@@ -725,7 +725,7 @@ export default function ProfileClient({
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
                                             className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
-                                            placeholder="Minimal 6 karakter"
+                                            placeholder="Minimal 8 karakter"
                                             disabled={isChangingPassword}
                                         />
                                     </div>

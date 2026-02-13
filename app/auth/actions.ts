@@ -65,8 +65,8 @@ export async function updatePassword(formData: FormData) {
     const password = formData.get('password') as string
     const oldPassword = formData.get('oldPassword') as string
 
-    if (!password || password.length < 6) {
-        return { error: 'Password baru minimal 6 karakter' }
+    if (!password || password.length < 8) {
+        return { error: 'Password baru minimal 8 karakter' }
     }
 
     if (!oldPassword) {
