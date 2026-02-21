@@ -46,7 +46,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                 <nav className="container mx-auto px-4 h-20 flex items-center justify-between relative">
 
 
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-3xl font-handwriting font-bold text-gray-800 rotate-[-2deg] cursor-pointer hover:rotate-0 transition-transform pl-0 md:pl-0">
+                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="text-3xl font-handwriting font-bold text-gray-800 rotate-[-2deg] cursor-pointer hover:rotate-0 transition-transform pl-0 md:pl-0">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                     </button>
 
@@ -76,6 +76,8 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         <button
                             className="md:hidden p-2 text-gray-800 hover:bg-gray-200 rounded-md transition"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            aria-label={isMenuOpen ? 'Tutup menu' : 'Buka menu'}
+                            aria-expanded={isMenuOpen}
                         >
                             {isMenuOpen ? <X size={32} /> : <Menu size={32} />}
                         </button>
