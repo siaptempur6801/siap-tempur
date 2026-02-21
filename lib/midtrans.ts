@@ -2,11 +2,18 @@
 // @ts-expect-error - midtrans-client lacks type definitions
 import midtransClient from 'midtrans-client';
 
-export const snap = new midtransClient.Snap({
-    isProduction: true, // User requested to use production keys unconditionally
-    serverKey: process.env.MIDTRANS_SERVER_KEY || 'Mid-server-placeholder',
-    clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-placeholder'
-});
+let _snap: any = null;
+
+function getSnap() {
+    if (!_snap) {
+        _snap = new midtransClient.Snap({
+            isProduction: !(process.env.MIDTRANS_SERVER_KEY || '').includes('SB-'),
+            serverKey: process.env.MIDTRANS_SERVER_KEY || '',
+            clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
+        });
+    }
+    return _snap;
+}
 
 export async function createTransaction(
     orderId: string,
@@ -32,7 +39,7 @@ export async function createTransaction(
     }
 
     try {
-        const transaction = await snap.createTransaction(parameter);
+        const transaction = await getSnap().createTransaction(parameter);
         return transaction;
     } catch (error) {
         console.error("Midtrans Transaction Error:", error);
