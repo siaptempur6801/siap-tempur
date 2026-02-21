@@ -8,22 +8,26 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const handwriting = Patrick_Hand({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-handwriting",
+  display: "swap",
 });
 
 const bodyFont = Work_Sans({
   subsets: ["latin"],
   variable: "--font-body",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
