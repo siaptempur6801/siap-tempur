@@ -8,6 +8,7 @@ import { User, Mail, Calendar, Shield, Trophy, Zap, Clock, Edit, Camera, Save, X
 import ImageCropper from '@/components/ui/ImageCropper'
 import { updateProfileInfo, deleteAccount } from '@/app/actions/profile'
 import { signout, updatePassword } from '@/app/auth/actions'
+import { syncPaymentStatus } from '@/app/actions/payment'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
@@ -40,6 +41,7 @@ type Transaction = {
     status: 'pending' | 'settlement' | 'expire' | 'cancel' | 'deny'
     package_name: string
     order_id: string
+    snap_token?: string
 }
 
 type UsageSession = {
@@ -143,6 +145,61 @@ export default function ProfileClient({
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [isChangingPassword, setIsChangingPassword] = useState(false)
+
+    const handlePayPending = (token: string, orderId: string, event: React.MouseEvent) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const loadingId = toast.loading("Membuka pembayaran...");
+
+        // @ts-expect-error - snap is loaded via script in the layout
+        if (typeof window !== "undefined" && window.snap) {
+            try {
+                // @ts-expect-error
+                window.snap.pay(token, {
+                    onSuccess: async function (result: any) {
+                        toast.loading("Memverifikasi pembayaran...", { id: loadingId })
+                        await syncPaymentStatus(orderId)
+                        toast.success("Pembayaran Berhasil!", {
+                            id: loadingId,
+                            description: "Tiket tryout kamu telah ditambahkan."
+                        })
+                        window.location.reload()
+                    },
+                    onPending: async function (result: any) {
+                        toast.loading("Memperbarui status...", { id: loadingId })
+                        await syncPaymentStatus(orderId)
+                        toast.info("Pembayaran Tertunda", {
+                            id: loadingId,
+                            description: "Silakan selesaikan pembayaran sesuai instruksi."
+                        })
+                        window.location.reload()
+                    },
+                    onError: function (result: any) {
+                        toast.dismiss(loadingId)
+                        toast.error("Pembayaran Gagal")
+                    },
+                    onClose: async function () {
+                        toast.loading("Memperiksa status terakhir...", { id: loadingId })
+                        await syncPaymentStatus(orderId)
+                        toast.info("Pembayaran Ditutup", { id: loadingId })
+                        window.location.reload()
+                    }
+                })
+            } catch (err: any) {
+                toast.dismiss(loadingId)
+                toast.error("Gagal memuat popup Snap", { description: err.message })
+            }
+        } else {
+            toast.dismiss(loadingId)
+            toast.error("Sistem pembayaran sedang disiapkan. Memuat ulang...", {
+                description: "Mohon tunggu sebentar..."
+            })
+            setTimeout(() => {
+                window.location.reload()
+            }, 1000)
+        }
+    }
 
 
 
@@ -563,9 +620,9 @@ export default function ProfileClient({
                                     <CreditCard className="w-6 h-6" /> Riwayat Pembelian Kuota
                                 </h4>
                                 {transactions.length > 0 ? (
-                                    <div className="flex flex-col gap-4">
+                                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                                         {transactions.map((tx) => (
-                                            <div key={tx.id} className="w-full p-5 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all relative overflow-hidden group">
+                                            <div key={tx.id} className="w-full shrink-0 p-5 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all relative overflow-hidden group">
                                                 <div className="flex items-center justify-between gap-4 relative z-10">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-12 bg-blue-100 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0 group-hover:rotate-12 transition-transform">
@@ -581,9 +638,33 @@ export default function ProfileClient({
                                                     </div>
                                                     <div className="text-right">
                                                         <div className="font-black text-xl text-gray-900">Rp {tx.amount.toLocaleString('id-ID')}</div>
-                                                        <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 border border-gray-900 inline-block mt-2 shadow-sm ${tx.status === 'settlement' ? 'bg-green-300 transform -rotate-2' : 'bg-yellow-300 transform rotate-2'}`}>
-                                                            {tx.status === 'settlement' ? 'Berhasil' : tx.status}
-                                                        </div>
+                                                        {(() => {
+                                                            const statusMap: Record<string, { label: string; color: string }> = {
+                                                                'settlement': { label: 'Berhasil', color: 'bg-green-300' },
+                                                                'capture': { label: 'Berhasil', color: 'bg-green-300' },
+                                                                'pending': { label: 'Menunggu', color: 'bg-yellow-300' },
+                                                                'expire': { label: 'Kedaluwarsa', color: 'bg-gray-300' },
+                                                                'cancel': { label: 'Gagal', color: 'bg-red-300' },
+                                                                'deny': { label: 'Gagal', color: 'bg-red-300' },
+                                                            }
+                                                            const s = statusMap[tx.status] || { label: tx.status, color: 'bg-blue-100' }
+                                                            return (
+                                                                <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 border border-gray-900 inline-block mt-2 shadow-sm ${s.color} transform ${['settlement', 'capture'].includes(tx.status) ? '-rotate-2' : 'rotate-2'}`}>
+                                                                    {s.label}
+                                                                </div>
+                                                            )
+                                                        })()}
+                                                        {tx.status === 'pending' && tx.snap_token && (
+                                                            <div className="mt-3">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => handlePayPending(tx.snap_token!, tx.order_id, e)}
+                                                                    className="px-4 py-2 bg-blue-400 text-gray-900 text-sm font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-500 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer relative z-20 pointer-events-auto"
+                                                                >
+                                                                    Bayar Sekarang
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 {/* Decorative background pattern */}
@@ -612,7 +693,7 @@ export default function ProfileClient({
                                 {usageSessions.length > 0 ? (
                                     <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                                         {usageSessions.map((session) => (
-                                            <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all gap-3 sm:gap-0">
+                                            <div key={session.id} className="flex flex-col shrink-0 sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all gap-3 sm:gap-0">
                                                 <div className="flex items-start sm:items-center gap-4">
                                                     <div className="w-12 h-12 bg-orange-200 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0">
                                                         <FileText className="w-6 h-6 text-gray-900" />

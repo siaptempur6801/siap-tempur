@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { PRICING_PACKAGES } from '@/lib/constants'
+import crypto from 'crypto'
 
 // Initialize Supabase with Service Role for backend updates
 const supabase = createClient(
@@ -11,7 +12,17 @@ const supabase = createClient(
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-        const { order_id, transaction_status } = body
+        const { order_id, transaction_status, status_code, gross_amount, signature_key } = body
+
+        // === Signature Verification ===
+        const serverKey = process.env.MIDTRANS_SERVER_KEY || ''
+        const hash = crypto.createHash('sha512').update(`${order_id}${status_code}${gross_amount}${serverKey}`).digest('hex')
+
+        if (hash !== signature_key) {
+            console.error('[Webhook] Invalid signature key for order:', order_id)
+            return NextResponse.json({ message: 'Invalid signature key' }, { status: 403 })
+        }
+        // === End Signature Verification ===
 
         console.log(`[Webhook] Received status for ${order_id}: ${transaction_status}`)
 

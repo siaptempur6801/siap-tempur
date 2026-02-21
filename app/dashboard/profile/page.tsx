@@ -30,7 +30,7 @@ export default async function ProfilePage() {
         // 3. Fetch Transactions
         supabase
             .from('transactions')
-            .select('*')
+            .select('id, created_at, amount, status, package_name, order_id, snap_token')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false }),
 
@@ -63,22 +63,30 @@ export default async function ProfilePage() {
             .select()
             .single()
 
-        return <ProfileClient
-            profile={newProfile || { id: user.id, full_name: null, avatar_url: null, bio: null }}
-            user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
-            transactions={transactions || []}
-            usageSessions={usageSessions || []}
-            totalXP={totalXP}
-            level={levelInfo.level}
-        />
+        return (
+            <>
+                <ProfileClient
+                    profile={newProfile || { id: user.id, full_name: null, avatar_url: null, bio: null }}
+                    user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
+                    transactions={transactions || []}
+                    usageSessions={usageSessions || []}
+                    totalXP={totalXP}
+                    level={levelInfo.level}
+                />
+            </>
+        )
     }
 
-    return <ProfileClient
-        profile={profile}
-        user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
-        transactions={transactions || []}
-        usageSessions={usageSessions || []}
-        totalXP={totalXP}
-        level={levelInfo.level}
-    />
+    return (
+        <>
+            <ProfileClient
+                profile={profile}
+                user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
+                transactions={transactions || []}
+                usageSessions={usageSessions || []}
+                totalXP={totalXP}
+                level={levelInfo.level}
+            />
+        </>
+    )
 }

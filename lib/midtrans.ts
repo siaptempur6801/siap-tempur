@@ -2,35 +2,40 @@
 // @ts-expect-error - midtrans-client lacks type definitions
 import midtransClient from 'midtrans-client';
 
-// Since we don't have real keys, we'll expose a function that MOCKS the token creation.
-// In production, you would use proper keys.
-
 export const snap = new midtransClient.Snap({
-    isProduction: false,
-    serverKey: process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-placeholder',
-    clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'SB-Mid-client-placeholder'
+    isProduction: true, // User requested to use production keys unconditionally
+    serverKey: process.env.MIDTRANS_SERVER_KEY || 'Mid-server-placeholder',
+    clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || 'Mid-client-placeholder'
 });
 
-export async function createTransaction(_orderId: string, _amount: number) {
-    // REAL LOGIC START (Commented out because no keys)
-    /*
-    let parameter = {
+export async function createTransaction(
+    orderId: string,
+    amount: number,
+    customerDetails?: any,
+    itemDetails?: any[],
+    enabledPayments?: string[]
+) {
+    const parameter: any = {
         "transaction_details": {
             "order_id": orderId,
             "gross_amount": amount
         },
-        "credit_card":{
-            "secure" : true
-        }
+        "customer_details": customerDetails || {}
     };
-    return await snap.createTransaction(parameter);
-    */
-    // REAL LOGIC END
 
-    // MOCK LOGIC for Demo
+    if (itemDetails && itemDetails.length > 0) {
+        parameter.item_details = itemDetails;
+    }
 
-    return {
-        token: "mock_token_" + Math.random().toString(36).substring(7),
-        redirect_url: "https://app.sandbox.midtrans.com/snap/v2/vtweb/mock"
-    };
+    if (enabledPayments && enabledPayments.length > 0) {
+        parameter.enabled_payments = enabledPayments;
+    }
+
+    try {
+        const transaction = await snap.createTransaction(parameter);
+        return transaction;
+    } catch (error) {
+        console.error("Midtrans Transaction Error:", error);
+        throw error;
+    }
 }

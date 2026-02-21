@@ -1,15 +1,15 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Sparkles, Flame, Zap, Package } from 'lucide-react'
+import { Sparkles, Flame, Zap, Package, CreditCard, Smartphone, CheckCircle, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import PaperBackground from '@/components/PaperBackground'
 import CheckDoodle from '@/components/CheckDoodle'
 import { PRICING_PACKAGES } from '@/lib/constants'
-import { createPackageTransaction } from '@/app/actions/payment'
-import Script from 'next/script'
+import { createPackageTransaction, syncPaymentStatus } from '@/app/actions/payment'
 import { cn } from '@/lib/utils'
 import MockSnapModal from '@/components/dashboard/MockSnapModal'
+import { X } from 'lucide-react'
 
 export default function BeliPaketPage() {
     const [mockModalOpen, setMockModalOpen] = useState(false)
@@ -42,14 +42,20 @@ export default function BeliPaketPage() {
             // REAL MIDTRANS FLOW
             // @ts-expect-error - snap is loaded via script
             window.snap.pay(transaction.token, {
-                onSuccess: function (result: any) {
+                onSuccess: async function (result: any) {
+                    const loadingId = toast.loading("Memverifikasi pembayaran...")
+                    await syncPaymentStatus(transaction.orderId)
                     toast.success("Pembayaran Berhasil!", {
+                        id: loadingId,
                         description: "Tiket tryout kamu akan segera ditambahkan."
                     })
                     console.log('success', result)
                 },
-                onPending: function (result: any) {
+                onPending: async function (result: any) {
+                    const loadingId = toast.loading("Memperbarui status...")
+                    await syncPaymentStatus(transaction.orderId)
                     toast.info("Pembayaran Tertunda", {
+                        id: loadingId,
                         description: "Silakan selesaikan pembayaran sesuai instruksi."
                     })
                     console.log('pending', result)
@@ -58,8 +64,10 @@ export default function BeliPaketPage() {
                     toast.error("Pembayaran Gagal")
                     console.log('error', result)
                 },
-                onClose: function () {
-                    toast.info("Pembayaran Dibatalkan")
+                onClose: async function () {
+                    const loadingId = toast.loading("Memperiksa status terakhir...")
+                    await syncPaymentStatus(transaction.orderId)
+                    toast.info("Pembayaran Ditutup", { id: loadingId })
                 }
             })
         } catch (error: any) {
@@ -109,10 +117,6 @@ export default function BeliPaketPage() {
     return (
         <div className="font-body w-full flex flex-col relative">
             <PaperBackground />
-            <Script
-                src="https://app.sandbox.midtrans.com/snap/snap.js"
-                data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
-            />
 
             {/* MOCK MODAL */}
             <MockSnapModal
@@ -197,7 +201,72 @@ export default function BeliPaketPage() {
                     ))}
                 </div>
 
-                <div className="mt-12 sm:mt-20 text-center w-full px-2 sm:px-0">
+                {/* Best Practice Payment Instructions */}
+                <div className="mt-16 sm:mt-24 w-full max-w-4xl mx-auto">
+                    <div className="text-center mb-10">
+                        <h2 className="font-handwriting text-3xl sm:text-4xl font-bold text-gray-900 flex items-center justify-center gap-3">
+                            <ShieldCheck className="w-8 h-8 text-green-600" />
+                            Cara Pembayaran Cepat & Aman
+                        </h2>
+                        <p className="font-handwriting text-xl text-gray-600 mt-2">Best practice supaya tryout-mu langsung aktif!</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 relative">
+                        {/* Connecting Line for Desktop */}
+                        <div className="hidden md:block absolute top-[45px] left-[10%] right-[10%] h-1 bg-gray-300 border-t-2 border-dashed border-gray-900 z-0 opacity-50"></div>
+
+                        {/* Step 1 */}
+                        <div className="relative z-10 flex flex-col items-center text-center group">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#ffffeb] border-2 border-gray-900 rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mb-4 z-10">
+                                <Package className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600" />
+                            </div>
+                            <div className="absolute top-0 right-[25%] bg-yellow-300 text-gray-900 font-black text-xs px-2 py-0.5 border-2 border-gray-900 rotate-12 z-20 shadow-sm">
+                                1
+                            </div>
+                            <h3 className="font-handwriting text-xl font-bold text-gray-900 mb-2">Pilih Paket</h3>
+                            <p className="font-handwriting text-lg text-gray-600">Tekan tombol pilih pada paket yang kamu inginkan.</p>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div className="relative z-10 flex flex-col items-center text-center group mt-6 md:mt-0">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#e0f2fe] border-2 border-gray-900 rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mb-4 z-10">
+                                <ShieldCheck className="w-8 h-8 sm:w-10 sm:h-10 text-blue-600" />
+                            </div>
+                            <div className="absolute top-0 right-[25%] bg-blue-300 text-gray-900 font-black text-xs px-2 py-0.5 border-2 border-gray-900 -rotate-12 z-20 shadow-sm">
+                                2
+                            </div>
+                            <h3 className="font-handwriting text-xl font-bold text-gray-900 mb-2">Data Otomatis</h3>
+                            <p className="font-handwriting text-lg text-gray-600">Sistem akan otomatis merekap nama dan email dari akunmu.</p>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div className="relative z-10 flex flex-col items-center text-center group mt-6 md:mt-0">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#fce7f3] border-2 border-gray-900 rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mb-4 z-10">
+                                <Smartphone className="w-8 h-8 sm:w-10 sm:h-10 text-pink-600" />
+                            </div>
+                            <div className="absolute top-0 right-[25%] bg-pink-300 text-gray-900 font-black text-xs px-2 py-0.5 border-2 border-gray-900 rotate-6 z-20 shadow-sm">
+                                3
+                            </div>
+                            <h3 className="font-handwriting text-xl font-bold text-gray-900 mb-2">Scan QRIS</h3>
+                            <p className="font-handwriting text-lg text-gray-600">Buka m-banking atau e-wallet (Gopay, Dana, dll), lalu scan QR-nya!</p>
+                        </div>
+
+                        {/* Step 4 */}
+                        <div className="relative z-10 flex flex-col items-center text-center group mt-6 md:mt-0">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#dcfce7] border-2 border-gray-900 rounded-full flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:translate-x-[2px] group-hover:translate-y-[2px] group-hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all mb-4 z-10">
+                                <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-green-600" />
+                            </div>
+                            <div className="absolute top-0 right-[25%] bg-green-300 text-gray-900 font-black text-xs px-2 py-0.5 border-2 border-gray-900 -rotate-6 z-20 shadow-sm">
+                                4
+                            </div>
+                            <h3 className="font-handwriting text-xl font-bold text-gray-900 mb-2">Lunas & Latihan</h3>
+                            <p className="font-handwriting text-lg text-gray-600">Setelah dibayar, kuota otomatis masuk. Langsung Gas!</p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div className="mt-16 sm:mt-24 text-center w-full px-2 sm:px-0">
                     <div className="inline-block bg-[#fff740] p-6 md:p-8 shadow-md rotate-1 font-handwriting text-xl sm:text-2xl max-w-4xl relative rounded-xl border-2 border-gray-900 overflow-hidden">
                         <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-500 shadow-sm z-10 border border-red-700"></div>
                         <p className="text-gray-900 leading-relaxed px-2 sm:px-4">

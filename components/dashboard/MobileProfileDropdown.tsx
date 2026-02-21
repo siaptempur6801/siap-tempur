@@ -31,7 +31,7 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
     const dropdownRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        setMounted(true)
+        const timer = setTimeout(() => setMounted(true), 0)
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false)
@@ -39,6 +39,7 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
         }
         document.addEventListener("mousedown", handleClickOutside)
         return () => {
+            clearTimeout(timer)
             document.removeEventListener("mousedown", handleClickOutside)
         }
     }, [])

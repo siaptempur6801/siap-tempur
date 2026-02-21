@@ -24,8 +24,9 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
-        setMounted(true)
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+        const timer = setTimeout(() => setMounted(true), 0)
+        return () => clearTimeout(timer)
+    }, [])
 
     const getBarColor = (score: number, passing: number) => {
         if (score >= passing) return '#22c55e' // Green
