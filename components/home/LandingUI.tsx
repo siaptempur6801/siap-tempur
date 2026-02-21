@@ -1,12 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 
 import Link from "next/link";
-import { Target, Timer, BarChart3, ChevronDown, ArrowRight, HelpCircle, Sparkles, Menu, X, AlertCircle, Flame, Rocket } from "lucide-react";
-import { toast } from 'sonner'
+import { Target, Timer, BarChart3, ArrowRight, HelpCircle, Sparkles, Menu, X, Flame, Rocket } from "lucide-react";
 import PaperBackground from "@/components/PaperBackground";
 import CheckDoodle from "@/components/CheckDoodle";
 
@@ -16,20 +14,8 @@ import CheckDoodle from "@/components/CheckDoodle";
 
 export default function Home({ user: initialUser }: { user: User | null }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [user, setUser] = useState<User | null>(initialUser);
+    const user = initialUser;
     const router = useRouter();
-
-    useEffect(() => {
-        // If initialUser is not provided, we can still check client-side
-        if (!initialUser) {
-            const fetchUser = async () => {
-                const supabase = createClient();
-                const { data: { user } } = await supabase.auth.getUser();
-                setUser(user);
-            };
-            fetchUser();
-        }
-    }, [initialUser]);
 
     const scrollToSection = (id: string) => {
         const element = document.getElementById(id);
