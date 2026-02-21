@@ -39,7 +39,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
     };
 
     return (
-        <div className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 selection:bg-yellow-200 selection:text-black overflow-x-hidden">
+        <main className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 selection:bg-yellow-200 selection:text-black overflow-x-hidden">
 
             {/* --- NAVBAR (Binder Style) --- */}
             <header className="fixed top-0 w-full z-50 bg-[#fdfbf7]/90 backdrop-blur-sm border-b-4 border-gray-800/10">
@@ -127,7 +127,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         </span>
                     </h1>
 
-                    <p className="text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto mb-10 font-handwriting leading-relaxed">
+                    <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto mb-10 font-handwriting leading-relaxed">
                         Platform tryout CAT SKD <strong>CPNS & Sekolah Kedinasan</strong> paling
                         <span className="bg-green-200 px-1 mx-1">realistis.</span>
                         Beli ketengan, sekali bayar langsung sikat soalnya. Gak pake langganan ribet!
@@ -224,7 +224,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <div className="mb-4 font-handwriting">
                                 <span className="text-4xl font-bold text-indigo-600">Rp 10k</span>
-                                <span className="text-gray-500 text-lg">/ 1 Token</span>
+                                <span className="text-gray-600 text-lg">/ 1 Token</span>
                             </div>
 
                             <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
@@ -260,7 +260,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <div className="mb-1 font-handwriting">
                                 <span className="text-4xl font-bold text-indigo-600">Rp 25k</span>
-                                <span className="text-gray-500 text-lg">/ 3 Token</span>
+                                <span className="text-gray-600 text-lg">/ 3 Token</span>
                             </div>
                             <p className="font-handwriting text-green-700 text-sm mb-6 bg-green-100 inline-flex px-4 py-1 rounded-full items-center gap-2">
                                 Hemat Rp 5k! <Sparkles className="w-4 h-4" />
@@ -387,7 +387,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
             <footer className="bg-gray-900 text-white py-12 border-t-8 border-gray-800 border-dashed relative overflow-hidden">
                 <div className="container mx-auto px-4 text-center relative z-10">
                     <h2 className="font-handwriting text-4xl font-bold mb-6">Siap Tempur CPNS & Kedinasan?</h2>
-                    <p className="text-gray-400 mb-8 max-w-lg mx-auto">Mau CPNS atau Kedinasan? Format SKD-nya sama. Latihan sekarang!</p>
+                    <p className="text-gray-300 mb-8 max-w-lg mx-auto">Mau CPNS atau Kedinasan? Format SKD-nya sama. Latihan sekarang!</p>
 
                     <button
                         onClick={() => user ? router.push("/dashboard") : router.push("/login")}
@@ -395,7 +395,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         Gas Tempur Sekarang! <Rocket className="w-6 h-6" />
                     </button>
 
-                    <div className="mt-16 flex flex-col md:flex-row items-center justify-center gap-6 text-sm text-gray-400 font-handwriting text-lg">
+                    <div className="mt-16 flex flex-col md:flex-row items-center justify-center gap-6 text-sm text-gray-300 font-handwriting text-lg">
                         <Link href="/syarat-ketentuan" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
                         <Link href="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
                         <Link href="/kebijakan-pengembalian" className="hover:text-white transition-colors">Kebijakan Pengembalian</Link>
@@ -403,6 +403,6 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     </div>
                 </div>
             </footer>
-        </div>
+        </main>
     );
 }

@@ -49,9 +49,9 @@ export default function DashboardShell({ children, user, profile, signoutAction,
     // If on practice session, render minimal layout without sidebar
     if (isPracticeSession) {
         return (
-            <div className="min-h-screen bg-[#fdfbf7]">
+            <main className="min-h-screen bg-[#fdfbf7]">
                 {children}
-            </div>
+            </main>
         )
     }
 
