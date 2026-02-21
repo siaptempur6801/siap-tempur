@@ -264,7 +264,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <span className="text-4xl font-bold text-indigo-600">Rp 25k</span>
                                 <span className="text-gray-600 text-lg">/ 3 Token</span>
                             </div>
-                            <p className="font-handwriting text-green-700 text-sm mb-6 bg-green-100 inline-flex px-4 py-1 rounded-full items-center gap-2">
+                            <p className="font-handwriting text-green-900 text-sm mb-6 bg-green-100 inline-flex px-4 py-1 rounded-full items-center gap-2">
                                 Hemat Rp 5k! <Sparkles className="w-4 h-4" />
                             </p>
 
@@ -309,7 +309,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <span className="text-5xl font-bold text-indigo-700">Rp 40k</span>
                                 <span className="text-gray-600 text-xl">/ 5 Token</span>
                             </div>
-                            <p className="font-handwriting text-green-700 text-md mb-8 bg-green-200 inline-flex px-6 py-2 rounded-full items-center gap-2 w-fit shadow-md">
+                            <p className="font-handwriting text-green-900 text-md mb-8 bg-green-200 inline-flex px-6 py-2 rounded-full items-center gap-2 w-fit shadow-md">
                                 Hemat Rp 10k! <Sparkles className="w-6 h-6 fill-current" />
                             </p>
 
