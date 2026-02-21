@@ -54,9 +54,6 @@ export default function RootLayout({
   return (
     <html lang="id">
       <head>
-        {/* Preconnect to critical third-party origins */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://app.midtrans.com" />
       </head>
       <body
