@@ -15,6 +15,7 @@ import CheckDoodle from "@/components/CheckDoodle";
 export default function Home({ user: initialUser }: { user: User | null }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [selectedOption, setSelectedOption] = useState<string>('C');
     const user = initialUser;
     const router = useRouter();
 
@@ -290,32 +291,36 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                     </div>
 
                                     <div className="space-y-2 md:space-y-3">
-                                        {/* Option A */}
-                                        <div className="p-3 md:p-4 rounded-xl border-2 border-gray-200 flex items-start gap-4 hover:border-blue-400 hover:bg-blue-50/30 transition-all">
-                                            <div className="w-8 h-8 rounded-full border-2 border-gray-400 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg text-gray-400">A</div>
-                                            <span className="text-base md:text-lg leading-relaxed font-handwriting text-gray-600 font-medium">Ketuhanan Yang Maha Esa</span>
-                                        </div>
-                                        {/* Option B */}
-                                        <div className="p-3 md:p-4 rounded-xl border-2 border-gray-200 flex items-start gap-4 hover:border-blue-400 hover:bg-blue-50/30 transition-all">
-                                            <div className="w-8 h-8 rounded-full border-2 border-gray-400 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg text-gray-400">B</div>
-                                            <span className="text-base md:text-lg leading-relaxed font-handwriting text-gray-600 font-medium">Kemanusiaan yang Adil dan Beradab</span>
-                                        </div>
-                                        {/* Option C (selected) */}
-                                        <div className="p-3 md:p-4 rounded-xl border-2 border-blue-600 bg-blue-50 flex items-start gap-4 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-[1px] translate-y-[1px] relative overflow-hidden">
-                                            <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10"></div>
-                                            <div className="w-8 h-8 rounded-full border-2 border-blue-600 bg-blue-600 text-white flex items-center justify-center shrink-0 font-handwriting font-bold text-lg">C</div>
-                                            <span className="text-base md:text-lg leading-relaxed font-handwriting text-blue-900 font-bold">Persatuan Indonesia</span>
-                                        </div>
-                                        {/* Option D */}
-                                        <div className="p-3 md:p-4 rounded-xl border-2 border-gray-200 flex items-start gap-4 hover:border-blue-400 hover:bg-blue-50/30 transition-all">
-                                            <div className="w-8 h-8 rounded-full border-2 border-gray-400 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg text-gray-400">D</div>
-                                            <span className="text-base md:text-lg leading-relaxed font-handwriting text-gray-600 font-medium">Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan</span>
-                                        </div>
-                                        {/* Option E */}
-                                        <div className="p-3 md:p-4 rounded-xl border-2 border-gray-200 flex items-start gap-4 hover:border-blue-400 hover:bg-blue-50/30 transition-all">
-                                            <div className="w-8 h-8 rounded-full border-2 border-gray-400 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg text-gray-400">E</div>
-                                            <span className="text-base md:text-lg leading-relaxed font-handwriting text-gray-600 font-medium">Keadilan Sosial bagi Seluruh Rakyat Indonesia</span>
-                                        </div>
+                                        {[
+                                            { key: 'A', text: 'Ketuhanan Yang Maha Esa' },
+                                            { key: 'B', text: 'Kemanusiaan yang Adil dan Beradab' },
+                                            { key: 'C', text: 'Persatuan Indonesia' },
+                                            { key: 'D', text: 'Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan' },
+                                            { key: 'E', text: 'Keadilan Sosial bagi Seluruh Rakyat Indonesia' },
+                                        ].map((opt) => {
+                                            const isSelected = selectedOption === opt.key;
+                                            return (
+                                                <button
+                                                    key={opt.key}
+                                                    type="button"
+                                                    onClick={() => setSelectedOption(opt.key)}
+                                                    className={`w-full p-3 md:p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 cursor-pointer text-left ${isSelected
+                                                            ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-[1px] translate-y-[1px] relative overflow-hidden'
+                                                            : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'
+                                                        }`}
+                                                >
+                                                    {isSelected && <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10" />}
+                                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg transition-all duration-200 ${isSelected
+                                                            ? 'border-blue-600 bg-blue-600 text-white scale-110'
+                                                            : 'border-gray-400 text-gray-400'
+                                                        }`}>{opt.key}</div>
+                                                    <span className={`text-base md:text-lg leading-relaxed font-handwriting transition-colors duration-200 ${isSelected
+                                                            ? 'text-blue-900 font-bold'
+                                                            : 'text-gray-600 font-medium'
+                                                        }`}>{opt.text}</span>
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </div>
 
@@ -337,9 +342,9 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                                         key={num}
                                                         className={`aspect-square rounded-lg font-handwriting font-bold text-sm flex items-center justify-center border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] ${isActive ? 'ring-2 ring-blue-400 ring-offset-1 border-blue-600 z-10' : ''
                                                             } ${isMarked
-                                                                ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
+                                                                ? 'bg-yellow-500 text-yellow-950 border-yellow-700'
                                                                 : isAnswered
-                                                                    ? 'bg-blue-500 text-white border-blue-700'
+                                                                    ? 'bg-blue-700 text-white border-blue-900'
                                                                     : 'bg-white text-gray-400 border-gray-300'
                                                             }`}
                                                     >
@@ -373,7 +378,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         </div>
 
                         {/* Decorative "DEMO" Label */}
-                        <div className="absolute top-4 left-4 bg-red-500 text-white font-handwriting text-xs font-bold px-3 py-1 rounded-full -rotate-12 shadow-lg z-30 border-2 border-red-700">
+                        <div className="absolute top-4 left-4 bg-red-700 text-white font-handwriting text-xs font-bold px-3 py-1 rounded-full -rotate-12 shadow-lg z-30 border-2 border-red-900">
                             DEMO
                         </div>
                     </div>
