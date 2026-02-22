@@ -148,3 +148,36 @@ input[type=number] {
     transform: translateY(0px);
   }
 }
+
+/* Exam Preview Animations */
+@keyframes float-annotation {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-float-annotation {
+  animation: float-annotation 3s ease-in-out infinite;
+}
+
+.blink-timer {
+  animation: blink-colon 1s step-end infinite;
+}
+
+@keyframes blink-colon {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
