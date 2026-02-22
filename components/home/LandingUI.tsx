@@ -305,18 +305,18 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                                     type="button"
                                                     onClick={() => setSelectedOption(opt.key)}
                                                     className={`w-full p-3 md:p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 cursor-pointer text-left ${isSelected
-                                                            ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-[1px] translate-y-[1px] relative overflow-hidden'
-                                                            : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'
+                                                        ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-[1px] translate-y-[1px] relative overflow-hidden'
+                                                        : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'
                                                         }`}
                                                 >
                                                     {isSelected && <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10" />}
                                                     <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg transition-all duration-200 ${isSelected
-                                                            ? 'border-blue-600 bg-blue-600 text-white scale-110'
-                                                            : 'border-gray-400 text-gray-400'
+                                                        ? 'border-blue-600 bg-blue-600 text-white scale-110'
+                                                        : 'border-gray-400 text-gray-400'
                                                         }`}>{opt.key}</div>
                                                     <span className={`text-base md:text-lg leading-relaxed font-handwriting transition-colors duration-200 ${isSelected
-                                                            ? 'text-blue-900 font-bold'
-                                                            : 'text-gray-600 font-medium'
+                                                        ? 'text-blue-900 font-bold'
+                                                        : 'text-gray-600 font-medium'
                                                         }`}>{opt.text}</span>
                                                 </button>
                                             );
@@ -345,7 +345,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                                                 ? 'bg-yellow-500 text-yellow-950 border-yellow-700'
                                                                 : isAnswered
                                                                     ? 'bg-blue-700 text-white border-blue-900'
-                                                                    : 'bg-white text-gray-400 border-gray-300'
+                                                                    : 'bg-white text-gray-600 border-gray-300'
                                                             }`}
                                                     >
                                                         {num}
