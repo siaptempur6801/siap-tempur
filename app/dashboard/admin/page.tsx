@@ -3,6 +3,7 @@ import { Plus, FileText } from 'lucide-react'
 import Link from 'next/link'
 import QuestionCard from '@/components/admin/QuestionCard'
 import AdminSearch from '@/components/admin/AdminSearch'
+import ExcelImport from '@/components/admin/ExcelImport'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,12 +13,14 @@ export default async function AdminDashboard({
     searchParams: Promise<{
         q?: string
         category?: string
+        sub_category?: string
     }>
 }) {
     const supabase = await createClient()
     const params = await searchParams
     const query = params?.q || ''
     const category = params?.category || 'TWK'
+    const subCategory = params?.sub_category || ''
 
     // Construct Query with JOIN to options
     let dbQuery = supabase
@@ -28,6 +31,10 @@ export default async function AdminDashboard({
     if (category) {
         // Here 'category' filter in UI corresponds to 'type' in DB
         dbQuery = dbQuery.eq('type', category)
+    }
+
+    if (subCategory) {
+        dbQuery = dbQuery.eq('sub_category', subCategory)
     }
 
     if (query) {
@@ -53,12 +60,15 @@ export default async function AdminDashboard({
                         </span>
                     </div>
                 </div>
-                <Link
-                    href="/dashboard/admin/create"
-                    className="flex items-center gap-2 bg-gray-900 text-white px-5 py-3 rounded-lg hover:bg-gray-800 transition font-bold shadow-lg transform hover:-translate-y-1 active:translate-y-0"
-                >
-                    <Plus size={20} /> Buat Soal Baru
-                </Link>
+                <div className="flex items-center gap-3">
+                    <ExcelImport />
+                    <Link
+                        href="/dashboard/admin/create"
+                        className="flex items-center gap-2 bg-gray-900 text-white px-5 py-3 rounded-lg hover:bg-gray-800 transition font-bold shadow-lg transform hover:-translate-y-1 active:translate-y-0"
+                    >
+                        <Plus size={20} /> Buat Soal Baru
+                    </Link>
+                </div>
             </div>
 
             {/* Filter / Search Bar */}

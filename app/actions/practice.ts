@@ -46,9 +46,7 @@ export async function startTryout() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    // Call DB Function for Tryout
-    // Standard CPNS 2024: 110 Questions (TWK 30, TIU 35, TKP 45)
-    // Adjust logic if needed in the DB function
+    // Call reworked RPC — generates 110 soal sesuai blueprint SKD CPNS
     const { data, error } = await supabase.rpc('start_tryout_session', {
         p_user_id: user.id
     })
@@ -56,13 +54,13 @@ export async function startTryout() {
     if (error) {
         console.error('[startTryout] DB Error:', error)
         if (error.message?.includes('Not enough SKD tickets') || error.details?.includes('Not enough SKD tickets')) {
-            return { error: 'Tiket SKD habis! Silakan beli paket baru.' }
+            return { error: 'Token ujian habis! Silakan beli paket baru.' }
         }
-        return { error: 'Failed to start tryout session' }
+        return { error: 'Gagal memulai ujian. Pastikan bank soal sudah terisi cukup.' }
     }
 
     if (!data || data.length === 0) {
-        return { error: 'No session created' }
+        return { error: 'Sesi ujian tidak berhasil dibuat' }
     }
 
     const sessionId = data[0].session_id

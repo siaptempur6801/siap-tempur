@@ -99,9 +99,10 @@ export default function CreateQuestionPage() {
                                 <select
                                     name="category"
                                     required
+                                    defaultValue=""
                                     className="w-full p-3.5 bg-white border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none font-bold text-gray-700 transition-all cursor-pointer"
                                 >
-                                    <option value="" disabled selected>Pilih Sub-Kategori...</option>
+                                    <option value="" disabled>Pilih Sub-Kategori...</option>
                                     {categories[type]?.map((cat) => (
                                         <option key={cat} value={cat}>{cat}</option>
                                     ))}

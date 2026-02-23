@@ -15,6 +15,7 @@ interface Question {
     content: string
     type: string
     category?: string
+    sub_category?: string
     options: {
         id: string
         content: string
@@ -49,14 +50,23 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     const [showExitModal, setShowExitModal] = useState(false)
     const [showNav, setShowNav] = useState(true) // Toggleable desktop side nav
 
-    // Sort questions by type (TWK -> TIU -> TKP)
+    // Sort questions by blueprint sub-category order, fallback to type
     const sortedQuestions = useMemo(() => {
+        const subCategoryOrder: Record<string, number> = {
+            'Nasionalisme': 1, 'Integritas': 2, 'Bela Negara': 3, 'Pilar Negara': 4, 'Bahasa Negara': 5,
+            'Analogi': 6, 'Silogisme': 7, 'Analitis': 8, 'Berhitung': 9, 'Deret Angka': 10, 'Perbandingan Kuantitatif': 11, 'Soal Cerita': 12, 'Analogi Figural': 13, 'Ketidaksamaan': 14, 'Serial': 15,
+            'Pelayanan Publik': 16, 'Jejaring Kerja': 17, 'Sosial Budaya': 18, 'Teknologi Informasi dan Komunikasi': 19, 'Profesionalisme': 20, 'Anti-Radikalisme': 21
+        }
         const typeOrder: Record<string, number> = {
             [SUBJECTS.TWK.short]: 1,
             [SUBJECTS.TIU.short]: 2,
             [SUBJECTS.TKP.short]: 3
         }
         return [...questions].sort((a, b) => {
+            if (a.sub_category && b.sub_category && subCategoryOrder[a.sub_category] && subCategoryOrder[b.sub_category]) {
+                const diff = subCategoryOrder[a.sub_category] - subCategoryOrder[b.sub_category];
+                if (diff !== 0) return diff;
+            }
             return (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99)
         })
     }, [questions])
@@ -555,57 +565,63 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                         </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                        <div className="prose dark:prose-invert max-w-none mb-6 md:mb-8 font-handwriting text-gray-900">
-                            <p className="text-xl md:text-2xl leading-relaxed font-bold">{currentQuestion.content}</p>
+                    {/* Content Area - Flex Column */}
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        {/* Sticky Question */}
+                        <div className="shrink-0 p-4 pb-2 md:p-6 md:pb-4 border-b-2 border-dashed border-gray-200 z-10">
+                            <div className="prose dark:prose-invert max-w-none font-handwriting text-gray-900">
+                                <p className="text-xl md:text-2xl leading-relaxed font-bold">{currentQuestion.content}</p>
+                            </div>
                         </div>
 
-                        <div className="space-y-2 md:space-y-3">
-                            {currentQuestion.options.map((option, i) => {
-                                const isSelected = answers[currentQuestion.id] === option.id;
-                                return (
-                                    <div
-                                        key={option.id}
-                                        onClick={() => handleSelectOption(option.id)}
-                                        className={cn(
-                                            "p-3 md:p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden",
-                                            isSelected
-                                                ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] transform translate-x-[1px] translate-y-[1px]'
-                                                : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-[2px_2px_0px_0px_rgba(59,130,246,0.2)]'
-                                        )}
-                                    >
-                                        {/* Ink Highlighter Effect */}
-                                        {isSelected && (
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: '100%' }}
-                                                className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/30 -z-10"
-                                                style={{ originX: 0 }}
-                                            />
-                                        )}
+                        {/* Scrollable Options */}
+                        <div className="flex-1 overflow-y-auto p-4 pt-4 md:p-6 md:pt-6">
+                            <div className="space-y-2 md:space-y-3">
+                                {currentQuestion.options.map((option, i) => {
+                                    const isSelected = answers[currentQuestion.id] === option.id;
+                                    return (
+                                        <div
+                                            key={option.id}
+                                            onClick={() => handleSelectOption(option.id)}
+                                            className={cn(
+                                                "p-3 md:p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden",
+                                                isSelected
+                                                    ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] transform translate-x-[1px] translate-y-[1px]'
+                                                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-[2px_2px_0px_0px_rgba(59,130,246,0.2)]'
+                                            )}
+                                        >
+                                            {/* Ink Highlighter Effect */}
+                                            {isSelected && (
+                                                <motion.div
+                                                    initial={{ width: 0 }}
+                                                    animate={{ width: '100%' }}
+                                                    className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/30 -z-10"
+                                                    style={{ originX: 0 }}
+                                                />
+                                            )}
 
-                                        <div className={cn(
-                                            "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-handwriting font-bold text-lg transition-colors",
-                                            isSelected
-                                                ? 'border-blue-600 bg-blue-600 text-white'
-                                                : 'border-gray-400 text-gray-400 group-hover:border-blue-400 group-hover:text-blue-400'
-                                        )}>
-                                            {String.fromCharCode(65 + i)}
+                                            <div className={cn(
+                                                "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-handwriting font-bold text-lg transition-colors",
+                                                isSelected
+                                                    ? 'border-blue-600 bg-blue-600 text-white'
+                                                    : 'border-gray-400 text-gray-400 group-hover:border-blue-400 group-hover:text-blue-400'
+                                            )}>
+                                                {String.fromCharCode(65 + i)}
+                                            </div>
+                                            <span className={cn(
+                                                "text-base md:text-lg leading-relaxed font-handwriting",
+                                                isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
+                                            )}>
+                                                {option.content}
+                                            </span>
                                         </div>
-                                        <span className={cn(
-                                            "text-base md:text-lg leading-relaxed font-handwriting",
-                                            isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
-                                        )}>
-                                            {option.content}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         {/* Mobile Navigation - Slimmed Down */}
-                        <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-300 flex justify-between items-center sm:hidden gap-3">
+                        <div className="shrink-0 p-4 border-t-2 border-dashed border-gray-300 flex justify-between items-center sm:hidden gap-3 bg-white/50 backdrop-blur-sm z-10">
                             <button
                                 onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
                                 disabled={currentIndex === 0}
