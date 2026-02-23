@@ -639,6 +639,9 @@ export default function ProfileClient({
                                                     <div className="text-right">
                                                         <div className="font-black text-xl text-gray-900">Rp {tx.amount.toLocaleString('id-ID')}</div>
                                                         {(() => {
+                                                            const isLocallyExpired = tx.status === 'pending' && (new Date().getTime() - new Date(tx.created_at).getTime() > 24 * 60 * 60 * 1000);
+                                                            const computedStatus = isLocallyExpired ? 'expire' : tx.status;
+
                                                             const statusMap: Record<string, { label: string; color: string }> = {
                                                                 'settlement': { label: 'Berhasil', color: 'bg-green-300' },
                                                                 'capture': { label: 'Berhasil', color: 'bg-green-300' },
@@ -647,24 +650,26 @@ export default function ProfileClient({
                                                                 'cancel': { label: 'Gagal', color: 'bg-red-300' },
                                                                 'deny': { label: 'Gagal', color: 'bg-red-300' },
                                                             }
-                                                            const s = statusMap[tx.status] || { label: tx.status, color: 'bg-blue-100' }
+                                                            const s = statusMap[computedStatus] || { label: computedStatus, color: 'bg-blue-100' }
                                                             return (
-                                                                <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 border border-gray-900 inline-block mt-2 shadow-sm ${s.color} transform ${['settlement', 'capture'].includes(tx.status) ? '-rotate-2' : 'rotate-2'}`}>
-                                                                    {s.label}
-                                                                </div>
+                                                                <>
+                                                                    <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 border border-gray-900 inline-block mt-2 shadow-sm ${s.color} transform ${['settlement', 'capture'].includes(computedStatus) ? '-rotate-2' : 'rotate-2'}`}>
+                                                                        {s.label}
+                                                                    </div>
+                                                                    {computedStatus === 'pending' && tx.snap_token && (
+                                                                        <div className="mt-3">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(e) => handlePayPending(tx.snap_token!, tx.order_id, e)}
+                                                                                className="px-4 py-2 bg-blue-400 text-gray-900 text-sm font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-500 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer relative z-20 pointer-events-auto"
+                                                                            >
+                                                                                Bayar Sekarang
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </>
                                                             )
                                                         })()}
-                                                        {tx.status === 'pending' && tx.snap_token && (
-                                                            <div className="mt-3">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={(e) => handlePayPending(tx.snap_token!, tx.order_id, e)}
-                                                                    className="px-4 py-2 bg-blue-400 text-gray-900 text-sm font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-500 hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer relative z-20 pointer-events-auto"
-                                                                >
-                                                                    Bayar Sekarang
-                                                                </button>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
                                                 {/* Decorative background pattern */}
