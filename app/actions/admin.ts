@@ -151,6 +151,7 @@ interface ExcelQuestion {
     sub_category: string
     content: string
     explanation: string
+    image_url?: string // NEW FIELD
     option_a: string
     option_b: string
     option_c: string
@@ -198,6 +199,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
                         category: q.sub_category,
                         sub_category: q.sub_category,
                         explanation: q.explanation || null,
+                        image_url: q.image_url || null, // NEW FIELD
                     })
                     .select('id')
                     .single()

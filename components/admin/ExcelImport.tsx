@@ -10,6 +10,7 @@ interface ParsedQuestion {
     sub_category: string
     content: string
     explanation: string
+    image_url?: string // NEW FIELD
     option_a: string
     option_b: string
     option_c: string
@@ -60,6 +61,8 @@ export default function ExcelImport() {
             rowErrors.push(`Baris ${rowNum}: content (soal) kosong`)
         }
 
+        const imageUrl = String(row['image_url'] || '').trim()
+
         const optionA = String(row['option_a'] || '').trim()
         const optionB = String(row['option_b'] || '').trim()
         const optionC = String(row['option_c'] || '').trim()
@@ -92,8 +95,10 @@ export default function ExcelImport() {
                     sub_category: subCategory,
                     content,
                     explanation: String(row['explanation'] || '').trim(),
+                    image_url: imageUrl || undefined,
                     option_a: optionA,
                     option_b: optionB,
+
                     option_c: optionC,
                     option_d: optionD,
                     option_e: optionE,
@@ -119,6 +124,7 @@ export default function ExcelImport() {
                     sub_category: subCategory,
                     content,
                     explanation: String(row['explanation'] || '').trim(),
+                    image_url: imageUrl || undefined,
                     option_a: optionA,
                     option_b: optionB,
                     option_c: optionC,
@@ -238,9 +244,10 @@ export default function ExcelImport() {
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                             <p className="text-sm text-blue-800 font-medium mb-2">📋 Format kolom Excel yang diharapkan:</p>
                             <code className="text-[10px] md:text-xs text-blue-700 break-all bg-white p-2 rounded block border border-blue-200">
-                                type | sub_category | content | explanation | option_a | option_b | option_c | option_d | option_e | correct_answer | score_a | score_b | score_c | score_d | score_e
+                                type | sub_category | content | image_url | explanation | option_a | option_b | option_c | option_d | option_e | correct_answer | score_a | score_b | score_c | score_d | score_e
                             </code>
                             <div className="mt-3 text-xs text-blue-800 space-y-1.5">
+                                <p>• <strong>image_url:</strong> opsional, isi dengan link publik gambar (jika ada)</p>
                                 <p>• <strong>TWK & TIU:</strong> isi <code>correct_answer</code> (A/B/C/D/E), score dikosongkan</p>
                                 <p>• <strong>TKP:</strong> kosongkan <code>correct_answer</code>, isi <code>score_a</code> s/d <code>score_e</code> (1–5)</p>
                                 <p className="pt-2"><a href="/template_soal_skd.xlsx" download className="inline-flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-blue-200 font-bold hover:bg-blue-100 transition shadow-sm">⬇️ Download Template</a></p>
