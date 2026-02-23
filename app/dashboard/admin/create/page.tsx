@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Loader2, Info, AlertCircle } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
+import { ArrowLeft, Save, Loader2, Info, AlertCircle, ImageIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { createQuestion } from '@/app/actions/admin'
 import { cn } from '@/lib/utils'
@@ -12,6 +13,8 @@ export default function CreateQuestionPage() {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [type, setType] = useState('TWK')
+    const [imageFile, setImageFile] = useState<File | null>(null)
+    const [imagePreview, setImagePreview] = useState<string | null>(null)
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -21,6 +24,26 @@ export default function CreateQuestionPage() {
         formData.append('type', type)
 
         try {
+            if (imageFile) {
+                const supabase = createClient()
+                const fileExt = imageFile.name.split('.').pop()
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+
+                const { error: uploadError } = await supabase.storage
+                    .from('question-images')
+                    .upload(fileName, imageFile)
+
+                if (uploadError) {
+                    throw new Error("Gagal mengupload gambar: " + uploadError.message)
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('question-images')
+                    .getPublicUrl(fileName)
+
+                formData.append('image_url', publicUrl)
+            }
+
             const res = await createQuestion(formData)
 
             if (res.success) {
@@ -120,6 +143,50 @@ export default function CreateQuestionPage() {
                                 className="w-full p-5 sm:p-6 text-lg sm:text-xl bg-white border-2 border-gray-100 rounded-2xl focus:border-blue-500 focus:outline-none font-medium leading-relaxed shadow-sm transition-all resize-none paper-lines"
                                 placeholder="Tulis pertanyaan di sini..."
                             ></textarea>
+                        </div>
+
+                        {/* Image Upload Area */}
+                        <div className="space-y-3">
+                            <label className="block text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Gambar Soal (Opsional)</label>
+                            {imagePreview ? (
+                                <div className="relative inline-block border-2 border-gray-200 rounded-xl p-2 bg-gray-50 max-w-sm">
+                                    <img src={imagePreview} alt="Preview" className="max-h-48 w-full object-contain rounded-lg" />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setImageFile(null)
+                                            setImagePreview(null)
+                                        }}
+                                        className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-md transition-colors"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="relative border-2 border-dashed border-gray-300 rounded-2xl p-8 hover:bg-gray-50 transition-colors flex flex-col items-center justify-center text-center group cursor-pointer max-w-sm">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) {
+                                                if (file.size > 2 * 1024 * 1024) {
+                                                    toast.error("Ukuran gambar maksimal 2MB")
+                                                    return
+                                                }
+                                                setImageFile(file)
+                                                setImagePreview(URL.createObjectURL(file))
+                                            }
+                                        }}
+                                    />
+                                    <div className="w-14 h-14 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-100 transition-all mb-4">
+                                        <ImageIcon size={28} />
+                                    </div>
+                                    <div className="font-bold text-gray-700 text-sm">Klik atau drag gambar ke sini</div>
+                                    <div className="text-xs text-gray-400 mt-1">PNG, JPG, JPEG (Maks. 2MB)</div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Pilihan Jawaban Section */}

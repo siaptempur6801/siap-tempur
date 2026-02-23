@@ -43,6 +43,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
                 type,
                 category,
                 sub_category,
+                image_url,
                 options (
                     id,
                     content
@@ -71,6 +72,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
         type: string
         category: string
         sub_category: string
+        image_url?: string | null
         options: Option[]
     }
 
@@ -92,6 +94,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             type: qRaw.type,
             category: qRaw.category,
             sub_category: qRaw.sub_category,
+            image_url: qRaw.image_url,
             options: qRaw.options || [] // Ensure array
         }
     }).filter(Boolean) as Question[]

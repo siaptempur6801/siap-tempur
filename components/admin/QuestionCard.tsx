@@ -20,6 +20,7 @@ interface Question {
     category: string
     content: string
     explanation: string
+    image_url?: string | null
     created_at: string
     options: Option[]
 }
@@ -100,10 +101,19 @@ export default function QuestionCard({ q }: { q: Question }) {
                     </div>
                 </div>
 
-                {/* Question Text */}
-                <div className="mb-4">
+                {/* Question Text & Image */}
+                <div className="mb-4 flex flex-col sm:flex-row gap-4">
+                    {q.image_url && (
+                        <div className="shrink-0">
+                            <img
+                                src={q.image_url}
+                                alt="Thumbnail Soal"
+                                className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
+                            />
+                        </div>
+                    )}
                     <p className={cn(
-                        "text-gray-900 font-medium text-base sm:text-lg whitespace-pre-wrap leading-relaxed",
+                        "text-gray-900 font-medium text-base sm:text-lg whitespace-pre-wrap leading-relaxed flex-1",
                         !expanded && "line-clamp-2"
                     )}>
                         {(q.content || '').replace(/<[^>]*>?/gm, '')}

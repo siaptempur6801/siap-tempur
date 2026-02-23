@@ -16,6 +16,7 @@ interface Question {
     type: string
     category?: string
     sub_category?: string
+    image_url?: string | null
     options: {
         id: string
         content: string
@@ -568,9 +569,21 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                     {/* Content Area - Flex Column */}
                     <div className="flex-1 flex flex-col overflow-hidden">
                         {/* Sticky Question */}
-                        <div className="shrink-0 p-4 pb-2 md:p-6 md:pb-4 border-b-2 border-dashed border-gray-200 z-10">
+                        <div className="shrink-0 p-4 pb-2 md:p-6 md:pb-4 border-b-2 border-dashed border-gray-200 z-10 flex flex-col gap-4">
+                            {currentQuestion.image_url && (
+                                <div className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white relative">
+                                    <div className="absolute top-2 left-2 z-10 p-1.5 bg-yellow-300 border-2 border-gray-900 rounded shadow-sm transform -rotate-2">
+                                        <Sparkles size={14} className="text-gray-900" />
+                                    </div>
+                                    <img
+                                        src={currentQuestion.image_url}
+                                        alt="Ilustrasi Soal"
+                                        className="w-full h-auto object-contain max-h-[200px]"
+                                    />
+                                </div>
+                            )}
                             <div className="prose dark:prose-invert max-w-none font-handwriting text-gray-900">
-                                <p className="text-xl md:text-2xl leading-relaxed font-bold">{currentQuestion.content}</p>
+                                <p className="text-xl md:text-2xl leading-relaxed font-bold whitespace-pre-wrap">{currentQuestion.content}</p>
                             </div>
                         </div>
 

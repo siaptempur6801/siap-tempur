@@ -35,6 +35,7 @@ export async function createQuestion(formData: FormData) {
     const category = formData.get('category') as string // Sub-category
     const explanation = formData.get('explanation') as string
     const correctAnswer = formData.get('correct_answer') as string // A, B, C...
+    const imageUrl = formData.get('image_url') as string | null // NEW FIELD
 
     const supabase = await createClient()
 
@@ -46,7 +47,8 @@ export async function createQuestion(formData: FormData) {
             content,
             category,
             sub_category: category,
-            explanation
+            explanation,
+            image_url: imageUrl || null
         })
         .select()
         .single()
@@ -91,6 +93,7 @@ export async function updateQuestion(id: string, formData: FormData) {
     const category = formData.get('category') as string
     const explanation = formData.get('explanation') as string
     const correctAnswer = formData.get('correct_answer') as string
+    const imageUrl = formData.get('image_url') as string | null // NEW FIELD
 
     const supabase = await createClient()
 
@@ -102,7 +105,8 @@ export async function updateQuestion(id: string, formData: FormData) {
             content,
             category,
             sub_category: category,
-            explanation
+            explanation,
+            image_url: imageUrl || null
         })
         .eq('id', id)
 
