@@ -16,6 +16,40 @@ export default function EditQuestionForm({ question }: { question: any }) {
     const [imagePreview, setImagePreview] = useState<string | null>(question.image_url || null)
     const [isImageRemoved, setIsImageRemoved] = useState(false)
 
+    const [categories, setCategories] = useState<Record<string, string[]>>({
+        'TWK': [],
+        'TIU': [],
+        'TKP': []
+    })
+
+    React.useEffect(() => {
+        const fetchCategories = async () => {
+            const supabase = createClient()
+            const { data, error } = await supabase
+                .from('tryout_configurations')
+                .select('type, sub_category')
+                .eq('is_active', true)
+                .order('sort_order', { ascending: true })
+
+            if (data && !error) {
+                const catMap: Record<string, string[]> = {
+                    'TWK': [],
+                    'TIU': [],
+                    'TKP': []
+                }
+                data.forEach(item => {
+                    if (catMap[item.type]) {
+                        catMap[item.type].push(item.sub_category)
+                    }
+                })
+                setCategories(catMap)
+            }
+        }
+        fetchCategories()
+    }, [])
+
+    const [selectedCategory, setSelectedCategory] = useState(question.category || "")
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
         setLoading(true)
@@ -72,12 +106,6 @@ export default function EditQuestionForm({ question }: { question: any }) {
     // Find index of correct option to determine A, B, C, D, E
     const correctLabel = ['A', 'B', 'C', 'D', 'E'][question.options?.indexOf(correctOption)] || 'A'
 
-    const categories: Record<string, string[]> = {
-        'TWK': ['Nasionalisme', 'Integritas', 'Bela Negara', 'Pilar Negara', 'Bahasa Indonesia'],
-        'TIU': ['Analogi', 'Silogisme', 'Analitis', 'Berhitung', 'Deret Angka', 'Perbandingan Kuantitatif', 'Soal Cerita', 'Analogi Figural', 'Ketidaksamaan', 'Serial'],
-        'TKP': ['Pelayanan Publik', 'Jejaring Kerja', 'Sosial Budaya', 'TIK', 'Profesionalisme', 'Anti Radikalisme']
-    }
-
     return (
         <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
             {/* Admin Alert Header */}
@@ -99,7 +127,10 @@ export default function EditQuestionForm({ question }: { question: any }) {
                                 <button
                                     key={t}
                                     type="button"
-                                    onClick={() => setType(t)}
+                                    onClick={() => {
+                                        setType(t)
+                                        setSelectedCategory("")
+                                    }}
                                     className={cn(
                                         "flex-1 py-3 rounded-xl font-bold border-2 transition-all flex items-center justify-center gap-2",
                                         type === t
@@ -118,10 +149,15 @@ export default function EditQuestionForm({ question }: { question: any }) {
                         <select
                             name="category"
                             required
-                            defaultValue={question.category}
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
                             className="w-full p-3.5 bg-gray-50/50 border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:bg-white focus:outline-none font-bold text-gray-700 transition-all cursor-pointer"
                         >
                             <option value="" disabled>Pilih Sub-Kategori...</option>
+                            {/* Ensure current category is listed even if not in hardcoded list */}
+                            {selectedCategory && !categories[type]?.includes(selectedCategory) && (
+                                <option value={selectedCategory}>{selectedCategory} (Custom)</option>
+                            )}
                             {categories[type]?.map((cat) => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}

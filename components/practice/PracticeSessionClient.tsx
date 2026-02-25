@@ -51,25 +51,9 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     const [showExitModal, setShowExitModal] = useState(false)
     const [showNav, setShowNav] = useState(true) // Toggleable desktop side nav
 
-    // Sort questions by blueprint sub-category order, fallback to type
+    // Subcategory sorting and limits are now handled by dynamic tryout_configurations in the database fetch
     const sortedQuestions = useMemo(() => {
-        const subCategoryOrder: Record<string, number> = {
-            'Nasionalisme': 1, 'Integritas': 2, 'Bela Negara': 3, 'Pilar Negara': 4, 'Bahasa Negara': 5,
-            'Analogi': 6, 'Silogisme': 7, 'Analitis': 8, 'Berhitung': 9, 'Deret Angka': 10, 'Perbandingan Kuantitatif': 11, 'Soal Cerita': 12, 'Analogi Figural': 13, 'Ketidaksamaan': 14, 'Serial': 15,
-            'Pelayanan Publik': 16, 'Jejaring Kerja': 17, 'Sosial Budaya': 18, 'Teknologi Informasi dan Komunikasi': 19, 'Profesionalisme': 20, 'Anti-Radikalisme': 21
-        }
-        const typeOrder: Record<string, number> = {
-            [SUBJECTS.TWK.short]: 1,
-            [SUBJECTS.TIU.short]: 2,
-            [SUBJECTS.TKP.short]: 3
-        }
-        return [...questions].sort((a, b) => {
-            if (a.sub_category && b.sub_category && subCategoryOrder[a.sub_category] && subCategoryOrder[b.sub_category]) {
-                const diff = subCategoryOrder[a.sub_category] - subCategoryOrder[b.sub_category];
-                if (diff !== 0) return diff;
-            }
-            return (typeOrder[a.type] || 99) - (typeOrder[b.type] || 99)
-        })
+        return questions
     }, [questions])
 
     const currentQuestion = sortedQuestions[currentIndex]

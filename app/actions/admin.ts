@@ -262,3 +262,79 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
         message: `Import selesai: ${successCount} berhasil, ${failCount} gagal (baris: ${failedRows.slice(0, 10).join(', ')}${failedRows.length > 10 ? '...' : ''})`
     }
 }
+
+// =============================================
+// TRYOUT CONFIGURATIONS
+// =============================================
+
+export async function updateTryoutConfigurations(configs: any[]) {
+    const isUserAdmin = await isAdmin();
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+
+    const supabase = await createClient();
+
+    // We can use an upsert to update multiple rows efficiently
+    const { error } = await supabase
+        .from('tryout_configurations')
+        .upsert(configs, { onConflict: 'id' });
+
+    if (error) {
+        return { success: false, message: error.message };
+    }
+
+    revalidatePath('/dashboard/admin/tryout-config');
+    return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' };
+}
+
+export async function addTryoutConfiguration(type: string, sub_category: string) {
+    const isUserAdmin = await isAdmin();
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+
+    const supabase = await createClient();
+
+    // Get the max sort_order for the given type to append to bottom
+    const { data: maxOrderData } = await supabase
+        .from('tryout_configurations')
+        .select('sort_order')
+        .order('sort_order', { ascending: false })
+        .limit(1);
+
+    const nextSortOrder = (maxOrderData && maxOrderData.length > 0) ? (maxOrderData[0].sort_order + 1) : 1;
+
+    const { error } = await supabase
+        .from('tryout_configurations')
+        .insert({
+            type,
+            sub_category,
+            question_count: 0,
+            sort_order: nextSortOrder,
+            is_active: true
+        });
+
+    if (error) {
+        return { success: false, message: error.message };
+    }
+
+    revalidatePath('/dashboard/admin/tryout-config');
+    return { success: true, message: 'Sub-Kategori berhasil ditambahkan' };
+}
+
+export async function toggleTryoutConfiguration(id: string, is_active: boolean) {
+    const isUserAdmin = await isAdmin();
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from('tryout_configurations')
+        .update({ is_active })
+        .eq('id', id);
+
+    if (error) {
+        return { success: false, message: error.message };
+    }
+
+    revalidatePath('/dashboard/admin/tryout-config');
+    return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
+}
+

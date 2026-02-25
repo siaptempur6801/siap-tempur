@@ -57,7 +57,20 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
         return <div>Error loading questions</div>
     }
 
+    // 2.5 Fetch Tryout Configurations for Sorting
+    const { data: configs } = await supabase
+        .from('tryout_configurations')
+        .select('type, sub_category, sort_order')
+        .eq('is_active', true)
 
+    // Build a map for O(1) sort order lookups
+    const configSortMap: Record<string, number> = {}
+    if (configs) {
+        configs.forEach((c) => {
+            const key = `${c.type}-${c.sub_category}`
+            configSortMap[key] = c.sort_order
+        })
+    }
 
     // 3. Format Data for Client
     // We need to transform the joined data into a clean structure
@@ -74,6 +87,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
         sub_category: string
         image_url?: string | null
         options: Option[]
+        sort_order?: number
     }
 
     interface AnswerData {
@@ -88,6 +102,9 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
 
         if (!qRaw) return null
 
+        const sortKey = `${qRaw.type}-${qRaw.sub_category}`
+        const sortOrder = configSortMap[sortKey] || 999
+
         return {
             id: qRaw.id,
             content: qRaw.content,
@@ -95,12 +112,18 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             category: qRaw.category,
             sub_category: qRaw.sub_category,
             image_url: qRaw.image_url,
-            options: qRaw.options || [] // Ensure array
+            options: qRaw.options || [], // Ensure array
+            sort_order: sortOrder
         }
     }).filter(Boolean) as Question[]
 
-
-
+    // Perform server-side sorting based on admin configuration
+    questions.sort((a, b) => {
+        if (a.sort_order !== undefined && b.sort_order !== undefined) {
+            return a.sort_order - b.sort_order
+        }
+        return 0
+    })
 
     const initialAnswers: Record<string, string> = {}
         ; (answersData as unknown as AnswerData[]).forEach((item) => {

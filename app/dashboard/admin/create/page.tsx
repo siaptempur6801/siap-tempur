@@ -15,6 +15,38 @@ export default function CreateQuestionPage() {
     const [type, setType] = useState('TWK')
     const [imageFile, setImageFile] = useState<File | null>(null)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
+    const [selectedCategory, setSelectedCategory] = useState("")
+    const [categories, setCategories] = useState<Record<string, string[]>>({
+        'TWK': [],
+        'TIU': [],
+        'TKP': []
+    })
+
+    React.useEffect(() => {
+        const fetchCategories = async () => {
+            const supabase = createClient()
+            const { data, error } = await supabase
+                .from('tryout_configurations')
+                .select('type, sub_category')
+                .eq('is_active', true)
+                .order('sort_order', { ascending: true })
+
+            if (data && !error) {
+                const catMap: Record<string, string[]> = {
+                    'TWK': [],
+                    'TIU': [],
+                    'TKP': []
+                }
+                data.forEach(item => {
+                    if (catMap[item.type]) {
+                        catMap[item.type].push(item.sub_category)
+                    }
+                })
+                setCategories(catMap)
+            }
+        }
+        fetchCategories()
+    }, [])
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
@@ -62,12 +94,6 @@ export default function CreateQuestionPage() {
         }
     }
 
-    const categories: Record<string, string[]> = {
-        'TWK': ['Nasionalisme', 'Integritas', 'Bela Negara', 'Pilar Negara', 'Bahasa Indonesia'],
-        'TIU': ['Analogi', 'Silogisme', 'Analitis', 'Berhitung', 'Deret Angka', 'Perbandingan Kuantitatif', 'Soal Cerita', 'Analogi Figural', 'Ketidaksamaan', 'Serial'],
-        'TKP': ['Pelayanan Publik', 'Jejaring Kerja', 'Sosial Budaya', 'TIK', 'Profesionalisme', 'Anti Radikalisme']
-    }
-
     return (
         <div className="w-full pb-10">
             <Link href="/dashboard/admin" className="inline-flex items-center text-gray-400 hover:text-gray-900 mb-6 font-bold transition-colors group">
@@ -103,7 +129,10 @@ export default function CreateQuestionPage() {
                                         <button
                                             key={t}
                                             type="button"
-                                            onClick={() => setType(t)}
+                                            onClick={() => {
+                                                setType(t)
+                                                setSelectedCategory("")
+                                            }}
                                             className={cn(
                                                 "flex-1 py-3 rounded-xl font-bold border-2 transition-all flex items-center justify-center gap-2",
                                                 type === t
@@ -122,7 +151,8 @@ export default function CreateQuestionPage() {
                                 <select
                                     name="category"
                                     required
-                                    defaultValue=""
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
                                     className="w-full p-3.5 bg-white border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none font-bold text-gray-700 transition-all cursor-pointer"
                                 >
                                     <option value="" disabled>Pilih Sub-Kategori...</option>

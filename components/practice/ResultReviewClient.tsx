@@ -37,18 +37,8 @@ interface Props {
 export default function ResultReviewClient({ answers }: Props) {
     const [currentIndex, setCurrentIndex] = useState(0)
 
-    // Sort answers by question type (TWK -> TIU -> TKP)
     const sortedAnswers = useMemo(() => {
-        const typeOrder: Record<string, number> = {
-            [SUBJECTS.TWK.short]: 1,
-            [SUBJECTS.TIU.short]: 2,
-            [SUBJECTS.TKP.short]: 3
-        }
-        return [...answers].sort((a, b) => {
-            const qA = Array.isArray(a.questions) ? a.questions[0] : a.questions
-            const qB = Array.isArray(b.questions) ? b.questions[0] : b.questions
-            return (typeOrder[qA.type] || 99) - (typeOrder[qB.type] || 99)
-        })
+        return answers
     }, [answers])
 
     const currentAnswer = sortedAnswers[currentIndex]

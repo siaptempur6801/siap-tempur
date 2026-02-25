@@ -78,7 +78,6 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
         isStreak: isFirstSessionToday
     }
 
-    // 2. Fetch Detailed Answers
     const { data: rawAnswers, error: answersError } = await supabase
         .from('test_answers')
         .select(`
@@ -91,6 +90,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                 explanation,
                 type,
                 category,
+                sub_category,
                 options (
                     id,
                     content,
@@ -109,10 +109,38 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     if (answersError) return <div>Error loading results</div>
 
-    const answers = (rawAnswers || []).map((ans: any) => ({
-        ...ans,
-        selected_option: Array.isArray(ans.selected_option) ? ans.selected_option[0] || null : (ans.selected_option as any)
-    }))
+    const { data: configs } = await supabase
+        .from('tryout_configurations')
+        .select('type, sub_category, sort_order')
+        .eq('is_active', true)
+
+    const configSortMap: Record<string, number> = {}
+    if (configs) {
+        configs.forEach((c) => {
+            const key = `${c.type}-${c.sub_category}`
+            configSortMap[key] = c.sort_order
+        })
+    }
+
+    const answers = (rawAnswers || []).map((ans: any) => {
+        const qRaw = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
+        const sortKey = qRaw ? `${qRaw.type}-${qRaw.sub_category}` : ''
+        const sortOrder = configSortMap[sortKey] || 999
+
+        return {
+            ...ans,
+            sort_order: sortOrder,
+            selected_option: Array.isArray(ans.selected_option) ? ans.selected_option[0] || null : (ans.selected_option as any)
+        }
+    })
+
+    // Pre-sort on server based on configuration sort_order
+    answers.sort((a: any, b: any) => {
+        if (a.sort_order !== undefined && b.sort_order !== undefined) {
+            return a.sort_order - b.sort_order
+        }
+        return 0
+    })
 
     // --- DATA PROCESSING ---
 

@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { Plus, FileText } from 'lucide-react'
+import { Plus, FileText, Settings } from 'lucide-react'
 import Link from 'next/link'
 import QuestionCard from '@/components/admin/QuestionCard'
 import AdminSearch from '@/components/admin/AdminSearch'
@@ -60,7 +60,13 @@ export default async function AdminDashboard({
                         </span>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                    <Link
+                        href="/dashboard/admin/tryout-config"
+                        className="flex items-center gap-2 bg-blue-100 text-blue-700 px-5 py-3 rounded-lg hover:bg-blue-200 transition font-bold shadow-sm transform hover:-translate-y-1 active:translate-y-0 border border-blue-200"
+                    >
+                        <Settings size={20} /> Konfigurasi Tryout
+                    </Link>
                     <ExcelImport />
                     <Link
                         href="/dashboard/admin/create"
