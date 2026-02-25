@@ -21,7 +21,7 @@ import ScrollToReviewButton from '@/components/practice/ScrollToReviewButton'
 import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import PaperBackground from '@/components/PaperBackground'
 import { getXPInfo } from '@/lib/dashboard'
-import { cn, formatSubjectName } from '@/lib/utils'
+import { cn, formatSubjectName, calculateCurrentStreak } from '@/lib/utils'
 import { PASSING_GRADES, SUBJECTS } from '@/lib/constants'
 
 export default async function PracticeResultPage({ params }: { params: Promise<{ sessionId: string }> }) {
@@ -74,7 +74,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     const enrichedXPInfo = {
         ...xpInfo,
-        streakCount: profile?.streak_count || 0,
+        streakCount: calculateCurrentStreak(profile?.streak_count, profile?.last_activity_date),
         isStreak: isFirstSessionToday
     }
 

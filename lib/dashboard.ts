@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
+import { calculateCurrentStreak } from './utils'
 
 interface DashboardData {
     user: {
@@ -109,7 +110,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankRes] = await Promise.all([
         supabase
             .from('profiles')
-            .select('full_name, streak_count, tryout_quota')
+            .select('full_name, streak_count, tryout_quota, last_activity_date')
             .eq('id', userId)
             .single(),
         supabase
@@ -228,7 +229,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     } : null
 
     return {
-        user: { id: userId, name: profile?.full_name || 'Calon ASN', streak: profile?.streak_count || 0, tryoutQuota: profile?.tryout_quota || 0 },
+        user: { id: userId, name: profile?.full_name || 'Calon ASN', streak: calculateCurrentStreak(profile?.streak_count, profile?.last_activity_date), tryoutQuota: profile?.tryout_quota || 0 },
         stats: { totalSessions: recentSessions.length, xp: totalXp, level: levelInfo.level, levelName: levelInfo.name, levelProgress: getLevelProgress(totalXp).progress, rank: rankData?.rank_pos || null },
         progress: {
             twk: { score: avgScores.twk, target: PASSING_GRADES.TWK, passed: avgScores.twk >= PASSING_GRADES.TWK },

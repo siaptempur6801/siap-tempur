@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileClient from '@/components/profile/ProfileClient'
 import { getLevel } from '@/lib/dashboard'
+import { calculateCurrentStreak } from '@/lib/utils'
 
 export default async function ProfilePage() {
     const supabase = await createClient()
@@ -51,6 +52,10 @@ export default async function ProfilePage() {
     // Calculate XP and Level
     const totalXP = rawSessions?.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXP)
+
+    if (profile) {
+        profile.streak_count = calculateCurrentStreak(profile.streak_count, profile.last_activity_date);
+    }
 
     if (!profile) {
         // Create default profile if not exists
