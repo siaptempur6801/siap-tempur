@@ -338,3 +338,21 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean) 
     return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
 }
 
+export async function deleteTryoutConfiguration(id: string) {
+    const isUserAdmin = await isAdmin();
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from('tryout_configurations')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        return { success: false, message: error.message };
+    }
+
+    revalidatePath('/dashboard/admin/tryout-config');
+    return { success: true, message: 'Kategori berhasil dihapus secara permanen' };
+}

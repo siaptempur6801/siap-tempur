@@ -27,7 +27,11 @@ export async function createTransaction(
             "order_id": orderId,
             "gross_amount": amount
         },
-        "customer_details": customerDetails || {}
+        "customer_details": customerDetails || {},
+        "custom_expiry": {
+            "expiry_duration": 15,
+            "unit": "minute"
+        }
     };
 
     if (itemDetails && itemDetails.length > 0) {

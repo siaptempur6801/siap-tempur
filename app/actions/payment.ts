@@ -100,7 +100,36 @@ export async function syncPaymentStatus(orderId: string) {
             cache: 'no-store'
         })
 
-        if (!response.ok) return false;
+        if (!response.ok) {
+            // Jika Midtrans API melempar 404 (Not Found), seringkali karena snap session expired
+            // Mari kita cek umur transaksi di database
+            if (response.status === 404) {
+                const adminSupabase = createSupabaseClient(
+                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                    process.env.SUPABASE_SERVICE_ROLE_KEY!
+                )
+
+                const { data: txInfo } = await adminSupabase
+                    .from('transactions')
+                    .select('created_at, status')
+                    .eq('order_id', orderId)
+                    .single()
+
+                if (txInfo && txInfo.status === 'pending') {
+                    const txAge = new Date().getTime() - new Date(txInfo.created_at).getTime();
+                    const mins15 = 15 * 60 * 1000;
+
+                    if (txAge > mins15) {
+                        // Paksa menjadi expire karena sudah terlalu lama dan tidak ditemukan di Midtrans
+                        await adminSupabase
+                            .from('transactions')
+                            .update({ status: 'expire' })
+                            .eq('order_id', orderId)
+                    }
+                }
+            }
+            return false;
+        }
 
         const result = await response.json()
         const transaction_status = result.transaction_status

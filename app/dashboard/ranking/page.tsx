@@ -9,10 +9,10 @@ export default async function RankingPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    // Fetch snapshot data ordered by rank_pos
+    // Fetch snapshot data using secure RPC instead of direct table access
+    // We'll apply sorting and limit here just as we would on a table
     const { data: rankings, error } = await supabase
-        .from('leaderboard_snapshot')
-        .select('*')
+        .rpc('get_leaderboard_snapshot')
         .order('rank_pos', { ascending: true })
         .limit(100)
 

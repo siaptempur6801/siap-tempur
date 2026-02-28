@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 import PaperBackground from '@/components/PaperBackground'
+import VoucherClaim from '@/components/VoucherClaim'
 
 type Profile = {
     id: string
@@ -577,7 +578,7 @@ export default function ProfileClient({
                         </div>
 
                         {/* Quota Card - Sticky Note Style */}
-                        <div className="bg-green-200 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative transform rotate-1">
+                        <div className="bg-green-200 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative transform rotate-1 mt-4">
                             <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-4 bg-blue-400 rounded-b-sm shadow-sm"></div>
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                                 <div className="flex items-center gap-4">
@@ -603,6 +604,16 @@ export default function ProfileClient({
                             </div>
                         </div>
 
+                        {/* Voucher Claim Section */}
+                        <div className="mt-6 relative z-20">
+                            <VoucherClaim
+                                userId={user.id}
+                                onSuccessClaim={() => {
+                                    // Refresh window to fetch new profile data with updated quota
+                                    window.location.reload()
+                                }}
+                            />
+                        </div>
 
                     </div>
                 )
@@ -639,7 +650,7 @@ export default function ProfileClient({
                                                     <div className="text-right">
                                                         <div className="font-black text-xl text-gray-900">Rp {tx.amount.toLocaleString('id-ID')}</div>
                                                         {(() => {
-                                                            const isLocallyExpired = tx.status === 'pending' && (new Date().getTime() - new Date(tx.created_at).getTime() > 24 * 60 * 60 * 1000);
+                                                            const isLocallyExpired = tx.status === 'pending' && (new Date().getTime() - new Date(tx.created_at).getTime() > 15 * 60 * 1000);
                                                             const computedStatus = isLocallyExpired ? 'expire' : tx.status;
 
                                                             const statusMap: Record<string, { label: string; color: string }> = {
@@ -647,10 +658,11 @@ export default function ProfileClient({
                                                                 'capture': { label: 'Berhasil', color: 'bg-green-300' },
                                                                 'pending': { label: 'Menunggu', color: 'bg-yellow-300' },
                                                                 'expire': { label: 'Kedaluwarsa', color: 'bg-gray-300' },
-                                                                'cancel': { label: 'Gagal', color: 'bg-red-300' },
+                                                                'cancel': { label: 'Batal', color: 'bg-red-300' },
                                                                 'deny': { label: 'Gagal', color: 'bg-red-300' },
                                                             }
                                                             const s = statusMap[computedStatus] || { label: computedStatus, color: 'bg-blue-100' }
+
                                                             return (
                                                                 <>
                                                                     <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 border border-gray-900 inline-block mt-2 shadow-sm ${s.color} transform ${['settlement', 'capture'].includes(computedStatus) ? '-rotate-2' : 'rotate-2'}`}>

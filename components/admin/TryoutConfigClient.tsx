@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Save, Plus, Loader2, ArrowUp, ArrowDown, Trash2, Check, X, GripVertical } from 'lucide-react'
+import { Save, Plus, Loader2, ArrowUp, ArrowDown, Trash2, Check, X, GripVertical, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { updateTryoutConfigurations, addTryoutConfiguration, toggleTryoutConfiguration } from '@/app/actions/admin'
+import { updateTryoutConfigurations, addTryoutConfiguration, toggleTryoutConfiguration, deleteTryoutConfiguration } from '@/app/actions/admin'
 import { cn } from '@/lib/utils'
 import PaperBackground from '@/components/PaperBackground'
 
@@ -24,6 +24,8 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
     const [configs, setConfigs] = useState<TryoutConfig[]>(initialConfigs)
     const [isSaving, setIsSaving] = useState(false)
     const [isAdding, setIsAdding] = useState(false)
+    const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     // Form state for new category
     const [newType, setNewType] = useState('TWK')
@@ -76,6 +78,33 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
         } catch (error) {
             toast.error("Gagal mengubah status kategori", { id: loadingToast })
             setConfigs(configs.map(c => c.id === id ? { ...c, is_active: currentlyActive } : c))
+        }
+    }
+
+    const handleDeleteClick = (id: string, name: string) => {
+        setItemToDelete({ id, name })
+    }
+
+    const confirmDelete = async () => {
+        if (!itemToDelete) return;
+
+        setIsDeleting(true)
+        const loadingToast = toast.loading(`Menghapus kategori...`)
+
+        try {
+            const res = await deleteTryoutConfiguration(itemToDelete.id)
+            if (res.success) {
+                toast.success(res.message, { id: loadingToast })
+                setConfigs(configs.filter(c => c.id !== itemToDelete.id))
+                router.refresh()
+            } else {
+                toast.error(res.message, { id: loadingToast })
+            }
+        } catch (error) {
+            toast.error("Gagal menghapus kategori", { id: loadingToast })
+        } finally {
+            setIsDeleting(false)
+            setItemToDelete(null)
         }
     }
 
@@ -213,18 +242,27 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                         />
                                     </div>
 
-                                    <button
-                                        onClick={() => handleToggleActive(config.id, config.is_active)}
-                                        className={cn(
-                                            "w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all shrink-0",
-                                            config.is_active
-                                                ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100 hover:border-red-300"
-                                                : "bg-green-50 border-green-200 text-green-600 hover:bg-green-100 hover:border-green-300"
-                                        )}
-                                        title={config.is_active ? "Nonaktifkan Kategori" : "Aktifkan Kategori"}
-                                    >
-                                        {config.is_active ? <X size={20} /> : <Check size={20} />}
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => handleToggleActive(config.id, config.is_active)}
+                                            className={cn(
+                                                "w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all shrink-0",
+                                                config.is_active
+                                                    ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100 hover:border-red-300"
+                                                    : "bg-green-50 border-green-200 text-green-600 hover:bg-green-100 hover:border-green-300"
+                                            )}
+                                            title={config.is_active ? "Nonaktifkan Kategori" : "Aktifkan Kategori"}
+                                        >
+                                            {config.is_active ? <X size={20} /> : <Check size={20} />}
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteClick(config.id, config.sub_category)}
+                                            className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-red-200 bg-white text-red-500 hover:bg-red-50 hover:border-red-300 transition-all shrink-0"
+                                            title="Hapus Kategori Permanen"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -313,6 +351,39 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                 </div>
             </div>
 
+            {/* Custom Delete Confirmation Modal */}
+            {itemToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-[2rem] p-6 sm:p-8 max-w-sm w-full border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden animate-in zoom-in-95 duration-200">
+                        <PaperBackground />
+                        <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center border-2 border-red-500 text-red-500">
+                                <AlertTriangle size={32} />
+                            </div>
+                            <div>
+                                <h3 className="font-handwriting font-black text-2xl text-gray-900 leading-tight">Hapus Kategori?</h3>
+                                <p className="text-gray-600 mt-2 font-medium">Anda yakin ingin menghapus <strong className="text-red-500">{itemToDelete.name}</strong>? Aksi ini akan mempengaruhi pembuatan tryout selanjutnya.</p>
+                            </div>
+                            <div className="flex gap-3 w-full mt-4">
+                                <button
+                                    onClick={() => setItemToDelete(null)}
+                                    disabled={isDeleting}
+                                    className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-300 font-bold text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={confirmDelete}
+                                    disabled={isDeleting}
+                                    className="flex-1 px-4 py-2.5 rounded-xl border-2 border-red-600 bg-red-500 text-white font-bold hover:bg-red-600 shadow-[2px_2px_0px_0px_rgba(185,28,28,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] focus:outline-none transition-all flex items-center justify-center gap-2"
+                                >
+                                    {isDeleting ? <Loader2 className="animate-spin" size={18} /> : 'Ya, Hapus'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
