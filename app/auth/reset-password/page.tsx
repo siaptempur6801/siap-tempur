@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { updatePassword } from '@/app/auth/actions'
+import { resetPassword } from '@/app/auth/actions'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import PaperBackground from '@/components/PaperBackground'
 
 export default function ResetPasswordPage() {
     const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
 
@@ -17,8 +18,19 @@ export default function ResetPasswordPage() {
         setLoading(true)
         const formData = new FormData(event.currentTarget)
 
+        const password = formData.get('password') as string
+        const confirmPassword = formData.get('confirmPassword') as string
+
+        if (password !== confirmPassword) {
+            toast.error('Password tidak cocok', {
+                description: 'Pastikan password baru dan konfirmasi password sama.'
+            })
+            setLoading(false)
+            return
+        }
+
         try {
-            const result = await updatePassword(formData)
+            const result = await resetPassword(formData)
             if (result?.error) {
                 toast.error(result.error)
             } else {
@@ -48,6 +60,7 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+                    {/* Field Password Baru */}
                     <div className="relative">
                         <label htmlFor="password" className="sr-only">Password Baru</label>
                         <input
@@ -56,6 +69,7 @@ export default function ResetPasswordPage() {
                             type={showPassword ? "text" : "password"}
                             autoComplete="new-password"
                             required
+                            minLength={8}
                             className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
                             placeholder="Password Baru (Min. 8 karakter)"
                         />
@@ -65,6 +79,28 @@ export default function ResetPasswordPage() {
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
                         >
                             {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
+                        </button>
+                    </div>
+
+                    {/* Field Konfirmasi Password Baru */}
+                    <div className="relative">
+                        <label htmlFor="confirmPassword" className="sr-only">Konfirmasi Password Baru</label>
+                        <input
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            autoComplete="new-password"
+                            required
+                            minLength={8}
+                            className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
+                            placeholder="Ulangi Password Baru"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
+                        >
+                            {showConfirmPassword ? <EyeOff size={24} /> : <Eye size={24} />}
                         </button>
                     </div>
 

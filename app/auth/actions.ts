@@ -145,6 +145,25 @@ export async function resendVerificationEmail(email: string) {
     return { success: true }
 }
 
+export async function resetPassword(formData: FormData) {
+    const supabase = await createClient()
+    const password = formData.get('password') as string
+
+    if (!password || password.length < 8) {
+        return { error: 'Password baru minimal 8 karakter' }
+    }
+
+    const { error } = await supabase.auth.updateUser({
+        password: password
+    })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { success: true }
+}
+
 export async function forgotPassword(formData: FormData) {
     const supabase = await createClient()
     const email = formData.get('email') as string
