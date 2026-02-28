@@ -133,7 +133,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .eq('user_id', userId)
             .eq('status', 'completed'),
         supabase
-            .from('leaderboard_snapshot')
+            .rpc('get_leaderboard_snapshot')
             .select('rank_pos')
             .eq('user_id', userId)
             .maybeSingle()
