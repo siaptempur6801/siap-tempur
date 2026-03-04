@@ -1,0 +1,7 @@
+--- TOP 10 APP QUERIES BY PROP_TOTAL_TIME (Time Spent) ---
+
+--- TOP 10 APP QUERIES BY MEAN_TIME (Slowest Queries) ---
+
+--- TOP 10 APP QUERIES BY CALLS (Most Frequent) ---
+
+--- TOP 10 OVERALL QUERIES (Including Postgres Admin) BY PROP_TOTAL_TIME ---

@@ -22,9 +22,11 @@ interface LeaderboardEntry {
 interface LeaderboardClientProps {
     data: LeaderboardEntry[]
     currentUserId: string
+    periodText?: string
+    currentUserRank?: LeaderboardEntry | null
 }
 
-export default function LeaderboardClient({ data, currentUserId }: LeaderboardClientProps) {
+export default function LeaderboardClient({ data, currentUserId, periodText = 'Edisi Minggu Ini', currentUserRank }: LeaderboardClientProps) {
     const [searchQuery, setSearchQuery] = React.useState('')
 
     const filteredData = data.filter(entry =>
@@ -48,7 +50,7 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                     <div>
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-200 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-1 mb-4">
                             <BarChart3 className="w-4 h-4 text-gray-900" />
-                            <span className="text-xs font-bold uppercase tracking-wider">Edisi Minggu Ini</span>
+                            <span className="text-xs font-bold uppercase tracking-wider">{periodText}</span>
                         </div>
                         <h1 className="font-handwriting text-5xl md:text-7xl font-bold text-gray-900">Ranking Nasional</h1>
                         <p className="font-handwriting text-xl md:text-2xl text-gray-600 mt-2 italic">
@@ -247,6 +249,28 @@ export default function LeaderboardClient({ data, currentUserId }: LeaderboardCl
                         </div>
                     </div>
                 </PageAnimateItem>
+
+                {/* Panel Posisi User di Luar Top 100 */}
+                {currentUserRank && !data.some(e => e.user_id === currentUserId) && (
+                    <PageAnimateItem className="mt-4">
+                        <div className="bg-blue-50 border-2 border-blue-600 shadow-[4px_4px_0px_0px_rgba(37,99,235,0.3)] p-4 flex items-center gap-4">
+                            <div className="flex-shrink-0 text-center w-14">
+                                <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-0.5">Posisi</div>
+                                <div className="text-3xl font-black text-blue-700">#{currentUserRank.rank_pos}</div>
+                            </div>
+                            <div className="w-px h-12 bg-blue-200" />
+                            <div className="flex-1">
+                                <div className="text-sm font-black text-blue-800">Posisi kamu belum masuk Top 100 saat ini</div>
+                                <div className="text-xs text-blue-500 mt-0.5">Terus latihan untuk naik ke papan peringkat! Skor terbaikmu: <strong>{currentUserRank.top_score}</strong></div>
+                            </div>
+                            <div className="hidden sm:flex gap-3 text-center">
+                                <div><div className="text-[10px] font-black text-blue-400 uppercase">TWK</div><div className="text-sm font-bold text-blue-700">{currentUserRank.score_twk}</div></div>
+                                <div><div className="text-[10px] font-black text-blue-400 uppercase">TIU</div><div className="text-sm font-bold text-blue-700">{currentUserRank.score_tiu}</div></div>
+                                <div><div className="text-[10px] font-black text-blue-400 uppercase">TKP</div><div className="text-sm font-bold text-blue-700">{currentUserRank.score_tkp}</div></div>
+                            </div>
+                        </div>
+                    </PageAnimateItem>
+                )}
             </PageAnimateContainer>
         </div>
     )

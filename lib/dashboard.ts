@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
 import { calculateCurrentStreak } from './utils'
 
@@ -106,8 +107,25 @@ export function getXPInfo(previousTotalXP: number, xpEarned: number) {
     }
 }
 
+// Cache rank leaderboard per user selama 5 menit
+// Leaderboard diupdate via cron job, tidak perlu real-time
+export function getCachedRank(supabase: SupabaseClient, userId: string) {
+    return unstable_cache(
+        async () => {
+            const { data } = await supabase
+                .rpc('get_leaderboard_snapshot')
+                .select('rank_pos')
+                .eq('user_id', userId)
+                .maybeSingle()
+            return data
+        },
+        [`rank-${userId}`],
+        { revalidate: 300, tags: [`rank-${userId}`] } // 5 menit
+    )()
+}
+
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
-    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankRes] = await Promise.all([
+    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankData] = await Promise.all([
         supabase
             .from('profiles')
             .select('full_name, streak_count, tryout_quota, last_activity_date')
@@ -132,18 +150,15 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .select('total_score')
             .eq('user_id', userId)
             .eq('status', 'completed'),
-        supabase
-            .rpc('get_leaderboard_snapshot')
-            .select('rank_pos')
-            .eq('user_id', userId)
-            .maybeSingle()
+        // Rank di-cache 5 menit — tidak perlu hit DB setiap request
+        getCachedRank(supabase, userId),
     ])
 
     const profile = profileRes.data
     const sessions = sessionsRes.data
     const bestSession = bestSessionRes.data?.[0]
     const allSessions = allSessionsRes.data
-    const rankData = rankRes.data
+    // rankData sudah di-resolve langsung dari getCachedRank via Promise.all
 
     const totalXp = allSessions?.reduce((sum: number, s: any) => sum + (s.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXp)
