@@ -134,7 +134,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         🎯 Persiapan CPNS & Kedinasan 2026
                     </span>
 
-                    <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-[0.9]">
+                    <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-tight">
                         Latihan SKD Sampai Lulus, <br />
                         <span className="text-blue-600">Bukan</span> Sampai <br />
                         <span className="relative inline-block mt-2">
@@ -156,13 +156,13 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         <div className="flex flex-col sm:flex-row justify-center gap-4 w-full">
                             <button
                                 onClick={() => scrollToSection("products")}
-                                className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
+                                className="group w-full sm:w-auto px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
                                 Mulai Latihan Sekarang <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                             </button>
 
                             <button
                                 onClick={() => scrollToSection("exam-preview")}
-                                className="px-8 py-4 font-handwriting text-2xl font-bold bg-white text-gray-900 rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
+                                className="w-full sm:w-auto px-8 py-4 font-handwriting text-2xl font-bold bg-white text-gray-900 rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
                                 Lihat Dulu Tampilannya <Eye className="w-6 h-6" />
                             </button>
                         </div>
@@ -412,7 +412,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         <p className="font-handwriting text-2xl text-gray-600">Tanpa langganan bulanan. Beli sekali, pakai kapanpun. <span className="bg-yellow-200 px-1">Token gak pernah expired!</span></p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-10 lg:gap-8 max-w-6xl mx-auto">
+                    <div className="grid md:grid-cols-3 gap-10 lg:gap-16 max-w-6xl mx-auto items-start">
 
                         {/* PRODUK 1: SKD Satuan */}
                         <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[1deg] hover:rotate-0 transition-transform duration-300 flex flex-col">
@@ -427,8 +427,10 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <span className="text-4xl font-bold text-indigo-600">Rp 10k</span>
                                 <span className="text-gray-600 text-lg">/ 1 Token</span>
                             </div>
+                            {/* Spacer agar list sejajar dengan card yang punya badge */}
+                            <div className="h-8 mb-2" />
 
-                            <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
+                            <div className="space-y-2 mb-8 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>Tryout SKD Premium</span>
                                 </div>
@@ -453,7 +455,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         {/* PRODUK 2: SKD Paket 3x */}
                         <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[-1deg] hover:rotate-0 transition-transform duration-300 flex flex-col">
                             {/* Tape Effect */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-101/80 border-l border-r border-white/50 shadow-sm rotate-1"></div>
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm rotate-1"></div>
 
                             <h3 className="font-handwriting text-2xl font-bold text-gray-800 border-b-2 border-indigo-200 pb-2 mb-2">
                                 SKD Paket 3x
@@ -463,11 +465,11 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <span className="text-4xl font-bold text-indigo-600">Rp 25k</span>
                                 <span className="text-gray-600 text-lg">/ 3 Token</span>
                             </div>
-                            <p className="font-handwriting text-green-900 text-sm mb-6 bg-green-100 inline-flex px-4 py-1 rounded-full items-center gap-2">
+                            <span className="self-start font-handwriting text-green-900 text-sm mb-4 bg-green-100 inline-flex px-4 py-1 rounded-full items-center gap-2">
                                 Hemat Rp 5k! <Sparkles className="w-4 h-4" />
-                            </p>
+                            </span>
 
-                            <div className="space-y-2 mb-6 font-handwriting text-lg text-gray-700 flex-grow">
+                            <div className="space-y-2 mb-8 font-handwriting text-lg text-gray-700 flex-grow">
                                 <div className="flex items-start gap-2">
                                     <CheckDoodle /> <span>Tryout SKD Premium</span>
                                 </div>
@@ -484,13 +486,13 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <button
                                 onClick={() => router.push('/dashboard/beli-paket')}
-                                className="w-full py-2 font-handwriting text-xl font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
+                                className="w-full py-2.5 font-handwriting text-xl font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
                                 Ambil 3 Token — Hemat 17%
                             </button>
                         </div>
 
                         {/* PRODUK 3: SKD Paket 5x + PDF (BEST SELLER) */}
-                        <div className="relative bg-[#fffdeb] p-8 border-4 border-indigo-600 shadow-2xl rotate-[0deg] transition-transform duration-300 scale-110 z-20 flex flex-col rounded-xl">
+                        <div className="relative bg-[#fffdeb] p-8 border-4 border-indigo-600 shadow-2xl rotate-[0deg] transition-transform duration-300 scale-100 md:scale-110 z-20 flex flex-col rounded-xl">
                             {/* Paper Clip Effect */}
                             <div className="absolute -top-6 left-10 w-8 h-12 bg-gray-300/80 rounded-full border-2 border-gray-400 rotate-12 flex items-center justify-center pt-4">
                                 <div className="w-2 h-6 bg-gray-400/50 rounded-full"></div>
@@ -508,9 +510,9 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 <span className="text-5xl font-bold text-indigo-700">Rp 40k</span>
                                 <span className="text-gray-600 text-xl">/ 5 Token</span>
                             </div>
-                            <p className="font-handwriting text-green-900 text-md mb-8 bg-green-200 inline-flex px-6 py-2 rounded-full items-center gap-2 w-fit shadow-md">
-                                Hemat Rp 10k! <Sparkles className="w-6 h-6 fill-current" />
-                            </p>
+                            <span className="self-start font-handwriting text-green-900 text-sm mb-6 bg-green-200 inline-flex px-4 py-1.5 rounded-full items-center gap-2 shadow-sm">
+                                Hemat Rp 10k! <Sparkles className="w-4 h-4 fill-current" />
+                            </span>
 
                             <div className="space-y-3 mb-8 font-handwriting text-xl text-gray-800 flex-grow">
                                 <div className="flex items-start gap-3">
@@ -533,7 +535,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                             <button
                                 onClick={() => router.push('/dashboard/beli-paket')}
-                                className="w-full py-4 font-handwriting text-2xl font-bold bg-indigo-600 text-white border-2 border-gray-900 rounded-lg shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer">
+                                className="w-full py-3 font-handwriting text-lg font-bold bg-indigo-600 text-white border-2 border-gray-900 rounded-lg shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer">
                                 Ambil 5 Token — Paling Hemat!
                             </button>
                         </div>
@@ -549,15 +551,15 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                     <div className="flex flex-wrap justify-center gap-8">
                         {/* Note 1 - Yellow */}
-                        <div className="w-full md:w-80 bg-[#fff740] p-6 shadow-md rotate-[-2deg] font-handwriting text-xl text-gray-800 relative">
+                        <div className="w-full md:w-80 bg-[#fff740] p-6 shadow-md rotate-[-2deg] font-handwriting text-xl text-gray-800 relative mx-auto md:mx-0">
                             {/* Pin */}
-                            <div className="absolute -top-3 left-1/2 w-4 h-4 rounded-full bg-red-500 shadow-sm border border-red-700 z-10"></div>
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-500 shadow-sm border border-red-700 z-10"></div>
                             <p className="mb-4">"Kemarin tes CPNS beneran, gue kaget karena tipe soalnya udah sering ketemu pas latihan di sini. Hasilnya? Alhamdulillah lolos passing grade!"</p>
                             <p className="font-bold text-right">- Andi, Lolos SKD 2025</p>
                         </div>
 
                         {/* Note 2 - Pink */}
-                        <div className="w-full md:w-80 bg-[#ff7eb9] p-6 shadow-md rotate-[3deg] font-handwriting text-xl text-gray-900 relative">
+                        <div className="w-full md:w-80 bg-[#ff7eb9] p-6 shadow-md rotate-[3deg] font-handwriting text-xl text-gray-900 relative mx-auto md:mx-0">
                             {/* Tape */}
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-20 h-6 bg-white/40 rotate-2"></div>
                             <p className="mb-4">"Dulu selalu kehabisan waktu di TIU. Setelah 5x tryout di sini, akhirnya bisa selesai tepat waktu dan skor TIU naik 30 poin!"</p>
@@ -565,15 +567,15 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         </div>
 
                         {/* Note 3 - Green */}
-                        <div className="w-full md:w-80 bg-[#7afcff] p-6 shadow-md rotate-[-1deg] font-handwriting text-xl text-gray-900 relative">
+                        <div className="w-full md:w-80 bg-[#7afcff] p-6 shadow-md rotate-[-1deg] font-handwriting text-xl text-gray-900 relative mx-auto md:mx-0">
                             {/* Pin */}
-                            <div className="absolute -top-3 left-1/2 w-4 h-4 rounded-full bg-black shadow-sm z-10"></div>
+                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-black shadow-sm z-10"></div>
                             <p className="mb-4">"Gak perlu bayar langganan mahal. Beli 1 token dulu buat coba, ternyata cocok, langsung borong paket 5. Worth it banget!"</p>
                             <p className="font-bold text-right">- Budi, Fresh Graduate 2025</p>
                         </div>
 
                         {/* Note 4 - Lavender */}
-                        <div className="w-full md:w-80 bg-[#e8d5f5] p-6 shadow-md rotate-[2deg] font-handwriting text-xl text-gray-900 relative">
+                        <div className="w-full md:w-80 bg-[#e8d5f5] p-6 shadow-md rotate-[2deg] font-handwriting text-xl text-gray-900 relative mx-auto md:mx-0">
                             {/* Tape */}
                             <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-20 h-6 bg-white/40 -rotate-1"></div>
                             <p className="mb-4">"Mau masuk STAN atau CPNS, SKD-nya sama aja. Di sini penilaiannya persis standar BKN. Jadi latihan sekali, siap untuk dua jalur sekaligus!"</p>
@@ -643,11 +645,11 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                     <button
                         onClick={() => user ? router.push("/dashboard") : router.push("/login")}
-                        className="px-10 py-3 font-handwriting text-2xl font-bold text-gray-900 bg-white rounded-md border-b-4 border-gray-400 active:border-b-0 active:translate-y-1 transition-all cursor-pointer flex items-center justify-center gap-2 mx-auto">
+                        className="w-fit px-10 py-3 font-handwriting text-2xl font-bold text-gray-900 bg-white rounded-md border-b-4 border-gray-400 active:border-b-0 active:translate-y-1 transition-all cursor-pointer flex items-center justify-center gap-2 mx-auto">
                         Mulai Latihan dari Rp 8.000 <Rocket className="w-6 h-6" />
                     </button>
 
-                    <div className="mt-16 flex flex-col md:flex-row items-center justify-center gap-6 text-sm text-gray-300 font-handwriting text-lg">
+                    <div className="mt-16 flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 text-sm text-gray-300 font-handwriting text-lg">
                         <Link href="/syarat-ketentuan" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
                         <Link href="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
                         <Link href="/kebijakan-pengembalian" className="hover:text-white transition-colors">Kebijakan Pengembalian</Link>
