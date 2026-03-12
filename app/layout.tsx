@@ -32,12 +32,11 @@ const bodyFont = Work_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Siap Tempur - Tryout SKD CPNS",
-    template: "%s - Siap Tempur"
+    default: "Siap Tempur - Platform Tryout & Belajar SKD CPNS Terbaik",
+    template: "%s | Siap Tempur"
   },
-  description: "Platform belajar SKD CPNS terbaik",
-  keywords: ["skd", "twk", "tiu", "tkp", "cat bkn", "bimbel online", "tryout skd", "asn"],
-
+  description: "Persiapkan ujian CPNS Anda dengan Siap Tempur. Kami menyediakan simulasi tryout SKD bersistem CAT BKN terbaru, materi terstruktur, dan analisis hasil yang akurat untuk menunjang kelulusan Anda.",
+  keywords: ["tryout cpns", "tryout skd", "cpns", "skd", "twk", "tiu", "tkp", "cat bkn", "bimbel online cpns", "lulus cpns", "asn"],
   authors: [{ name: "Siap Tempur Team" }],
 };
 
