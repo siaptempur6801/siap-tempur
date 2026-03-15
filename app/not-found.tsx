@@ -40,7 +40,7 @@ export default function NotFound() {
 
                     <div className="flex flex-col gap-4">
                         <Link
-                            href="/dashboard"
+                            href="/cpns/dashboard"
                             className="flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white border-2 border-gray-900 text-2xl font-bold shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                         >
                             <Home size={24} />

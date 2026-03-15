@@ -7,6 +7,12 @@ import Link from "next/link";
 import { Target, Timer, BarChart3, ArrowRight, HelpCircle, Sparkles, Menu, X, Flame, Rocket, Eye, Monitor, Flag, Clock, ChevronDown, MessageCircleQuestion } from "lucide-react";
 import PaperBackground from "@/components/PaperBackground";
 import CheckDoodle from "@/components/CheckDoodle";
+import StructuredData from "@/components/StructuredData";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Section } from "@/components/ui/Section";
+import { cn } from "@/lib/utils";
 
 
 
@@ -53,16 +59,41 @@ export default function Home({ user: initialUser }: { user: User | null }) {
         }
     ];
 
+    const cpnsSchema = {
+        "@context": "https://schema.org",
+        "@type": "Course",
+        "name": "Tryout SKD CPNS 2026 Siap Tempur",
+        "description": "Simulasi ujian SKD CPNS dengan sistem CAT BKN asli. Materi TWK, TIU, TKP, dan ranking nasional.",
+        "provider": {
+            "@type": "Organization",
+            "name": "Siap Tempur",
+            "sameAs": "https://siaptempur.id"
+        },
+        "offers": {
+            "@type": "Offer",
+            "category": "Education",
+            "price": "8000.00",
+            "priceCurrency": "IDR",
+            "availability": "https://schema.org/InStock"
+        }
+    };
+
     return (
         <main className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 selection:bg-yellow-200 selection:text-black overflow-x-hidden">
+            <StructuredData data={cpnsSchema} />
 
             {/* --- NAVBAR (Binder Style) --- */}
             <header className="fixed top-0 w-full z-50 bg-[#fdfbf7]/90 backdrop-blur-sm border-b-4 border-gray-800/10">
                 <nav className="container mx-auto px-4 h-20 flex items-center justify-between relative">
 
 
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="text-3xl font-handwriting font-bold text-gray-800 rotate-[-2deg] cursor-pointer hover:rotate-0 transition-transform pl-0 md:pl-0">
-                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="flex flex-col items-start group cursor-pointer pl-0 md:pl-0">
+                        <span className="text-2xl font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight">
+                            CPNS & KEDINASAN
+                        </span>
+                        <span className="text-sm font-handwriting font-bold text-gray-500 ml-1 -mt-1 group-hover:text-gray-900 transition-colors">
+                            by Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                        </span>
                     </button>
 
                     {/* Desktop Navigation (Centered) */}
@@ -75,17 +106,20 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                     <div className="flex items-center gap-4">
                         {user ? (
-                            <button
-                                onClick={() => router.push("/dashboard")}
-                                className="hidden md:block px-6 py-2 font-handwriting text-xl font-bold text-white bg-blue-600 rounded-md border-2 border-transparent hover:bg-white hover:text-blue-600 hover:border-blue-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+                            <Button
+                                onClick={() => router.push("/cpns/dashboard")}
+                                className="hidden md:block"
+                            >
                                 Dashboard
-                            </button>
+                            </Button>
                         ) : (
-                            <button
-                                onClick={() => router.push("/login")}
-                                className="hidden md:block px-6 py-2 font-handwriting text-xl font-bold text-white bg-gray-900 rounded-md border-2 border-transparent hover:bg-white hover:text-gray-900 hover:border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all cursor-pointer">
+                            <Button
+                                onClick={() => router.push("/login?returnTo=/cpns")}
+                                variant="secondary"
+                                className="hidden md:block"
+                            >
                                 Masuk / Daftar
-                            </button>
+                            </Button>
                         )}
 
                         {/* Hamburger Menu Button */}
@@ -107,17 +141,20 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <button onClick={() => { scrollToSection("products"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Harga</button>
                             <button onClick={() => { scrollToSection("memorials"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Kata Mereka</button>
                             {user ? (
-                                <button
-                                    onClick={() => { router.push("/dashboard"); setIsMenuOpen(false); }}
-                                    className="font-handwriting text-2xl font-bold text-white bg-blue-600 px-6 py-3 rounded-md text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mt-2">
+                                <Button
+                                    onClick={() => { router.push("/cpns/dashboard"); setIsMenuOpen(false); }}
+                                    className="text-2xl py-3 mt-2"
+                                >
                                     Dashboard
-                                </button>
+                                </Button>
                             ) : (
-                                <button
-                                    onClick={() => { router.push("/login"); setIsMenuOpen(false); }}
-                                    className="font-handwriting text-2xl font-bold text-white bg-gray-900 px-6 py-3 rounded-md text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] mt-2">
+                                <Button
+                                    onClick={() => { router.push("/login?returnTo=/cpns"); setIsMenuOpen(false); }}
+                                    variant="secondary"
+                                    className="text-2xl py-3 mt-2"
+                                >
                                     Masuk / Daftar
-                                </button>
+                                </Button>
                             )}
                         </div>
                     )}
@@ -125,14 +162,12 @@ export default function Home({ user: initialUser }: { user: User | null }) {
             </header>
 
             {/* --- HERO SECTION (Kertas Ujian) --- */}
-            <section className="relative pt-32 pb-32 overflow-hidden">
-                <PaperBackground />
-
-                <div className="container mx-auto px-4 text-center relative z-10">
+            <Section paper className="pt-32 pb-32">
+                <div className="text-center relative z-10">
                     {/* Label Stabilo */}
-                    <span className="inline-block px-4 py-1 mb-6 font-handwriting text-xl font-bold bg-yellow-200 -rotate-2 border-2 border-gray-800 rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Badge variant="yellow" className="mb-6">
                         🎯 Persiapan CPNS & Kedinasan 2026
-                    </span>
+                    </Badge>
 
                     <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-tight">
                         Latihan SKD Sampai Lulus, <br />
@@ -154,75 +189,70 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                     <div className="flex flex-col items-center gap-8">
                         <div className="flex flex-col sm:flex-row justify-center gap-4 w-full">
-                            <button
+                            <Button
+                                size="lg"
                                 onClick={() => scrollToSection("products")}
-                                className="group w-full sm:w-auto px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
+                                className="w-full sm:w-auto"
+                            >
                                 Mulai Latihan Sekarang <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                            </button>
+                            </Button>
 
-                            <button
+                            <Button
+                                size="lg"
+                                variant="outline"
                                 onClick={() => scrollToSection("exam-preview")}
-                                className="w-full sm:w-auto px-8 py-4 font-handwriting text-2xl font-bold bg-white text-gray-900 rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer flex items-center justify-center gap-3">
+                                className="w-full sm:w-auto"
+                            >
                                 Lihat Dulu Tampilannya <Eye className="w-6 h-6" />
-                            </button>
+                            </Button>
                         </div>
-
-
                     </div>
                 </div>
-            </section>
+            </Section>
 
             {/* --- KEUNGGULAN (Doodle Icons) --- */}
-            <section id="features" className="py-24 bg-white border-y-4 border-gray-900 border-dashed relative">
-                {/* Pattern Grid Background */}
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                        <h2 className="font-handwriting text-5xl font-bold mb-4">Kenapa Ribuan Peserta Pilih Sini?</h2>
-                        <p className="font-handwriting text-2xl text-gray-600">Karena yang kaget di hari H itu yang gak pernah latihan serius.</p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {/* Card 1 */}
-                        <div className="group p-6 bg-[#fdfbf7] border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all">
-                            <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
-                                <Target className="w-12 h-12 text-blue-600 -rotate-6" strokeWidth={2.5} />
-                            </div>
-                            <h3 className="font-handwriting text-2xl font-bold mb-2">Penilaian Standar BKN</h3>
-                            <p className="text-gray-700">Bobot skor & passing grade <strong>100% sesuai aturan BKN</strong>. Kamu bisa tahu persis posisimu: lulus atau belum — sebelum hari H tiba.</p>
-                        </div>
-
-                        {/* Card 2 */}
-                        <div className="group p-6 bg-[#fdfbf7] border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all">
-                            <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
-                                <Timer className="w-12 h-12 text-red-500 rotate-6" strokeWidth={2.5} />
-                            </div>
-                            <h3 className="font-handwriting text-2xl font-bold mb-2">Timer 100 Menit Berjalan</h3>
-                            <p className="text-gray-700">110 soal, 100 menit. Latihan di sini = latihan manajemen waktu yang menentukan lolos atau gagal di CAT BKN nanti.</p>
-                        </div>
-
-                        {/* Card 3 */}
-                        <div className="group p-6 bg-[#fdfbf7] border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all">
-                            <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
-                                <BarChart3 className="w-12 h-12 text-green-600 -rotate-3" strokeWidth={2.5} />
-                            </div>
-                            <h3 className="font-handwriting text-2xl font-bold mb-2">Tahu Kelemahanmu</h3>
-                            <p className="text-gray-700">Analisis skor TWK, TIU, TKP + ranking nasional. Langsung tahu bagian mana yang harus diperbaiki sebelum tes sesungguhnya.</p>
-                        </div>
-                    </div>
+            <Section id="features" dashedBorder="both" pattern="grid" className="bg-white">
+                <div className="text-center max-w-3xl mx-auto mb-16">
+                    <h2 className="font-handwriting text-5xl font-bold mb-4">Kenapa Ribuan Peserta Pilih Sini?</h2>
+                    <p className="font-handwriting text-2xl text-gray-600">Karena yang kaget di hari H itu yang gak pernah latihan serius.</p>
                 </div>
-            </section>
+
+                <div className="grid md:grid-cols-3 gap-8">
+                    {/* Card 1 */}
+                    <Card interactive className="p-6">
+                        <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <Target className="w-12 h-12 text-blue-600 -rotate-6" strokeWidth={2.5} />
+                        </div>
+                        <h3 className="font-handwriting text-2xl font-bold mb-2">Penilaian Standar BKN</h3>
+                        <p className="text-gray-700">Bobot skor & passing grade <strong>100% sesuai aturan BKN</strong>. Kamu bisa tahu persis posisimu: lulus atau belum — sebelum hari H tiba.</p>
+                    </Card>
+
+                    {/* Card 2 */}
+                    <Card interactive className="p-6">
+                        <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <Timer className="w-12 h-12 text-red-500 rotate-6" strokeWidth={2.5} />
+                        </div>
+                        <h3 className="font-handwriting text-2xl font-bold mb-2">Timer 100 Menit Berjalan</h3>
+                        <p className="text-gray-700">110 soal, 100 menit. Latihan di sini = latihan manajemen waktu yang menentukan lolos atau gagal di CAT BKN nanti.</p>
+                    </Card>
+
+                    {/* Card 3 */}
+                    <Card interactive className="p-6">
+                        <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <BarChart3 className="w-12 h-12 text-green-600 -rotate-3" strokeWidth={2.5} />
+                        </div>
+                        <h3 className="font-handwriting text-2xl font-bold mb-2">Tahu Kelemahanmu</h3>
+                        <p className="text-gray-700">Analisis skor TWK, TIU, TKP + ranking nasional. Langsung tahu bagian mana yang harus diperbaiki sebelum tes sesungguhnya.</p>
+                    </Card>
+                </div>
+            </Section>
 
             {/* --- INTIP TAMPILAN SIMULASI (Exam Preview) --- */}
-            <section id="exam-preview" className="py-24 bg-[#fdfbf7] relative overflow-hidden">
-                <PaperBackground />
-
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                        <span className="inline-block px-4 py-1 mb-4 font-handwriting text-lg font-bold bg-blue-100 text-blue-700 rotate-1 border-2 border-blue-300 rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
-                            <Eye className="w-5 h-5 inline -mt-0.5 mr-1" /> Sneak Peek!
-                        </span>
+            <Section id="exam-preview" paper className="bg-[#fdfbf7]">
+                <div className="text-center max-w-3xl mx-auto mb-16">
+                    <Badge variant="blue" className="mb-4">
+                        <Eye className="w-5 h-5" /> Sneak Peek!
+                    </Badge>
                         <h2 className="font-handwriting text-5xl font-bold mb-4">Begini Rasanya Latihan di Sini</h2>
                         <p className="font-handwriting text-2xl text-gray-600">Sistem penilaian sama persis dengan CAT BKN. Bedanya, ini latihan — salah di sini gratis, salah di sana hilang kursi ASN.</p>
                     </div>
@@ -386,274 +416,208 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     {/* CTA */}
                     <div className="text-center mt-12">
                         <button
-                            onClick={() => user ? router.push("/dashboard") : router.push("/login")}
+                            onClick={() => user ? router.push("/cpns/dashboard") : router.push("/login?returnTo=/cpns")}
                             className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
                         >
                             Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                         </button>
                         <p className="font-handwriting text-lg text-gray-500 mt-4">Mulai dari Rp 8.000/tryout. Lebih murah dari kopi, tapi bisa ubah masa depanmu.</p>
                     </div>
-                </div>
-            </section>
+                </Section>
 
-            {/* --- PRODUK (Index Cards / Sticky Notes) --- */}
-            <section id="products" className="py-24 bg-[#f0f4f8] relative overflow-hidden">
-                {/* Background Corrugated Paper Look via CSS */}
-                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none"
-                    style={{
-                        backgroundImage: "radial-gradient(#000 1px, transparent 1px)",
-                        backgroundSize: "10px 10px"
-                    }}>
+            {/* --- PRICING SECTION --- */}
+            <Section id="products" pattern="dots" dashedBorder="both" className="bg-[#f0f4f8]">
+                <div className="text-center mb-16 relative z-10">
+                    <Badge variant="red" className="mb-4">BISA SCAN QRIS</Badge>
+                    <h2 className="font-handwriting text-5xl font-bold mb-4">Investasi ASN Sekali Bayar</h2>
+                    <p className="font-handwriting text-2xl text-gray-600">Tanpa biaya bulanan. Beli token sesuai kebutuhan tempurmu.</p>
                 </div>
 
-                <div className="container mx-auto px-4">
-                    <div className="text-center mb-16">
-                        <h2 className="font-handwriting text-5xl font-bold mb-4">Pilih Paket Latihanmu</h2>
-                        <p className="font-handwriting text-2xl text-gray-600">Tanpa langganan bulanan. Beli sekali, pakai kapanpun. <span className="bg-yellow-200 px-1">Token gak pernah expired!</span></p>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-10 lg:gap-16 max-w-6xl mx-auto items-start">
-
-                        {/* PRODUK 1: SKD Satuan */}
-                        <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[1deg] hover:rotate-0 transition-transform duration-300 flex flex-col">
-                            {/* Tape Effect */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
-
-                            <h3 className="font-handwriting text-2xl font-bold text-gray-800 border-b-2 border-indigo-200 pb-2 mb-2">
-                                SKD Satuan
-                            </h3>
-
-                            <div className="mb-4 font-handwriting">
-                                <span className="text-4xl font-bold text-indigo-600">Rp 10k</span>
-                                <span className="text-gray-600 text-lg">/ 1 Token</span>
-                            </div>
-                            {/* Spacer agar list sejajar dengan card yang punya badge */}
-                            <div className="h-8 mb-2" />
-
-                            <div className="space-y-2 mb-8 font-handwriting text-lg text-gray-700 flex-grow">
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Tryout SKD Premium</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Pembahasan Lengkap</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Perankingan Nasional</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Token Aktif Selamanya</span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => router.push('/dashboard/beli-paket')}
-                                className="w-full py-2 font-handwriting text-xl font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
-                                Mulai dengan 1 Token
-                            </button>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+                    {/* Paket 1 */}
+                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
+                        <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PERINTIS</span>
+                        <div className="flex items-end gap-1 mb-6">
+                            <span className="text-2xl font-bold mb-2">Rp</span>
+                            <span className="text-6xl font-bold text-gray-900">10k</span>
                         </div>
+                        <Badge variant="pink" className="mb-8">1x TOKEN TRYOUT</Badge>
+                        <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
+                            <li className="flex items-center gap-3"><Flag size={20} className="text-blue-600" /> 110 Soal Prediksi</li>
+                            <li className="flex items-center gap-3"><Clock size={20} className="text-blue-600" /> Waktu 100 Menit</li>
+                            <li className="flex items-center gap-3"><Monitor size={20} className="text-blue-600" /> CAT BKN Interface</li>
+                            <li className="flex items-center gap-3"><BarChart3 size={20} className="text-blue-600" /> Pembahasan Lengkap</li>
+                        </ul>
+                        <Button
+                            className="w-full text-xl py-6 mt-auto"
+                            onClick={() => router.push("/login?returnTo=/cpns")}
+                        >
+                            Beli Sekarang
+                        </Button>
+                    </Card>
 
-                        {/* PRODUK 2: SKD Paket 3x */}
-                        <div className="relative bg-white p-6 border border-gray-300 shadow-xl rotate-[-1deg] hover:rotate-0 transition-transform duration-300 flex flex-col">
-                            {/* Tape Effect */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm rotate-1"></div>
-
-                            <h3 className="font-handwriting text-2xl font-bold text-gray-800 border-b-2 border-indigo-200 pb-2 mb-2">
-                                SKD Paket 3x
-                            </h3>
-
-                            <div className="mb-1 font-handwriting">
-                                <span className="text-4xl font-bold text-indigo-600">Rp 25k</span>
-                                <span className="text-gray-600 text-lg">/ 3 Token</span>
-                            </div>
-                            <span className="self-start font-handwriting text-green-900 text-sm mb-4 bg-green-100 inline-flex px-4 py-1 rounded-full items-center gap-2">
-                                Hemat Rp 5k! <Sparkles className="w-4 h-4" />
-                            </span>
-
-                            <div className="space-y-2 mb-8 font-handwriting text-lg text-gray-700 flex-grow">
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Tryout SKD Premium</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Pembahasan Lengkap</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Perankingan Nasional</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckDoodle /> <span>Token Aktif Selamanya</span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => router.push('/dashboard/beli-paket')}
-                                className="w-full py-2.5 font-handwriting text-xl font-bold bg-indigo-50 text-indigo-700 border-2 border-indigo-200 border-dashed rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition cursor-pointer">
-                                Ambil 3 Token — Hemat 17%
-                            </button>
+                    {/* Paket 2 (Featured) */}
+                    <Card variant="standard" interactive className="p-10 bg-blue-600 border-4 border-gray-900 relative overflow-hidden group scale-105 z-20">
+                        <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 font-bold px-4 py-1 rounded-full text-sm shadow-md z-10 animate-pulse">PALING LARIS!</div>
+                        <span className="font-handwriting font-bold text-blue-100 mb-2 block">PAKET PEJUANG</span>
+                        <div className="flex items-end gap-1 mb-6">
+                            <span className="text-2xl font-bold mb-2 text-white">Rp</span>
+                            <span className="text-6xl font-bold text-yellow-400">40k</span>
                         </div>
+                        <Badge variant="yellow" className="mb-8">5x TOKEN TRYOUT</Badge>
+                        <ul className="space-y-4 mb-8 w-full font-handwriting text-xl font-bold text-white">
+                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Semua Fitur Tryout</li>
+                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Lebih Hemat Rp 10rb</li>
+                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Ranking Nasional</li>
+                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Token Selamanya</li>
+                        </ul>
+                        <Button
+                            size="lg"
+                            className="w-full text-2xl py-6 bg-yellow-400 text-gray-900 hover:bg-yellow-300 mt-auto"
+                            onClick={() => router.push("/login?returnTo=/cpns")}
+                        >
+                            Ambil Paket Ini <Rocket className="ml-2 animate-bounce" />
+                        </Button>
+                    </Card>
 
-                        {/* PRODUK 3: SKD Paket 5x + PDF (BEST SELLER) */}
-                        <div className="relative bg-[#fffdeb] p-8 border-4 border-indigo-600 shadow-2xl rotate-[0deg] transition-transform duration-300 scale-100 md:scale-110 z-20 flex flex-col rounded-xl">
-                            {/* Paper Clip Effect */}
-                            <div className="absolute -top-6 left-10 w-8 h-12 bg-gray-300/80 rounded-full border-2 border-gray-400 rotate-12 flex items-center justify-center pt-4">
-                                <div className="w-2 h-6 bg-gray-400/50 rounded-full"></div>
-                            </div>
-
-                            <div className="absolute -top-4 right-4 bg-red-600 text-white font-handwriting text-sm font-bold px-4 py-1.5 -rotate-6 rounded shadow-lg animate-pulse flex items-center gap-1">
-                                BEST SELLER <Flame className="w-4 h-4 fill-current" />
-                            </div>
-
-                            <h3 className="font-handwriting text-3xl font-bold text-gray-900 border-b-2 border-indigo-300 pb-2 mb-4 flex items-center gap-2">
-                                SKD Paket 5x
-                            </h3>
-
-                            <div className="mb-2 font-handwriting">
-                                <span className="text-5xl font-bold text-indigo-700">Rp 40k</span>
-                                <span className="text-gray-600 text-xl">/ 5 Token</span>
-                            </div>
-                            <span className="self-start font-handwriting text-green-900 text-sm mb-6 bg-green-200 inline-flex px-4 py-1.5 rounded-full items-center gap-2 shadow-sm">
-                                Hemat Rp 10k! <Sparkles className="w-4 h-4 fill-current" />
-                            </span>
-
-                            <div className="space-y-3 mb-8 font-handwriting text-xl text-gray-800 flex-grow">
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1"><CheckDoodle /></div>
-                                    <span className="font-bold underline decoration-wavy decoration-indigo-400">Tryout SKD Premium</span>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1"><CheckDoodle /></div>
-                                    <span>Pembahasan Lengkap</span>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1"><CheckDoodle /></div>
-                                    <span>Perankingan Nasional</span>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1"><CheckDoodle /></div>
-                                    <span className="font-bold">Token Aktif Selamanya</span>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => router.push('/dashboard/beli-paket')}
-                                className="w-full py-3 font-handwriting text-lg font-bold bg-indigo-600 text-white border-2 border-gray-900 rounded-lg shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer">
-                                Ambil 5 Token — Paling Hemat!
-                            </button>
+                    {/* Paket 3 */}
+                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
+                        <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PASUKAN</span>
+                        <div className="flex items-end gap-1 mb-6">
+                            <span className="text-2xl font-bold mb-2">Rp</span>
+                            <span className="text-6xl font-bold text-gray-900">75k</span>
                         </div>
-
-                    </div>
+                        <Badge variant="green" className="mb-8">10x TOKEN TRYOUT</Badge>
+                        <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
+                            <li className="flex items-center gap-3 text-green-600 font-bold"><Sparkles size={20} /> Persiapan Maksimal</li>
+                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Latihan Tiap Minggu</li>
+                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Ranking Terupdate</li>
+                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Hemat Rp 25.000!</li>
+                        </ul>
+                        <Button
+                            className="w-full text-xl py-6 mt-auto"
+                            onClick={() => router.push("/login?returnTo=/cpns")}
+                        >
+                            Hajar Gaskeun!
+                        </Button>
+                    </Card>
                 </div>
-            </section>
+            </Section>
 
-            {/* --- TESTIMONI (Sticky Notes) --- */}
-            <section id="memorials" className="py-24 bg-[#fdfbf7]">
-                <div className="container mx-auto px-4">
-                    <h2 className="font-handwriting text-4xl font-bold text-center mb-12">Mereka Udah Buktiin, Kamu Kapan?</h2>
-
-                    <div className="flex flex-wrap justify-center gap-8">
-                        {/* Note 1 - Yellow */}
-                        <div className="w-full md:w-80 bg-[#fff740] p-6 shadow-md rotate-[-2deg] font-handwriting text-xl text-gray-800 relative mx-auto md:mx-0">
-                            {/* Pin */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-red-500 shadow-sm border border-red-700 z-10"></div>
-                            <p className="mb-4">"Kemarin tes CPNS beneran, gue kaget karena tipe soalnya udah sering ketemu pas latihan di sini. Hasilnya? Alhamdulillah lolos passing grade!"</p>
-                            <p className="font-bold text-right">- Andi, Lolos SKD 2025</p>
-                        </div>
-
-                        {/* Note 2 - Pink */}
-                        <div className="w-full md:w-80 bg-[#ff7eb9] p-6 shadow-md rotate-[3deg] font-handwriting text-xl text-gray-900 relative mx-auto md:mx-0">
-                            {/* Tape */}
-                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-20 h-6 bg-white/40 rotate-2"></div>
-                            <p className="mb-4">"Dulu selalu kehabisan waktu di TIU. Setelah 5x tryout di sini, akhirnya bisa selesai tepat waktu dan skor TIU naik 30 poin!"</p>
-                            <p className="font-bold text-right">- Sarah, Pejuang NIP 2026</p>
-                        </div>
-
-                        {/* Note 3 - Green */}
-                        <div className="w-full md:w-80 bg-[#7afcff] p-6 shadow-md rotate-[-1deg] font-handwriting text-xl text-gray-900 relative mx-auto md:mx-0">
-                            {/* Pin */}
-                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-black shadow-sm z-10"></div>
-                            <p className="mb-4">"Gak perlu bayar langganan mahal. Beli 1 token dulu buat coba, ternyata cocok, langsung borong paket 5. Worth it banget!"</p>
-                            <p className="font-bold text-right">- Budi, Fresh Graduate 2025</p>
-                        </div>
-
-                        {/* Note 4 - Lavender */}
-                        <div className="w-full md:w-80 bg-[#e8d5f5] p-6 shadow-md rotate-[2deg] font-handwriting text-xl text-gray-900 relative mx-auto md:mx-0">
-                            {/* Tape */}
-                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-20 h-6 bg-white/40 -rotate-1"></div>
-                            <p className="mb-4">"Mau masuk STAN atau CPNS, SKD-nya sama aja. Di sini penilaiannya persis standar BKN. Jadi latihan sekali, siap untuk dua jalur sekaligus!"</p>
-                            <p className="font-bold text-right">- Rizky, Calon Taruna STAN</p>
-                        </div>
-                    </div>
+            {/* --- TESTIMONIALS (Sketsa Orang) --- */}
+            <Section id="memorials" className="bg-white" dashedBorder="top" pattern="dots">
+                <div className="text-center max-w-4xl mx-auto mb-16">
+                    <h2 className="font-handwriting text-5xl font-bold mb-4">"Gak Nyangka, Soalnya Mirip Banget!"</h2>
+                    <p className="font-handwriting text-2xl text-gray-600">Kata mereka yang udah "tempur" duluan dan sekarang udah pakai seragam.</p>
                 </div>
-            </section>
 
-            {/* --- FAQ (Accordion) --- */}
-            <section id="faq" className="py-24 bg-white border-t-4 border-gray-900 border-dashed relative">
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {/* Testi 1 */}
+                    <Card interactive className="p-8">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-16 h-16 bg-blue-100 border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl">👨‍💼</div>
+                            <div>
+                                <h4 className="font-handwriting text-xl font-bold">Rizky - Bekasi</h4>
+                                <div className="flex text-yellow-500"><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /></div>
+                            </div>
+                        </div>
+                        <p className="font-handwriting text-xl text-gray-700 italic leading-relaxed">
+                            "Membantu banget pas manajemen waktu. Pas hari H beneran gak kaget lagi sama timer yang jalan terus. Skor TIU-ku naik drastis!"
+                        </p>
+                    </Card>
 
-                <div className="container mx-auto px-4 relative z-10">
-                    <div className="text-center max-w-3xl mx-auto mb-16">
-                        <span className="inline-block px-4 py-1 mb-4 font-handwriting text-lg font-bold bg-orange-100 text-orange-700 -rotate-1 border-2 border-orange-300 rounded-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
-                            <MessageCircleQuestion className="w-5 h-5 inline -mt-0.5 mr-1" /> Sering Ditanya
-                        </span>
-                        <h2 className="font-handwriting text-5xl font-bold mb-4">Masih Ragu? Baca Dulu</h2>
-                        <p className="font-handwriting text-2xl text-gray-600">Jawaban untuk pertanyaan yang sering ditanya sebelum membeli.</p>
+                    {/* Testi 2 */}
+                    <Card interactive className="p-8 rotate-1">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-16 h-16 bg-pink-100 border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl">👩‍🏫</div>
+                            <div>
+                                <h4 className="font-handwriting text-xl font-bold">Dina - Surabaya</h4>
+                                <div className="flex text-yellow-500"><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /></div>
+                            </div>
+                        </div>
+                        <p className="font-handwriting text-xl text-gray-700 italic leading-relaxed">
+                            "Pembahasannya gampang dimengerti, gak bertele-tele. Fitur ranking nasionalnya bikin makin semangat buat ngejar skor tertinggi."
+                        </p>
+                    </Card>
+
+                    {/* Testi 3 */}
+                    <Card interactive className="p-8 rotate-[-1deg]">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-16 h-16 bg-green-100 border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl">🧑‍💻</div>
+                            <div>
+                                <h4 className="font-handwriting text-xl font-bold">Fajar - Medan</h4>
+                                <div className="flex text-yellow-500"><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /></div>
+                            </div>
+                        </div>
+                        <p className="font-handwriting text-xl text-gray-700 italic leading-relaxed">
+                            "Sistem CAT-nya mirip banget sama aslinya. Pas tes beneran kerasa kayak lagi ngerjain tryout di Siap Tempur aja. Akhirnya lolos tahun ini!"
+                        </p>
+                    </Card>
+                </div>
+            </Section>
+
+            {/* --- FAQ SECTION --- */}
+            <Section dashedBorder="top" className="bg-white">
+                <div className="max-w-3xl mx-auto">
+                    <div className="text-center mb-12">
+                        <Badge variant="blue" className="mb-4">Tanya Jawab</Badge>
+                        <h2 className="font-handwriting text-5xl font-bold">Bingung Soal Tempur?</h2>
                     </div>
 
-                    <div className="max-w-3xl mx-auto space-y-4">
+                    <div className="space-y-4">
                         {faqItems.map((item, i) => (
-                            <div
-                                key={i}
-                                className="bg-[#fdfbf7] border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] overflow-hidden transition-all"
-                            >
+                            <Card key={i} className="overflow-hidden">
                                 <button
                                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                                    className="w-full flex items-center justify-between p-5 md:p-6 text-left font-handwriting font-bold text-lg md:text-xl text-gray-900 hover:bg-yellow-50/50 transition-colors"
+                                    className="w-full flex items-center justify-between p-6 text-left cursor-pointer group"
                                 >
-                                    <span className="flex items-center gap-3">
-                                        <span className="inline-flex items-center justify-center w-8 h-8 bg-blue-100 border-2 border-blue-400 rounded-full text-blue-600 font-bold text-sm shrink-0">
-                                            {i + 1}
-                                        </span>
+                                    <span className="font-handwriting text-2xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
                                         {item.q}
                                     </span>
-                                    <ChevronDown
-                                        className={`w-6 h-6 text-gray-500 shrink-0 ml-4 transition-transform duration-300 ${openFaq === i ? 'rotate-180' : ''
-                                            }`}
-                                    />
+                                    <ChevronDown className={cn("w-6 h-6 transition-transform text-gray-400", openFaq === i && "rotate-180 text-blue-600")} />
                                 </button>
-                                <div
-                                    className={`overflow-hidden transition-all duration-300 ease-in-out ${openFaq === i ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                                        }`}
-                                >
-                                    <div className="px-5 md:px-6 pb-5 md:pb-6 pt-0">
-                                        <div className="border-t-2 border-dashed border-gray-300 pt-4">
-                                            <p className="font-handwriting text-lg text-gray-700 leading-relaxed">
-                                                {item.a}
-                                            </p>
-                                        </div>
+                                {openFaq === i && (
+                                    <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-200">
+                                        <div className="h-0.5 w-full bg-gray-100 mb-4" />
+                                        <p className="font-handwriting text-xl text-gray-600 leading-relaxed italic">
+                                            {item.a}
+                                        </p>
                                     </div>
-                                </div>
-                            </div>
+                                )}
+                            </Card>
                         ))}
                     </div>
                 </div>
-            </section>
+            </Section>
 
-            {/* --- FOOTER (Doodle Border) --- */}
-            <footer className="bg-gray-900 text-white py-12 border-t-8 border-gray-800 border-dashed relative overflow-hidden">
-                <div className="container mx-auto px-4 text-center relative z-10">
-                    <h2 className="font-handwriting text-4xl font-bold mb-6">Formasi CPNS 2026 Sudah di Depan Mata</h2>
-                    <p className="text-gray-300 mb-8 max-w-lg mx-auto">Yang mulai latihan dari sekarang, mereka yang punya kursi nanti. Jangan sampai nyesel karena telat persiapan.</p>
+            {/* --- CPNS FOOTER --- */}
+            <footer className="bg-gray-900 text-white py-20 relative overflow-hidden">
+                {/* Scribble decoration */}
+                <div className="absolute top-10 right-10 opacity-10 rotate-12">
+                    <Rocket size={120} />
+                </div>
 
-                    <button
-                        onClick={() => user ? router.push("/dashboard") : router.push("/login")}
-                        className="w-fit px-10 py-3 font-handwriting text-2xl font-bold text-gray-900 bg-white rounded-md border-b-4 border-gray-400 active:border-b-0 active:translate-y-1 transition-all cursor-pointer flex items-center justify-center gap-2 mx-auto">
-                        Mulai Latihan dari Rp 8.000 <Rocket className="w-6 h-6" />
-                    </button>
+                <div className="max-w-4xl mx-auto text-center relative z-10 px-4">
+                    <h2 className="font-handwriting text-4xl font-bold mb-6 italic">"Jangan Tempur Tanpa Amunisi."</h2>
+                    <p className="text-gray-400 mb-8 max-w-lg mx-auto font-handwriting text-xl">Lolos CPNS bukan soal pintar saja, tapi soal siapa yang paling siap menghadapi sistem CAT yang aslinya.</p>
 
-                    <div className="mt-16 flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 text-sm text-gray-300 font-handwriting text-lg">
-                        <Link href="/syarat-ketentuan" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
-                        <Link href="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
-                        <Link href="/kebijakan-pengembalian" className="hover:text-white transition-colors">Kebijakan Pengembalian</Link>
-                        <span>&copy; 2026 Siap Tempur.</span>
+                    <Button
+                        variant="white"
+                        size="lg"
+                        onClick={() => scrollToSection("products")}
+                    >
+                        Ambil Amunisi Sekarang
+                    </Button>
+
+                    <div className="mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-6 font-handwriting text-lg text-gray-500">
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-white">Siap Tempur</span> © 2026
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-6">
+                            <Link href="/syarat-ketentuan" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
+                            <Link href="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
+                            <Link href="/kebijakan-pengembalian" className="hover:text-white transition-colors">Kebijakan Pengembalian</Link>
+                        </div>
                     </div>
                 </div>
             </footer>

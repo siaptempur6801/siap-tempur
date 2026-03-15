@@ -30,14 +30,60 @@ const bodyFont = Work_Sans({
   display: "swap",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://siaptempur.id';
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "Siap Tempur - Platform Tryout & Belajar SKD CPNS Terbaik",
+    default: "Siap Tempur - Solusi Persiapan Ujian CPNS, BUMN & TOEFL",
     template: "%s | Siap Tempur"
   },
-  description: "Persiapkan ujian CPNS Anda dengan Siap Tempur. Kami menyediakan simulasi tryout SKD bersistem CAT BKN terbaru, materi terstruktur, dan analisis hasil yang akurat untuk menunjang kelulusan Anda.",
-  keywords: ["tryout cpns", "tryout skd", "cpns", "skd", "twk", "tiu", "tkp", "cat bkn", "bimbel online cpns", "lulus cpns", "asn"],
-  authors: [{ name: "Siap Tempur Team" }],
+  description: "Portal persiapan ujian terlengkap di Indonesia. Simulasi tryout SKD CPNS, TKD BUMN, dan TOEFL dengan sistem penilaian standar resmi (CAT BKN) dan ranking nasional. Berjuang cerdas, bukan keras.",
+  keywords: ["siap tempur", "tryout cpns", "tryout skd", "cpns 2026", "skd bkn", "tkd bumn", "toefl itp", "simulasi cat bkn", "bimbel cpns murah", "latihan soal cpns"],
+  authors: [{ name: "Siap Tempur" }],
+  creator: "Siap Tempur",
+  publisher: "Siap Tempur",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: "Siap Tempur - Portal Persiapan Ujian CPNS, BUMN & TOEFL",
+    description: "Portal persiapan ujian terlengkap di Indonesia. Simulasi tryout SKD CPNS, TKD BUMN, dan TOEFL dengan sistem penilaian standar resmi (CAT BKN).",
+    url: siteUrl,
+    siteName: "Siap Tempur",
+    locale: "id_ID",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png", // USER: You should add this image to public/ folder
+        width: 1200,
+        height: 630,
+        alt: "Siap Tempur - Portal Persiapan Ujian",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Siap Tempur - Portal Persiapan Ujian CPNS, BUMN & TOEFL",
+    description: "Portal persiapan ujian terlengkap di Indonesia. Simulasi tryout SKD CPNS, TKD BUMN, dan TOEFL.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  alternates: {
+    canonical: siteUrl,
+  },
 };
 
 export const viewport = {

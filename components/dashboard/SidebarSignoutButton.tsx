@@ -30,7 +30,7 @@ export default function SidebarSignoutButton({ signoutAction }: SidebarSignoutBu
             })
             // Delay redirect to allow toast to be seen
             setTimeout(() => {
-                window.location.href = '/login'
+                window.location.href = '/login?returnTo=/cpns'
             }, 1500)
         } else {
             setIsLoading(false)

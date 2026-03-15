@@ -174,6 +174,158 @@ export interface Database {
                     created_at?: string
                 }
             }
+            // --- NEW GENERIC TABLES --- //
+            generic_tests: {
+                Row: {
+                    id: string
+                    title: string
+                    category: string
+                    description: string | null
+                    is_active: boolean
+                    created_at: string
+                    updated_at: string | null
+                }
+                Insert: {
+                    id?: string
+                    title: string
+                    category: string
+                    description?: string | null
+                    is_active?: boolean
+                    created_at?: string
+                    updated_at?: string | null
+                }
+                Update: {
+                    id?: string
+                    title?: string
+                    category?: string
+                    description?: string | null
+                    is_active?: boolean
+                    created_at?: string
+                    updated_at?: string | null
+                }
+            }
+            generic_questions: {
+                Row: {
+                    id: string
+                    test_id: string
+                    content: string
+                    image_url: string | null
+                    section_name: string
+                    type: string
+                    explanation: string | null
+                    order_index: number
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    test_id: string
+                    content: string
+                    image_url?: string | null
+                    section_name: string
+                    type: string
+                    explanation?: string | null
+                    order_index?: number
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    test_id?: string
+                    content?: string
+                    image_url?: string | null
+                    section_name?: string
+                    type?: string
+                    explanation?: string | null
+                    order_index?: number
+                    created_at?: string
+                }
+            }
+            generic_options: {
+                Row: {
+                    id: string
+                    question_id: string
+                    content: string
+                    is_correct: boolean
+                    score_value: number
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    question_id: string
+                    content: string
+                    is_correct?: boolean
+                    score_value?: number
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    question_id?: string
+                    content?: string
+                    is_correct?: boolean
+                    score_value?: number
+                    created_at?: string
+                }
+            }
+            generic_sessions: {
+                Row: {
+                    id: string
+                    user_id: string
+                    test_id: string
+                    status: 'in_progress' | 'completed'
+                    start_time: string
+                    end_time: string | null
+                    total_score: number
+                    scores_breakdown: Json // The flexible new column
+                    is_passed: boolean
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    test_id: string
+                    status?: 'in_progress' | 'completed'
+                    start_time?: string
+                    end_time?: string | null
+                    total_score?: number
+                    scores_breakdown?: Json
+                    is_passed?: boolean
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    test_id?: string
+                    status?: 'in_progress' | 'completed'
+                    start_time?: string
+                    end_time?: string | null
+                    total_score?: number
+                    scores_breakdown?: Json
+                    is_passed?: boolean
+                    created_at?: string
+                }
+            }
+            generic_answers: {
+                Row: {
+                    id: string
+                    session_id: string
+                    question_id: string
+                    option_id: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    session_id: string
+                    question_id: string
+                    option_id?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    session_id?: string
+                    question_id?: string
+                    option_id?: string | null
+                    created_at?: string
+                }
+            }
         }
     }
 }

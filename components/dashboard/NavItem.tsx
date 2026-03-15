@@ -15,8 +15,8 @@ export function NavItem({ href, icon, label, badge }: NavItemProps) {
     const pathname = usePathname()
 
     // Check if active
-    const isActive = href === '/dashboard'
-        ? pathname === '/dashboard'
+    const isActive = href === '/cpns/dashboard'
+        ? pathname === '/cpns/dashboard'
         : pathname.startsWith(href)
 
     return (
@@ -50,8 +50,8 @@ export function MobileNavItem({ href, icon, label }: NavItemProps) {
     const pathname = usePathname()
 
     // Check if active
-    const isActive = href === '/dashboard'
-        ? pathname === '/dashboard'
+    const isActive = href === '/cpns/dashboard'
+        ? pathname === '/cpns/dashboard'
         : pathname.startsWith(href)
 
     return (

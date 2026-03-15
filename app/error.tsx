@@ -61,7 +61,7 @@ export default function Error({
                         </button>
 
                         <Link
-                            href="/dashboard"
+                            href="/cpns/dashboard"
                             className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-gray-900 border-2 border-gray-900 text-xl font-bold hover:bg-gray-50 transition-colors"
                         >
                             <Home size={20} />

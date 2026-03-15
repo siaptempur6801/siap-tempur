@@ -33,7 +33,7 @@ export async function updateProfile(formData: FormData) {
         return { error: error.message }
     }
 
-    revalidatePath('/dashboard', 'layout')
+    revalidatePath('/cpns/dashboard', 'layout')
     return { success: true }
 }
 
@@ -78,8 +78,8 @@ export async function updateProfileInfo(data: {
     }
 
     revalidatePath('/', 'layout')
-    revalidatePath('/dashboard', 'layout')
-    revalidatePath('/dashboard/profile')
+    revalidatePath('/cpns/dashboard', 'layout')
+    revalidatePath('/cpns/dashboard/profile')
     return { success: true }
 }
 

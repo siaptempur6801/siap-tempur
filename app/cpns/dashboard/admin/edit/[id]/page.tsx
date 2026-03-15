@@ -24,7 +24,7 @@ export default async function EditQuestionPage({ params }: { params: Promise<{ i
 
     return (
         <div className="w-full pb-10">
-            <Link href="/dashboard/admin" className="inline-flex items-center text-gray-500 hover:text-gray-900 mb-6">
+            <Link href="/cpns/dashboard/admin" className="inline-flex items-center text-gray-500 hover:text-gray-900 mb-6">
                 <ArrowLeft size={18} className="mr-2" /> Kembali ke Manager
             </Link>
 

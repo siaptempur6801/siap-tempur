@@ -80,7 +80,7 @@ export default function CreateQuestionPage() {
 
             if (res.success) {
                 toast.success(res.message)
-                router.push('/dashboard/admin')
+                router.push('/cpns/dashboard/admin')
                 router.refresh()
             } else {
                 toast.error(res.message)
@@ -96,7 +96,7 @@ export default function CreateQuestionPage() {
 
     return (
         <div className="w-full pb-10">
-            <Link href="/dashboard/admin" className="inline-flex items-center text-gray-400 hover:text-gray-900 mb-6 font-bold transition-colors group">
+            <Link href="/cpns/dashboard/admin" className="inline-flex items-center text-gray-400 hover:text-gray-900 mb-6 font-bold transition-colors group">
                 <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" /> Kembali ke Manager
             </Link>
 

@@ -74,7 +74,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
             if (result?.success) {
                 toast.success(isTryout ? 'Tryout selesai!' : 'Latihan selesai!')
-                router.push(`/dashboard/latihan/${sessionId}/result`)
+                router.push(`/cpns/dashboard/latihan/${sessionId}/result`)
             }
         } catch (error) {
             console.error('Error finishing practice:', error)
@@ -201,7 +201,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
 
     const handleExit = () => {
-        router.push('/dashboard/latihan')
+        router.push('/cpns/dashboard/latihan')
     }
 
     return (

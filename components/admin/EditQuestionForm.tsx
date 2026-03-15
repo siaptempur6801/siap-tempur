@@ -88,7 +88,7 @@ export default function EditQuestionForm({ question }: { question: any }) {
 
             if (res.success) {
                 toast.success(res.message)
-                router.push('/dashboard/admin')
+                router.push('/cpns/dashboard/admin')
                 router.refresh()
             } else {
                 toast.error(res.message)

@@ -1,11 +1,12 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://siaptempur.id';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://siaptempur.id';
 
   // Core routes
   const routes = [
     '',
+    '/cpns',
     '/login',
     '/register',
     '/kebijakan-pengembalian',
@@ -14,8 +15,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: route === '' ? 1 : 0.8,
+    changeFrequency: (route === '' || route === '/cpns') ? 'daily' as const : 'weekly' as const,
+    priority: route === '' ? 1 : route === '/cpns' ? 0.9 : 0.8,
   }));
 
   return routes;

@@ -44,7 +44,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
     const pathname = usePathname()
 
     // Check if we're on a practice session page (mengerjakan soal atau result)
-    const isPracticeSession = /^\/dashboard\/latihan\/[^/]+/.test(pathname)
+    const isPracticeSession = /^\/cpns\/dashboard\/latihan\/[^/]+/.test(pathname)
 
     // If on practice session, render minimal layout without sidebar
     if (isPracticeSession) {
@@ -64,22 +64,27 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                 <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
 
                 <div className="p-6 relative z-10">
-                    <Link href="/" className="text-3xl font-handwriting font-bold text-gray-800 rotate-[-2deg] block hover:scale-105 transition-transform">
-                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                    <Link href="/cpns" className="flex flex-col items-start group">
+                        <span className="text-xl font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight">
+                            CPNS & KEDINASAN
+                        </span>
+                        <span className="text-xs font-handwriting font-bold text-gray-500 ml-1 -mt-1 group-hover:text-gray-900 transition-colors">
+                            by Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                        </span>
                     </Link>
                 </div>
 
                 <nav className="flex-1 px-4 space-y-3 relative z-10">
-                    <NavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
-                    <NavItem href="/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
-                    <NavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
-                    <NavItem href="/dashboard/latihan" icon={<Target size={20} />} label="Tryout" badge="XP" />
+                    <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
+                    <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
+                    <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
+                    <NavItem href="/cpns/dashboard/latihan" icon={<Target size={20} />} label="Tryout" badge="XP" />
 
-                    <NavItem href="/dashboard/profile" icon={<User size={20} />} label="Profil" />
+                    <NavItem href="/cpns/dashboard/profile" icon={<User size={20} />} label="Profil" />
 
                     {isAdmin && (
                         <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
-                            <NavItem href="/dashboard/admin" icon={<Shield size={20} />} label="Admin" />
+                            <NavItem href="/cpns/dashboard/admin" icon={<Shield size={20} />} label="Admin" />
                         </div>
                     )}
                 </nav>
@@ -125,8 +130,13 @@ export default function DashboardShell({ children, user, profile, signoutAction,
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0 relative scrollbar-hide">
                 {/* Mobile Header (Hidden on Desktop) */}
                 <div className="md:hidden h-16 border-b-2 border-gray-900 flex items-center px-6 justify-between sticky top-0 bg-[#fdfbf7]/90 backdrop-blur-md z-30 shadow-sm">
-                    <Link href="/" className="text-2xl font-handwriting font-bold text-gray-800 rotate-[-1deg]">
-                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                    <Link href="/cpns" className="flex flex-col items-start group">
+                        <span className="text-lg font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight">
+                            CPNS & KEDINASAN
+                        </span>
+                        <span className="text-[10px] font-handwriting font-bold text-gray-500 ml-1 -mt-1 group-hover:text-gray-900 transition-colors">
+                            by Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                        </span>
                     </Link>
                     <MobileProfileDropdown user={user} profile={profile} signoutAction={signoutAction} />
                 </div>
@@ -139,14 +149,14 @@ export default function DashboardShell({ children, user, profile, signoutAction,
             {/* Mobile Bottom Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#fdfbf7]/90 backdrop-blur-xl border-t-2 border-gray-900 z-40">
                 <div className="grid grid-cols-5 gap-1 px-2 py-2">
-                    <MobileNavItem href="/dashboard" icon={<LayoutDashboard size={20} />} label="Home" />
-                    <MobileNavItem href="/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking" />
-                    <MobileNavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
-                    <MobileNavItem href="/dashboard/latihan" icon={<Target size={20} />} label="Tryout" />
+                    <MobileNavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Home" />
+                    <MobileNavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking" />
+                    <MobileNavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
+                    <MobileNavItem href="/cpns/dashboard/latihan" icon={<Target size={20} />} label="Tryout" />
 
                     {/* Dynamic Profile Icon */}
                     <MobileNavItem
-                        href="/dashboard/profile"
+                        href="/cpns/dashboard/profile"
                         icon={
                             profile?.avatar_url ? (
                                 <div className="w-5 h-5 rounded-full overflow-hidden border border-gray-900 relative">

@@ -56,7 +56,7 @@ export async function signup(formData: FormData) {
 export async function signout() {
     const supabase = await createClient()
     await supabase.auth.signOut()
-    revalidatePath('/', 'layout')
+    revalidatePath('/cpns', 'layout')
     return { success: true }
 }
 
@@ -98,7 +98,7 @@ export async function updatePassword(formData: FormData) {
         return { error: error.message }
     }
 
-    revalidatePath('/dashboard/profile')
+    revalidatePath('/cpns/dashboard/profile')
     return { success: true }
 }
 

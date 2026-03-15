@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { login, resendVerificationEmail } from '@/app/auth/actions'
@@ -13,9 +13,16 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
+    const [returnTo, setReturnTo] = useState('/')
     const router = useRouter()
 
-
+    useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search)
+        const returnUrl = searchParams.get('returnTo')
+        if (returnUrl) {
+            setReturnTo(returnUrl)
+        }
+    }, [])
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
         setLoading(true)
@@ -34,7 +41,7 @@ export default function LoginPage() {
                 toast.success('Login Berhasil!', {
                     description: 'Selamat datang kembali!'
                 })
-                router.push('/dashboard')
+                router.push(returnTo !== '/' ? `${returnTo}/dashboard` : '/cpns/dashboard')
             }
         } catch (error) {
             toast.error('Terjadi kesalahan saat login')
@@ -67,7 +74,7 @@ export default function LoginPage() {
         <div className="font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden">
             <PaperBackground variant="light" />
 
-            <Link href="/" className="absolute top-6 left-6 flex items-center text-sm font-handwriting text-xl font-bold text-gray-800 hover:text-blue-600 transition z-20">
+            <Link href={returnTo} className="absolute top-6 left-6 flex items-center text-sm font-handwriting text-xl font-bold text-gray-800 hover:text-blue-600 transition z-20">
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Kembali
             </Link>
@@ -215,7 +222,7 @@ export default function LoginPage() {
 
                 <div className="text-center text-lg font-handwriting">
                     <span className="text-gray-600">Belum punya akun? </span>
-                    <Link href="/register" className="font-bold text-blue-600 hover:underline decoration-wavy">
+                    <Link href={`/register${returnTo !== '/' ? `?returnTo=${returnTo}` : ''}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
                         Daftar Gratis
                     </Link>
                 </div>
