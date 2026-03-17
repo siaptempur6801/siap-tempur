@@ -7,10 +7,11 @@ import { toast } from 'sonner'
 
 interface VoucherClaimProps {
     userId: string
+    userEmail: string
     onSuccessClaim?: () => void
 }
 
-export default function VoucherClaim({ userId, onSuccessClaim }: VoucherClaimProps) {
+export default function VoucherClaim({ userId, userEmail, onSuccessClaim }: VoucherClaimProps) {
     const [code, setCode] = useState('')
     const [loading, setLoading] = useState(false)
 
@@ -30,6 +31,7 @@ export default function VoucherClaim({ userId, onSuccessClaim }: VoucherClaimPro
             const { data, error } = await supabase.rpc('claim_voucher', {
                 p_user_id: userId,
                 p_voucher_code: code.trim(),
+                p_user_email: userEmail,
             })
 
             if (error) {

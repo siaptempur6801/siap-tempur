@@ -611,6 +611,7 @@ export default function ProfileClient({
                         <div className="mt-6 relative z-20">
                             <VoucherClaim
                                 userId={user.id}
+                                userEmail={user.email}
                                 onSuccessClaim={() => {
                                     // Refresh window to fetch new profile data with updated quota
                                     window.location.reload()
