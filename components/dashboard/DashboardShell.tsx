@@ -65,7 +65,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                 <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
 
                 <div className="p-6 relative z-10">
-                    <Link href={portal === 'cpns' ? "/cpns" : "/toefl"} className="flex flex-col items-start group">
+                    <Link href={portal === 'cpns' ? "/" : "/toefl"} className="flex flex-col items-start group">
                         <span className="text-xl font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight uppercase">
                             {portal === 'cpns' ? "CPNS & KEDINASAN" : "TOEFL ITP Portal"}
                         </span>
@@ -76,16 +76,16 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                 </div>
 
                 <nav className="flex-1 px-4 space-y-3 relative z-10">
-                    <NavItem href={`/${portal}/dashboard`} icon={<LayoutDashboard size={20} />} label="Dashboard" />
-                    {portal === 'cpns' && <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />}
-                    <NavItem href={`/${portal}/dashboard/beli-paket`} icon={<BookOpen size={20} />} label="Beli Paket" />
-                    <NavItem href={`/${portal}/dashboard/latihan`} icon={<Target size={20} />} label="Tryout" badge="XP" />
+                    <NavItem href={portal === 'cpns' ? "/dashboard" : "/toefl/dashboard"} icon={<LayoutDashboard size={20} />} label="Dashboard" />
+                    {portal === 'cpns' && <NavItem href="/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />}
+                    <NavItem href={portal === 'cpns' ? "/dashboard/beli-paket" : "/toefl/dashboard/beli-paket"} icon={<BookOpen size={20} />} label="Beli Paket" />
+                    <NavItem href={portal === 'cpns' ? "/dashboard/latihan" : "/toefl/dashboard/latihan"} icon={<Target size={20} />} label="Tryout" badge="XP" />
 
-                    <NavItem href={`/${portal}/dashboard/profile`} icon={<User size={20} />} label="Profil" />
+                    <NavItem href={portal === 'cpns' ? "/dashboard/profile" : "/toefl/dashboard/profile"} icon={<User size={20} />} label="Profil" />
 
                     {isAdmin && (
                         <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
-                            <NavItem href={`/${portal}/dashboard/admin`} icon={<Shield size={20} />} label="Admin" />
+                            <NavItem href={portal === 'cpns' ? "/dashboard/admin" : "/toefl/dashboard/admin"} icon={<Shield size={20} />} label="Admin" />
                         </div>
                     )}
                 </nav>
@@ -130,7 +130,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0 relative scrollbar-hide">
                 {/* Mobile Header (Hidden on Desktop) */}
                 <div className="md:hidden h-16 border-b-2 border-gray-900 flex items-center px-6 justify-between sticky top-0 bg-[#fdfbf7]/90 backdrop-blur-md z-30 shadow-sm">
-                    <Link href={portal === 'cpns' ? "/cpns" : "/toefl"} className="flex flex-col items-start group">
+                    <Link href={portal === 'cpns' ? "/" : "/toefl"} className="flex flex-col items-start group">
                         <span className="text-lg font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight uppercase">
                             {portal === 'cpns' ? "CPNS & KEDINASAN" : "TOEFL ITP Portal"}
                         </span>
@@ -149,18 +149,18 @@ export default function DashboardShell({ children, user, profile, signoutAction,
             {/* Mobile Bottom Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#fdfbf7]/90 backdrop-blur-xl border-t-2 border-gray-900 z-40">
                 <div className="grid grid-cols-5 gap-1 px-2 py-2">
-                    <MobileNavItem href={`/${portal}/dashboard`} icon={<LayoutDashboard size={20} />} label="Home" />
-                    <MobileNavItem href={portal === 'cpns' ? "/cpns/dashboard/ranking" : "/toefl/dashboard/beli-paket"} icon={portal === 'cpns' ? <BarChart3 size={20} /> : <BookOpen size={20} />} label={portal === 'cpns' ? "Ranking" : "Beli"} />
+                    <MobileNavItem href={portal === 'cpns' ? "/dashboard" : "/toefl/dashboard"} icon={<LayoutDashboard size={20} />} label="Home" />
+                    <MobileNavItem href={portal === 'cpns' ? "/dashboard/ranking" : "/toefl/dashboard/beli-paket"} icon={portal === 'cpns' ? <BarChart3 size={20} /> : <BookOpen size={20} />} label={portal === 'cpns' ? "Ranking" : "Beli"} />
                     {portal === 'cpns' ? (
-                        <MobileNavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
+                        <MobileNavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
                     ) : (
                         <div className="flex items-center justify-center p-2 opacity-20"><Trophy size={20} /></div>
                     )}
-                    <MobileNavItem href={`/${portal}/dashboard/latihan`} icon={<Target size={20} />} label="Tryout" />
+                    <MobileNavItem href={portal === 'cpns' ? "/dashboard/latihan" : "/toefl/dashboard/latihan"} icon={<Target size={20} />} label="Tryout" />
 
                     {/* Dynamic Profile Icon */}
                     <MobileNavItem
-                        href={`/${portal}/dashboard/profile`}
+                        href={portal === 'cpns' ? "/dashboard/profile" : "/toefl/dashboard/profile"}
                         icon={
                             profile?.avatar_url ? (
                                 <div className="w-5 h-5 rounded-full overflow-hidden border border-gray-900 relative">

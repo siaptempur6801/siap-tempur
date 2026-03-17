@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "Tryout SKD CPNS 2026 - Simulasi CAT BKN Terlengkap",
   description: "Latihan simulasi SKD CPNS & Kedinasan 2026 dengan sistem CAT BKN asli. Akses ribuan soal TWK, TIU, TKP, pembahasan lengkap, dan ranking nasional se-Indonesia.",
   alternates: {
-    canonical: '/cpns',
+    canonical: '/',
   },
 }
 

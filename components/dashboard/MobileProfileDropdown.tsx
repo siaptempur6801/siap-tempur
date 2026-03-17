@@ -106,7 +106,7 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
 
                     <div className="p-2 relative z-10">
                         <Link
-                            href="/cpns/dashboard/profile"
+                            href="/dashboard/profile"
                             className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"
                             onClick={() => setIsOpen(false)}
                         >

@@ -40,7 +40,6 @@ export default function BeliPaketPage() {
             }
 
             // REAL MIDTRANS FLOW
-            // @ts-expect-error - snap is loaded via script
             window.snap.pay(transaction.token, {
                 onSuccess: async function (result: any) {
                     const loadingId = toast.loading("Memverifikasi pembayaran...")

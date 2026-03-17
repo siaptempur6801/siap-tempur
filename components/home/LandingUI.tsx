@@ -108,14 +108,14 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     <div className="flex items-center gap-4">
                         {user ? (
                             <Button
-                                onClick={() => router.push("/cpns/dashboard")}
+                                onClick={() => router.push("/dashboard")}
                                 className="hidden md:block"
                             >
                                 Dashboard
                             </Button>
                         ) : (
                             <Button
-                                onClick={() => router.push("/login?returnTo=/cpns")}
+                                onClick={() => router.push("/login?returnTo=/")}
                                 variant="secondary"
                                 className="hidden md:block"
                             >
@@ -144,14 +144,14 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <button onClick={() => { scrollToSection("memorials"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Kata Mereka</button>
                             {user ? (
                                 <Button
-                                    onClick={() => { router.push("/cpns/dashboard"); setIsMenuOpen(false); }}
+                                    onClick={() => { router.push("/dashboard"); setIsMenuOpen(false); }}
                                     className="text-2xl py-3 mt-2"
                                 >
                                     Dashboard
                                 </Button>
                             ) : (
                                 <Button
-                                    onClick={() => { router.push("/login?returnTo=/cpns"); setIsMenuOpen(false); }}
+                                    onClick={() => { router.push("/login?returnTo=/"); setIsMenuOpen(false); }}
                                     variant="secondary"
                                     className="text-2xl py-3 mt-2"
                                 >
@@ -418,7 +418,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     {/* CTA */}
                     <div className="text-center mt-12">
                         <button
-                            onClick={() => user ? router.push("/cpns/dashboard") : router.push("/login?returnTo=/cpns")}
+                            onClick={() => user ? router.push("/dashboard") : router.push("/login?returnTo=/")}
                             className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
                         >
                             Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
@@ -452,7 +452,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         </ul>
                         <Button
                             className="w-full text-xl py-6 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/cpns")}
+                            onClick={() => router.push("/login?returnTo=/")}
                         >
                             Beli Sekarang
                         </Button>
@@ -476,7 +476,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         <Button
                             size="lg"
                             className="w-full text-2xl py-6 bg-yellow-400 text-gray-900 hover:bg-yellow-300 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/cpns")}
+                            onClick={() => router.push("/login?returnTo=/")}
                         >
                             Ambil Paket Ini <Rocket className="ml-2 animate-bounce" />
                         </Button>
@@ -498,7 +498,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         </ul>
                         <Button
                             className="w-full text-xl py-6 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/cpns")}
+                            onClick={() => router.push("/login?returnTo=/")}
                         >
                             Hajar Gaskeun!
                         </Button>

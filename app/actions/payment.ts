@@ -177,10 +177,18 @@ export async function syncPaymentStatus(orderId: string) {
 
                 if (quotaError) {
                     const column = isToefl ? 'tryout_quota_toefl' : 'tryout_quota'
+                    const { data: profileData } = await adminSupabase
+                        .from('profiles')
+                        .select(column)
+                        .eq('id', tx.user_id)
+                        .single()
+
+                    const currentQuota = (profileData as any)?.[column] || 0
+
                     await adminSupabase
                         .from('profiles')
                         .update({
-                            [column]: (await adminSupabase.from('profiles').select(column).eq('id', tx.user_id).single()).data?.[column] + tokenCount
+                            [column]: currentQuota + tokenCount
                         })
                         .eq('id', tx.user_id)
                 }

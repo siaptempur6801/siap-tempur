@@ -62,14 +62,14 @@ export default async function AdminDashboard({
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     <Link
-                        href="/cpns/dashboard/admin/tryout-config"
+                        href="/dashboard/admin/tryout-config"
                         className="flex items-center gap-2 bg-blue-100 text-blue-700 px-5 py-3 rounded-lg hover:bg-blue-200 transition font-bold shadow-sm transform hover:-translate-y-1 active:translate-y-0 border border-blue-200"
                     >
                         <Settings size={20} /> Konfigurasi Tryout
                     </Link>
                     <ExcelImport />
                     <Link
-                        href="/cpns/dashboard/admin/create"
+                        href="/dashboard/admin/create"
                         className="flex items-center gap-2 bg-gray-900 text-white px-5 py-3 rounded-lg hover:bg-gray-800 transition font-bold shadow-lg transform hover:-translate-y-1 active:translate-y-0"
                     >
                         <Plus size={20} /> Buat Soal Baru
@@ -94,7 +94,7 @@ export default async function AdminDashboard({
                         <h3 className="text-lg font-bold text-gray-900">Tidak ada soal ditemukan</h3>
                         <p className="text-gray-500 mb-6">Coba ubah filter atau buat soal baru.</p>
                         <Link
-                            href="/cpns/dashboard/admin/create"
+                            href="/dashboard/admin/create"
                             className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold transition"
                         >
                             <Plus size={18} /> Buat Soal Baru

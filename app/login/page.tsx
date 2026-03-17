@@ -41,7 +41,7 @@ export default function LoginPage() {
                 toast.success('Login Berhasil!', {
                     description: 'Selamat datang kembali!'
                 })
-                router.push(returnTo !== '/' ? `${returnTo}/dashboard` : '/cpns/dashboard')
+                router.push(returnTo !== '/' ? `${returnTo}/dashboard` : '/dashboard')
             }
         } catch (error) {
             toast.error('Terjadi kesalahan saat login')

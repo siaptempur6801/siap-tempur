@@ -23,7 +23,7 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                 description: "Silahkan beli paket Tryout terlebih dahulu untuk melanjutkan.",
                 action: {
                     label: "Beli Paket",
-                    onClick: () => router.push('/cpns/dashboard/beli-paket')
+                    onClick: () => router.push('/dashboard/beli-paket')
                 }
             })
             return
@@ -40,7 +40,7 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
 
             if (result?.success && result?.sessionId) {
                 toast.success('Tryout SKD dimulai!')
-                router.push(`/cpns/dashboard/latihan/${result.sessionId}`)
+                router.push(`/dashboard/latihan/${result.sessionId}`)
             }
         } catch {
             toast.error('Gagal memulai tryout')
@@ -153,7 +153,7 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                                         </button>
                                     ) : (
                                         <button
-                                            onClick={() => router.push('/cpns/dashboard/beli-paket')}
+                                            onClick={() => router.push('/dashboard/beli-paket')}
                                             className="w-full group relative py-6 flex flex-col items-center justify-center bg-orange-100 text-orange-700 border-2 border-orange-500 border-dashed hover:bg-orange-200 transition-all font-bold"
                                         >
                                             <span className="text-4xl font-black mb-1 uppercase italic">Ticket Habis!</span>

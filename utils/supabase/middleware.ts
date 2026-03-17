@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Route yang hanya bisa diakses kalau BELUM login
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password']
 // Route yang WAJIB login
-const PROTECTED_ROUTES = ['/cpns/dashboard']
+const PROTECTED_ROUTES = ['/dashboard']
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({ request })
@@ -45,7 +45,7 @@ export async function updateSession(request: NextRequest) {
     // Kalau SUDAH login dan coba akses halaman auth → redirect ke dashboard
     if (user && AUTH_ROUTES.some(route => pathname.startsWith(route))) {
         const url = request.nextUrl.clone()
-        url.pathname = '/cpns/dashboard'
+        url.pathname = '/dashboard'
         return NextResponse.redirect(url)
     }
 

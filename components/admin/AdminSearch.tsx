@@ -15,7 +15,7 @@ export default function AdminSearch() {
         } else {
             params.delete('q')
         }
-        replace(`/cpns/dashboard/admin?${params.toString()}`)
+        replace(`/dashboard/admin?${params.toString()}`)
     }, 300)
 
     const handleCategory = (cat: string) => {
@@ -27,7 +27,7 @@ export default function AdminSearch() {
         }
         // Reset sub_category when category changes
         params.delete('sub_category')
-        replace(`/cpns/dashboard/admin?${params.toString()}`)
+        replace(`/dashboard/admin?${params.toString()}`)
     }
 
     const handleSubCategory = (subCat: string) => {
@@ -37,7 +37,7 @@ export default function AdminSearch() {
         } else {
             params.delete('sub_category')
         }
-        replace(`/cpns/dashboard/admin?${params.toString()}`)
+        replace(`/dashboard/admin?${params.toString()}`)
     }
 
     const currentCategory = searchParams.get('category') || 'TWK'

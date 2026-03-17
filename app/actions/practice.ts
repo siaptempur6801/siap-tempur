@@ -105,8 +105,8 @@ export async function finishPractice(sessionId: string) {
     // Leaderboard is now updated via pg_cron (Materialized View) every ~2-5 mins
     // No need to trigger manual refresh here to save DB resources.
 
-    revalidatePath(`/cpns/dashboard/latihan/${sessionId}/result`)
-    revalidatePath('/cpns/dashboard')
-    revalidatePath('/cpns/dashboard/ranking')
+    revalidatePath(`/dashboard/latihan/${sessionId}/result`)
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/ranking')
     return { success: true }
 }

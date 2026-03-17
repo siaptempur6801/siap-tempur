@@ -8,7 +8,7 @@ import TryoutConfigClient from '@/components/admin/TryoutConfigClient'
 export default async function TryoutConfigPage() {
     const isUserAdmin = await isAdmin();
     if (!isUserAdmin) {
-        redirect('/cpns/dashboard');
+        redirect('/dashboard');
     }
 
     const supabase = await createClient()
@@ -28,7 +28,7 @@ export default async function TryoutConfigPage() {
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-                    <Link href="/cpns/dashboard/admin" className="inline-flex items-center text-gray-400 hover:text-gray-900 font-bold transition-colors group shrink-0">
+                    <Link href="/dashboard/admin" className="inline-flex items-center text-gray-400 hover:text-gray-900 font-bold transition-colors group shrink-0">
                         <ArrowLeft size={18} className="mr-2 group-hover:-translate-x-1 transition-transform" /> Kembali
                     </Link>
 

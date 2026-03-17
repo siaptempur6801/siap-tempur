@@ -153,10 +153,8 @@ export default function ProfileClient({
 
         const loadingId = toast.loading("Membuka pembayaran...");
 
-        // @ts-expect-error - snap is loaded via script in the layout
         if (typeof window !== "undefined" && window.snap) {
             try {
-                // @ts-expect-error
                 window.snap.pay(token, {
                     onSuccess: async function (result: any) {
                         toast.loading("Memverifikasi pembayaran...", { id: loadingId })
@@ -597,7 +595,7 @@ export default function ProfileClient({
                                         <div className="text-2xl font-bold text-green-600 leading-none mb-1">{profile.tryout_quota ?? 0}</div>
                                         <div className="text-[10px] text-gray-600 font-extrabold uppercase tracking-tight">Token SKD</div>
                                     </div>
-                                    <Link href="/cpns/dashboard/beli-paket" className="px-6 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center">
+                                    <Link href="/dashboard/beli-paket" className="px-6 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center">
                                         + Beli Kuota
                                     </Link>
                                 </div>
@@ -696,7 +694,7 @@ export default function ProfileClient({
                                         </div>
                                         <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
                                         <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
-                                        <Link href="/cpns/dashboard/beli-paket" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                        <Link href="/dashboard/beli-paket" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
                                             Beli Kuota Sekarang
                                         </Link>
                                     </div>
