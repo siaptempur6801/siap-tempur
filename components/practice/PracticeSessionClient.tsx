@@ -9,6 +9,8 @@ import { cn, formatSubjectName } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import PaperBackground from '@/components/PaperBackground'
 import { SUBJECTS } from '@/lib/constants'
+import MathRenderer from '@/components/MathRenderer'
+
 
 interface Question {
     id: string
@@ -567,7 +569,9 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                 </div>
                             )}
                             <div className="prose dark:prose-invert max-w-none font-handwriting text-gray-900">
-                                <p className="text-xl md:text-2xl leading-relaxed font-bold whitespace-pre-wrap">{currentQuestion.content}</p>
+                                <div className="text-xl md:text-2xl leading-relaxed font-bold whitespace-pre-wrap">
+                                    <MathRenderer text={currentQuestion.content} />
+                                </div>
                             </div>
                         </div>
 
@@ -609,7 +613,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                                 "text-base md:text-lg leading-relaxed font-handwriting",
                                                 isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
                                             )}>
-                                                {option.content}
+                                                <MathRenderer text={option.content} />
                                             </span>
                                         </div>
                                     );

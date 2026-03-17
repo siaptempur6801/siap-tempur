@@ -115,7 +115,7 @@ export default function CreateQuestionPage() {
                         <Info className="text-blue-500 shrink-0 mt-0.5" size={18} />
                         <div>
                             <p className="text-sm font-bold text-blue-800">Mode Kontributor</p>
-                            <p className="text-[11px] sm:text-xs text-blue-700">Soal akan langsung tersedia di Bank Soal setelah disimpan.</p>
+                            <p className="text-[11px] sm:text-xs text-blue-700">Soal akan langsung tersedia di Bank Soal setelah disimpan. Dukung rumus matematika dengan format <code>$rumus$</code> (inline) atau <code>$$rumus$$</code> (block).</p>
                         </div>
                     </div>
 

@@ -32,6 +32,30 @@ export const SUBJECTS = {
 } as const;
 
 /**
+ * TOEFL Subject Metadata
+ */
+export const TOEFL_SUBJECTS = {
+    LISTENING: {
+        short: "LISTENING",
+        name: "Listening Comprehension",
+        fullMark: 68, // Scaled score
+        passing: 45
+    },
+    STRUCTURE: {
+        short: "STRUCTURE",
+        name: "Structure & Written Expression",
+        fullMark: 67, // Scaled score
+        passing: 45
+    },
+    READING: {
+        short: "READING",
+        name: "Reading Comprehension",
+        fullMark: 67, // Scaled score
+        passing: 45
+    }
+} as const;
+
+/**
  * User Leveling thresholds
  */
 export const LEVEL_THRESHOLDS = [
@@ -58,47 +82,83 @@ export const LEVEL_THRESHOLDS = [
 export const PRICING_PACKAGES = [
     {
         id: 'skd-satuan',
-        name: 'SKD Satuan',
+        name: 'Paket Perintis',
         price: 10000,
         tokens: 1,
         bestSeller: false,
         savings: 0,
         description: '1 Token Tryout SKD CAT',
         features: [
-            'Tryout SKD Premium',
-            'Pembahasan Lengkap',
-            'Perankingan Nasional',
-            'Token Aktif Selamanya'
-        ]
-    },
-    {
-        id: 'skd-paket-3',
-        name: 'SKD Paket 3x',
-        price: 25000,
-        tokens: 3,
-        bestSeller: false,
-        savings: 5000,
-        description: '3 Token Tryout SKD CAT',
-        features: [
-            'Tryout SKD Premium',
-            'Pembahasan Lengkap',
-            'Perankingan Nasional',
-            'Token Aktif Selamanya'
+            '110 Soal Prediksi',
+            'Waktu 100 Menit',
+            'CAT BKN Interface',
+            'Pembahasan Lengkap'
         ]
     },
     {
         id: 'skd-paket-5',
-        name: 'SKD Paket 5x',
+        name: 'Paket Pejuang',
         price: 40000,
         tokens: 5,
         bestSeller: true,
         savings: 10000,
-        description: '5 Token Tryout SKD CAT + Ringkasan',
+        description: '5 Token Tryout SKD CAT',
         features: [
-            'Tryout SKD Premium',
-            'Pembahasan Lengkap',
-            'Perankingan Nasional',
-            'Token Aktif Selamanya'
+            'Semua Fitur Tryout',
+            'Lebih Hemat Rp 10rb',
+            'Ranking Nasional',
+            'Token Selamanya'
+        ]
+    },
+    {
+        id: 'skd-paket-10',
+        name: 'Paket Pasukan',
+        price: 75000,
+        tokens: 10,
+        bestSeller: false,
+        savings: 25000,
+        description: '10 Token Tryout SKD CAT',
+        features: [
+            'Persiapan Maksimal',
+            'Latihan Tiap Minggu',
+            'Ranking Terupdate',
+            'Hemat Rp 25.000!'
+        ]
+    }
+] as const;
+
+/**
+ * Pricing Packages for TOEFL Tokens
+ */
+export const TOEFL_PRICING_PACKAGES = [
+    {
+        id: 'toefl-satuan',
+        name: 'Paket TOEFL Perunggu',
+        price: 15000,
+        tokens: 1,
+        bestSeller: false,
+        savings: 0,
+        description: '1 Token Tryout TOEFL ITP',
+        features: [
+            '140 Soal Standar ITP',
+            'Sistem Scoring 310-677',
+            'Audio Listening Jernih',
+            'Pembahasan Lengkap'
+        ]
+    },
+    {
+        id: 'toefl-paket-5',
+        name: 'Paket TOEFL Emas',
+        price: 50000,
+        tokens: 5,
+        bestSeller: true,
+        savings: 25000,
+        description: '5 Token Tryout TOEFL ITP',
+        features: [
+            'Semua Fitur Simulasi',
+            'Lebih Hemat Rp 25rb',
+            'Review Skor Tak Terbatas',
+            'Paket Recomended'
         ]
     }
 ] as const;

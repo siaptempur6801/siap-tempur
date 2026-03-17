@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { deleteQuestion } from '@/app/actions/admin'
+import MathRenderer from '@/components/MathRenderer'
+
 
 interface Option {
     id: string
@@ -119,12 +121,12 @@ export default function QuestionCard({ q }: { q: Question }) {
                                 />
                             </div>
                         )}
-                        <p className={cn(
+                        <div className={cn(
                             "text-gray-900 font-medium text-base sm:text-lg whitespace-pre-wrap leading-relaxed flex-1",
                             !expanded && "line-clamp-2"
                         )}>
-                            {(q.content || '').replace(/<[^>]*>?/gm, '')}
-                        </p>
+                            <MathRenderer text={q.content} />
+                        </div>
                     </div>
 
                     {/* Footer: Toggle & Quick Info */}
@@ -173,7 +175,7 @@ export default function QuestionCard({ q }: { q: Question }) {
                                                 {optionLabels[idx] || '?'}
                                             </span>
                                             <div className="flex-1 flex justify-between items-start gap-2">
-                                                <span>{opt.content}</span>
+                                                <MathRenderer text={opt.content} />
                                                 {q.type === 'TKP' && (
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded text-[10px] font-bold shrink-0",
@@ -193,7 +195,7 @@ export default function QuestionCard({ q }: { q: Question }) {
                         <div className="space-y-2">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pembahasan</p>
                             <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-blue-900 whitespace-pre-wrap leading-relaxed">
-                                {q.explanation || '-'}
+                                <MathRenderer text={q.explanation || '-'} />
                             </div>
                         </div>
 

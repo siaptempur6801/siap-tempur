@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cn } from "@/lib/utils";
 import { Geist, Geist_Mono, Patrick_Hand, Work_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -97,12 +98,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <head>
         <link rel="dns-prefetch" href="https://app.midtrans.com" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${handwriting.variable} ${bodyFont.variable} antialiased`}
+        className={cn(
+          geistSans.variable,
+          geistMono.variable,
+          handwriting.variable,
+          bodyFont.variable,
+          "antialiased"
+        )}
       >
         {/* Global Background Gradient Mesh - GPU Accelerated */}
         <div className="fixed inset-0 z-[-1] bg-background transform-gpu pointer-events-none">

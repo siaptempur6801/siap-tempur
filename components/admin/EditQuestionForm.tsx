@@ -113,7 +113,7 @@ export default function EditQuestionForm({ question }: { question: any }) {
                 <Info className="text-amber-500 shrink-0 mt-0.5" size={18} />
                 <div>
                     <p className="text-sm font-bold text-amber-800">Admin Mode Aktif</p>
-                    <p className="text-[11px] sm:text-xs text-amber-700">Mengedit ID: <code className="bg-amber-100 px-1 rounded">{question.id}</code>. Dampak langsung ke seluruh pengguna.</p>
+                    <p className="text-[11px] sm:text-xs text-amber-700">Mengedit ID: <code className="bg-amber-100 px-1 rounded">{question.id}</code>. Dukung rumus matematika dengan format <code>$rumus$</code> atau <code>$$rumus$$</code>.</p>
                 </div>
             </div>
 

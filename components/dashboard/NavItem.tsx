@@ -14,9 +14,9 @@ interface NavItemProps {
 export function NavItem({ href, icon, label, badge }: NavItemProps) {
     const pathname = usePathname()
 
-    // Check if active
-    const isActive = href === '/cpns/dashboard'
-        ? pathname === '/cpns/dashboard'
+    // Check if active - handle dashboard root as exact match, others as prefix
+    const isActive = href.endsWith('/dashboard')
+        ? pathname === href
         : pathname.startsWith(href)
 
     return (
@@ -50,8 +50,8 @@ export function MobileNavItem({ href, icon, label }: NavItemProps) {
     const pathname = usePathname()
 
     // Check if active
-    const isActive = href === '/cpns/dashboard'
-        ? pathname === '/cpns/dashboard'
+    const isActive = href.endsWith('/dashboard')
+        ? pathname === href
         : pathname.startsWith(href)
 
     return (

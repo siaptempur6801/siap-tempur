@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Map, Spa
 import PaperBackground from '@/components/PaperBackground'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { SUBJECTS } from '@/lib/constants'
+import MathRenderer from '@/components/MathRenderer'
+
 
 interface Option {
     id: string
@@ -208,7 +210,9 @@ export default function ResultReviewClient({ answers }: Props) {
                 <div className="flex-1 p-4 sm:p-10 relative z-10">
                     <div className="relative mb-6 sm:mb-10">
                         <div className="absolute -left-4 sm:-left-6 top-1 w-1 sm:h-full bg-blue-400 rounded-full opacity-50"></div>
-                        <p className="text-lg sm:text-2xl font-bold leading-relaxed text-gray-800 max-w-4xl">{question.content}</p>
+                        <div className="text-lg sm:text-2xl font-bold leading-relaxed text-gray-800 max-w-4xl">
+                            <MathRenderer text={question.content} />
+                        </div>
                     </div>
 
                     <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10 max-w-4xl">
@@ -270,7 +274,7 @@ export default function ResultReviewClient({ answers }: Props) {
 
                                     <div className="flex-1 min-w-0">
                                         <div className={cn("text-base sm:text-xl leading-relaxed break-words", textClass)}>
-                                            {option.content}
+                                            <MathRenderer text={option.content} />
                                         </div>
 
                                         {/* Status Labels */}
@@ -305,7 +309,7 @@ export default function ResultReviewClient({ answers }: Props) {
                                     <span>Mengapa Begitu?</span>
                                 </div>
                                 <div className="text-base sm:text-xl text-gray-800 leading-relaxed relative z-10 font-medium italic">
-                                    {question.explanation}
+                                    <MathRenderer text={question.explanation} />
                                 </div>
                                 <div className="absolute bottom-2 right-3 opacity-20 relative z-10">
                                     <Sparkles size={40} className="text-gray-900" />

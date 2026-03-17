@@ -99,6 +99,7 @@ export default function ToeflLandingUI({ user: initialUser }: { user: User | nul
                     </button>
 
                     <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex gap-6 font-handwriting text-xl text-gray-700">
+                        <Link href="/" className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Semua Program</Link>
                         <button onClick={() => scrollToSection('features')} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Fitur</button>
                         <button onClick={() => scrollToSection('pricing')} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Harga</button>
                         <button onClick={() => scrollToSection('faq')} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">FAQ</button>
@@ -136,6 +137,7 @@ export default function ToeflLandingUI({ user: initialUser }: { user: User | nul
                     {/* Mobile Menu */}
                     {isMenuOpen && (
                         <div className="absolute top-20 left-0 w-full bg-[#fdfbf7] border-b-4 border-gray-800/10 shadow-lg p-6 flex flex-col gap-4 md:hidden z-40">
+                            <Link href="/" className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Semua Program</Link>
                             <button onClick={() => { scrollToSection("features"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Fitur</button>
                             <button onClick={() => { scrollToSection("pricing"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Harga</button>
                             <button onClick={() => { scrollToSection("faq"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">FAQ</button>
