@@ -108,7 +108,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     <div className="flex items-center gap-4">
                         {user ? (
                             <Button
-                                onClick={() => router.push("/dashboard")}
+                                onClick={() => router.push("/cpns/dashboard")}
                                 className="hidden md:block"
                             >
                                 Dashboard
@@ -144,7 +144,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <button onClick={() => { scrollToSection("memorials"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Kata Mereka</button>
                             {user ? (
                                 <Button
-                                    onClick={() => { router.push("/dashboard"); setIsMenuOpen(false); }}
+                                    onClick={() => { router.push("/cpns/dashboard"); setIsMenuOpen(false); }}
                                     className="text-2xl py-3 mt-2"
                                 >
                                     Dashboard
@@ -418,7 +418,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     {/* CTA */}
                     <div className="text-center mt-12">
                         <button
-                            onClick={() => user ? router.push("/dashboard") : router.push("/login?returnTo=/")}
+                            onClick={() => user ? router.push("/cpns/dashboard") : router.push("/login?returnTo=/cpns")}
                             className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
                         >
                             Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
@@ -619,6 +619,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             <Link href="/syarat-ketentuan" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
                             <Link href="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
                             <Link href="/kebijakan-pengembalian" className="hover:text-white transition-colors">Kebijakan Pengembalian</Link>
+                            <a href="mailto:halo@siaptempur.id" className="hover:text-white transition-colors font-bold underline decoration-wavy decoration-blue-500">Hubungi Kami</a>
                         </div>
                     </div>
                 </div>

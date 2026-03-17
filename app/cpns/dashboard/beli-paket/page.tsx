@@ -5,11 +5,19 @@ import { Sparkles, Flame, Zap, Package, CreditCard, Smartphone, CheckCircle, Shi
 import { toast } from 'sonner'
 import PaperBackground from '@/components/PaperBackground'
 import CheckDoodle from '@/components/CheckDoodle'
-import { PRICING_PACKAGES } from '@/lib/constants'
 import { createPackageTransaction, syncPaymentStatus } from '@/app/actions/payment'
 import { cn } from '@/lib/utils'
 import MockSnapModal from '@/components/dashboard/MockSnapModal'
 import { X } from 'lucide-react'
+import { PRICING_PACKAGES as PRICING_PACKAGES_DATA } from '@/lib/constants'
+
+declare global {
+    interface Window {
+        snap: any;
+    }
+}
+
+const PRICING_PACKAGES = PRICING_PACKAGES_DATA as any;
 
 export default function BeliPaketPage() {
     const [mockModalOpen, setMockModalOpen] = useState(false)
@@ -30,10 +38,11 @@ export default function BeliPaketPage() {
             // CHECK IS MOCK?
             console.log("Transaction Token:", transaction.token)
             if (transaction.token.startsWith('mock_')) {
+                const pkgInfo = PRICING_PACKAGES.find((p: any) => p.id === packageId)
                 setCurrentTransaction({
                     ...transaction,
-                    amount: PRICING_PACKAGES.find(p => p.id === packageId)?.price || 0,
-                    packageName: PRICING_PACKAGES.find(p => p.id === packageId)?.name || 'Paket'
+                    amount: pkgInfo?.price || 0,
+                    packageName: pkgInfo?.name || 'Paket'
                 })
                 setMockModalOpen(true)
                 return
@@ -139,7 +148,7 @@ export default function BeliPaketPage() {
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 lg:gap-8 w-full max-w-6xl items-stretch">
-                    {PRICING_PACKAGES.map((pkg) => (
+                    {PRICING_PACKAGES.map((pkg: any) => (
                         <div
                             key={pkg.id}
                             className={cn(
@@ -177,7 +186,7 @@ export default function BeliPaketPage() {
                             )}
 
                             <div className="space-y-4 mb-8 font-handwriting text-gray-700 flex-grow text-lg md:text-xl">
-                                {pkg.features.map((feature, i) => (
+                                {pkg.features.map((feature: string, i: number) => (
                                     <div key={i} className="flex items-start gap-2.5">
                                         <CheckDoodle className="w-6 h-6 mt-1" />
                                         <span>{feature}</span>

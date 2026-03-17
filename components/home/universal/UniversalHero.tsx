@@ -33,7 +33,7 @@ export default function UniversalHero() {
                 {/* Corporate Mission Intro */}
                 <Card variant="sketch" className="p-8 mb-12 bg-white/50">
                     <p className="text-2xl md:text-3xl font-handwriting text-gray-800 leading-relaxed font-bold italic">
-                        "Misi kami sederhana: Memberikan akses latihan ujian kelas dunia dengan biaya yang masuk akal bagi setiap anak bangsa."
+                        "Misi kami sederhana: Memberikan akses latihan ujian berkualitas dengan biaya yang masuk akal bagi setiap anak bangsa."
                     </p>
                 </Card>
 

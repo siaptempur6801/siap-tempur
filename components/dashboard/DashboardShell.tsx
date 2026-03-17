@@ -45,7 +45,10 @@ export default function DashboardShell({ children, user, profile, signoutAction,
     const pathname = usePathname()
 
     // Check if we're on a practice session page (mengerjakan soal atau result)
-    const isPracticeSession = pathname.includes('/dashboard/latihan/') || pathname.includes('/dashboard/result/')
+    const isPracticeSession = pathname.includes('/cpns/dashboard/latihan/') || 
+                              pathname.includes('/cpns/dashboard/result/') ||
+                              pathname.includes('/toefl/dashboard/latihan/') ||
+                              pathname.includes('/toefl/dashboard/result/')
 
     // If on practice session, render minimal layout without sidebar
     if (isPracticeSession) {
@@ -65,7 +68,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                 <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
 
                 <div className="p-6 relative z-10">
-                    <Link href={portal === 'cpns' ? "/" : "/toefl"} className="flex flex-col items-start group">
+                    <Link href={portal === 'cpns' ? "/cpns" : "/toefl"} className="flex flex-col items-start group">
                         <span className="text-xl font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight uppercase">
                             {portal === 'cpns' ? "CPNS & KEDINASAN" : "TOEFL ITP Portal"}
                         </span>
@@ -76,16 +79,16 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                 </div>
 
                 <nav className="flex-1 px-4 space-y-3 relative z-10">
-                    <NavItem href={portal === 'cpns' ? "/dashboard" : "/toefl/dashboard"} icon={<LayoutDashboard size={20} />} label="Dashboard" />
-                    {portal === 'cpns' && <NavItem href="/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />}
-                    <NavItem href={portal === 'cpns' ? "/dashboard/beli-paket" : "/toefl/dashboard/beli-paket"} icon={<BookOpen size={20} />} label="Beli Paket" />
-                    <NavItem href={portal === 'cpns' ? "/dashboard/latihan" : "/toefl/dashboard/latihan"} icon={<Target size={20} />} label="Tryout" badge="XP" />
+                    <NavItem href={portal === 'cpns' ? "/cpns/dashboard" : "/toefl/dashboard"} icon={<LayoutDashboard size={20} />} label="Dashboard" />
+                    {portal === 'cpns' && <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />}
+                    <NavItem href={portal === 'cpns' ? "/cpns/dashboard/beli-paket" : "/toefl/dashboard/beli-paket"} icon={<BookOpen size={20} />} label="Beli Paket" />
+                    <NavItem href={portal === 'cpns' ? "/cpns/dashboard/latihan" : "/toefl/dashboard/latihan"} icon={<Target size={20} />} label="Tryout" badge="XP" />
 
-                    <NavItem href={portal === 'cpns' ? "/dashboard/profile" : "/toefl/dashboard/profile"} icon={<User size={20} />} label="Profil" />
+                    <NavItem href={portal === 'cpns' ? "/cpns/dashboard/profile" : "/toefl/dashboard/profile"} icon={<User size={20} />} label="Profil" />
 
                     {isAdmin && (
                         <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
-                            <NavItem href={portal === 'cpns' ? "/dashboard/admin" : "/toefl/dashboard/admin"} icon={<Shield size={20} />} label="Admin" />
+                            <NavItem href={portal === 'cpns' ? "/cpns/dashboard/admin" : "/toefl/dashboard/admin"} icon={<Shield size={20} />} label="Admin" />
                         </div>
                     )}
                 </nav>
@@ -138,7 +141,12 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                             by Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                         </span>
                     </Link>
-                    <MobileProfileDropdown user={user} profile={profile} signoutAction={signoutAction} />
+                    <MobileProfileDropdown 
+                        user={user} 
+                        profile={profile} 
+                        signoutAction={signoutAction} 
+                        portal={portal}
+                    />
                 </div>
 
                 <div className="p-6 md:p-8 max-w-7xl mx-auto">
@@ -149,18 +157,18 @@ export default function DashboardShell({ children, user, profile, signoutAction,
             {/* Mobile Bottom Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#fdfbf7]/90 backdrop-blur-xl border-t-2 border-gray-900 z-40">
                 <div className="grid grid-cols-5 gap-1 px-2 py-2">
-                    <MobileNavItem href={portal === 'cpns' ? "/dashboard" : "/toefl/dashboard"} icon={<LayoutDashboard size={20} />} label="Home" />
-                    <MobileNavItem href={portal === 'cpns' ? "/dashboard/ranking" : "/toefl/dashboard/beli-paket"} icon={portal === 'cpns' ? <BarChart3 size={20} /> : <BookOpen size={20} />} label={portal === 'cpns' ? "Ranking" : "Beli"} />
+                    <MobileNavItem href={portal === 'cpns' ? "/cpns/dashboard" : "/toefl/dashboard"} icon={<LayoutDashboard size={20} />} label="Home" />
+                    <MobileNavItem href={portal === 'cpns' ? "/cpns/dashboard/ranking" : "/toefl/dashboard/beli-paket"} icon={portal === 'cpns' ? <BarChart3 size={20} /> : <BookOpen size={20} />} label={portal === 'cpns' ? "Ranking" : "Beli"} />
                     {portal === 'cpns' ? (
-                        <MobileNavItem href="/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
+                        <MobileNavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
                     ) : (
                         <div className="flex items-center justify-center p-2 opacity-20"><Trophy size={20} /></div>
                     )}
-                    <MobileNavItem href={portal === 'cpns' ? "/dashboard/latihan" : "/toefl/dashboard/latihan"} icon={<Target size={20} />} label="Tryout" />
+                    <MobileNavItem href={portal === 'cpns' ? "/cpns/dashboard/latihan" : "/toefl/dashboard/latihan"} icon={<Target size={20} />} label="Tryout" />
 
                     {/* Dynamic Profile Icon */}
                     <MobileNavItem
-                        href={portal === 'cpns' ? "/dashboard/profile" : "/toefl/dashboard/profile"}
+                        href={portal === 'cpns' ? "/cpns/dashboard/profile" : "/toefl/dashboard/profile"}
                         icon={
                             profile?.avatar_url ? (
                                 <div className="w-5 h-5 rounded-full overflow-hidden border border-gray-900 relative">

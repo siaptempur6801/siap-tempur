@@ -36,7 +36,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
         .single()
 
     if (sessionError || !session) {
-        redirect('/dashboard/latihan')
+        redirect('/cpns/dashboard/latihan')
     }
 
     if (session.status !== 'completed') {
@@ -448,7 +448,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                                         {message}
                                     </div>
                                     {allPassed && (
-                                        <Link href="/dashboard/latihan" className={cn(
+                                        <Link href="/cpns/dashboard/latihan" className={cn(
                                             "inline-flex items-center gap-2 px-5 py-2 rounded-xl border-2 font-black transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none",
                                             allPassed ? "bg-green-600 text-white border-green-800" : "bg-gray-900 text-white border-black"
                                         )}>
@@ -469,7 +469,7 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                 {/* 4. ACTION BAR (Sticky Bottom or Inline) */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-4 sm:pt-8 px-2 sm:px-0">
                     <Link
-                        href="/dashboard/latihan"
+                        href="/cpns/dashboard/latihan"
                         className="flex justify-center items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-2 border-gray-900 bg-white hover:bg-gray-50 font-black text-lg sm:text-xl transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                     >
                         <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> Dashboard

@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Route yang hanya bisa diakses kalau BELUM login
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password']
 // Route yang WAJIB login
-const PROTECTED_ROUTES = ['/dashboard']
+const PROTECTED_ROUTES = ['/cpns/dashboard', '/toefl/dashboard']
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({ request })
@@ -42,10 +42,11 @@ export async function updateSession(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname
 
-    // Kalau SUDAH login dan coba akses halaman auth → redirect ke dashboard
+    // Kalau SUDAH login dan coba akses halaman auth → redirect ke dashboard asal atau default ke cpns
     if (user && AUTH_ROUTES.some(route => pathname.startsWith(route))) {
         const url = request.nextUrl.clone()
-        url.pathname = '/dashboard'
+        // Default redirect after login if coming to an auth page while logged in
+        url.pathname = '/cpns/dashboard'
         return NextResponse.redirect(url)
     }
 

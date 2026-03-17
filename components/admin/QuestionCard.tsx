@@ -93,7 +93,7 @@ export default function QuestionCard({ q }: { q: Question }) {
                         </div>
                         <div className="flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                             <Link
-                                href={`/dashboard/admin/edit/${q.id}`}
+                                href={`/cpns/dashboard/admin/edit/${q.id}`}
                                 className="p-3 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl sm:rounded-lg transition bg-gray-50 lg:bg-transparent"
                                 title="Edit"
                             >

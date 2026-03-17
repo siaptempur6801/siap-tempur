@@ -33,7 +33,8 @@ export async function updateProfile(formData: FormData) {
         return { error: error.message }
     }
 
-    revalidatePath('/dashboard', 'layout')
+    revalidatePath('/cpns/dashboard', 'layout')
+    revalidatePath('/toefl/dashboard', 'layout')
     return { success: true }
 }
 
@@ -78,9 +79,10 @@ export async function updateProfileInfo(data: {
     }
 
     revalidatePath('/', 'layout')
-    revalidatePath('/', 'layout')
-    revalidatePath('/dashboard', 'layout')
-    revalidatePath('/dashboard/profile')
+    revalidatePath('/cpns/dashboard', 'layout')
+    revalidatePath('/toefl/dashboard', 'layout')
+    revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/toefl/dashboard/profile')
     return { success: true }
 }
 

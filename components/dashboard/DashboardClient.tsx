@@ -176,7 +176,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                             </div>
 
                             <Link
-                                href="/dashboard/beli-paket"
+                                href="/cpns/dashboard/beli-paket"
                                 className="inline-flex items-center gap-3 px-4 py-2 bg-blue-100 border-2 border-gray-900 text-gray-900 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-sm group"
                             >
                                 <Ticket className="w-5 h-5 text-blue-600 -rotate-12" /> <span className="text-xl text-blue-700">{data.user.tryoutQuota}</span> <span>Tiket Sisa</span>
@@ -188,7 +188,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
                             {/* Main CTA: Latihan */}
                             <Link
-                                href="/dashboard/latihan"
+                                href="/cpns/dashboard/latihan"
                                 className="group relative p-8 bg-blue-600 text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex flex-col justify-between min-h-[160px]"
                             >
                                 <div>
@@ -205,7 +205,7 @@ export default function DashboardClient({ data, greeting }: Props) {
 
                             {/* Secondary CTA: Ranking */}
                             <Link
-                                href="/dashboard/ranking"
+                                href="/cpns/dashboard/ranking"
                                 className="group relative p-8 bg-white text-gray-900 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex flex-col justify-between min-h-[160px]"
                             >
                                 <div>
@@ -372,7 +372,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                                         <p className="text-gray-500 text-sm max-w-xs mx-auto mb-6">
                                             Kamu belum mengerjakan Tryout atau Latihan Soal. Yuk mulai sekarang!
                                         </p>
-                                        <Link href="/dashboard/latihan" className="px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">
+                                        <Link href="/cpns/dashboard/latihan" className="px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">
                                             Mulai Ujian Pertama
                                         </Link>
                                     </div>
@@ -424,7 +424,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                     {/* STATS GRID */}
                     <div className="grid grid-cols-2 gap-4">
                         {/* Ranking Card */}
-                        <Link href="/dashboard/ranking" className="block group">
+                        <Link href="/cpns/dashboard/ranking" className="block group">
                             <motion.div
                                 whileHover={{ scale: 1.05, rotate: -1 }}
                                 className="p-4 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:shadow-none group-hover:translate-x-0.5 group-hover:translate-y-0.5 transition-all text-center flex flex-col items-center gap-1"

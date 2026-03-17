@@ -21,9 +21,10 @@ interface MobileProfileDropdownProps {
     } | null
 
     signoutAction: () => Promise<{ success: boolean }>
+    portal: 'cpns' | 'toefl'
 }
 
-export default function MobileProfileDropdown({ user, profile, signoutAction }: MobileProfileDropdownProps) {
+export default function MobileProfileDropdown({ user, profile, signoutAction, portal }: MobileProfileDropdownProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [showModal, setShowModal] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -106,7 +107,7 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
 
                     <div className="p-2 relative z-10">
                         <Link
-                            href="/dashboard/profile"
+                            href={portal === 'cpns' ? "/cpns/dashboard/profile" : "/toefl/dashboard/profile"}
                             className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"
                             onClick={() => setIsOpen(false)}
                         >

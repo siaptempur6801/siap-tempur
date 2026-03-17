@@ -16,16 +16,16 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
 
     if (sessionError) {
         console.error('[PracticeSessionPage] Session Error Raw:', JSON.stringify(sessionError, null, 2))
-        redirect('/dashboard/latihan') // Comment out redirect to see error on screen/logs
+        redirect('/cpns/dashboard/latihan') // Comment out redirect to see error on screen/logs
     }
 
     if (!session) {
         console.error('[PracticeSessionPage] Session not found (Possible RLS issue)')
-        redirect('/dashboard/latihan')
+        redirect('/cpns/dashboard/latihan')
     }
 
     if (session.status === 'completed') {
-        redirect(`/dashboard/latihan/${sessionId}/result`)
+        redirect(`/cpns/dashboard/latihan/${sessionId}/result`)
     }
 
     // 2. Fetch Questions & Options

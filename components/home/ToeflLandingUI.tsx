@@ -507,6 +507,7 @@ export default function ToeflLandingUI({ user: initialUser }: { user: User | nul
                             <Link href="/syarat-ketentuan" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
                             <Link href="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
                             <Link href="/kebijakan-pengembalian" className="hover:text-white transition-colors">Kebijakan Pengembalian</Link>
+                            <a href="mailto:halo@siaptempur.id" className="hover:text-white transition-colors font-bold underline decoration-wavy decoration-blue-500">Hubungi Kami</a>
                         </div>
                     </div>
                 </div>

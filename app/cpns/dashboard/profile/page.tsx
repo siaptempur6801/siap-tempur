@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileClient from '@/components/profile/ProfileClient'
-import { getLevel } from '@/lib/dashboard'
+import { getLevel, getXPInfo } from '@/lib/dashboard'
 import { calculateCurrentStreak } from '@/lib/utils'
 
 export default async function ProfilePage() {

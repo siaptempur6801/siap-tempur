@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { createClient, createAdminClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { isAdmin } from '@/utils/admin'
 
@@ -10,17 +10,38 @@ export async function deleteQuestion(id: string) {
         return { success: false, message: 'Unauthorized' }
     }
 
-    const supabase = await createClient()
-    const { error } = await supabase
+    // Use admin client to bypass RLS for cleanup
+    const supabase = await createAdminClient()
+
+    // 1. Delete associations first to avoid FK violations
+    // we use individual checks to ensure each step succeeds or logs correctly
+    const { error: err1 } = await supabase.from('test_answers').delete().eq('question_id', id)
+    if (err1 && err1.code !== 'PGRST116') { // Ignore "no rows found" if any
+        console.error('Error deleting test_answers:', err1)
+    }
+    
+    const { error: err2 } = await supabase.from('options').delete().eq('question_id', id)
+    if (err2 && err2.code !== 'PGRST116') {
+        console.error('Error deleting options:', err2)
+    }
+    
+    const { error: err3 } = await supabase.from('tryout_questions').delete().eq('question_id', id)
+    if (err3 && err3.code !== 'PGRST116') {
+        console.error('Error deleting tryout_questions:', err3)
+    }
+
+    // 2. Finally delete the question
+    const { error: qErr } = await supabase
         .from('questions')
         .delete()
         .eq('id', id)
 
-    if (error) {
-        return { success: false, message: error.message }
+    if (qErr) {
+        console.error('Final delete error:', qErr)
+        return { success: false, message: `Gagal menghapus soal: ${qErr.message}` }
     }
 
-    revalidatePath('/dashboard/admin')
+    revalidatePath('/cpns/dashboard/admin')
     return { success: true, message: 'Soal berhasil dihapus' }
 }
 
@@ -78,7 +99,7 @@ export async function createQuestion(formData: FormData) {
         return { success: false, message: oError.message }
     }
 
-    revalidatePath('/dashboard/admin')
+    revalidatePath('/cpns/dashboard/admin')
     return { success: true, message: 'Soal baru berhasil dibuat' }
 }
 
@@ -138,7 +159,7 @@ export async function updateQuestion(id: string, formData: FormData) {
 
     if (oError) return { success: false, message: oError.message }
 
-    revalidatePath('/dashboard/admin')
+    revalidatePath('/cpns/dashboard/admin')
     return { success: true, message: 'Soal berhasil diupdate' }
 }
 
@@ -248,7 +269,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
         }
     }
 
-    revalidatePath('/dashboard/admin')
+    revalidatePath('/cpns/dashboard/admin')
 
     if (failCount === 0) {
         return {
@@ -282,7 +303,7 @@ export async function updateTryoutConfigurations(configs: any[]) {
         return { success: false, message: error.message };
     }
 
-    revalidatePath('/dashboard/admin/tryout-config');
+    revalidatePath('/cpns/dashboard/admin/tryout-config');
     return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' };
 }
 
@@ -315,7 +336,7 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
         return { success: false, message: error.message };
     }
 
-    revalidatePath('/dashboard/admin/tryout-config');
+    revalidatePath('/cpns/dashboard/admin/tryout-config');
     return { success: true, message: 'Sub-Kategori berhasil ditambahkan' };
 }
 
@@ -334,7 +355,7 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean) 
         return { success: false, message: error.message };
     }
 
-    revalidatePath('/dashboard/admin/tryout-config');
+    revalidatePath('/cpns/dashboard/admin/tryout-config');
     return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
 }
 
@@ -353,6 +374,6 @@ export async function deleteTryoutConfiguration(id: string) {
         return { success: false, message: error.message };
     }
 
-    revalidatePath('/dashboard/admin/tryout-config');
+    revalidatePath('/cpns/dashboard/admin/tryout-config');
     return { success: true, message: 'Kategori berhasil dihapus secara permanen' };
 }

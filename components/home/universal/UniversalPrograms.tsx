@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Flame, Clock, Landmark } from "lucide-react";
+import { Flame, Clock, Landmark, Sparkles } from "lucide-react";
 import { Section } from "@/components/ui/Section";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -66,19 +66,19 @@ export default function UniversalPrograms() {
 
                 {/* 3. TOEFL Card (Soon) */}
                 <Card className="relative bg-white/60 h-full p-8 flex flex-col opacity-80 border-2 border-gray-300 shadow-[2px_2px_0px_0px_rgba(37,99,235,0.1)]">
-                    <div className="absolute top-4 right-4 bg-gray-200 text-gray-600 font-handwriting text-sm font-bold px-3 py-1 rotate-2 rounded border border-gray-300 flex items-center gap-1">
+                    <div className="absolute top-4 right-4 bg-gray-200 text-gray-600 font-handwriting text-sm font-bold px-3 py-1 rotate-3 rounded border border-gray-300 flex items-center gap-1">
                         <Clock className="w-4 h-4" /> Segera Hadir
                     </div>
 
                     <div className="w-20 h-20 bg-gray-100 border-2 border-gray-300 text-gray-400 rounded-xl flex items-center justify-center mb-6 text-4xl font-bold font-serif blur-[1px]">
-                        T
+                        <span className="text-3xl">T</span>
                     </div>
                     
                     <h3 className="text-2xl font-handwriting font-bold mb-3 text-gray-500 line-clamp-1 border-b-2 border-gray-200 pb-2">
                         TOEFL ITP
                     </h3>
                     <p className="text-lg text-gray-500 font-handwriting mb-6 flex-grow leading-relaxed">
-                        Tingkatkan skor TOEFL kamu untuk mendaftar beasiswa atau syarat sidang skripsi.
+                        Simulasi TOEFL ITP akurat. Listening, Structure, dan Reading dengan sistem scoring IRT standar resmi.
                     </p>
                     
                     <div className="mt-auto w-full py-3 text-center bg-gray-200 text-gray-500 font-handwriting text-xl font-bold rounded-lg border border-dashed border-gray-400 cursor-not-allowed">

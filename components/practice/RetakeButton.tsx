@@ -32,7 +32,7 @@ export default function RetakeButton({ isCombined, singleType }: RetakeButtonPro
                 toast.error(result.error)
             } else if (result.sessionId) {
                 toast.success('Sesi baru dimulai!')
-                router.push(`/dashboard/latihan/${result.sessionId}`)
+                router.push(`/cpns/dashboard/latihan/${result.sessionId}`)
             }
         } catch (error) {
             console.error('Failed to retake:', error)
