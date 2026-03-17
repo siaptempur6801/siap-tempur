@@ -116,7 +116,8 @@ export async function updateQuestion(id: string, formData: FormData) {
     const correctAnswer = formData.get('correct_answer') as string
     const imageUrl = formData.get('image_url') as string | null // NEW FIELD
 
-    const supabase = await createClient()
+    // Use admin client to bypass RLS for cleanup steps
+    const supabase = await createAdminClient()
 
     // 1. Update Question
     const { error: qError } = await supabase
@@ -133,7 +134,22 @@ export async function updateQuestion(id: string, formData: FormData) {
 
     if (qError) return { success: false, message: qError.message }
 
-    // 2. Clear Existing Options
+    // 2. Get existing option IDs for this question (to clean up test_answers references)
+    const { data: existingOptions } = await supabase
+        .from('options')
+        .select('id')
+        .eq('question_id', id)
+
+    // 3. Nullify test_answers referencing old options (prevents FK violation)
+    if (existingOptions && existingOptions.length > 0) {
+        const optionIds = existingOptions.map(o => o.id)
+        await supabase
+            .from('test_answers')
+            .update({ option_id: null })
+            .in('option_id', optionIds)
+    }
+
+    // 4. Delete Existing Options
     const { error: dError } = await supabase
         .from('options')
         .delete()
