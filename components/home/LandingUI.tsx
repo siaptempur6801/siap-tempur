@@ -115,7 +115,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                             </Button>
                         ) : (
                             <Button
-                                onClick={() => router.push("/login?returnTo=/")}
+                                onClick={() => router.push("/login?returnTo=/cpns")}
                                 variant="secondary"
                                 className="hidden md:block"
                             >
@@ -151,7 +151,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                                 </Button>
                             ) : (
                                 <Button
-                                    onClick={() => { router.push("/login?returnTo=/"); setIsMenuOpen(false); }}
+                                    onClick={() => { router.push("/login?returnTo=/cpns"); setIsMenuOpen(false); }}
                                     variant="secondary"
                                     className="text-2xl py-3 mt-2"
                                 >
@@ -452,7 +452,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         </ul>
                         <Button
                             className="w-full text-xl py-6 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/")}
+                            onClick={() => router.push("/login?returnTo=/cpns")}
                         >
                             Beli Sekarang
                         </Button>
@@ -476,7 +476,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         <Button
                             size="lg"
                             className="w-full text-2xl py-6 bg-yellow-400 text-gray-900 hover:bg-yellow-300 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/")}
+                            onClick={() => router.push("/login?returnTo=/cpns")}
                         >
                             Ambil Paket Ini <Rocket className="ml-2 animate-bounce" />
                         </Button>
@@ -498,7 +498,7 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                         </ul>
                         <Button
                             className="w-full text-xl py-6 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/")}
+                            onClick={() => router.push("/login?returnTo=/cpns")}
                         >
                             Hajar Gaskeun!
                         </Button>

@@ -77,6 +77,7 @@ export default async function ProfilePage() {
                     usageSessions={usageSessions || []}
                     totalXP={totalXP}
                     level={levelInfo.level}
+                    portal="cpns"
                 />
             </>
         )
@@ -91,6 +92,7 @@ export default async function ProfilePage() {
                 usageSessions={usageSessions || []}
                 totalXP={totalXP}
                 level={levelInfo.level}
+                portal="cpns"
             />
         </>
     )

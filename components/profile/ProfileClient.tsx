@@ -51,21 +51,25 @@ type UsageSession = {
     mode: string
 }
 
+interface ProfileClientProps {
+  profile: Profile
+  user: UserData
+  transactions: Transaction[]
+  usageSessions: UsageSession[]
+  totalXP: number
+  level: number
+  portal: 'cpns' | 'toefl'
+}
+
 export default function ProfileClient({
     profile: initialProfile,
     user,
     transactions,
     usageSessions,
     totalXP,
-    level
-}: {
-    profile: Profile,
-    user: UserData,
-    transactions: Transaction[],
-    usageSessions: UsageSession[],
-    totalXP: number,
-    level: number
-}) {
+    level,
+    portal
+}: ProfileClientProps) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'settings'>('profile')
     const [isEditing, setIsEditing] = useState(false)
@@ -179,7 +183,7 @@ export default function ProfileClient({
                         toast.error("Pembayaran Gagal")
                     },
                     onClose: async function () {
-                        toast.loading("Memperiksa status terakhir...", { id: loadingId })
+                        toast.loading("Memeriksa status terakhir...", { id: loadingId })
                         await syncPaymentStatus(orderId)
                         toast.info("Pembayaran Ditutup", { id: loadingId })
                         window.location.reload()
@@ -275,16 +279,14 @@ export default function ProfileClient({
         setIsChangingPassword(false)
 
         if (result.success) {
-            toast.success('Password berhasil diubah! Silakan login kembali.')
-            setShowPasswordModal(false)
+      router.push(`/login?returnTo=/${portal}`)
+      toast.success('Password berhasil diperbarui', {
+        description: 'Silakan masuk kembali dengan password baru Anda.'
+      })
+      setShowPasswordModal(false)
             setOldPassword('')
             setNewPassword('')
             setConfirmPassword('')
-
-            setTimeout(async () => {
-                await signout()
-                window.location.href = '/'
-            }, 1500)
         } else {
             toast.error(result.error || 'Gagal mengubah password')
         }
@@ -595,7 +597,10 @@ export default function ProfileClient({
                                         <div className="text-2xl font-bold text-green-600 leading-none mb-1">{profile.tryout_quota ?? 0}</div>
                                         <div className="text-[10px] text-gray-600 font-extrabold uppercase tracking-tight">Token SKD</div>
                                     </div>
-                                    <Link href="/cpns/dashboard/beli-paket" className="px-6 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center">
+                                    <Link 
+                                        href={portal === 'cpns' ? "/cpns/dashboard/beli-paket" : "/toefl/dashboard/beli-paket"}
+                                        className="px-6 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center"
+                                    >
                                         + Beli Kuota
                                     </Link>
                                 </div>
@@ -694,7 +699,10 @@ export default function ProfileClient({
                                         </div>
                                         <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
                                         <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
-                                        <Link href="/cpns/dashboard/beli-paket" className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all">
+                                        <Link 
+                                            href={portal === 'cpns' ? "/cpns/dashboard/beli-paket" : "/toefl/dashboard/beli-paket"}
+                                            className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
+                                        >
                                             Beli Kuota Sekarang
                                         </Link>
                                     </div>
@@ -790,7 +798,7 @@ export default function ProfileClient({
                                 className="relative max-w-md w-full bg-[#fdfbf7] p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none -rotate-1"
                                 onClick={(e) => e.stopPropagation()}
                             >
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-blue-101/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-blue-100/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
                                 <div className="flex items-center justify-between mb-8 relative z-10">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-yellow-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
