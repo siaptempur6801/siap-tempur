@@ -217,17 +217,23 @@ begin
 end
 $$;
 
-create table if not exists leaderboard_snapshot (
-  rank_pos int,
-  user_id uuid primary key references profiles(id) on delete cascade,
-  full_name text,
-  avatar_url text,
-  top_score int,
-  score_twk int,
-  score_tiu int,
-  score_tkp int,
-  updated_at timestamp with time zone default now()
-);
+do $$
+begin
+  if to_regclass('public.leaderboard_snapshot') is null then
+    create table leaderboard_snapshot (
+      rank_pos int,
+      user_id uuid primary key references profiles(id) on delete cascade,
+      full_name text,
+      avatar_url text,
+      top_score int,
+      score_twk int,
+      score_tiu int,
+      score_tkp int,
+      updated_at timestamp with time zone default now()
+    );
+  end if;
+end
+$$;
 
 insert into tryout_configurations (type, sub_category, question_count, sort_order)
 values
@@ -259,7 +265,18 @@ set
 
 create index if not exists idx_questions_type_subcategory on questions(type, sub_category);
 create index if not exists test_sessions_active_lookup_idx on test_sessions(user_id, mode, status, last_activity_at desc);
-create index if not exists idx_leaderboard_score on leaderboard_snapshot(top_score desc);
+do $$
+begin
+  if exists (
+    select 1
+    from pg_class
+    where oid = to_regclass('public.leaderboard_snapshot')
+      and relkind in ('r', 'm')
+  ) then
+    create index if not exists idx_leaderboard_score on leaderboard_snapshot(top_score desc);
+  end if;
+end
+$$;
 
 -- 8. Policies (RLS)
 alter table if exists profiles enable row level security;
@@ -272,7 +289,18 @@ alter table if exists test_sessions enable row level security;
 alter table if exists test_answers enable row level security;
 alter table if exists transactions enable row level security;
 alter table if exists tryout_configurations enable row level security;
-alter table if exists leaderboard_snapshot enable row level security;
+do $$
+begin
+  if exists (
+    select 1
+    from pg_class
+    where oid = to_regclass('public.leaderboard_snapshot')
+      and relkind = 'r'
+  ) then
+    alter table leaderboard_snapshot enable row level security;
+  end if;
+end
+$$;
 
 -- (Basic Policies - Extend as needed)
 drop policy if exists "Users can view own profile" on profiles;
@@ -357,8 +385,19 @@ create policy "Admins can delete tryout configurations" on tryout_configurations
   (select role from profiles where id = (select auth.uid())) = 'admin'
 );
 
-drop policy if exists "Anyone can view leaderboard" on leaderboard_snapshot;
-create policy "Anyone can view leaderboard" on leaderboard_snapshot for select to authenticated using (true);
+do $$
+begin
+  if exists (
+    select 1
+    from pg_class
+    where oid = to_regclass('public.leaderboard_snapshot')
+      and relkind = 'r'
+  ) then
+    drop policy if exists "Anyone can view leaderboard" on leaderboard_snapshot;
+    create policy "Anyone can view leaderboard" on leaderboard_snapshot for select to authenticated using (true);
+  end if;
+end
+$$;
 
 -- 9. Functions
 create or replace function handle_new_user()
@@ -619,44 +658,61 @@ $$ language plpgsql security definer set search_path = public;
 create or replace function refresh_leaderboard_snapshot()
 returns void as $$
 begin
-  truncate leaderboard_snapshot;
+  if exists (
+    select 1
+    from pg_class
+    where oid = to_regclass('public.leaderboard_snapshot')
+      and relkind = 'm'
+  ) then
+    refresh materialized view leaderboard_snapshot;
+    return;
+  end if;
 
-  insert into leaderboard_snapshot (
-    rank_pos,
-    user_id,
-    full_name,
-    avatar_url,
-    top_score,
-    score_twk,
-    score_tiu,
-    score_tkp,
-    updated_at
-  )
-  with user_best_scores as (
-    select distinct on (user_id)
+  if exists (
+    select 1
+    from pg_class
+    where oid = to_regclass('public.leaderboard_snapshot')
+      and relkind = 'r'
+  ) then
+    truncate leaderboard_snapshot;
+
+    insert into leaderboard_snapshot (
+      rank_pos,
       user_id,
-      total_score,
+      full_name,
+      avatar_url,
+      top_score,
       score_twk,
       score_tiu,
       score_tkp,
-      end_time
-    from test_sessions
-    where status = 'completed'
-    order by user_id, total_score desc, end_time asc nulls last
-  )
-  select
-    row_number() over (order by total_score desc, end_time asc nulls last) as rank_pos,
-    ubs.user_id,
-    coalesce(p.full_name, 'Pejuang SKD'),
-    p.avatar_url,
-    ubs.total_score,
-    ubs.score_twk,
-    ubs.score_tiu,
-    ubs.score_tkp,
-    now()
-  from user_best_scores ubs
-  left join profiles p on p.id = ubs.user_id
-  order by ubs.total_score desc, ubs.end_time asc nulls last;
+      updated_at
+    )
+    with user_best_scores as (
+      select distinct on (user_id)
+        user_id,
+        total_score,
+        score_twk,
+        score_tiu,
+        score_tkp,
+        end_time
+      from test_sessions
+      where status = 'completed'
+      order by user_id, total_score desc, end_time asc nulls last
+    )
+    select
+      row_number() over (order by total_score desc, end_time asc nulls last) as rank_pos,
+      ubs.user_id,
+      coalesce(p.full_name, 'Pejuang SKD'),
+      p.avatar_url,
+      ubs.total_score,
+      ubs.score_twk,
+      ubs.score_tiu,
+      ubs.score_tkp,
+      now()
+    from user_best_scores ubs
+    left join profiles p on p.id = ubs.user_id
+    order by ubs.total_score desc, ubs.end_time asc nulls last;
+  end if;
 end;
 $$ language plpgsql security definer set search_path = public;
 
@@ -673,20 +729,46 @@ returns table (
   updated_at timestamp with time zone
 ) as $$
 begin
-  return query
-  select
-    ls.rank_pos,
-    ls.user_id,
-    ls.full_name,
-    ls.avatar_url,
-    ls.top_score,
-    ls.score_twk,
-    ls.score_tiu,
-    ls.score_tkp,
-    ls.updated_at
-  from leaderboard_snapshot ls
-  order by ls.rank_pos asc
-  limit 100;
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'leaderboard_snapshot'
+      and column_name = 'updated_at'
+  ) then
+    return query execute '
+      select
+        ls.rank_pos::int,
+        ls.user_id,
+        ls.full_name,
+        ls.avatar_url,
+        ls.top_score,
+        ls.score_twk,
+        ls.score_tiu,
+        ls.score_tkp,
+        ls.updated_at
+      from public.leaderboard_snapshot ls
+      order by ls.rank_pos asc
+      limit 100
+    ';
+    return;
+  end if;
+
+  return query execute '
+    select
+      ls.rank_pos::int,
+      ls.user_id,
+      ls.full_name,
+      ls.avatar_url,
+      ls.top_score,
+      ls.score_twk,
+      ls.score_tiu,
+      ls.score_tkp,
+      ls.achieved_at as updated_at
+    from public.leaderboard_snapshot ls
+    order by ls.rank_pos asc
+    limit 100
+  ';
 end;
 $$ language plpgsql security definer set search_path = public;
 
