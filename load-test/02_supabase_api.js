@@ -37,7 +37,7 @@ const HEADERS = {
     'Content-Type': 'application/json',
 };
 
-export default function () {
+export default function supabaseApiScenario() {
     const res = http.get(
         SUPABASE_URL + '/rest/v1/tryouts?select=id,title,description,is_active&is_active=eq.true&order=created_at.desc&limit=10',
         { headers: HEADERS }
@@ -45,7 +45,7 @@ export default function () {
 
     let isArray = false;
     if (res.status === 200) {
-        try { isArray = Array.isArray(JSON.parse(res.body)); } catch (_) { }
+        try { isArray = Array.isArray(JSON.parse(res.body)); } catch { }
     }
 
     const ok = check(res, {

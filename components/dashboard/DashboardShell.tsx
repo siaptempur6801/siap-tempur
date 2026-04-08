@@ -28,12 +28,14 @@ interface DashboardShellProps {
         email?: string
         user_metadata?: {
             full_name?: string
+            name?: string
         }
     }
     profile: {
         avatar_url?: string
         full_name?: string
         tryout_quota?: number
+        tryout_quota_toefl?: number
     } | null
 
     signoutAction: () => Promise<{ success: boolean }>
@@ -113,13 +115,13 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                             <p className="text-sm font-bold text-gray-900 truncate font-handwriting">
                                 {profile?.full_name ||
                                     user.user_metadata?.full_name ||
-                                    (user as any).user_metadata?.name ||
+                                    user.user_metadata?.name ||
                                     'Pejuang Tryout'}
                             </p>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="text-[10px] px-1.5 py-0.5 border border-gray-900 bg-blue-100 text-blue-900 font-bold uppercase inline-flex items-center gap-1 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] text-xs" title={portal === 'cpns' ? "Sisa Token SKD CPNS & Kedinasan" : "Sisa Token TOEFL ITP"}>
                                     <Ticket size={12} className="fill-current" />
-                                    {portal === 'cpns' ? (profile?.tryout_quota ?? 0) : ((profile as any)?.tryout_quota_toefl ?? 0)} Token
+                                    {portal === 'cpns' ? (profile?.tryout_quota ?? 0) : (profile?.tryout_quota_toefl ?? 0)} Token
                                 </span>
                             </div>
                         </div>

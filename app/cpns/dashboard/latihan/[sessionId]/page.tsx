@@ -46,7 +46,8 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
                 image_url,
                 options (
                     id,
-                    content
+                    content,
+                    image_url
                 )
             )
         `)
@@ -77,6 +78,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
     interface Option {
         id: string
         content: string
+        image_url?: string | null
     }
 
     interface Question {

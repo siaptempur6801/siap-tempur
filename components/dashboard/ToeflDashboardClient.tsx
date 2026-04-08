@@ -1,21 +1,13 @@
 'use client'
 
-import { useState } from 'react'
 import { motion, Variants } from 'framer-motion'
 import Link from 'next/link'
 import {
-    Flame,
-    Zap,
-    Target,
     ArrowRight,
     Trophy,
     BookOpen,
     TrendingUp,
-    BarChart3,
-    CheckCircle2,
     Sparkles,
-    Brain,
-    User,
     Monitor,
     Rocket,
     Ticket,
@@ -23,7 +15,6 @@ import {
     PencilLine
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { TOEFL_SUBJECTS } from '@/lib/constants'
 
 interface ToeflDashboardData {
     user: {
@@ -219,8 +210,6 @@ export default function ToeflDashboardClient({ data, greeting }: Props) {
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                             {(['listening', 'structure', 'reading'] as const).map((type) => {
                                                 const score = data.lastExam ? data.lastExam[`score_${type}`] : 0
-                                                const target = data.progress[type].target
-                                                const passed = score >= target
 
                                                 return (
                                                     <div key={type} className="p-4 rounded-xl border-2 bg-white border-gray-200">

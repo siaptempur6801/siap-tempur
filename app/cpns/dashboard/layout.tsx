@@ -4,6 +4,15 @@ import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import Script from 'next/script'
 
+type UserMetadata = {
+    full_name?: string
+    name?: string
+}
+
+type DashboardProfile = {
+    role?: string | null
+}
+
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
@@ -29,11 +38,12 @@ export default async function DashboardLayout({
 
     // If profile doesn't exist, create it (new user or first time in dashboard)
     if (!profile) {
+        const userMetadata = user.user_metadata as UserMetadata | undefined
         const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
             .insert({
                 id: user.id,
-                full_name: user.user_metadata?.full_name || (user as any).user_metadata?.name || null,
+                full_name: userMetadata?.full_name || userMetadata?.name || null,
                 tryout_quota: 0
             })
             .select()
@@ -46,7 +56,7 @@ export default async function DashboardLayout({
         }
     }
 
-    const isAdminUser = profile?.role === 'admin'
+    const isAdminUser = (profile as DashboardProfile | null)?.role === 'admin'
 
     return (
         <>

@@ -75,7 +75,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                 // Revert optimistic update
                 setConfigs(configs.map(c => c.id === id ? { ...c, is_active: currentlyActive } : c))
             }
-        } catch (error) {
+        } catch {
             toast.error("Gagal mengubah status kategori", { id: loadingToast })
             setConfigs(configs.map(c => c.id === id ? { ...c, is_active: currentlyActive } : c))
         }
@@ -100,7 +100,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             } else {
                 toast.error(res.message, { id: loadingToast })
             }
-        } catch (error) {
+        } catch {
             toast.error("Gagal menghapus kategori", { id: loadingToast })
         } finally {
             setIsDeleting(false)
@@ -130,7 +130,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             } else {
                 toast.error(res.message, { id: loadingToast })
             }
-        } catch (error) {
+        } catch {
             toast.error("Gagal menyimpan konfigurasi", { id: loadingToast })
         } finally {
             setIsSaving(false)
@@ -156,7 +156,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             } else {
                 toast.error(res.message, { id: loadingToast })
             }
-        } catch (error) {
+        } catch {
             toast.error("Terjadi kesalahan sistem", { id: loadingToast })
         } finally {
             setIsAdding(false)

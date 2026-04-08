@@ -22,6 +22,7 @@ interface Question {
     options: {
         id: string
         content: string
+        image_url?: string | null
     }[]
 }
 
@@ -203,12 +204,22 @@ const QuestionOptionCard = memo(function QuestionOptionCard({
             )}>
                 {String.fromCharCode(65 + index)}
             </div>
-            <span className={cn(
-                "text-base md:text-lg leading-relaxed font-handwriting",
+            <div className={cn(
+                "flex-1 space-y-2 text-base md:text-lg leading-relaxed font-handwriting",
                 isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
             )}>
-                <MathRenderer text={option.content} />
-            </span>
+                {option.image_url && (
+                    <Image
+                        src={option.image_url}
+                        alt={`Pilihan ${String.fromCharCode(65 + index)}`}
+                        width={360}
+                        height={240}
+                        unoptimized
+                        className="max-h-44 w-full max-w-sm object-contain rounded-lg border-2 border-gray-200 bg-white"
+                    />
+                )}
+                {option.content.trim() && <MathRenderer text={option.content} />}
+            </div>
         </button>
     )
 })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Clock3, FileSearch, Search, SlidersHorizontal } from 'lucide-react'
 import PaperBackground from '@/components/PaperBackground'
@@ -105,10 +105,6 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
         return next
     }, [modeFilter, query, sessions, sortMode, statusFilter])
 
-    useEffect(() => {
-        setPage(1)
-    }, [query, modeFilter, statusFilter, sortMode])
-
     const totalPages = Math.max(1, Math.ceil(filteredSessions.length / pageSize))
     const currentPage = Math.min(page, totalPages)
     const paginatedSessions = filteredSessions.slice((currentPage - 1) * pageSize, currentPage * pageSize)
@@ -134,7 +130,10 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                             <input
                                 value={query}
-                                onChange={(event) => setQuery(event.target.value)}
+                                onChange={(event) => {
+                                    setQuery(event.target.value)
+                                    setPage(1)
+                                }}
                                 placeholder="Cari nama sesi, tipe, atau tanggal..."
                                 className="w-full border-2 border-gray-900 bg-[#fffdf7] py-3 pl-11 pr-4 text-base font-sans shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] outline-none"
                             />
@@ -153,7 +152,10 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                             </span>
                             <select
                                 value={modeFilter}
-                                onChange={(event) => setModeFilter(event.target.value as ModeFilter)}
+                                onChange={(event) => {
+                                    setModeFilter(event.target.value as ModeFilter)
+                                    setPage(1)
+                                }}
                                 className="border-2 border-gray-900 bg-white px-3 py-3 text-sm font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] outline-none"
                             >
                                 {modeOptions.map((option) => (
@@ -170,7 +172,10 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                             </span>
                             <select
                                 value={statusFilter}
-                                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                                onChange={(event) => {
+                                    setStatusFilter(event.target.value as StatusFilter)
+                                    setPage(1)
+                                }}
                                 className="border-2 border-gray-900 bg-white px-3 py-3 text-sm font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] outline-none"
                             >
                                 {statusOptions.map((option) => (
@@ -187,7 +192,10 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                             </span>
                             <select
                                 value={sortMode}
-                                onChange={(event) => setSortMode(event.target.value as SortMode)}
+                                onChange={(event) => {
+                                    setSortMode(event.target.value as SortMode)
+                                    setPage(1)
+                                }}
                                 className="border-2 border-gray-900 bg-white px-3 py-3 text-sm font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] outline-none"
                             >
                                 {sortOptions.map((option) => (
@@ -315,6 +323,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                                 setModeFilter('all')
                                 setStatusFilter('all')
                                 setSortMode('newest')
+                                setPage(1)
                             }}
                             className="inline-flex items-center gap-2 px-5 py-3 bg-blue-600 text-white border-2 border-gray-900 font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                         >

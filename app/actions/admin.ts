@@ -4,6 +4,17 @@ import { createClient, createAdminClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { isAdmin } from '@/utils/admin'
 
+type QuestionType = 'TWK' | 'TIU' | 'TKP'
+
+interface TryoutConfigurationPayload {
+    id: string
+    type: string
+    sub_category: string
+    question_count: number
+    sort_order: number
+    is_active: boolean
+}
+
 export async function deleteQuestion(id: string) {
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
@@ -51,7 +62,7 @@ export async function createQuestion(formData: FormData) {
         return { success: false, message: 'Unauthorized' }
     }
 
-    const type = formData.get('type') as any // TWK, TIU, TKP
+    const type = formData.get('type') as QuestionType
     const content = formData.get('content') as string
     const category = formData.get('category') as string // Sub-category
     const explanation = formData.get('explanation') as string
@@ -77,12 +88,13 @@ export async function createQuestion(formData: FormData) {
     if (qError) return { success: false, message: qError.message }
 
     // 2. Prepare Options
-    const optionLabels = ['A', 'B', 'C', 'D', 'E']
-    const optionsToInsert = optionLabels.map(label => {
+    const optionLabels: OptionLabel[] = ['A', 'B', 'C', 'D', 'E']
+    const optionsToInsert = optionLabels.map((label) => {
         const score = formData.get(`score_${label.toLowerCase()}`)
         return {
             question_id: question.id,
-            content: formData.get(`option_${label.toLowerCase()}`) as string,
+            content: ((formData.get(`option_${label.toLowerCase()}`) as string) || '').trim(),
+            image_url: ((formData.get(`option_${label.toLowerCase()}_image_url`) as string) || '').trim() || null,
             is_correct: label === correctAnswer,
             score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
         }
@@ -109,7 +121,7 @@ export async function updateQuestion(id: string, formData: FormData) {
         return { success: false, message: 'Unauthorized' }
     }
 
-    const type = formData.get('type') as any
+    const type = formData.get('type') as QuestionType
     const content = formData.get('content') as string
     const category = formData.get('category') as string
     const explanation = formData.get('explanation') as string
@@ -158,12 +170,13 @@ export async function updateQuestion(id: string, formData: FormData) {
     if (dError) return { success: false, message: dError.message }
 
     // 3. Insert New Options
-    const optionLabels = ['A', 'B', 'C', 'D', 'E']
-    const optionsToInsert = optionLabels.map(label => {
+    const optionLabels: OptionLabel[] = ['A', 'B', 'C', 'D', 'E']
+    const optionsToInsert = optionLabels.map((label) => {
         const score = formData.get(`score_${label.toLowerCase()}`)
         return {
             question_id: id,
-            content: formData.get(`option_${label.toLowerCase()}`) as string,
+            content: ((formData.get(`option_${label.toLowerCase()}`) as string) || '').trim(),
+            image_url: ((formData.get(`option_${label.toLowerCase()}_image_url`) as string) || '').trim() || null,
             is_correct: label === correctAnswer,
             score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
         }
@@ -201,6 +214,8 @@ interface ExcelQuestion {
     score_d?: number
     score_e?: number
 }
+
+type OptionLabel = 'A' | 'B' | 'C' | 'D' | 'E'
 
 export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
     const isUserAdmin = await isAdmin()
@@ -304,7 +319,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
 // TRYOUT CONFIGURATIONS
 // =============================================
 
-export async function updateTryoutConfigurations(configs: any[]) {
+export async function updateTryoutConfigurations(configs: TryoutConfigurationPayload[]) {
     const isUserAdmin = await isAdmin();
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
 

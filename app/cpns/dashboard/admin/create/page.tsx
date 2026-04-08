@@ -3,24 +3,56 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Loader2, Info, AlertCircle, ImageIcon, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { createQuestion } from '@/app/actions/admin'
 import { cn } from '@/lib/utils'
 
+interface TryoutConfigRow {
+    type: string
+    sub_category: string
+}
+
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'] as const
+type OptionLabel = (typeof OPTION_LABELS)[number]
+
+type OptionImageState = {
+    file: File | null
+    preview: string | null
+}
+
+function createEmptyOptionImageState(): Record<OptionLabel, OptionImageState> {
+    return {
+        A: { file: null, preview: null },
+        B: { file: null, preview: null },
+        C: { file: null, preview: null },
+        D: { file: null, preview: null },
+        E: { file: null, preview: null }
+    }
+}
+
 export default function CreateQuestionPage() {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
-    const [type, setType] = useState('TWK')
+    const [type, setType] = useState<'TWK' | 'TIU' | 'TKP'>('TWK')
     const [imageFile, setImageFile] = useState<File | null>(null)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
     const [selectedCategory, setSelectedCategory] = useState("")
+    const [optionImages, setOptionImages] = useState<Record<OptionLabel, OptionImageState>>(createEmptyOptionImageState)
     const [categories, setCategories] = useState<Record<string, string[]>>({
         'TWK': [],
         'TIU': [],
         'TKP': []
     })
+
+    const setOptionImage = (label: OptionLabel, file: File | null, preview: string | null) => {
+        setOptionImages((prev) => ({
+            ...prev,
+            [label]: { file, preview }
+        }))
+    }
 
     React.useEffect(() => {
         const fetchCategories = async () => {
@@ -37,7 +69,7 @@ export default function CreateQuestionPage() {
                     'TIU': [],
                     'TKP': []
                 }
-                data.forEach(item => {
+                data.forEach((item: TryoutConfigRow) => {
                     if (catMap[item.type]) {
                         catMap[item.type].push(item.sub_category)
                     }
@@ -56,8 +88,19 @@ export default function CreateQuestionPage() {
         formData.append('type', type)
 
         try {
+            const supabase = createClient()
+
+            for (const label of OPTION_LABELS) {
+                const textValue = String(formData.get(`option_${label.toLowerCase()}`) || '').trim()
+                const hasImage = Boolean(optionImages[label].file || optionImages[label].preview)
+                if (!textValue && !hasImage) {
+                    toast.error(`Pilihan ${label} harus punya teks atau gambar`)
+                    setLoading(false)
+                    return
+                }
+            }
+
             if (imageFile) {
-                const supabase = createClient()
                 const fileExt = imageFile.name.split('.').pop()
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
@@ -76,6 +119,28 @@ export default function CreateQuestionPage() {
                 formData.append('image_url', publicUrl)
             }
 
+            for (const label of OPTION_LABELS) {
+                const optionFile = optionImages[label].file
+                if (!optionFile) continue
+
+                const fileExt = optionFile.name.split('.').pop()
+                const fileName = `option-${label.toLowerCase()}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+
+                const { error: uploadError } = await supabase.storage
+                    .from('question-images')
+                    .upload(fileName, optionFile)
+
+                if (uploadError) {
+                    throw new Error(`Gagal mengupload gambar pilihan ${label}: ${uploadError.message}`)
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('question-images')
+                    .getPublicUrl(fileName)
+
+                formData.append(`option_${label.toLowerCase()}_image_url`, publicUrl)
+            }
+
             const res = await createQuestion(formData)
 
             if (res.success) {
@@ -86,7 +151,7 @@ export default function CreateQuestionPage() {
                 toast.error(res.message)
             }
 
-        } catch (error: any) {
+        } catch (error) {
             console.error(error)
             toast.error("Gagal membuat soal")
         } finally {
@@ -125,7 +190,7 @@ export default function CreateQuestionPage() {
                             <div className="space-y-3">
                                 <label className="block text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Tipe Soal</label>
                                 <div className="flex gap-2">
-                                    {['TWK', 'TIU', 'TKP'].map((t) => (
+                                    {(['TWK', 'TIU', 'TKP'] as const).map((t) => (
                                         <button
                                             key={t}
                                             type="button"
@@ -180,7 +245,14 @@ export default function CreateQuestionPage() {
                             <label className="block text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Gambar Soal (Opsional)</label>
                             {imagePreview ? (
                                 <div className="relative inline-block border-2 border-gray-200 rounded-xl p-2 bg-gray-50 max-w-sm">
-                                    <img src={imagePreview} alt="Preview" className="max-h-48 w-full object-contain rounded-lg" />
+                                    <Image
+                                        src={imagePreview}
+                                        alt="Preview"
+                                        width={480}
+                                        height={320}
+                                        unoptimized
+                                        className="max-h-48 w-full object-contain rounded-lg"
+                                    />
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -227,7 +299,7 @@ export default function CreateQuestionPage() {
                             </div>
 
                             <div className="grid grid-cols-1 gap-4">
-                                {['A', 'B', 'C', 'D', 'E'].map((opt) => (
+                                {OPTION_LABELS.map((opt) => (
                                     <div key={opt} className="group flex gap-4 items-center">
                                         {/* Radio Circle */}
                                         <div className="relative flex items-center justify-center">
@@ -251,11 +323,53 @@ export default function CreateQuestionPage() {
                                         <div className="flex-1 relative space-y-2">
                                             <textarea
                                                 name={`option_${opt.toLowerCase()}`}
-                                                required
                                                 rows={1}
                                                 className="w-full p-4 pl-5 bg-white border-2 border-gray-100 rounded-xl focus:border-blue-500 focus:outline-none font-medium transition-all"
-                                                placeholder={`Teks pilihan ${opt}...`}
+                                                placeholder={`Teks pilihan ${opt}... atau kosongkan bila pakai gambar`}
                                             ></textarea>
+
+                                            {optionImages[opt].preview ? (
+                                                <div className="relative inline-block border-2 border-gray-200 rounded-xl p-2 bg-gray-50 max-w-xs">
+                                                    <Image
+                                                        src={optionImages[opt].preview!}
+                                                        alt={`Preview opsi ${opt}`}
+                                                        width={320}
+                                                        height={220}
+                                                        unoptimized
+                                                        className="max-h-40 w-full object-contain rounded-lg"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setOptionImage(opt, null, null)}
+                                                        className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-md transition-colors"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="relative border-2 border-dashed border-gray-300 rounded-xl p-4 hover:bg-gray-50 transition-colors flex flex-col items-center justify-center text-center group cursor-pointer max-w-xs">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0]
+                                                            if (file) {
+                                                                if (file.size > 2 * 1024 * 1024) {
+                                                                    toast.error(`Ukuran gambar pilihan ${opt} maksimal 2MB`)
+                                                                    return
+                                                                }
+                                                                setOptionImage(opt, file, URL.createObjectURL(file))
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:bg-blue-100 transition-all mb-3">
+                                                        <ImageIcon size={20} />
+                                                    </div>
+                                                    <div className="font-bold text-gray-700 text-xs">Upload gambar pilihan {opt}</div>
+                                                    <div className="text-[10px] text-gray-400 mt-1">Opsional, maks. 2MB</div>
+                                                </div>
+                                            )}
 
                                             {type === 'TKP' && (
                                                 <div className="flex items-center gap-2">

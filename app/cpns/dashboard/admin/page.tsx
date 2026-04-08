@@ -1,9 +1,11 @@
 import { createClient } from '@/utils/supabase/server'
 import { Plus, FileText, Settings } from 'lucide-react'
 import Link from 'next/link'
-import QuestionCard from '@/components/admin/QuestionCard'
+import QuestionCard, { type Question } from '@/components/admin/QuestionCard'
 import AdminSearch from '@/components/admin/AdminSearch'
 import ExcelImport from '@/components/admin/ExcelImport'
+
+type QuestionWithOptions = Question
 
 export const dynamic = 'force-dynamic'
 
@@ -83,7 +85,7 @@ export default async function AdminDashboard({
             {/* Question List Grid */}
             <div className="grid grid-cols-1 gap-4">
                 {questions?.map((q) => (
-                    <QuestionCard key={q.id} q={q as any} />
+                    <QuestionCard key={q.id} q={q as QuestionWithOptions} />
                 ))}
 
                 {(!questions || questions.length === 0) && (

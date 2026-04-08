@@ -22,7 +22,96 @@ import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import PaperBackground from '@/components/PaperBackground'
 import { getXPInfo } from '@/lib/dashboard'
 import { cn, formatSubjectName, calculateCurrentStreak } from '@/lib/utils'
-import { PASSING_GRADES, SUBJECTS } from '@/lib/constants'
+import { PASSING_GRADES } from '@/lib/constants'
+
+type AnswerOption = {
+    id: string
+    content: string
+    image_url?: string | null
+    is_correct: boolean
+    score_value: number
+}
+
+type AnswerQuestion = {
+    id: string
+    content: string
+    explanation: string
+    type: 'TWK' | 'TIU' | 'TKP'
+    category: string
+    sub_category: string | null
+    options: AnswerOption[]
+}
+
+type RawAnswer = {
+    id: string
+    question_id: string
+    option_id: string | null
+    questions: AnswerQuestion | AnswerQuestion[] | null
+    selected_option: AnswerOption | AnswerOption[] | null
+}
+
+type ReviewAnswer = {
+    id: string
+    question_id: string
+    option_id: string
+    questions: AnswerQuestion
+    selected_option: AnswerOption | null
+    sort_order: number
+}
+
+type CategoryCardProps = {
+    type: string
+    score: number
+    maxScore: number
+    total: number
+    correct: number
+}
+
+function CategoryCard({ type, score, maxScore, total, correct }: CategoryCardProps) {
+    const pct = Math.round((score / maxScore) * 100) || 0
+    const typeUpper = type.toUpperCase() as keyof typeof PASSING_GRADES
+    const passingGrade = PASSING_GRADES[typeUpper]
+    const isPassed = score >= passingGrade
+    const passColor = isPassed ? 'text-green-600' : 'text-red-500'
+
+    return (
+        <div className="bg-white border-2 border-gray-900 p-3.5 sm:p-4 rounded-2xl flex flex-col gap-2.5 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group hover:scale-[1.02] transition-transform font-handwriting">
+            <PaperBackground />
+            <div className="flex justify-between items-center relative z-10">
+                <span className="text-xs sm:text-sm font-bold text-gray-800 uppercase tracking-widest">{type}</span>
+                <span className={cn(
+                    "text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold border-2 rotate-3",
+                    isPassed ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"
+                )}>
+                    {isPassed ? <span className="inline-flex items-center gap-1">LULUS <Sparkles className="w-3 h-3" /></span> : 'BELUM LULUS'}
+                </span>
+            </div>
+            <div className="mt-2 relative z-10">
+                <span className={cn("text-3xl sm:text-4xl font-black font-sans", passColor)}>{score}</span>
+                <span className="text-gray-400 text-base sm:text-lg font-sans"> / {maxScore}</span>
+            </div>
+
+            <div className="flex flex-col gap-1 text-[11px] sm:text-xs font-bold text-gray-500 relative z-10 font-sans">
+                <div className="flex justify-between"><span>Passing Grade:</span> <span className="text-gray-900">{passingGrade}</span></div>
+                <div className="flex justify-between"><span>Benar:</span> <span className="text-gray-900">{correct}/{total} Soal</span></div>
+            </div>
+
+            <div className="w-full h-2.5 bg-gray-100 border-2 border-gray-900 rounded-full mt-1.5 overflow-hidden relative z-10">
+                <div
+                    className={cn("h-full rounded-full border-r-2 border-gray-900 transition-all duration-1000", isPassed ? 'bg-green-500' : 'bg-red-500')}
+                    style={{ width: `${Math.min(pct, 100)}%` }}
+                />
+            </div>
+        </div>
+    )
+}
+
+function normalizeRelation<T>(value: T | T[] | null): T | null {
+    if (Array.isArray(value)) {
+        return value[0] ?? null
+    }
+    return value
+}
 
 export default async function PracticeResultPage({
     params,
@@ -104,6 +193,7 @@ export default async function PracticeResultPage({
                 options (
                     id,
                     content,
+                    image_url,
                     is_correct,
                     score_value
                 )
@@ -111,6 +201,7 @@ export default async function PracticeResultPage({
             selected_option: options (
                 id,
                 content,
+                image_url,
                 is_correct,
                 score_value
             )
@@ -132,20 +223,28 @@ export default async function PracticeResultPage({
         })
     }
 
-    const answers = (rawAnswers || []).map((ans: any) => {
-        const qRaw = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
+    const answers: ReviewAnswer[] = ((rawAnswers || []) as RawAnswer[]).flatMap((ans) => {
+        const qRaw = normalizeRelation(ans.questions)
+        if (!qRaw) return []
         const sortKey = qRaw ? `${qRaw.type}-${qRaw.sub_category}` : ''
         const sortOrder = configSortMap[sortKey] || 999
 
-        return {
+        return [{
             ...ans,
+            option_id: ans.option_id ?? '',
+            questions: {
+                ...qRaw,
+                explanation: qRaw.explanation || '',
+                category: qRaw.category || '',
+                options: qRaw.options || []
+            },
             sort_order: sortOrder,
-            selected_option: Array.isArray(ans.selected_option) ? ans.selected_option[0] || null : (ans.selected_option as any)
-        }
+            selected_option: normalizeRelation(ans.selected_option)
+        }]
     })
 
     // Pre-sort on server based on configuration sort_order
-    answers.sort((a: any, b: any) => {
+    answers.sort((a, b) => {
         if (a.sort_order !== undefined && b.sort_order !== undefined) {
             return a.sort_order - b.sort_order
         }
@@ -155,52 +254,42 @@ export default async function PracticeResultPage({
     // --- DATA PROCESSING ---
 
     // 1. Determine Module Type
-    const uniqueTypes = Array.from(new Set(answers.map((a: any) => {
-        const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-        return q.type
-    })))
+    const uniqueTypes = Array.from(new Set(answers.map((a) => a.questions.type)))
     const isCombined = uniqueTypes.length > 1
-    const singleType = isCombined ? null : uniqueTypes[0]
+    const singleType: 'TWK' | 'TIU' | 'TKP' | null = isCombined ? null : (uniqueTypes[0] ?? null)
 
     // 2. Calculate Stats Helper
     const calculateStats = (filterType?: string) => {
         const filtered = filterType
-            ? answers.filter((a: any) => (Array.isArray(a.questions) ? a.questions[0] : a.questions).type === filterType)
+            ? answers.filter((a) => a.questions.type === filterType)
             : answers
 
         const total = filtered.length
         if (total === 0) return { total: 0, correct: 0, wrong: 0, empty: 0, score: 0, maxScore: 0, accuracy: 0 }
 
-        let correct = 0
         let score = 0
         let maxScore = 0
 
-        filtered.forEach((a: any) => {
-            const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-            const type = q.type
-            const isCorrect = a.selected_option?.is_correct
+        filtered.forEach((a) => {
+            const type = a.questions.type
             const val = a.selected_option?.score_value || 0
 
             if (type === 'TKP') {
                 score += val
                 maxScore += 5
-                if (val >= 3) correct++
             } else {
-                if (isCorrect) {
-                    correct++
+                if (a.selected_option?.is_correct) {
                     score += 5
                 }
                 maxScore += 5
             }
         })
 
-        const wrong = total - correct // This is a simplified view for TKP
         const accuracy = Math.round((score / maxScore) * 100)
 
         // Correction for actual correct/wrong counts needed for display
-        const realCorrect = filtered.filter((a: any) => {
-            const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-            if (q.type === 'TKP') return (a.selected_option?.score_value || 0) === 5
+        const realCorrect = filtered.filter((a) => {
+            if (a.questions.type === 'TKP') return (a.selected_option?.score_value || 0) === 5
             return a.selected_option?.is_correct
         }).length
 
@@ -213,7 +302,7 @@ export default async function PracticeResultPage({
 
     // 3. Time Duration
     const startTime = new Date(session.start_time).getTime()
-    const endTime = session.end_time ? new Date(session.end_time).getTime() : Date.now()
+    const endTime = new Date(session.end_time ?? session.start_time).getTime()
     const durationMinutes = Math.floor((endTime - startTime) / 60000)
     const durationSeconds = Math.floor(((endTime - startTime) % 60000) / 1000)
 
@@ -233,48 +322,6 @@ export default async function PracticeResultPage({
         if (mainStats.accuracy >= 80) return <span>Luar biasa! Kamu sudah siap untuk menaklukkan soal-soal SKD sesungguhnya. Pertahankan! <Trophy className="inline-block w-5 h-5 text-yellow-500 align-text-bottom ml-1" /></span>
         if (mainStats.accuracy >= 60) return <span>Permulaan yang bagus. Ada beberapa materi yang perlu diperdalam lagi agar skor makin maksimal. <Zap className="inline-block w-5 h-5 text-blue-500 align-text-bottom ml-1" /></span>
         return <span>Jangan patah semangat! Perbanyak latihan soal dan pelajari pembahasan untuk meningkatkan pemahamanmu. <Flame className="inline-block w-5 h-5 text-orange-500 align-text-bottom ml-1" /></span>
-    }
-
-    // --- UI HELPERS ---
-
-    const CategoryCard = ({ type, score, maxScore, total, correct }: { type: string; score: number; maxScore: number; total: number; correct: number }) => {
-        const pct = Math.round((score / maxScore) * 100) || 0
-        const typeUpper = type.toUpperCase() as keyof typeof PASSING_GRADES
-        const passingGrade = PASSING_GRADES[typeUpper]
-        const isPassed = score >= passingGrade
-        const passColor = isPassed ? 'text-green-600' : 'text-red-500'
-
-        return (
-            <div className="bg-white border-2 border-gray-900 p-3.5 sm:p-4 rounded-2xl flex flex-col gap-2.5 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group hover:scale-[1.02] transition-transform font-handwriting">
-                <PaperBackground />
-                <div className="flex justify-between items-center relative z-10">
-                    <span className="text-xs sm:text-sm font-bold text-gray-800 uppercase tracking-widest">{type}</span>
-                    <span className={cn(
-                        "text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold border-2 rotate-3",
-                        isPassed ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"
-                    )}>
-                        {isPassed ? <span className="inline-flex items-center gap-1">LULUS <Sparkles className="w-3 h-3" /></span> : 'BELUM LULUS'}
-                    </span>
-                </div>
-                <div className="mt-2 relative z-10">
-                    <span className={cn("text-3xl sm:text-4xl font-black font-sans", passColor)}>{score}</span>
-                    <span className="text-gray-400 text-base sm:text-lg font-sans"> / {maxScore}</span>
-                </div>
-
-                <div className="flex flex-col gap-1 text-[11px] sm:text-xs font-bold text-gray-500 relative z-10 font-sans">
-                    <div className="flex justify-between"><span>Passing Grade:</span> <span className="text-gray-900">{passingGrade}</span></div>
-                    <div className="flex justify-between"><span>Benar:</span> <span className="text-gray-900">{correct}/{total} Soal</span></div>
-                </div>
-
-                {/* Mini Progress Bar */}
-                <div className="w-full h-2.5 bg-gray-100 border-2 border-gray-900 rounded-full mt-1.5 overflow-hidden relative z-10">
-                    <div
-                        className={cn("h-full rounded-full border-r-2 border-gray-900 transition-all duration-1000", isPassed ? 'bg-green-500' : 'bg-red-500')}
-                        style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
-                </div>
-            </div>
-        )
     }
 
     return (

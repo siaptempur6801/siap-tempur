@@ -29,6 +29,14 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+build_output*.log
+eslint-fixed.json
+eslint-results.json
+lint.json
+lint_report.json
+lint_results.json
+tsc_output.txt
+temp_parse_output.txt
 
 # env files (can opt-in for committing if needed)
 .env*

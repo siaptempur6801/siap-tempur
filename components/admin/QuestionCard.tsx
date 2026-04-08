@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Edit, Trash2, CheckCircle2, ChevronDown, ChevronUp, AlertCircle, X } from 'lucide-react'
+import { Edit, Trash2, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { deleteQuestion } from '@/app/actions/admin'
@@ -13,11 +14,12 @@ import MathRenderer from '@/components/MathRenderer'
 interface Option {
     id: string
     content: string
+    image_url?: string | null
     is_correct: boolean
     score_value: number
 }
 
-interface Question {
+export interface Question {
     id: string
     type: 'TWK' | 'TIU' | 'TKP'
     category: string
@@ -48,7 +50,7 @@ export default function QuestionCard({ q }: { q: Question }) {
             } else {
                 toast.error(res.message)
             }
-        } catch (error) {
+        } catch {
             toast.error('Gagal menghapus soal')
         } finally {
             setIsDeleting(false)
@@ -114,9 +116,12 @@ export default function QuestionCard({ q }: { q: Question }) {
                     <div className="mb-4 flex flex-col sm:flex-row gap-4">
                         {q.image_url && (
                             <div className="shrink-0">
-                                <img
+                                <Image
                                     src={q.image_url}
                                     alt="Thumbnail Soal"
+                                    width={96}
+                                    height={96}
+                                    unoptimized
                                     className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg border-2 border-gray-200 shadow-sm"
                                 />
                             </div>
@@ -175,7 +180,19 @@ export default function QuestionCard({ q }: { q: Question }) {
                                                 {optionLabels[idx] || '?'}
                                             </span>
                                             <div className="flex-1 flex justify-between items-start gap-2">
-                                                <MathRenderer text={opt.content} />
+                                                <div className="flex-1 space-y-2">
+                                                    {opt.image_url && (
+                                                        <Image
+                                                            src={opt.image_url}
+                                                            alt={`Pilihan ${optionLabels[idx] || '?'}`}
+                                                            width={320}
+                                                            height={220}
+                                                            unoptimized
+                                                            className="max-h-36 w-full max-w-xs object-contain rounded-lg border border-gray-200 bg-white"
+                                                        />
+                                                    )}
+                                                    {opt.content.trim() && <MathRenderer text={opt.content} />}
+                                                </div>
                                                 {q.type === 'TKP' && (
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded text-[10px] font-bold shrink-0",

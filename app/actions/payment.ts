@@ -4,6 +4,11 @@ import { createClient } from '@/utils/supabase/server'
 import { createTransaction } from '@/lib/midtrans'
 import { PRICING_PACKAGES, TOEFL_PRICING_PACKAGES } from '@/lib/constants'
 
+type ProfileQuotaData = {
+    tryout_quota?: number | null
+    tryout_quota_toefl?: number | null
+}
+
 export async function createPackageTransaction(packageId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -183,7 +188,7 @@ export async function syncPaymentStatus(orderId: string) {
                         .eq('id', tx.user_id)
                         .single()
 
-                    const currentQuota = (profileData as any)?.[column] || 0
+                    const currentQuota = (profileData as ProfileQuotaData | null)?.[column] || 0
 
                     await adminSupabase
                         .from('profiles')

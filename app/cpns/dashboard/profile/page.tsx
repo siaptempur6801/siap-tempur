@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileClient from '@/components/profile/ProfileClient'
-import { getLevel, getXPInfo } from '@/lib/dashboard'
+import { getLevel } from '@/lib/dashboard'
 import { calculateCurrentStreak } from '@/lib/utils'
 
 export default async function ProfilePage() {
@@ -75,7 +75,6 @@ export default async function ProfilePage() {
                     user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
                     transactions={transactions || []}
                     usageSessions={usageSessions || []}
-                    totalXP={totalXP}
                     level={levelInfo.level}
                     portal="cpns"
                 />
@@ -90,7 +89,6 @@ export default async function ProfilePage() {
                 user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
                 transactions={transactions || []}
                 usageSessions={usageSessions || []}
-                totalXP={totalXP}
                 level={levelInfo.level}
                 portal="cpns"
             />

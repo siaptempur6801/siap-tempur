@@ -18,7 +18,15 @@ interface Stat {
     borderColor: string
 }
 
-export default function StatOverview({ data, streak, type }: { data: any, streak: number, type?: string }) {
+interface StatsSummary {
+    summary: {
+        totalSessions: number
+        avgScore: number
+        maxScore: number
+    }
+}
+
+export default function StatOverview({ data, streak, type }: { data: StatsSummary, streak: number, type?: string }) {
 
     const totalFullMark = SUBJECTS.TWK.fullMark + SUBJECTS.TIU.fullMark + SUBJECTS.TKP.fullMark
     let avgScoreSub = `Dari Total ${totalFullMark}`

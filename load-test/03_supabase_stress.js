@@ -79,7 +79,7 @@ const ENDPOINTS = [
     ),
 ];
 
-export default function () {
+export default function supabaseStressScenario() {
     // Pilih endpoint acak untuk variasi beban
     const endpoint = ENDPOINTS[Math.floor(Math.random() * ENDPOINTS.length)];
     const res = endpoint();

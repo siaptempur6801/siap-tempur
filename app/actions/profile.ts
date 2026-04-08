@@ -131,9 +131,12 @@ export async function deleteAccount() {
         if (deleteError) throw deleteError
         await supabase.auth.signOut()
         return { success: true }
-    } catch (error: any) {
+    } catch (error) {
         console.error('Delete account error:', error)
-        return { success: false, error: error.message }
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Terjadi kesalahan saat menghapus akun'
+        }
     }
 }
 

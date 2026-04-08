@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Map, Sparkles, X } from 'lucide-react'
+import Image from 'next/image'
 import PaperBackground from '@/components/PaperBackground'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { SUBJECTS } from '@/lib/constants'
@@ -12,6 +13,7 @@ import MathRenderer from '@/components/MathRenderer'
 interface Option {
     id: string
     content: string
+    image_url?: string | null
     is_correct: boolean
     score_value: number
 }
@@ -360,25 +362,37 @@ export default function ResultReviewClient({ answers }: Props) {
                                         {String.fromCharCode(65 + i)}
                                     </div>
 
-                                    <div className="flex-1 min-w-0">
-                                        <div className={cn("text-[15px] sm:text-lg leading-snug break-words", textClass)}>
-                                            <MathRenderer text={option.content} />
-                                        </div>
-
-                                        {/* Status Labels */}
-                                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                                            {isSelected && <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded bg-gray-900 text-white shadow-sm">Pilihan Anda</span>}
-                                            {type !== 'TKP' && isCorrect && <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded border-2 border-green-600 bg-white text-green-700 shadow-sm">Kunci</span>}
-                                            {type === 'TKP' && option.score_value > 0 && (
-                                                <span className={cn(
-                                                    "text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded border-2 shadow-sm",
-                                                    option.score_value === 5 ? "bg-green-500 text-white border-green-700" : "bg-blue-50 text-blue-700 border-blue-200"
-                                                )}>
-                                                    Poin: {option.score_value}
-                                                </span>
+                                        <div className="flex-1 min-w-0 space-y-2">
+                                            {option.image_url && (
+                                                <Image
+                                                    src={option.image_url}
+                                                    alt={`Pilihan ${String.fromCharCode(65 + i)}`}
+                                                    width={360}
+                                                    height={240}
+                                                    unoptimized
+                                                    className="max-h-44 w-full max-w-sm object-contain rounded-lg border-2 border-gray-200 bg-white"
+                                                />
                                             )}
+                                            {option.content.trim() && (
+                                                <div className={cn("text-[15px] sm:text-lg leading-snug break-words", textClass)}>
+                                                    <MathRenderer text={option.content} />
+                                                </div>
+                                            )}
+
+                                            {/* Status Labels */}
+                                            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                                                {isSelected && <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded bg-gray-900 text-white shadow-sm">Pilihan Anda</span>}
+                                                {type !== 'TKP' && isCorrect && <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded border-2 border-green-600 bg-white text-green-700 shadow-sm">Kunci</span>}
+                                                {type === 'TKP' && option.score_value > 0 && (
+                                                    <span className={cn(
+                                                        "text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded border-2 shadow-sm",
+                                                        option.score_value === 5 ? "bg-green-500 text-white border-green-700" : "bg-blue-50 text-blue-700 border-blue-200"
+                                                    )}>
+                                                        Poin: {option.score_value}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
                                 </div>
                             )
                         })}

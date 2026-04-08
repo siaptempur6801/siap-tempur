@@ -28,7 +28,7 @@ export default function VoucherClaim({ userId, userEmail, onSuccessClaim }: Vouc
         try {
             const supabase = createClient()
 
-            const { data, error } = await supabase.rpc('claim_voucher', {
+            const { error } = await supabase.rpc('claim_voucher', {
                 p_user_id: userId,
                 p_voucher_code: code.trim(),
                 p_user_email: userEmail,

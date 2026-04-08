@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { X, CheckCircle, Clock, AlertCircle } from 'lucide-react'
-import { formatCurrency } from '@/lib/utils'
 
 interface MockSnapModalProps {
     isOpen: boolean
@@ -33,11 +32,9 @@ export default function MockSnapModal({
                 {/* Header */}
                 <div className="bg-white px-6 py-4 border-b flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <img
-                            src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Midtrans_Logo.png"
-                            alt="Midtrans Mock"
-                            className="h-6 object-contain opacity-50 grayscale hover:grayscale-0 transition-all"
-                        />
+                        <span className="text-sm font-black tracking-wide text-gray-500 uppercase">
+                            Midtrans Mock
+                        </span>
                         <span className="text-xs font-bold text-gray-400 border border-gray-200 px-1.5 py-0.5 rounded bg-gray-50">TEST MODE</span>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
@@ -55,6 +52,7 @@ export default function MockSnapModal({
                         <p className="text-sm text-gray-500 mt-2 bg-gray-50 py-1 px-3 rounded-full inline-block border border-gray-100">
                             Order ID: <span className="font-mono text-gray-700">{orderId}</span>
                         </p>
+                        <p className="mt-2 text-sm font-semibold text-gray-700">{packageName}</p>
                     </div>
 
                     <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">

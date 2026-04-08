@@ -4,14 +4,12 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { LogOut } from 'lucide-react'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
 
 interface SidebarSignoutButtonProps {
     signoutAction: () => Promise<{ success: boolean }>
 }
 
 export default function SidebarSignoutButton({ signoutAction }: SidebarSignoutButtonProps) {
-    const router = useRouter()
     const [showModal, setShowModal] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [mounted, setMounted] = useState(false)

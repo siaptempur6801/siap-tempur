@@ -3,6 +3,17 @@ import { createClient } from '@/utils/supabase/server'
 export const revalidate = 300
 import LeaderboardClient from '@/components/dashboard/LeaderboardClient'
 
+interface LeaderboardEntry {
+    rank_pos: number
+    user_id: string
+    full_name: string
+    avatar_url: string | null
+    top_score: number
+    score_twk: number
+    score_tiu: number
+    score_tkp: number
+}
+
 export default async function RankingPage() {
     const supabase = await createClient()
 
@@ -31,10 +42,10 @@ export default async function RankingPage() {
 
     return (
         <LeaderboardClient
-            data={rankings || []}
+            data={(rankings as LeaderboardEntry[] | null) || []}
             currentUserId={user.id}
             periodText={periodText}
-            currentUserRank={(currentUserRank as any) ?? null}
+            currentUserRank={(currentUserRank as LeaderboardEntry | null) ?? null}
         />
     )
 }

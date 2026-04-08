@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
                     description: 'Silakan cek inbox atau spam email Anda untuk me-reset password.'
                 })
             }
-        } catch (error) {
+        } catch {
             toast.error('Gagal mengirim email')
         } finally {
             setLoading(false)

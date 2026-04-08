@@ -3,13 +3,11 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
-    Ticket, 
     Check, 
     Zap, 
     ShieldCheck, 
     CreditCard, 
     Loader2,
-    Sparkles,
     ShoppingBag,
     Headphones,
     BookOpen,
@@ -21,12 +19,6 @@ import { TOEFL_PRICING_PACKAGES } from '@/lib/constants'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
-declare global {
-  interface Window {
-    snap: any;
-  }
-}
-
 export default function ToeflBeliPaketPage() {
     const [loading, setLoading] = useState<string | null>(null)
 
@@ -36,20 +28,19 @@ export default function ToeflBeliPaketPage() {
             const result = await createPackageTransaction(packageId)
 
             if (result.token) {
-                // @ts-ignore
                 window.snap.pay(result.token, {
-                    onSuccess: function(result: any) {
+                    onSuccess: function () {
                         toast.success("Pembayaran berhasil!")
                         window.location.href = '/toefl/dashboard'
                     },
-                    onPending: function(result: any) {
+                    onPending: function () {
                         toast.info("Menunggu pembayaran...")
                         window.location.href = '/toefl/dashboard'
                     },
-                    onError: function(result: any) {
+                    onError: function () {
                         toast.error("Pembayaran gagal.")
                     },
-                    onClose: function() {
+                    onClose: function () {
                         toast.warning("Widget pembayaran ditutup.")
                         setLoading(null)
                     }

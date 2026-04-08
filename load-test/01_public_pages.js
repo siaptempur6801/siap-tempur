@@ -38,7 +38,7 @@ export const options = {
     },
 };
 
-export default function () {
+export default function publicPagesScenario() {
     const headers = { 'Accept': 'text/html' };
 
     // --- Test 1: Landing Page ---

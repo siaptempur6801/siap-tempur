@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Clock3, LogOut, User, Crown, Ticket, GraduationCap } from 'lucide-react'
+import { Clock3, LogOut, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -12,12 +12,14 @@ interface MobileProfileDropdownProps {
         email?: string
         user_metadata?: {
             full_name?: string
+            name?: string
         }
     }
     profile: {
         avatar_url?: string
         full_name?: string
         tryout_quota?: number
+        tryout_quota_toefl?: number
     } | null
 
     signoutAction: () => Promise<{ success: boolean }>
@@ -47,7 +49,7 @@ export default function MobileProfileDropdown({ user, profile, signoutAction, po
 
     const displayName = profile?.full_name ||
         user.user_metadata?.full_name ||
-        (user as any).user_metadata?.name ||
+        user.user_metadata?.name ||
         'Pejuang Tryout'
     const avatarUrl = profile?.avatar_url
 

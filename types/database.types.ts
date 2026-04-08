@@ -86,6 +86,7 @@ export interface Database {
                     id: string
                     question_id: string
                     content: string
+                    image_url: string | null
                     is_correct: boolean
                     score_value: number
                     created_at: string
@@ -94,6 +95,7 @@ export interface Database {
                     id?: string
                     question_id: string
                     content: string
+                    image_url?: string | null
                     is_correct?: boolean
                     score_value?: number
                     created_at?: string
@@ -102,6 +104,7 @@ export interface Database {
                     id?: string
                     question_id?: string
                     content?: string
+                    image_url?: string | null
                     is_correct?: boolean
                     score_value?: number
                     created_at?: string

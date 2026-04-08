@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import Cropper from 'react-easy-crop'
-import { X, Check } from 'lucide-react'
+import { X } from 'lucide-react'
 
 // Define Area interface locally to avoid type issues
 interface Area {
@@ -67,7 +67,7 @@ export default function ImageCropper({ imageSrc, onCancel, onCropComplete }: Ima
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
     const [isProcessing, setIsProcessing] = useState(false)
 
-    const onCropCompleteHandler = useCallback((croppedArea: any, croppedAreaPixels: Area) => {
+    const onCropCompleteHandler = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
         setCroppedAreaPixels(croppedAreaPixels)
     }, [])
 

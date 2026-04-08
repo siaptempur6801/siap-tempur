@@ -1,27 +1,28 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Sparkles, Flame, Zap, Package, CreditCard, Smartphone, CheckCircle, ShieldCheck } from 'lucide-react'
+import { useState } from 'react'
+import { Sparkles, Flame, Zap, Package, Smartphone, CheckCircle, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import PaperBackground from '@/components/PaperBackground'
 import CheckDoodle from '@/components/CheckDoodle'
 import { createPackageTransaction, syncPaymentStatus } from '@/app/actions/payment'
 import { cn } from '@/lib/utils'
 import MockSnapModal from '@/components/dashboard/MockSnapModal'
-import { X } from 'lucide-react'
 import { PRICING_PACKAGES as PRICING_PACKAGES_DATA } from '@/lib/constants'
 
-declare global {
-    interface Window {
-        snap: any;
-    }
+type PricingPackage = (typeof PRICING_PACKAGES_DATA)[number]
+
+type MockTransaction = {
+    orderId: string
+    amount: number
+    packageName: string
 }
 
-const PRICING_PACKAGES = PRICING_PACKAGES_DATA as any;
+const PRICING_PACKAGES = PRICING_PACKAGES_DATA
 
 export default function BeliPaketPage() {
     const [mockModalOpen, setMockModalOpen] = useState(false)
-    const [currentTransaction, setCurrentTransaction] = useState<any>(null)
+    const [currentTransaction, setCurrentTransaction] = useState<MockTransaction | null>(null)
 
     const handleBuy = async (packageId: string) => {
         const loadingToast = toast.loading("Memproses pesanan...")
@@ -38,9 +39,9 @@ export default function BeliPaketPage() {
             // CHECK IS MOCK?
             console.log("Transaction Token:", transaction.token)
             if (transaction.token.startsWith('mock_')) {
-                const pkgInfo = PRICING_PACKAGES.find((p: any) => p.id === packageId)
+                const pkgInfo = PRICING_PACKAGES.find((p: PricingPackage) => p.id === packageId)
                 setCurrentTransaction({
-                    ...transaction,
+                    orderId: transaction.orderId,
                     amount: pkgInfo?.price || 0,
                     packageName: pkgInfo?.name || 'Paket'
                 })
@@ -50,7 +51,7 @@ export default function BeliPaketPage() {
 
             // REAL MIDTRANS FLOW
             window.snap.pay(transaction.token, {
-                onSuccess: async function (result: any) {
+                onSuccess: async function (result) {
                     const loadingId = toast.loading("Memverifikasi pembayaran...")
                     await syncPaymentStatus(transaction.orderId)
                     toast.success("Pembayaran Berhasil!", {
@@ -59,7 +60,7 @@ export default function BeliPaketPage() {
                     })
                     console.log('success', result)
                 },
-                onPending: async function (result: any) {
+                onPending: async function (result) {
                     const loadingId = toast.loading("Memperbarui status...")
                     await syncPaymentStatus(transaction.orderId)
                     toast.info("Pembayaran Tertunda", {
@@ -68,7 +69,7 @@ export default function BeliPaketPage() {
                     })
                     console.log('pending', result)
                 },
-                onError: function (result: any) {
+                onError: function (result) {
                     toast.error("Pembayaran Gagal")
                     console.log('error', result)
                 },
@@ -78,10 +79,10 @@ export default function BeliPaketPage() {
                     toast.info("Pembayaran Ditutup", { id: loadingId })
                 }
             })
-        } catch (error: any) {
+        } catch (error) {
             toast.dismiss(loadingToast)
             toast.error("Terjadi Kesalahan", {
-                description: error.message || "Gagal membuat transaksi."
+                description: error instanceof Error ? error.message : "Gagal membuat transaksi."
             })
         }
     }
@@ -116,7 +117,7 @@ export default function BeliPaketPage() {
             } else {
                 toast.error("Status: Gagal/Expired")
             }
-        } catch (e) {
+        } catch {
             toast.dismiss(loadingId)
             toast.error("Gagal menghubungi server mock")
         }
@@ -148,7 +149,7 @@ export default function BeliPaketPage() {
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 lg:gap-8 w-full max-w-6xl items-stretch">
-                    {PRICING_PACKAGES.map((pkg: any) => (
+                    {PRICING_PACKAGES.map((pkg) => (
                         <div
                             key={pkg.id}
                             className={cn(

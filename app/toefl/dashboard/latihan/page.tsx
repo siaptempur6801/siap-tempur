@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
     Monitor, 
@@ -11,11 +10,9 @@ import {
     Ticket, 
     Sparkles,
     AlertCircle,
-    Info,
     CheckCircle2
 } from 'lucide-react'
 import Link from 'next/link'
-import { cn } from '@/lib/utils'
 
 export default function ToeflLatihanPage() {
     const tests = [
@@ -67,7 +64,7 @@ export default function ToeflLatihanPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {tests.map((test, idx) => (
+                {tests.map((test) => (
                     <motion.div
                         key={test.id}
                         whileHover={{ y: -5 }}

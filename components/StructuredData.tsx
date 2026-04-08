@@ -1,4 +1,12 @@
-export default function StructuredData({ data }: { data: any }) {
+type StructuredDataValue =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: StructuredDataValue }
+  | StructuredDataValue[]
+
+export default function StructuredData({ data }: { data: StructuredDataValue }) {
   return (
     <script
       type="application/ld+json"

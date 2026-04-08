@@ -4,10 +4,10 @@ import { useState, useTransition, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Calendar, Shield, Trophy, Zap, Clock, Edit, Camera, Save, X, Loader2, ClipboardList, Ticket, Coins, Lock, Trash2, BookOpen, Eye, Target, CreditCard, ShoppingCart, FileText, Settings } from 'lucide-react'
+import { User, Mail, Calendar, Shield, Zap, Clock, Edit, Camera, Save, X, Loader2, ClipboardList, Ticket, Coins, Lock, Trash2, Eye, Target, CreditCard, ShoppingCart, FileText, Settings } from 'lucide-react'
 import ImageCropper from '@/components/ui/ImageCropper'
 import { updateProfileInfo, deleteAccount } from '@/app/actions/profile'
-import { signout, updatePassword } from '@/app/auth/actions'
+import { updatePassword } from '@/app/auth/actions'
 import { syncPaymentStatus } from '@/app/actions/payment'
 import { toast } from 'sonner'
 import { createClient } from '@/utils/supabase/client'
@@ -56,7 +56,6 @@ interface ProfileClientProps {
   user: UserData
   transactions: Transaction[]
   usageSessions: UsageSession[]
-  totalXP: number
   level: number
   portal: 'cpns' | 'toefl'
 }
@@ -66,7 +65,6 @@ export default function ProfileClient({
     user,
     transactions,
     usageSessions,
-    totalXP,
     level,
     portal
 }: ProfileClientProps) {
@@ -137,7 +135,7 @@ export default function ProfileClient({
             } else {
                 toast.error('Gagal memperbarui database')
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error('Upload error:', error)
             toast.error('Gagal mengupload foto.')
         } finally {
@@ -160,7 +158,7 @@ export default function ProfileClient({
         if (typeof window !== "undefined" && window.snap) {
             try {
                 window.snap.pay(token, {
-                    onSuccess: async function (result: any) {
+                    onSuccess: async function () {
                         toast.loading("Memverifikasi pembayaran...", { id: loadingId })
                         await syncPaymentStatus(orderId)
                         toast.success("Pembayaran Berhasil!", {
@@ -169,7 +167,7 @@ export default function ProfileClient({
                         })
                         window.location.reload()
                     },
-                    onPending: async function (result: any) {
+                    onPending: async function () {
                         toast.loading("Memperbarui status...", { id: loadingId })
                         await syncPaymentStatus(orderId)
                         toast.info("Pembayaran Tertunda", {
@@ -178,7 +176,7 @@ export default function ProfileClient({
                         })
                         window.location.reload()
                     },
-                    onError: function (result: any) {
+                    onError: function () {
                         toast.dismiss(loadingId)
                         toast.error("Pembayaran Gagal")
                     },
@@ -189,9 +187,11 @@ export default function ProfileClient({
                         window.location.reload()
                     }
                 })
-            } catch (err: any) {
+            } catch (err) {
                 toast.dismiss(loadingId)
-                toast.error("Gagal memuat popup Snap", { description: err.message })
+                toast.error("Gagal memuat popup Snap", {
+                    description: err instanceof Error ? err.message : 'Terjadi kesalahan saat membuka Snap.'
+                })
             }
         } else {
             toast.dismiss(loadingId)
@@ -868,7 +868,14 @@ export default function ProfileClient({
                                 </button>
                                 <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
                                     {profile.avatar_url ? (
-                                        <img src={profile.avatar_url} alt="Avatar Preview" className="w-full h-auto max-h-[80vh] object-contain" />
+                                        <Image
+                                            src={profile.avatar_url}
+                                            alt="Avatar Preview"
+                                            width={1200}
+                                            height={1200}
+                                            unoptimized
+                                            className="w-full h-auto max-h-[80vh] object-contain"
+                                        />
                                     ) : (
                                         <div className="w-96 h-96 flex items-center justify-center">
                                             <span className="text-9xl font-bold text-white">{user.email[0].toUpperCase()}</span>
@@ -957,7 +964,7 @@ export default function ProfileClient({
                                                         toast.error(res.error || 'Gagal menghapus akun')
                                                         setIsDeleting(false)
                                                     }
-                                                } catch (err) {
+                                                } catch {
                                                     toast.error('Terjadi kesalahan sistem')
                                                     setIsDeleting(false)
                                                 }

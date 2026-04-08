@@ -13,7 +13,7 @@ export const options = {
 const SUPABASE_URL = __ENV.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON = __ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export default function () {
+export default function debugMetricsScenario() {
     http.get(`${SUPABASE_URL}/rest/v1/tryouts?select=id&limit=1`, {
         headers: {
             'apikey': SUPABASE_ANON,
