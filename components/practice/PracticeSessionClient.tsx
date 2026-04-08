@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { memo, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, Pause, Play, LogOut, Key, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, LogOut, Key, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import PaperBackground from '@/components/PaperBackground'
-import { SUBJECTS } from '@/lib/constants'
 import MathRenderer from '@/components/MathRenderer'
 
 
@@ -29,29 +29,297 @@ interface Props {
     sessionId: string
     questions: Question[]
     initialAnswers: Record<string, string> // questionId -> optionId
+    initialCurrentIndex: number
+    initialMarked: Record<string, boolean>
     endTime?: string // ISO string for tryout mode
     isTryout?: boolean
 }
 
-export default function PracticeSessionClient({ sessionId, questions, initialAnswers, endTime, isTryout = false }: Props) {
+type SessionProgressSnapshot = {
+    sessionId: string
+    currentQuestionIndex: number
+    markedQuestions: Record<string, boolean>
+}
+
+type AnswerSyncState = {
+    inFlight: boolean
+    latestOptionId: string | null
+    inflightPromise: Promise<void> | null
+}
+
+function getSessionStorageKey(sessionId: string) {
+    return `cpns-practice-session:${sessionId}`
+}
+
+function saveProgressToLocalStorage(snapshot: SessionProgressSnapshot) {
+    if (typeof window === 'undefined') return
+
+    window.localStorage.setItem(
+        getSessionStorageKey(snapshot.sessionId),
+        JSON.stringify({
+            currentQuestionIndex: snapshot.currentQuestionIndex,
+            markedQuestions: snapshot.markedQuestions
+        })
+    )
+}
+
+function loadProgressFromLocalStorage(sessionId: string) {
+    if (typeof window === 'undefined') return null
+
+    try {
+        const raw = window.localStorage.getItem(getSessionStorageKey(sessionId))
+        if (!raw) return null
+
+        const parsed = JSON.parse(raw) as {
+            currentQuestionIndex?: number
+            markedQuestions?: Record<string, boolean>
+        }
+
+        return {
+            currentQuestionIndex: typeof parsed.currentQuestionIndex === 'number' ? parsed.currentQuestionIndex : null,
+            markedQuestions: parsed.markedQuestions && typeof parsed.markedQuestions === 'object' ? parsed.markedQuestions : null
+        }
+    } catch {
+        return null
+    }
+}
+
+function clearProgressFromLocalStorage(sessionId: string) {
+    if (typeof window === 'undefined') return
+    window.localStorage.removeItem(getSessionStorageKey(sessionId))
+}
+
+async function saveProgressSnapshot(snapshot: SessionProgressSnapshot, previousSerializedSnapshot: string, force = false) {
+    const serialized = JSON.stringify(snapshot)
+
+    if (!force && serialized === previousSerializedSnapshot) {
+        return { serialized, skipped: true, success: false }
+    }
+
+    const response = await fetch(`/api/practice-sessions/${snapshot.sessionId}/beacon`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            currentQuestionIndex: snapshot.currentQuestionIndex,
+            markedQuestions: snapshot.markedQuestions
+        })
+    })
+
+    if (!response.ok) {
+        return { serialized, skipped: false, success: false }
+    }
+
+    return { serialized, skipped: false, success: true }
+}
+
+function flushProgressWithBeacon(snapshot: SessionProgressSnapshot) {
+    const payload = JSON.stringify({
+        currentQuestionIndex: snapshot.currentQuestionIndex,
+        markedQuestions: snapshot.markedQuestions
+    })
+    const endpoint = `/api/practice-sessions/${snapshot.sessionId}/beacon`
+
+    if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+        const blob = new Blob([payload], { type: 'application/json' })
+        const queued = navigator.sendBeacon(endpoint, blob)
+
+        if (queued) {
+            return true
+        }
+    }
+
+    void fetch(endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: payload,
+        keepalive: true
+    })
+
+    return false
+}
+
+const QuestionPrompt = memo(function QuestionPrompt({ question }: { question: Question }) {
+    return (
+        <>
+            {question.image_url && (
+                <div className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white relative">
+                    <div className="absolute top-2 left-2 z-10 p-1.5 bg-yellow-300 border-2 border-gray-900 rounded shadow-sm transform -rotate-2">
+                        <Sparkles size={14} className="text-gray-900" />
+                    </div>
+                    <Image
+                        src={question.image_url}
+                        alt="Ilustrasi Soal"
+                        width={800}
+                        height={400}
+                        className="w-full h-auto object-contain max-h-[200px]"
+                        unoptimized
+                    />
+                </div>
+            )}
+            <div className="prose dark:prose-invert max-w-none font-handwriting text-gray-900">
+                <div className="text-xl md:text-2xl leading-relaxed font-bold whitespace-pre-wrap">
+                    <MathRenderer text={question.content} />
+                </div>
+            </div>
+        </>
+    )
+})
+
+const QuestionOptionCard = memo(function QuestionOptionCard({
+    option,
+    index,
+    isSelected,
+    onSelect
+}: {
+    option: Question['options'][number]
+    index: number
+    isSelected: boolean
+    onSelect: (optionId: string) => void
+}) {
+    return (
+        <button
+            type="button"
+            onClick={() => onSelect(option.id)}
+            className={cn(
+                "w-full px-3 py-1.5 md:px-4 md:py-2 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden text-left touch-manipulation",
+                isSelected
+                    ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-[1px] translate-y-[1px]'
+                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-[2px_2px_0px_0px_rgba(59,130,246,0.2)]'
+            )}
+        >
+            {isSelected && (
+                <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10" />
+            )}
+
+            <div className={cn(
+                "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-handwriting font-bold text-lg transition-colors",
+                isSelected
+                    ? 'border-blue-600 bg-blue-600 text-white'
+                    : 'border-gray-400 text-gray-400 group-hover:border-blue-400 group-hover:text-blue-400'
+            )}>
+                {String.fromCharCode(65 + index)}
+            </div>
+            <span className={cn(
+                "text-base md:text-lg leading-relaxed font-handwriting",
+                isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
+            )}>
+                <MathRenderer text={option.content} />
+            </span>
+        </button>
+    )
+})
+
+const TryoutTimerBadge = memo(function TryoutTimerBadge({
+    endTime,
+    hasFinished,
+    onShowWarning5Min,
+    onShowWarning1Min,
+    onTimeExpired
+}: {
+    endTime: string
+    hasFinished: boolean
+    onShowWarning5Min: () => void
+    onShowWarning1Min: () => void
+    onTimeExpired: () => void
+}) {
+    const [timeLeft, setTimeLeft] = useState('01:40:00')
+    const [timeLeftMs, setTimeLeftMs] = useState(0)
+    const warning5ShownRef = useRef(false)
+    const warning1ShownRef = useRef(false)
+    const expiredHandledRef = useRef(false)
+
+    useEffect(() => {
+        warning5ShownRef.current = false
+        warning1ShownRef.current = false
+        expiredHandledRef.current = false
+    }, [endTime])
+
+    useEffect(() => {
+        if (!endTime || hasFinished) return
+
+        const tick = () => {
+            const now = Date.now()
+            const end = new Date(endTime).getTime()
+            const diff = end - now
+
+            if (diff <= 0) {
+                setTimeLeft('00:00:00')
+                setTimeLeftMs(0)
+
+                if (!expiredHandledRef.current) {
+                    expiredHandledRef.current = true
+                    onTimeExpired()
+                }
+                return
+            }
+
+            setTimeLeftMs(diff)
+
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+            setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
+
+            if (diff <= 5 * 60 * 1000 && diff > 60 * 1000 && !warning5ShownRef.current) {
+                warning5ShownRef.current = true
+                onShowWarning5Min()
+            }
+
+            if (diff <= 60 * 1000 && !warning1ShownRef.current) {
+                warning1ShownRef.current = true
+                onShowWarning1Min()
+            }
+        }
+
+        tick()
+        const interval = window.setInterval(tick, 1000)
+        return () => window.clearInterval(interval)
+    }, [endTime, hasFinished, onShowWarning5Min, onShowWarning1Min, onTimeExpired])
+
+    return (
+        <div className={cn(
+            "px-2 py-1 md:px-4 md:py-1 rounded-full text-[10px] md:text-sm font-mono flex items-center gap-1 md:gap-1.5 transition-all duration-300 border",
+            timeLeftMs <= 60000 ? "bg-red-50 text-red-600 border-red-500 animate-pulse border-2 md:shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]" :
+                timeLeftMs <= 300000 ? "bg-orange-50 text-orange-600 border-orange-500 border-2 md:shadow-[2px_2px_0px_0px_rgba(249,115,22,1)]" :
+                    "bg-blue-50 text-blue-700 border-blue-900 border-2 md:shadow-[2px_2px_0px_0px_rgba(30,58,138,1)]"
+        )}>
+            <Clock size={11} className="md:w-3.5 md:h-3.5" />
+            <span>{timeLeft}</span>
+        </div>
+    )
+})
+
+export default function PracticeSessionClient({
+    sessionId,
+    questions,
+    initialAnswers,
+    initialCurrentIndex,
+    initialMarked,
+    endTime,
+    isTryout = false
+}: Props) {
     const router = useRouter()
-    const [currentIndex, setCurrentIndex] = useState(0)
+    const [currentIndex, setCurrentIndex] = useState(initialCurrentIndex)
     const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers)
-    const [marked, setMarked] = useState<Record<string, boolean>>({}) // Ragu-ragu state
-    const [submitting, setSubmitting] = useState(false)
+    const [marked, setMarked] = useState<Record<string, boolean>>(initialMarked)
     const [finishing, setFinishing] = useState(false)
 
-    // Timer states for tryout mode
-    const [timeLeft, setTimeLeft] = useState<string>('01:40:00')
-    const [timeLeftMs, setTimeLeftMs] = useState<number>(0)
     const [hasFinished, setHasFinished] = useState(false)
     const [showWarning5Min, setShowWarning5Min] = useState(false)
     const [showWarning1Min, setShowWarning1Min] = useState(false)
-    const [isPaused, setIsPaused] = useState(false)
     const [showMobileNav, setShowMobileNav] = useState(false)
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [showExitModal, setShowExitModal] = useState(false)
     const [showNav, setShowNav] = useState(true) // Toggleable desktop side nav
+    const [hasHydratedResumeState, setHasHydratedResumeState] = useState(false)
+    const lastSavedSnapshotRef = useRef('')
+    const latestSnapshotRef = useRef<SessionProgressSnapshot | null>(null)
+    const answerSyncStateRef = useRef<Record<string, AnswerSyncState>>({})
 
     // Subcategory sorting and limits are now handled by dynamic tryout_configurations in the database fetch
     const sortedQuestions = useMemo(() => {
@@ -59,6 +327,34 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
     }, [questions])
 
     const currentQuestion = sortedQuestions[currentIndex]
+    const currentQuestionId = currentQuestion?.id ?? ''
+
+    const syncProgressSnapshot = useCallback((nextIndex: number, nextMarked: Record<string, boolean>) => {
+        if (hasFinished) return
+
+        const snapshot = {
+            sessionId,
+            currentQuestionIndex: nextIndex,
+            markedQuestions: nextMarked
+        }
+
+        latestSnapshotRef.current = snapshot
+        saveProgressToLocalStorage(snapshot)
+    }, [hasFinished, sessionId])
+
+    const handleNavigateToIndex = useCallback((nextIndex: number) => {
+        const safeIndex = Math.max(0, Math.min(sortedQuestions.length - 1, nextIndex))
+        setCurrentIndex(safeIndex)
+        syncProgressSnapshot(safeIndex, marked)
+    }, [marked, sortedQuestions.length, syncProgressSnapshot])
+
+    const handlePreviousQuestion = useCallback(() => {
+        handleNavigateToIndex(currentIndex - 1)
+    }, [currentIndex, handleNavigateToIndex])
+
+    const handleNextQuestion = useCallback(() => {
+        handleNavigateToIndex(currentIndex + 1)
+    }, [currentIndex, handleNavigateToIndex])
 
     const handleFinishSession = useCallback(async () => {
         if (finishing) return // Prevent double click
@@ -75,6 +371,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
             }
 
             if (result?.success) {
+                clearProgressFromLocalStorage(sessionId)
                 toast.success(isTryout ? 'Tryout selesai!' : 'Latihan selesai!')
                 router.push(`/cpns/dashboard/latihan/${sessionId}/result`)
             }
@@ -86,52 +383,83 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
         }
     }, [finishing, hasFinished, isTryout, sessionId, router])
 
-    const handleAutoFinish = useCallback(async () => {
-        toast.info('Waktu habis! Ujian diselesaikan otomatis.')
-        await handleFinishSession()
-    }, [handleFinishSession])
-
-    // Timer Logic for Tryout Mode
     useEffect(() => {
-        if (!isTryout || !endTime) return
-        if (isPaused) return // Don't run timer when paused
-
-        const interval = setInterval(() => {
-            if (hasFinished) return
-
-            const now = new Date().getTime()
-            const end = new Date(endTime).getTime()
-            const diff = end - now
-
-            if (diff <= 0) {
-                clearInterval(interval)
-                setTimeLeft('00:00:00')
-                setTimeLeftMs(0)
-                if (!hasFinished) {
-                    setHasFinished(true)
-                    handleAutoFinish()
-                }
-            } else {
-                setTimeLeftMs(diff)
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-                setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
-
-                // Warning notifications
-                const totalMinutes = Math.floor(diff / (1000 * 60))
-
-                if (totalMinutes === 4 && !showWarning5Min) {
-                    setShowWarning5Min(true)
-                }
-
-                if (totalMinutes === 0 && Math.floor(diff / 1000) === 60 && !showWarning1Min) {
-                    setShowWarning1Min(true)
-                }
+        const savedProgress = loadProgressFromLocalStorage(sessionId)
+        if (savedProgress) {
+            if (
+                typeof savedProgress.currentQuestionIndex === 'number' &&
+                savedProgress.currentQuestionIndex >= 0 &&
+                savedProgress.currentQuestionIndex < sortedQuestions.length
+            ) {
+                setCurrentIndex(savedProgress.currentQuestionIndex)
             }
-        }, 1000)
-        return () => clearInterval(interval)
-    }, [endTime, hasFinished, isTryout, isPaused, showWarning5Min, showWarning1Min, handleAutoFinish])
+
+            if (savedProgress.markedQuestions) {
+                setMarked(savedProgress.markedQuestions)
+            }
+        }
+
+        setHasHydratedResumeState(true)
+    }, [sessionId, sortedQuestions.length])
+
+    useEffect(() => {
+        if (!hasHydratedResumeState) {
+            return
+        }
+
+        if (hasFinished) {
+            latestSnapshotRef.current = null
+            clearProgressFromLocalStorage(sessionId)
+            return
+        }
+
+        latestSnapshotRef.current = {
+            sessionId,
+            currentQuestionIndex: currentIndex,
+            markedQuestions: marked
+        }
+
+        saveProgressToLocalStorage(latestSnapshotRef.current)
+
+        const timeout = window.setTimeout(() => {
+            const snapshot = latestSnapshotRef.current
+            if (!snapshot) return
+
+            void saveProgressSnapshot(snapshot, lastSavedSnapshotRef.current)
+                .then((result) => {
+                    if (result.success || result.skipped) {
+                        lastSavedSnapshotRef.current = result.serialized
+                    }
+                })
+                .catch((error) => {
+                    console.error('Failed to persist practice session progress:', error)
+                })
+        }, 700)
+
+        return () => window.clearTimeout(timeout)
+    }, [sessionId, currentIndex, marked, hasFinished, hasHydratedResumeState])
+
+    useEffect(() => {
+        const flushProgress = () => {
+            if (latestSnapshotRef.current) {
+                flushProgressWithBeacon(latestSnapshotRef.current)
+            }
+        }
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'hidden') {
+                flushProgress()
+            }
+        }
+
+        window.addEventListener('pagehide', flushProgress)
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+
+        return () => {
+            window.removeEventListener('pagehide', flushProgress)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
+    }, [])
 
     // Warn on browser refresh/close
     useEffect(() => {
@@ -146,43 +474,97 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
         return () => window.removeEventListener('beforeunload', handleBeforeUnload)
     }, [finishing, hasFinished])
 
-    // Safety check - prevent crash if no questions available
-    if (!currentQuestion || sortedQuestions.length === 0) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="text-center text-muted-foreground">
-                    <p className="text-lg font-semibold">Tidak ada soal tersedia</p>
-                    <p className="text-sm">Silakan kembali ke halaman latihan</p>
-                </div>
-            </div>
-        )
-    }
-
-    const handleSelectOption = async (optionId: string) => {
-        if (submitting) return
-        if (answers[currentQuestion.id] === optionId) return // Prevent double click on same option
-
-
-        // Optimistic update
-        setAnswers(prev => ({ ...prev, [currentQuestion.id]: optionId }))
-        setSubmitting(true)
-
-        // Server action
-        // Silent update/debounce could be better, but direct call is safer for consistency
-        const result = await submitAnswer(sessionId, currentQuestion.id, optionId)
-        setSubmitting(false)
-
-        if (result?.error) {
-            toast.error('Gagal menyimpan jawaban')
-        }
-    }
-
     const toggleMark = () => {
-        setMarked(prev => ({
-            ...prev,
-            [currentQuestion.id]: !prev[currentQuestion.id]
-        }))
+        setMarked(prev => {
+            const nextMarked = {
+                ...prev,
+                [currentQuestionId]: !prev[currentQuestionId]
+            }
+
+            syncProgressSnapshot(currentIndex, nextMarked)
+            return nextMarked
+        })
     }
+
+    const syncAnswerForQuestion = useCallback(async (questionId: string): Promise<void> => {
+        const state = answerSyncStateRef.current[questionId]
+        if (!state?.latestOptionId) return
+        if (state.inFlight) {
+            return state.inflightPromise ?? Promise.resolve()
+        }
+
+        const optionId = state.latestOptionId
+        state.inFlight = true
+
+        const request = submitAnswer(sessionId, questionId, optionId)
+            .then((result) => {
+                if (result?.error && state.latestOptionId === optionId) {
+                    toast.error('Gagal menyimpan jawaban')
+                }
+            })
+            .catch(() => {
+                if (state.latestOptionId === optionId) {
+                    toast.error('Gagal menyimpan jawaban')
+                }
+            })
+            .then(async () => {
+                state.inFlight = false
+
+                if (state.latestOptionId !== optionId) {
+                    await syncAnswerForQuestion(questionId)
+                }
+            })
+
+        state.inflightPromise = request
+        return request
+    }, [sessionId])
+
+    const flushPendingAnswers = useCallback(async () => {
+        const pendingQuestionIds = Object.keys(answerSyncStateRef.current)
+        if (pendingQuestionIds.length === 0) return
+
+        await Promise.all(pendingQuestionIds.map((questionId) => syncAnswerForQuestion(questionId)))
+    }, [syncAnswerForQuestion])
+
+    const handleAutoFinish = useCallback(async () => {
+        toast.info('Waktu habis! Ujian diselesaikan otomatis.')
+        await flushPendingAnswers()
+        await handleFinishSession()
+    }, [flushPendingAnswers, handleFinishSession])
+
+    const handleSelectOption = useCallback((optionId: string) => {
+        const questionId = currentQuestionId
+        if (!questionId) return
+
+        if (answers[questionId] === optionId) return
+
+        setAnswers(prev => ({ ...prev, [questionId]: optionId }))
+
+        const currentState = answerSyncStateRef.current[questionId] ?? {
+            inFlight: false,
+            latestOptionId: null,
+            inflightPromise: null
+        }
+
+        currentState.latestOptionId = optionId
+        answerSyncStateRef.current[questionId] = currentState
+
+        void syncAnswerForQuestion(questionId)
+    }, [answers, currentQuestionId, syncAnswerForQuestion])
+
+    const handleShowWarning5Min = useCallback(() => {
+        setShowWarning5Min(true)
+    }, [])
+
+    const handleShowWarning1Min = useCallback(() => {
+        setShowWarning1Min(true)
+    }, [])
+
+    const handleTimeExpired = useCallback(() => {
+        if (hasFinished) return
+        setHasFinished(true)
+        void handleAutoFinish()
+    }, [handleAutoFinish, hasFinished])
 
 
     // Calculate Answer Stats
@@ -197,13 +579,41 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
     const handleConfirmFinish = async () => {
         setShowConfirmModal(false)
+        await flushPendingAnswers()
         await handleFinishSession()
     }
 
 
 
-    const handleExit = () => {
+    const handleExit = async () => {
+        await flushPendingAnswers()
+
+        const snapshot = latestSnapshotRef.current
+
+        if (snapshot) {
+            try {
+                const result = await saveProgressSnapshot(snapshot, lastSavedSnapshotRef.current, true)
+                if (result.success || result.skipped) {
+                    lastSavedSnapshotRef.current = result.serialized
+                }
+            } catch (error) {
+                console.error('Failed to save progress before exit:', error)
+            }
+        }
+
         router.push('/cpns/dashboard/latihan')
+    }
+
+    // Safety check - prevent crash if no questions available
+    if (!currentQuestion || sortedQuestions.length === 0) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center text-muted-foreground">
+                    <p className="text-lg font-semibold">Tidak ada soal tersedia</p>
+                    <p className="text-sm">Silakan kembali ke halaman latihan</p>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -243,7 +653,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                         <button
                                             key={q.id}
                                             onClick={() => {
-                                                setCurrentIndex(idx)
+                                                handleNavigateToIndex(idx)
                                                 setShowMobileNav(false)
                                             }}
                                             className={cn(
@@ -295,7 +705,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                             <h3 className="text-3xl font-bold text-gray-900">Keluar Latihan?</h3>
 
                             <p className="text-lg text-gray-700 font-medium flex items-center justify-center gap-2">
-                                Progres latihan Anda saat ini akan hilang. Apakah Anda yakin ingin menyerah?
+                                Progres latihan dan nomor soal terakhir akan tersimpan. Anda bisa lanjut lagi nanti dari dashboard.
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-4">
@@ -319,7 +729,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
 
             {/* Warning Modal - 5 Minutes */}
             <AnimatePresence>
-                {isTryout && showWarning5Min && timeLeftMs > 60000 && (
+                {isTryout && showWarning5Min && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -452,52 +862,23 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                 "flex-1 flex flex-col md:h-full relative transition-all duration-500",
                 showNav ? "" : "lg:max-w-4xl lg:mx-auto"
             )}>
-                {/* Desktop Floating Toggle Tab */}
-                <button
-                    onClick={() => setShowNav(!showNav)}
-                    className="hidden lg:flex absolute top-20 -right-4 z-20 items-center justify-center w-8 h-10 bg-yellow-100 border-2 border-l-0 border-gray-900 rounded-r-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:w-10 transition-all group overflow-hidden"
-                    title={showNav ? "Sembunyikan Navigasi" : "Tampilkan Navigasi"}
-                >
-                    <motion.div
-                        animate={{ rotate: showNav ? 0 : 180 }}
-                        className={cn("transition-colors", showNav ? "text-gray-500" : "text-blue-600")}
-                    >
-                        <Map size={16} />
-                    </motion.div>
-                </button>
-
                 <div className="flex-1 flex flex-col bg-white/80 backdrop-blur-sm border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] md:overflow-hidden relative">
                     {/* Header - Optimized for Mobile */}
                     <div className="border-b-2 border-dashed border-gray-300 bg-yellow-50/50 p-2 md:p-4">
                         <div className="flex items-center justify-between gap-2">
                             {/* Left: Nav & Info */}
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <button
-                                    onClick={() => setShowMobileNav(true)}
-                                    className="lg:hidden p-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 shrink-0"
-                                >
-                                    <Map size={16} />
-                                </button>
-
-                                <button
-                                    onClick={() => setShowExitModal(true)}
-                                    className="lg:hidden p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 shrink-0 border border-red-200 ml-2"
-                                    title="Keluar"
-                                >
-                                    <LogOut size={16} />
-                                </button>
-
+                            <div className="flex items-center gap-2 overflow-hidden min-w-0">
                                 <div className="flex flex-col gap-0.5 md:gap-1 overflow-hidden">
                                     <div className="flex items-baseline gap-1">
                                         <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900 leading-tight">Soal #{currentIndex + 1}</span>
                                         <span className="font-handwriting text-sm text-gray-500 md:text-lg">/ {sortedQuestions.length}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[10px] md:text-[11px] font-bold rounded uppercase tracking-wider">
+                                        <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[9px] md:text-[11px] font-bold rounded uppercase tracking-wider">
                                             {currentQuestion.type}
                                         </span>
                                         {currentQuestion.category && (
-                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] md:text-xs font-bold font-handwriting rounded shadow-sm">
+                                            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[9px] md:text-xs font-bold font-handwriting rounded md:shadow-sm">
                                                 {formatSubjectName(currentQuestion.category)}
                                             </span>
                                         )}
@@ -511,10 +892,10 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                     onClick={toggleMark}
                                     className={cn(
                                         "flex items-center justify-center rounded-full border transition-colors",
-                                        "w-8 h-8 md:w-auto md:h-auto md:px-4 md:py-1.5 font-handwriting font-bold", // Circle on mobile, Pill on desktop
+                                        "w-7 h-7 md:w-auto md:h-auto md:px-4 md:py-1 text-[10px] md:text-sm gap-1 md:gap-1.5 font-handwriting font-bold shadow-none", // Circle on mobile, Pill on desktop
                                         marked[currentQuestion.id]
-                                            ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400 rotate-1 shadow-sm'
-                                            : 'bg-white border-2 border-gray-300 text-gray-500 hover:bg-gray-50 hover:border-gray-400'
+                                            ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400 rotate-1 md:shadow-[2px_2px_0px_0px_rgba(202,138,4,1)]'
+                                            : 'bg-white border-2 border-gray-300 text-gray-500 hover:bg-gray-50 hover:border-gray-400 md:shadow-[2px_2px_0px_0px_rgba(156,163,175,1)]'
                                     )}
                                     title={marked[currentQuestion.id] ? 'Hilangkan tanda ragu' : 'Tandai ragu'}
                                 >
@@ -523,108 +904,77 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                 </button>
 
                                 {isTryout ? (
-                                    <div className={cn(
-                                        "px-2 py-1 md:px-4 md:py-1 rounded-full text-xs md:text-sm font-mono flex items-center gap-1.5 transition-all duration-300 border",
-                                        isPaused ? "bg-gray-500 text-white border-gray-600" :
-                                            timeLeftMs <= 60000 ? "bg-red-50 text-red-600 border-red-500 animate-pulse border-2 shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]" :
-                                                timeLeftMs <= 300000 ? "bg-orange-50 text-orange-600 border-orange-500 border-2 shadow-[2px_2px_0px_0px_rgba(249,115,22,1)]" :
-                                                    "bg-blue-50 text-blue-700 border-blue-900 border-2 shadow-[2px_2px_0px_0px_rgba(30,58,138,1)]"
-                                    )}>
-                                        <Clock size={12} className="md:w-3.5 md:h-3.5" />
-                                        <span>{timeLeft}</span>
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                setIsPaused(!isPaused)
-                                            }}
-                                            className="ml-1 md:ml-2 hover:bg-black/10 rounded p-0.5"
-                                        >
-                                            {isPaused ? <Play size={10} /> : <Pause size={10} />}
-                                        </button>
-                                    </div>
+                                    <TryoutTimerBadge
+                                        endTime={endTime!}
+                                        hasFinished={hasFinished}
+                                        onShowWarning5Min={handleShowWarning5Min}
+                                        onShowWarning1Min={handleShowWarning1Min}
+                                        onTimeExpired={handleTimeExpired}
+                                    />
                                 ) : (
                                     <div className="hidden md:flex px-4 py-1.5 bg-white border-2 border-gray-900 rounded-full text-xs md:text-sm font-handwriting font-bold items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         <Clock size={14} />
                                         <span>Latihan Santai</span>
                                     </div>
                                 )}
+
+                                <button
+                                    onClick={() => setShowNav(!showNav)}
+                                    className={cn(
+                                        "hidden lg:flex px-2.5 md:px-3 h-7 md:h-8 rounded-full border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all items-center justify-center",
+                                        showNav
+                                            ? "bg-blue-50 text-blue-700 border-blue-900 hover:bg-blue-100"
+                                            : "bg-white text-gray-500 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                                    )}
+                                    title={showNav ? "Sembunyikan Navigasi" : "Tampilkan Navigasi"}
+                                >
+                                    <motion.div
+                                        animate={{ rotate: showNav ? 0 : 180 }}
+                                        className="transition-colors"
+                                    >
+                                        <Map size={14} />
+                                    </motion.div>
+                                </button>
+
+                                <button
+                                    onClick={() => setShowMobileNav(true)}
+                                    className="lg:hidden w-8 h-8 md:w-9 md:h-9 rounded-full border-2 border-gray-300 bg-white text-gray-500 hover:bg-gray-50 hover:border-gray-400 shrink-0 shadow-none flex items-center justify-center"
+                                >
+                                    <Map size={14} className="md:w-4 md:h-4" />
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    {/* Content Area - Flex Column */}
+                    {/* Content Area - Unified Scroll */}
                     <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Sticky Question */}
-                        <div className="shrink-0 p-4 pb-2 md:p-6 md:pb-4 border-b-2 border-dashed border-gray-200 z-10 flex flex-col gap-4">
-                            {currentQuestion.image_url && (
-                                <div className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white relative">
-                                    <div className="absolute top-2 left-2 z-10 p-1.5 bg-yellow-300 border-2 border-gray-900 rounded shadow-sm transform -rotate-2">
-                                        <Sparkles size={14} className="text-gray-900" />
-                                    </div>
-                                    <img
-                                        src={currentQuestion.image_url}
-                                        alt="Ilustrasi Soal"
-                                        className="w-full h-auto object-contain max-h-[200px]"
-                                    />
+                        <div className="flex-1 overflow-y-auto">
+                            <div className="p-4 md:p-6 flex flex-col gap-6">
+                                <div className="pb-4 md:pb-6 border-b-2 border-dashed border-gray-200 flex flex-col gap-4">
+                                    <QuestionPrompt question={currentQuestion} />
                                 </div>
-                            )}
-                            <div className="prose dark:prose-invert max-w-none font-handwriting text-gray-900">
-                                <div className="text-xl md:text-2xl leading-relaxed font-bold whitespace-pre-wrap">
-                                    <MathRenderer text={currentQuestion.content} />
+
+                                <div className="space-y-2 md:space-y-3">
+                                    {currentQuestion.options.map((option, i) => {
+                                        const isSelected = answers[currentQuestion.id] === option.id
+                                        return (
+                                            <QuestionOptionCard
+                                                key={option.id}
+                                                option={option}
+                                                index={i}
+                                                isSelected={isSelected}
+                                                onSelect={handleSelectOption}
+                                            />
+                                        )
+                                    })}
                                 </div>
-                            </div>
-                        </div>
-
-                        {/* Scrollable Options */}
-                        <div className="flex-1 overflow-y-auto p-4 pt-4 md:p-6 md:pt-6">
-                            <div className="space-y-2 md:space-y-3">
-                                {currentQuestion.options.map((option, i) => {
-                                    const isSelected = answers[currentQuestion.id] === option.id;
-                                    return (
-                                        <div
-                                            key={option.id}
-                                            onClick={() => handleSelectOption(option.id)}
-                                            className={cn(
-                                                "p-3 md:p-4 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden",
-                                                isSelected
-                                                    ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] transform translate-x-[1px] translate-y-[1px]'
-                                                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-[2px_2px_0px_0px_rgba(59,130,246,0.2)]'
-                                            )}
-                                        >
-                                            {/* Ink Highlighter Effect */}
-                                            {isSelected && (
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: '100%' }}
-                                                    className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/30 -z-10"
-                                                    style={{ originX: 0 }}
-                                                />
-                                            )}
-
-                                            <div className={cn(
-                                                "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-handwriting font-bold text-lg transition-colors",
-                                                isSelected
-                                                    ? 'border-blue-600 bg-blue-600 text-white'
-                                                    : 'border-gray-400 text-gray-400 group-hover:border-blue-400 group-hover:text-blue-400'
-                                            )}>
-                                                {String.fromCharCode(65 + i)}
-                                            </div>
-                                            <span className={cn(
-                                                "text-base md:text-lg leading-relaxed font-handwriting",
-                                                isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
-                                            )}>
-                                                <MathRenderer text={option.content} />
-                                            </span>
-                                        </div>
-                                    );
-                                })}
                             </div>
                         </div>
 
                         {/* Mobile Navigation - Slimmed Down */}
                         <div className="shrink-0 p-4 border-t-2 border-dashed border-gray-300 flex justify-between items-center sm:hidden gap-3 bg-white/50 backdrop-blur-sm z-10">
                             <button
-                                onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+                                onClick={handlePreviousQuestion}
                                 disabled={currentIndex === 0}
                                 className="flex items-center justify-center w-12 h-12 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 disabled:opacity-50 transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             >
@@ -642,7 +992,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                 </button>
                             ) : (
                                 <button
-                                    onClick={() => setCurrentIndex(prev => Math.min(sortedQuestions.length - 1, prev + 1))}
+                                    onClick={handleNextQuestion}
                                     className="flex items-center justify-center w-12 h-12 bg-gray-900 text-white rounded-xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(30,58,138,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
                                     <ChevronRight size={24} />
@@ -654,7 +1004,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                     {/* Footer Nav - Desktop Only - Styled */}
                     <div className="hidden sm:flex p-4 border-t-2 border-dashed border-gray-300 justify-between items-center bg-white/50 backdrop-blur-sm">
                         <button
-                            onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+                            onClick={handlePreviousQuestion}
                             disabled={currentIndex === 0}
                             className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-handwriting font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                         >
@@ -673,7 +1023,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                             </button>
                         ) : (
                             <button
-                                onClick={() => setCurrentIndex(prev => Math.min(sortedQuestions.length - 1, prev + 1))}
+                                onClick={handleNextQuestion}
                                 className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg hover:bg-gray-800 transition font-handwriting font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             >
                                 Selanjutnya
@@ -705,7 +1055,7 @@ export default function PracticeSessionClient({ sessionId, questions, initialAns
                                 {sortedQuestions.map((q, idx) => (
                                     <button
                                         key={q.id}
-                                        onClick={() => setCurrentIndex(idx)}
+                                        onClick={() => handleNavigateToIndex(idx)}
                                         className={cn(
                                             "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]",
                                             currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-2 border-blue-600 z-10' : '',

@@ -7,7 +7,7 @@ import {
     LayoutDashboard,
     BookOpen,
     Trophy,
-    Calendar,
+    Clock3,
     User,
     Ticket,
     Target,
@@ -83,6 +83,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     {portal === 'cpns' && <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />}
                     <NavItem href={portal === 'cpns' ? "/cpns/dashboard/beli-paket" : "/toefl/dashboard/beli-paket"} icon={<BookOpen size={20} />} label="Beli Paket" />
                     <NavItem href={portal === 'cpns' ? "/cpns/dashboard/latihan" : "/toefl/dashboard/latihan"} icon={<Target size={20} />} label="Tryout" badge="XP" />
+                    {portal === 'cpns' && <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Riwayat" />}
 
                     <NavItem href={portal === 'cpns' ? "/cpns/dashboard/profile" : "/toefl/dashboard/profile"} icon={<User size={20} />} label="Profil" />
 

@@ -5,7 +5,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Core routes
   const routes = [
-    '',
     '/cpns',
     '/login',
     '/register',
@@ -15,8 +14,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
-    changeFrequency: (route === '' || route === '/cpns') ? 'daily' as const : 'weekly' as const,
-    priority: route === '' ? 1 : route === '/cpns' ? 0.9 : 0.8,
+    changeFrequency: route === '/cpns' ? 'daily' as const : 'weekly' as const,
+    priority: route === '/cpns' ? 1 : 0.8,
   }));
 
   return routes;

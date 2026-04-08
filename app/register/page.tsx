@@ -12,7 +12,7 @@ import PaperBackground from '@/components/PaperBackground'
 export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [returnTo, setReturnTo] = useState('/')
+    const [returnTo, setReturnTo] = useState('/cpns')
     const router = useRouter()
 
     useEffect(() => {
@@ -39,9 +39,9 @@ export default function RegisterPage() {
                 })
                 // Redirect to login page instead of dashboard to force login after verification
                 // Or stay on page and show a success message
-                router.push(`/login?verified=false${returnTo !== '/' ? `&returnTo=${returnTo}` : ''}`)
+                router.push(`/login?verified=false&returnTo=${returnTo}`)
             }
-        } catch (error) {
+        } catch {
             toast.error('Terjadi kesalahan saat pendaftaran')
         } finally {
             setLoading(false)
@@ -147,7 +147,7 @@ export default function RegisterPage() {
                                     toast.error(result.error)
                                     setLoading(false)
                                 }
-                            } catch (error) {
+                            } catch {
                                 toast.error('Gagal menghubungkan ke Google')
                                 setLoading(false)
                             }
@@ -179,7 +179,7 @@ export default function RegisterPage() {
 
                 <div className="text-center text-lg font-handwriting">
                     <span className="text-gray-600">Sudah punya akun? </span>
-                    <Link href={`/login${returnTo !== '/' ? `?returnTo=${returnTo}` : ''}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
+                    <Link href={`/login?returnTo=${returnTo}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
                         Masuk
                     </Link>
                 </div>

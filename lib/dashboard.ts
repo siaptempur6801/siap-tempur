@@ -25,6 +25,7 @@ interface DashboardData {
         tkp: { score: number; target: number; passed: boolean }
     }
     lastExam: {
+        id: string
         date: string
         score_twk: number
         score_tiu: number
@@ -33,6 +34,7 @@ interface DashboardData {
         passed: boolean
     } | null
     bestExam: {
+        id: string
         date: string
         score_twk: number
         score_tiu: number
@@ -54,6 +56,14 @@ interface DashboardData {
         name: string
         daysLeft: number
     } | null
+    activeSession: {
+        mode: 'practice' | 'tryout'
+    } | null
+}
+
+function isMissingProgressColumnError(error: { message?: string | null; details?: string | null } | null) {
+    const text = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase()
+    return text.includes('last_activity_at')
 }
 
 export function getLevel(xp: number) {
@@ -125,7 +135,7 @@ export function getCachedRank(supabase: SupabaseClient, userId: string) {
 }
 
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
-    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankData] = await Promise.all([
+    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankData, activeSessionRes] = await Promise.all([
         supabase
             .from('profiles')
             .select('full_name, streak_count, tryout_quota, last_activity_date')
@@ -152,15 +162,35 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .eq('status', 'completed'),
         // Rank di-cache 5 menit — tidak perlu hit DB setiap request
         getCachedRank(supabase, userId),
+        supabase
+            .from('test_sessions')
+            .select('mode, start_time')
+            .eq('user_id', userId)
+            .eq('status', 'in_progress')
+            .order('last_activity_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
     ])
+
+    const fallbackActiveSessionRes = activeSessionRes.error && isMissingProgressColumnError(activeSessionRes.error)
+        ? await supabase
+            .from('test_sessions')
+            .select('mode, start_time')
+            .eq('user_id', userId)
+            .eq('status', 'in_progress')
+            .order('start_time', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : null
 
     const profile = profileRes.data
     const sessions = sessionsRes.data
     const bestSession = bestSessionRes.data?.[0]
     const allSessions = allSessionsRes.data
+    const activeSession = fallbackActiveSessionRes?.data ?? activeSessionRes.data
     // rankData sudah di-resolve langsung dari getCachedRank via Promise.all
 
-    const totalXp = allSessions?.reduce((sum: number, s: any) => sum + (s.total_score || 0), 0) || 0
+    const totalXp = allSessions?.reduce((sum: number, session) => sum + (session.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXp)
 
     const recentSessions = sessions || []
@@ -226,6 +256,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
 
     const lastSession = sessions && sessions.length > 0 ? sessions[0] : null
     const lastExam = lastSession ? {
+        id: lastSession.id,
         date: new Date(lastSession.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         score_twk: lastSession.score_twk || 0,
         score_tiu: lastSession.score_tiu || 0,
@@ -235,6 +266,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     } : null
 
     const bestExam = bestSession ? {
+        id: bestSession.id,
         date: new Date(bestSession.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
         score_twk: bestSession.score_twk || 0,
         score_tiu: bestSession.score_tiu || 0,
@@ -260,6 +292,9 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         },
         recommendations: recommendations.slice(0, 2),
         nextTryout: null,
+        activeSession: activeSession?.mode === 'practice' || activeSession?.mode === 'tryout'
+            ? { mode: activeSession.mode }
+            : null,
     }
 }
 

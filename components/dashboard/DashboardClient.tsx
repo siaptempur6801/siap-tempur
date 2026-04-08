@@ -3,11 +3,9 @@
 import { useState } from 'react'
 import { motion, Variants } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
     Flame,
     Zap,
-    Target,
     ArrowRight,
     Trophy,
     BookOpen,
@@ -22,8 +20,6 @@ import {
     Ticket
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { toast } from 'sonner'
-import { SUBJECTS } from '@/lib/constants'
 
 interface DashboardData {
     user: {
@@ -47,6 +43,7 @@ interface DashboardData {
         tkp: { score: number; target: number; passed: boolean }
     }
     lastExam: {
+        id: string
         date: string
         score_twk: number
         score_tiu: number
@@ -55,6 +52,7 @@ interface DashboardData {
         passed: boolean
     } | null
     bestExam: {
+        id: string
         date: string
         score_twk: number
         score_tiu: number
@@ -66,6 +64,9 @@ interface DashboardData {
         name: string
         daysLeft: number
     } | null
+    activeSession: {
+        mode: 'practice' | 'tryout'
+    } | null
 }
 
 interface Props {
@@ -73,41 +74,11 @@ interface Props {
     greeting: { greeting: string; message: string }
 }
 
-const TYPE_COLORS = {
-    TWK: {
-        bg: 'bg-blue-500',
-        bgLight: 'bg-blue-500/10',
-        text: 'text-blue-500',
-        border: 'border-blue-500/20',
-        gradient: 'from-blue-500 to-cyan-500',
-    },
-    TIU: {
-        bg: 'bg-purple-500',
-        bgLight: 'bg-purple-500/10',
-        text: 'text-purple-500',
-        border: 'border-purple-500/20',
-        gradient: 'from-purple-500 to-pink-500',
-    },
-    TKP: {
-        bg: 'bg-amber-500',
-        bgLight: 'bg-amber-500/10',
-        text: 'text-amber-500',
-        border: 'border-amber-500/20',
-        gradient: 'from-amber-500 to-orange-500',
-    },
-}
-
 const TYPE_ICONS = {
     TWK: <BookOpen className="w-5 h-5" />,
     TIU: <Brain className="w-5 h-5" />,
     TKP: <User className="w-5 h-5" />,
 }
-
-
-
-
-
-
 
 export default function DashboardClient({ data, greeting }: Props) {
     const [activeTab, setActiveTab] = useState<'last' | 'best'>('last')
@@ -131,7 +102,13 @@ export default function DashboardClient({ data, greeting }: Props) {
         }
     }
 
-    const allPassed = data.progress.twk.passed && data.progress.tiu.passed && data.progress.tkp.passed
+    const hasActiveSession = Boolean(data.activeSession)
+    const primaryCtaTitle = hasActiveSession
+        ? 'Lanjutkan Ujian'
+        : 'Mulai Latihan'
+    const primaryCtaDescription = hasActiveSession
+        ? 'Sesi tryout kamu masih berjalan'
+        : 'Asah kemampuan TWK, TIU, TKP'
 
     return (
         <motion.div
@@ -195,8 +172,8 @@ export default function DashboardClient({ data, greeting }: Props) {
                                     <div className="w-12 h-12 bg-white border-2 border-gray-900 flex items-center justify-center text-blue-600 mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
                                         <Building2 className="w-6 h-6" />
                                     </div>
-                                    <h3 className="text-3xl font-black mb-1">Mulai Latihan</h3>
-                                    <p className="text-blue-100 font-medium">Asah kemampuan TWK, TIU, TKP</p>
+                                    <h3 className="text-3xl font-black mb-1">{primaryCtaTitle}</h3>
+                                    <p className="text-blue-100 font-medium">{primaryCtaDescription}</p>
                                 </div>
                                 <div className="absolute top-6 right-6 opacity-20 group-hover:opacity-40 transition-opacity">
                                     <ArrowRight size={48} />
@@ -312,7 +289,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                                         </div>
 
                                         {/* Score Breakdown */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                             {(['twk', 'tiu', 'tkp'] as const).map((type) => {
                                                 const exam = activeTab === 'last' ? data.lastExam : data.bestExam
                                                 const score = exam ? exam[`score_${type}`] : 0
@@ -361,6 +338,16 @@ export default function DashboardClient({ data, greeting }: Props) {
                                                     </div>
                                                 )
                                             })}
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <Link
+                                                href={`/cpns/dashboard/latihan/${(activeTab === 'last' ? data.lastExam : data.bestExam)?.id}/result`}
+                                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                                            >
+                                                Lihat Pembahasan Lengkap
+                                                <ArrowRight className="w-4 h-4" />
+                                            </Link>
                                         </div>
                                     </>
                                 ) : (

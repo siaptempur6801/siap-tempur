@@ -24,9 +24,19 @@ import { getXPInfo } from '@/lib/dashboard'
 import { cn, formatSubjectName, calculateCurrentStreak } from '@/lib/utils'
 import { PASSING_GRADES, SUBJECTS } from '@/lib/constants'
 
-export default async function PracticeResultPage({ params }: { params: Promise<{ sessionId: string }> }) {
+export default async function PracticeResultPage({
+    params,
+    searchParams
+}: {
+    params: Promise<{ sessionId: string }>
+    searchParams: Promise<{ from?: string }>
+}) {
     const supabase = await createClient()
     const { sessionId } = await params
+    const { from } = await searchParams
+    const cameFromHistory = from === 'riwayat'
+    const backHref = cameFromHistory ? '/cpns/dashboard/riwayat' : '/cpns/dashboard/latihan'
+    const backLabel = cameFromHistory ? 'Riwayat' : 'Dashboard'
 
     // 1. Fetch Session Result
     const { data: session, error: sessionError } = await supabase
@@ -235,29 +245,29 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
         const passColor = isPassed ? 'text-green-600' : 'text-red-500'
 
         return (
-            <div className="bg-white border-2 border-gray-900 p-4 sm:p-5 rounded-2xl flex flex-col gap-3 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group hover:scale-[1.02] transition-transform font-handwriting">
+            <div className="bg-white border-2 border-gray-900 p-3.5 sm:p-4 rounded-2xl flex flex-col gap-2.5 relative overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group hover:scale-[1.02] transition-transform font-handwriting">
                 <PaperBackground />
                 <div className="flex justify-between items-center relative z-10">
-                    <span className="text-sm font-bold text-gray-800 uppercase tracking-widest">{type}</span>
+                    <span className="text-xs sm:text-sm font-bold text-gray-800 uppercase tracking-widest">{type}</span>
                     <span className={cn(
-                        "text-[10px] px-2.5 py-1 rounded-full font-bold border-2 rotate-3",
+                        "text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold border-2 rotate-3",
                         isPassed ? "bg-green-100 text-green-700 border-green-300" : "bg-red-100 text-red-700 border-red-300"
                     )}>
                         {isPassed ? <span className="inline-flex items-center gap-1">LULUS <Sparkles className="w-3 h-3" /></span> : 'BELUM LULUS'}
                     </span>
                 </div>
                 <div className="mt-2 relative z-10">
-                    <span className={cn("text-4xl font-black font-sans", passColor)}>{score}</span>
-                    <span className="text-gray-400 text-lg font-sans"> / {maxScore}</span>
+                    <span className={cn("text-3xl sm:text-4xl font-black font-sans", passColor)}>{score}</span>
+                    <span className="text-gray-400 text-base sm:text-lg font-sans"> / {maxScore}</span>
                 </div>
 
-                <div className="flex flex-col gap-1 text-xs font-bold text-gray-500 relative z-10 font-sans">
+                <div className="flex flex-col gap-1 text-[11px] sm:text-xs font-bold text-gray-500 relative z-10 font-sans">
                     <div className="flex justify-between"><span>Passing Grade:</span> <span className="text-gray-900">{passingGrade}</span></div>
                     <div className="flex justify-between"><span>Benar:</span> <span className="text-gray-900">{correct}/{total} Soal</span></div>
                 </div>
 
                 {/* Mini Progress Bar */}
-                <div className="w-full h-3 bg-gray-100 border-2 border-gray-900 rounded-full mt-2 overflow-hidden relative z-10">
+                <div className="w-full h-2.5 bg-gray-100 border-2 border-gray-900 rounded-full mt-1.5 overflow-hidden relative z-10">
                     <div
                         className={cn("h-full rounded-full border-r-2 border-gray-900 transition-all duration-1000", isPassed ? 'bg-green-500' : 'bg-red-500')}
                         style={{ width: `${Math.min(pct, 100)}%` }}
@@ -269,86 +279,86 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
 
     return (
         <ResultXPWrapper xpInfo={enrichedXPInfo}>
-            <div className="max-w-5xl mx-auto p-3 sm:p-8 space-y-6 sm:space-y-8 pb-32 font-handwriting">
+            <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-5 sm:space-y-6 pb-28 font-handwriting">
 
                 {/* 1. HERO SECTION */}
                 <div className="relative overflow-hidden rounded-3xl bg-[#fff9c4] border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                     <PaperBackground />
 
-                    <div className="relative p-6 sm:p-12 flex flex-col items-center text-center z-10">
-                        <div className="mb-4">
-                            <span className="px-4 py-1.5 rounded-full bg-gray-900 text-white text-sm font-bold uppercase tracking-widest rotate-2 inline-flex items-center gap-1">
+                    <div className="relative p-5 sm:p-8 flex flex-col items-center text-center z-10">
+                        <div className="mb-3">
+                            <span className="px-3 py-1 rounded-full bg-gray-900 text-white text-[11px] sm:text-sm font-bold uppercase tracking-widest rotate-2 inline-flex items-center gap-1">
                                 HASIL {isCombined ? 'TRYOUT SKD' : `LATIHAN ${formatSubjectName(singleType || '')}`} <ClipboardList className="w-4 h-4" />
                             </span>
                         </div>
 
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 text-gray-900 drop-shadow-sm">
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-black mb-3 text-gray-900 drop-shadow-sm">
                             {grade.text}
                         </h1>
-                        <p className="text-gray-700 text-lg md:text-xl max-w-2xl mx-auto mb-10 italic font-medium">
+                        <p className="text-gray-700 text-base md:text-lg max-w-2xl mx-auto mb-6 sm:mb-8 italic font-medium">
                             "{getFeedback()}"
                         </p>
 
-                        <div className="flex flex-col md:flex-row items-center gap-10 md:gap-20 w-full justify-center">
+                        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10 w-full justify-center">
 
                             {/* SCORE CIRCLE */}
                             <div className="relative group">
                                 <div className={cn(
-                                    "w-44 h-44 sm:w-56 sm:h-56 rounded-full border-4 border-gray-900 flex flex-col items-center justify-center bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-transform hover:scale-105 relative",
+                                    "w-36 h-36 sm:w-44 sm:h-44 rounded-full border-4 border-gray-900 flex flex-col items-center justify-center bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] transition-transform hover:scale-105 relative",
                                     grade.border
                                 )}>
                                     <div className="flex items-baseline gap-1">
-                                        <span className={cn("text-7xl md:text-8xl font-black tracking-tighter leading-none font-sans", grade.color)}>
+                                        <span className={cn("text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-none font-sans", grade.color)}>
                                             {session.total_score}
                                         </span>
                                     </div>
-                                    <span className="text-sm text-gray-500 font-bold mt-2 uppercase tracking-widest">Skor Akhir</span>
+                                    <span className="text-xs sm:text-sm text-gray-500 font-bold mt-1.5 uppercase tracking-widest">Skor Akhir</span>
 
                                     {/* Doodle around score */}
                                     <div className="absolute -top-2 -right-2 opacity-20">
-                                        <Sparkles size={40} className="text-gray-900" />
+                                        <Sparkles size={32} className="text-gray-900" />
                                     </div>
                                 </div>
 
                                 {/* Grade Badge */}
                                 <div className={cn(
-                                    "absolute -right-4 -top-4 w-20 h-20 rounded-xl border-4 border-gray-900 flex items-center justify-center text-4xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-12",
+                                    "absolute -right-2 -top-2 sm:-right-3 sm:-top-3 w-14 h-14 sm:w-16 sm:h-16 rounded-xl border-4 border-gray-900 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-12",
                                     grade.bg, grade.color
                                 )}>
                                     {grade.label}
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full md:w-auto">
-                                <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[140px] -rotate-1">
-                                    <div className="flex items-center gap-2 text-gray-500 text-[10px] sm:text-sm font-bold uppercase mb-0.5 sm:mb-1">
+                            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 w-full md:w-auto">
+                                <div className="bg-white p-3 sm:p-4 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[124px] sm:min-w-[132px] -rotate-1">
+                                    <div className="flex items-center gap-1.5 text-gray-500 text-[10px] sm:text-xs font-bold uppercase mb-0.5 sm:mb-1">
                                         <Target size={14} className="text-blue-500 sm:w-4 sm:h-4" /> Akurasi
                                     </div>
-                                    <span className="text-2xl sm:text-3xl font-black text-gray-900 font-sans">{mainStats.accuracy}%</span>
+                                    <span className="text-xl sm:text-2xl font-black text-gray-900 font-sans">{mainStats.accuracy}%</span>
                                     <span className="text-[10px] sm:text-xs text-gray-400 font-medium whitespace-nowrap">Banyak Benernya</span>
                                 </div>
 
-                                <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[140px] rotate-1">
-                                    <div className="flex items-center gap-2 text-gray-500 text-[10px] sm:text-sm font-bold uppercase mb-0.5 sm:mb-1">
+                                <div className="bg-white p-3 sm:p-4 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[124px] sm:min-w-[132px] rotate-1">
+                                    <div className="flex items-center gap-1.5 text-gray-500 text-[10px] sm:text-xs font-bold uppercase mb-0.5 sm:mb-1">
                                         <Clock size={14} className="text-orange-500 sm:w-4 sm:h-4" /> Waktu
                                     </div>
-                                    <span className="text-2xl sm:text-3xl font-black text-gray-900 font-sans">{durationMinutes}<span className="text-base sm:text-lg">m</span> {durationSeconds}<span className="text-base sm:text-lg">d</span></span>
+                                    <span className="text-xl sm:text-2xl font-black text-gray-900 font-sans">{durationMinutes}<span className="text-sm sm:text-base">m</span> {durationSeconds}<span className="text-sm sm:text-base">d</span></span>
                                     <span className="text-[10px] sm:text-xs text-gray-400 font-medium whitespace-nowrap">Lama Mikirnya</span>
                                 </div>
 
-                                <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[140px] rotate-1">
-                                    <div className="flex items-center gap-2 text-green-600 text-[10px] sm:text-sm font-bold uppercase mb-0.5 sm:mb-1">
+                                <div className="bg-white p-3 sm:p-4 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[124px] sm:min-w-[132px] rotate-1">
+                                    <div className="flex items-center gap-1.5 text-green-600 text-[10px] sm:text-xs font-bold uppercase mb-0.5 sm:mb-1">
                                         <CheckCircle2 size={14} className="sm:w-4 sm:h-4" /> Benar
                                     </div>
-                                    <span className="text-2xl sm:text-3xl font-black text-green-600 font-sans">{mainStats.correct}</span>
+                                    <span className="text-xl sm:text-2xl font-black text-green-600 font-sans">{mainStats.correct}</span>
                                     <span className="text-[10px] sm:text-xs text-gray-400 font-medium whitespace-nowrap">Berhasil HJ</span>
                                 </div>
 
-                                <div className="bg-white p-3 sm:p-5 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[140px] -rotate-1">
-                                    <div className="flex items-center gap-2 text-red-500 text-[10px] sm:text-sm font-bold uppercase mb-0.5 sm:mb-1">
+                                <div className="bg-white p-3 sm:p-4 rounded-2xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex flex-col items-start min-w-[124px] sm:min-w-[132px] -rotate-1">
+                                    <div className="flex items-center gap-1.5 text-red-500 text-[10px] sm:text-xs font-bold uppercase mb-0.5 sm:mb-1">
                                         <XCircle size={14} className="sm:w-4 sm:h-4" /> Salah
                                     </div>
-                                    <span className="text-2xl sm:text-3xl font-black text-red-500 font-sans">{mainStats.wrong}</span>
+                                    <span className="text-xl sm:text-2xl font-black text-red-500 font-sans">{mainStats.wrong}</span>
                                     <span className="text-[10px] sm:text-xs text-gray-400 font-medium whitespace-nowrap">Zonk / Skip</span>
                                 </div>
                             </div>
@@ -469,13 +479,13 @@ export default async function PracticeResultPage({ params }: { params: Promise<{
                 {/* 4. ACTION BAR (Sticky Bottom or Inline) */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-4 sm:pt-8 px-2 sm:px-0">
                     <Link
-                        href="/cpns/dashboard/latihan"
+                        href={backHref}
                         className="flex justify-center items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-2 border-gray-900 bg-white hover:bg-gray-50 font-black text-lg sm:text-xl transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                     >
-                        <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> Dashboard
+                        <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> {backLabel}
                     </Link>
 
-                    <RetakeButton isCombined={isCombined} singleType={singleType} />
+                    {!cameFromHistory && <RetakeButton isCombined={isCombined} singleType={singleType} />}
 
                     <ScrollToReviewButton />
                 </div>

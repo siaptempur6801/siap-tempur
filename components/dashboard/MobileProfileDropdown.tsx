@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { LogOut, User, Crown, Ticket, GraduationCap } from 'lucide-react'
+import { Clock3, LogOut, User, Crown, Ticket, GraduationCap } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -106,6 +106,17 @@ export default function MobileProfileDropdown({ user, profile, signoutAction, po
                     </div>
 
                     <div className="p-2 relative z-10">
+                        {portal === 'cpns' && (
+                            <Link
+                                href="/cpns/dashboard/riwayat"
+                                className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                <Clock3 size={18} />
+                                Riwayat
+                            </Link>
+                        )}
+
                         <Link
                             href={portal === 'cpns' ? "/cpns/dashboard/profile" : "/toefl/dashboard/profile"}
                             className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"

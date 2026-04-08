@@ -1,12 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "@supabase/supabase-js";
 
 import Link from "next/link";
-import { Target, Timer, BarChart3, ArrowRight, HelpCircle, Sparkles, Menu, X, Flame, Rocket, Eye, Monitor, Flag, Clock, ChevronDown, MessageCircleQuestion } from "lucide-react";
-import PaperBackground from "@/components/PaperBackground";
-import CheckDoodle from "@/components/CheckDoodle";
+import { Target, Timer, BarChart3, ArrowRight, Sparkles, Menu, X, Rocket, Eye, Monitor, Flag, Clock, ChevronDown } from "lucide-react";
 import StructuredData from "@/components/StructuredData";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -18,7 +15,9 @@ import { cn } from "@/lib/utils";
 
 
 
-export default function Home({ user: initialUser }: { user: User | null }) {
+type LandingUser = { id: string } | null;
+
+export default function Home({ user: initialUser }: { user: LandingUser }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [selectedOption, setSelectedOption] = useState<string>('C');
@@ -98,7 +97,6 @@ export default function Home({ user: initialUser }: { user: User | null }) {
 
                     {/* Desktop Navigation (Centered) */}
                     <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex gap-6 font-handwriting text-xl text-gray-700">
-                        <Link href="/" className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Semua Program</Link>
                         <button onClick={() => scrollToSection("features")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Fitur</button>
                         <button onClick={() => scrollToSection("exam-preview")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Intip Simulasi</button>
                         <button onClick={() => scrollToSection("products")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Harga</button>
@@ -137,7 +135,6 @@ export default function Home({ user: initialUser }: { user: User | null }) {
                     {/* Mobile Menu Dropdown */}
                     {isMenuOpen && (
                         <div className="absolute top-20 left-0 w-full bg-[#fdfbf7] border-b-4 border-gray-800/10 shadow-lg p-6 flex flex-col gap-4 md:hidden z-40">
-                            <Link href="/" className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Semua Program</Link>
                             <button onClick={() => { scrollToSection("features"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Fitur</button>
                             <button onClick={() => { scrollToSection("exam-preview"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Intip Simulasi</button>
                             <button onClick={() => { scrollToSection("products"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Harga</button>

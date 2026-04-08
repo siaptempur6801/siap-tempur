@@ -31,7 +31,7 @@ export default function RetakeButton({ isCombined, singleType }: RetakeButtonPro
             if (result.error) {
                 toast.error(result.error)
             } else if (result.sessionId) {
-                toast.success('Sesi baru dimulai!')
+                toast.success(result.resumed ? 'Melanjutkan sesi tersimpan.' : 'Sesi baru dimulai!')
                 router.push(`/cpns/dashboard/latihan/${result.sessionId}`)
             }
         } catch (error) {

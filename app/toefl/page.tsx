@@ -19,5 +19,5 @@ export default async function ToeflHome() {
     c.name.includes('sb-') && c.name.includes('-auth-token')
   )
 
-  return <ToeflLandingUI user={hasSession ? { id: 'cached' } as any : null} />
+  return <ToeflLandingUI user={hasSession ? { id: 'cached' } : null} />
 }

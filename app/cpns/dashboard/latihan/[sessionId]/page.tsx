@@ -132,6 +132,20 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             }
         })
 
+    const initialCurrentIndex = Math.max(
+        0,
+        Math.min(
+            Number(session.current_question_index ?? 0),
+            Math.max(questions.length - 1, 0)
+        )
+    )
+
+    const initialMarked = session.marked_questions && typeof session.marked_questions === 'object'
+        ? Object.fromEntries(
+            Object.entries(session.marked_questions as Record<string, unknown>).map(([questionId, value]) => [questionId, Boolean(value)])
+        )
+        : {}
+
     // Check if this is a tryout session (has all three types)
     const questionTypes = new Set(questions.map((q) => q.type))
     const isTryout = questionTypes.has('TWK') && questionTypes.has('TIU') && questionTypes.has('TKP')
@@ -148,6 +162,8 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             sessionId={sessionId}
             questions={questions}
             initialAnswers={initialAnswers}
+            initialCurrentIndex={initialCurrentIndex}
+            initialMarked={initialMarked}
             endTime={endTime}
             isTryout={isTryout}
         />

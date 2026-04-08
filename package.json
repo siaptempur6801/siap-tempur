@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:cpns-resume": "node scripts/test_cpns_resume_flow.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",

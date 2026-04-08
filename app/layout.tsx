@@ -36,11 +36,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://siaptempur.id';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Siap Tempur - Solusi Persiapan Ujian CPNS, BUMN & TOEFL",
+    default: "Siap Tempur - Tryout SKD CPNS & Simulasi CAT BKN",
     template: "%s | Siap Tempur"
   },
-  description: "Portal persiapan ujian terlengkap di Indonesia. Simulasi tryout SKD CPNS, TKD BUMN, dan TOEFL dengan sistem penilaian standar resmi (CAT BKN) dan ranking nasional. Berjuang cerdas, bukan keras.",
-  keywords: ["siap tempur", "tryout cpns", "tryout skd", "cpns 2026", "skd bkn", "tkd bumn", "toefl itp", "simulasi cat bkn", "bimbel cpns murah", "latihan soal cpns"],
+  description: "Platform tryout SKD CPNS 2026 dengan simulasi CAT BKN, pembahasan lengkap, ranking nasional, dan dashboard belajar yang fokus ke persiapan CPNS.",
+  keywords: ["siap tempur", "tryout cpns", "tryout skd", "cpns 2026", "skd bkn", "simulasi cat bkn", "bimbel cpns murah", "latihan soal cpns", "tryout kedinasan"],
   authors: [{ name: "Siap Tempur" }],
   creator: "Siap Tempur",
   publisher: "Siap Tempur",
@@ -50,9 +50,9 @@ export const metadata: Metadata = {
     telephone: false,
   },
   openGraph: {
-    title: "Siap Tempur - Portal Persiapan Ujian CPNS, BUMN & TOEFL",
-    description: "Portal persiapan ujian terlengkap di Indonesia. Simulasi tryout SKD CPNS, TKD BUMN, dan TOEFL dengan sistem penilaian standar resmi (CAT BKN).",
-    url: siteUrl,
+    title: "Siap Tempur - Tryout SKD CPNS & Simulasi CAT BKN",
+    description: "Platform tryout SKD CPNS 2026 dengan simulasi CAT BKN, pembahasan lengkap, dan ranking nasional.",
+    url: `${siteUrl}/cpns`,
     siteName: "Siap Tempur",
     locale: "id_ID",
     type: "website",
@@ -61,14 +61,14 @@ export const metadata: Metadata = {
         url: "/og-image.png", // USER: You should add this image to public/ folder
         width: 1200,
         height: 630,
-        alt: "Siap Tempur - Portal Persiapan Ujian",
+        alt: "Siap Tempur - Tryout SKD CPNS",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Siap Tempur - Portal Persiapan Ujian CPNS, BUMN & TOEFL",
-    description: "Portal persiapan ujian terlengkap di Indonesia. Simulasi tryout SKD CPNS, TKD BUMN, dan TOEFL.",
+    title: "Siap Tempur - Tryout SKD CPNS & Simulasi CAT BKN",
+    description: "Platform tryout SKD CPNS 2026 dengan simulasi CAT BKN, pembahasan lengkap, dan ranking nasional.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -81,9 +81,6 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
-  },
-  alternates: {
-    canonical: siteUrl,
   },
 };
 

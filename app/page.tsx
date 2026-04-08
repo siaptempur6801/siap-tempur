@@ -1,5 +1,5 @@
-import UniversalLandingUI from '@/components/home/universal/UniversalLandingUI'
+import { permanentRedirect } from 'next/navigation'
 
 export default function Index() {
-    return <UniversalLandingUI />
+    permanentRedirect('/cpns')
 }

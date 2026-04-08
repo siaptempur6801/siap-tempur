@@ -13,7 +13,7 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
-    const [returnTo, setReturnTo] = useState('/')
+    const [returnTo, setReturnTo] = useState('/cpns')
     const router = useRouter()
 
     useEffect(() => {
@@ -41,9 +41,9 @@ export default function LoginPage() {
                 toast.success('Login Berhasil!', {
                     description: 'Selamat datang kembali!'
                 })
-                router.push(returnTo !== '/' ? `${returnTo}/dashboard` : '/cpns/dashboard')
+                router.push(`${returnTo}/dashboard`)
             }
-        } catch (error) {
+        } catch {
             toast.error('Terjadi kesalahan saat login')
         } finally {
             setLoading(false)
@@ -63,7 +63,7 @@ export default function LoginPage() {
                 })
                 setUnverifiedEmail(null) // Hide the resend button or keep it? Maybe hide to prevent spam
             }
-        } catch (error) {
+        } catch {
             toast.error('Gagal mengirim ulang email')
         } finally {
             setLoading(false)
@@ -190,7 +190,7 @@ export default function LoginPage() {
                                     toast.error(result.error)
                                     setLoading(false)
                                 }
-                            } catch (error) {
+                            } catch {
                                 toast.error('Gagal menghubungkan ke Google')
                                 setLoading(false)
                             }
@@ -222,7 +222,7 @@ export default function LoginPage() {
 
                 <div className="text-center text-lg font-handwriting">
                     <span className="text-gray-600">Belum punya akun? </span>
-                    <Link href={`/register${returnTo !== '/' ? `?returnTo=${returnTo}` : ''}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
+                    <Link href={`/register?returnTo=${returnTo}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
                         Daftar Gratis
                     </Link>
                 </div>

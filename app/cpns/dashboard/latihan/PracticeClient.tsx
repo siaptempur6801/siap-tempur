@@ -1,8 +1,8 @@
 'use client'
 
 import { startTryout } from '@/app/actions/practice'
-import { ArrowRight, Loader2, Zap, Ticket, BookOpen, Trophy, AlertCircle } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowRight, Loader2, Ticket, BookOpen, Trophy, AlertCircle, Zap } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -11,14 +11,139 @@ import PaperBackground from '@/components/PaperBackground'
 
 interface PracticeClientProps {
     quota: number
+    activeSessionId: string | null
+    activeResumeQuestionNumber: number | null
+    activeAnsweredQuestions: number | null
+    activeStartedAt: string | null
 }
 
-export default function PracticeClient({ quota }: PracticeClientProps) {
+function getSessionStorageKey(sessionId: string) {
+    return `cpns-practice-session:${sessionId}`
+}
+
+function formatRemainingTime(startedAt: string | null, durationMinutes = 100) {
+    if (!startedAt) return null
+
+    const remainingMs = new Date(startedAt).getTime() + durationMinutes * 60 * 1000 - Date.now()
+    if (remainingMs <= 0) return 'Waktu habis'
+
+    const remainingMinutes = Math.ceil(remainingMs / 60000)
+    return `Sisa sekitar ${remainingMinutes} menit`
+}
+
+function loadStoredResumeQuestionNumber(sessionId: string | null) {
+    if (!sessionId || typeof window === 'undefined') return null
+
+    try {
+        const raw = window.localStorage.getItem(getSessionStorageKey(sessionId))
+        if (!raw) return null
+
+        const parsed = JSON.parse(raw) as { currentQuestionIndex?: number }
+        if (typeof parsed.currentQuestionIndex === 'number' && parsed.currentQuestionIndex >= 0) {
+            return parsed.currentQuestionIndex + 1
+        }
+    } catch {
+        // Ignore invalid local cache and fall back to server value.
+    }
+
+    return null
+}
+
+export default function PracticeClient({
+    quota,
+    activeSessionId,
+    activeResumeQuestionNumber,
+    activeAnsweredQuestions,
+    activeStartedAt
+}: PracticeClientProps) {
     const [loadingTryout, setLoadingTryout] = useState(false)
+    const [hydratedResumeQuestionNumber, setHydratedResumeQuestionNumber] = useState<number | null>(activeResumeQuestionNumber)
+    const [resumeTimeLabel, setResumeTimeLabel] = useState<string | null>(null)
     const router = useRouter()
 
+    const hydrateResumeQuestionNumber = useCallback(() => {
+        if (!activeSessionId) {
+            setHydratedResumeQuestionNumber(activeResumeQuestionNumber)
+            return
+        }
+
+        const storedResumeQuestionNumber = loadStoredResumeQuestionNumber(activeSessionId)
+        if (storedResumeQuestionNumber) {
+            setHydratedResumeQuestionNumber(storedResumeQuestionNumber)
+            return
+        }
+
+        setHydratedResumeQuestionNumber(activeResumeQuestionNumber)
+    }, [activeSessionId, activeResumeQuestionNumber])
+
+    useEffect(() => {
+        hydrateResumeQuestionNumber()
+    }, [hydrateResumeQuestionNumber])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                hydrateResumeQuestionNumber()
+            }
+        }
+
+        window.addEventListener('focus', hydrateResumeQuestionNumber)
+        window.addEventListener('pageshow', hydrateResumeQuestionNumber)
+        document.addEventListener('visibilitychange', handleVisibilityChange)
+
+        return () => {
+            window.removeEventListener('focus', hydrateResumeQuestionNumber)
+            window.removeEventListener('pageshow', hydrateResumeQuestionNumber)
+            document.removeEventListener('visibilitychange', handleVisibilityChange)
+        }
+    }, [hydrateResumeQuestionNumber])
+
+    useEffect(() => {
+        if (!activeStartedAt) {
+            setResumeTimeLabel(null)
+            return
+        }
+
+        const updateTimeLabel = () => {
+            setResumeTimeLabel(formatRemainingTime(activeStartedAt))
+        }
+
+        updateTimeLabel()
+        const interval = window.setInterval(updateTimeLabel, 30000)
+
+        return () => window.clearInterval(interval)
+    }, [activeStartedAt])
+
+    const resumeDetails = useMemo(() => {
+        const items: string[] = []
+
+        if ((activeAnsweredQuestions ?? 0) > 0) {
+            items.push(`${activeAnsweredQuestions} terjawab`)
+        }
+
+        if (resumeTimeLabel) {
+            items.push(resumeTimeLabel)
+        }
+
+        return items
+    }, [activeAnsweredQuestions, resumeTimeLabel])
+
+    const hasSavedProgress = (activeAnsweredQuestions ?? 0) > 0 || (hydratedResumeQuestionNumber ?? 1) > 1
+    const bannerMessage = activeSessionId
+        ? hasSavedProgress && hydratedResumeQuestionNumber
+            ? `Sesi tryout kamu masih berjalan. Lanjutkan dari soal nomor ${hydratedResumeQuestionNumber} tanpa pakai tiket baru.`
+            : 'Sesi tryout kamu masih berjalan. Lanjutkan ujian tanpa pakai tiket baru.'
+        : null
+    const buttonSubLabel = activeSessionId
+        ? hasSavedProgress && hydratedResumeQuestionNumber
+            ? `Posisi Terakhir Soal ${hydratedResumeQuestionNumber}`
+            : 'Sesi Masih Berjalan'
+        : '110 Soal • 100 Menit'
+
     const handleStartTryout = async () => {
-        if (quota <= 0) {
+        if (!activeSessionId && quota <= 0) {
             toast.error("Kuota Habis!", {
                 description: "Silahkan beli paket Tryout terlebih dahulu untuk melanjutkan.",
                 action: {
@@ -39,7 +164,7 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
             }
 
             if (result?.success && result?.sessionId) {
-                toast.success('Tryout SKD dimulai!')
+                toast.success(result.resumed ? 'Melanjutkan sesi tryout tersimpan.' : 'Tryout SKD dimulai!')
                 router.push(`/cpns/dashboard/latihan/${result.sessionId}`)
             }
         } catch {
@@ -127,7 +252,12 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                             {/* Right: Actions */}
                             <div className="flex flex-col items-center justify-center">
                                 <div className="w-full space-y-4">
-                                    {quota > 0 ? (
+                                    {activeSessionId && (
+                                        <div className="rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 px-4 py-3 text-center text-sm font-sans text-blue-700">
+                                            {bannerMessage}
+                                        </div>
+                                    )}
+                                    {quota > 0 || activeSessionId ? (
                                         <button
                                             onClick={handleStartTryout}
                                             disabled={loadingTryout}
@@ -144,10 +274,17 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                                             ) : (
                                                 <>
                                                     <Zap className="absolute top-2 right-2 w-8 h-8 text-yellow-300 opacity-20 group-hover:opacity-100 transition-opacity" />
-                                                    <span className="text-4xl font-black mb-1">Mulai Ujian</span>
+                                                    <span className="text-4xl font-black mb-1">{activeSessionId ? 'Lanjutkan Ujian' : 'Mulai Ujian'}</span>
                                                     <span className="text-sm font-bold opacity-80 uppercase tracking-widest flex items-center gap-2">
-                                                        110 Soal • 100 Menit <ArrowRight size={14} />
+                                                        {activeSessionId
+                                                            ? buttonSubLabel
+                                                            : '110 Soal • 100 Menit'} <ArrowRight size={14} />
                                                     </span>
+                                                    {activeSessionId && hasSavedProgress && resumeDetails.length > 0 && (
+                                                        <span className="mt-2 text-xs font-bold opacity-90 text-center">
+                                                            {resumeDetails.join(' | ')}
+                                                        </span>
+                                                    )}
                                                 </>
                                             )}
                                         </button>
@@ -211,7 +348,7 @@ export default function PracticeClient({ quota }: PracticeClientProps) {
                         <div>
                             <h4 className="font-bold text-lg mb-1 italic">Perhatian:</h4>
                             <p className="text-sm md:text-base font-sans leading-relaxed">
-                                Jangan keluar dari halaman ujian sebelum menekan tombol <strong>"Akhiri Sesi"</strong>. Keluar di tengah jalan akan dianggap telah menyelesaikan ujian dan tiket tidak dapat dikembalikan.
+                                Jika harus keluar, progres tryout akan tetap tersimpan dan bisa dilanjutkan lagi dari dashboard. Tiket tetap terpakai sampai sesi tersebut benar-benar selesai.
                             </p>
                         </div>
                     </div>

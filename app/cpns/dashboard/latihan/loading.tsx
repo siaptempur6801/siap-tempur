@@ -9,7 +9,7 @@ export default function PracticeLoading() {
                 <div className="animate-spin p-4 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full">
                     <Loader2 className="w-8 h-8 text-orange-500" />
                 </div>
-                <p className="mt-4 font-bold text-gray-600 animate-pulse">Menyiapkan Soal...</p>
+                <p className="mt-4 font-bold text-gray-600 animate-pulse">Memuat Halaman...</p>
             </div>
         </div>
     )

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Map, Sparkles } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, AlertCircle, Map, Sparkles, X } from 'lucide-react'
 import PaperBackground from '@/components/PaperBackground'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { SUBJECTS } from '@/lib/constants'
@@ -38,6 +39,7 @@ interface Props {
 
 export default function ResultReviewClient({ answers }: Props) {
     const [currentIndex, setCurrentIndex] = useState(0)
+    const [showNav, setShowNav] = useState(false)
 
     const sortedAnswers = useMemo(() => {
         return answers
@@ -74,94 +76,124 @@ export default function ResultReviewClient({ answers }: Props) {
     const maxScoreOption = options.reduce((prev: Option, current: Option) => (prev.score_value > current.score_value) ? prev : current, options[0])
 
     return (
-        <div className="flex flex-col gap-8 min-h-[500px] font-handwriting">
+        <div className="flex flex-col gap-6 min-h-[500px] font-handwriting">
 
             {/* TOP: Navigation Panel */}
-            <div className="w-full flex flex-col bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
-                <PaperBackground />
-                <div className="p-4 border-b-2 border-dashed border-gray-300 font-bold text-xl flex items-center justify-between bg-white/30 relative z-10">
-                    <div className="flex items-center gap-2">
-                        <Map size={20} />
-                        <span>Daftar Pembahasan</span>
-                    </div>
-                    {/* Legend Compact */}
-                    <div className="flex items-center gap-6 text-sm text-gray-700 hidden lg:flex">
-                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500 border border-green-700"></div><span>Benar / Tinggi</span></div>
-                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500 border border-red-700"></div><span>Salah / Rendah</span></div>
-                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Sedang</span></div>
-                    </div>
+            <div className="hidden">
+                <div className="flex justify-end">
+                    <button
+                        onClick={() => setShowNav(prev => !prev)}
+                        className={cn(
+                            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full border-2 text-xs sm:text-sm font-bold transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                            showNav
+                                ? "bg-blue-50 text-blue-700 border-blue-900 hover:bg-blue-100"
+                                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-500"
+                        )}
+                        title={showNav ? 'Sembunyikan navigasi pembahasan' : 'Tampilkan navigasi pembahasan'}
+                    >
+                        <motion.div animate={{ rotate: showNav ? 0 : 180 }}>
+                            <Map size={14} />
+                        </motion.div>
+                        <span>{showNav ? 'Sembunyikan Navigasi' : 'Tampilkan Navigasi'}</span>
+                    </button>
                 </div>
 
-                <div className="p-6 relative z-10">
-                    <div className="flex flex-col gap-6">
-                        {/* Group questions by type using centralized SUBJECTS */}
-                        {[SUBJECTS.TWK.short, SUBJECTS.TIU.short, SUBJECTS.TKP.short].map((questionType) => {
-                            const filteredAnswers = sortedAnswers
-                                .map((ans, idx) => ({ ans, idx }))
-                                .filter(({ ans }) => {
-                                    const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
-                                    return q.type === questionType
-                                })
-
-                            if (filteredAnswers.length === 0) return null
-
-                            // Calculate offset for display numbering dynamically
-                            let numberOffset = 0
-                            if (questionType === SUBJECTS.TIU.short) {
-                                numberOffset = sortedAnswers.filter(a => {
-                                    const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-                                    return q.type === SUBJECTS.TWK.short
-                                }).length
-                            } else if (questionType === SUBJECTS.TKP.short) {
-                                numberOffset = sortedAnswers.filter(a => {
-                                    const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-                                    return q.type === SUBJECTS.TWK.short || q.type === SUBJECTS.TIU.short
-                                }).length
-                            }
-
-                            return (
-                                <div key={questionType}>
-                                    {/* Section Header */}
-                                    <div className="text-sm font-bold text-gray-800 mb-3 px-1 uppercase tracking-widest border-s-4 border-gray-900 ps-3">
-                                        {questionType}
+                <AnimatePresence initial={false}>
+                    {showNav && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0, y: -8 }}
+                            animate={{ height: 'auto', opacity: 1, y: 0 }}
+                            exit={{ height: 0, opacity: 0, y: -8 }}
+                            transition={{ duration: 0.22 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="w-full flex flex-col bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+                                <PaperBackground />
+                                <div className="px-3 py-2.5 border-b-2 border-dashed border-gray-300 font-bold text-base sm:text-lg flex items-center justify-between bg-white/30 relative z-10">
+                                    <div className="flex items-center gap-2">
+                                        <Map size={18} />
+                                        <span>Daftar Pembahasan</span>
                                     </div>
-                                    {/* Question Buttons */}
-                                    <div className="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2.5">
-                                        {filteredAnswers.map(({ ans, idx }, positionInGroup) => {
-                                            const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
-                                            const s = getReviewStatus(ans, q)
-                                            const displayNumber = positionInGroup + 1 + numberOffset
+                                    {/* Legend Compact */}
+                                    <div className="hidden lg:flex items-center gap-4 text-xs text-gray-700">
+                                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-green-500 border border-green-700"></div><span>Benar / Tinggi</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-700"></div><span>Salah / Rendah</span></div>
+                                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-blue-700"></div><span>Sedang</span></div>
+                                    </div>
+                                </div>
 
-                                            let colorClass = 'bg-white text-gray-400 border-gray-300'
-                                            if (q.type === 'TKP') {
-                                                if (s === 'perfect') colorClass = 'bg-green-500 text-white border-green-700'
-                                                else if (s === 'good') colorClass = 'bg-blue-500 text-white border-blue-700'
-                                                else colorClass = 'bg-orange-500 text-white border-orange-700'
-                                            } else {
-                                                if (s === 'correct') colorClass = 'bg-green-500 text-white border-green-700'
-                                                else colorClass = 'bg-red-500 text-white border-red-700'
+                                <div className="p-3 sm:p-4 relative z-10">
+                                    <div className="flex flex-col gap-4">
+                                        {/* Group questions by type using centralized SUBJECTS */}
+                                        {[SUBJECTS.TWK.short, SUBJECTS.TIU.short, SUBJECTS.TKP.short].map((questionType) => {
+                                            const filteredAnswers = sortedAnswers
+                                                .map((ans, idx) => ({ ans, idx }))
+                                                .filter(({ ans }) => {
+                                                    const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
+                                                    return q.type === questionType
+                                                })
+
+                                            if (filteredAnswers.length === 0) return null
+
+                                            // Calculate offset for display numbering dynamically
+                                            let numberOffset = 0
+                                            if (questionType === SUBJECTS.TIU.short) {
+                                                numberOffset = sortedAnswers.filter(a => {
+                                                    const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+                                                    return q.type === SUBJECTS.TWK.short
+                                                }).length
+                                            } else if (questionType === SUBJECTS.TKP.short) {
+                                                numberOffset = sortedAnswers.filter(a => {
+                                                    const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+                                                    return q.type === SUBJECTS.TWK.short || q.type === SUBJECTS.TIU.short
+                                                }).length
                                             }
 
                                             return (
-                                                <button
-                                                    key={ans.id}
-                                                    onClick={() => setCurrentIndex(idx)}
-                                                    className={cn(
-                                                        "aspect-square rounded-lg font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-                                                        currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-2 scale-110 z-10 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'hover:scale-105',
-                                                        colorClass
-                                                    )}
-                                                >
-                                                    {displayNumber}
-                                                </button>
+                                                <div key={questionType}>
+                                                    <div className="text-xs font-bold text-gray-800 mb-2 px-1 uppercase tracking-[0.2em] border-s-4 border-gray-900 ps-2.5">
+                                                        {questionType}
+                                                    </div>
+                                                    <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-14 gap-1.5 sm:gap-2">
+                                                        {filteredAnswers.map(({ ans, idx }, positionInGroup) => {
+                                                            const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
+                                                            const s = getReviewStatus(ans, q)
+                                                            const displayNumber = positionInGroup + 1 + numberOffset
+
+                                                            let colorClass = 'bg-white text-gray-400 border-gray-300'
+                                                            if (q.type === 'TKP') {
+                                                                if (s === 'perfect') colorClass = 'bg-green-500 text-white border-green-700'
+                                                                else if (s === 'good') colorClass = 'bg-blue-500 text-white border-blue-700'
+                                                                else colorClass = 'bg-orange-500 text-white border-orange-700'
+                                                            } else {
+                                                                if (s === 'correct') colorClass = 'bg-green-500 text-white border-green-700'
+                                                                else colorClass = 'bg-red-500 text-white border-red-700'
+                                                            }
+
+                                                            return (
+                                                                <button
+                                                                    key={ans.id}
+                                                                    onClick={() => setCurrentIndex(idx)}
+                                                                    className={cn(
+                                                                        "h-11 w-11 sm:h-12 sm:w-12 rounded-md font-bold text-sm sm:text-base flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                                                                        currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-1 scale-105 z-10 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' : 'hover:scale-[1.03]',
+                                                                        colorClass
+                                                                    )}
+                                                                >
+                                                                    {displayNumber}
+                                                                </button>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
                                             )
                                         })}
                                     </div>
                                 </div>
-                            )
-                        })}
-                    </div>
-                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* BOTTOM: Question Review Area */}
@@ -174,40 +206,96 @@ export default function ResultReviewClient({ answers }: Props) {
                             <h2 className="font-bold text-xl sm:text-2xl text-gray-900 leading-tight">
                                 Pembahasan <span className="font-sans">#{currentIndex + 1}</span>
                             </h2>
-                            <div className="flex gap-1.5 flex-wrap">
-                                <span className="px-2 py-0.5 bg-gray-900 text-white text-[10px] sm:text-xs font-bold rounded-full rotate-2">
-                                    {question.type}
-                                </span>
-                                {question.category && (
-                                    <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border-2 border-blue-200 text-[10px] sm:text-xs font-bold rounded-lg -rotate-1 shadow-sm">
-                                        {formatSubjectName(question.category)}
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <div className="flex gap-1.5 flex-wrap">
+                                    <span className="px-2 py-0.5 bg-gray-900 text-white text-[10px] sm:text-xs font-bold rounded-full rotate-2">
+                                        {question.type}
                                     </span>
-                                )}
+                                    {question.category && (
+                                        <span className="px-2 py-0.5 bg-blue-50 text-blue-700 border-2 border-blue-200 text-[10px] sm:text-xs font-bold rounded-lg -rotate-1 shadow-sm">
+                                            {formatSubjectName(question.category)}
+                                        </span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-1.5 sm:hidden ml-auto">
+                                    <div className="px-2.5 py-0.5 bg-white border-2 border-gray-900 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-none">
+                                        {type === 'TKP' ? (
+                                            <span className={cn(
+                                                "flex items-center gap-1",
+                                                status === 'perfect' ? 'text-green-600' : status === 'good' ? 'text-blue-600' : 'text-orange-600'
+                                            )}>
+                                                <Sparkles size={12} /> +<span className="font-sans">{currentAnswer.selected_option?.score_value || 0}</span>
+                                            </span>
+                                        ) : (
+                                            status === 'correct' ? (
+                                                <span className="flex items-center gap-1 text-green-600 font-bold"><CheckCircle2 size={13} /> Benar</span>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-red-600 font-bold"><XCircle size={13} /> Salah</span>
+                                            )
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={() => setShowNav(prev => !prev)}
+                                        className={cn(
+                                            "inline-flex items-center justify-center w-8 h-6 bg-white rounded-full border-2 transition-all shadow-none",
+                                            showNav
+                                                ? "text-blue-700 border-blue-900 hover:bg-blue-50"
+                                                : "text-gray-600 border-gray-900 hover:bg-gray-50"
+                                        )}
+                                        title={showNav ? 'Sembunyikan navigasi pembahasan' : 'Tampilkan navigasi pembahasan'}
+                                    >
+                                        <motion.div animate={{ rotate: showNav ? 0 : 180 }}>
+                                            <Map size={12} />
+                                        </motion.div>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Score Badge - Integrated */}
-                    <div className="self-start sm:self-center px-3 py-1 bg-white border-2 border-gray-900 rounded-full text-sm sm:text-lg font-bold flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                        {type === 'TKP' ? (
-                            <span className={cn(
-                                "flex items-center gap-1.5",
-                                status === 'perfect' ? 'text-green-600' : status === 'good' ? 'text-blue-600' : 'text-orange-600'
-                            )}>
-                                <Sparkles size={14} className="sm:w-[18px] sm:h-[18px]" /> +<span className="font-sans">{currentAnswer.selected_option?.score_value || 0}</span> Poin
-                            </span>
-                        ) : (
-                            status === 'correct' ? (
-                                <span className="flex items-center gap-1.5 text-green-600 font-bold"><CheckCircle2 size={16} className="sm:w-[18px] sm:h-[18px]" /> Benar</span>
+                    {/* Score Badge + Nav Toggle */}
+                    <div className="hidden sm:flex items-center gap-2 self-start sm:self-center">
+                        <div className="px-2.5 py-0.5 sm:px-3 sm:py-1 bg-white border-2 border-gray-900 rounded-full text-xs sm:text-lg font-bold flex items-center gap-1.5 sm:gap-2 shadow-none sm:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            {type === 'TKP' ? (
+                                <span className={cn(
+                                    "flex items-center gap-1.5",
+                                    status === 'perfect' ? 'text-green-600' : status === 'good' ? 'text-blue-600' : 'text-orange-600'
+                                )}>
+                                    <Sparkles size={14} className="sm:w-[18px] sm:h-[18px]" /> +<span className="font-sans">{currentAnswer.selected_option?.score_value || 0}</span> Poin
+                                </span>
                             ) : (
-                                <span className="flex items-center gap-1.5 text-red-600 font-bold"><XCircle size={16} className="sm:w-[18px] sm:h-[18px]" /> Salah</span>
-                            )
-                        )}
+                                status === 'correct' ? (
+                                    <span className="flex items-center gap-1.5 text-green-600 font-bold"><CheckCircle2 size={16} className="sm:w-[18px] sm:h-[18px]" /> Benar</span>
+                                ) : (
+                                    <span className="flex items-center gap-1.5 text-red-600 font-bold"><XCircle size={16} className="sm:w-[18px] sm:h-[18px]" /> Salah</span>
+                                )
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => setShowNav(prev => !prev)}
+                            className={cn(
+                                "inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 bg-white rounded-full border-2 text-xs sm:text-lg font-bold transition-all shadow-none sm:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                                showNav
+                                    ? "text-blue-700 border-blue-900 hover:bg-blue-50"
+                                    : "text-gray-600 border-gray-900 hover:bg-gray-50"
+                            )}
+                            title={showNav ? 'Sembunyikan navigasi pembahasan' : 'Tampilkan navigasi pembahasan'}
+                        >
+                            <motion.div animate={{ rotate: showNav ? 0 : 180 }}>
+                                <Map size={14} className="sm:w-[18px] sm:h-[18px]" />
+                            </motion.div>
+                            <span>{showNav ? 'Sembunyikan Navigasi' : 'Tampilkan Navigasi'}</span>
+                        </button>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 p-4 sm:p-10 relative z-10">
+                <div className="flex-1 relative z-10 overflow-hidden">
+                    <div className="flex h-full flex-col lg:flex-row">
+                        <div className="flex-1 p-4 sm:p-10 overflow-y-auto">
                     <div className="relative mb-6 sm:mb-10">
                         <div className="absolute -left-4 sm:-left-6 top-1 w-1 sm:h-full bg-blue-400 rounded-full opacity-50"></div>
                         <div className="text-lg sm:text-2xl font-bold leading-relaxed text-gray-800 max-w-4xl">
@@ -215,7 +303,7 @@ export default function ResultReviewClient({ answers }: Props) {
                         </div>
                     </div>
 
-                    <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10 max-w-4xl">
+                    <div className="space-y-2 sm:space-y-2.5 mb-7 sm:mb-8 max-w-4xl">
                         {options.map((option: Option, i: number) => {
                             const isSelected = currentAnswer.option_id === option.id
                             const isCorrect = option.is_correct
@@ -260,25 +348,25 @@ export default function ResultReviewClient({ answers }: Props) {
 
                             return (
                                 <div key={option.id} className={cn(
-                                    "p-5 rounded-xl border-2 flex items-start gap-4 transition-all relative overflow-hidden group",
+                                    "px-3 py-3.5 sm:px-3.5 sm:py-3.5 rounded-lg border-2 flex items-start gap-2.5 sm:gap-3 transition-all relative overflow-hidden group",
                                     borderClass,
                                     bgClass
                                 )}>
                                     {/* Indicator Circle */}
                                     <div className={cn(
-                                        "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-bold text-lg",
+                                        "w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-bold text-sm sm:text-base",
                                         indicatorColor
                                     )}>
                                         {String.fromCharCode(65 + i)}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
-                                        <div className={cn("text-base sm:text-xl leading-relaxed break-words", textClass)}>
+                                        <div className={cn("text-[15px] sm:text-lg leading-snug break-words", textClass)}>
                                             <MathRenderer text={option.content} />
                                         </div>
 
                                         {/* Status Labels */}
-                                        <div className="flex gap-2 mt-2 flex-wrap">
+                                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
                                             {isSelected && <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded bg-gray-900 text-white shadow-sm">Pilihan Anda</span>}
                                             {type !== 'TKP' && isCorrect && <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded border-2 border-green-600 bg-white text-green-700 shadow-sm">Kunci</span>}
                                             {type === 'TKP' && option.score_value > 0 && (
@@ -317,7 +405,205 @@ export default function ResultReviewClient({ answers }: Props) {
                             </div>
                         </div>
                     )}
+                        </div>
+
+                        <AnimatePresence initial={false}>
+                            {showNav && (
+                                <motion.aside
+                                    initial={{ x: 280, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    exit={{ x: 280, opacity: 0 }}
+                                    transition={{ duration: 0.22 }}
+                                    className="hidden lg:block shrink-0 lg:w-[248px] xl:w-[260px] border-l-2 border-dashed border-gray-300 bg-[#fff9c4]/80 backdrop-blur-sm"
+                                >
+                                    <div className="px-2.5 py-3 border-b-2 border-dashed border-gray-300 font-bold text-sm flex items-center gap-2 bg-white/30">
+                                        <Map size={16} />
+                                        <span>Daftar Pembahasan</span>
+                                    </div>
+
+                                    <div className="px-2 py-3 space-y-3 max-h-[680px] overflow-y-auto">
+                                        <div className="hidden lg:flex items-center gap-3 text-[11px] text-gray-700">
+                                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-500 border border-green-700"></div><span>Benar</span></div>
+                                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-700"></div><span>Salah</span></div>
+                                            <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-blue-700"></div><span>Sedang</span></div>
+                                        </div>
+
+                                        {[SUBJECTS.TWK.short, SUBJECTS.TIU.short, SUBJECTS.TKP.short].map((questionType) => {
+                                            const filteredAnswers = sortedAnswers
+                                                .map((ans, idx) => ({ ans, idx }))
+                                                .filter(({ ans }) => {
+                                                    const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
+                                                    return q.type === questionType
+                                                })
+
+                                            if (filteredAnswers.length === 0) return null
+
+                                            let numberOffset = 0
+                                            if (questionType === SUBJECTS.TIU.short) {
+                                                numberOffset = sortedAnswers.filter(a => {
+                                                    const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+                                                    return q.type === SUBJECTS.TWK.short
+                                                }).length
+                                            } else if (questionType === SUBJECTS.TKP.short) {
+                                                numberOffset = sortedAnswers.filter(a => {
+                                                    const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+                                                    return q.type === SUBJECTS.TWK.short || q.type === SUBJECTS.TIU.short
+                                                }).length
+                                            }
+
+                                            return (
+                                                <div key={questionType}>
+                                                    <div className="text-[11px] font-bold text-gray-800 mb-2 px-1 uppercase tracking-[0.2em] border-s-4 border-gray-900 ps-2">
+                                                        {questionType}
+                                                    </div>
+                                                    <div className="grid grid-cols-5 gap-1">
+                                                        {filteredAnswers.map(({ ans, idx }, positionInGroup) => {
+                                                            const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
+                                                            const s = getReviewStatus(ans, q)
+                                                            const displayNumber = positionInGroup + 1 + numberOffset
+
+                                                            let colorClass = 'bg-white text-gray-400 border-gray-300'
+                                                            if (q.type === 'TKP') {
+                                                                if (s === 'perfect') colorClass = 'bg-green-500 text-white border-green-700'
+                                                                else if (s === 'good') colorClass = 'bg-blue-500 text-white border-blue-700'
+                                                                else colorClass = 'bg-orange-500 text-white border-orange-700'
+                                                            } else {
+                                                                if (s === 'correct') colorClass = 'bg-green-500 text-white border-green-700'
+                                                                else colorClass = 'bg-red-500 text-white border-red-700'
+                                                            }
+
+                                                            return (
+                                                                <button
+                                                                    key={ans.id}
+                                                                    onClick={() => setCurrentIndex(idx)}
+                                                                    className={cn(
+                                                                        "aspect-square w-full rounded-[6px] font-bold text-[11px] flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                                                                        currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-1 scale-105 z-10 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' : 'hover:scale-[1.03]',
+                                                                        colorClass
+                                                                    )}
+                                                                >
+                                                                    {displayNumber}
+                                                                </button>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </motion.aside>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
+
+                <AnimatePresence>
+                    {showNav && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[1px] lg:hidden"
+                            onClick={() => setShowNav(false)}
+                        >
+                            <motion.aside
+                                initial={{ x: '100%' }}
+                                animate={{ x: 0 }}
+                                exit={{ x: '100%' }}
+                                transition={{ duration: 0.22 }}
+                                className="ml-auto h-full w-[260px] border-l border-gray-900 bg-[#fff9c4] shadow-[-4px_0_0_0_rgba(0,0,0,1)]"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <div className="px-3 py-3 border-b-2 border-dashed border-gray-300 font-bold text-sm flex items-center justify-between bg-white/30">
+                                    <div className="flex items-center gap-2">
+                                        <Map size={16} />
+                                        <span>Daftar Pembahasan</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowNav(false)}
+                                        className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+
+                                <div className="px-2 py-3 space-y-3 h-[calc(100%-57px)] overflow-y-auto">
+                                    <div className="flex items-center gap-3 text-[11px] text-gray-700">
+                                        <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-500 border border-green-700"></div><span>Benar</span></div>
+                                        <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-700"></div><span>Salah</span></div>
+                                        <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-blue-700"></div><span>Sedang</span></div>
+                                    </div>
+
+                                    {[SUBJECTS.TWK.short, SUBJECTS.TIU.short, SUBJECTS.TKP.short].map((questionType) => {
+                                        const filteredAnswers = sortedAnswers
+                                            .map((ans, idx) => ({ ans, idx }))
+                                            .filter(({ ans }) => {
+                                                const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
+                                                return q.type === questionType
+                                            })
+
+                                        if (filteredAnswers.length === 0) return null
+
+                                        let numberOffset = 0
+                                        if (questionType === SUBJECTS.TIU.short) {
+                                            numberOffset = sortedAnswers.filter(a => {
+                                                const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+                                                return q.type === SUBJECTS.TWK.short
+                                            }).length
+                                        } else if (questionType === SUBJECTS.TKP.short) {
+                                            numberOffset = sortedAnswers.filter(a => {
+                                                const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
+                                                return q.type === SUBJECTS.TWK.short || q.type === SUBJECTS.TIU.short
+                                            }).length
+                                        }
+
+                                        return (
+                                            <div key={questionType}>
+                                                <div className="text-[11px] font-bold text-gray-800 mb-2 px-1 uppercase tracking-[0.2em] border-s-4 border-gray-900 ps-2">
+                                                    {questionType}
+                                                </div>
+                                                <div className="grid grid-cols-5 gap-1">
+                                                    {filteredAnswers.map(({ ans, idx }, positionInGroup) => {
+                                                        const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
+                                                        const s = getReviewStatus(ans, q)
+                                                        const displayNumber = positionInGroup + 1 + numberOffset
+
+                                                        let colorClass = 'bg-white text-gray-400 border-gray-300'
+                                                        if (q.type === 'TKP') {
+                                                            if (s === 'perfect') colorClass = 'bg-green-500 text-white border-green-700'
+                                                            else if (s === 'good') colorClass = 'bg-blue-500 text-white border-blue-700'
+                                                            else colorClass = 'bg-orange-500 text-white border-orange-700'
+                                                        } else {
+                                                            if (s === 'correct') colorClass = 'bg-green-500 text-white border-green-700'
+                                                            else colorClass = 'bg-red-500 text-white border-red-700'
+                                                        }
+
+                                                        return (
+                                                            <button
+                                                                key={ans.id}
+                                                                onClick={() => {
+                                                                    setCurrentIndex(idx)
+                                                                    setShowNav(false)
+                                                                }}
+                                                                className={cn(
+                                                                    "aspect-square w-full rounded-[6px] font-bold text-[11px] flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                                                                    currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-1 scale-105 z-10 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' : 'hover:scale-[1.03]',
+                                                                    colorClass
+                                                                )}
+                                                            >
+                                                                {displayNumber}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </motion.aside>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Footer Nav */}
                 <div className="p-4 sm:p-6 border-t-2 border-dashed border-gray-300 flex justify-between items-center bg-yellow-50/30 relative z-10">
