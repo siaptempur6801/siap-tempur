@@ -12,11 +12,6 @@ type QuestionWithOptions = Question
 
 export const dynamic = 'force-dynamic'
 
-type FilterableQuery = {
-    eq: (column: string, value: string) => FilterableQuery
-    or: (filters: string) => FilterableQuery
-}
-
 export default async function AdminDashboard({
     searchParams,
 }: {
@@ -30,21 +25,17 @@ export default async function AdminDashboard({
 }) {
     const supabase = await createClient()
     const filters = normalizeAdminFilters(await searchParams)
+    let filteredCountQuery = supabase
+        .from('questions')
+        .select('*', { count: 'exact', head: true })
+        .eq('type', filters.category)
 
-    const applyQuestionFilters = (query: FilterableQuery) => {
-        let nextQuery = query
+    if (filters.subCategory) {
+        filteredCountQuery = filteredCountQuery.eq('sub_category', filters.subCategory)
+    }
 
-        nextQuery = nextQuery.eq('type', filters.category)
-
-        if (filters.subCategory) {
-            nextQuery = nextQuery.eq('sub_category', filters.subCategory)
-        }
-
-        if (filters.q) {
-            nextQuery = nextQuery.or(`content.ilike.%${filters.q}%,question_code.ilike.%${filters.q}%`)
-        }
-
-        return nextQuery
+    if (filters.q) {
+        filteredCountQuery = filteredCountQuery.or(`content.ilike.%${filters.q}%,question_code.ilike.%${filters.q}%`)
     }
 
     const [
@@ -52,9 +43,7 @@ export default async function AdminDashboard({
         { count: totalQuestionCount },
         { data: configs },
     ] = await Promise.all([
-        applyQuestionFilters(
-            supabase.from('questions').select('*', { count: 'exact', head: true })
-        ),
+        filteredCountQuery,
         supabase.from('questions').select('*', { count: 'exact', head: true }),
         supabase
             .from('tryout_configurations')
@@ -70,13 +59,22 @@ export default async function AdminDashboard({
     const currentPage = Math.min(filters.page, totalPages)
     const from = (currentPage - 1) * filters.pageSize
     const to = from + filters.pageSize - 1
-    const { data: questions } = await applyQuestionFilters(
-        supabase
-            .from('questions')
-            .select('*, options(*)')
-            .order('created_at', { ascending: false })
-            .range(from, to)
-    )
+    let questionsQuery = supabase
+        .from('questions')
+        .select('*, options(*)')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+        .eq('type', filters.category)
+
+    if (filters.subCategory) {
+        questionsQuery = questionsQuery.eq('sub_category', filters.subCategory)
+    }
+
+    if (filters.q) {
+        questionsQuery = questionsQuery.or(`content.ilike.%${filters.q}%,question_code.ilike.%${filters.q}%`)
+    }
+
+    const { data: questions } = await questionsQuery
     const paginationParams = new URLSearchParams()
 
     paginationParams.set('category', filters.category)
