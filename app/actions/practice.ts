@@ -1,5 +1,6 @@
 'use server'
 
+import { isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-session'
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -7,13 +8,6 @@ import { redirect } from 'next/navigation'
 type ResumeSessionResult = {
     sessionId: string
     resumed: true
-}
-
-const TRYOUT_DURATION_MS = 100 * 60 * 1000
-
-function isMissingProgressColumnError(error: { message?: string | null; details?: string | null } | null) {
-    const text = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase()
-    return text.includes('last_activity_at') || text.includes('current_question_index') || text.includes('marked_questions')
 }
 
 async function queryInProgressSessions(
@@ -45,11 +39,6 @@ async function queryInProgressSessions(
         .eq('status', 'in_progress')
         .order('start_time', { ascending: false })
         .limit(limit)
-}
-
-function isTryoutExpired(startTime?: string | null) {
-    if (!startTime) return false
-    return Date.now() - new Date(startTime).getTime() >= TRYOUT_DURATION_MS
 }
 
 async function findExistingTryoutSession(
@@ -221,11 +210,6 @@ export async function finishPractice(sessionId: string) {
     const { error } = await supabase.rpc('calculate_session_score', {
         session_uuid: sessionId
     })
-
-    if (error) {
-        console.error('Error finishing practice:', error)
-        return { error: 'Failed to finish session' }
-    }
 
     if (error) {
         console.error('Error finishing practice:', error)

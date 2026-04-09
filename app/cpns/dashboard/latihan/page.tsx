@@ -1,19 +1,7 @@
-
+import { isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-session'
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import PracticeClient from './PracticeClient'
-
-const TRYOUT_DURATION_MS = 100 * 60 * 1000
-
-function isMissingProgressColumnError(error: { message?: string | null; details?: string | null } | null) {
-    const text = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase()
-    return text.includes('last_activity_at') || text.includes('current_question_index')
-}
-
-function isTryoutExpired(startTime?: string | null) {
-    if (!startTime) return false
-    return Date.now() - new Date(startTime).getTime() >= TRYOUT_DURATION_MS
-}
 
 export default async function PracticeListingPage() {
     const supabase = await createClient()

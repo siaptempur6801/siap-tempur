@@ -21,7 +21,7 @@ import ScrollToReviewButton from '@/components/practice/ScrollToReviewButton'
 import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import PaperBackground from '@/components/PaperBackground'
 import { getXPInfo } from '@/lib/dashboard'
-import { cn, formatSubjectName, calculateCurrentStreak } from '@/lib/utils'
+import { cn, formatSubjectName, calculateCurrentStreak, getDateKeyInTimeZone } from '@/lib/utils'
 import { PASSING_GRADES } from '@/lib/constants'
 
 type AnswerOption = {
@@ -165,9 +165,9 @@ export default async function PracticeResultPage({
     const xpInfo = getXPInfo(previousTotalXP, xpEarned)
 
     // Streak Logic: Show streak popup if this is the first session completed today
-    const today = new Date().toISOString().split('T')[0]
+    const today = getDateKeyInTimeZone(new Date())
     const otherSessionsToday = allPreviousSessions.filter(s =>
-        s.end_time && new Date(s.end_time).toISOString().split('T')[0] === today
+        s.end_time && getDateKeyInTimeZone(s.end_time) === today
     )
     const isFirstSessionToday = otherSessionsToday.length === 0
 

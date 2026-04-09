@@ -1,6 +1,8 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
+export const DEFAULT_APP_TIME_ZONE = 'Asia/Jakarta'
+
 export function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs))
 }
@@ -17,6 +19,26 @@ export const formatCurrency = (amount: number) => {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
     }).format(amount)
+}
+
+export function getDateKeyInTimeZone(dateInput: Date | string | number, timeZone = DEFAULT_APP_TIME_ZONE): string {
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput)
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    })
+    const parts = formatter.formatToParts(date)
+    const year = parts.find((part) => part.type === 'year')?.value
+    const month = parts.find((part) => part.type === 'month')?.value
+    const day = parts.find((part) => part.type === 'day')?.value
+
+    if (!year || !month || !day) {
+        throw new Error(`Unable to format date key for timezone ${timeZone}`)
+    }
+
+    return `${year}-${month}-${day}`
 }
 
 export function calculateCurrentStreak(streakCount: number | null | undefined, lastActivityDate: string | null | undefined): number {

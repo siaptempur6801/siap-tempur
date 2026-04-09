@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isMissingProgressColumnError } from '@/lib/practice-session'
 import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -6,11 +7,6 @@ export const dynamic = 'force-dynamic'
 interface BeaconPayload {
     currentQuestionIndex?: number
     markedQuestions?: Record<string, boolean>
-}
-
-function isMissingProgressColumnError(error: { message?: string | null; details?: string | null } | null) {
-    const text = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase()
-    return text.includes('last_activity_at') || text.includes('current_question_index') || text.includes('marked_questions')
 }
 
 function sanitizeMarkedQuestions(markedQuestions: BeaconPayload['markedQuestions']) {

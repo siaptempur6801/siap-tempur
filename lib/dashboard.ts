@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
 import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
+import { isMissingProgressColumnError } from './practice-session'
 import { calculateCurrentStreak } from './utils'
 
 interface DashboardData {
@@ -59,11 +60,6 @@ interface DashboardData {
     activeSession: {
         mode: 'practice' | 'tryout'
     } | null
-}
-
-function isMissingProgressColumnError(error: { message?: string | null; details?: string | null } | null) {
-    const text = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase()
-    return text.includes('last_activity_at')
 }
 
 export function getLevel(xp: number) {
