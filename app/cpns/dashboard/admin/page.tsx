@@ -3,11 +3,19 @@ import { Plus, FileText, Settings } from 'lucide-react'
 import Link from 'next/link'
 import QuestionCard, { type Question } from '@/components/admin/QuestionCard'
 import AdminSearch from '@/components/admin/AdminSearch'
-import ExcelImport from '@/components/admin/ExcelImport'
+import ExcelImportDialog from '@/components/admin/ExcelImportDialog'
+import AdminOverview from '@/components/admin/AdminOverview'
+import AdminPagination from '@/components/admin/AdminPagination'
+import { buildActiveCategoryMap, buildCategoryMap, normalizeAdminFilters } from '@/lib/admin-dashboard'
 
 type QuestionWithOptions = Question
 
 export const dynamic = 'force-dynamic'
+
+type FilterableQuery = {
+    eq: (column: string, value: string) => FilterableQuery
+    or: (filters: string) => FilterableQuery
+}
 
 export default async function AdminDashboard({
     searchParams,
@@ -16,94 +24,148 @@ export default async function AdminDashboard({
         q?: string
         category?: string
         sub_category?: string
+        page?: string
+        page_size?: string
     }>
 }) {
     const supabase = await createClient()
-    const params = await searchParams
-    const query = params?.q || ''
-    const category = params?.category || 'TWK'
-    const subCategory = params?.sub_category || ''
+    const filters = normalizeAdminFilters(await searchParams)
 
-    // Construct Query with JOIN to options
-    let dbQuery = supabase
-        .from('questions')
-        .select('*, options(*)', { count: 'exact' })
-        .order('created_at', { ascending: false })
+    const applyQuestionFilters = (query: FilterableQuery) => {
+        let nextQuery = query
 
-    if (category) {
-        // Here 'category' filter in UI corresponds to 'type' in DB
-        dbQuery = dbQuery.eq('type', category)
+        nextQuery = nextQuery.eq('type', filters.category)
+
+        if (filters.subCategory) {
+            nextQuery = nextQuery.eq('sub_category', filters.subCategory)
+        }
+
+        if (filters.q) {
+            nextQuery = nextQuery.or(`content.ilike.%${filters.q}%,question_code.ilike.%${filters.q}%`)
+        }
+
+        return nextQuery
     }
 
-    if (subCategory) {
-        dbQuery = dbQuery.eq('sub_category', subCategory)
+    const [
+        { count: filteredCount },
+        { count: totalQuestionCount },
+        { data: configs },
+    ] = await Promise.all([
+        applyQuestionFilters(
+            supabase.from('questions').select('*', { count: 'exact', head: true })
+        ),
+        supabase.from('questions').select('*', { count: 'exact', head: true }),
+        supabase
+            .from('tryout_configurations')
+            .select('type, sub_category, is_active')
+            .order('sort_order', { ascending: true }),
+    ])
+
+    const allCategories = buildCategoryMap(configs || [])
+    const activeCategories = buildActiveCategoryMap(configs || [])
+    const selectedTypeCategories = allCategories[filters.category] || []
+    const selectedTypeActiveCategories = activeCategories[filters.category] || []
+    const totalPages = Math.max(1, Math.ceil((filteredCount || 0) / filters.pageSize))
+    const currentPage = Math.min(filters.page, totalPages)
+    const from = (currentPage - 1) * filters.pageSize
+    const to = from + filters.pageSize - 1
+    const { data: questions } = await applyQuestionFilters(
+        supabase
+            .from('questions')
+            .select('*, options(*)')
+            .order('created_at', { ascending: false })
+            .range(from, to)
+    )
+    const paginationParams = new URLSearchParams()
+
+    paginationParams.set('category', filters.category)
+    paginationParams.set('page_size', String(filters.pageSize))
+
+    if (filters.q) {
+        paginationParams.set('q', filters.q)
     }
 
-    if (query) {
-        dbQuery = dbQuery.ilike('content', `%${query}%`)
+    if (filters.subCategory) {
+        paginationParams.set('sub_category', filters.subCategory)
     }
 
-    const { data: questions, count } = await dbQuery.limit(100)
+    paginationParams.set('page', String(currentPage))
+    const currentAdminHref = `/cpns/dashboard/admin?${paginationParams.toString()}`
 
     return (
         <div className="space-y-8 pb-10">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="font-handwriting text-3xl font-bold text-gray-900 rotate-[-1deg] inline-block">
-                        Bank Soal Manager
+                    <h1 className="text-3xl font-bold text-slate-900">
+                        Dashboard Admin Bank Soal
                     </h1>
-                    <div className="flex items-center gap-3 mt-1">
-                        <p className="text-gray-600 font-medium">
-                            Kelola soal-soal latihan CPNS & Kedinasan.
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                        <p className="text-sm text-slate-600">
+                            Kelola soal, materi aktif, dan struktur tryout dari satu alur kerja.
                         </p>
-                        <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-black border border-blue-200">
-                            Total: {count || 0} Soal
-                        </span>
                     </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
                     <Link
                         href="/cpns/dashboard/admin/tryout-config"
-                        className="flex items-center gap-2 bg-blue-100 text-blue-700 px-5 py-3 rounded-lg hover:bg-blue-200 transition font-bold shadow-sm transform hover:-translate-y-1 active:translate-y-0 border border-blue-200"
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
                     >
                         <Settings size={20} /> Konfigurasi Tryout
                     </Link>
-                    <ExcelImport />
+                    <ExcelImportDialog />
                     <Link
-                        href="/cpns/dashboard/admin/create"
-                        className="flex items-center gap-2 bg-gray-900 text-white px-5 py-3 rounded-lg hover:bg-gray-800 transition font-bold shadow-lg transform hover:-translate-y-1 active:translate-y-0"
+                        href={`/cpns/dashboard/admin/create?returnTo=${encodeURIComponent(currentAdminHref)}`}
+                        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800"
                     >
                         <Plus size={20} /> Buat Soal Baru
                     </Link>
                 </div>
             </div>
 
-            {/* Filter / Search Bar */}
-            <AdminSearch />
+            <AdminOverview
+                totalQuestions={totalQuestionCount || 0}
+                filteredQuestions={filteredCount || 0}
+                activeCategories={selectedTypeActiveCategories.length}
+                totalCategories={selectedTypeCategories.length}
+                selectedType={filters.category}
+            />
 
-            {/* Question List Grid */}
+            <AdminSearch categoryMap={allCategories} />
+
             <div className="grid grid-cols-1 gap-4">
                 {questions?.map((q) => (
-                    <QuestionCard key={q.id} q={q as QuestionWithOptions} />
+                    <QuestionCard
+                        key={q.id}
+                        q={q as QuestionWithOptions}
+                        editHref={`/cpns/dashboard/admin/edit/${q.id}?returnTo=${encodeURIComponent(currentAdminHref)}`}
+                    />
                 ))}
 
                 {(!questions || questions.length === 0) && (
-                    <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-gray-300">
-                        <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <FileText className="h-8 w-8 text-gray-400" />
+                    <div className="rounded-3xl border border-dashed border-slate-300 bg-white py-20 text-center">
+                        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                            <FileText className="h-8 w-8 text-slate-400" />
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900">Tidak ada soal ditemukan</h3>
-                        <p className="text-gray-500 mb-6">Coba ubah filter atau buat soal baru.</p>
+                        <h3 className="text-lg font-bold text-slate-900">Tidak ada soal ditemukan</h3>
+                        <p className="mb-6 text-slate-500">Coba ubah filter atau buat soal baru.</p>
                         <Link
-                            href="/cpns/dashboard/admin/create"
-                            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold transition"
+                            href={`/cpns/dashboard/admin/create?returnTo=${encodeURIComponent(currentAdminHref)}`}
+                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700"
                         >
                             <Plus size={18} /> Buat Soal Baru
                         </Link>
                     </div>
                 )}
             </div>
+
+            <AdminPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={filters.pageSize}
+                totalItems={filteredCount || 0}
+                baseParams={paginationParams}
+            />
         </div>
     )
 }

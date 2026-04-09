@@ -21,6 +21,7 @@ interface Option {
 
 export interface Question {
     id: string
+    question_code: string
     type: 'TWK' | 'TIU' | 'TKP'
     category: string
     content: string
@@ -30,7 +31,13 @@ export interface Question {
     options: Option[]
 }
 
-export default function QuestionCard({ q }: { q: Question }) {
+export default function QuestionCard({
+    q,
+    editHref,
+}: {
+    q: Question
+    editHref?: string
+}) {
     const [expanded, setExpanded] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -61,16 +68,16 @@ export default function QuestionCard({ q }: { q: Question }) {
         if (!q.options || q.options.length === 0) return null
 
         if (q.type === 'TKP') {
-            // For TKP, the "correct" one is the one with highest score (usually 5)
-            return [...q.options].sort((a, b) => b.score_value - a.score_value)[0]
+            return q.options.find((opt) => opt.is_correct)
+                || [...q.options].sort((a, b) => b.score_value - a.score_value)[0]
         }
 
-        // For others, find is_correct true
         return q.options.find(opt => opt.is_correct)
     }
 
     const correctAnswer = getCorrectOption()
     const optionLabels = ['A', 'B', 'C', 'D', 'E']
+    const questionCode = q.question_code || q.id
 
     return (
         <>
@@ -78,7 +85,10 @@ export default function QuestionCard({ q }: { q: Question }) {
                 <div className="p-5">
                     {/* Header: Type & Actions */}
                     <div className="flex justify-between items-start mb-3">
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
+                            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold border bg-slate-100 text-slate-700 border-slate-200">
+                                {questionCode}
+                            </span>
                             <span className={cn(
                                 "px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border",
                                 q.type === 'TWK' && "bg-red-50 text-red-600 border-red-200",
@@ -95,7 +105,7 @@ export default function QuestionCard({ q }: { q: Question }) {
                         </div>
                         <div className="flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                             <Link
-                                href={`/cpns/dashboard/admin/edit/${q.id}`}
+                                href={editHref || `/cpns/dashboard/admin/edit/${q.id}`}
                                 className="p-3 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl sm:rounded-lg transition bg-gray-50 lg:bg-transparent"
                                 title="Edit"
                             >
@@ -218,7 +228,7 @@ export default function QuestionCard({ q }: { q: Question }) {
 
                         {/* Meta */}
                         <div className="text-[10px] text-gray-300 font-mono pt-2 flex justify-between">
-                            <span>ID: {q.id}</span>
+                            <span>{questionCode}</span>
                             <span>Dibuat: {new Date(q.created_at).toLocaleString('id-ID')}</span>
                         </div>
                     </div>

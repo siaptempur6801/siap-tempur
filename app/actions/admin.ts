@@ -1,10 +1,9 @@
 'use server'
 
-import { createClient, createAdminClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { isAdmin } from '@/utils/admin'
-
-type QuestionType = 'TWK' | 'TIU' | 'TKP'
+import { OPTION_LABELS, type OptionLabel, type QuestionType } from '@/lib/admin-dashboard'
 
 interface TryoutConfigurationPayload {
     id: string
@@ -13,6 +12,59 @@ interface TryoutConfigurationPayload {
     question_count: number
     sort_order: number
     is_active: boolean
+}
+
+interface QuestionFormPayload {
+    type: QuestionType
+    content: string
+    category: string
+    explanation: string
+    correctAnswer: string
+    imageUrl: string | null
+}
+
+function readQuestionFormPayload(formData: FormData): QuestionFormPayload {
+    return {
+        type: formData.get('type') as QuestionType,
+        content: String(formData.get('content') || '').trim(),
+        category: String(formData.get('category') || '').trim(),
+        explanation: String(formData.get('explanation') || '').trim(),
+        correctAnswer: String(formData.get('correct_answer') || '').trim(),
+        imageUrl: String(formData.get('image_url') || '').trim() || null,
+    }
+}
+
+function validateQuestionFormPayload(payload: QuestionFormPayload) {
+    if (!payload.content) return 'Pertanyaan wajib diisi'
+    if (!payload.category) return 'Materi wajib dipilih'
+    if (!payload.explanation) return 'Pembahasan wajib diisi'
+    if (!OPTION_LABELS.includes(payload.correctAnswer as OptionLabel)) return 'Kunci jawaban tidak valid'
+
+    return null
+}
+
+function buildOptionRows(questionId: string, formData: FormData, type: QuestionType, correctAnswer: string) {
+    return OPTION_LABELS.map((label) => {
+        const content = String(formData.get(`option_${label.toLowerCase()}`) || '').trim()
+        const imageUrl = String(formData.get(`option_${label.toLowerCase()}_image_url`) || '').trim() || null
+        const score = Number(formData.get(`score_${label.toLowerCase()}`) || 0)
+
+        if (!content && !imageUrl) {
+            throw new Error(`Pilihan ${label} harus punya teks atau gambar`)
+        }
+
+        if (type === 'TKP' && (!Number.isInteger(score) || score < 1 || score > 5)) {
+            throw new Error(`Poin pilihan ${label} harus 1 sampai 5`)
+        }
+
+        return {
+            question_id: questionId,
+            content,
+            image_url: imageUrl,
+            is_correct: label === correctAnswer,
+            score_value: type === 'TKP' ? score : (label === correctAnswer ? 1 : 0),
+        }
+    })
 }
 
 export async function deleteQuestion(id: string) {
@@ -62,43 +114,37 @@ export async function createQuestion(formData: FormData) {
         return { success: false, message: 'Unauthorized' }
     }
 
-    const type = formData.get('type') as QuestionType
-    const content = formData.get('content') as string
-    const category = formData.get('category') as string // Sub-category
-    const explanation = formData.get('explanation') as string
-    const correctAnswer = formData.get('correct_answer') as string // A, B, C...
-    const imageUrl = formData.get('image_url') as string | null // NEW FIELD
+    const payload = readQuestionFormPayload(formData)
+    const validationError = validateQuestionFormPayload(payload)
+    if (validationError) {
+        return { success: false, message: validationError }
+    }
 
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     // 1. Insert Question
     const { data: question, error: qError } = await supabase
         .from('questions')
         .insert({
-            type,
-            content,
-            category,
-            sub_category: category,
-            explanation,
-            image_url: imageUrl || null
+            type: payload.type,
+            content: payload.content,
+            category: payload.category,
+            sub_category: payload.category,
+            explanation: payload.explanation,
+            image_url: payload.imageUrl
         })
         .select()
         .single()
 
     if (qError) return { success: false, message: qError.message }
 
-    // 2. Prepare Options
-    const optionLabels: OptionLabel[] = ['A', 'B', 'C', 'D', 'E']
-    const optionsToInsert = optionLabels.map((label) => {
-        const score = formData.get(`score_${label.toLowerCase()}`)
-        return {
-            question_id: question.id,
-            content: ((formData.get(`option_${label.toLowerCase()}`) as string) || '').trim(),
-            image_url: ((formData.get(`option_${label.toLowerCase()}_image_url`) as string) || '').trim() || null,
-            is_correct: label === correctAnswer,
-            score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
-        }
-    })
+    let optionsToInsert
+    try {
+        optionsToInsert = buildOptionRows(question.id, formData, payload.type, payload.correctAnswer)
+    } catch (error) {
+        await supabase.from('questions').delete().eq('id', question.id)
+        return { success: false, message: error instanceof Error ? error.message : 'Pilihan jawaban tidak valid' }
+    }
 
     // 3. Insert Options
     const { error: oError } = await supabase
@@ -121,26 +167,30 @@ export async function updateQuestion(id: string, formData: FormData) {
         return { success: false, message: 'Unauthorized' }
     }
 
-    const type = formData.get('type') as QuestionType
-    const content = formData.get('content') as string
-    const category = formData.get('category') as string
-    const explanation = formData.get('explanation') as string
-    const correctAnswer = formData.get('correct_answer') as string
-    const imageUrl = formData.get('image_url') as string | null // NEW FIELD
+    const payload = readQuestionFormPayload(formData)
+    const validationError = validateQuestionFormPayload(payload)
+    if (validationError) {
+        return { success: false, message: validationError }
+    }
 
-    // Use admin client to bypass RLS for cleanup steps
+    let optionsToInsert
+    try {
+        optionsToInsert = buildOptionRows(id, formData, payload.type, payload.correctAnswer)
+    } catch (error) {
+        return { success: false, message: error instanceof Error ? error.message : 'Pilihan jawaban tidak valid' }
+    }
+
     const supabase = await createAdminClient()
 
-    // 1. Update Question
     const { error: qError } = await supabase
         .from('questions')
         .update({
-            type,
-            content,
-            category,
-            sub_category: category,
-            explanation,
-            image_url: imageUrl || null
+            type: payload.type,
+            content: payload.content,
+            category: payload.category,
+            sub_category: payload.category,
+            explanation: payload.explanation,
+            image_url: payload.imageUrl
         })
         .eq('id', id)
 
@@ -169,19 +219,6 @@ export async function updateQuestion(id: string, formData: FormData) {
 
     if (dError) return { success: false, message: dError.message }
 
-    // 3. Insert New Options
-    const optionLabels: OptionLabel[] = ['A', 'B', 'C', 'D', 'E']
-    const optionsToInsert = optionLabels.map((label) => {
-        const score = formData.get(`score_${label.toLowerCase()}`)
-        return {
-            question_id: id,
-            content: ((formData.get(`option_${label.toLowerCase()}`) as string) || '').trim(),
-            image_url: ((formData.get(`option_${label.toLowerCase()}_image_url`) as string) || '').trim() || null,
-            is_correct: label === correctAnswer,
-            score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
-        }
-    })
-
     const { error: oError } = await supabase
         .from('options')
         .insert(optionsToInsert)
@@ -203,10 +240,15 @@ interface ExcelQuestion {
     explanation: string
     image_url?: string // NEW FIELD
     option_a: string
+    option_a_image_url?: string
     option_b: string
+    option_b_image_url?: string
     option_c: string
+    option_c_image_url?: string
     option_d: string
+    option_d_image_url?: string
     option_e: string
+    option_e_image_url?: string
     correct_answer?: string  // A/B/C/D/E for TWK & TIU
     score_a?: number  // For TKP (1-5)
     score_b?: number
@@ -214,8 +256,6 @@ interface ExcelQuestion {
     score_d?: number
     score_e?: number
 }
-
-type OptionLabel = 'A' | 'B' | 'C' | 'D' | 'E'
 
 export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
     const isUserAdmin = await isAdmin()
@@ -227,7 +267,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
         return { success: false, message: 'Tidak ada data soal untuk diimport' }
     }
 
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     let successCount = 0
     let failCount = 0
     const failedRows: number[] = []
@@ -265,16 +305,30 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
                 // 2. Build Options
                 const optionLabels = ['a', 'b', 'c', 'd', 'e'] as const
                 const optionKeys = ['option_a', 'option_b', 'option_c', 'option_d', 'option_e'] as const
+                const optionImageKeys = [
+                    'option_a_image_url',
+                    'option_b_image_url',
+                    'option_c_image_url',
+                    'option_d_image_url',
+                    'option_e_image_url',
+                ] as const
                 const scoreKeys = ['score_a', 'score_b', 'score_c', 'score_d', 'score_e'] as const
 
                 const optionsToInsert = optionLabels.map((label, idx) => {
                     const letterUpper = label.toUpperCase()
                     const isTKP = q.type === 'TKP'
+                    const optionContent = q[optionKeys[idx]] || ''
+                    const optionImageUrl = q[optionImageKeys[idx]] || ''
+
+                    if (!optionContent.trim() && !optionImageUrl.trim()) {
+                        throw new Error(`Pilihan ${letterUpper} kosong`)
+                    }
 
                     return {
                         question_id: question.id,
-                        content: q[optionKeys[idx]] || '',
-                        is_correct: isTKP ? false : letterUpper === q.correct_answer,
+                        content: optionContent,
+                        image_url: optionImageUrl || null,
+                        is_correct: isTKP ? letterUpper === q.correct_answer : letterUpper === q.correct_answer,
                         score_value: isTKP ? (q[scoreKeys[idx]] || 0) : (letterUpper === q.correct_answer ? 5 : 0),
                     }
                 })
@@ -305,7 +359,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
     if (failCount === 0) {
         return {
             success: true,
-            message: `✅ Berhasil import ${successCount} soal!`
+            message: `Berhasil import ${successCount} soal`
         }
     }
 
@@ -320,38 +374,37 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
 // =============================================
 
 export async function updateTryoutConfigurations(configs: TryoutConfigurationPayload[]) {
-    const isUserAdmin = await isAdmin();
-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient()
 
-    // We can use an upsert to update multiple rows efficiently
     const { error } = await supabase
         .from('tryout_configurations')
-        .upsert(configs, { onConflict: 'id' });
+        .upsert(configs, { onConflict: 'id' })
 
     if (error) {
-        return { success: false, message: error.message };
+        return { success: false, message: error.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin/tryout-config');
-    return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' };
+    revalidatePath('/cpns/dashboard/admin/tryout-config')
+    revalidatePath('/cpns/dashboard/admin')
+    return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' }
 }
 
 export async function addTryoutConfiguration(type: string, sub_category: string) {
-    const isUserAdmin = await isAdmin();
-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient()
 
-    // Get the max sort_order for the given type to append to bottom
     const { data: maxOrderData } = await supabase
         .from('tryout_configurations')
         .select('sort_order')
         .order('sort_order', { ascending: false })
-        .limit(1);
+        .limit(1)
 
-    const nextSortOrder = (maxOrderData && maxOrderData.length > 0) ? (maxOrderData[0].sort_order + 1) : 1;
+    const nextSortOrder = (maxOrderData && maxOrderData.length > 0) ? (maxOrderData[0].sort_order + 1) : 1
 
     const { error } = await supabase
         .from('tryout_configurations')
@@ -361,50 +414,53 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
             question_count: 0,
             sort_order: nextSortOrder,
             is_active: true
-        });
+        })
 
     if (error) {
-        return { success: false, message: error.message };
+        return { success: false, message: error.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin/tryout-config');
-    return { success: true, message: 'Sub-Kategori berhasil ditambahkan' };
+    revalidatePath('/cpns/dashboard/admin/tryout-config')
+    revalidatePath('/cpns/dashboard/admin')
+    return { success: true, message: 'Sub-Kategori berhasil ditambahkan' }
 }
 
 export async function toggleTryoutConfiguration(id: string, is_active: boolean) {
-    const isUserAdmin = await isAdmin();
-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient()
 
     const { error } = await supabase
         .from('tryout_configurations')
         .update({ is_active })
-        .eq('id', id);
+        .eq('id', id)
 
     if (error) {
-        return { success: false, message: error.message };
+        return { success: false, message: error.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin/tryout-config');
-    return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
+    revalidatePath('/cpns/dashboard/admin/tryout-config')
+    revalidatePath('/cpns/dashboard/admin')
+    return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` }
 }
 
 export async function deleteTryoutConfiguration(id: string) {
-    const isUserAdmin = await isAdmin();
-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const supabase = await createClient();
+    const supabase = await createAdminClient()
 
     const { error } = await supabase
         .from('tryout_configurations')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
 
     if (error) {
-        return { success: false, message: error.message };
+        return { success: false, message: error.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin/tryout-config');
-    return { success: true, message: 'Kategori berhasil dihapus secara permanen' };
+    revalidatePath('/cpns/dashboard/admin/tryout-config')
+    revalidatePath('/cpns/dashboard/admin')
+    return { success: true, message: 'Kategori berhasil dihapus secara permanen' }
 }

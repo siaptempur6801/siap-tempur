@@ -90,8 +90,62 @@ create table if not exists materials (
 );
 
 -- 3. Questions & Options
+create sequence if not exists question_code_seq start 1;
+create sequence if not exists questions_twk_code_seq start 1;
+create sequence if not exists questions_tiu_code_seq start 1;
+create sequence if not exists questions_tkp_code_seq start 1;
+
+create or replace function generate_question_code()
+returns text
+language plpgsql
+as $$
+begin
+  return 'Q-' || lpad(nextval('question_code_seq')::text, 6, '0');
+end;
+$$;
+
+create or replace function next_question_code_by_type(question_type_input question_type)
+returns text
+language plpgsql
+as $$
+declare
+  code_prefix text;
+  next_number bigint;
+begin
+  case question_type_input
+    when 'TWK' then
+      code_prefix := 'TWK';
+      next_number := nextval('questions_twk_code_seq');
+    when 'TIU' then
+      code_prefix := 'TIU';
+      next_number := nextval('questions_tiu_code_seq');
+    when 'TKP' then
+      code_prefix := 'TKP';
+      next_number := nextval('questions_tkp_code_seq');
+    else
+      raise exception 'Unsupported question type: %', question_type_input;
+  end case;
+
+  return code_prefix || '-' || lpad(next_number::text, 6, '0');
+end;
+$$;
+
+create or replace function assign_question_code_by_type()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.question_code is null or btrim(new.question_code) = '' then
+    new.question_code := next_question_code_by_type(new.type);
+  end if;
+
+  return new;
+end;
+$$;
+
 create table if not exists questions (
   id uuid default uuid_generate_v4() primary key,
+  question_code text not null,
   content text not null,
   type question_type not null,
   category text,
@@ -101,11 +155,39 @@ create table if not exists questions (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+alter table questions add column if not exists question_code text;
+alter table questions alter column question_code drop default;
 alter table questions add column if not exists category text;
 alter table questions add column if not exists sub_category text;
 alter table questions add column if not exists explanation text;
 alter table questions add column if not exists image_url text;
 alter table questions add column if not exists created_at timestamp with time zone default timezone('utc'::text, now()) not null;
+drop trigger if exists questions_assign_question_code on questions;
+create trigger questions_assign_question_code
+before insert on questions
+for each row
+execute function assign_question_code_by_type();
+with ranked_questions as (
+  select
+    id,
+    type,
+    row_number() over (partition by type order by created_at, id) as sequence_number
+  from questions
+)
+update questions
+set question_code = case ranked_questions.type
+  when 'TWK' then 'TWK-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+  when 'TIU' then 'TIU-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+  when 'TKP' then 'TKP-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+end
+from ranked_questions
+where questions.id = ranked_questions.id
+  and (questions.question_code is null or questions.question_code !~ '^(TWK|TIU|TKP)-[0-9]{6}$');
+select setval('questions_twk_code_seq', greatest((select count(*) from questions where type = 'TWK') + 1, 1), false);
+select setval('questions_tiu_code_seq', greatest((select count(*) from questions where type = 'TIU') + 1, 1), false);
+select setval('questions_tkp_code_seq', greatest((select count(*) from questions where type = 'TKP') + 1, 1), false);
+alter table questions alter column question_code set not null;
+create unique index if not exists questions_question_code_key on questions(question_code);
 
 create table if not exists options (
   id uuid default uuid_generate_v4() primary key,

@@ -56,28 +56,35 @@ export interface Database {
             questions: {
                 Row: {
                     id: string
+                    question_code: string
                     content: string
                     type: 'TWK' | 'TIU' | 'TKP'
                     category: string | null
+                    sub_category: string | null
                     explanation: string | null
+                    image_url: string | null
                     created_at: string
                 }
                 Insert: {
                     id?: string
+                    question_code?: string
                     content: string
                     type: 'TWK' | 'TIU' | 'TKP'
                     category?: string | null
+                    sub_category?: string | null
                     explanation?: string | null
-                    difficulty?: number
+                    image_url?: string | null
                     created_at?: string
                 }
                 Update: {
                     id?: string
+                    question_code?: string
                     content?: string
                     type?: 'TWK' | 'TIU' | 'TKP'
                     category?: string | null
+                    sub_category?: string | null
                     explanation?: string | null
-                    difficulty?: number
+                    image_url?: string | null
                     created_at?: string
                 }
             }
