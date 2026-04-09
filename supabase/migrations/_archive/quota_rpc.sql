@@ -1,3 +1,7 @@
+-- Archived on 2026-04-09.
+-- Reason: ad-hoc non-timestamped script; functionality is already covered by schema.sql
+-- and active timestamped migrations.
+
 -- 1. Function to safely increment tryout quota
 create or replace function increment_tryout_quota(user_id_param uuid, increment_by int)
 returns void as $$
@@ -17,6 +21,6 @@ begin
 end $$;
 
 -- 3. Add Insert Policy for transactions (for authenticated users)
-create policy "Users can insert own transactions" 
-on transactions for insert 
+create policy "Users can insert own transactions"
+on transactions for insert
 with check (auth.uid() = user_id);

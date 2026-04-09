@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
-// Cache leaderboard 5 menit — data diupdate via cron, tidak perlu real-time
-export const revalidate = 300
+// Cache leaderboard 15 menit agar selaras dengan refresh snapshot via pg_cron.
+export const revalidate = 900
 import LeaderboardClient from '@/components/dashboard/LeaderboardClient'
 
 interface LeaderboardEntry {

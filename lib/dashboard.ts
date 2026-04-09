@@ -117,8 +117,8 @@ export function getXPInfo(previousTotalXP: number, xpEarned: number) {
     }
 }
 
-// Cache rank leaderboard per user selama 5 menit
-// Leaderboard diupdate via cron job, tidak perlu real-time
+// Cache rank leaderboard per user selama 15 menit.
+// Snapshot leaderboard juga direfresh via pg_cron tiap 15 menit.
 export function getCachedRank(supabase: SupabaseClient, userId: string) {
     return unstable_cache(
         async () => {
@@ -130,7 +130,7 @@ export function getCachedRank(supabase: SupabaseClient, userId: string) {
             return data
         },
         [`rank-${userId}`],
-        { revalidate: 300, tags: [`rank-${userId}`] } // 5 menit
+        { revalidate: 900, tags: [`rank-${userId}`] } // 15 menit
     )()
 }
 

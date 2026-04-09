@@ -232,7 +232,7 @@ export async function finishPractice(sessionId: string) {
         return { error: 'Failed to finish session' }
     }
 
-    // Leaderboard is now updated via pg_cron (Materialized View) every ~2-5 mins
+    // Leaderboard is updated by pg_cron on a fixed interval.
     // No need to trigger manual refresh here to save DB resources.
 
     revalidatePath(`/cpns/dashboard/latihan/${sessionId}/result`)

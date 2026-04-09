@@ -96,21 +96,23 @@ create sequence if not exists questions_tiu_code_seq start 1;
 create sequence if not exists questions_tkp_code_seq start 1;
 
 create or replace function generate_question_code()
-returns text
-language plpgsql
-as $$
-begin
-  return 'Q-' || lpad(nextval('question_code_seq')::text, 6, '0');
-end;
-$$;
+  returns text
+  language plpgsql
+  set search_path = public
+  as $$
+  begin
+    return 'Q-' || lpad(nextval('question_code_seq')::text, 6, '0');
+  end;
+  $$;
 
 create or replace function next_question_code_by_type(question_type_input question_type)
-returns text
-language plpgsql
-as $$
-declare
-  code_prefix text;
-  next_number bigint;
+  returns text
+  language plpgsql
+  set search_path = public
+  as $$
+  declare
+    code_prefix text;
+    next_number bigint;
 begin
   case question_type_input
     when 'TWK' then
@@ -131,12 +133,13 @@ end;
 $$;
 
 create or replace function assign_question_code_by_type()
-returns trigger
-language plpgsql
-as $$
-begin
-  if new.question_code is null or btrim(new.question_code) = '' then
-    new.question_code := next_question_code_by_type(new.type);
+  returns trigger
+  language plpgsql
+  set search_path = public
+  as $$
+  begin
+    if new.question_code is null or btrim(new.question_code) = '' then
+      new.question_code := next_question_code_by_type(new.type);
   end if;
 
   return new;
