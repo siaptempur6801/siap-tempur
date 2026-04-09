@@ -172,7 +172,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                         Latihan SKD Sampai Lulus, <br />
                         <span className="text-blue-600">Bukan</span> Sampai <br />
                         <span className="relative inline-block mt-2">
-                            Dompet Habis.
+                            Dompet Tipis.
                             {/* Coretan bawah */}
                             <svg className="absolute w-full h-3 -bottom-1 left-0 text-blue-500/50" viewBox="0 0 100 10" preserveAspectRatio="none">
                                 <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
