@@ -2,12 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { createTransaction } from '@/lib/midtrans'
-import { PRICING_PACKAGES, TOEFL_PRICING_PACKAGES } from '@/lib/constants'
-
-type ProfileQuotaData = {
-    tryout_quota?: number | null
-    tryout_quota_toefl?: number | null
-}
+import { PRICING_PACKAGES } from '@/lib/constants'
 
 export async function createPackageTransaction(packageId: string) {
     const supabase = await createClient()
@@ -18,14 +13,12 @@ export async function createPackageTransaction(packageId: string) {
     }
 
     // Find the package from constants
-    const pkg = [...PRICING_PACKAGES, ...TOEFL_PRICING_PACKAGES].find(p => p.id === packageId)
+    const pkg = PRICING_PACKAGES.find(p => p.id === packageId)
     if (!pkg) {
         throw new Error("Package not found")
     }
 
-    const isToefl = packageId.startsWith('toefl-')
-    const prefix = isToefl ? 'TOEFL' : 'SKD'
-    const orderId = `${prefix}-${pkg.id.toUpperCase()}-${user.id.substring(0, 8)}-${Date.now()}`
+    const orderId = `SKD-${pkg.id.toUpperCase()}-${user.id.substring(0, 8)}-${Date.now()}`
     const baseAmount = pkg.price
 
     // QRIS Flat Rp 500 Admin Fee
@@ -169,31 +162,28 @@ export async function syncPaymentStatus(orderId: string) {
 
         // Give quota if settlement
         if (transaction_status === 'settlement' || transaction_status === 'capture') {
-            const pkg = [...PRICING_PACKAGES, ...TOEFL_PRICING_PACKAGES].find(p => p.name === tx.package_name)
+            const pkg = PRICING_PACKAGES.find(p => p.name === tx.package_name)
             const tokenCount = pkg ? pkg.tokens : 0
-            const isToefl = tx.order_id.startsWith('TOEFL-')
 
             if (tokenCount > 0) {
-                const rpcName = isToefl ? 'increment_toefl_quota' : 'increment_tryout_quota'
-                const { error: quotaError } = await adminSupabase.rpc(rpcName, {
+                const { error: quotaError } = await adminSupabase.rpc('increment_tryout_quota', {
                     user_id_param: tx.user_id,
                     increment_by: tokenCount
                 })
 
                 if (quotaError) {
-                    const column = isToefl ? 'tryout_quota_toefl' : 'tryout_quota'
                     const { data: profileData } = await adminSupabase
                         .from('profiles')
-                        .select(column)
+                        .select('tryout_quota')
                         .eq('id', tx.user_id)
                         .single()
 
-                    const currentQuota = (profileData as ProfileQuotaData | null)?.[column] || 0
+                    const currentQuota = profileData?.tryout_quota || 0
 
                     await adminSupabase
                         .from('profiles')
                         .update({
-                            [column]: currentQuota + tokenCount
+                            tryout_quota: currentQuota + tokenCount
                         })
                         .eq('id', tx.user_id)
                 }

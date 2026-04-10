@@ -39,7 +39,7 @@ type Transaction = {
     id: string
     created_at: string
     amount: number
-    status: 'pending' | 'settlement' | 'expire' | 'cancel' | 'deny'
+    status: 'pending' | 'capture' | 'settlement' | 'expire' | 'cancel' | 'deny'
     package_name: string
     order_id: string
     snap_token?: string
@@ -57,7 +57,6 @@ interface ProfileClientProps {
   transactions: Transaction[]
   usageSessions: UsageSession[]
   level: number
-  portal: 'cpns' | 'toefl'
 }
 
 export default function ProfileClient({
@@ -65,8 +64,7 @@ export default function ProfileClient({
     user,
     transactions,
     usageSessions,
-    level,
-    portal
+    level
 }: ProfileClientProps) {
     const router = useRouter()
     const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'settings'>('profile')
@@ -279,7 +277,7 @@ export default function ProfileClient({
         setIsChangingPassword(false)
 
         if (result.success) {
-      router.push(`/login?returnTo=/${portal}`)
+      router.push('/login?returnTo=/cpns')
       toast.success('Password berhasil diperbarui', {
         description: 'Silakan masuk kembali dengan password baru Anda.'
       })
@@ -598,7 +596,7 @@ export default function ProfileClient({
                                         <div className="text-[10px] text-gray-600 font-extrabold uppercase tracking-tight">Token SKD</div>
                                     </div>
                                     <Link 
-                                        href={portal === 'cpns' ? "/cpns/dashboard/beli-paket" : "/toefl/dashboard/beli-paket"}
+                                        href="/cpns/dashboard/beli-paket"
                                         className="px-6 py-3 bg-orange-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center"
                                     >
                                         + Beli Kuota
@@ -701,7 +699,7 @@ export default function ProfileClient({
                                         <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
                                         <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
                                         <Link 
-                                            href={portal === 'cpns' ? "/cpns/dashboard/beli-paket" : "/toefl/dashboard/beli-paket"}
+                                            href="/cpns/dashboard/beli-paket"
                                             className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
                                         >
                                             Beli Kuota Sekarang

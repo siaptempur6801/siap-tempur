@@ -32,30 +32,6 @@ export const SUBJECTS = {
 } as const;
 
 /**
- * TOEFL Subject Metadata
- */
-export const TOEFL_SUBJECTS = {
-    LISTENING: {
-        short: "LISTENING",
-        name: "Listening Comprehension",
-        fullMark: 68, // Scaled score
-        passing: 45
-    },
-    STRUCTURE: {
-        short: "STRUCTURE",
-        name: "Structure & Written Expression",
-        fullMark: 67, // Scaled score
-        passing: 45
-    },
-    READING: {
-        short: "READING",
-        name: "Reading Comprehension",
-        fullMark: 67, // Scaled score
-        passing: 45
-    }
-} as const;
-
-/**
  * User Leveling thresholds
  */
 export const LEVEL_THRESHOLDS = [
@@ -127,38 +103,3 @@ export const PRICING_PACKAGES = [
     }
 ] as const;
 
-/**
- * Pricing Packages for TOEFL Tokens
- */
-export const TOEFL_PRICING_PACKAGES = [
-    {
-        id: 'toefl-satuan',
-        name: 'Paket TOEFL Perunggu',
-        price: 15000,
-        tokens: 1,
-        bestSeller: false,
-        savings: 0,
-        description: '1 Token Tryout TOEFL ITP',
-        features: [
-            '140 Soal Standar ITP',
-            'Sistem Scoring 310-677',
-            'Audio Listening Jernih',
-            'Pembahasan Lengkap'
-        ]
-    },
-    {
-        id: 'toefl-paket-5',
-        name: 'Paket TOEFL Emas',
-        price: 50000,
-        tokens: 5,
-        bestSeller: true,
-        savings: 25000,
-        description: '5 Token Tryout TOEFL ITP',
-        features: [
-            'Semua Fitur Simulasi',
-            'Lebih Hemat Rp 25rb',
-            'Review Skor Tak Terbatas',
-            'Paket Recomended'
-        ]
-    }
-] as const;

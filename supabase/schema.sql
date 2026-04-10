@@ -59,7 +59,6 @@ create table if not exists profiles (
   bio text,
   role text not null default 'user',
   tryout_quota int not null default 0,
-  tryout_quota_toefl int not null default 0,
   streak_count int not null default 0,
   last_activity_date date,
   
@@ -71,23 +70,10 @@ alter table profiles add column if not exists avatar_url text;
 alter table profiles add column if not exists bio text;
 alter table profiles add column if not exists role text not null default 'user';
 alter table profiles add column if not exists tryout_quota int not null default 0;
-alter table profiles add column if not exists tryout_quota_toefl int not null default 0;
 alter table profiles add column if not exists streak_count int not null default 0;
 alter table profiles add column if not exists last_activity_date date;
 alter table profiles add column if not exists updated_at timestamp with time zone default timezone('utc'::text, now());
 alter table profiles add column if not exists created_at timestamp with time zone default timezone('utc'::text, now()) not null;
-
-create table if not exists materials (
-  id uuid default uuid_generate_v4() primary key,
-  title text not null,
-  slug text unique not null,
-  description text,
-  content text,
-  video_url text,
-  category text,
-  is_premium boolean not null default false,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
 
 -- 3. Questions & Options
 create sequence if not exists question_code_seq start 1;
@@ -207,30 +193,10 @@ alter table options add column if not exists is_correct boolean not null default
 alter table options add column if not exists score_value int not null default 0;
 alter table options add column if not exists created_at timestamp with time zone default timezone('utc'::text, now()) not null;
 
--- 5. Tryout Events
-create table if not exists tryouts (
-  id uuid default uuid_generate_v4() primary key,
-  title text not null,
-  description text,
-  start_time timestamp with time zone not null,
-  end_time timestamp with time zone not null,
-  duration_minutes int not null,
-  is_active boolean default true,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
-
-create table if not exists tryout_questions (
-  tryout_id uuid references tryouts(id) on delete cascade not null,
-  question_id uuid references questions(id) on delete cascade not null,
-  order_index int not null,
-  primary key (tryout_id, question_id)
-);
-
--- 6. Test Sessions & Answers
+-- 5. Test Sessions & Answers
 create table if not exists test_sessions (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references profiles(id) on delete cascade not null,
-  tryout_id uuid references tryouts(id),
   mode session_mode not null default 'practice',
   status session_status not null default 'in_progress',
   start_time timestamp with time zone default timezone('utc'::text, now()) not null,
@@ -249,7 +215,6 @@ create table if not exists test_sessions (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
-alter table test_sessions add column if not exists tryout_id uuid references tryouts(id);
 alter table test_sessions add column if not exists current_question_index integer not null default 0;
 alter table test_sessions add column if not exists marked_questions jsonb not null default '{}'::jsonb;
 alter table test_sessions add column if not exists last_activity_at timestamp with time zone not null default timezone('utc'::text, now());
@@ -365,11 +330,8 @@ $$;
 
 -- 8. Policies (RLS)
 alter table if exists profiles enable row level security;
-alter table if exists materials enable row level security;
 alter table if exists questions enable row level security;
 alter table if exists options enable row level security;
-alter table if exists tryouts enable row level security;
-alter table if exists tryout_questions enable row level security;
 alter table if exists test_sessions enable row level security;
 alter table if exists test_answers enable row level security;
 alter table if exists transactions enable row level security;
@@ -394,20 +356,11 @@ create policy "Users can view own profile" on profiles for select using ((select
 drop policy if exists "Users can update own profile" on profiles;
 create policy "Users can update own profile" on profiles for update using ((select auth.uid()) = id);
 
-drop policy if exists "Authenticated read materials" on materials;
-create policy "Authenticated read materials" on materials for select to authenticated using (true);
-
 drop policy if exists "Public read questions" on questions;
 create policy "Public read questions" on questions for select using (true);
 
 drop policy if exists "Public read options" on options;
 create policy "Public read options" on options for select using (true);
-
-drop policy if exists "Authenticated read tryouts" on tryouts;
-create policy "Authenticated read tryouts" on tryouts for select to authenticated using (true);
-
-drop policy if exists "Authenticated read tryout questions" on tryout_questions;
-create policy "Authenticated read tryout questions" on tryout_questions for select to authenticated using (true);
 
 drop policy if exists "Users can view own sessions" on test_sessions;
 create policy "Users can view own sessions" on test_sessions for select using ((select auth.uid()) = user_id);
@@ -540,15 +493,6 @@ returns void as $$
 begin
   update profiles
   set tryout_quota = coalesce(tryout_quota, 0) + increment_by
-  where id = user_id_param;
-end;
-$$ language plpgsql security definer set search_path = public;
-
-create or replace function increment_toefl_quota(user_id_param uuid, increment_by int)
-returns void as $$
-begin
-  update profiles
-  set tryout_quota_toefl = coalesce(tryout_quota_toefl, 0) + increment_by
   where id = user_id_param;
 end;
 $$ language plpgsql security definer set search_path = public;

@@ -76,7 +76,6 @@ export default async function ProfilePage() {
                     transactions={transactions || []}
                     usageSessions={usageSessions || []}
                     level={levelInfo.level}
-                    portal="cpns"
                 />
             </>
         )
@@ -90,7 +89,6 @@ export default async function ProfilePage() {
                 transactions={transactions || []}
                 usageSessions={usageSessions || []}
                 level={levelInfo.level}
-                portal="cpns"
             />
         </>
     )

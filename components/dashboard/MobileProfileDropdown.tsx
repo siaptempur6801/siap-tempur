@@ -19,14 +19,12 @@ interface MobileProfileDropdownProps {
         avatar_url?: string
         full_name?: string
         tryout_quota?: number
-        tryout_quota_toefl?: number
     } | null
 
     signoutAction: () => Promise<{ success: boolean }>
-    portal: 'cpns' | 'toefl'
 }
 
-export default function MobileProfileDropdown({ user, profile, signoutAction, portal }: MobileProfileDropdownProps) {
+export default function MobileProfileDropdown({ user, profile, signoutAction }: MobileProfileDropdownProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [showModal, setShowModal] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -108,19 +106,17 @@ export default function MobileProfileDropdown({ user, profile, signoutAction, po
                     </div>
 
                     <div className="p-2 relative z-10">
-                        {portal === 'cpns' && (
-                            <Link
-                                href="/cpns/dashboard/riwayat"
-                                className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
-                                onClick={() => setIsOpen(false)}
-                            >
-                                <Clock3 size={18} />
-                                Riwayat
-                            </Link>
-                        )}
+                        <Link
+                            href="/cpns/dashboard/riwayat"
+                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            <Clock3 size={18} />
+                            Riwayat
+                        </Link>
 
                         <Link
-                            href={portal === 'cpns' ? "/cpns/dashboard/profile" : "/toefl/dashboard/profile"}
+                            href="/cpns/dashboard/profile"
                             className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"
                             onClick={() => setIsOpen(false)}
                         >

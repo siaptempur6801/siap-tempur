@@ -88,11 +88,6 @@ export async function deleteQuestion(id: string) {
         console.error('Error deleting options:', err2)
     }
     
-    const { error: err3 } = await supabase.from('tryout_questions').delete().eq('question_id', id)
-    if (err3 && err3.code !== 'PGRST116') {
-        console.error('Error deleting tryout_questions:', err3)
-    }
-
     // 2. Finally delete the question
     const { error: qErr } = await supabase
         .from('questions')

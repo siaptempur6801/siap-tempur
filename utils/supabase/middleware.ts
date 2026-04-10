@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Route yang hanya bisa diakses kalau BELUM login
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password']
 // Route yang WAJIB login
-const PROTECTED_ROUTES = ['/cpns/dashboard', '/toefl/dashboard']
+const PROTECTED_ROUTES = ['/cpns/dashboard']
 
 export async function updateSession(request: NextRequest) {
     let supabaseResponse = NextResponse.next({ request })
