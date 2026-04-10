@@ -5,6 +5,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   // Core routes
   const routes = [
+    '',
     '/cpns',
     '/login',
     '/register',

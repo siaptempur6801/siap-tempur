@@ -58,13 +58,21 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png", // USER: You should add this image to public/ folder
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "Siap Tempur - Tryout SKD CPNS",
       },
     ],
   },
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/manifest.webmanifest",
+  category: "education",
+  classification: "Education/Test Prep",
   twitter: {
     card: "summary_large_image",
     title: "Siap Tempur - Tryout SKD CPNS & Simulasi CAT BKN",
