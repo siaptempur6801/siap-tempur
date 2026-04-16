@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { Geist, Geist_Mono, Patrick_Hand, Work_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 
 
 const geistSans = Geist({
@@ -135,7 +134,6 @@ export default function RootLayout({
             }
           }}
         />
-        <SpeedInsights />
       </body>
     </html>
   );

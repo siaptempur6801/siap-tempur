@@ -28,7 +28,9 @@ export async function POST(
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        // Beacon writes are best-effort, so stale tabs or expired sessions
+        // should fail silently instead of inflating observability noise.
+        return new NextResponse(null, { status: 204 })
     }
 
     let body: BeaconPayload
@@ -81,7 +83,7 @@ export async function POST(
     }
 
     if (!data) {
-        return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+        return new NextResponse(null, { status: 204 })
     }
 
     return NextResponse.json({ success: true })

@@ -132,7 +132,10 @@ export default function TrendChart({
                             }}
                             labelStyle={{ color: '#374151', marginBottom: '4px', fontWeight: 'bold' }}
                             itemStyle={{ color: '#1f2937', fontWeight: 'bold' }}
-                            formatter={(value: number | string | undefined) => [`${value ?? 0} Poin`, 'Skor Total']}
+                            formatter={(value) => {
+                                const displayValue = Array.isArray(value) ? value.join(', ') : (value ?? 0)
+                                return [`${displayValue} Poin`, 'Skor Total']
+                            }}
                             labelFormatter={(label) => `Latihan #${label}`}
                         />
                         <Area
