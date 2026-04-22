@@ -40,6 +40,8 @@ const navItems = [
     { href: '/cpns/admin/export', label: 'Export Data', icon: FileSpreadsheet },
 ]
 
+const userDashboardItem = { href: '/cpns/dashboard', label: 'Dashboard User', icon: ArrowLeft }
+
 function AdminNavLink({
     href,
     label,
@@ -167,6 +169,9 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
                         {navItems.map((item) => (
                             <AdminNavLink key={item.href} {...item} />
                         ))}
+                        <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
+                            <AdminNavLink {...userDashboardItem} />
+                        </div>
                     </nav>
 
                     <div className="relative z-10 shrink-0 border-t-2 border-gray-900 p-4">
@@ -186,14 +191,7 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
                                 </span>
                             </div>
                         </div>
-                        <div className="flex items-center justify-between gap-2 border-t-2 border-gray-900 pt-4">
-                            <Link
-                                href="/cpns/dashboard"
-                                className="inline-flex items-center gap-2 rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-xs font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5"
-                            >
-                                <ArrowLeft size={14} />
-                                User
-                            </Link>
+                        <div className="flex items-center justify-end gap-2 border-t-2 border-gray-900 pt-4">
                             <SidebarSignoutButton signoutAction={signoutAction} />
                         </div>
                     </div>
@@ -229,7 +227,7 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
 
                 <nav className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-gray-900 bg-[#f8f8f6]/90 backdrop-blur-xl md:hidden">
                     <div className="grid grid-cols-5 gap-1 px-2 py-2">
-                        {navItems.map((item) => (
+                        {[...navItems.slice(0, 4), userDashboardItem].map((item) => (
                             <AdminMobileNavLink key={item.href} {...item} />
                         ))}
                     </div>
