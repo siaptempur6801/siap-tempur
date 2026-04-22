@@ -459,3 +459,130 @@ export async function deleteTryoutConfiguration(id: string) {
     revalidatePath('/cpns/admin')
     return { success: true, message: 'Kategori berhasil dihapus secara permanen' }
 }
+
+// =============================================
+// VOUCHERS
+// =============================================
+
+export async function createVoucher(formData: FormData) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const code = String(formData.get('code') || '').trim().toUpperCase()
+    const quotaAmount = Number(formData.get('quota_amount') || 0)
+    const maxUses = Number(formData.get('max_uses') || 0)
+    const expiresAt = String(formData.get('expires_at') || '').trim()
+    const isActive = formData.get('is_active') === 'on'
+
+    if (!code) return { success: false, message: 'Kode voucher wajib diisi' }
+    if (!Number.isInteger(quotaAmount) || quotaAmount < 1) return { success: false, message: 'Jumlah token harus minimal 1' }
+    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Maksimal penggunaan harus minimal 1' }
+
+    const supabase = await createAdminClient()
+    const { error } = await supabase
+        .from('vouchers')
+        .insert({
+            code,
+            quota_amount: quotaAmount,
+            max_uses: maxUses,
+            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+            is_active: isActive,
+        })
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/voucher')
+    return { success: true, message: 'Voucher berhasil dibuat' }
+}
+
+export async function toggleVoucher(id: string, isActive: boolean) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const { error } = await supabase
+        .from('vouchers')
+        .update({ is_active: isActive, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/voucher')
+    return { success: true, message: `Voucher berhasil di${isActive ? 'aktifkan' : 'nonaktifkan'}` }
+}
+
+export async function updateVoucher(id: string, formData: FormData) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const code = String(formData.get('code') || '').trim().toUpperCase()
+    const quotaAmount = Number(formData.get('quota_amount') || 0)
+    const maxUses = Number(formData.get('max_uses') || 0)
+    const expiresAt = String(formData.get('expires_at') || '').trim()
+    const isActive = formData.get('is_active') === 'on'
+
+    if (!id) return { success: false, message: 'Voucher tidak valid' }
+    if (!code) return { success: false, message: 'Kode voucher wajib diisi' }
+    if (!Number.isInteger(quotaAmount) || quotaAmount < 1) return { success: false, message: 'Jumlah token harus minimal 1' }
+    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Maksimal penggunaan harus minimal 1' }
+
+    const supabase = await createAdminClient()
+    const { data: voucher } = await supabase
+        .from('vouchers')
+        .select('used_count')
+        .eq('id', id)
+        .single()
+
+    if (voucher && maxUses < voucher.used_count) {
+        return { success: false, message: `Max penggunaan tidak boleh kurang dari klaim saat ini (${voucher.used_count})` }
+    }
+
+    const { error } = await supabase
+        .from('vouchers')
+        .update({
+            code,
+            quota_amount: quotaAmount,
+            max_uses: maxUses,
+            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+            is_active: isActive,
+            updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/voucher')
+    return { success: true, message: 'Voucher berhasil diupdate' }
+}
+
+export async function deleteVoucher(id: string) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+    if (!id) return { success: false, message: 'Voucher tidak valid' }
+
+    const supabase = await createAdminClient()
+    const { data: voucher, error: readError } = await supabase
+        .from('vouchers')
+        .select('used_count')
+        .eq('id', id)
+        .single()
+
+    if (readError) return { success: false, message: readError.message }
+
+    if ((voucher?.used_count || 0) > 0) {
+        return {
+            success: false,
+            message: 'Voucher yang sudah pernah diklaim tidak bisa dihapus. Nonaktifkan voucher agar riwayat klaim tetap aman.',
+        }
+    }
+
+    const { error } = await supabase
+        .from('vouchers')
+        .delete()
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/voucher')
+    return { success: true, message: 'Voucher berhasil dihapus' }
+}

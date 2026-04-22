@@ -4,7 +4,7 @@ import { isAdmin } from '@/utils/admin'
 import { createAdminClient } from '@/utils/supabase/server'
 import { PASSING_GRADES } from '@/lib/constants'
 
-type ExportType = 'sessions' | 'ranking' | 'questions'
+type ExportType = 'sessions' | 'ranking' | 'questions' | 'vouchers'
 type ExportFormat = 'xlsx' | 'csv'
 
 const MAX_ROWS = 5000
@@ -186,6 +186,58 @@ async function getQuestionRows(request: NextRequest) {
     })
 }
 
+async function getVoucherRows(request: NextRequest) {
+    const supabase = await createAdminClient()
+    const dateFrom = getParam(request, 'date_from')
+    const dateTo = getParam(request, 'date_to')
+
+    let query = supabase
+        .from('vouchers')
+        .select('code, quota_amount, max_uses, used_count, expires_at, is_active, created_at, voucher_claims(user_email, claimed_at, profiles(full_name))')
+        .order('created_at', { ascending: false })
+        .limit(MAX_ROWS)
+
+    if (dateFrom) query = query.gte('created_at', `${dateFrom}T00:00:00.000Z`)
+    if (dateTo) query = query.lte('created_at', `${dateTo}T23:59:59.999Z`)
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+
+    return (data || []).flatMap((voucher) => {
+        const claims = voucher.voucher_claims || []
+        if (claims.length === 0) {
+            return [{
+                kode_voucher: voucher.code,
+                token: voucher.quota_amount,
+                max_penggunaan: voucher.max_uses,
+                total_dipakai: voucher.used_count,
+                status: voucher.is_active ? 'Aktif' : 'Nonaktif',
+                expired_at: formatDate(voucher.expires_at),
+                nama_user: '',
+                email_user: '',
+                claimed_at: '',
+                created_at: formatDate(voucher.created_at),
+            }]
+        }
+
+        return claims.map((claim) => {
+            const profile = Array.isArray(claim.profiles) ? claim.profiles[0] : claim.profiles
+            return {
+                kode_voucher: voucher.code,
+                token: voucher.quota_amount,
+                max_penggunaan: voucher.max_uses,
+                total_dipakai: voucher.used_count,
+                status: voucher.is_active ? 'Aktif' : 'Nonaktif',
+                expired_at: formatDate(voucher.expires_at),
+                nama_user: profile?.full_name || '',
+                email_user: claim.user_email || '',
+                claimed_at: formatDate(claim.claimed_at),
+                created_at: formatDate(voucher.created_at),
+            }
+        })
+    })
+}
+
 export async function GET(request: NextRequest) {
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
@@ -195,7 +247,7 @@ export async function GET(request: NextRequest) {
     const type = getParam(request, 'type') as ExportType
     const format = (getParam(request, 'format') || 'xlsx') as ExportFormat
 
-    if (!['sessions', 'ranking', 'questions'].includes(type)) {
+    if (!['sessions', 'ranking', 'questions', 'vouchers'].includes(type)) {
         return NextResponse.json({ error: 'Invalid export type' }, { status: 400 })
     }
 
@@ -209,7 +261,9 @@ export async function GET(request: NextRequest) {
                 ? await getSessionRows(request)
                 : type === 'ranking'
                     ? await getRankingRows()
-                    : await getQuestionRows(request)
+                    : type === 'questions'
+                        ? await getQuestionRows(request)
+                        : await getVoucherRows(request)
 
         return createFileResponse(rows, type, format)
     } catch (error) {

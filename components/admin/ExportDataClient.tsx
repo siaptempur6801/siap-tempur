@@ -19,6 +19,11 @@ const exportTypes = [
         label: 'Bank Soal',
         description: 'Backup soal, opsi jawaban, kunci, poin TKP, dan pembahasan.',
     },
+    {
+        value: 'vouchers',
+        label: 'Voucher',
+        description: 'Rekap kode voucher, kuota, klaim, dan email pengguna.',
+    },
 ] as const
 
 const sessionStatuses = [
