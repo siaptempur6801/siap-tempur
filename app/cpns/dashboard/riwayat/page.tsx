@@ -16,7 +16,11 @@ function formatCompletedAt(dateTime: string) {
     }).format(new Date(dateTime))
 }
 
-function getHistoryTitle(mode: 'practice' | 'tryout', types: SessionType[]) {
+function getHistoryTitle(mode: 'practice' | 'tryout', types: SessionType[], eventTitle?: string | null) {
+    if (eventTitle) {
+        return eventTitle
+    }
+
     if (mode === 'tryout' || types.length > 1) {
         return 'Tryout SKD Full'
     }
@@ -67,17 +71,29 @@ export default async function RiwayatPage() {
 
     const sessionIds = completedSessions?.map((session) => session.id) ?? []
     const historyTypesMap = new Map<string, Set<SessionType>>()
+    const eventTitleMap = new Map<string, string>()
 
     if (sessionIds.length > 0) {
-        const { data: historyAnswers } = await supabase
-            .from('test_answers')
-            .select(`
-                session_id,
-                questions (
-                    type
-                )
-            `)
-            .in('session_id', sessionIds)
+        const [{ data: historyAnswers }, { data: eventSessions }] = await Promise.all([
+            supabase
+                .from('test_answers')
+                .select(`
+                    session_id,
+                    questions (
+                        type
+                    )
+                `)
+                .in('session_id', sessionIds),
+            supabase
+                .from('tryout_event_sessions')
+                .select(`
+                    session_id,
+                    tryout_events (
+                        title
+                    )
+                `)
+                .in('session_id', sessionIds),
+        ])
 
         historyAnswers?.forEach((answer) => {
             const question = Array.isArray(answer.questions) ? answer.questions[0] : answer.questions
@@ -89,18 +105,29 @@ export default async function RiwayatPage() {
             currentTypes.add(type)
             historyTypesMap.set(answer.session_id, currentTypes)
         })
+
+        eventSessions?.forEach((eventSession) => {
+            const event = Array.isArray(eventSession.tryout_events)
+                ? eventSession.tryout_events[0]
+                : eventSession.tryout_events
+
+            if (event?.title) {
+                eventTitleMap.set(eventSession.session_id, event.title)
+            }
+        })
     }
 
     const historySessions = (completedSessions ?? []).map((session) => {
         const types = Array.from(historyTypesMap.get(session.id) ?? [])
+        const eventTitle = eventTitleMap.get(session.id) ?? null
         const scoreTwk = session.score_twk ?? 0
         const scoreTiu = session.score_tiu ?? 0
         const scoreTkp = session.score_tkp ?? 0
 
         return {
             id: session.id,
-            title: getHistoryTitle(session.mode, types),
-            mode: session.mode,
+            title: getHistoryTitle(session.mode, types, eventTitle),
+            isEvent: Boolean(eventTitle),
             completedAt: session.end_time ?? session.start_time,
             completedAtLabel: formatCompletedAt(session.end_time ?? session.start_time),
             totalScore: session.total_score ?? 0,

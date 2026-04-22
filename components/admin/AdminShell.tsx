@@ -35,7 +35,7 @@ interface AdminShellProps {
 const navItems = [
     { href: '/cpns/admin', label: 'Bank Soal', icon: ClipboardList },
     { href: '/cpns/admin/tryout-config', label: 'Konfigurasi Tryout', icon: Settings },
-    { href: '/cpns/admin/tryout-akbar', label: 'Tryout Akbar', icon: BarChart3, disabled: true },
+    { href: '/cpns/admin/event', label: 'Event', icon: BarChart3 },
     { href: '/cpns/admin/voucher', label: 'Voucher', icon: Ticket },
     { href: '/cpns/admin/export', label: 'Export Data', icon: FileSpreadsheet },
 ]

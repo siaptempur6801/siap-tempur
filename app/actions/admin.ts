@@ -586,3 +586,231 @@ export async function deleteVoucher(id: string) {
     revalidatePath('/cpns/admin/voucher')
     return { success: true, message: 'Voucher berhasil dihapus' }
 }
+
+// =============================================
+// TRYOUT AKBAR EVENTS
+// =============================================
+
+function readTryoutEventForm(formData: FormData) {
+    const title = String(formData.get('title') || '').trim()
+    const description = String(formData.get('description') || '').trim()
+    const startsAt = String(formData.get('starts_at') || '').trim()
+    const endsAt = String(formData.get('ends_at') || '').trim()
+    const startGraceMinutes = Number(formData.get('start_grace_minutes') || 15)
+    const durationMinutes = Number(formData.get('duration_minutes') || 100)
+    const maxParticipantsRaw = String(formData.get('max_participants') || '').trim()
+    const resultVisibleAt = String(formData.get('result_visible_at') || '').trim()
+    const explanationVisibleAt = String(formData.get('explanation_visible_at') || '').trim()
+    const requiresCode = formData.get('requires_code') === 'on'
+
+    return {
+        title,
+        description: description || null,
+        starts_at: startsAt ? new Date(startsAt).toISOString() : '',
+        ends_at: endsAt ? new Date(endsAt).toISOString() : '',
+        start_grace_minutes: Number.isInteger(startGraceMinutes) ? startGraceMinutes : 15,
+        duration_minutes: Number.isInteger(durationMinutes) ? durationMinutes : 100,
+        max_participants: maxParticipantsRaw ? Number(maxParticipantsRaw) : null,
+        requires_code: requiresCode,
+        result_visible_at: resultVisibleAt ? new Date(resultVisibleAt).toISOString() : null,
+        explanation_visible_at: explanationVisibleAt ? new Date(explanationVisibleAt).toISOString() : null,
+    }
+}
+
+function validateTryoutEventPayload(payload: ReturnType<typeof readTryoutEventForm>) {
+    if (!payload.title) return 'Nama event wajib diisi'
+    if (!payload.starts_at) return 'Jadwal mulai wajib diisi'
+    if (!payload.ends_at) return 'Jadwal tutup wajib diisi'
+    if (new Date(payload.ends_at).getTime() <= new Date(payload.starts_at).getTime()) {
+        return 'Jadwal tutup harus setelah jadwal mulai'
+    }
+    if (!Number.isInteger(payload.start_grace_minutes) || payload.start_grace_minutes < 0) return 'Start window tidak valid'
+    if (!Number.isInteger(payload.duration_minutes) || payload.duration_minutes < 1) return 'Durasi tidak valid'
+    if (payload.max_participants !== null && (!Number.isInteger(payload.max_participants) || payload.max_participants < 1)) {
+        return 'Max peserta tidak valid'
+    }
+    return null
+}
+
+export async function createTryoutEvent(formData: FormData) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const payload = readTryoutEventForm(formData)
+    const validationError = validateTryoutEventPayload(payload)
+    if (validationError) return { success: false, message: validationError }
+
+    const supabase = await createAdminClient()
+    const { error } = await supabase
+        .from('tryout_events')
+        .insert({ ...payload, status: 'draft' })
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    return { success: true, message: 'Event Tryout Akbar berhasil dibuat' }
+}
+
+export async function updateTryoutEvent(id: string, formData: FormData) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const payload = readTryoutEventForm(formData)
+    const validationError = validateTryoutEventPayload(payload)
+    if (validationError) return { success: false, message: validationError }
+
+    const supabase = await createAdminClient()
+    const { error } = await supabase
+        .from('tryout_events')
+        .update({ ...payload, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    return { success: true, message: 'Event Tryout Akbar berhasil diupdate' }
+}
+
+export async function updateTryoutEventStatus(id: string, status: 'draft' | 'scheduled' | 'live' | 'closed' | 'cancelled') {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const { error } = await supabase
+        .from('tryout_events')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    return { success: true, message: `Status event berhasil diubah ke ${status}` }
+}
+
+export async function generateTryoutEventQuestions(id: string) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const { data, error } = await supabase.rpc('generate_tryout_event_questions', {
+        p_event_id: id,
+    })
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    return { success: true, message: `Paket soal event berhasil digenerate (${data || 0} soal)` }
+}
+
+export async function deleteTryoutEvent(id: string) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const { data: eventSessions, error: sessionReadError } = await supabase
+        .from('tryout_event_sessions')
+        .select('session_id')
+        .eq('event_id', id)
+
+    if (sessionReadError) return { success: false, message: sessionReadError.message }
+
+    const sessionIds = (eventSessions || [])
+        .map((session) => session.session_id)
+        .filter(Boolean)
+
+    if (sessionIds.length > 0) {
+        const { error: sessionDeleteError } = await supabase
+            .from('test_sessions')
+            .delete()
+            .in('id', sessionIds)
+
+        if (sessionDeleteError) return { success: false, message: sessionDeleteError.message }
+    }
+
+    const { error } = await supabase
+        .from('tryout_events')
+        .delete()
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    revalidatePath('/cpns/dashboard/event')
+    revalidatePath('/cpns/dashboard/riwayat')
+    revalidatePath('/cpns/dashboard/ranking')
+    return { success: true, message: 'Event Tryout Akbar berhasil dihapus' }
+}
+
+export async function createTryoutEventCode(eventId: string, formData: FormData) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const code = String(formData.get('code') || '').trim().toUpperCase()
+    const maxUses = Number(formData.get('max_uses') || 1)
+    const expiresAt = String(formData.get('expires_at') || '').trim()
+
+    if (!eventId) return { success: false, message: 'Event tidak valid' }
+    if (!code) return { success: false, message: 'Kode masuk wajib diisi' }
+    if (!/^[A-Z0-9-]{4,32}$/.test(code)) {
+        return { success: false, message: 'Kode hanya boleh huruf, angka, strip, minimal 4 karakter' }
+    }
+    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Limit penggunaan kode tidak valid' }
+
+    const supabase = await createAdminClient()
+    const { error } = await supabase
+        .from('tryout_event_codes')
+        .insert({
+            event_id: eventId,
+            code,
+            max_uses: maxUses,
+            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+        })
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    return { success: true, message: 'Kode masuk event berhasil dibuat' }
+}
+
+export async function toggleTryoutEventCode(id: string, isActive: boolean) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const { error } = await supabase
+        .from('tryout_event_codes')
+        .update({ is_active: isActive, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    return { success: true, message: isActive ? 'Kode masuk diaktifkan' : 'Kode masuk dinonaktifkan' }
+}
+
+export async function deleteTryoutEventCode(id: string) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const { data: code, error: readError } = await supabase
+        .from('tryout_event_codes')
+        .select('used_count')
+        .eq('id', id)
+        .single()
+
+    if (readError) return { success: false, message: readError.message }
+    if ((code?.used_count || 0) > 0) {
+        return { success: false, message: 'Kode yang sudah dipakai peserta tidak bisa dihapus. Nonaktifkan kode agar riwayat tetap aman.' }
+    }
+
+    const { error } = await supabase
+        .from('tryout_event_codes')
+        .delete()
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    return { success: true, message: 'Kode masuk event berhasil dihapus' }
+}

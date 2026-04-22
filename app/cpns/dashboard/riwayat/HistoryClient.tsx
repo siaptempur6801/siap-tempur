@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 type HistorySession = {
     id: string
     title: string
-    mode: 'practice' | 'tryout'
+    isEvent: boolean
     completedAt: string
     completedAtLabel: string
     totalScore: number
@@ -19,7 +19,7 @@ type HistorySession = {
     passed: boolean | null
 }
 
-type ModeFilter = 'all' | 'tryout' | 'practice'
+type TypeFilter = 'all' | 'event' | 'tryout'
 type StatusFilter = 'all' | 'passed' | 'failed'
 type SortMode = 'newest' | 'oldest' | 'highest'
 
@@ -27,10 +27,10 @@ interface HistoryClientProps {
     sessions: HistorySession[]
 }
 
-const modeOptions: Array<{ value: ModeFilter; label: string }> = [
+const typeOptions: Array<{ value: TypeFilter; label: string }> = [
     { value: 'all', label: 'Semua' },
-    { value: 'tryout', label: 'Tryout' },
-    { value: 'practice', label: 'Latihan' }
+    { value: 'event', label: 'Event' },
+    { value: 'tryout', label: 'Tryout (Token)' }
 ]
 
 const statusOptions: Array<{ value: StatusFilter; label: string }> = [
@@ -64,7 +64,7 @@ function ScoreChip({
 
 export default function HistoryClient({ sessions }: HistoryClientProps) {
     const [query, setQuery] = useState('')
-    const [modeFilter, setModeFilter] = useState<ModeFilter>('all')
+    const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
     const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
     const [sortMode, setSortMode] = useState<SortMode>('newest')
     const [page, setPage] = useState(1)
@@ -78,16 +78,19 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                 normalizedQuery.length === 0 ||
                 session.title.toLowerCase().includes(normalizedQuery) ||
                 session.completedAtLabel.toLowerCase().includes(normalizedQuery) ||
-                session.mode.toLowerCase().includes(normalizedQuery)
+                (session.isEvent && 'event'.includes(normalizedQuery))
 
-            const matchesMode = modeFilter === 'all' || session.mode === modeFilter
+            const matchesType =
+                typeFilter === 'all' ||
+                (typeFilter === 'event' && session.isEvent) ||
+                (typeFilter === 'tryout' && !session.isEvent)
 
             const matchesStatus =
                 statusFilter === 'all' ||
                 (statusFilter === 'passed' && session.passed === true) ||
                 (statusFilter === 'failed' && session.passed === false)
 
-            return matchesQuery && matchesMode && matchesStatus
+            return matchesQuery && matchesType && matchesStatus
         })
 
         next.sort((a, b) => {
@@ -103,7 +106,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
         })
 
         return next
-    }, [modeFilter, query, sessions, sortMode, statusFilter])
+    }, [query, sessions, sortMode, statusFilter, typeFilter])
 
     const totalPages = Math.max(1, Math.ceil(filteredSessions.length / pageSize))
     const currentPage = Math.min(page, totalPages)
@@ -118,7 +121,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                         <FileSearch size={14} />
                         <span>Riwayat Ujian</span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Hasil Tryout & Latihan Sebelumnya</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Hasil Ujian Sebelumnya</h1>
                     <p className="text-lg text-gray-600 max-w-3xl font-sans">
                         Saya padatkan jadi daftar yang lebih ringkas supaya lebih cepat discan dan gampang dicari.
                     </p>
@@ -134,7 +137,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                                     setQuery(event.target.value)
                                     setPage(1)
                                 }}
-                                placeholder="Cari nama sesi, tipe, atau tanggal..."
+                                placeholder="Cari nama sesi, event, atau tanggal..."
                                 className="w-full border-2 border-gray-900 bg-[#fffdf7] py-3 pl-11 pr-4 text-base font-sans shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] outline-none"
                             />
                         </div>
@@ -151,14 +154,14 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                                 Tipe
                             </span>
                             <select
-                                value={modeFilter}
+                                value={typeFilter}
                                 onChange={(event) => {
-                                    setModeFilter(event.target.value as ModeFilter)
+                                    setTypeFilter(event.target.value as TypeFilter)
                                     setPage(1)
                                 }}
                                 className="border-2 border-gray-900 bg-white px-3 py-3 text-sm font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] outline-none"
                             >
-                                {modeOptions.map((option) => (
+                                {typeOptions.map((option) => (
                                     <option key={option.value} value={option.value}>
                                         {option.label}
                                     </option>
@@ -218,9 +221,11 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-3">
                                     <div className="min-w-0 md:flex-1">
                                         <div className="flex flex-wrap items-center gap-1.5">
-                                            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-500 font-sans">
-                                                {session.mode === 'tryout' ? 'Tryout' : 'Latihan'}
-                                            </span>
+                                            {session.isEvent && (
+                                                <span className="inline-flex items-center gap-1 border-2 border-gray-900 bg-blue-100 px-2 py-0.5 text-[9px] font-black uppercase text-blue-700">
+                                                    Event
+                                                </span>
+                                            )}
                                             {session.passed !== null && (
                                                 <span
                                                     className={cn(
@@ -270,12 +275,12 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                                         </div>
 
                                         <div className="flex justify-end">
-                                        <Link
-                                            href={`/cpns/dashboard/latihan/${session.id}/result?from=riwayat`}
-                                            className="inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-3 py-2.5 md:px-2 md:py-2 lg:px-4 lg:py-3 text-xs md:text-[10px] lg:text-sm font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
-                                        >
-                                            Lihat Hasil
-                                        </Link>
+                                            <Link
+                                                href={`/cpns/dashboard/latihan/${session.id}/result?from=${session.isEvent ? 'event' : 'riwayat'}`}
+                                                className="inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-3 py-2.5 md:px-2 md:py-2 lg:px-4 lg:py-3 text-xs md:text-[10px] lg:text-sm font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+                                            >
+                                                Lihat Hasil
+                                            </Link>
                                         </div>
                                     </div>
                                 </div>
@@ -320,7 +325,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                         <button
                             onClick={() => {
                                 setQuery('')
-                                setModeFilter('all')
+                                setTypeFilter('all')
                                 setStatusFilter('all')
                                 setSortMode('newest')
                                 setPage(1)

@@ -148,6 +148,12 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
         )
         : {}
 
+    const { data: eventSession } = await supabase
+        .from('tryout_event_sessions')
+        .select('id')
+        .eq('session_id', sessionId)
+        .maybeSingle()
+
     // Check if this is a tryout session (has all three types)
     const questionTypes = new Set(questions.map((q) => q.type))
     const isTryout = questionTypes.has('TWK') && questionTypes.has('TIU') && questionTypes.has('TKP')
@@ -168,6 +174,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             initialMarked={initialMarked}
             endTime={endTime}
             isTryout={isTryout}
+            returnTo={eventSession ? 'event' : 'latihan'}
         />
     )
 }

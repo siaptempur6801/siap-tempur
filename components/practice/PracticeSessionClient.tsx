@@ -34,6 +34,7 @@ interface Props {
     initialMarked: Record<string, boolean>
     endTime?: string // ISO string for tryout mode
     isTryout?: boolean
+    returnTo?: 'latihan' | 'event'
 }
 
 type SessionProgressSnapshot = {
@@ -312,7 +313,8 @@ export default function PracticeSessionClient({
     initialCurrentIndex,
     initialMarked,
     endTime,
-    isTryout = false
+    isTryout = false,
+    returnTo = 'latihan'
 }: Props) {
     const router = useRouter()
     const [currentIndex, setCurrentIndex] = useState(initialCurrentIndex)
@@ -384,7 +386,7 @@ export default function PracticeSessionClient({
             if (result?.success) {
                 clearProgressFromLocalStorage(sessionId)
                 toast.success(isTryout ? 'Tryout selesai!' : 'Latihan selesai!')
-                router.push(`/cpns/dashboard/latihan/${sessionId}/result`)
+                router.push(`/cpns/dashboard/latihan/${sessionId}/result${returnTo === 'event' ? '?from=event' : ''}`)
             }
         } catch (error) {
             console.error('Error finishing practice:', error)
@@ -392,7 +394,7 @@ export default function PracticeSessionClient({
         } finally {
             setFinishing(false)
         }
-    }, [finishing, hasFinished, isTryout, sessionId, router])
+    }, [finishing, hasFinished, isTryout, returnTo, sessionId, router])
 
     useEffect(() => {
         const savedProgress = loadProgressFromLocalStorage(sessionId)
@@ -612,7 +614,7 @@ export default function PracticeSessionClient({
             }
         }
 
-        router.push('/cpns/dashboard/latihan')
+        router.push(returnTo === 'event' ? '/cpns/dashboard/event' : '/cpns/dashboard/latihan')
     }
 
     // Safety check - prevent crash if no questions available
@@ -716,7 +718,7 @@ export default function PracticeSessionClient({
                             <h3 className="text-3xl font-bold text-gray-900">Keluar Latihan?</h3>
 
                             <p className="text-lg text-gray-700 font-medium flex items-center justify-center gap-2">
-                                Progres latihan dan nomor soal terakhir akan tersimpan. Anda bisa lanjut lagi nanti dari dashboard.
+                                Progres latihan dan nomor soal terakhir akan tersimpan. Anda bisa lanjut lagi nanti dari {returnTo === 'event' ? 'halaman event' : 'dashboard'}.
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-4">

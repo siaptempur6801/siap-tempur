@@ -1,7 +1,7 @@
 'use server'
 
 import { isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-session'
-import { createClient } from '@/utils/supabase/server'
+import { createAdminClient, createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -205,6 +205,8 @@ export async function submitAnswer(sessionId: string, questionId: string, option
 
 export async function finishPractice(sessionId: string) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/login')
 
     // Call scoring function
     const { error } = await supabase.rpc('calculate_session_score', {
@@ -216,6 +218,32 @@ export async function finishPractice(sessionId: string) {
         return { error: 'Failed to finish session' }
     }
 
+    const admin = await createAdminClient()
+    const { data: eventSession } = await admin
+        .from('tryout_event_sessions')
+        .select('event_id')
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+    if (eventSession) {
+        await Promise.all([
+            admin
+                .from('tryout_event_sessions')
+                .update({
+                    status: 'completed',
+                    finished_at: new Date().toISOString(),
+                })
+                .eq('session_id', sessionId)
+                .eq('user_id', user.id),
+            admin
+                .from('tryout_event_participants')
+                .update({ status: 'completed' })
+                .eq('event_id', eventSession.event_id)
+                .eq('user_id', user.id),
+        ])
+    }
+
     // Leaderboard is updated by pg_cron on a fixed interval.
     // No need to trigger manual refresh here to save DB resources.
 
@@ -223,5 +251,7 @@ export async function finishPractice(sessionId: string) {
     revalidatePath('/cpns/dashboard')
     revalidatePath('/cpns/dashboard/ranking')
     revalidatePath('/cpns/dashboard/latihan')
+    revalidatePath('/cpns/dashboard/event')
+    revalidatePath('/cpns/dashboard/riwayat')
     return { success: true }
 }

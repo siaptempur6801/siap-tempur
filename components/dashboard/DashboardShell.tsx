@@ -6,6 +6,7 @@ import Image from 'next/image'
 import {
     LayoutDashboard,
     BookOpen,
+    CalendarDays,
     Clock3,
     User,
     Ticket,
@@ -77,6 +78,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
 
                 <nav className="flex-1 px-4 space-y-3 relative z-10">
                     <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
+                    <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
                     <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
                     <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
                     <NavItem href="/cpns/dashboard/latihan" icon={<Target size={20} />} label="Tryout" badge="XP" />
@@ -153,8 +155,9 @@ export default function DashboardShell({ children, user, profile, signoutAction,
 
             {/* Mobile Bottom Navigation */}
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#fdfbf7]/90 backdrop-blur-xl border-t-2 border-gray-900 z-40">
-                <div className="grid grid-cols-5 gap-1 px-2 py-2">
+                <div className="grid grid-cols-6 gap-1 px-2 py-2">
                     <MobileNavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Home" />
+                    <MobileNavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
                     <MobileNavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking" />
                     <MobileNavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
                     <MobileNavItem href="/cpns/dashboard/latihan" icon={<Target size={20} />} label="Tryout" />

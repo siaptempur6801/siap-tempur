@@ -124,8 +124,6 @@ export default async function PracticeResultPage({
     const { sessionId } = await params
     const { from } = await searchParams
     const cameFromHistory = from === 'riwayat'
-    const backHref = cameFromHistory ? '/cpns/dashboard/riwayat' : '/cpns/dashboard/latihan'
-    const backLabel = cameFromHistory ? 'Riwayat' : 'Dashboard'
 
     // 1. Fetch Session Result
     const { data: session, error: sessionError } = await supabase
@@ -141,6 +139,20 @@ export default async function PracticeResultPage({
     if (session.status !== 'completed') {
         // Optional: redirect or show message
     }
+
+    const { data: eventSession } = await supabase
+        .from('tryout_event_sessions')
+        .select('id')
+        .eq('session_id', sessionId)
+        .maybeSingle()
+
+    const isEventSession = from === 'event' || Boolean(eventSession)
+    const backHref = cameFromHistory
+        ? '/cpns/dashboard/riwayat'
+        : isEventSession
+            ? '/cpns/dashboard/event'
+            : '/cpns/dashboard/latihan'
+    const backLabel = cameFromHistory ? 'Riwayat' : isEventSession ? 'Event' : 'Dashboard'
 
     // Fetch user's total XP and metadata before this session (for popups)
     const [prevSessionsRes, profileRes] = await Promise.all([
@@ -532,7 +544,7 @@ export default async function PracticeResultPage({
                         <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> {backLabel}
                     </Link>
 
-                    {!cameFromHistory && <RetakeButton isCombined={isCombined} singleType={singleType} />}
+                    {!cameFromHistory && !isEventSession && <RetakeButton isCombined={isCombined} singleType={singleType} />}
 
                     <ScrollToReviewButton />
                 </div>
