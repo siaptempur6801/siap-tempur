@@ -1,0 +1,219 @@
+import { NextRequest, NextResponse } from 'next/server'
+import * as XLSX from 'xlsx'
+import { isAdmin } from '@/utils/admin'
+import { createAdminClient } from '@/utils/supabase/server'
+import { PASSING_GRADES } from '@/lib/constants'
+
+type ExportType = 'sessions' | 'ranking' | 'questions'
+type ExportFormat = 'xlsx' | 'csv'
+
+const MAX_ROWS = 5000
+
+function getParam(request: NextRequest, key: string) {
+    return request.nextUrl.searchParams.get(key)?.trim() || ''
+}
+
+function sanitizeSheetName(name: string) {
+    return name.replace(/[:\\/?*\[\]]/g, '').slice(0, 31) || 'Export'
+}
+
+function formatDate(value?: string | null) {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    return date.toISOString()
+}
+
+function csvEscape(value: unknown) {
+    const text = value == null ? '' : String(value)
+    if (/[",\r\n]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`
+    }
+    return text
+}
+
+function toCsv(rows: Record<string, unknown>[]) {
+    if (rows.length === 0) return ''
+    const headers = Object.keys(rows[0])
+    return [
+        headers.map(csvEscape).join(','),
+        ...rows.map((row) => headers.map((header) => csvEscape(row[header])).join(',')),
+    ].join('\r\n')
+}
+
+function createFileResponse(rows: Record<string, unknown>[], type: ExportType, format: ExportFormat) {
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
+    const filename = `siap-tempur-${type}-${timestamp}.${format}`
+
+    if (format === 'csv') {
+        const csv = toCsv(rows)
+        return new NextResponse(csv, {
+            headers: {
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="${filename}"`,
+            },
+        })
+    }
+
+    const workbook = XLSX.utils.book_new()
+    const worksheet = XLSX.utils.json_to_sheet(rows)
+    XLSX.utils.book_append_sheet(workbook, worksheet, sanitizeSheetName(type))
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+
+    return new NextResponse(new Uint8Array(buffer), {
+        headers: {
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': `attachment; filename="${filename}"`,
+        },
+    })
+}
+
+async function getSessionRows(request: NextRequest) {
+    const supabase = await createAdminClient()
+    const status = getParam(request, 'status')
+    const dateFrom = getParam(request, 'date_from')
+    const dateTo = getParam(request, 'date_to')
+
+    let query = supabase
+        .from('test_sessions')
+        .select('id, user_id, mode, status, start_time, end_time, score_twk, score_tiu, score_tkp, total_score, is_passed, created_at, profiles(full_name)')
+        .order('start_time', { ascending: false })
+        .limit(MAX_ROWS)
+
+    if (status) query = query.eq('status', status)
+    if (dateFrom) query = query.gte('start_time', `${dateFrom}T00:00:00.000Z`)
+    if (dateTo) query = query.lte('start_time', `${dateTo}T23:59:59.999Z`)
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+
+    return (data || []).map((session) => {
+        const profile = Array.isArray(session.profiles) ? session.profiles[0] : session.profiles
+        const passed = Boolean(session.is_passed) || (
+            Number(session.score_twk || 0) >= PASSING_GRADES.TWK &&
+            Number(session.score_tiu || 0) >= PASSING_GRADES.TIU &&
+            Number(session.score_tkp || 0) >= PASSING_GRADES.TKP
+        )
+
+        return {
+            session_id: session.id,
+            user_id: session.user_id,
+            nama: profile?.full_name || '',
+            mode: session.mode,
+            status: session.status,
+            waktu_mulai: formatDate(session.start_time),
+            waktu_selesai: formatDate(session.end_time),
+            skor_twk: session.score_twk || 0,
+            skor_tiu: session.score_tiu || 0,
+            skor_tkp: session.score_tkp || 0,
+            total_skor: session.total_score || 0,
+            lulus_passing_grade: passed ? 'Ya' : 'Tidak',
+            created_at: formatDate(session.created_at),
+        }
+    })
+}
+
+async function getRankingRows() {
+    const supabase = await createAdminClient()
+    const { data, error } = await supabase
+        .from('leaderboard_snapshot')
+        .select('rank_pos, user_id, full_name, top_score, score_twk, score_tiu, score_tkp')
+        .order('rank_pos', { ascending: true })
+        .limit(MAX_ROWS)
+
+    if (error) throw new Error(error.message)
+
+    return (data || []).map((row) => ({
+        ranking: row.rank_pos,
+        user_id: row.user_id,
+        nama: row.full_name || '',
+        skor_twk: row.score_twk || 0,
+        skor_tiu: row.score_tiu || 0,
+        skor_tkp: row.score_tkp || 0,
+        total_skor: row.top_score || 0,
+    }))
+}
+
+async function getQuestionRows(request: NextRequest) {
+    const supabase = await createAdminClient()
+    const questionType = getParam(request, 'question_type')
+    const dateFrom = getParam(request, 'date_from')
+    const dateTo = getParam(request, 'date_to')
+
+    let query = supabase
+        .from('questions')
+        .select('id, question_code, type, category, sub_category, content, image_url, explanation, created_at, options(content, image_url, is_correct, score_value)')
+        .order('created_at', { ascending: false })
+        .limit(MAX_ROWS)
+
+    if (questionType) query = query.eq('type', questionType)
+    if (dateFrom) query = query.gte('created_at', `${dateFrom}T00:00:00.000Z`)
+    if (dateTo) query = query.lte('created_at', `${dateTo}T23:59:59.999Z`)
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+
+    return (data || []).map((question) => {
+        const options = question.options || []
+        const optionByIndex = (index: number) => options[index]
+        const correctIndex = options.findIndex((option) => option.is_correct)
+
+        return {
+            kode_soal: question.question_code || question.id,
+            tipe: question.type,
+            kategori: question.category || question.sub_category || '',
+            isi_soal: question.content,
+            gambar_soal: question.image_url || '',
+            opsi_a: optionByIndex(0)?.content || '',
+            opsi_a_gambar: optionByIndex(0)?.image_url || '',
+            opsi_a_poin: optionByIndex(0)?.score_value || 0,
+            opsi_b: optionByIndex(1)?.content || '',
+            opsi_b_gambar: optionByIndex(1)?.image_url || '',
+            opsi_b_poin: optionByIndex(1)?.score_value || 0,
+            opsi_c: optionByIndex(2)?.content || '',
+            opsi_c_gambar: optionByIndex(2)?.image_url || '',
+            opsi_c_poin: optionByIndex(2)?.score_value || 0,
+            opsi_d: optionByIndex(3)?.content || '',
+            opsi_d_gambar: optionByIndex(3)?.image_url || '',
+            opsi_d_poin: optionByIndex(3)?.score_value || 0,
+            opsi_e: optionByIndex(4)?.content || '',
+            opsi_e_gambar: optionByIndex(4)?.image_url || '',
+            opsi_e_poin: optionByIndex(4)?.score_value || 0,
+            kunci_jawaban: correctIndex >= 0 ? ['A', 'B', 'C', 'D', 'E'][correctIndex] : '',
+            pembahasan: question.explanation || '',
+            created_at: formatDate(question.created_at),
+        }
+    })
+}
+
+export async function GET(request: NextRequest) {
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const type = getParam(request, 'type') as ExportType
+    const format = (getParam(request, 'format') || 'xlsx') as ExportFormat
+
+    if (!['sessions', 'ranking', 'questions'].includes(type)) {
+        return NextResponse.json({ error: 'Invalid export type' }, { status: 400 })
+    }
+
+    if (!['xlsx', 'csv'].includes(format)) {
+        return NextResponse.json({ error: 'Invalid export format' }, { status: 400 })
+    }
+
+    try {
+        const rows =
+            type === 'sessions'
+                ? await getSessionRows(request)
+                : type === 'ranking'
+                    ? await getRankingRows()
+                    : await getQuestionRows(request)
+
+        return createFileResponse(rows, type, format)
+    } catch (error) {
+        console.error('[admin-export]', error)
+        return NextResponse.json({ error: 'Gagal membuat export data' }, { status: 500 })
+    }
+}

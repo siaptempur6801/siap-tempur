@@ -9,7 +9,8 @@ import { createQuestion, updateQuestion } from '@/app/actions/admin'
 import { AlertCircle, ArrowLeft, ImageIcon, Info, Loader2, Save, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { OPTION_LABELS, QUESTION_TYPES, type CategoryMap, type OptionLabel, type QuestionType } from '@/lib/admin-dashboard'
+import { ADMIN_BASE_PATH, OPTION_LABELS, QUESTION_TYPES, type CategoryMap, type OptionLabel, type QuestionType } from '@/lib/admin-dashboard'
+import PaperBackground from '@/components/PaperBackground'
 
 interface QuestionOption {
     id: string
@@ -90,7 +91,7 @@ export default function QuestionEditorForm({
     categoryMap,
     mode,
     question,
-    returnHref = '/cpns/dashboard/admin',
+    returnHref = ADMIN_BASE_PATH,
 }: QuestionEditorFormProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
@@ -204,32 +205,33 @@ export default function QuestionEditorForm({
         <div className="w-full pb-10">
             <Link
                 href={returnHref}
-                className="inline-flex items-center text-sm font-semibold text-gray-500 transition-colors hover:text-gray-900"
+                className="inline-flex items-center rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-sm font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5"
             >
                 <ArrowLeft size={18} className="mr-2" />
                 Kembali ke dashboard admin
             </Link>
 
-            <div className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-200 bg-slate-50 px-6 py-5 sm:px-8">
-                    <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+            <div className="relative mt-6 overflow-hidden border-2 border-gray-900 bg-white shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                <PaperBackground />
+                <div className="relative z-10 border-b-2 border-gray-900 bg-gray-100/90 px-6 py-5 sm:px-8">
+                    <h1 className="font-handwriting text-4xl font-black text-gray-900">
                         {isEditMode ? 'Edit Soal' : 'Buat Soal Baru'}
                     </h1>
-                    <p className="mt-1 text-sm text-slate-600">
+                    <p className="mt-1 text-sm font-medium text-gray-600">
                         {isEditMode
                             ? 'Perbarui soal tanpa mengubah struktur form admin.'
                             : 'Gunakan struktur yang sama untuk semua soal agar bank soal tetap konsisten.'}
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="divide-y divide-slate-200">
-                    <div className="mx-4 mt-4 flex gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 sm:mx-8">
-                        <Info className="mt-0.5 shrink-0 text-blue-600" size={18} />
+                <form onSubmit={handleSubmit} className="relative z-10 divide-y-2 divide-gray-200">
+                    <div className="mx-4 mt-4 flex gap-3 border-2 border-gray-900 bg-gray-100 p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:mx-8">
+                        <Info className="mt-0.5 shrink-0 text-gray-900" size={18} />
                         <div className="space-y-1 text-sm">
-                            <p className="font-semibold text-blue-900">
+                            <p className="font-bold text-gray-900">
                                 {isEditMode ? 'Mode edit aktif' : 'Mode tambah soal'}
                             </p>
-                            <p className="text-blue-800">
+                            <p className="text-gray-700">
                                 Tulis rumus dengan format <code>$rumus$</code> atau <code>$$rumus$$</code>.
                                 {isEditMode && question ? (
                                     <> Kode soal: <code>{question.question_code || question.id}</code></>
@@ -241,7 +243,7 @@ export default function QuestionEditorForm({
                     <div className="space-y-8 p-5 sm:p-8">
                         <div className="grid gap-8 md:grid-cols-2">
                             <div className="space-y-3">
-                                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                                     Tipe Soal
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
@@ -251,10 +253,10 @@ export default function QuestionEditorForm({
                                             type="button"
                                             onClick={() => handleTypeChange(questionType)}
                                             className={cn(
-                                                'rounded-xl border px-4 py-3 text-sm font-semibold transition',
+                                                'rounded-md border-2 px-4 py-3 text-sm font-bold transition',
                                                 type === questionType
-                                                    ? 'border-slate-900 bg-slate-900 text-white'
-                                                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-slate-900'
+                                                    ? 'border-gray-900 bg-gray-900 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)]'
+                                                    : 'border-gray-900 bg-white text-gray-700 hover:bg-gray-100'
                                             )}
                                         >
                                             {questionType}
@@ -264,7 +266,7 @@ export default function QuestionEditorForm({
                             </div>
 
                             <div className="space-y-3">
-                                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                                     Materi
                                 </label>
                                 <select
@@ -272,7 +274,7 @@ export default function QuestionEditorForm({
                                     required
                                     value={selectedCategory}
                                     onChange={(event) => setSelectedCategory(event.target.value)}
-                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-700 outline-none transition focus:border-blue-500"
+                                    className="w-full rounded-md border-2 border-gray-300 bg-white px-4 py-3 font-bold text-gray-800 outline-none transition focus:border-gray-900"
                                 >
                                     <option value="" disabled>
                                         {categoryOptions.length > 0 ? 'Pilih materi...' : 'Belum ada materi'}
@@ -287,7 +289,7 @@ export default function QuestionEditorForm({
                                     ))}
                                 </select>
                                 {categoryOptions.length === 0 ? (
-                                    <p className="text-xs text-amber-700">
+                                    <p className="text-xs font-bold text-gray-600">
                                         Tambahkan materi di halaman konfigurasi tryout sebelum membuat soal baru.
                                     </p>
                                 ) : null}
@@ -295,7 +297,7 @@ export default function QuestionEditorForm({
                         </div>
 
                         <div className="space-y-3">
-                            <label className="block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                            <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                                 Narasi Pertanyaan
                             </label>
                             <textarea
@@ -303,24 +305,24 @@ export default function QuestionEditorForm({
                                 required
                                 rows={6}
                                 defaultValue={question?.content || ''}
-                                className="w-full resize-none rounded-2xl border border-slate-200 bg-white p-5 text-base font-medium leading-relaxed text-slate-900 outline-none transition focus:border-blue-500 sm:text-lg"
+                                className="w-full resize-none rounded-md border-2 border-gray-300 bg-white p-5 text-base font-medium leading-relaxed text-gray-900 outline-none transition focus:border-gray-900 sm:text-lg"
                                 placeholder="Tulis pertanyaan utama di sini..."
                             />
                         </div>
 
                         <div className="space-y-3">
-                            <label className="block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                            <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                                 Gambar Soal
                             </label>
                             {imagePreview ? (
-                                <div className="relative inline-block max-w-sm rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                                <div className="relative inline-block max-w-sm border-2 border-gray-900 bg-gray-50 p-2">
                                     <Image
                                         src={imagePreview}
                                         alt="Preview soal"
                                         width={480}
                                         height={320}
                                         unoptimized
-                                        className="max-h-48 w-full rounded-xl object-contain"
+                                        className="max-h-48 w-full object-contain"
                                     />
                                     <button
                                         type="button"
@@ -329,13 +331,13 @@ export default function QuestionEditorForm({
                                             setImagePreview(null)
                                             setIsImageRemoved(true)
                                         }}
-                                        className="absolute -right-3 -top-3 rounded-full bg-red-500 p-1.5 text-white transition hover:bg-red-600"
+                                        className="absolute -right-3 -top-3 border-2 border-gray-900 bg-gray-900 p-1.5 text-white transition hover:bg-gray-800"
                                     >
                                         <X size={16} />
                                     </button>
                                 </div>
                             ) : (
-                                <div className="relative flex max-w-sm cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 px-6 py-8 text-center transition hover:bg-slate-50">
+                                <div className="relative flex max-w-sm cursor-pointer flex-col items-center justify-center border-2 border-dashed border-gray-400 bg-white px-6 py-8 text-center transition hover:bg-gray-100">
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -356,21 +358,21 @@ export default function QuestionEditorForm({
                                             setIsImageRemoved(false)
                                         }}
                                     />
-                                    <div className="mb-4 rounded-full bg-blue-100 p-3 text-blue-600">
+                                    <div className="mb-4 border-2 border-gray-900 bg-gray-100 p-3 text-gray-900">
                                         <ImageIcon size={24} />
                                     </div>
-                                    <p className="font-semibold text-slate-800">Upload gambar pendukung</p>
-                                    <p className="mt-1 text-xs text-slate-500">PNG, JPG, JPEG sampai 2MB</p>
+                                    <p className="font-bold text-gray-900">Upload gambar pendukung</p>
+                                    <p className="mt-1 text-xs text-gray-500">PNG, JPG, JPEG sampai 2MB</p>
                                 </div>
                             )}
                         </div>
 
                         <div className="space-y-6">
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                                     Pilihan Jawaban
                                 </label>
-                                <span className="text-xs text-slate-500">
+                                <span className="text-xs font-medium text-gray-500">
                                     {type === 'TKP'
                                         ? 'Pilih opsi terbaik, lalu isi bobot poin tiap opsi.'
                                         : 'Pilih satu jawaban yang benar.'}
@@ -379,7 +381,7 @@ export default function QuestionEditorForm({
 
                             <div className="grid gap-4">
                                 {OPTION_LABELS.map((label, index) => (
-                                    <div key={label} className="flex flex-col gap-4 rounded-2xl border border-slate-200 p-4">
+                                    <div key={label} className="flex flex-col gap-4 border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)]">
                                         <div className="flex items-start gap-4">
                                             <div className="pt-1">
                                                 <input
@@ -393,7 +395,7 @@ export default function QuestionEditorForm({
                                                 />
                                                 <label
                                                     htmlFor={`correct-answer-${label}`}
-                                                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white font-bold text-slate-500 transition peer-checked:border-green-600 peer-checked:bg-green-600 peer-checked:text-white"
+                                                    className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-md border-2 border-gray-900 bg-white font-bold text-gray-600 transition peer-checked:bg-gray-900 peer-checked:text-white"
                                                 >
                                                     {label}
                                                 </label>
@@ -404,30 +406,30 @@ export default function QuestionEditorForm({
                                                     name={`option_${label.toLowerCase()}`}
                                                     rows={2}
                                                     defaultValue={question?.options?.[index]?.content || ''}
-                                                    className="w-full rounded-xl border border-slate-200 bg-white p-4 font-medium text-slate-800 outline-none transition focus:border-blue-500"
+                                                    className="w-full rounded-md border-2 border-gray-300 bg-white p-4 font-medium text-gray-800 outline-none transition focus:border-gray-900"
                                                     placeholder={`Isi pilihan ${label}, atau kosongkan jika memakai gambar`}
                                                 />
 
                                                 {optionImages[label].preview ? (
-                                                    <div className="relative inline-block max-w-xs rounded-2xl border border-slate-200 bg-slate-50 p-2">
+                                                    <div className="relative inline-block max-w-xs border-2 border-gray-900 bg-gray-50 p-2">
                                                         <Image
                                                             src={optionImages[label].preview || ''}
                                                             alt={`Preview pilihan ${label}`}
                                                             width={320}
                                                             height={220}
                                                             unoptimized
-                                                            className="max-h-40 w-full rounded-xl object-contain"
+                                                            className="max-h-40 w-full object-contain"
                                                         />
                                                         <button
                                                             type="button"
                                                             onClick={() => setOptionImage(label, { file: null, preview: null, removed: true })}
-                                                            className="absolute -right-3 -top-3 rounded-full bg-red-500 p-1.5 text-white transition hover:bg-red-600"
+                                                            className="absolute -right-3 -top-3 border-2 border-gray-900 bg-gray-900 p-1.5 text-white transition hover:bg-gray-800"
                                                         >
                                                             <X size={16} />
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <div className="relative flex max-w-xs cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center transition hover:bg-slate-50">
+                                                    <div className="relative flex max-w-xs cursor-pointer flex-col items-center justify-center border-2 border-dashed border-gray-400 bg-white px-4 py-5 text-center transition hover:bg-gray-100">
                                                         <input
                                                             type="file"
                                                             accept="image/*"
@@ -450,19 +452,19 @@ export default function QuestionEditorForm({
                                                                 })
                                                             }}
                                                         />
-                                                        <div className="mb-3 rounded-full bg-blue-100 p-2 text-blue-600">
+                                                        <div className="mb-3 border-2 border-gray-900 bg-gray-100 p-2 text-gray-900">
                                                             <ImageIcon size={18} />
                                                         </div>
-                                                        <p className="text-sm font-semibold text-slate-800">
+                                                        <p className="text-sm font-bold text-gray-900">
                                                             Upload gambar pilihan {label}
                                                         </p>
-                                                        <p className="mt-1 text-xs text-slate-500">Opsional, maksimal 2MB</p>
+                                                        <p className="mt-1 text-xs text-gray-500">Opsional, maksimal 2MB</p>
                                                     </div>
                                                 )}
 
                                                 {type === 'TKP' ? (
                                                     <div className="flex items-center gap-2">
-                                                        <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                                        <label className="text-xs font-bold uppercase tracking-wide text-gray-500">
                                                             Poin
                                                         </label>
                                                         <input
@@ -472,7 +474,7 @@ export default function QuestionEditorForm({
                                                             max="5"
                                                             required
                                                             defaultValue={question?.options?.[index]?.score_value || 1}
-                                                            className="w-20 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-500"
+                                                            className="w-20 rounded-md border-2 border-gray-300 bg-gray-50 px-3 py-2 text-sm font-bold text-gray-800 outline-none transition focus:border-gray-900"
                                                         />
                                                     </div>
                                                 ) : null}
@@ -483,9 +485,9 @@ export default function QuestionEditorForm({
                             </div>
 
                             {type === 'TKP' ? (
-                                <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                                    <AlertCircle className="mt-0.5 shrink-0 text-amber-600" size={18} />
-                                    <p className="text-sm text-amber-900">
+                                <div className="flex gap-3 border-2 border-gray-900 bg-gray-100 p-4">
+                                    <AlertCircle className="mt-0.5 shrink-0 text-gray-900" size={18} />
+                                    <p className="text-sm font-medium text-gray-800">
                                         Soal TKP tetap butuh satu opsi terbaik untuk tampilan review admin, tetapi
                                         penilaian mengikuti poin 1 sampai 5 yang Anda isi.
                                     </p>
@@ -494,7 +496,7 @@ export default function QuestionEditorForm({
                         </div>
 
                         <div className="space-y-3">
-                            <label className="block text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                            <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                                 Pembahasan
                             </label>
                             <textarea
@@ -502,24 +504,24 @@ export default function QuestionEditorForm({
                                 required
                                 rows={6}
                                 defaultValue={question?.explanation || ''}
-                                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 p-5 font-medium leading-relaxed text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white"
+                                className="w-full resize-none rounded-md border-2 border-gray-300 bg-gray-50 p-5 font-medium leading-relaxed text-gray-800 outline-none transition focus:border-gray-900 focus:bg-white"
                                 placeholder="Jelaskan alasan jawaban atau pendekatan penyelesaian..."
                             />
                         </div>
                     </div>
 
-                    <div className="flex flex-col-reverse gap-3 bg-slate-50 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+                    <div className="flex flex-col-reverse gap-3 border-t-2 border-gray-900 bg-gray-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                         <button
                             type="button"
                             onClick={() => router.push(returnHref)}
-                            className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-500 transition hover:text-slate-800"
+                            className="rounded-md px-4 py-3 text-sm font-bold text-gray-600 transition hover:text-gray-900"
                         >
                             Batalkan
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="inline-flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-6 py-3 font-bold text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
                             {isEditMode ? 'Simpan Perubahan' : 'Simpan Soal'}

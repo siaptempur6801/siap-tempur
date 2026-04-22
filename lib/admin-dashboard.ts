@@ -16,7 +16,9 @@ export interface AdminFilters {
     pageSize: AdminPageSize
 }
 
-export const DEFAULT_ADMIN_RETURN_PATH = '/cpns/dashboard/admin'
+export const ADMIN_BASE_PATH = '/cpns/admin'
+export const LEGACY_ADMIN_BASE_PATH = '/cpns/dashboard/admin'
+export const DEFAULT_ADMIN_RETURN_PATH = ADMIN_BASE_PATH
 
 type ConfigRow = {
     type: string
@@ -86,7 +88,11 @@ export function sanitizeAdminReturnPath(returnTo?: string) {
     }
 
     const trimmed = returnTo.trim()
-    if (!trimmed.startsWith('/cpns/dashboard/admin')) {
+    if (trimmed.startsWith(LEGACY_ADMIN_BASE_PATH)) {
+        return trimmed.replace(LEGACY_ADMIN_BASE_PATH, ADMIN_BASE_PATH)
+    }
+
+    if (!trimmed.startsWith(ADMIN_BASE_PATH)) {
         return DEFAULT_ADMIN_RETURN_PATH
     }
 

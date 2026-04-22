@@ -164,32 +164,32 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
     }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
+        <div className="grid grid-cols-1 gap-8 pb-12 lg:grid-cols-3">
 
             {/* Left: Configuration List */}
             <div className="lg:col-span-2 space-y-4">
-                <div className="bg-white rounded-[2rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.1)] border-2 border-gray-900 overflow-hidden relative">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-white shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
                     <PaperBackground />
 
-                    <div className="p-6 sm:p-8 relative z-10 border-b-2 border-gray-900 bg-gray-50/80 backdrop-blur-sm flex justify-between items-center sticky top-0">
-                        <h2 className="text-xl font-black font-handwriting">Kategori Aktif (110 Total Needed)</h2>
+                    <div className="sticky top-0 z-10 flex flex-col gap-3 border-b-2 border-gray-900 bg-gray-100/90 p-6 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
+                        <h2 className="font-handwriting text-2xl font-black text-gray-900">Kategori Aktif</h2>
                         <span className={cn(
-                            "px-4 py-2 text-sm font-bold rounded-xl border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-                            isValidTotal ? "bg-green-300 text-green-900 border-green-800" : "bg-red-200 text-red-900 border-red-800"
+                            "w-fit border-2 px-4 py-2 text-sm font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                            isValidTotal ? "border-gray-900 bg-gray-900 text-white" : "border-gray-900 bg-white text-gray-900"
                         )}>
                             Total: {totalQuestions} Soal
                         </span>
                     </div>
 
-                    <div className="p-4 sm:p-6 relative z-10 space-y-3 max-h-[600px] overflow-y-auto">
+                    <div className="relative z-10 max-h-[600px] space-y-3 overflow-y-auto p-4 sm:p-6">
                         {configs.map((config, idx) => (
                             <div
                                 key={config.id}
                                 className={cn(
-                                    "flex flex-col sm:flex-row gap-3 sm:items-center p-3 rounded-2xl border-2 transition-all",
+                                    "flex flex-col gap-3 border-2 p-3 transition-all sm:flex-row sm:items-center",
                                     config.is_active
-                                        ? "bg-white border-gray-200 shadow-sm hover:border-blue-400"
-                                        : "bg-gray-50 border-gray-200 opacity-60 grayscale"
+                                        ? "border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.12)] hover:-translate-y-0.5"
+                                        : "border-gray-300 bg-gray-100 opacity-60 grayscale"
                                 )}
                             >
                                 <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
@@ -213,16 +213,14 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className={cn(
-                                                "text-[10px] font-black uppercase px-2 py-0.5 rounded border",
-                                                config.type === 'TWK' ? 'bg-red-50 text-red-600 border-red-200' :
-                                                    config.type === 'TIU' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                                                        'bg-green-50 text-green-600 border-green-200'
+                                                "border px-2 py-0.5 text-[10px] font-black uppercase",
+                                                "border-gray-900 bg-gray-100 text-gray-900"
                                             )}>
                                                 {config.type}
                                             </span>
-                                            <span className="text-xs text-gray-400 font-bold">Urutan: #{config.sort_order}</span>
+                                            <span className="text-xs font-bold text-gray-400">Urutan: #{config.sort_order}</span>
                                         </div>
-                                        <h3 className="font-bold text-gray-800 text-sm sm:text-base leading-tight">
+                                        <h3 className="text-sm font-bold leading-tight text-gray-800 sm:text-base">
                                             {config.sub_category}
                                         </h3>
                                     </div>
@@ -238,7 +236,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                             value={config.question_count}
                                             onChange={(e) => handleChangeCount(config.id, parseInt(e.target.value) || 0)}
                                             disabled={!config.is_active}
-                                            className="w-16 p-2 text-center font-black border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                                            className="w-16 rounded-md border-2 border-gray-300 p-2 text-center font-black focus:border-gray-900 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400"
                                         />
                                     </div>
 
@@ -246,10 +244,10 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                         <button
                                             onClick={() => handleToggleActive(config.id, config.is_active)}
                                             className={cn(
-                                                "w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-all shrink-0",
+                                                "flex h-10 w-10 shrink-0 items-center justify-center border-2 transition-all",
                                                 config.is_active
-                                                    ? "bg-red-50 border-red-200 text-red-500 hover:bg-red-100 hover:border-red-300"
-                                                    : "bg-green-50 border-green-200 text-green-600 hover:bg-green-100 hover:border-green-300"
+                                                    ? "border-gray-900 bg-white text-gray-900 hover:bg-gray-100"
+                                                    : "border-gray-900 bg-gray-900 text-white hover:bg-gray-700"
                                             )}
                                             title={config.is_active ? "Nonaktifkan Kategori" : "Aktifkan Kategori"}
                                         >
@@ -257,7 +255,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                         </button>
                                         <button
                                             onClick={() => handleDeleteClick(config.id, config.sub_category)}
-                                            className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-red-200 bg-white text-red-500 hover:bg-red-50 hover:border-red-300 transition-all shrink-0"
+                                            className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-gray-900 bg-white text-gray-900 transition-all hover:bg-gray-100"
                                             title="Hapus Kategori Permanen"
                                         >
                                             <Trash2 size={16} />
@@ -268,11 +266,11 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                         ))}
                     </div>
 
-                    <div className="p-6 bg-gray-50 border-t-2 border-gray-900 relative z-10 flex justify-end">
+                    <div className="relative z-10 flex justify-end border-t-2 border-gray-900 bg-gray-100 p-6">
                         <button
                             onClick={handleSaveOrder}
                             disabled={isSaving}
-                            className="bg-gray-900 text-white px-8 py-3 rounded-xl font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] hover:bg-gray-800 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center gap-2 disabled:opacity-50"
+                            className="flex items-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-8 py-3 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-1 hover:bg-gray-800 active:translate-y-0 disabled:opacity-50"
                         >
                             {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                             Simpan Struktur Tryout
@@ -283,10 +281,10 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
 
             {/* Right: Add New Category & Sidebar Rules */}
             <div className="space-y-6">
-                <div className="bg-[#e0e7ff] rounded-[2rem] p-6 sm:p-8 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.2)] border-2 border-gray-900 relative overflow-hidden">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10">
-                        <h3 className="font-handwriting text-2xl font-black mb-4 text-gray-900 border-b-2 border-gray-900 pb-2">Tambah Kategori</h3>
+                        <h3 className="mb-4 border-b-2 border-gray-900 pb-2 font-handwriting text-2xl font-black text-gray-900">Tambah Kategori</h3>
 
                         <form onSubmit={handleAddNew} className="space-y-4">
                             <div className="space-y-2">
@@ -300,8 +298,8 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                             className={cn(
                                                 "flex-1 py-2 text-sm font-bold border-2 rounded-lg transition-all",
                                                 newType === t
-                                                    ? "bg-blue-600 text-white border-blue-600"
-                                                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+                                                    ? "border-gray-900 bg-gray-900 text-white"
+                                                    : "border-gray-900 bg-white text-gray-700 hover:bg-gray-100"
                                             )}
                                         >
                                             {t}
@@ -318,14 +316,14 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                     value={newCategory}
                                     onChange={(e) => setNewCategory(e.target.value)}
                                     placeholder="Cth: Penalaran Kritis"
-                                    className="w-full p-3 border-2 border-gray-900 rounded-xl focus:border-blue-600 focus:outline-none font-bold placeholder:text-gray-400 placeholder:font-normal"
+                                    className="w-full rounded-md border-2 border-gray-900 p-3 font-bold placeholder:font-normal placeholder:text-gray-400 focus:border-gray-900 focus:outline-none"
                                 />
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={isAdding}
-                                className="w-full mt-4 bg-white text-gray-900 border-2 border-gray-900 p-3 rounded-xl font-black flex items-center justify-center gap-2 hover:bg-gray-50 hover:-translate-y-0.5 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50"
+                                className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-white p-3 font-black text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-50"
                             >
                                 {isAdding ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
                                 Tambahkan Topik
@@ -334,7 +332,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                     </div>
                 </div>
 
-                <div className="bg-[#fff9c4] rounded-[2rem] p-6 sm:p-8 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.2)] border-2 border-gray-900 relative overflow-hidden">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-gray-100 p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10 text-gray-800 space-y-3">
                         <h4 className="font-handwriting text-xl font-black mb-2 flex items-center gap-2">
@@ -353,29 +351,29 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
 
             {/* Custom Delete Confirmation Modal */}
             {itemToDelete && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-[2rem] p-6 sm:p-8 max-w-sm w-full border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+                    <div className="relative w-full max-w-sm animate-in overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] duration-200 zoom-in-95 sm:p-8">
                         <PaperBackground />
                         <div className="relative z-10 flex flex-col items-center text-center space-y-4">
-                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center border-2 border-red-500 text-red-500">
+                            <div className="flex h-16 w-16 items-center justify-center border-2 border-gray-900 bg-gray-100 text-gray-900">
                                 <AlertTriangle size={32} />
                             </div>
                             <div>
                                 <h3 className="font-handwriting font-black text-2xl text-gray-900 leading-tight">Hapus Kategori?</h3>
-                                <p className="text-gray-600 mt-2 font-medium">Anda yakin ingin menghapus <strong className="text-red-500">{itemToDelete.name}</strong>? Aksi ini akan mempengaruhi pembuatan tryout selanjutnya.</p>
+                                <p className="mt-2 font-medium text-gray-600">Anda yakin ingin menghapus <strong className="text-gray-900">{itemToDelete.name}</strong>? Aksi ini akan mempengaruhi pembuatan tryout selanjutnya.</p>
                             </div>
                             <div className="flex gap-3 w-full mt-4">
                                 <button
                                     onClick={() => setItemToDelete(null)}
                                     disabled={isDeleting}
-                                    className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-300 font-bold text-gray-600 hover:bg-gray-50 focus:outline-none transition-colors"
+                                    className="flex-1 rounded-md border-2 border-gray-900 px-4 py-2.5 font-bold text-gray-900 transition-colors hover:bg-gray-100 focus:outline-none"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={confirmDelete}
                                     disabled={isDeleting}
-                                    className="flex-1 px-4 py-2.5 rounded-xl border-2 border-red-600 bg-red-500 text-white font-bold hover:bg-red-600 shadow-[2px_2px_0px_0px_rgba(185,28,28,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] focus:outline-none transition-all flex items-center justify-center gap-2"
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-4 py-2.5 font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none focus:outline-none"
                                 >
                                     {isDeleting ? <Loader2 className="animate-spin" size={18} /> : 'Ya, Hapus'}
                                 </button>

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ADMIN_BASE_PATH } from '@/lib/admin-dashboard'
 
 interface AdminPaginationProps {
     currentPage: number
@@ -11,7 +12,7 @@ interface AdminPaginationProps {
 function buildPageHref(baseParams: URLSearchParams, page: number) {
     const params = new URLSearchParams(baseParams)
     params.set('page', String(page))
-    return `/cpns/dashboard/admin?${params.toString()}`
+    return `${ADMIN_BASE_PATH}?${params.toString()}`
 }
 
 export default function AdminPagination({
@@ -29,8 +30,8 @@ export default function AdminPagination({
     const endItem = Math.min(currentPage * pageSize, totalItems)
 
     return (
-        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600">
+        <div className="flex flex-col gap-3 border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-bold text-gray-600">
                 Menampilkan {startItem}-{endItem} dari {totalItems} soal
             </p>
 
@@ -40,14 +41,14 @@ export default function AdminPagination({
                     aria-disabled={currentPage <= 1}
                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                         currentPage <= 1
-                            ? 'pointer-events-none border border-slate-200 bg-slate-100 text-slate-400'
-                            : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                            ? 'pointer-events-none border-2 border-gray-200 bg-gray-100 text-gray-400'
+                            : 'border-2 border-gray-900 bg-white text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
                     }`}
                 >
                     Sebelumnya
                 </Link>
 
-                <span className="text-sm font-medium text-slate-600">
+                <span className="text-sm font-bold text-gray-600">
                     Halaman {currentPage} / {totalPages}
                 </span>
 
@@ -56,8 +57,8 @@ export default function AdminPagination({
                     aria-disabled={currentPage >= totalPages}
                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                         currentPage >= totalPages
-                            ? 'pointer-events-none border border-slate-200 bg-slate-100 text-slate-400'
-                            : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+                            ? 'pointer-events-none border-2 border-gray-200 bg-gray-100 text-gray-400'
+                            : 'border-2 border-gray-900 bg-white text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
                     }`}
                 >
                     Berikutnya

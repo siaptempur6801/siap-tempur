@@ -3,7 +3,7 @@
 import { Search } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useDebouncedCallback } from 'use-debounce'
-import { ADMIN_PAGE_SIZES, type CategoryMap } from '@/lib/admin-dashboard'
+import { ADMIN_BASE_PATH, ADMIN_PAGE_SIZES, type CategoryMap } from '@/lib/admin-dashboard'
 
 export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap }) {
     const searchParams = useSearchParams()
@@ -17,7 +17,7 @@ export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap 
             params.delete('q')
         }
         params.set('page', '1')
-        replace(`/cpns/dashboard/admin?${params.toString()}`)
+        replace(`${ADMIN_BASE_PATH}?${params.toString()}`)
     }, 300)
 
     const handleCategory = (cat: string) => {
@@ -30,7 +30,7 @@ export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap 
         // Reset sub_category when category changes
         params.delete('sub_category')
         params.set('page', '1')
-        replace(`/cpns/dashboard/admin?${params.toString()}`)
+        replace(`${ADMIN_BASE_PATH}?${params.toString()}`)
     }
 
     const handleSubCategory = (subCat: string) => {
@@ -41,14 +41,14 @@ export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap 
             params.delete('sub_category')
         }
         params.set('page', '1')
-        replace(`/cpns/dashboard/admin?${params.toString()}`)
+        replace(`${ADMIN_BASE_PATH}?${params.toString()}`)
     }
 
     const handlePageSize = (pageSize: string) => {
         const params = new URLSearchParams(searchParams)
         params.set('page_size', pageSize)
         params.set('page', '1')
-        replace(`/cpns/dashboard/admin?${params.toString()}`)
+        replace(`${ADMIN_BASE_PATH}?${params.toString()}`)
     }
 
     const currentCategory = searchParams.get('category') || 'TWK'
@@ -56,16 +56,16 @@ export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap 
     const currentPageSize = searchParams.get('page_size') || '10'
 
     return (
-        <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
                 <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 transition-colors" size={18} />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 transition-colors" size={18} />
                     <input
                         type="text"
                         placeholder="Cari isi soal atau kode soal..."
                         onChange={(e) => handleSearch(e.target.value)}
                         defaultValue={searchParams.get('q')?.toString()}
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white"
+                        className="w-full rounded-md border-2 border-gray-300 bg-gray-50 py-3 pl-11 pr-4 font-bold text-gray-800 outline-none transition focus:border-gray-900 focus:bg-white"
                     />
                 </div>
 
@@ -73,7 +73,7 @@ export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap 
                     <select
                         onChange={(e) => handleCategory(e.target.value)}
                         value={currentCategory}
-                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-700 outline-none transition focus:border-blue-500"
+                        className="rounded-md border-2 border-gray-300 bg-white px-4 py-3 font-bold text-gray-800 outline-none transition focus:border-gray-900"
                     >
                         <option value="TWK">TWK</option>
                         <option value="TIU">TIU</option>
@@ -83,7 +83,7 @@ export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap 
                     <select
                         onChange={(e) => handleSubCategory(e.target.value)}
                         value={searchParams.get('sub_category') || ''}
-                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-700 outline-none transition focus:border-blue-500"
+                        className="rounded-md border-2 border-gray-300 bg-white px-4 py-3 font-bold text-gray-800 outline-none transition focus:border-gray-900"
                     >
                         <option value="">Semua materi</option>
                         {currentSubCategories.map((subCategory) => (
@@ -96,7 +96,7 @@ export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap 
                     <select
                         onChange={(e) => handlePageSize(e.target.value)}
                         value={currentPageSize}
-                        className="rounded-2xl border border-slate-200 bg-white px-4 py-3 font-medium text-slate-700 outline-none transition focus:border-blue-500"
+                        className="rounded-md border-2 border-gray-300 bg-white px-4 py-3 font-bold text-gray-800 outline-none transition focus:border-gray-900"
                     >
                         {ADMIN_PAGE_SIZES.map((pageSize) => (
                             <option key={pageSize} value={pageSize}>

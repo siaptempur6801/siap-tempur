@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { deleteQuestion } from '@/app/actions/admin'
 import MathRenderer from '@/components/MathRenderer'
+import { ADMIN_BASE_PATH } from '@/lib/admin-dashboard'
 
 
 interface Option {
@@ -81,32 +82,29 @@ export default function QuestionCard({
 
     return (
         <>
-            <div className="group bg-white rounded-xl border-2 border-gray-100 hover:border-blue-400 overflow-hidden transition-all hover:shadow-[4px_4px_0px_0px_rgba(59,130,246,0.2)]">
+            <div className="group overflow-hidden border-2 border-gray-900 bg-white transition-all hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.18)]">
                 <div className="p-5">
                     {/* Header: Type & Actions */}
                     <div className="flex justify-between items-start mb-3">
                         <div className="flex flex-wrap gap-2">
-                            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold border bg-slate-100 text-slate-700 border-slate-200">
+                            <span className="border border-gray-900 bg-gray-100 px-3 py-1 font-mono text-xs font-bold text-gray-900">
                                 {questionCode}
                             </span>
                             <span className={cn(
-                                "px-3 py-1 rounded-full text-xs font-black tracking-wider uppercase border",
-                                q.type === 'TWK' && "bg-red-50 text-red-600 border-red-200",
-                                q.type === 'TIU' && "bg-yellow-50 text-yellow-600 border-yellow-200",
-                                q.type === 'TKP' && "bg-green-50 text-green-600 border-green-200",
+                                "border border-gray-900 bg-white px-3 py-1 text-xs font-black uppercase tracking-wider text-gray-900",
                             )}>
                                 {q.type}
                             </span>
                             {q.category && (
-                                <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200 uppercase tracking-tighter">
+                                <span className="border border-gray-300 bg-gray-100 px-3 py-1 text-xs font-bold uppercase tracking-tighter text-gray-600">
                                     {q.category}
                                 </span>
                             )}
                         </div>
                         <div className="flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                             <Link
-                                href={editHref || `/cpns/dashboard/admin/edit/${q.id}`}
-                                className="p-3 sm:p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl sm:rounded-lg transition bg-gray-50 lg:bg-transparent"
+                                href={editHref || `${ADMIN_BASE_PATH}/edit/${q.id}`}
+                                className="bg-gray-50 p-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 sm:p-2 lg:bg-transparent"
                                 title="Edit"
                             >
                                 <Edit size={20} className="sm:w-[18px] sm:h-[18px]" />
@@ -114,7 +112,7 @@ export default function QuestionCard({
                             <button
                                 onClick={() => setShowDeleteModal(true)}
                                 disabled={isDeleting}
-                                className="p-3 sm:p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl sm:rounded-lg transition disabled:opacity-50 bg-gray-50 lg:bg-transparent"
+                                className="bg-gray-50 p-3 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50 sm:p-2 lg:bg-transparent"
                                 title="Hapus"
                             >
                                 <Trash2 size={20} className="sm:w-[18px] sm:h-[18px]" />
@@ -146,8 +144,8 @@ export default function QuestionCard({
 
                     {/* Footer: Toggle & Quick Info */}
                     <div className="flex items-center justify-between border-t pt-3 mt-2">
-                        <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-50 px-3 py-1 rounded-lg border border-gray-100">
-                            <CheckCircle2 size={14} className="text-green-500" />
+                        <div className="flex items-center gap-2 border border-gray-300 bg-gray-50 px-3 py-1 text-sm text-gray-600">
+                            <CheckCircle2 size={14} className="text-gray-700" />
                             <span>
                                 Kunci: <span className="font-bold text-gray-900">
                                     {correctAnswer ? optionLabels[q.options.indexOf(correctAnswer)] : '-'}
@@ -157,7 +155,7 @@ export default function QuestionCard({
 
                         <button
                             onClick={() => setExpanded(!expanded)}
-                            className="text-sm font-bold text-blue-600 flex items-center gap-1 hover:underline"
+                            className="flex items-center gap-1 text-sm font-bold text-gray-900 hover:underline"
                         >
                             {expanded ? 'Tutup Detail' : 'Lihat Detail'}
                             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -167,7 +165,7 @@ export default function QuestionCard({
 
                 {/* Expanded Details */}
                 {expanded && (
-                    <div className="bg-gray-50 p-5 border-t-2 border-dashed border-gray-200 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                    <div className="space-y-4 border-t-2 border-dashed border-gray-300 bg-gray-50 p-5 animate-in slide-in-from-top-2 duration-200">
 
                         {/* Options List */}
                         <div className="space-y-2">
@@ -179,13 +177,13 @@ export default function QuestionCard({
                                         <div
                                             key={opt.id}
                                             className={cn(
-                                                "flex gap-3 items-start p-2 rounded-lg text-sm transition-colors",
-                                                isTheCorrectOne ? "bg-green-100 border border-green-200 text-green-900" : "bg-white border border-gray-200 text-gray-600"
+                                                "flex gap-3 items-start border p-2 text-sm transition-colors",
+                                                isTheCorrectOne ? "border-gray-900 bg-gray-100 text-gray-900" : "border-gray-200 bg-white text-gray-600"
                                             )}
                                         >
                                             <span className={cn(
-                                                "w-6 h-6 flex items-center justify-center rounded font-bold text-xs flex-shrink-0",
-                                                isTheCorrectOne ? "bg-green-500 text-white" : "bg-gray-100 text-gray-500"
+                                                "flex h-6 w-6 flex-shrink-0 items-center justify-center text-xs font-bold",
+                                                isTheCorrectOne ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500"
                                             )}>
                                                 {optionLabels[idx] || '?'}
                                             </span>
@@ -206,7 +204,7 @@ export default function QuestionCard({
                                                 {q.type === 'TKP' && (
                                                     <span className={cn(
                                                         "px-2 py-0.5 rounded text-[10px] font-bold shrink-0",
-                                                        opt.score_value === 5 ? "bg-green-200 text-green-800" : "bg-gray-200 text-gray-600"
+                                                        opt.score_value === 5 ? "bg-gray-900 text-white" : "bg-gray-200 text-gray-600"
                                                     )}>
                                                         {opt.score_value} Poin
                                                     </span>
@@ -221,7 +219,7 @@ export default function QuestionCard({
                         {/* Discussion */}
                         <div className="space-y-2">
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Pembahasan</p>
-                            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-blue-900 whitespace-pre-wrap leading-relaxed">
+                            <div className="border border-gray-300 bg-white p-4 text-sm leading-relaxed text-gray-900">
                                 <MathRenderer text={q.explanation || '-'} />
                             </div>
                         </div>
@@ -238,13 +236,13 @@ export default function QuestionCard({
             {/* Delete Confirmation Modal */}
             {showDeleteModal && mounted && createPortal(
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                    <div className="relative w-full max-w-sm animate-in overflow-hidden border-2 border-gray-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] duration-200 zoom-in-95">
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-black/10 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
                         <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
-                            <div className="w-16 h-16 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mb-2 rotate-3 shadow-md">
-                                <Trash2 size={32} className="text-red-600" />
+                            <div className="mb-2 flex h-16 w-16 rotate-3 items-center justify-center border-2 border-gray-900 bg-gray-100 shadow-md">
+                                <Trash2 size={32} className="text-gray-900" />
                             </div>
 
                             <h3 className="text-3xl font-bold text-gray-900">Hapus soal ini?</h3>
@@ -257,14 +255,14 @@ export default function QuestionCard({
                                 <button
                                     onClick={() => setShowDeleteModal(false)}
                                     disabled={isDeleting}
-                                    className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="rounded-md border-2 border-gray-900 bg-white px-4 py-2 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:bg-gray-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={handleDelete}
                                     disabled={isDeleting}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-4 py-2 font-bold text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] transition hover:bg-gray-800 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-70"
                                 >
                                     {isDeleting ? '...' : 'Ya, Hapus'}
                                 </button>

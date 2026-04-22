@@ -99,7 +99,7 @@ export async function deleteQuestion(id: string) {
         return { success: false, message: `Gagal menghapus soal: ${qErr.message}` }
     }
 
-    revalidatePath('/cpns/dashboard/admin')
+    revalidatePath('/cpns/admin')
     return { success: true, message: 'Soal berhasil dihapus' }
 }
 
@@ -152,7 +152,7 @@ export async function createQuestion(formData: FormData) {
         return { success: false, message: oError.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin')
+    revalidatePath('/cpns/admin')
     return { success: true, message: 'Soal baru berhasil dibuat' }
 }
 
@@ -220,7 +220,7 @@ export async function updateQuestion(id: string, formData: FormData) {
 
     if (oError) return { success: false, message: oError.message }
 
-    revalidatePath('/cpns/dashboard/admin')
+    revalidatePath('/cpns/admin')
     return { success: true, message: 'Soal berhasil diupdate' }
 }
 
@@ -349,7 +349,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
         }
     }
 
-    revalidatePath('/cpns/dashboard/admin')
+    revalidatePath('/cpns/admin')
 
     if (failCount === 0) {
         return {
@@ -382,8 +382,8 @@ export async function updateTryoutConfigurations(configs: TryoutConfigurationPay
         return { success: false, message: error.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin/tryout-config')
-    revalidatePath('/cpns/dashboard/admin')
+    revalidatePath('/cpns/admin/tryout-config')
+    revalidatePath('/cpns/admin')
     return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' }
 }
 
@@ -415,8 +415,8 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
         return { success: false, message: error.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin/tryout-config')
-    revalidatePath('/cpns/dashboard/admin')
+    revalidatePath('/cpns/admin/tryout-config')
+    revalidatePath('/cpns/admin')
     return { success: true, message: 'Sub-Kategori berhasil ditambahkan' }
 }
 
@@ -435,8 +435,8 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean) 
         return { success: false, message: error.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin/tryout-config')
-    revalidatePath('/cpns/dashboard/admin')
+    revalidatePath('/cpns/admin/tryout-config')
+    revalidatePath('/cpns/admin')
     return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` }
 }
 
@@ -455,7 +455,7 @@ export async function deleteTryoutConfiguration(id: string) {
         return { success: false, message: error.message }
     }
 
-    revalidatePath('/cpns/dashboard/admin/tryout-config')
-    revalidatePath('/cpns/dashboard/admin')
+    revalidatePath('/cpns/admin/tryout-config')
+    revalidatePath('/cpns/admin')
     return { success: true, message: 'Kategori berhasil dihapus secara permanen' }
 }

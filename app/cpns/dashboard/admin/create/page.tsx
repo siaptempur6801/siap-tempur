@@ -1,27 +1,11 @@
-import QuestionEditorForm from '@/components/admin/QuestionEditorForm'
-import { buildCategoryMap, sanitizeAdminReturnPath } from '@/lib/admin-dashboard'
-import { createClient } from '@/utils/supabase/server'
+import { redirect } from 'next/navigation'
+import { sanitizeAdminReturnPath } from '@/lib/admin-dashboard'
 
-export const dynamic = 'force-dynamic'
-
-export default async function CreateQuestionPage({
+export default async function LegacyCreateQuestionPage({
     searchParams,
 }: {
     searchParams: Promise<{ returnTo?: string }>
 }) {
-    const supabase = await createClient()
     const { returnTo } = await searchParams
-
-    const { data: configs } = await supabase
-        .from('tryout_configurations')
-        .select('type, sub_category, is_active')
-        .order('sort_order', { ascending: true })
-
-    return (
-        <QuestionEditorForm
-            mode="create"
-            categoryMap={buildCategoryMap(configs || [])}
-            returnHref={sanitizeAdminReturnPath(returnTo)}
-        />
-    )
+    redirect(`/cpns/admin/create?returnTo=${encodeURIComponent(sanitizeAdminReturnPath(returnTo))}`)
 }

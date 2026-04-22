@@ -86,7 +86,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
 
                     {isAdmin && (
                         <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
-                            <NavItem href="/cpns/dashboard/admin" icon={<Shield size={20} />} label="Admin" />
+                            <NavItem href="/cpns/admin" icon={<Shield size={20} />} label="Admin" />
                         </div>
                     )}
                 </nav>
