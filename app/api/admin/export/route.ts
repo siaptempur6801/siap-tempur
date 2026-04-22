@@ -4,7 +4,7 @@ import { isAdmin } from '@/utils/admin'
 import { createAdminClient } from '@/utils/supabase/server'
 import { PASSING_GRADES } from '@/lib/constants'
 
-type ExportType = 'sessions' | 'ranking' | 'questions' | 'vouchers'
+type ExportType = 'sessions' | 'ranking' | 'questions' | 'vouchers' | 'events'
 type ExportFormat = 'xlsx' | 'csv'
 
 const MAX_ROWS = 5000
@@ -238,6 +238,134 @@ async function getVoucherRows(request: NextRequest) {
     })
 }
 
+async function getEventRows(request: NextRequest) {
+    const supabase = await createAdminClient()
+    const eventId = getParam(request, 'event_id')
+    const dateFrom = getParam(request, 'date_from')
+    const dateTo = getParam(request, 'date_to')
+
+    let eventQuery = supabase
+        .from('tryout_events')
+        .select('id, title, status, starts_at, ends_at, duration_minutes, start_grace_minutes, max_participants, requires_code, created_at')
+        .order('starts_at', { ascending: false })
+        .limit(MAX_ROWS)
+
+    if (eventId) eventQuery = eventQuery.eq('id', eventId)
+    if (dateFrom) eventQuery = eventQuery.gte('starts_at', `${dateFrom}T00:00:00.000Z`)
+    if (dateTo) eventQuery = eventQuery.lte('starts_at', `${dateTo}T23:59:59.999Z`)
+
+    const { data: events, error: eventError } = await eventQuery
+    if (eventError) throw new Error(eventError.message)
+    if (!events || events.length === 0) return []
+
+    const eventIds = events.map((event) => event.id)
+
+    const [{ data: participants, error: participantError }, { data: sessions, error: sessionError }] = await Promise.all([
+        supabase
+            .from('tryout_event_participants')
+            .select('id, event_id, event_code_id, user_id, status, registered_at, profiles(full_name, phone_number, gender, education_level, target_instance), tryout_event_codes(code)')
+            .in('event_id', eventIds)
+            .order('registered_at', { ascending: true })
+            .limit(MAX_ROWS),
+        supabase
+            .from('tryout_event_sessions')
+            .select('event_id, user_id, session_id, status, started_at, finished_at, test_sessions(status, start_time, end_time, score_twk, score_tiu, score_tkp, total_score, is_passed)')
+            .in('event_id', eventIds)
+            .limit(MAX_ROWS),
+    ])
+
+    if (participantError) throw new Error(participantError.message)
+    if (sessionError) throw new Error(sessionError.message)
+
+    const sessionByEventUser = new Map(
+        (sessions || []).map((session) => [`${session.event_id}:${session.user_id}`, session])
+    )
+
+    return events.flatMap((event) => {
+        const eventParticipants = (participants || []).filter((participant) => participant.event_id === event.id)
+
+        if (eventParticipants.length === 0) {
+            return [{
+                event_id: event.id,
+                nama_event: event.title,
+                status_event: event.status,
+                event_mulai: formatDate(event.starts_at),
+                event_tutup: formatDate(event.ends_at),
+                durasi_menit: event.duration_minutes,
+                start_window_menit: event.start_grace_minutes,
+                max_peserta: event.max_participants || '',
+                wajib_kode: event.requires_code ? 'Ya' : 'Tidak',
+                participant_id: '',
+                user_id: '',
+                nama_peserta: '',
+                no_hp: '',
+                gender: '',
+                pendidikan: '',
+                target_instansi: '',
+                kode_masuk: '',
+                status_peserta: '',
+                registered_at: '',
+                session_id: '',
+                status_session_event: '',
+                status_test: '',
+                started_at: '',
+                finished_at: '',
+                skor_twk: '',
+                skor_tiu: '',
+                skor_tkp: '',
+                total_skor: '',
+                lulus_passing_grade: '',
+                created_at: formatDate(event.created_at),
+            }]
+        }
+
+        return eventParticipants.map((participant) => {
+            const profile = Array.isArray(participant.profiles) ? participant.profiles[0] : participant.profiles
+            const code = Array.isArray(participant.tryout_event_codes) ? participant.tryout_event_codes[0] : participant.tryout_event_codes
+            const eventSession = sessionByEventUser.get(`${participant.event_id}:${participant.user_id}`)
+            const testSession = Array.isArray(eventSession?.test_sessions) ? eventSession?.test_sessions[0] : eventSession?.test_sessions
+            const passed = Boolean(testSession?.is_passed) || (
+                Number(testSession?.score_twk || 0) >= PASSING_GRADES.TWK &&
+                Number(testSession?.score_tiu || 0) >= PASSING_GRADES.TIU &&
+                Number(testSession?.score_tkp || 0) >= PASSING_GRADES.TKP
+            )
+
+            return {
+                event_id: event.id,
+                nama_event: event.title,
+                status_event: event.status,
+                event_mulai: formatDate(event.starts_at),
+                event_tutup: formatDate(event.ends_at),
+                durasi_menit: event.duration_minutes,
+                start_window_menit: event.start_grace_minutes,
+                max_peserta: event.max_participants || '',
+                wajib_kode: event.requires_code ? 'Ya' : 'Tidak',
+                participant_id: participant.id,
+                user_id: participant.user_id,
+                nama_peserta: profile?.full_name || '',
+                no_hp: profile?.phone_number || '',
+                gender: profile?.gender || '',
+                pendidikan: profile?.education_level || '',
+                target_instansi: profile?.target_instance || '',
+                kode_masuk: code?.code || '',
+                status_peserta: participant.status,
+                registered_at: formatDate(participant.registered_at),
+                session_id: eventSession?.session_id || '',
+                status_session_event: eventSession?.status || '',
+                status_test: testSession?.status || '',
+                started_at: formatDate(eventSession?.started_at || testSession?.start_time),
+                finished_at: formatDate(eventSession?.finished_at || testSession?.end_time),
+                skor_twk: testSession?.score_twk ?? '',
+                skor_tiu: testSession?.score_tiu ?? '',
+                skor_tkp: testSession?.score_tkp ?? '',
+                total_skor: testSession?.total_score ?? '',
+                lulus_passing_grade: testSession ? (passed ? 'Ya' : 'Tidak') : '',
+                created_at: formatDate(event.created_at),
+            }
+        })
+    })
+}
+
 export async function GET(request: NextRequest) {
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
@@ -247,7 +375,7 @@ export async function GET(request: NextRequest) {
     const type = getParam(request, 'type') as ExportType
     const format = (getParam(request, 'format') || 'xlsx') as ExportFormat
 
-    if (!['sessions', 'ranking', 'questions', 'vouchers'].includes(type)) {
+    if (!['sessions', 'ranking', 'questions', 'vouchers', 'events'].includes(type)) {
         return NextResponse.json({ error: 'Invalid export type' }, { status: 400 })
     }
 
@@ -263,7 +391,9 @@ export async function GET(request: NextRequest) {
                     ? await getRankingRows()
                     : type === 'questions'
                         ? await getQuestionRows(request)
-                        : await getVoucherRows(request)
+                        : type === 'vouchers'
+                            ? await getVoucherRows(request)
+                            : await getEventRows(request)
 
         return createFileResponse(rows, type, format)
     } catch (error) {

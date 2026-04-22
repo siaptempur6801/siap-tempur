@@ -24,6 +24,11 @@ const exportTypes = [
         label: 'Voucher',
         description: 'Rekap kode voucher, kuota, klaim, dan email pengguna.',
     },
+    {
+        value: 'events',
+        label: 'Event',
+        description: 'Rekap event, peserta, kode masuk, session, skor, dan kelulusan.',
+    },
 ] as const
 
 const sessionStatuses = [
@@ -43,18 +48,44 @@ const questionTypes = [
 type ExportType = (typeof exportTypes)[number]['value']
 type ExportFormat = 'xlsx' | 'csv'
 
-export default function ExportDataClient() {
+type ExportEvent = {
+    id: string
+    title: string
+    status: string
+    starts_at: string
+}
+
+interface ExportDataClientProps {
+    events: ExportEvent[]
+}
+
+function formatEventDate(value: string) {
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(new Date(value))
+}
+
+export default function ExportDataClient({ events }: ExportDataClientProps) {
     const [exportType, setExportType] = useState<ExportType>('sessions')
     const [format, setFormat] = useState<ExportFormat>('xlsx')
     const [dateFrom, setDateFrom] = useState('')
     const [dateTo, setDateTo] = useState('')
     const [status, setStatus] = useState('')
     const [questionType, setQuestionType] = useState('')
+    const [eventId, setEventId] = useState('')
     const [isExporting, setIsExporting] = useState(false)
 
     const selectedExport = useMemo(
         () => exportTypes.find((item) => item.value === exportType) || exportTypes[0],
         [exportType]
+    )
+    const selectedEvent = useMemo(
+        () => events.find((event) => event.id === eventId) || null,
+        [eventId, events]
     )
 
     const exportHref = useMemo(() => {
@@ -66,9 +97,10 @@ export default function ExportDataClient() {
         if (dateTo) params.set('date_to', dateTo)
         if (status && exportType === 'sessions') params.set('status', status)
         if (questionType && exportType === 'questions') params.set('question_type', questionType)
+        if (eventId && exportType === 'events') params.set('event_id', eventId)
 
         return `/api/admin/export?${params.toString()}`
-    }, [dateFrom, dateTo, exportType, format, questionType, status])
+    }, [dateFrom, dateTo, eventId, exportType, format, questionType, status])
 
     const handleExport = () => {
         setIsExporting(true)
@@ -79,7 +111,7 @@ export default function ExportDataClient() {
     return (
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
             <div className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     {exportTypes.map((item) => {
                         const isActive = exportType === item.value
                         return (
@@ -170,6 +202,29 @@ export default function ExportDataClient() {
                             </div>
                         ) : null}
 
+                        {exportType === 'events' ? (
+                            <div className="space-y-2 md:col-span-2">
+                                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
+                                    Pilih Event
+                                </label>
+                                <select
+                                    value={eventId}
+                                    onChange={(event) => setEventId(event.target.value)}
+                                    className="w-full rounded-md border-2 border-gray-300 bg-white px-4 py-3 font-bold text-gray-800 outline-none transition focus:border-gray-900"
+                                >
+                                    <option value="">Semua event</option>
+                                    {events.map((event) => (
+                                        <option key={event.id} value={event.id}>
+                                            {event.title} - {event.status} - {formatEventDate(event.starts_at)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs font-bold text-gray-500">
+                                    Pilih satu event supaya file hanya berisi peserta dan hasil event tersebut.
+                                </p>
+                            </div>
+                        ) : null}
+
                         {exportType !== 'ranking' ? (
                             <>
                                 <div className="space-y-2">
@@ -212,6 +267,12 @@ export default function ExportDataClient() {
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Format</p>
                         <p className="mt-1 font-black uppercase text-gray-900">{format}</p>
                     </div>
+                    {exportType === 'events' ? (
+                        <div className="border-b-2 border-gray-900 pb-3">
+                            <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Event</p>
+                            <p className="mt-1 font-black text-gray-900">{selectedEvent?.title || 'Semua event'}</p>
+                        </div>
+                    ) : null}
                     <p className="font-medium leading-relaxed text-gray-600">
                         Export dibatasi maksimal 5.000 baris per unduhan supaya proses tetap ringan.
                     </p>

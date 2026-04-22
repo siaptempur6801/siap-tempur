@@ -1,8 +1,19 @@
 import ExportDataClient from '@/components/admin/ExportDataClient'
+import { createAdminClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-export default function ExportDataPage() {
+export default async function ExportDataPage() {
+    const supabase = await createAdminClient()
+    const { data: events, error } = await supabase
+        .from('tryout_events')
+        .select('id, title, status, starts_at')
+        .order('starts_at', { ascending: false })
+
+    if (error) {
+        console.error('[export-events]', error)
+    }
+
     return (
         <div className="space-y-8 pb-10">
             <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
@@ -18,7 +29,7 @@ export default function ExportDataPage() {
                 </div>
             </div>
 
-            <ExportDataClient />
+            <ExportDataClient events={events || []} />
         </div>
     )
 }

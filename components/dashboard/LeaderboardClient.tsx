@@ -28,6 +28,8 @@ interface LeaderboardClientProps {
 
 export default function LeaderboardClient({ data, currentUserId, periodText = 'Edisi Minggu Ini', currentUserRank }: LeaderboardClientProps) {
     const [searchQuery, setSearchQuery] = React.useState('')
+    const currentUserInTopRankings = data.some((entry) => entry.user_id === currentUserId)
+    const showCurrentUserOutsideTop100 = Boolean(currentUserRank && !currentUserInTopRankings)
 
     const filteredData = data.filter(entry =>
         entry.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -54,7 +56,7 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                         </div>
                         <h1 className="font-handwriting text-5xl md:text-7xl font-bold text-gray-900">Ranking Nasional</h1>
                         <p className="font-handwriting text-xl md:text-2xl text-gray-600 mt-2 italic">
-                            Bersaing dengan 100+ pejuang CPNS lainnya!
+                            Top 100 pejuang CPNS nasional minggu ini.
                         </p>
                     </div>
 
@@ -230,6 +232,38 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                                 </div>
                             </div>
                         )}
+
+                        {showCurrentUserOutsideTop100 && currentUserRank && (
+                            <div className="border-t-2 border-blue-600 bg-blue-50 p-4">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                                    <div className="flex-shrink-0 text-center sm:w-20">
+                                        <div className="text-xs font-bold uppercase tracking-widest text-blue-400">Posisi</div>
+                                        <div className="text-3xl font-black text-blue-700">#{currentUserRank.rank_pos}</div>
+                                    </div>
+                                    <div className="hidden h-14 w-px bg-blue-200 sm:block" />
+                                    <div className="flex-1">
+                                        <div className="text-sm font-black text-blue-800">Posisi kamu belum masuk Top 100 saat ini</div>
+                                        <div className="mt-0.5 text-xs text-blue-500">
+                                            Skor terbaikmu: <strong>{currentUserRank.top_score}</strong>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 text-center sm:flex">
+                                        <div>
+                                            <div className="text-[10px] font-black uppercase text-blue-400">TWK</div>
+                                            <div className="text-sm font-bold text-blue-700">{currentUserRank.score_twk}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-black uppercase text-blue-400">TIU</div>
+                                            <div className="text-sm font-bold text-blue-700">{currentUserRank.score_tiu}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-black uppercase text-blue-400">TKP</div>
+                                            <div className="text-sm font-bold text-blue-700">{currentUserRank.score_tkp}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Legend / Footer */}
@@ -250,27 +284,6 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                     </div>
                 </PageAnimateItem>
 
-                {/* Panel Posisi User di Luar Top 100 */}
-                {currentUserRank && !data.some(e => e.user_id === currentUserId) && (
-                    <PageAnimateItem className="mt-4">
-                        <div className="bg-blue-50 border-2 border-blue-600 shadow-[4px_4px_0px_0px_rgba(37,99,235,0.3)] p-4 flex items-center gap-4">
-                            <div className="flex-shrink-0 text-center w-14">
-                                <div className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-0.5">Posisi</div>
-                                <div className="text-3xl font-black text-blue-700">#{currentUserRank.rank_pos}</div>
-                            </div>
-                            <div className="w-px h-12 bg-blue-200" />
-                            <div className="flex-1">
-                                <div className="text-sm font-black text-blue-800">Posisi kamu belum masuk Top 100 saat ini</div>
-                                <div className="text-xs text-blue-500 mt-0.5">Terus latihan untuk naik ke papan peringkat! Skor terbaikmu: <strong>{currentUserRank.top_score}</strong></div>
-                            </div>
-                            <div className="hidden sm:flex gap-3 text-center">
-                                <div><div className="text-[10px] font-black text-blue-400 uppercase">TWK</div><div className="text-sm font-bold text-blue-700">{currentUserRank.score_twk}</div></div>
-                                <div><div className="text-[10px] font-black text-blue-400 uppercase">TIU</div><div className="text-sm font-bold text-blue-700">{currentUserRank.score_tiu}</div></div>
-                                <div><div className="text-[10px] font-black text-blue-400 uppercase">TKP</div><div className="text-sm font-bold text-blue-700">{currentUserRank.score_tkp}</div></div>
-                            </div>
-                        </div>
-                    </PageAnimateItem>
-                )}
             </PageAnimateContainer>
         </div>
     )

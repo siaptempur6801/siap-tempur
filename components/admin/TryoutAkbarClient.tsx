@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { BarChart3, Edit, Loader2, Plus, Save, Ticket, Trash2, X } from 'lucide-react'
+import { BarChart3, Download, Edit, Loader2, Plus, Save, Ticket, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
     createTryoutEventCode,
@@ -519,6 +519,10 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                                         <button disabled={isPending} onClick={() => runAction(() => updateTryoutEventStatus(selectedEvent.id, 'cancelled'))} className="w-full rounded-md border-2 border-gray-900 bg-white px-3 py-2 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60">
                                             Cancel
                                         </button>
+                                        <a href={`/api/admin/export?type=events&format=xlsx&event_id=${selectedEvent.id}`} className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-3 py-2 font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5">
+                                            <Download size={16} />
+                                            Export XLSX
+                                        </a>
                                     </div>
                                 </aside>
                             </div>

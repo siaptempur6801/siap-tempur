@@ -71,7 +71,7 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-10 h-10 rounded-full bg-white border-2 border-gray-900 flex items-center justify-center overflow-hidden hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                className="relative w-10 h-10 bg-white border-2 border-gray-900 flex items-center justify-center overflow-hidden hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
                 {avatarUrl ? (
                     <Image

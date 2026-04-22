@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createAdminClient, createClient } from '@/utils/supabase/server'
 // Cache leaderboard 15 menit agar selaras dengan refresh snapshot via pg_cron.
 export const revalidate = 900
 import LeaderboardClient from '@/components/dashboard/LeaderboardClient'
@@ -29,10 +29,16 @@ export default async function RankingPage() {
     const weekOfMonth = Math.ceil(date / 7);
     const periodText = `Minggu ke-${weekOfMonth} Bulan ${monthName}`;
 
+    const admin = await createAdminClient()
+
     // Fetch top 100 dan urutan user saat ini secara paralel
-    const [{ data: rankings, error }, { data: currentUserRank }] = await Promise.all([
-        supabase.rpc('get_leaderboard_snapshot').order('rank_pos', { ascending: true }),
-        supabase.rpc('get_user_leaderboard_rank', { p_user_id: user.id }).maybeSingle(),
+    const [{ data: rankings, error }, { data: currentUserRank, error: currentUserRankError }] = await Promise.all([
+        supabase.rpc('get_leaderboard_snapshot').order('rank_pos', { ascending: true }).limit(100),
+        admin
+            .from('leaderboard_snapshot')
+            .select('rank_pos, user_id, full_name, avatar_url, top_score, score_twk, score_tiu, score_tkp')
+            .eq('user_id', user.id)
+            .maybeSingle(),
     ])
 
     if (error) {
@@ -40,12 +46,29 @@ export default async function RankingPage() {
         return <div className="p-8 text-center">Error loading leaderboard. Please try again later.</div>
     }
 
+    const topRankings = ((rankings as LeaderboardEntry[] | null) || []).slice(0, 100)
+    let resolvedCurrentUserRank = (currentUserRank as LeaderboardEntry | null) ?? null
+
+    if (!resolvedCurrentUserRank || currentUserRankError) {
+        const { data: fallbackUserRank, error: fallbackUserRankError } = await admin
+            .from('leaderboard_snapshot')
+            .select('rank_pos, user_id, full_name, avatar_url, top_score, score_twk, score_tiu, score_tkp')
+            .eq('user_id', user.id)
+            .maybeSingle()
+
+        if (fallbackUserRankError) {
+            console.error('Current User Rank Fallback Error:', fallbackUserRankError)
+        } else {
+            resolvedCurrentUserRank = (fallbackUserRank as LeaderboardEntry | null) ?? null
+        }
+    }
+
     return (
         <LeaderboardClient
-            data={(rankings as LeaderboardEntry[] | null) || []}
+            data={topRankings}
             currentUserId={user.id}
             periodText={periodText}
-            currentUserRank={(currentUserRank as LeaderboardEntry | null) ?? null}
+            currentUserRank={resolvedCurrentUserRank}
         />
     )
 }
