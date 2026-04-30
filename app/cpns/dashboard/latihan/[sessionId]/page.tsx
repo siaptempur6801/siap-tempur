@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import PracticeSessionClient from '@/components/practice/PracticeSessionClient'
+import { getOptionOrderForSession, orderOptionsById } from '@/lib/option-randomizer'
 
 export default async function PracticeSessionPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const supabase = await createClient()
@@ -35,8 +36,10 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
     const { data: answersData, error: answersError } = await supabase
         .from('test_answers')
         .select(`
+            id,
             question_id,
             option_id,
+            option_order,
             questions (
                 id,
                 content,
@@ -93,10 +96,14 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
     }
 
     interface AnswerData {
+        id: string
         question_id: string
         option_id: string | null
+        option_order: string[] | null
         questions: Question | Question[] // Supabase join can return array or single object depending on query
     }
+
+    const optionOrderUpdates: Array<{ answerId: string; optionOrder: string[] }> = []
 
     const questions = (answersData as unknown as AnswerData[]).map((item) => {
         // Handle if joined data is array or object
@@ -106,6 +113,14 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
 
         const sortKey = `${qRaw.type}-${qRaw.sub_category}`
         const sortOrder = configSortMap[sortKey] || 999
+        const rawOptions = qRaw.options || []
+        const optionOrder = item.option_order?.length
+            ? item.option_order
+            : getOptionOrderForSession(rawOptions, sessionId, qRaw.id)
+
+        if (!item.option_order?.length && optionOrder.length > 0) {
+            optionOrderUpdates.push({ answerId: item.id, optionOrder })
+        }
 
         return {
             id: qRaw.id,
@@ -114,10 +129,21 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             category: qRaw.category,
             sub_category: qRaw.sub_category,
             image_url: qRaw.image_url,
-            options: qRaw.options || [], // Ensure array
+            options: orderOptionsById(rawOptions, optionOrder),
             sort_order: sortOrder
         }
     }).filter(Boolean) as Question[]
+
+    if (optionOrderUpdates.length > 0) {
+        await Promise.all(
+            optionOrderUpdates.map((item) => (
+                supabase
+                    .from('test_answers')
+                    .update({ option_order: item.optionOrder })
+                    .eq('id', item.answerId)
+            ))
+        )
+    }
 
     // Perform server-side sorting based on admin configuration
     questions.sort((a, b) => {

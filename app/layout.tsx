@@ -107,6 +107,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://app.midtrans.com" />
       </head>
       <body
+        suppressHydrationWarning
         className={cn(
           geistSans.variable,
           geistMono.variable,

@@ -21,6 +21,7 @@ interface Option {
 interface Question {
     id: string
     content: string
+    image_url?: string | null
     explanation: string
     type: string
     category: string
@@ -69,11 +70,6 @@ export default function ResultReviewClient({ answers }: Props) {
 
     const status = getReviewStatus(currentAnswer, question)
     const options = question.options || []
-
-    // Sort options to match original display order (usually random, but for review maybe consistent?)
-    // In practice mode we randomized them. Here they come from DB join. 
-    // They might be in ID order or insertion order. That's fine for review.
-
 
     const maxScoreOption = options.reduce((prev: Option, current: Option) => (prev.score_value > current.score_value) ? prev : current, options[0])
 
@@ -298,8 +294,23 @@ export default function ResultReviewClient({ answers }: Props) {
                 <div className="flex-1 relative z-10 overflow-hidden">
                     <div className="flex h-full flex-col lg:flex-row">
                         <div className="flex-1 p-4 sm:p-10 overflow-y-auto">
-                    <div className="relative mb-6 sm:mb-10">
+                    <div className="relative mb-6 sm:mb-10 space-y-5">
                         <div className="absolute -left-4 sm:-left-6 top-1 w-1 sm:h-full bg-blue-400 rounded-full opacity-50"></div>
+                        {question.image_url && (
+                            <div className="w-full max-w-md mx-auto rounded-xl border-2 border-gray-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white relative">
+                                <div className="absolute top-2 left-2 z-10 p-1.5 bg-yellow-300 border-2 border-gray-900 rounded shadow-sm -rotate-2">
+                                    <Sparkles size={14} className="text-gray-900" />
+                                </div>
+                                <Image
+                                    src={question.image_url}
+                                    alt="Ilustrasi Soal"
+                                    width={900}
+                                    height={520}
+                                    unoptimized
+                                    className="w-full h-auto object-contain max-h-[320px]"
+                                />
+                            </div>
+                        )}
                         <div className="text-lg sm:text-2xl font-bold leading-relaxed text-gray-800 max-w-4xl">
                             <MathRenderer text={question.content} />
                         </div>

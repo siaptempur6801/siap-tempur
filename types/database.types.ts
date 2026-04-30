@@ -185,6 +185,7 @@ export interface Database {
                     session_id: string
                     question_id: string
                     option_id: string | null
+                    option_order: string[] | null
                     created_at: string
                 }
                 Insert: {
@@ -192,6 +193,7 @@ export interface Database {
                     session_id: string
                     question_id: string
                     option_id?: string | null
+                    option_order?: string[] | null
                     created_at?: string
                 }
                 Update: {
@@ -199,6 +201,7 @@ export interface Database {
                     session_id?: string
                     question_id?: string
                     option_id?: string | null
+                    option_order?: string[] | null
                     created_at?: string
                 }
             }
