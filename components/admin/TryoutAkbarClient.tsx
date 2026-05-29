@@ -1,7 +1,12 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
-import { BarChart3, Download, Edit, Loader2, Plus, Save, Ticket, Trash2, X } from 'lucide-react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+    BarChart3, ChevronDown, ChevronUp, Copy, Download,
+    Loader2, Plus, Radio, Save, Settings, Ticket, Trash2, Users, X,
+    CheckCircle2, Clock, BookOpen, AlertTriangle, Zap, EyeOff, Eye, Trophy
+} from 'lucide-react'
 import { toast } from 'sonner'
 import {
     createTryoutEventCode,
@@ -13,6 +18,8 @@ import {
     updateTryoutEvent,
     updateTryoutEventStatus,
 } from '@/app/actions/admin'
+import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 
 type EventStatus = 'draft' | 'scheduled' | 'live' | 'closed' | 'cancelled'
 
@@ -26,6 +33,18 @@ type EventCode = {
     created_at: string
 }
 
+type EventQuestion = {
+    id: string
+    sort_order: number
+    display_order: number
+    question_id: string
+    question_code: string
+    content: string
+    type: 'TWK' | 'TIU' | 'TKP'
+    category: string | null
+    sub_category: string | null
+}
+
 type TryoutEvent = {
     id: string
     title: string
@@ -36,6 +55,8 @@ type TryoutEvent = {
     duration_minutes: number
     max_participants: number | null
     requires_code: boolean
+    is_paid: boolean
+    price: number
     status: EventStatus
     result_visible_at: string | null
     explanation_visible_at: string | null
@@ -46,6 +67,7 @@ type TryoutEvent = {
     completed_count: number
     passed_count: number
     codes: EventCode[]
+    questions: EventQuestion[]
 }
 
 interface TryoutAkbarClientProps {
@@ -55,133 +77,632 @@ interface TryoutAkbarClientProps {
 function formatDate(value: string | null) {
     if (!value) return '-'
     return new Intl.DateTimeFormat('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
     }).format(new Date(value))
 }
 
 function toDateInputValue(value: string | null) {
     if (!value) return ''
-    return value.slice(0, 16)
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+
+    const offsetMs = date.getTimezoneOffset() * 60 * 1000
+    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
+}
+
+function getEventFormValues(event?: TryoutEvent | null) {
+    return {
+        title: event?.title || '',
+        description: event?.description || '',
+        starts_at: toDateInputValue(event?.starts_at || null),
+        ends_at: toDateInputValue(event?.ends_at || null),
+        duration_minutes: String(event?.duration_minutes ?? 100),
+        start_grace_minutes: String(event?.start_grace_minutes ?? 15),
+        max_participants: event?.max_participants ? String(event.max_participants) : '',
+        result_visible_at: toDateInputValue(event?.result_visible_at || null),
+        explanation_visible_at: toDateInputValue(event?.explanation_visible_at || null),
+        requires_code: event?.requires_code || false,
+        is_paid: event?.is_paid || false,
+        price: String(event?.price ?? 15000),
+    }
+}
+
+// ─── Status Config ────────────────────────────────────────────────────────────
+const STATUS_CONFIG: Record<EventStatus, { label: string; bg: string; text: string; border: string }> = {
+    draft: { label: 'Draft', bg: 'bg-gray-100', text: 'text-gray-700', border: 'border-gray-400' },
+    scheduled: { label: 'Scheduled', bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-400' },
+    live: { label: 'Live', bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-400' },
+    closed: { label: 'Closed', bg: 'bg-gray-200', text: 'text-gray-500', border: 'border-gray-400' },
+    cancelled: { label: 'Cancelled', bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-400' },
 }
 
 function StatusBadge({ status }: { status: EventStatus }) {
+    const cfg = STATUS_CONFIG[status]
     return (
-        <span className="border border-current px-2 py-0.5 text-[10px] font-black uppercase">
-            {status}
+        <span className={cn('inline-flex items-center gap-1 border-2 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide', cfg.bg, cfg.text, cfg.border)}>
+            {status === 'live' && <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />}
+            {cfg.label}
         </span>
     )
 }
 
-function EventForm({
-    event,
-    action,
-    isPending,
-}: {
+// ─── Progress Bar ─────────────────────────────────────────────────────────────
+function ProgressRow({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+    const pct = max > 0 ? Math.round((value / max) * 100) : 0
+    return (
+        <div className="space-y-1">
+            <div className="flex justify-between text-xs font-bold">
+                <span className="text-gray-600">{label}</span>
+                <span className="text-gray-900">{value}<span className="text-gray-400">/{max}</span> <span className="text-gray-400">({pct}%)</span></span>
+            </div>
+            <div className="h-2 w-full border border-gray-200 bg-gray-100 rounded-sm overflow-hidden">
+                <div className={cn('h-full transition-all', color)} style={{ width: `${pct}%` }} />
+            </div>
+        </div>
+    )
+}
+
+// ─── Event Form ───────────────────────────────────────────────────────────────
+function EventForm({ event, action, isPending }: {
     event?: TryoutEvent | null
     action: (formData: FormData) => void
     isPending: boolean
 }) {
+    const [values, setValues] = useState(() => getEventFormValues(event))
+
+    useEffect(() => {
+        setValues(getEventFormValues(event))
+    }, [event])
+
+    const updateValue = (field: keyof ReturnType<typeof getEventFormValues>, value: string | boolean) => {
+        setValues((current) => ({ ...current, [field]: value }))
+    }
+
     return (
         <form action={action} className="space-y-4">
-            <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Nama Event</label>
-                <input name="title" required defaultValue={event?.title || ''} placeholder="Tryout Akbar SKD CPNS Nasional" className="w-full rounded-md border-2 border-gray-300 px-4 py-3 font-bold outline-none focus:border-gray-900" />
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2 space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Nama Event</label>
+                    <input name="title" required value={values.title} onChange={(e) => updateValue('title', e.target.value)} placeholder="Tryout Akbar SKD CPNS Nasional"
+                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="sm:col-span-2 space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Deskripsi</label>
+                    <textarea name="description" rows={2} value={values.description} onChange={(e) => updateValue('description', e.target.value)} placeholder="Deskripsi singkat event"
+                        className="w-full resize-none border-2 border-gray-300 px-4 py-2.5 font-medium text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Mulai</label>
+                    <input name="starts_at" type="datetime-local" required value={values.starts_at} onChange={(e) => updateValue('starts_at', e.target.value)}
+                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Tutup</label>
+                    <input name="ends_at" type="datetime-local" required value={values.ends_at} onChange={(e) => updateValue('ends_at', e.target.value)}
+                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Durasi (menit)</label>
+                    <input name="duration_minutes" type="number" min="1" value={values.duration_minutes} onChange={(e) => updateValue('duration_minutes', e.target.value)} required
+                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Start Window (menit)</label>
+                    <input name="start_grace_minutes" type="number" min="0" value={values.start_grace_minutes} onChange={(e) => updateValue('start_grace_minutes', e.target.value)} required
+                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Max Peserta</label>
+                    <input name="max_participants" type="number" min="1" value={values.max_participants} onChange={(e) => updateValue('max_participants', e.target.value)}
+                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Hasil Terlihat</label>
+                    <input name="result_visible_at" type="datetime-local" value={values.result_visible_at} onChange={(e) => updateValue('result_visible_at', e.target.value)}
+                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Pembahasan</label>
+                    <input name="explanation_visible_at" type="datetime-local" value={values.explanation_visible_at} onChange={(e) => updateValue('explanation_visible_at', e.target.value)}
+                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                </div>
+                <div className="sm:col-span-2">
+                    <label className="flex items-center gap-3 border-2 border-gray-300 bg-gray-50 px-4 py-3 text-sm font-black text-gray-900 cursor-pointer hover:border-gray-900 transition">
+                        <input name="requires_code" type="checkbox" checked={values.requires_code} onChange={(e) => updateValue('requires_code', e.target.checked)} className="h-4 w-4 accent-gray-900" />
+                        Wajib kode masuk untuk daftar event
+                    </label>
+                </div>
+                {/* Payment Section */}
+                <div className="sm:col-span-2 border-t-2 border-gray-200 pt-4">
+                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3">Pembayaran</p>
+                    <label className="flex items-center gap-3 border-2 border-gray-300 bg-gray-50 px-4 py-3 text-sm font-black text-gray-900 cursor-pointer hover:border-gray-900 transition mb-3">
+                        <input
+                            name="is_paid"
+                            type="checkbox"
+                            checked={values.is_paid}
+                            onChange={(e) => updateValue('is_paid', e.target.checked)}
+                            className="h-4 w-4 accent-gray-900"
+                        />
+                        Event Berbayar (wajib beli tiket sebelum daftar)
+                    </label>
+                    {values.is_paid && (
+                        <div className="space-y-1.5">
+                            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Harga Tiket (Rp)</label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400">Rp</span>
+                                <input
+                                    name="price"
+                                    type="number"
+                                    min="0"
+                                    step="500"
+                                    required={values.is_paid}
+                                    value={values.price}
+                                    onChange={(e) => updateValue('price', e.target.value)}
+                                    className="w-full border-2 border-gray-300 pl-10 pr-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900"
+                                />
+                            </div>
+                            <p className="text-xs font-medium text-gray-400">Tidak ada admin fee tambahan. Harga ini yang dibayar user.</p>
+                        </div>
+                    )}
+                </div>
             </div>
-            <div className="space-y-2">
-                <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Deskripsi</label>
-                <textarea name="description" rows={3} defaultValue={event?.description || ''} placeholder="Deskripsi singkat event" className="w-full resize-none rounded-md border-2 border-gray-300 px-4 py-3 font-medium outline-none focus:border-gray-900" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Mulai</label>
-                    <input name="starts_at" type="datetime-local" required defaultValue={toDateInputValue(event?.starts_at || null)} className="w-full rounded-md border-2 border-gray-300 px-4 py-3 font-bold outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Tutup</label>
-                    <input name="ends_at" type="datetime-local" required defaultValue={toDateInputValue(event?.ends_at || null)} className="w-full rounded-md border-2 border-gray-300 px-4 py-3 font-bold outline-none focus:border-gray-900" />
-                </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Durasi</label>
-                    <input name="duration_minutes" type="number" min="1" defaultValue={event?.duration_minutes || 100} required className="w-full rounded-md border-2 border-gray-300 px-4 py-3 font-bold outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Window</label>
-                    <input name="start_grace_minutes" type="number" min="0" defaultValue={event?.start_grace_minutes ?? 15} required className="w-full rounded-md border-2 border-gray-300 px-4 py-3 font-bold outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Max</label>
-                    <input name="max_participants" type="number" min="1" defaultValue={event?.max_participants || ''} className="w-full rounded-md border-2 border-gray-300 px-4 py-3 font-bold outline-none focus:border-gray-900" />
-                </div>
-            </div>
-            <label className="flex items-center gap-3 rounded-md border-2 border-gray-300 bg-gray-50 px-4 py-3 text-sm font-black text-gray-900">
-                <input name="requires_code" type="checkbox" defaultChecked={event?.requires_code || false} className="h-5 w-5 accent-gray-900" />
-                Wajib kode masuk untuk daftar event
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Hasil Terlihat</label>
-                    <input name="result_visible_at" type="datetime-local" defaultValue={toDateInputValue(event?.result_visible_at || null)} className="w-full rounded-md border-2 border-gray-300 px-4 py-3 font-bold outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-2">
-                    <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Pembahasan</label>
-                    <input name="explanation_visible_at" type="datetime-local" defaultValue={toDateInputValue(event?.explanation_visible_at || null)} className="w-full rounded-md border-2 border-gray-300 px-4 py-3 font-bold outline-none focus:border-gray-900" />
-                </div>
-            </div>
-            <button disabled={isPending} className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-3 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 disabled:opacity-60">
+            <button disabled={isPending}
+                className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-5 py-3 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none disabled:opacity-60">
                 {isPending ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                {event ? 'Simpan Event' : 'Buat Event'}
+                {event ? 'Simpan Perubahan' : 'Buat Event'}
             </button>
         </form>
     )
 }
 
-function EventCodeForm({
-    action,
-    isPending,
+// ─── Status Action Buttons ────────────────────────────────────────────────────
+const STATUS_ACTIONS: Array<{
+    targetStatus: EventStatus
+    label: string
+    icon: React.ReactNode
+    btnClass: string
+    confirm?: string
+}> = [
+    {
+        targetStatus: 'scheduled',
+        label: 'Publish',
+        icon: <Eye size={14} />,
+        btnClass: 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700',
+    },
+    {
+        targetStatus: 'live',
+        label: 'Go Live',
+        icon: <Radio size={14} />,
+        btnClass: 'border-green-600 bg-green-600 text-white hover:bg-green-700',
+        confirm: 'Event akan langsung LIVE dan peserta bisa mulai. Lanjutkan?',
+    },
+    {
+        targetStatus: 'closed',
+        label: 'Tutup',
+        icon: <EyeOff size={14} />,
+        btnClass: 'border-orange-600 bg-orange-600 text-white hover:bg-orange-700',
+        confirm: 'Event akan ditutup. Peserta tidak bisa mulai lagi. Lanjutkan?',
+    },
+    {
+        targetStatus: 'cancelled',
+        label: 'Cancel',
+        icon: <X size={14} />,
+        btnClass: 'border-red-600 bg-red-100 text-red-700 hover:bg-red-200',
+        confirm: 'Event akan dibatalkan permanen. Yakin?',
+    },
+]
+
+// ─── Detail Panel Tabs ────────────────────────────────────────────────────────
+type DetailTab = 'stats' | 'settings' | 'questions' | 'codes'
+
+function DetailPanel({
+    event, onClose, isPending, onRunAction, onUpdate,
 }: {
-    action: (formData: FormData) => void
+    event: TryoutEvent
+    onClose: () => void
+    isPending: boolean
+    onRunAction: (cb: () => Promise<{ success: boolean; message: string }>) => void
+    onUpdate: (eventId: string, fd: FormData) => void
+}) {
+    const [tab, setTab] = useState<DetailTab>('stats')
+    const [codeToDelete, setCodeToDelete] = useState<EventCode | null>(null)
+
+    const TABS: Array<{ id: DetailTab; label: string; icon: React.ReactNode }> = [
+        { id: 'stats', label: 'Statistik', icon: <BarChart3 size={15} /> },
+        { id: 'settings', label: 'Pengaturan', icon: <Settings size={15} /> },
+        { id: 'questions', label: `Soal (${event.questions.length})`, icon: <BookOpen size={15} /> },
+        { id: 'codes', label: `Kode (${event.codes.length})`, icon: <Ticket size={15} /> },
+    ]
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="border-t-0 border-2 border-gray-900 bg-gray-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.15)]"
+        >
+            {/* Tab Bar */}
+            <div className="flex items-center gap-0 border-b-2 border-gray-900 bg-white">
+                {TABS.map((t) => (
+                    <button key={t.id} onClick={() => setTab(t.id)}
+                        className={cn(
+                            'flex items-center gap-1.5 px-4 py-2.5 text-xs font-black uppercase tracking-wide border-r-2 border-gray-900 transition',
+                            tab === t.id ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
+                        )}>
+                        {t.icon}{t.label}
+                    </button>
+                ))}
+                <button onClick={onClose} className="ml-auto px-3 py-2.5 text-gray-400 hover:text-gray-900 transition">
+                    <X size={16} />
+                </button>
+            </div>
+
+            <div className="p-5">
+                {/* ── STATS TAB ── */}
+                {tab === 'stats' && (
+                    <div className="grid gap-6 lg:grid-cols-[1fr_200px]">
+                        <div className="space-y-5">
+                            {/* Meta */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {[
+                                    { label: 'Soal', value: event.question_count, icon: <BookOpen size={14} className="text-blue-500" /> },
+                                    { label: 'Durasi', value: `${event.duration_minutes}m`, icon: <Clock size={14} className="text-orange-500" /> },
+                                    { label: 'Window', value: `${event.start_grace_minutes}m`, icon: <Clock size={14} className="text-yellow-500" /> },
+                                    { label: 'Max', value: event.max_participants || '∞', icon: <Users size={14} className="text-green-500" /> },
+                                ].map(({ label, value, icon }) => (
+                                    <div key={label} className="border-2 border-gray-200 bg-white p-3">
+                                        <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 mb-1">{icon}{label}</div>
+                                        <p className="text-xl font-black text-gray-900">{value}</p>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Progress Bars */}
+                            <div className="border-2 border-gray-200 bg-white p-4 space-y-3">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-3">Progres Peserta</h4>
+                                <ProgressRow label="Pendaftar" value={event.participant_count} max={event.max_participants || event.participant_count || 1} color="bg-blue-400" />
+                                <ProgressRow label="Mulai Tryout" value={event.session_count} max={event.participant_count || 1} color="bg-yellow-400" />
+                                <ProgressRow label="Selesai" value={event.completed_count} max={event.session_count || 1} color="bg-green-400" />
+                                <ProgressRow label="Lulus" value={event.passed_count} max={event.completed_count || 1} color="bg-emerald-500" />
+                            </div>
+
+                            {/* Schedule Info */}
+                            <div className="border-2 border-gray-200 bg-white p-4 text-sm space-y-1.5 font-medium text-gray-700">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-2">Jadwal</h4>
+                                <div className="flex gap-2"><span className="font-black text-gray-400 w-24">Mulai</span><span>{formatDate(event.starts_at)}</span></div>
+                                <div className="flex gap-2"><span className="font-black text-gray-400 w-24">Tutup</span><span>{formatDate(event.ends_at)}</span></div>
+                                <div className="flex gap-2"><span className="font-black text-gray-400 w-24">Hasil</span><span>{formatDate(event.result_visible_at)}</span></div>
+                                <div className="flex gap-2"><span className="font-black text-gray-400 w-24">Pembahasan</span><span>{formatDate(event.explanation_visible_at)}</span></div>
+                            </div>
+                        </div>
+
+                        {/* Action sidebar */}
+                        <div className="space-y-3">
+                            <a 
+                                href={`/cpns/live/${event.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex w-full items-center justify-center gap-2 border-2 border-indigo-600 bg-indigo-50 px-3 py-2.5 text-sm font-black text-indigo-700 transition shadow-[2px_2px_0px_0px_rgba(79,70,229,0.3)] hover:translate-y-px hover:shadow-none mb-2"
+                            >
+                                <Trophy size={14} /> Live Leaderboard
+                            </a>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Ubah Status</p>
+                            {STATUS_ACTIONS.map(({ targetStatus, label, icon, btnClass, confirm }) => (
+                                <button key={targetStatus}
+                                    disabled={isPending || event.status === targetStatus}
+                                    onClick={() => {
+                                        if (confirm && !window.confirm(confirm)) return
+                                        onRunAction(() => updateTryoutEventStatus(event.id, targetStatus))
+                                    }}
+                                    className={cn(
+                                        'flex w-full items-center justify-center gap-2 border-2 px-3 py-2.5 text-sm font-black transition shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-y-px hover:shadow-none disabled:opacity-40 disabled:cursor-not-allowed',
+                                        btnClass,
+                                        event.status === targetStatus && 'ring-2 ring-offset-1 ring-gray-900'
+                                    )}>
+                                    {icon}{label}
+                                    {event.status === targetStatus && <CheckCircle2 size={13} />}
+                                </button>
+                            ))}
+                            <div className="border-t-2 border-gray-200 pt-3 space-y-2">
+                                <button disabled={isPending} onClick={() => onRunAction(() => generateTryoutEventQuestions(event.id))}
+                                    className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-white px-3 py-2.5 text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-px hover:shadow-none transition disabled:opacity-60">
+                                    <Zap size={14} /> Generate Soal
+                                </button>
+                                <a href={`/api/admin/export?type=events&format=csv&event_id=${event.id}`}
+                                    className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-3 py-2.5 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] hover:translate-y-px hover:shadow-none transition">
+                                    <Download size={14} /> Export CSV
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── SETTINGS TAB ── */}
+                {tab === 'settings' && (
+                    <EventForm event={event} action={(fd) => onUpdate(event.id, fd)} isPending={isPending} />
+                )}
+
+                {/* ── QUESTIONS TAB ── */}
+                {tab === 'questions' && (
+                    <div className="space-y-4">
+                        <div className="flex flex-col gap-3 border-2 border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h4 className="font-handwriting text-2xl font-black text-gray-900">Daftar Soal Event</h4>
+                                <p className="text-sm font-medium text-gray-500">
+                                    {event.questions.length} soal tersusun sesuai urutan paket event.
+                                </p>
+                            </div>
+                            <button disabled={isPending} onClick={() => onRunAction(() => generateTryoutEventQuestions(event.id))}
+                                className="inline-flex items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2.5 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none disabled:opacity-60">
+                                {isPending ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                                Generate Ulang
+                            </button>
+                        </div>
+
+                        {event.questions.length === 0 ? (
+                            <div className="border-2 border-dashed border-gray-300 bg-white p-8 text-center">
+                                <BookOpen className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+                                <p className="text-sm font-black uppercase tracking-widest text-gray-400">Belum ada soal</p>
+                                <p className="mt-1 text-sm font-medium text-gray-500">Klik Generate Ulang untuk membuat paket soal event.</p>
+                            </div>
+                        ) : (
+                            <div className="max-h-[520px] space-y-2 overflow-y-auto pr-2 custom-scrollbar">
+                                {event.questions.map((question) => (
+                                    <div key={question.id} className="grid gap-3 border-2 border-gray-200 bg-white p-4 sm:grid-cols-[64px_1fr]">
+                                        <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-gray-50 font-mono text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                            #{question.display_order}
+                                        </div>
+                                        <div className="min-w-0 space-y-2">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <span className="border-2 border-gray-900 bg-gray-900 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
+                                                    {question.type}
+                                                </span>
+                                                <span className="border border-gray-300 px-2 py-0.5 font-mono text-[11px] font-black text-gray-600">
+                                                    {question.question_code}
+                                                </span>
+                                                {(question.sub_category || question.category) && (
+                                                    <span className="truncate text-xs font-bold text-gray-500">
+                                                        {question.sub_category || question.category}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="line-clamp-3 text-sm font-semibold leading-relaxed text-gray-900">
+                                                {question.content}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── CODES TAB ── */}
+                {tab === 'codes' && (
+                    <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+                        {/* New code form */}
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-3">Buat Kode Baru</p>
+                            <CodeForm eventId={event.id} onRunAction={onRunAction} isPending={isPending} />
+                        </div>
+
+                        {/* Existing codes */}
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-3">
+                                Daftar Kode ({event.codes.length})
+                            </p>
+                            {event.codes.length === 0 ? (
+                                <div className="border-2 border-dashed border-gray-300 bg-white p-6 text-center text-sm font-bold text-gray-400">
+                                    Belum ada kode masuk.
+                                </div>
+                            ) : (
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    {event.codes.map((code) => (
+                                        <div key={code.id} className={cn(
+                                            'border-2 bg-white p-3 space-y-2',
+                                            code.is_active ? 'border-gray-900' : 'border-gray-300 opacity-60'
+                                        )}>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-mono text-base font-black text-gray-900">{code.code}</span>
+                                                    <button onClick={() => { navigator.clipboard.writeText(code.code); toast.success('Kode disalin!') }}
+                                                        className="text-gray-400 hover:text-gray-900 transition">
+                                                        <Copy size={13} />
+                                                    </button>
+                                                </div>
+                                                <span className={cn('text-[10px] font-black border px-1.5 py-0.5', code.is_active ? 'border-green-500 text-green-700' : 'border-gray-400 text-gray-500')}>
+                                                    {code.is_active ? 'AKTIF' : 'OFF'}
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] font-bold text-gray-500">
+                                                {code.used_count}/{code.max_uses} dipakai · exp {formatDate(code.expires_at)}
+                                            </p>
+                                            <div className="h-1.5 w-full bg-gray-100 border border-gray-200 rounded-sm overflow-hidden">
+                                                <div className="h-full bg-blue-400" style={{ width: `${Math.round((code.used_count / code.max_uses) * 100)}%` }} />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button disabled={isPending}
+                                                    onClick={() => onRunAction(() => toggleTryoutEventCode(code.id, !code.is_active))}
+                                                    className="flex-1 border border-gray-300 bg-gray-50 py-1.5 text-xs font-black text-gray-700 hover:border-gray-900 transition disabled:opacity-50">
+                                                    {code.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                                                </button>
+                                                <button disabled={isPending}
+                                                    onClick={() => setCodeToDelete(code)}
+                                                    className="border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-black text-red-600 hover:border-red-500 transition disabled:opacity-50">
+                                                    <Trash2 size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Delete code confirm */}
+            <AnimatePresence>
+                {codeToDelete && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                        <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+                            className="w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                            <h3 className="font-handwriting text-2xl font-black text-gray-900">Hapus Kode?</h3>
+                            <p className="mt-2 text-sm font-medium text-gray-600">Kode <strong>{codeToDelete.code}</strong> akan dihapus permanen.</p>
+                            <div className="mt-4 flex gap-3">
+                                <button onClick={() => setCodeToDelete(null)} className="flex-1 border-2 border-gray-900 bg-white py-2 font-black text-gray-900">Batal</button>
+                                <button disabled={isPending} onClick={() => { onRunAction(() => deleteTryoutEventCode(codeToDelete.id)); setCodeToDelete(null) }}
+                                    className="flex-1 flex items-center justify-center gap-1 border-2 border-gray-900 bg-gray-900 py-2 font-black text-white disabled:opacity-60">
+                                    {isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Hapus
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    )
+}
+
+// ─── Code Creation Form ───────────────────────────────────────────────────────
+function CodeForm({ eventId, onRunAction, isPending }: {
+    eventId: string
+    onRunAction: (cb: () => Promise<{ success: boolean; message: string }>) => void
     isPending: boolean
 }) {
+    const [code, setCode] = useState('')
+    const [maxUses, setMaxUses] = useState('1')
+    const [expiresAt, setExpiresAt] = useState('')
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        const fd = new FormData()
+        fd.set('code', code)
+        fd.set('max_uses', maxUses)
+        if (expiresAt) fd.set('expires_at', expiresAt)
+        onRunAction(() => createTryoutEventCode(eventId, fd))
+        setCode('')
+    }
+
     return (
-        <form action={action} className="mt-4 space-y-3 border-2 border-gray-900 bg-white p-4">
-            <div className="grid grid-cols-[1fr_96px] gap-2">
+        <form onSubmit={handleSubmit} className="border-2 border-gray-900 bg-white p-4 space-y-3">
+            <div className="grid grid-cols-[1fr_80px] gap-2">
                 <div className="space-y-1">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Kode</label>
-                    <input name="code" required minLength={4} maxLength={32} placeholder="AKBAR-2026" className="w-full rounded-md border-2 border-gray-300 px-3 py-2 font-black uppercase outline-none focus:border-gray-900" />
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500">Kode</label>
+                    <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} required minLength={4} maxLength={32}
+                        placeholder="AKBAR-2026"
+                        className="w-full border-2 border-gray-300 px-3 py-2 font-black uppercase text-gray-900 outline-none focus:border-gray-900" />
                 </div>
                 <div className="space-y-1">
-                    <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Limit</label>
-                    <input name="max_uses" type="number" min="1" defaultValue={1} required className="w-full rounded-md border-2 border-gray-300 px-3 py-2 font-black outline-none focus:border-gray-900" />
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500">Limit</label>
+                    <input type="number" min="1" value={maxUses} onChange={(e) => setMaxUses(e.target.value)} required
+                        className="w-full border-2 border-gray-300 px-3 py-2 font-black text-gray-900 outline-none focus:border-gray-900" />
                 </div>
             </div>
             <div className="space-y-1">
-                <label className="block text-[10px] font-black uppercase tracking-[0.18em] text-gray-500">Kadaluarsa</label>
-                <input name="expires_at" type="datetime-local" className="w-full rounded-md border-2 border-gray-300 px-3 py-2 font-bold outline-none focus:border-gray-900" />
+                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-500">Kadaluarsa (opsional)</label>
+                <input type="datetime-local" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)}
+                    className="w-full border-2 border-gray-300 px-3 py-2 font-bold text-gray-900 outline-none focus:border-gray-900" />
             </div>
-            <button disabled={isPending} className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-4 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)] disabled:opacity-60">
-                {isPending ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
-                Buat Kode
+            <button type="submit" disabled={isPending || !code}
+                className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] disabled:opacity-60 transition hover:translate-y-px hover:shadow-none">
+                {isPending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Buat Kode
             </button>
         </form>
     )
 }
 
+// ─── Event Create Modal ───────────────────────────────────────────────────────
 export function EventCreateController() {
-    const [isCreateOpen, setIsCreateOpen] = useState(false)
+    const [isOpen, setIsOpen] = useState(false)
     const [isPending, startTransition] = useTransition()
+    const router = useRouter()
 
     const handleCreate = (formData: FormData) => {
         startTransition(async () => {
             const result = await createTryoutEvent(formData)
             if (result.success) {
                 toast.success(result.message)
-                setIsCreateOpen(false)
+                setIsOpen(false)
+                router.refresh()
+            }
+            else toast.error(result.message)
+        })
+    }
+
+    return (
+        <>
+            <button type="button" onClick={() => setIsOpen(true)}
+                className="inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-5 py-3 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none hover:bg-gray-800">
+                <Plus size={18} /> Buat Event
+            </button>
+            <AnimatePresence>
+                {isOpen && (
+                    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                            className="relative mt-10 w-full max-w-2xl border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                            <button type="button" onClick={() => setIsOpen(false)} className="absolute right-4 top-4 border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                <X size={16} />
+                            </button>
+                            <h2 className="pr-12 font-handwriting text-3xl font-black text-gray-900">Buat Event Baru</h2>
+                            <p className="mb-5 mt-1 text-sm font-medium text-gray-600">Siapkan jadwal dan aturan dasar Tryout Akbar.</p>
+                            <EventForm action={handleCreate} isPending={isPending} />
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </>
+    )
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
+    const [expandedId, setExpandedId] = useState<string | null>(null)
+    const [eventToDelete, setEventToDelete] = useState<TryoutEvent | null>(null)
+    const [isPending, startTransition] = useTransition()
+    const router = useRouter()
+
+    const summary = useMemo(() => ({
+        total: events.length,
+        scheduled: events.filter((e) => e.status === 'scheduled').length,
+        live: events.filter((e) => e.status === 'live').length,
+        participants: events.reduce((sum, e) => sum + e.participant_count, 0),
+    }), [events])
+
+    const runAction = (callback: () => Promise<{ success: boolean; message: string }>) => {
+        startTransition(async () => {
+            const result = await callback()
+            if (result.success) {
+                toast.success(result.message)
+                router.refresh()
+            } else {
+                toast.error(result.message)
+            }
+        })
+    }
+
+    const handleUpdate = (eventId: string, formData: FormData) => {
+        startTransition(async () => {
+            const result = await updateTryoutEvent(eventId, formData)
+            if (result.success) {
+                toast.success(result.message)
+                router.refresh()
+            } else {
+                toast.error(result.message)
+            }
+        })
+    }
+
+    const handleDelete = () => {
+        if (!eventToDelete) return
+        startTransition(async () => {
+            const result = await deleteTryoutEvent(eventToDelete.id)
+            if (result.success) {
+                toast.success(result.message)
+                setEventToDelete(null)
+                setExpandedId(null)
+                router.refresh()
             } else {
                 toast.error(result.message)
             }
@@ -189,387 +710,135 @@ export function EventCreateController() {
     }
 
     return (
-        <>
-            <button
-                type="button"
-                onClick={() => setIsCreateOpen(true)}
-                className="inline-flex items-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-3 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5 hover:bg-gray-800"
-            >
-                <Plus size={18} />
-                Buat Event
-            </button>
-
-            {isCreateOpen ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-                    <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                        <button type="button" onClick={() => setIsCreateOpen(false)} className="absolute right-4 top-4 border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            <X size={16} />
-                        </button>
-                        <h2 className="pr-12 font-handwriting text-3xl font-black text-gray-900">Buat Event</h2>
-                        <p className="mb-5 mt-1 text-sm font-medium text-gray-600">Siapkan jadwal dan aturan dasar Tryout Akbar.</p>
-                        <EventForm action={handleCreate} isPending={isPending} />
-                    </div>
-                </div>
-            ) : null}
-        </>
-    )
-}
-
-export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
-    const [selectedEventId, setSelectedEventId] = useState('')
-    const [isEditing, setIsEditing] = useState(false)
-    const [isVoucherOpen, setIsVoucherOpen] = useState(false)
-    const [eventToDelete, setEventToDelete] = useState<TryoutEvent | null>(null)
-    const [codeToDelete, setCodeToDelete] = useState<EventCode | null>(null)
-    const [isPending, startTransition] = useTransition()
-
-    const selectedEvent = useMemo(
-        () => events.find((event) => event.id === selectedEventId) || null,
-        [events, selectedEventId]
-    )
-
-    const summary = useMemo(() => ({
-        total: events.length,
-        scheduled: events.filter((event) => event.status === 'scheduled').length,
-        live: events.filter((event) => event.status === 'live').length,
-        participants: events.reduce((sum, event) => sum + event.participant_count, 0),
-    }), [events])
-
-    const handleUpdate = (eventId: string, formData: FormData) => {
-        startTransition(async () => {
-            const result = await updateTryoutEvent(eventId, formData)
-            if (result.success) {
-                toast.success(result.message)
-                setIsEditing(false)
-            } else toast.error(result.message)
-        })
-    }
-
-    const runAction = (callback: () => Promise<{ success: boolean; message: string }>) => {
-        startTransition(async () => {
-            const result = await callback()
-            if (result.success) toast.success(result.message)
-            else toast.error(result.message)
-        })
-    }
-
-    const handleDelete = () => {
-        if (!eventToDelete) return
-        runAction(async () => {
-            const result = await deleteTryoutEvent(eventToDelete.id)
-            if (result.success) {
-                setEventToDelete(null)
-                setSelectedEventId('')
-                setIsEditing(false)
-                setIsVoucherOpen(false)
-            }
-            return result
-        })
-    }
-
-    const handleCreateCode = (eventId: string, formData: FormData) => {
-        startTransition(async () => {
-            const result = await createTryoutEventCode(eventId, formData)
-            if (result.success) toast.success(result.message)
-            else toast.error(result.message)
-        })
-    }
-
-    const handleDeleteCode = () => {
-        if (!codeToDelete) return
-        runAction(async () => {
-            const result = await deleteTryoutEventCode(codeToDelete.id)
-            if (result.success) setCodeToDelete(null)
-            return result
-        })
-    }
-
-    return (
         <div className="space-y-8">
+            {/* Summary Stats */}
             <div className="grid gap-4 md:grid-cols-4">
                 {[
-                    ['Total Event', summary.total],
-                    ['Scheduled', summary.scheduled],
-                    ['Live', summary.live],
-                    ['Total Peserta', summary.participants],
-                ].map(([label, value]) => (
+                    { label: 'Total Event', value: summary.total, icon: <BarChart3 size={18} className="text-gray-400" /> },
+                    { label: 'Scheduled', value: summary.scheduled, icon: <Clock size={18} className="text-blue-400" /> },
+                    { label: 'Live', value: summary.live, icon: <Radio size={18} className="text-red-500" /> },
+                    { label: 'Total Peserta', value: summary.participants, icon: <Users size={18} className="text-green-500" /> },
+                ].map(({ label, value, icon }) => (
                     <div key={label} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <p className="text-sm font-bold uppercase tracking-wide text-gray-500">{label}</p>
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{label}</p>
+                            {icon}
+                        </div>
                         <p className="mt-2 font-handwriting text-4xl font-black text-gray-900">{value}</p>
                     </div>
                 ))}
             </div>
 
-            <div className="space-y-4">
+            {/* Event List */}
+            <div className="space-y-0">
                 {events.length === 0 ? (
                     <div className="border-2 border-dashed border-gray-900 bg-white p-12 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,0.12)]">
-                        <BarChart3 className="mx-auto h-12 w-12 text-gray-500" />
+                        <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
                         <h2 className="mt-4 font-handwriting text-3xl font-black text-gray-900">Belum ada event</h2>
-                        <p className="mt-2 text-sm font-medium text-gray-600">Klik Buat Event di banner untuk menyiapkan Tryout Akbar.</p>
+                        <p className="mt-2 text-sm font-medium text-gray-600">Klik Buat Event untuk menyiapkan Tryout Akbar.</p>
                     </div>
                 ) : (
-                    events.map((event) => (
-                        <div
-                            key={event.id}
-                            className="w-full border-2 border-gray-900 bg-white p-5 text-left text-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                        >
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="font-handwriting text-2xl font-black">{event.title}</h3>
-                                        <StatusBadge status={event.status} />
+                    <div className="space-y-3">
+                        {events.map((event) => {
+                            const isExpanded = expandedId === event.id
+                            return (
+                                <div key={event.id}>
+                                    {/* Event Row */}
+                                    <div className={cn(
+                                        'border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition',
+                                        isExpanded && 'shadow-none border-b-0'
+                                    )}>
+                                        <div className="flex items-center gap-4 p-4">
+                                            {/* Expand toggle */}
+                                            <button onClick={() => setExpandedId(isExpanded ? null : event.id)}
+                                                className="shrink-0 border-2 border-gray-900 p-1.5 hover:bg-gray-100 transition">
+                                                {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                            </button>
+
+                                            {/* Info */}
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                                                    <h3 className="font-handwriting text-xl font-black text-gray-900 truncate">{event.title}</h3>
+                                                    <StatusBadge status={event.status} />
+                                                    {event.requires_code && (
+                                                        <span className="border border-gray-300 px-1.5 py-0.5 text-[10px] font-black uppercase text-gray-500">
+                                                            🔑 Kode
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs font-medium text-gray-500">
+                                                    {formatDate(event.starts_at)} · {event.duration_minutes}m · {event.question_count} soal
+                                                </p>
+                                            </div>
+
+                                            {/* Quick stats */}
+                                            <div className="hidden sm:flex items-center gap-4 text-center shrink-0">
+                                                <div>
+                                                    <p className="text-xl font-black text-gray-900">{event.participant_count}</p>
+                                                    <p className="text-[10px] font-bold uppercase text-gray-400">Peserta</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xl font-black text-gray-900">{event.completed_count}</p>
+                                                    <p className="text-[10px] font-bold uppercase text-gray-400">Selesai</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xl font-black text-green-600">{event.passed_count}</p>
+                                                    <p className="text-[10px] font-bold uppercase text-gray-400">Lulus</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Delete */}
+                                            <button onClick={() => setEventToDelete(event)}
+                                                className="shrink-0 border-2 border-gray-200 bg-white p-1.5 text-gray-400 hover:border-red-400 hover:text-red-500 transition">
+                                                <Trash2 size={15} />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="mt-2 text-sm font-medium text-gray-600">
-                                        {formatDate(event.starts_at)} | {event.duration_minutes} menit | {event.question_count} soal
-                                        {event.requires_code ? ' | wajib kode' : ''}
-                                    </p>
+
+                                    {/* Inline Detail Panel */}
+                                    <AnimatePresence>
+                                        {isExpanded && (
+                                            <DetailPanel
+                                                event={event}
+                                                onClose={() => setExpandedId(null)}
+                                                isPending={isPending}
+                                                onRunAction={runAction}
+                                                onUpdate={handleUpdate}
+                                            />
+                                        )}
+                                    </AnimatePresence>
                                 </div>
-                                <div className="flex items-center justify-between gap-4 sm:justify-end">
-                                    <div className="flex shrink-0 gap-2">
-                                        <button
-                                            type="button"
-                                            aria-label={`Monitoring ${event.title}`}
-                                            title="Monitoring"
-                                            onClick={() => {
-                                                setSelectedEventId(event.id)
-                                                setIsEditing(false)
-                                                setIsVoucherOpen(false)
-                                            }}
-                                            className="border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5"
-                                        >
-                                            <BarChart3 size={18} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            aria-label={`Voucher ${event.title}`}
-                                            title="Voucher"
-                                            onClick={() => {
-                                                setSelectedEventId(event.id)
-                                                setIsEditing(false)
-                                                setIsVoucherOpen(true)
-                                            }}
-                                            className="border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5"
-                                        >
-                                            <Ticket size={18} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            aria-label={`Edit ${event.title}`}
-                                            title="Edit"
-                                            onClick={() => {
-                                                setSelectedEventId(event.id)
-                                                setIsEditing(true)
-                                                setIsVoucherOpen(false)
-                                            }}
-                                            className="border-2 border-gray-900 bg-gray-900 p-2 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5"
-                                        >
-                                            <Edit size={18} />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            aria-label={`Hapus ${event.title}`}
-                                            title="Hapus"
-                                            onClick={() => {
-                                                setEventToDelete(event)
-                                                setSelectedEventId('')
-                                                setIsEditing(false)
-                                                setIsVoucherOpen(false)
-                                            }}
-                                            className="border-2 border-gray-900 bg-white p-2 text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                    <div className="min-w-16 text-right">
-                                        <p className="text-2xl font-black">{event.participant_count}</p>
-                                        <p className="text-xs font-bold uppercase text-gray-500">peserta</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))
+                            )
+                        })}
+                    </div>
                 )}
             </div>
 
-            {selectedEvent ? (
-                <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-                    <div className="relative max-h-[90vh] w-full max-w-5xl overflow-y-auto border-2 border-gray-900 bg-gray-100 p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setSelectedEventId('')
-                                setIsEditing(false)
-                                setIsVoucherOpen(false)
-                            }}
-                            className="absolute right-4 top-4 border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-                        >
-                            <X size={16} />
-                        </button>
-                        <div className="pr-12">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <h2 className="font-handwriting text-3xl font-black text-gray-900">
-                                        {isEditing ? 'Edit Event' : isVoucherOpen ? 'Voucher Event' : 'Monitoring'}
-                                    </h2>
-                                    <p className="mt-1 text-sm font-bold text-gray-600">{selectedEvent.title}</p>
-                                </div>
+            {/* Delete Event Modal */}
+            <AnimatePresence>
+                {eventToDelete && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                        <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+                            className="w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="flex items-center gap-2 mb-3">
+                                <AlertTriangle size={20} className="text-red-500" />
+                                <h2 className="font-handwriting text-2xl font-black text-gray-900">Hapus Event?</h2>
                             </div>
-                        </div>
-
-                        {isEditing ? (
-                            <div className="mt-5">
-                                <EventForm event={selectedEvent} action={(formData) => handleUpdate(selectedEvent.id, formData)} isPending={isPending} />
+                            <p className="text-sm font-medium leading-relaxed text-gray-700">
+                                Event <strong>{eventToDelete.title}</strong> akan dihapus permanen, termasuk semua pendaftaran, kode masuk, dan sesi pengerjaan.
+                            </p>
+                            <div className="mt-5 flex gap-3">
+                                <button onClick={() => setEventToDelete(null)} disabled={isPending}
+                                    className="flex-1 border-2 border-gray-900 bg-white py-2.5 font-black text-gray-900">Batal</button>
+                                <button onClick={handleDelete} disabled={isPending}
+                                    className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-900 bg-red-600 py-2.5 font-black text-white disabled:opacity-60">
+                                    {isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Hapus
+                                </button>
                             </div>
-                        ) : isVoucherOpen ? (
-                            <section className="mt-5 border-2 border-gray-900 bg-white p-5">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div>
-                                        <h3 className="font-handwriting text-2xl font-black text-gray-900">Voucher</h3>
-                                        <p className="text-xs font-bold text-gray-600">Kode masuk khusus event.</p>
-                                    </div>
-                                    <span className="border-2 border-gray-900 bg-gray-100 px-2 py-1 text-xs font-black text-gray-900">
-                                        {selectedEvent.codes.length} kode
-                                    </span>
-                                </div>
-                                <EventCodeForm action={(formData) => handleCreateCode(selectedEvent.id, formData)} isPending={isPending} />
-                                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                                    {selectedEvent.codes.length === 0 ? (
-                                        <p className="border-2 border-dashed border-gray-300 bg-gray-50 p-3 text-sm font-bold text-gray-500">Belum ada kode masuk.</p>
-                                    ) : selectedEvent.codes.map((code) => (
-                                        <div key={code.id} className="border-2 border-gray-900 bg-gray-50 p-3">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div>
-                                                    <p className="font-mono text-lg font-black text-gray-900">{code.code}</p>
-                                                    <p className="text-xs font-bold text-gray-500">
-                                                        {code.used_count}/{code.max_uses} dipakai | exp {formatDate(code.expires_at)}
-                                                    </p>
-                                                </div>
-                                                <span className={`border border-current px-2 py-0.5 text-[10px] font-black uppercase ${code.is_active ? 'text-green-700' : 'text-gray-500'}`}>
-                                                    {code.is_active ? 'aktif' : 'off'}
-                                                </span>
-                                            </div>
-                                            <div className="mt-3 grid grid-cols-2 gap-2">
-                                                <button
-                                                    type="button"
-                                                    disabled={isPending}
-                                                    onClick={() => runAction(() => toggleTryoutEventCode(code.id, !code.is_active))}
-                                                    className="rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-xs font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:opacity-60"
-                                                >
-                                                    {code.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    disabled={isPending}
-                                                    onClick={() => setCodeToDelete(code)}
-                                                    className="rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-xs font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:opacity-60"
-                                                >
-                                                    Hapus
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        ) : (
-                            <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_220px]">
-                                <section className="border-2 border-gray-900 bg-white p-4">
-                                    <div className="mb-4">
-                                        <h3 className="font-handwriting text-2xl font-black text-gray-900">Monitoring</h3>
-                                        <p className="text-xs font-bold text-gray-600">Statistik peserta dan jadwal event.</p>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {[
-                                            ['Pendaftar', selectedEvent.participant_count],
-                                            ['Mulai', selectedEvent.session_count],
-                                            ['Selesai', selectedEvent.completed_count],
-                                            ['Lulus', selectedEvent.passed_count],
-                                        ].map(([label, value]) => (
-                                            <div key={label} className="border-2 border-gray-900 bg-white p-3">
-                                                <p className="text-xs font-bold uppercase text-gray-500">{label}</p>
-                                                <p className="text-2xl font-black text-gray-900">{value}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="mt-5 space-y-2 text-sm font-medium text-gray-700">
-                                        <p><strong>Mulai:</strong> {formatDate(selectedEvent.starts_at)}</p>
-                                        <p><strong>Tutup:</strong> {formatDate(selectedEvent.ends_at)}</p>
-                                        <p><strong>Start window:</strong> {selectedEvent.start_grace_minutes} menit</p>
-                                        <p><strong>Max peserta:</strong> {selectedEvent.max_participants || 'Tidak dibatasi'}</p>
-                                        <p><strong>Pendaftaran:</strong> {selectedEvent.requires_code ? 'Wajib kode masuk' : 'Tanpa kode'}</p>
-                                    </div>
-                                </section>
-
-                                <aside className="border-2 border-gray-900 bg-white p-4">
-                                    <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-gray-500">Action</p>
-                                    <div className="space-y-2">
-                                        <button disabled={isPending} onClick={() => runAction(() => generateTryoutEventQuestions(selectedEvent.id))} className="w-full rounded-md border-2 border-gray-900 bg-white px-3 py-2 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60">
-                                            Generate Soal
-                                        </button>
-                                        <button disabled={isPending} onClick={() => runAction(() => updateTryoutEventStatus(selectedEvent.id, 'scheduled'))} className="w-full rounded-md border-2 border-gray-900 bg-white px-3 py-2 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60">
-                                            Publish
-                                        </button>
-                                        <button disabled={isPending} onClick={() => runAction(() => updateTryoutEventStatus(selectedEvent.id, 'live'))} className="w-full rounded-md border-2 border-gray-900 bg-white px-3 py-2 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60">
-                                            Live
-                                        </button>
-                                        <button disabled={isPending} onClick={() => runAction(() => updateTryoutEventStatus(selectedEvent.id, 'closed'))} className="w-full rounded-md border-2 border-gray-900 bg-white px-3 py-2 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60">
-                                            Close
-                                        </button>
-                                        <button disabled={isPending} onClick={() => runAction(() => updateTryoutEventStatus(selectedEvent.id, 'cancelled'))} className="w-full rounded-md border-2 border-gray-900 bg-white px-3 py-2 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60">
-                                            Cancel
-                                        </button>
-                                        <a href={`/api/admin/export?type=events&format=xlsx&event_id=${selectedEvent.id}`} className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-3 py-2 font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)] transition hover:-translate-y-0.5">
-                                            <Download size={16} />
-                                            Export XLSX
-                                        </a>
-                                    </div>
-                                </aside>
-                            </div>
-                        )}
+                        </motion.div>
                     </div>
-                </div>
-            ) : null}
-
-            {eventToDelete ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-                    <div className="relative w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                        <h2 className="font-handwriting text-3xl font-black text-gray-900">Hapus Event?</h2>
-                        <p className="mt-3 text-sm font-medium leading-relaxed text-gray-700">
-                            Event <strong>{eventToDelete.title}</strong> akan dihapus permanen, termasuk pendaftaran, kode masuk, paket soal, dan session pengerjaan event ini.
-                        </p>
-                        <div className="mt-5 grid grid-cols-2 gap-3">
-                            <button onClick={() => setEventToDelete(null)} disabled={isPending} className="rounded-md border-2 border-gray-900 bg-white px-4 py-2.5 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                Batal
-                            </button>
-                            <button onClick={handleDelete} disabled={isPending} className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-4 py-2.5 font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)]">
-                                {isPending ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
-                                Hapus
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
-
-            {codeToDelete ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-                    <div className="relative w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                        <h2 className="font-handwriting text-3xl font-black text-gray-900">Hapus Kode?</h2>
-                        <p className="mt-3 text-sm font-medium leading-relaxed text-gray-700">
-                            Kode <strong>{codeToDelete.code}</strong> akan dihapus permanen. Kode yang sudah dipakai peserta akan ditolak oleh sistem.
-                        </p>
-                        <div className="mt-5 grid grid-cols-2 gap-3">
-                            <button onClick={() => setCodeToDelete(null)} disabled={isPending} className="rounded-md border-2 border-gray-900 bg-white px-4 py-2.5 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                Batal
-                            </button>
-                            <button onClick={handleDeleteCode} disabled={isPending} className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-4 py-2.5 font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)]">
-                                {isPending ? <Loader2 className="animate-spin" size={16} /> : <Trash2 size={16} />}
-                                Hapus
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+                )}
+            </AnimatePresence>
         </div>
     )
 }

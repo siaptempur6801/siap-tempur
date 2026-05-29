@@ -45,7 +45,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
     const pathname = usePathname()
 
     // Check if we're on a practice session page (mengerjakan soal atau result)
-    const isPracticeSession = pathname.includes('/cpns/dashboard/latihan/') ||
+    const isPracticeSession = pathname.includes('/cpns/dashboard/tryout/') ||
                               pathname.includes('/cpns/dashboard/result/')
 
     // If on practice session, render minimal layout without sidebar
@@ -81,7 +81,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
                     <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
                     <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
-                    <NavItem href="/cpns/dashboard/latihan" icon={<Target size={20} />} label="Tryout" badge="XP" />
+                    <NavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" badge="XP" />
                     <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Riwayat" />
 
                     <NavItem href="/cpns/dashboard/profile" icon={<User size={20} />} label="Profil" />
@@ -160,7 +160,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     <MobileNavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
                     <MobileNavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking" />
                     <MobileNavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
-                    <MobileNavItem href="/cpns/dashboard/latihan" icon={<Target size={20} />} label="Tryout" />
+                    <MobileNavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" />
                 </div>
             </nav>
         </div>

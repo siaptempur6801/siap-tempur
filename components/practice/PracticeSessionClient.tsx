@@ -3,7 +3,7 @@
 import { memo, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, LogOut, Key, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, LogOut, Key, Sparkles, X, ZoomIn } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -34,7 +34,7 @@ interface Props {
     initialMarked: Record<string, boolean>
     endTime?: string // ISO string for tryout mode
     isTryout?: boolean
-    returnTo?: 'latihan' | 'event'
+    returnTo?: 'tryout' | 'event'
 }
 
 type SessionProgressSnapshot = {
@@ -145,22 +145,71 @@ function flushProgressWithBeacon(snapshot: SessionProgressSnapshot) {
 }
 
 const QuestionPrompt = memo(function QuestionPrompt({ question }: { question: Question }) {
+    const [previewImage, setPreviewImage] = useState<string | null>(null)
+
     return (
         <>
             {question.image_url && (
-                <div className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white relative">
-                    <div className="absolute top-2 left-2 z-10 p-1.5 bg-yellow-300 border-2 border-gray-900 rounded shadow-sm transform -rotate-2">
-                        <Sparkles size={14} className="text-gray-900" />
+                <>
+                    <div 
+                        className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white relative cursor-pointer group"
+                        onClick={() => setPreviewImage(question.image_url!)}
+                    >
+                        <div className="absolute top-2 left-2 z-10 p-1.5 bg-yellow-300 border-2 border-gray-900 rounded shadow-sm transform -rotate-2">
+                            <Sparkles size={14} className="text-gray-900" />
+                        </div>
+                        <Image
+                            src={question.image_url}
+                            alt="Ilustrasi Soal"
+                            width={800}
+                            height={400}
+                            className="w-full h-auto object-contain max-h-[200px]"
+                            unoptimized
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-white px-3 py-1.5 rounded-lg border-2 border-gray-900 font-bold font-handwriting text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2">
+                                <ZoomIn size={16} /> Perbesar Gambar
+                            </div>
+                        </div>
                     </div>
-                    <Image
-                        src={question.image_url}
-                        alt="Ilustrasi Soal"
-                        width={800}
-                        height={400}
-                        className="w-full h-auto object-contain max-h-[200px]"
-                        unoptimized
-                    />
-                </div>
+                    
+                    <AnimatePresence>
+                        {previewImage && (
+                            <motion.div 
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" 
+                                onClick={() => setPreviewImage(null)}
+                            >
+                                <motion.div 
+                                    initial={{ scale: 0.95 }}
+                                    animate={{ scale: 1 }}
+                                    exit={{ scale: 0.95 }}
+                                    className="relative max-w-5xl w-full max-h-[90vh] bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col" 
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                     <button 
+                                        onClick={() => setPreviewImage(null)}
+                                        className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 transition-transform hover:scale-110 active:scale-95"
+                                     >
+                                         <X size={20} />
+                                     </button>
+                                     <div className="w-full h-full flex-1 overflow-auto flex items-center justify-center bg-white rounded-lg border-2 border-gray-900 p-2">
+                                         <Image
+                                             src={previewImage}
+                                             alt="Preview"
+                                             width={1200}
+                                             height={800}
+                                             className="max-w-full max-h-[80vh] object-contain"
+                                             unoptimized
+                                         />
+                                     </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </>
             )}
             <div className="prose dark:prose-invert max-w-none font-handwriting text-gray-900">
                 <div className="text-xl md:text-2xl leading-relaxed font-bold whitespace-pre-wrap">
@@ -182,46 +231,100 @@ const QuestionOptionCard = memo(function QuestionOptionCard({
     isSelected: boolean
     onSelect: (optionId: string) => void
 }) {
-    return (
-        <button
-            type="button"
-            onClick={() => onSelect(option.id)}
-            className={cn(
-                "w-full px-3 py-1.5 md:px-4 md:py-2 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden text-left touch-manipulation",
-                isSelected
-                    ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-[1px] translate-y-[1px]'
-                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-[2px_2px_0px_0px_rgba(59,130,246,0.2)]'
-            )}
-        >
-            {isSelected && (
-                <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10" />
-            )}
+    const [previewImage, setPreviewImage] = useState<string | null>(null)
 
-            <div className={cn(
-                "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-handwriting font-bold text-lg transition-colors",
-                isSelected
-                    ? 'border-blue-600 bg-blue-600 text-white'
-                    : 'border-gray-400 text-gray-400 group-hover:border-blue-400 group-hover:text-blue-400'
-            )}>
-                {String.fromCharCode(65 + index)}
-            </div>
-            <div className={cn(
-                "flex-1 space-y-2 text-base md:text-lg leading-relaxed font-handwriting",
-                isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
-            )}>
-                {option.image_url && (
-                    <Image
-                        src={option.image_url}
-                        alt={`Pilihan ${String.fromCharCode(65 + index)}`}
-                        width={360}
-                        height={240}
-                        unoptimized
-                        className="max-h-44 w-full max-w-sm object-contain rounded-lg border-2 border-gray-200 bg-white"
-                    />
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => onSelect(option.id)}
+                className={cn(
+                    "w-full px-3 py-1.5 md:px-4 md:py-2 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden text-left touch-manipulation",
+                    isSelected
+                        ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-px translate-y-px'
+                        : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 hover:shadow-[2px_2px_0px_0px_rgba(59,130,246,0.2)]'
                 )}
-                {option.content.trim() && <MathRenderer text={option.content} />}
-            </div>
-        </button>
+            >
+                {isSelected && (
+                    <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10" />
+                )}
+
+                <div className={cn(
+                    "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-handwriting font-bold text-lg transition-colors",
+                    isSelected
+                        ? 'border-blue-600 bg-blue-600 text-white'
+                        : 'border-gray-400 text-gray-400 group-hover:border-blue-400 group-hover:text-blue-400'
+                )}>
+                    {String.fromCharCode(65 + index)}
+                </div>
+                <div className={cn(
+                    "flex-1 space-y-2 text-base md:text-lg leading-relaxed font-handwriting",
+                    isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
+                )}>
+                    {option.image_url && (
+                        <div 
+                            className="relative max-h-44 w-full max-w-sm rounded-lg border-2 border-gray-200 bg-white overflow-hidden group/img cursor-pointer"
+                            onClick={(e) => {
+                                e.stopPropagation() // prevent selecting the option when clicking image
+                                setPreviewImage(option.image_url!)
+                            }}
+                        >
+                            <Image
+                                src={option.image_url}
+                                alt={`Pilihan ${String.fromCharCode(65 + index)}`}
+                                width={360}
+                                height={240}
+                                unoptimized
+                                className="w-full h-full object-contain max-h-44"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                <div className="bg-white p-2 rounded-full border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-gray-900">
+                                    <ZoomIn size={18} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {option.content.trim() && <MathRenderer text={option.content} />}
+                </div>
+            </button>
+
+            <AnimatePresence>
+                {previewImage && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" 
+                        onClick={() => setPreviewImage(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.95 }}
+                            className="relative max-w-5xl w-full max-h-[90vh] bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col" 
+                            onClick={e => e.stopPropagation()}
+                        >
+                             <button 
+                                onClick={() => setPreviewImage(null)}
+                                className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 transition-transform hover:scale-110 active:scale-95"
+                             >
+                                 <X size={20} />
+                             </button>
+                             <div className="w-full h-full flex-1 overflow-auto flex items-center justify-center bg-white rounded-lg border-2 border-gray-900 p-2">
+                                 <Image
+                                     src={previewImage}
+                                     alt="Preview"
+                                     width={1200}
+                                     height={800}
+                                     className="max-w-full max-h-[80vh] object-contain"
+                                     unoptimized
+                                 />
+                             </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
     )
 })
 
@@ -314,7 +417,7 @@ export default function PracticeSessionClient({
     initialMarked,
     endTime,
     isTryout = false,
-    returnTo = 'latihan'
+    returnTo = 'tryout'
 }: Props) {
     const router = useRouter()
     const [currentIndex, setCurrentIndex] = useState(initialCurrentIndex)
@@ -385,12 +488,12 @@ export default function PracticeSessionClient({
 
             if (result?.success) {
                 clearProgressFromLocalStorage(sessionId)
-                toast.success(isTryout ? 'Tryout selesai!' : 'Latihan selesai!')
-                router.push(`/cpns/dashboard/latihan/${sessionId}/result${returnTo === 'event' ? '?from=event' : ''}`)
+                toast.success(isTryout ? 'Tryout selesai!' : 'Tryout selesai!')
+                router.push(`/cpns/dashboard/tryout/${sessionId}/result${returnTo === 'event' ? '?from=event' : ''}`)
             }
         } catch (error) {
             console.error('Error finishing practice:', error)
-            toast.error('Gagal menyelesaikan latihan')
+            toast.error('Gagal menyelesaikan tryout')
         } finally {
             setFinishing(false)
         }
@@ -540,7 +643,7 @@ export default function PracticeSessionClient({
     }, [syncAnswerForQuestion])
 
     const handleAutoFinish = useCallback(async () => {
-        toast.info('Waktu habis! Ujian diselesaikan otomatis.')
+        toast.info('Waktu habis! Tryout diselesaikan otomatis.')
         await flushPendingAnswers()
         await handleFinishSession()
     }, [flushPendingAnswers, handleFinishSession])
@@ -614,7 +717,7 @@ export default function PracticeSessionClient({
             }
         }
 
-        router.push(returnTo === 'event' ? '/cpns/dashboard/event' : '/cpns/dashboard/latihan')
+        router.push(returnTo === 'event' ? '/cpns/dashboard/event' : '/cpns/dashboard/tryout')
     }
 
     // Safety check - prevent crash if no questions available
@@ -623,7 +726,7 @@ export default function PracticeSessionClient({
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center text-muted-foreground">
                     <p className="text-lg font-semibold">Tidak ada soal tersedia</p>
-                    <p className="text-sm">Silakan kembali ke halaman latihan</p>
+                    <p className="text-sm">Silakan kembali ke halaman tryout</p>
                 </div>
             </div>
         )
@@ -670,7 +773,7 @@ export default function PracticeSessionClient({
                                                 setShowMobileNav(false)
                                             }}
                                             className={cn(
-                                                "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]",
+                                                "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
                                                 currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-2 border-blue-600 z-10' : '',
                                                 marked[q.id]
                                                     ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
@@ -691,7 +794,7 @@ export default function PracticeSessionClient({
                                     onClick={() => setShowExitModal(true)}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-handwriting font-bold transition-all"
                                 >
-                                    <LogOut size={18} /> Keluar Latihan
+                                    <LogOut size={18} /> Keluar Tryout
                                 </button>
 
                                 <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
@@ -707,7 +810,7 @@ export default function PracticeSessionClient({
 
             {/* Exit Confirmation Modal */}
             {showExitModal && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                         <PaperBackground />
                         <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
@@ -715,22 +818,22 @@ export default function PracticeSessionClient({
                                 <LogOut size={32} className="text-red-600" />
                             </div>
 
-                            <h3 className="text-3xl font-bold text-gray-900">Keluar Latihan?</h3>
+                            <h3 className="text-3xl font-bold text-gray-900">Keluar Tryout?</h3>
 
                             <p className="text-lg text-gray-700 font-medium flex items-center justify-center gap-2">
-                                Progres latihan dan nomor soal terakhir akan tersimpan. Anda bisa lanjut lagi nanti dari {returnTo === 'event' ? 'halaman event' : 'dashboard'}.
+                                Progres tryout dan nomor soal terakhir akan tersimpan. Anda bisa lanjut lagi nanti dari {returnTo === 'event' ? 'halaman event' : 'dashboard'}.
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-4">
                                 <button
                                     onClick={() => setShowExitModal(false)}
-                                    className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={handleExit}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Keluar
                                 </button>
@@ -766,7 +869,7 @@ export default function PracticeSessionClient({
                                 <p className="text-xl mb-8 text-gray-700 font-medium leading-relaxed">Waktu tersisa kurang dari 5 menit nih. Gas pol selesaikan semua soalnya!</p>
                                 <button
                                     onClick={() => setShowWarning5Min(false)}
-                                    className="bg-orange-500 text-white px-10 py-3 rounded-lg border-2 border-gray-900 font-bold text-xl hover:bg-orange-600 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="bg-orange-500 text-white px-10 py-3 rounded-lg border-2 border-gray-900 font-bold text-xl hover:bg-orange-600 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Siap Mandraguna!
                                 </button>
@@ -802,7 +905,7 @@ export default function PracticeSessionClient({
                                 <p className="text-2xl mb-8 text-gray-800 font-bold leading-tight">Tinggal 1 menit lagi! Buruan klik Selesai sebelum auto-submit!</p>
                                 <button
                                     onClick={() => setShowWarning1Min(false)}
-                                    className="bg-red-600 text-white px-10 py-4 rounded-lg border-2 border-gray-900 font-bold text-2xl hover:bg-red-700 transition shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="bg-red-600 text-white px-10 py-4 rounded-lg border-2 border-gray-900 font-bold text-2xl hover:bg-red-700 transition shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     OKE OKE!!
                                 </button>
@@ -825,7 +928,7 @@ export default function PracticeSessionClient({
                                 <CheckCircle2 size={32} className="text-blue-600" />
                             </div>
 
-                            <h3 className="text-3xl font-bold text-gray-900">Selesaikan Latihan?</h3>
+                            <h3 className="text-3xl font-bold text-gray-900">Selesaikan Tryout?</h3>
 
                             <div className="w-full space-y-4 bg-white/60 border-2 border-gray-900 p-6 rounded-xl text-lg text-left shadow-inner relative">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-blue-500/10"></div>
@@ -854,13 +957,13 @@ export default function PracticeSessionClient({
                             <div className="grid grid-cols-2 gap-4 w-full mt-6">
                                 <button
                                     onClick={() => setShowConfirmModal(false)}
-                                    className="px-4 py-3 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="px-4 py-3 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={handleConfirmFinish}
-                                    className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Siap Tempur!
                                 </button>
@@ -927,7 +1030,7 @@ export default function PracticeSessionClient({
                                 ) : (
                                     <div className="hidden md:flex px-4 py-1.5 bg-white border-2 border-gray-900 rounded-full text-xs md:text-sm font-handwriting font-bold items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         <Clock size={14} />
-                                        <span>Latihan Santai</span>
+                                        <span>Tryout Santai</span>
                                     </div>
                                 )}
 
@@ -989,7 +1092,7 @@ export default function PracticeSessionClient({
                             <button
                                 onClick={handlePreviousQuestion}
                                 disabled={currentIndex === 0}
-                                className="flex items-center justify-center w-12 h-12 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 disabled:opacity-50 transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                className="flex items-center justify-center w-12 h-12 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 disabled:opacity-50 transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                             >
                                 <ChevronLeft size={24} />
                             </button>
@@ -998,7 +1101,7 @@ export default function PracticeSessionClient({
                                 <button
                                     onClick={onFinishClick}
                                     disabled={finishing}
-                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     {finishing ? '...' : 'Selesai'}
                                     <CheckCircle2 size={20} />
@@ -1006,7 +1109,7 @@ export default function PracticeSessionClient({
                             ) : (
                                 <button
                                     onClick={handleNextQuestion}
-                                    className="flex items-center justify-center w-12 h-12 bg-gray-900 text-white rounded-xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(30,58,138,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="flex items-center justify-center w-12 h-12 bg-gray-900 text-white rounded-xl border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(30,58,138,0.3)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     <ChevronRight size={24} />
                                 </button>
@@ -1019,7 +1122,7 @@ export default function PracticeSessionClient({
                         <button
                             onClick={handlePreviousQuestion}
                             disabled={currentIndex === 0}
-                            className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-handwriting font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                            className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-handwriting font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                         >
                             <ChevronLeft size={20} />
                             Sebelumnya
@@ -1029,7 +1132,7 @@ export default function PracticeSessionClient({
                             <button
                                 onClick={onFinishClick}
                                 disabled={finishing}
-                                className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)]"
+                                className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)]"
                             >
                                 {finishing ? 'Menyimpan...' : 'Selesai & Hitung'}
                                 <CheckCircle2 size={20} />
@@ -1037,7 +1140,7 @@ export default function PracticeSessionClient({
                         ) : (
                             <button
                                 onClick={handleNextQuestion}
-                                className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg hover:bg-gray-800 transition font-handwriting font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg hover:bg-gray-800 transition font-handwriting font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] active:translate-x-px active:translate-y-px active:shadow-none"
                             >
                                 Selanjutnya
                                 <ChevronRight size={20} />
@@ -1070,7 +1173,7 @@ export default function PracticeSessionClient({
                                         key={q.id}
                                         onClick={() => handleNavigateToIndex(idx)}
                                         className={cn(
-                                            "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px]",
+                                            "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
                                             currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-2 border-blue-600 z-10' : '',
                                             marked[q.id]
                                                 ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
@@ -1089,7 +1192,7 @@ export default function PracticeSessionClient({
                                 onClick={() => setShowExitModal(true)}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-handwriting font-bold transition-all text-base dashed"
                             >
-                                <LogOut size={18} /> Keluar Latihan
+                                <LogOut size={18} /> Keluar Tryout
                             </button>
                             <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>

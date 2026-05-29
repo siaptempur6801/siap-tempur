@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfileClient from '@/components/profile/ProfileClient'
 import { getLevel } from '@/lib/dashboard'

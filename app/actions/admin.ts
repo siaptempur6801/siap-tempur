@@ -1,9 +1,10 @@
 'use server'
 
-import { createAdminClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { isAdmin } from '@/utils/admin'
-import { OPTION_LABELS, type OptionLabel, type QuestionType } from '@/lib/admin-dashboard'
+import { isAdmin } from '@/lib/utils/admin'
+import { OPTION_LABELS, type QuestionType } from '@/lib/admin-dashboard'
+import { QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
 
 interface TryoutConfigurationPayload {
     id: string
@@ -32,15 +33,6 @@ function readQuestionFormPayload(formData: FormData): QuestionFormPayload {
         correctAnswer: String(formData.get('correct_answer') || '').trim(),
         imageUrl: String(formData.get('image_url') || '').trim() || null,
     }
-}
-
-function validateQuestionFormPayload(payload: QuestionFormPayload) {
-    if (!payload.content) return 'Pertanyaan wajib diisi'
-    if (!payload.category) return 'Materi wajib dipilih'
-    if (!payload.explanation) return 'Pembahasan wajib diisi'
-    if (!OPTION_LABELS.includes(payload.correctAnswer as OptionLabel)) return 'Kunci jawaban tidak valid'
-
-    return null
 }
 
 function buildOptionRows(questionId: string, formData: FormData, type: QuestionType, correctAnswer: string) {
@@ -109,11 +101,12 @@ export async function createQuestion(formData: FormData) {
         return { success: false, message: 'Unauthorized' }
     }
 
-    const payload = readQuestionFormPayload(formData)
-    const validationError = validateQuestionFormPayload(payload)
-    if (validationError) {
-        return { success: false, message: validationError }
+    const rawPayload = readQuestionFormPayload(formData)
+    const parsed = QuestionFormSchema.safeParse(rawPayload)
+    if (!parsed.success) {
+        return { success: false, message: parsed.error.issues[0].message }
     }
+    const payload = parsed.data
 
     const supabase = await createAdminClient()
 
@@ -162,11 +155,12 @@ export async function updateQuestion(id: string, formData: FormData) {
         return { success: false, message: 'Unauthorized' }
     }
 
-    const payload = readQuestionFormPayload(formData)
-    const validationError = validateQuestionFormPayload(payload)
-    if (validationError) {
-        return { success: false, message: validationError }
+    const rawPayload = readQuestionFormPayload(formData)
+    const parsed = QuestionFormSchema.safeParse(rawPayload)
+    if (!parsed.success) {
+        return { success: false, message: parsed.error.issues[0].message }
     }
+    const payload = parsed.data
 
     let optionsToInsert
     try {
@@ -468,25 +462,29 @@ export async function createVoucher(formData: FormData) {
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const code = String(formData.get('code') || '').trim().toUpperCase()
-    const quotaAmount = Number(formData.get('quota_amount') || 0)
-    const maxUses = Number(formData.get('max_uses') || 0)
-    const expiresAt = String(formData.get('expires_at') || '').trim()
-    const isActive = formData.get('is_active') === 'on'
+    const rawData = {
+        code: String(formData.get('code') || '').trim(),
+        quota_amount: Number(formData.get('quota_amount') || 0),
+        max_uses: Number(formData.get('max_uses') || 0),
+        expires_at: String(formData.get('expires_at') || '').trim() || null,
+        is_active: formData.get('is_active') === 'on',
+    }
 
-    if (!code) return { success: false, message: 'Kode voucher wajib diisi' }
-    if (!Number.isInteger(quotaAmount) || quotaAmount < 1) return { success: false, message: 'Jumlah token harus minimal 1' }
-    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Maksimal penggunaan harus minimal 1' }
+    const parsed = VoucherFormSchema.safeParse(rawData)
+    if (!parsed.success) {
+        return { success: false, message: parsed.error.issues[0].message }
+    }
+    const data = parsed.data
 
     const supabase = await createAdminClient()
     const { error } = await supabase
         .from('vouchers')
         .insert({
-            code,
-            quota_amount: quotaAmount,
-            max_uses: maxUses,
-            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
-            is_active: isActive,
+            code: data.code,
+            quota_amount: data.quota_amount,
+            max_uses: data.max_uses,
+            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
+            is_active: data.is_active,
         })
 
     if (error) return { success: false, message: error.message }
@@ -515,16 +513,21 @@ export async function updateVoucher(id: string, formData: FormData) {
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const code = String(formData.get('code') || '').trim().toUpperCase()
-    const quotaAmount = Number(formData.get('quota_amount') || 0)
-    const maxUses = Number(formData.get('max_uses') || 0)
-    const expiresAt = String(formData.get('expires_at') || '').trim()
-    const isActive = formData.get('is_active') === 'on'
+    const rawData = {
+        code: String(formData.get('code') || '').trim(),
+        quota_amount: Number(formData.get('quota_amount') || 0),
+        max_uses: Number(formData.get('max_uses') || 0),
+        expires_at: String(formData.get('expires_at') || '').trim() || null,
+        is_active: formData.get('is_active') === 'on',
+    }
 
     if (!id) return { success: false, message: 'Voucher tidak valid' }
-    if (!code) return { success: false, message: 'Kode voucher wajib diisi' }
-    if (!Number.isInteger(quotaAmount) || quotaAmount < 1) return { success: false, message: 'Jumlah token harus minimal 1' }
-    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Maksimal penggunaan harus minimal 1' }
+
+    const parsed = VoucherFormSchema.safeParse(rawData)
+    if (!parsed.success) {
+        return { success: false, message: parsed.error.issues[0].message }
+    }
+    const data = parsed.data
 
     const supabase = await createAdminClient()
     const { data: voucher } = await supabase
@@ -533,18 +536,18 @@ export async function updateVoucher(id: string, formData: FormData) {
         .eq('id', id)
         .single()
 
-    if (voucher && maxUses < voucher.used_count) {
+    if (voucher && data.max_uses < voucher.used_count) {
         return { success: false, message: `Max penggunaan tidak boleh kurang dari klaim saat ini (${voucher.used_count})` }
     }
 
     const { error } = await supabase
         .from('vouchers')
         .update({
-            code,
-            quota_amount: quotaAmount,
-            max_uses: maxUses,
-            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
-            is_active: isActive,
+            code: data.code,
+            quota_amount: data.quota_amount,
+            max_uses: data.max_uses,
+            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
+            is_active: data.is_active,
             updated_at: new Date().toISOString(),
         })
         .eq('id', id)
@@ -602,6 +605,9 @@ function readTryoutEventForm(formData: FormData) {
     const resultVisibleAt = String(formData.get('result_visible_at') || '').trim()
     const explanationVisibleAt = String(formData.get('explanation_visible_at') || '').trim()
     const requiresCode = formData.get('requires_code') === 'on'
+    const isPaid = formData.get('is_paid') === 'on' || formData.get('is_paid') === 'true'
+    const priceRaw = String(formData.get('price') || '0').trim()
+    const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
 
     return {
         title,
@@ -612,33 +618,23 @@ function readTryoutEventForm(formData: FormData) {
         duration_minutes: Number.isInteger(durationMinutes) ? durationMinutes : 100,
         max_participants: maxParticipantsRaw ? Number(maxParticipantsRaw) : null,
         requires_code: requiresCode,
+        is_paid: isPaid,
+        price,
         result_visible_at: resultVisibleAt ? new Date(resultVisibleAt).toISOString() : null,
         explanation_visible_at: explanationVisibleAt ? new Date(explanationVisibleAt).toISOString() : null,
     }
 }
 
-function validateTryoutEventPayload(payload: ReturnType<typeof readTryoutEventForm>) {
-    if (!payload.title) return 'Nama event wajib diisi'
-    if (!payload.starts_at) return 'Jadwal mulai wajib diisi'
-    if (!payload.ends_at) return 'Jadwal tutup wajib diisi'
-    if (new Date(payload.ends_at).getTime() <= new Date(payload.starts_at).getTime()) {
-        return 'Jadwal tutup harus setelah jadwal mulai'
-    }
-    if (!Number.isInteger(payload.start_grace_minutes) || payload.start_grace_minutes < 0) return 'Start window tidak valid'
-    if (!Number.isInteger(payload.duration_minutes) || payload.duration_minutes < 1) return 'Durasi tidak valid'
-    if (payload.max_participants !== null && (!Number.isInteger(payload.max_participants) || payload.max_participants < 1)) {
-        return 'Max peserta tidak valid'
-    }
-    return null
-}
+// Validation is handled by TryoutEventFormSchema
 
 export async function createTryoutEvent(formData: FormData) {
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const payload = readTryoutEventForm(formData)
-    const validationError = validateTryoutEventPayload(payload)
-    if (validationError) return { success: false, message: validationError }
+    const rawPayload = readTryoutEventForm(formData)
+    const parsed = TryoutEventFormSchema.safeParse(rawPayload)
+    if (!parsed.success) return { success: false, message: parsed.error.issues[0].message }
+    const payload = parsed.data
 
     const supabase = await createAdminClient()
     const { error } = await supabase
@@ -655,9 +651,10 @@ export async function updateTryoutEvent(id: string, formData: FormData) {
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const payload = readTryoutEventForm(formData)
-    const validationError = validateTryoutEventPayload(payload)
-    if (validationError) return { success: false, message: validationError }
+    const rawPayload = readTryoutEventForm(formData)
+    const parsed = TryoutEventFormSchema.safeParse(rawPayload)
+    if (!parsed.success) return { success: false, message: parsed.error.issues[0].message }
+    const payload = parsed.data
 
     const supabase = await createAdminClient()
     const { error } = await supabase
@@ -745,25 +742,26 @@ export async function createTryoutEventCode(eventId: string, formData: FormData)
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-    const code = String(formData.get('code') || '').trim().toUpperCase()
-    const maxUses = Number(formData.get('max_uses') || 1)
-    const expiresAt = String(formData.get('expires_at') || '').trim()
-
     if (!eventId) return { success: false, message: 'Event tidak valid' }
-    if (!code) return { success: false, message: 'Kode masuk wajib diisi' }
-    if (!/^[A-Z0-9-]{4,32}$/.test(code)) {
-        return { success: false, message: 'Kode hanya boleh huruf, angka, strip, minimal 4 karakter' }
+
+    const rawData = {
+        code: String(formData.get('code') || '').trim().toUpperCase(),
+        max_uses: Number(formData.get('max_uses') || 1),
+        expires_at: String(formData.get('expires_at') || '').trim() || null,
     }
-    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Limit penggunaan kode tidak valid' }
+
+    const parsed = TryoutEventCodeSchema.safeParse(rawData)
+    if (!parsed.success) return { success: false, message: parsed.error.issues[0].message }
+    const data = parsed.data
 
     const supabase = await createAdminClient()
     const { error } = await supabase
         .from('tryout_event_codes')
         .insert({
             event_id: eventId,
-            code,
-            max_uses: maxUses,
-            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+            code: data.code,
+            max_uses: data.max_uses,
+            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
         })
 
     if (error) return { success: false, message: error.message }

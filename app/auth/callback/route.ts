@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
+import { env } from '@/lib/env'
 
 function sanitizeNext(rawNext: string | null) {
     if (!rawNext || !rawNext.startsWith('/')) {
@@ -17,8 +18,8 @@ function createRouteClient(request: NextRequest) {
     const cookiesToApply: Array<{ name: string; value: string; options?: Record<string, unknown> }> = []
 
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        env.supabaseUrl(),
+        env.supabaseAnonKey(),
         {
             cookies: {
                 getAll() {
@@ -43,6 +44,7 @@ function createRouteClient(request: NextRequest) {
 function renderCallbackShell(request: NextRequest) {
     const next = sanitizeNext(request.nextUrl.searchParams.get('next'))
     const origin = request.nextUrl.origin
+    const nonce = request.headers.get('x-nonce') ?? undefined
     const html = `<!doctype html>
 <html lang="id">
   <head>
@@ -95,7 +97,7 @@ function renderCallbackShell(request: NextRequest) {
       <h1>Memproses Autentikasi</h1>
       <p id="message">Menyiapkan sesi akun Anda...</p>
     </main>
-    <script>
+    <script${nonce ? ` nonce="${nonce}"` : ''}>
       const messageEl = document.getElementById('message');
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const searchParams = new URLSearchParams(window.location.search);
@@ -173,17 +175,28 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     const { origin } = request.nextUrl
-    const { access_token, refresh_token, next } = await request.json()
+    let body: unknown
 
-    if (!access_token || !refresh_token) {
+    try {
+        body = await request.json()
+    } catch {
+        return NextResponse.json({ message: 'invalid_json' }, { status: 400 })
+    }
+
+    const payload = body && typeof body === 'object' ? body as Record<string, unknown> : {}
+    const accessToken = typeof payload.access_token === 'string' ? payload.access_token : ''
+    const refreshToken = typeof payload.refresh_token === 'string' ? payload.refresh_token : ''
+    const next = typeof payload.next === 'string' ? payload.next : null
+
+    if (!accessToken || !refreshToken) {
         return NextResponse.json({ message: 'missing_auth_data' }, { status: 400 })
     }
 
     const { supabase, applyCookies } = createRouteClient(request)
-    const redirectTo = sanitizeNext(typeof next === 'string' ? next : null)
+    const redirectTo = sanitizeNext(next)
     const { error } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
+        access_token: accessToken,
+        refresh_token: refreshToken,
     })
 
     if (error) {

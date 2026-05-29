@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle, FileSpreadsheet, Loader2, Upload, X } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import { AlertTriangle, CheckCircle, FileSpreadsheet, Loader2, Upload } from 'lucide-react'
 import { importQuestionsFromExcel } from '@/app/actions/admin'
+import { parseCsvRows } from '@/lib/csv'
+import Modal from '@/components/ui/Modal'
 
 interface ParsedQuestion {
     type: 'TWK' | 'TIU' | 'TKP'
@@ -30,6 +31,8 @@ interface ParsedQuestion {
 }
 
 const VALID_TYPES = ['TWK', 'TIU', 'TKP']
+const MAX_IMPORT_FILE_SIZE = 2 * 1024 * 1024
+const MAX_IMPORT_ROWS = 1000
 
 const VALID_SUB_CATEGORIES: Record<string, string[]> = {
     TWK: ['Nasionalisme', 'Integritas', 'Bela Negara', 'Pilar Negara', 'Bahasa Negara'],
@@ -200,20 +203,31 @@ export default function ExcelImportDialog() {
     }
 
     const processFile = useCallback((file: File) => {
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            setErrors(['File harus berformat .csv'])
+            return
+        }
+
+        if (file.size > MAX_IMPORT_FILE_SIZE) {
+            setErrors(['Ukuran file maksimal 2 MB'])
+            return
+        }
+
         setFileName(file.name)
         setResult(null)
         setErrors([])
 
-        const reader = new FileReader()
-        reader.onload = (event) => {
-            try {
-                const data = new Uint8Array(event.target?.result as ArrayBuffer)
-                const workbook = XLSX.read(data, { type: 'array' })
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet) as Record<string, unknown>[]
+        file.text()
+            .then((text) => {
+                const jsonData = parseCsvRows(text)
 
                 if (jsonData.length === 0) {
                     setErrors(['File kosong atau format tidak sesuai'])
+                    return
+                }
+
+                if (jsonData.length > MAX_IMPORT_ROWS) {
+                    setErrors([`Maksimal import ${MAX_IMPORT_ROWS} baris per file`])
                     return
                 }
 
@@ -232,12 +246,10 @@ export default function ExcelImportDialog() {
 
                 setParsedData(validQuestions)
                 setErrors(nextErrors)
-            } catch {
-                setErrors(['Gagal membaca file. Pastikan file adalah .xlsx yang valid.'])
-            }
-        }
-
-        reader.readAsArrayBuffer(file)
+            })
+            .catch(() => {
+                setErrors(['Gagal membaca file. Pastikan file adalah .csv yang valid.'])
+            })
     }, [])
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,24 +310,17 @@ export default function ExcelImportDialog() {
                 className="flex items-center gap-2 rounded-md border-2 border-gray-900 bg-white px-5 py-3 font-bold text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 active:translate-y-0"
             >
                 <FileSpreadsheet size={20} />
-                Import Excel
+                Import CSV
             </button>
 
-            {isOpen ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-                    <div className="max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-2xl border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-2xl font-bold text-gray-900">Import Soal dari Excel</h2>
-                            <button
-                                onClick={handleClose}
-                                className="rounded-lg p-2 transition hover:bg-gray-100"
-                            >
-                                <X size={20} />
-                            </button>
-                        </div>
-
+            <Modal
+                isOpen={isOpen}
+                onClose={handleClose}
+                title="Import Soal dari CSV"
+                className="max-w-3xl"
+            >
                         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                            <p className="mb-2 text-sm font-medium text-blue-800">Format kolom Excel yang didukung:</p>
+                            <p className="mb-2 text-sm font-medium text-blue-800">Format kolom CSV yang didukung:</p>
                             <code className="block break-all rounded border border-blue-200 bg-white p-2 text-[10px] text-blue-700 md:text-xs">
                                 type | sub_category | content | image_url | explanation | option_a | option_a_image_url | option_b | option_b_image_url | option_c | option_c_image_url | option_d | option_d_image_url | option_e | option_e_image_url | correct_answer | score_a | score_b | score_c | score_d | score_e
                             </code>
@@ -326,7 +331,7 @@ export default function ExcelImportDialog() {
                                 <p>- TKP wajib isi `score_a` sampai `score_e` dengan nilai 1-5. `correct_answer` boleh dikosongkan.</p>
                                 <p className="pt-2">
                                     <a
-                                        href="/template_soal_skd.xlsx"
+                                        href="/template_soal_skd.csv"
                                         download
                                         className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 py-1.5 font-bold transition hover:bg-blue-100"
                                     >
@@ -359,15 +364,15 @@ export default function ExcelImportDialog() {
                             ) : (
                                 <>
                                     <p className="font-medium text-gray-600">
-                                        Drag & drop file <strong>.xlsx</strong> atau klik untuk memilih
+                                        Drag & drop file <strong>.csv</strong> atau klik untuk memilih
                                     </p>
-                                    <p className="mt-1 text-sm text-gray-400">Maksimum ukuran file: 10MB</p>
+                                    <p className="mt-1 text-sm text-gray-400">Maksimum ukuran file: 2MB</p>
                                 </>
                             )}
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept=".xlsx,.xls"
+                                accept=".csv,text/csv"
                                 onChange={handleFileChange}
                                 className="hidden"
                             />
@@ -486,9 +491,7 @@ export default function ExcelImportDialog() {
                                 </p>
                             </div>
                         ) : null}
-                    </div>
-                </div>
-            ) : null}
+            </Modal>
         </>
     )
 }

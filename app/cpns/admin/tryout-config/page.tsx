@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import TryoutConfigClient from '@/components/admin/TryoutConfigClient'

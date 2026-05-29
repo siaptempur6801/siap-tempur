@@ -104,8 +104,8 @@ export default function DashboardClient({ data, greeting }: Props) {
 
     const hasActiveSession = Boolean(data.activeSession)
     const primaryCtaTitle = hasActiveSession
-        ? 'Lanjutkan Ujian'
-        : 'Mulai Latihan'
+        ? 'Lanjutkan Tryout'
+        : 'Mulai Tryout'
     const primaryCtaDescription = hasActiveSession
         ? 'Sesi tryout kamu masih berjalan'
         : 'Asah kemampuan TWK, TIU, TKP'
@@ -163,9 +163,9 @@ export default function DashboardClient({ data, greeting }: Props) {
 
                         {/* Two Columns Layout for Primary Actions */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
-                            {/* Main CTA: Latihan */}
+                            {/* Main CTA: Tryout */}
                             <Link
-                                href="/cpns/dashboard/latihan"
+                                href="/cpns/dashboard/tryout"
                                 className="group relative p-8 bg-blue-600 text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex flex-col justify-between min-h-[160px]"
                             >
                                 <div>
@@ -223,7 +223,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                                     <div className="p-2 bg-green-100 border-2 border-gray-900 text-green-700 rounded-md">
                                         <TrendingUp className="w-6 h-6" />
                                     </div>
-                                    <h3 className="font-bold text-2xl text-gray-900">Hasil Ujian</h3>
+                                    <h3 className="font-bold text-2xl text-gray-900">Hasil Tryout</h3>
                                 </div>
 
                                 {/* Tab Switcher */}
@@ -342,7 +342,7 @@ export default function DashboardClient({ data, greeting }: Props) {
 
                                         <div className="pt-2">
                                             <Link
-                                                href={`/cpns/dashboard/latihan/${(activeTab === 'last' ? data.lastExam : data.bestExam)?.id}/result`}
+                                                href={`/cpns/dashboard/tryout/${(activeTab === 'last' ? data.lastExam : data.bestExam)?.id}/result`}
                                                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
                                             >
                                                 Lihat Pembahasan Lengkap
@@ -355,12 +355,12 @@ export default function DashboardClient({ data, greeting }: Props) {
                                         <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
                                             <BarChart3 className="w-8 h-8 text-gray-400" />
                                         </div>
-                                        <h3 className="font-bold text-lg text-gray-900 mb-1">Belum Ada Riwayat Ujian</h3>
+                                        <h3 className="font-bold text-lg text-gray-900 mb-1">Belum Ada Riwayat Tryout</h3>
                                         <p className="text-gray-500 text-sm max-w-xs mx-auto mb-6">
-                                            Kamu belum mengerjakan Tryout atau Latihan Soal. Yuk mulai sekarang!
+                                            Kamu belum mengerjakan Tryout atau Tryout Soal. Yuk mulai sekarang!
                                         </p>
-                                        <Link href="/cpns/dashboard/latihan" className="px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">
-                                            Mulai Ujian Pertama
+                                        <Link href="/cpns/dashboard/tryout" className="px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">
+                                            Mulai Tryout Pertama
                                         </Link>
                                     </div>
                                 )}
@@ -440,7 +440,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                     {/* CALLOUT CARD */}
                     <div className="p-4 bg-blue-50 border-2 border-blue-200 border-dashed text-blue-700 font-bold text-sm leading-relaxed relative">
                         <Sparkles className="absolute -top-3 -right-3 w-8 h-8 text-blue-400 rotate-12 opacity-50" />
-                        "Kunci kelulusan SKD adalah KONSISTENSI. Luangkan waktu setiap hari untuk latihan!"
+                        "Kunci kelulusan SKD adalah KONSISTENSI. Luangkan waktu setiap hari untuk tryout!"
                     </div>
                 </motion.div>
             </div>

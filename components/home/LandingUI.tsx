@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Section } from "@/components/ui/Section";
 import { cn } from "@/lib/utils";
+import { faqItems, cpnsSchema, testimonials } from "@/lib/data/landing";
 
 
 
@@ -31,52 +32,6 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
         }
     };
 
-    const faqItems = [
-        {
-            q: "Apa itu Token dan bagaimana cara kerjanya?",
-            a: "Token = 1x akses tryout SKD lengkap (110 soal TWK+TIU+TKP). Beli → pilih tryout → langsung kerjain. Simpel. Dan yang paling penting: token kamu gak pernah expired, jadi bisa dipakai kapanpun kamu siap."
-        },
-        {
-            q: "Seberapa akurat soal dan sistem penilaiannya?",
-            a: "Soal disusun berdasarkan kisi-kisi resmi SKD BKN dengan bobot penilaian yang sama persis (TWK 5-5-5, TIU 5-5-5, TKP 1-2-3-4-5). Passing grade juga sesuai standar BKN, jadi kamu bisa benar-benar ukur kesiapanmu."
-        },
-        {
-            q: "Bisa diakses dari HP?",
-            a: "Bisa! Kamu bisa latihan dari HP, tablet, atau laptop. Tapi kalau mau simulasi yang paling mendekati situasi ujian nyata, kami sarankan pakai laptop/PC karena hari H juga pakai komputer."
-        },
-        {
-            q: "Bagaimana cara pembayaran?",
-            a: "Cukup scan QRIS — bisa pakai GoPay, OVO, Dana, ShopeePay, atau m-banking apapun. Bayar selesai, token langsung aktif dalam hitungan detik. Tanpa ribet!"
-        },
-        {
-            q: "Apakah ada pembahasan setiap soal?",
-            a: "Ada! Setelah tryout selesai, kamu langsung dapat: pembahasan lengkap setiap soal, analisis skor per subtes (TWK/TIU/TKP), plus ranking kamu dibanding peserta lain se-Indonesia."
-        },
-        {
-            q: "Kenapa harus beli paket, bukan satuan?",
-            a: "Riset menunjukkan butuh minimal 3-5x latihan untuk benar-benar siap SKD. Paket 5x token cuma Rp 8k/tryout (hemat Rp 10.000 dari harga satuan). Investasi kecil untuk masa depan ASN-mu!"
-        }
-    ];
-
-    const cpnsSchema = {
-        "@context": "https://schema.org",
-        "@type": "Course",
-        "name": "Tryout SKD CPNS 2026 Siap Tempur",
-        "description": "Simulasi ujian SKD CPNS dengan sistem CAT BKN asli. Materi TWK, TIU, TKP, dan ranking nasional.",
-        "provider": {
-            "@type": "Organization",
-            "name": "Siap Tempur",
-            "sameAs": "https://siaptempur.id"
-        },
-        "offers": {
-            "@type": "Offer",
-            "category": "Education",
-            "price": "8000.00",
-            "priceCurrency": "IDR",
-            "availability": "https://schema.org/InStock"
-        }
-    };
-
     return (
         <main className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 selection:bg-yellow-200 selection:text-black overflow-x-hidden">
             <StructuredData data={cpnsSchema} />
@@ -87,7 +42,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
 
 
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="flex flex-col items-start group cursor-pointer pl-0 md:pl-0">
-                        <span className="text-2xl font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight">
+                        <span className="text-2xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
                             CPNS & KEDINASAN
                         </span>
                         <span className="text-sm font-handwriting font-bold text-gray-500 ml-1 -mt-1 group-hover:text-gray-900 transition-colors">
@@ -160,7 +115,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                 </nav>
             </header>
 
-            {/* --- HERO SECTION (Kertas Ujian) --- */}
+            {/* --- HERO SECTION (Kertas Tryout) --- */}
             <Section paper className="pt-32 pb-32">
                 <div className="text-center relative z-10">
                     {/* Label Stabilo */}
@@ -169,7 +124,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     </Badge>
 
                     <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                        Latihan SKD Sampai Lulus, <br />
+                        Tryout SKD Sampai Lulus, <br />
                         <span className="text-blue-600">Bukan</span> Sampai <br />
                         <span className="relative inline-block mt-2">
                             Dompet Tipis.
@@ -183,7 +138,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto mb-10 font-handwriting leading-relaxed">
                         Tryout SKD dengan <strong>sistem penilaian standar CAT BKN</strong> — mulai dari
                         <span className="bg-green-200 px-1 mx-1">Rp 8.000/tryout.</span>
-                        Beli ketengan, langsung latihan. Tanpa langganan, tanpa ribet.
+                        Beli ketengan, langsung tryout. Tanpa langganan, tanpa ribet.
                     </p>
 
                     <div className="flex flex-col items-center gap-8">
@@ -193,7 +148,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                                 onClick={() => scrollToSection("products")}
                                 className="w-full sm:w-auto"
                             >
-                                Mulai Latihan Sekarang <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                                Mulai Tryout Sekarang <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                             </Button>
 
                             <Button
@@ -213,7 +168,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
             <Section id="features" dashedBorder="both" pattern="grid" className="bg-white">
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <h2 className="font-handwriting text-5xl font-bold mb-4">Kenapa Ribuan Peserta Pilih Sini?</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">Karena yang kaget di hari H itu yang gak pernah latihan serius.</p>
+                    <p className="font-handwriting text-2xl text-gray-600">Karena yang kaget di hari H itu yang gak pernah tryout serius.</p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">
@@ -232,7 +187,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                             <Timer className="w-12 h-12 text-red-500 rotate-6" strokeWidth={2.5} />
                         </div>
                         <h3 className="font-handwriting text-2xl font-bold mb-2">Timer 100 Menit Berjalan</h3>
-                        <p className="text-gray-700">110 soal, 100 menit. Latihan di sini = latihan manajemen waktu yang menentukan lolos atau gagal di CAT BKN nanti.</p>
+                        <p className="text-gray-700">110 soal, 100 menit. Tryout di sini = simulasi manajemen waktu yang menentukan lolos atau gagal di CAT BKN nanti.</p>
                     </Card>
 
                     {/* Card 3 */}
@@ -252,8 +207,8 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     <Badge variant="blue" className="mb-4">
                         <Eye className="w-5 h-5" /> Sneak Peek!
                     </Badge>
-                        <h2 className="font-handwriting text-5xl font-bold mb-4">Begini Rasanya Latihan di Sini</h2>
-                        <p className="font-handwriting text-2xl text-gray-600">Sistem penilaian sama persis dengan CAT BKN. Bedanya, ini latihan — salah di sini gratis, salah di sana hilang kursi ASN.</p>
+                        <h2 className="font-handwriting text-5xl font-bold mb-4">Begini Rasanya Tryout di Sini</h2>
+                        <p className="font-handwriting text-2xl text-gray-600">Sistem penilaian sama persis dengan CAT BKN. Bedanya, ini tryout — salah di sini gratis, salah di sana hilang kursi ASN.</p>
                     </div>
 
                     {/* Exam Mockup Container */}
@@ -334,7 +289,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                                                     type="button"
                                                     onClick={() => setSelectedOption(opt.key)}
                                                     className={`w-full p-3 md:p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 cursor-pointer text-left ${isSelected
-                                                        ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-[1px] translate-y-[1px] relative overflow-hidden'
+                                                        ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-px translate-y-px relative overflow-hidden'
                                                         : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'
                                                         }`}
                                                 >
@@ -434,7 +389,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
                     {/* Paket 1 */}
-                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
+                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px]">
                         <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PERINTIS</span>
                         <div className="flex items-end gap-1 mb-6">
                             <span className="text-2xl font-bold mb-2">Rp</span>
@@ -480,7 +435,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     </Card>
 
                     {/* Paket 3 */}
-                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
+                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px]">
                         <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PASUKAN</span>
                         <div className="flex items-end gap-1 mb-6">
                             <span className="text-2xl font-bold mb-2">Rp</span>
@@ -489,7 +444,7 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                         <Badge variant="green" className="mb-8">10x TOKEN TRYOUT</Badge>
                         <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
                             <li className="flex items-center gap-3 text-green-600 font-bold"><Sparkles size={20} /> Persiapan Maksimal</li>
-                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Latihan Tiap Minggu</li>
+                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Tryout Tiap Minggu</li>
                             <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Ranking Terupdate</li>
                             <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Hemat Rp 25.000!</li>
                         </ul>
@@ -511,47 +466,26 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {/* Testi 1 */}
-                    <Card interactive className="p-8">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 bg-blue-100 border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl">👨‍💼</div>
-                            <div>
-                                <h4 className="font-handwriting text-xl font-bold">Rizky - Bekasi</h4>
-                                <div className="flex text-yellow-500"><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /></div>
+                    {testimonials.map((testi, i) => (
+                        <Card key={i} interactive className={`p-8 ${testi.rotateClass}`}>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className={`w-16 h-16 ${testi.bgClass} border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl`}>
+                                    {testi.avatar}
+                                </div>
+                                <div>
+                                    <h4 className="font-handwriting text-xl font-bold">{testi.name}</h4>
+                                    <div className="flex text-yellow-500">
+                                        {[...Array(5)].map((_, idx) => (
+                                            <Sparkles key={idx} size={16} fill="currentColor" />
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <p className="font-handwriting text-xl text-gray-700 italic leading-relaxed">
-                            "Membantu banget pas manajemen waktu. Pas hari H beneran gak kaget lagi sama timer yang jalan terus. Skor TIU-ku naik drastis!"
-                        </p>
-                    </Card>
-
-                    {/* Testi 2 */}
-                    <Card interactive className="p-8 rotate-1">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 bg-pink-100 border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl">👩‍🏫</div>
-                            <div>
-                                <h4 className="font-handwriting text-xl font-bold">Dina - Surabaya</h4>
-                                <div className="flex text-yellow-500"><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /></div>
-                            </div>
-                        </div>
-                        <p className="font-handwriting text-xl text-gray-700 italic leading-relaxed">
-                            "Pembahasannya gampang dimengerti, gak bertele-tele. Fitur ranking nasionalnya bikin makin semangat buat ngejar skor tertinggi."
-                        </p>
-                    </Card>
-
-                    {/* Testi 3 */}
-                    <Card interactive className="p-8 rotate-[-1deg]">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 bg-green-100 border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl">🧑‍💻</div>
-                            <div>
-                                <h4 className="font-handwriting text-xl font-bold">Fajar - Medan</h4>
-                                <div className="flex text-yellow-500"><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /><Sparkles size={16} fill="currentColor" /></div>
-                            </div>
-                        </div>
-                        <p className="font-handwriting text-xl text-gray-700 italic leading-relaxed">
-                            "Sistem CAT-nya mirip banget sama aslinya. Pas tes beneran kerasa kayak lagi ngerjain tryout di Siap Tempur aja. Akhirnya lolos tahun ini!"
-                        </p>
-                    </Card>
+                            <p className="font-handwriting text-xl text-gray-700 italic leading-relaxed">
+                                {testi.text}
+                            </p>
+                        </Card>
+                    ))}
                 </div>
             </Section>
 

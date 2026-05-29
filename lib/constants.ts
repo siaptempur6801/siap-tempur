@@ -42,7 +42,7 @@ export const LEVEL_THRESHOLDS = [
     { xp: 800, level: 5, name: 'Pejuang SKD' },
     { xp: 1200, level: 6, name: 'Warrior Muda' },
     { xp: 1800, level: 7, name: 'Rising Star' },
-    { xp: 2500, level: 8, name: 'Ahli Latihan' },
+    { xp: 2500, level: 8, name: 'Ahli Tryout' },
     { xp: 3500, level: 9, name: 'Semi Pro' },
     { xp: 5000, level: 10, name: 'Pro Player' },
     { xp: 7000, level: 11, name: 'Elite Warrior' },
@@ -96,7 +96,7 @@ export const PRICING_PACKAGES = [
         description: '10 Token Tryout SKD CAT',
         features: [
             'Persiapan Maksimal',
-            'Latihan Tiap Minggu',
+            'Tryout Tiap Minggu',
             'Ranking Terupdate',
             'Hemat Rp 25.000!'
         ]

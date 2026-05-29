@@ -1,8 +1,17 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
 import { createTransaction } from '@/lib/midtrans'
 import { PRICING_PACKAGES } from '@/lib/constants'
+import { env } from '@/lib/env'
+import { logger } from '@/lib/logger'
+
+const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
+const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
+
+function isValidMidtransStatus(status: unknown): status is string {
+    return typeof status === 'string' && MIDTRANS_STATUSES.has(status)
+}
 
 export async function createPackageTransaction(packageId: string) {
     const supabase = await createClient()
@@ -66,7 +75,7 @@ export async function createPackageTransaction(packageId: string) {
         })
 
     if (dbError) {
-        console.error('Failed to log transaction to DB:', dbError)
+        logger.error('Payment transaction insert failed', dbError, { orderId })
         // If DB insertion fails, we should still return the token so the user can pay, 
         // though the webhook might not find the transaction (or maybe webhook creates it via upsert).
         // Best case: it succeeds.
@@ -84,9 +93,10 @@ export async function syncPaymentStatus(orderId: string) {
     const supabaseContext = await createClient()
     const { data: { user } } = await supabaseContext.auth.getUser()
     if (!user) return false;
+    if (typeof orderId !== 'string' || orderId.trim() === '') return false;
 
     try {
-        const serverKey = process.env.MIDTRANS_SERVER_KEY || ''
+        const serverKey = env.midtransServerKey()
         const isSandbox = serverKey.includes('SB-')
         const baseUrl = isSandbox ? 'https://api.sandbox.midtrans.com/v2' : 'https://api.midtrans.com/v2'
 
@@ -105,14 +115,15 @@ export async function syncPaymentStatus(orderId: string) {
             // Mari kita cek umur transaksi di database
             if (response.status === 404) {
                 const adminSupabase = createSupabaseClient(
-                    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                    process.env.SUPABASE_SERVICE_ROLE_KEY!
+                    env.supabaseUrl(),
+                    env.supabaseServiceRoleKey()
                 )
 
                 const { data: txInfo } = await adminSupabase
                     .from('transactions')
                     .select('created_at, status')
                     .eq('order_id', orderId)
+                    .eq('user_id', user.id)
                     .single()
 
                 if (txInfo && txInfo.status === 'pending') {
@@ -134,65 +145,46 @@ export async function syncPaymentStatus(orderId: string) {
         const result = await response.json()
         const transaction_status = result.transaction_status
 
-        if (!transaction_status) return false;
+        if (!isValidMidtransStatus(transaction_status)) return false;
 
         // Use Admin client to bypass RLS for updating transaction and quota safely
         const adminSupabase = createSupabaseClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
+            env.supabaseUrl(),
+            env.supabaseServiceRoleKey()
         )
 
         const { data: tx } = await adminSupabase
             .from('transactions')
             .select('*')
             .eq('order_id', orderId)
+            .eq('user_id', user.id)
             .single()
 
         if (!tx) return false;
 
-        if (tx.status === 'settlement' || tx.status === 'capture') {
-            return true; // Already processed
+        const midtransAmount = Number(result.gross_amount)
+        if (!Number.isFinite(midtransAmount) || midtransAmount !== tx.amount) {
+            logger.warn('Payment gross amount mismatch', { orderId })
+            return false
         }
 
-        // Update transaction status
-        await adminSupabase
-            .from('transactions')
-            .update({ status: transaction_status })
-            .eq('order_id', orderId)
+        const pkg = PRICING_PACKAGES.find(p => p.name === tx.package_name)
+        const tokenCount = SUCCESS_STATUSES.has(transaction_status) && pkg ? pkg.tokens : 0
 
-        // Give quota if settlement
-        if (transaction_status === 'settlement' || transaction_status === 'capture') {
-            const pkg = PRICING_PACKAGES.find(p => p.name === tx.package_name)
-            const tokenCount = pkg ? pkg.tokens : 0
+        const { error: processError } = await adminSupabase.rpc('process_paid_transaction', {
+            p_order_id: orderId,
+            p_transaction_status: transaction_status,
+            p_increment_by: tokenCount
+        })
 
-            if (tokenCount > 0) {
-                const { error: quotaError } = await adminSupabase.rpc('increment_tryout_quota', {
-                    user_id_param: tx.user_id,
-                    increment_by: tokenCount
-                })
-
-                if (quotaError) {
-                    const { data: profileData } = await adminSupabase
-                        .from('profiles')
-                        .select('tryout_quota')
-                        .eq('id', tx.user_id)
-                        .single()
-
-                    const currentQuota = profileData?.tryout_quota || 0
-
-                    await adminSupabase
-                        .from('profiles')
-                        .update({
-                            tryout_quota: currentQuota + tokenCount
-                        })
-                        .eq('id', tx.user_id)
-                }
-            }
+        if (processError) {
+            logger.error('Failed to process transaction status', processError, { orderId })
+            return false
         }
 
         return true;
     } catch (error) {
-        console.error('[SyncPaymentStatus] Error:', error)
+        logger.error('Payment status sync failed', error, { orderId })
         return false;
     }
 }

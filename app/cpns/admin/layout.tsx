@@ -2,8 +2,8 @@ import React from 'react'
 import { redirect } from 'next/navigation'
 import { signout } from '@/app/auth/actions'
 import AdminShell from '@/components/admin/AdminShell'
-import { createClient } from '@/utils/supabase/server'
-import { isAdmin } from '@/utils/admin'
+import { createClient } from '@/lib/utils/supabase/server'
+import { isAdmin } from '@/lib/utils/admin'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0

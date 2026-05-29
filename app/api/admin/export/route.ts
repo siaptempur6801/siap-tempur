@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as XLSX from 'xlsx'
-import { isAdmin } from '@/utils/admin'
-import { createAdminClient } from '@/utils/supabase/server'
+import { isAdmin } from '@/lib/utils/admin'
+import { createAdminClient } from '@/lib/utils/supabase/server'
 import { PASSING_GRADES } from '@/lib/constants'
+import { toCsv } from '@/lib/csv'
+import { checkRateLimit, errorResponse, getIp } from '@/lib/api-utils'
+import { logger } from '@/lib/logger'
+import { exportQuerySchema } from '@/lib/validations/api'
 
 type ExportType = 'sessions' | 'ranking' | 'questions' | 'vouchers' | 'events'
-type ExportFormat = 'xlsx' | 'csv'
+type ExportFormat = 'csv'
 
 const MAX_ROWS = 5000
 
 function getParam(request: NextRequest, key: string) {
     return request.nextUrl.searchParams.get(key)?.trim() || ''
-}
-
-function sanitizeSheetName(name: string) {
-    return name.replace(/[:\\/?*\[\]]/g, '').slice(0, 31) || 'Export'
 }
 
 function formatDate(value?: string | null) {
@@ -24,45 +23,13 @@ function formatDate(value?: string | null) {
     return date.toISOString()
 }
 
-function csvEscape(value: unknown) {
-    const text = value == null ? '' : String(value)
-    if (/[",\r\n]/.test(text)) {
-        return `"${text.replace(/"/g, '""')}"`
-    }
-    return text
-}
-
-function toCsv(rows: Record<string, unknown>[]) {
-    if (rows.length === 0) return ''
-    const headers = Object.keys(rows[0])
-    return [
-        headers.map(csvEscape).join(','),
-        ...rows.map((row) => headers.map((header) => csvEscape(row[header])).join(',')),
-    ].join('\r\n')
-}
-
 function createFileResponse(rows: Record<string, unknown>[], type: ExportType, format: ExportFormat) {
     const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
     const filename = `siap-tempur-${type}-${timestamp}.${format}`
 
-    if (format === 'csv') {
-        const csv = toCsv(rows)
-        return new NextResponse(csv, {
-            headers: {
-                'Content-Type': 'text/csv; charset=utf-8',
-                'Content-Disposition': `attachment; filename="${filename}"`,
-            },
-        })
-    }
-
-    const workbook = XLSX.utils.book_new()
-    const worksheet = XLSX.utils.json_to_sheet(rows)
-    XLSX.utils.book_append_sheet(workbook, worksheet, sanitizeSheetName(type))
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer
-
-    return new NextResponse(new Uint8Array(buffer), {
+    return new NextResponse(toCsv(rows), {
         headers: {
-            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Type': 'text/csv; charset=utf-8',
             'Content-Disposition': `attachment; filename="${filename}"`,
         },
     })
@@ -367,21 +334,32 @@ async function getEventRows(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+    const ip = getIp(request)
+    // 10 requests per minute per IP
+    if (await checkRateLimit(`export_${ip}`, 10, 60000)) {
+        return errorResponse('rate_limit_exceeded', 'Rate limit exceeded', 429)
+    }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        return errorResponse('unauthorized', 'Unauthorized access', 401)
     }
 
-    const type = getParam(request, 'type') as ExportType
-    const format = (getParam(request, 'format') || 'xlsx') as ExportFormat
-
-    if (!['sessions', 'ranking', 'questions', 'vouchers', 'events'].includes(type)) {
-        return NextResponse.json({ error: 'Invalid export type' }, { status: 400 })
+    // Extract all params to an object
+    const params = Object.fromEntries(request.nextUrl.searchParams.entries())
+    
+    // Validate params
+    const parsed = exportQuerySchema.safeParse(params)
+    if (!parsed.success) {
+        return errorResponse(
+            'validation_error', 
+            'Invalid request parameters', 
+            400, 
+            parsed.error.issues
+        )
     }
 
-    if (!['xlsx', 'csv'].includes(format)) {
-        return NextResponse.json({ error: 'Invalid export format' }, { status: 400 })
-    }
+    const { type, format } = parsed.data
 
     try {
         const rows =
@@ -396,8 +374,8 @@ export async function GET(request: NextRequest) {
                             : await getEventRows(request)
 
         return createFileResponse(rows, type, format)
-    } catch (error) {
-        console.error('[admin-export]', error)
-        return NextResponse.json({ error: 'Gagal membuat export data' }, { status: 500 })
+    } catch (error: unknown) {
+        logger.error('Admin export failed', error, { type })
+        return errorResponse('internal_error', 'Gagal membuat export data', 500)
     }
 }

@@ -1,15 +1,52 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // @ts-expect-error - midtrans-client lacks type definitions
 import midtransClient from 'midtrans-client';
+import { env } from '@/lib/env'
+import { logger } from '@/lib/logger'
 
+export interface MidtransCustomerDetails {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+    billing_address?: Record<string, unknown>;
+    shipping_address?: Record<string, unknown>;
+}
+
+export interface MidtransItemDetails {
+    id: string;
+    price: number;
+    quantity: number;
+    name: string;
+    brand?: string;
+    category?: string;
+    merchant_name?: string;
+}
+
+export interface MidtransTransactionParameter {
+    transaction_details: {
+        order_id: string;
+        gross_amount: number;
+    };
+    customer_details?: MidtransCustomerDetails;
+    item_details?: MidtransItemDetails[];
+    enabled_payments?: string[];
+    custom_expiry?: {
+        expiry_duration: number;
+        unit: string;
+    };
+    [key: string]: unknown;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _snap: any = null;
 
 function getSnap() {
     if (!_snap) {
+        const serverKey = env.midtransServerKey()
         _snap = new midtransClient.Snap({
-            isProduction: !(process.env.MIDTRANS_SERVER_KEY || '').includes('SB-'),
-            serverKey: process.env.MIDTRANS_SERVER_KEY || '',
-            clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
+            isProduction: !serverKey.includes('SB-'),
+            serverKey,
+            clientKey: env.midtransClientKey()
         });
     }
     return _snap;
@@ -18,11 +55,11 @@ function getSnap() {
 export async function createTransaction(
     orderId: string,
     amount: number,
-    customerDetails?: any,
-    itemDetails?: any[],
+    customerDetails?: MidtransCustomerDetails,
+    itemDetails?: MidtransItemDetails[],
     enabledPayments?: string[]
 ) {
-    const parameter: any = {
+    const parameter: MidtransTransactionParameter = {
         "transaction_details": {
             "order_id": orderId,
             "gross_amount": amount
@@ -46,7 +83,7 @@ export async function createTransaction(
         const transaction = await getSnap().createTransaction(parameter);
         return transaction;
     } catch (error) {
-        console.error("Midtrans Transaction Error:", error);
+        logger.error('Midtrans transaction error', error, { orderId });
         throw error;
     }
 }

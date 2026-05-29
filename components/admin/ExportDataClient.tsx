@@ -34,7 +34,7 @@ const exportTypes = [
 const sessionStatuses = [
     { value: '', label: 'Semua status' },
     { value: 'completed', label: 'Selesai' },
-    { value: 'in_progress', label: 'Sedang ujian' },
+    { value: 'in_progress', label: 'Sedang tryout' },
     { value: 'abandoned', label: 'Abandoned' },
 ]
 
@@ -46,7 +46,6 @@ const questionTypes = [
 ]
 
 type ExportType = (typeof exportTypes)[number]['value']
-type ExportFormat = 'xlsx' | 'csv'
 
 type ExportEvent = {
     id: string
@@ -71,7 +70,6 @@ function formatEventDate(value: string) {
 
 export default function ExportDataClient({ events }: ExportDataClientProps) {
     const [exportType, setExportType] = useState<ExportType>('sessions')
-    const [format, setFormat] = useState<ExportFormat>('xlsx')
     const [dateFrom, setDateFrom] = useState('')
     const [dateTo, setDateTo] = useState('')
     const [status, setStatus] = useState('')
@@ -91,7 +89,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
     const exportHref = useMemo(() => {
         const params = new URLSearchParams()
         params.set('type', exportType)
-        params.set('format', format)
+        params.set('format', 'csv')
 
         if (dateFrom) params.set('date_from', dateFrom)
         if (dateTo) params.set('date_to', dateTo)
@@ -100,7 +98,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
         if (eventId && exportType === 'events') params.set('event_id', eventId)
 
         return `/api/admin/export?${params.toString()}`
-    }, [dateFrom, dateTo, eventId, exportType, format, questionType, status])
+    }, [dateFrom, dateTo, eventId, exportType, questionType, status])
 
     const handleExport = () => {
         setIsExporting(true)
@@ -138,32 +136,10 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
                 <div className="border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
                     <h2 className="font-handwriting text-3xl font-black text-gray-900">Filter Export</h2>
                     <p className="mt-1 text-sm font-medium text-gray-600">
-                        Pilih format dan filter data sebelum mengunduh file.
+                        Pilih filter data sebelum mengunduh file CSV.
                     </p>
 
                     <div className="mt-6 grid gap-5 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
-                                Format File
-                            </label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {(['xlsx', 'csv'] as const).map((item) => (
-                                    <button
-                                        key={item}
-                                        type="button"
-                                        onClick={() => setFormat(item)}
-                                        className={`rounded-md border-2 px-4 py-3 text-sm font-black uppercase transition ${
-                                            format === item
-                                                ? 'border-gray-900 bg-gray-900 text-white'
-                                                : 'border-gray-900 bg-white text-gray-900 hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        {item}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
                         {exportType === 'sessions' ? (
                             <div className="space-y-2">
                                 <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
@@ -265,7 +241,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
                     </div>
                     <div className="border-b-2 border-gray-900 pb-3">
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Format</p>
-                        <p className="mt-1 font-black uppercase text-gray-900">{format}</p>
+                        <p className="mt-1 font-black uppercase text-gray-900">csv</p>
                     </div>
                     {exportType === 'events' ? (
                         <div className="border-b-2 border-gray-900 pb-3">

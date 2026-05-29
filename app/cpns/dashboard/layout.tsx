@@ -1,5 +1,6 @@
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import Script from 'next/script'
@@ -23,6 +24,7 @@ export default async function DashboardLayout({
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
+    const nonce = (await headers()).get('x-nonce') || undefined
 
     if (!user) {
         redirect('/login')
@@ -64,6 +66,7 @@ export default async function DashboardLayout({
                 src="https://app.midtrans.com/snap/snap.js"
                 data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
                 strategy="afterInteractive"
+                nonce={nonce}
             />
             <DashboardShell user={user} profile={profile} signoutAction={signout} isAdmin={isAdminUser}>
                 {children}

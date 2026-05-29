@@ -53,7 +53,7 @@ export default function TrendChart({
                         <TrendingUp className="w-6 h-6" /> Trend Nilai
                     </h3>
                     <p className="text-sm text-gray-600">
-                        {viewMode === 'long' ? 'Progres skor total latihan' : 'Progres 10 latihan terakhir'}
+                        {viewMode === 'long' ? 'Progres skor total tryout' : 'Progres 10 tryout terakhir'}
                     </p>
                 </div>
 
@@ -136,7 +136,7 @@ export default function TrendChart({
                                 const displayValue = Array.isArray(value) ? value.join(', ') : (value ?? 0)
                                 return [`${displayValue} Poin`, 'Skor Total']
                             }}
-                            labelFormatter={(label) => `Latihan #${label}`}
+                            labelFormatter={(label) => `Tryout #${label}`}
                         />
                         <Area
                             type="monotone"

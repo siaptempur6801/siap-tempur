@@ -1,5 +1,5 @@
 import ExportDataClient from '@/components/admin/ExportDataClient'
-import { createAdminClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/lib/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +24,7 @@ export default async function ExportDataPage() {
                     </p>
                     <h1 className="font-handwriting text-4xl font-black text-gray-900">Export Data</h1>
                     <p className="mt-2 text-sm font-medium text-gray-600">
-                        Unduh data operasional dalam format XLSX atau CSV untuk laporan, backup, dan audit.
+                        Unduh data operasional dalam format CSV untuk laporan, backup, dan audit.
                     </p>
                 </div>
             </div>

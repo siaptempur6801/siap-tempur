@@ -2,8 +2,8 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { Upload, FileSpreadsheet, CheckCircle, AlertTriangle, X, Loader2 } from 'lucide-react'
-import * as XLSX from 'xlsx'
 import { importQuestionsFromExcel } from '@/app/actions/admin'
+import { parseCsvRows } from '@/lib/csv'
 
 interface ParsedQuestion {
     type: 'TWK' | 'TIU' | 'TKP'
@@ -25,6 +25,8 @@ interface ParsedQuestion {
 }
 
 const VALID_TYPES = ['TWK', 'TIU', 'TKP']
+const MAX_IMPORT_FILE_SIZE = 2 * 1024 * 1024
+const MAX_IMPORT_ROWS = 1000
 
 const VALID_SUB_CATEGORIES: Record<string, string[]> = {
     TWK: ['Nasionalisme', 'Integritas', 'Bela Negara', 'Pilar Negara', 'Bahasa Negara'],
@@ -44,7 +46,7 @@ export default function ExcelImport() {
 
     const validateRow = (row: Record<string, unknown>, index: number): { question: ParsedQuestion | null; errors: string[] } => {
         const rowErrors: string[] = []
-        const rowNum = index + 2 // +2 because Excel is 1-indexed and has header
+        const rowNum = index + 2
 
         const type = String(row['type'] || '').trim().toUpperCase()
         if (!VALID_TYPES.includes(type)) {
@@ -138,20 +140,31 @@ export default function ExcelImport() {
     }
 
     const processFile = useCallback((file: File) => {
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            setErrors(['File harus berformat .csv'])
+            return
+        }
+
+        if (file.size > MAX_IMPORT_FILE_SIZE) {
+            setErrors(['Ukuran file maksimal 2 MB'])
+            return
+        }
+
         setFileName(file.name)
         setResult(null)
         setErrors([])
 
-        const reader = new FileReader()
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer)
-                const workbook = XLSX.read(data, { type: 'array' })
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet) as Record<string, unknown>[]
+        file.text()
+            .then((text) => {
+                const jsonData = parseCsvRows(text)
 
                 if (jsonData.length === 0) {
                     setErrors(['File kosong atau format tidak sesuai'])
+                    return
+                }
+
+                if (jsonData.length > MAX_IMPORT_ROWS) {
+                    setErrors([`Maksimal import ${MAX_IMPORT_ROWS} baris per file`])
                     return
                 }
 
@@ -170,11 +183,10 @@ export default function ExcelImport() {
 
                 setParsedData(validQuestions)
                 setErrors(allErrors)
-            } catch {
-                setErrors(['Gagal membaca file. Pastikan file adalah .xlsx yang valid.'])
-            }
-        }
-        reader.readAsArrayBuffer(file)
+            })
+            .catch(() => {
+                setErrors(['Gagal membaca file. Pastikan file adalah .csv yang valid.'])
+            })
     }, [])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -221,7 +233,7 @@ export default function ExcelImport() {
                 onClick={() => setIsOpen(true)}
                 className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-lg hover:bg-emerald-700 transition font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] transform hover:-translate-y-1 active:translate-y-0"
             >
-                <FileSpreadsheet size={20} /> Import Excel
+                <FileSpreadsheet size={20} /> Import CSV
             </button>
 
             {isOpen && (
@@ -230,7 +242,7 @@ export default function ExcelImport() {
                         {/* Header */}
                         <div className="flex items-center justify-between">
                             <h2 className="font-handwriting text-2xl font-bold text-gray-900">
-                                📊 Import Soal dari Excel
+                                📊 Import Soal dari CSV
                             </h2>
                             <button
                                 onClick={() => { setIsOpen(false); setParsedData([]); setErrors([]); setResult(null) }}
@@ -242,7 +254,7 @@ export default function ExcelImport() {
 
                         {/* Template Download */}
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p className="text-sm text-blue-800 font-medium mb-2">📋 Format kolom Excel yang diharapkan:</p>
+                            <p className="text-sm text-blue-800 font-medium mb-2">📋 Format kolom CSV yang diharapkan:</p>
                             <code className="text-[10px] md:text-xs text-blue-700 break-all bg-white p-2 rounded block border border-blue-200">
                                 type | sub_category | content | image_url | explanation | option_a | option_b | option_c | option_d | option_e | correct_answer | score_a | score_b | score_c | score_d | score_e
                             </code>
@@ -250,7 +262,7 @@ export default function ExcelImport() {
                                 <p>• <strong>image_url:</strong> opsional, isi dengan link publik gambar (jika ada)</p>
                                 <p>• <strong>TWK & TIU:</strong> isi <code>correct_answer</code> (A/B/C/D/E), score dikosongkan</p>
                                 <p>• <strong>TKP:</strong> kosongkan <code>correct_answer</code>, isi <code>score_a</code> s/d <code>score_e</code> (1–5)</p>
-                                <p className="pt-2"><a href="/template_soal_skd.xlsx" download className="inline-flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-blue-200 font-bold hover:bg-blue-100 transition shadow-sm">⬇️ Download Template</a></p>
+                                <p className="pt-2"><a href="/template_soal_skd.csv" download className="inline-flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-blue-200 font-bold hover:bg-blue-100 transition shadow-sm">⬇️ Download Template</a></p>
                             </div>
                         </div>
 
@@ -269,15 +281,15 @@ export default function ExcelImport() {
                             ) : (
                                 <>
                                     <p className="text-gray-600 font-medium">
-                                        Drag & drop file <strong>.xlsx</strong> atau klik untuk memilih
+                                        Drag & drop file <strong>.csv</strong> atau klik untuk memilih
                                     </p>
-                                    <p className="text-gray-400 text-sm mt-1">Maksimum ukuran file: 10MB</p>
+                                    <p className="text-gray-400 text-sm mt-1">Maksimum ukuran file: 2MB</p>
                                 </>
                             )}
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept=".xlsx,.xls"
+                                accept=".csv,text/csv"
                                 onChange={handleFileChange}
                                 className="hidden"
                             />

@@ -1,28 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isMissingProgressColumnError } from '@/lib/practice-session'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
+import { errorResponse, successResponse, isRateLimited, getIp } from '@/lib/api-utils'
+import { beaconPayloadSchema } from '@/lib/validations/api'
 
 export const dynamic = 'force-dynamic'
-
-interface BeaconPayload {
-    currentQuestionIndex?: number
-    markedQuestions?: Record<string, boolean>
-}
-
-function sanitizeMarkedQuestions(markedQuestions: BeaconPayload['markedQuestions']) {
-    if (!markedQuestions || typeof markedQuestions !== 'object') {
-        return {}
-    }
-
-    return Object.fromEntries(
-        Object.entries(markedQuestions).map(([questionId, value]) => [questionId, Boolean(value)])
-    )
-}
 
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const ip = getIp(request)
+    // 60 requests per minute per IP to prevent infinite loop bugs from flooding DB
+    if (isRateLimited(`beacon_${ip}`, 60, 60000)) {
+        return errorResponse('rate_limit_exceeded', 'Rate limit exceeded', 429)
+    }
+
     const { id } = await params
     const supabase = await createClient()
 
@@ -33,22 +26,23 @@ export async function POST(
         return new NextResponse(null, { status: 204 })
     }
 
-    let body: BeaconPayload
+    let body;
 
     try {
         const contentType = request.headers.get('content-type') ?? ''
         body = contentType.includes('application/json')
-            ? await request.json() as BeaconPayload
-            : JSON.parse(await request.text()) as BeaconPayload
+            ? await request.json()
+            : JSON.parse(await request.text())
     } catch {
-        return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+        return errorResponse('invalid_json', 'Invalid JSON payload', 400)
     }
 
-    const currentQuestionIndex = Number.isFinite(body.currentQuestionIndex)
-        ? Math.max(0, Math.floor(body.currentQuestionIndex ?? 0))
-        : 0
+    const parsed = beaconPayloadSchema.safeParse(body)
+    if (!parsed.success) {
+        return errorResponse('validation_error', 'Invalid payload format', 400, parsed.error.issues)
+    }
 
-    const markedQuestions = sanitizeMarkedQuestions(body.markedQuestions)
+    const { currentQuestionIndex = 0, markedQuestions = {} } = parsed.data
 
     const { data, error } = await supabase
         .from('test_sessions')
@@ -74,17 +68,17 @@ export async function POST(
                 .maybeSingle()
 
             if (!fallbackError && fallbackSession) {
-                return NextResponse.json({ success: true, degraded: true })
+                return successResponse({ success: true, degraded: true })
             }
         }
 
         console.error('[practice-session-beacon] Update error:', error)
-        return NextResponse.json({ error: 'Failed to save progress' }, { status: 500 })
+        return errorResponse('internal_error', 'Failed to save progress', 500)
     }
 
     if (!data) {
         return new NextResponse(null, { status: 204 })
     }
 
-    return NextResponse.json({ success: true })
+    return successResponse({ success: true })
 }

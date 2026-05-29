@@ -32,11 +32,11 @@ export default function RetakeButton({ isCombined, singleType }: RetakeButtonPro
                 toast.error(result.error)
             } else if (result.sessionId) {
                 toast.success(result.resumed ? 'Melanjutkan sesi tersimpan.' : 'Sesi baru dimulai!')
-                router.push(`/cpns/dashboard/latihan/${result.sessionId}`)
+                router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
             }
         } catch (error) {
             console.error('Failed to retake:', error)
-            toast.error('Terjadi kesalahan saat memulai ulang latihan')
+            toast.error('Terjadi kesalahan saat memulai ulang tryout')
         } finally {
             setIsLoading(false)
         }
@@ -53,7 +53,7 @@ export default function RetakeButton({ isCombined, singleType }: RetakeButtonPro
             ) : (
                 <RefreshCw size={24} />
             )}
-            {isLoading ? 'Memulai...' : 'Ulangi Latihan'}
+            {isLoading ? 'Memulai...' : 'Ulangi Tryout'}
         </button>
     )
 }

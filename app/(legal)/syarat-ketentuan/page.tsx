@@ -36,8 +36,8 @@ export default function SyaratKetentuanPage() {
 
             <h3>5. Batasan Tanggung Jawab</h3>
             <p>
-                SiapTempur berusaha menyediakan materi latihan terbaik, namun kami tidak menjamin kelulusan Anda dalam seleksi CPNS/Kedinasan yang sebenarnya.
-                Hasil latihan di platform ini hanya sebagai simulasi dan alat bantu belajar.
+                SiapTempur berusaha menyediakan materi tryout terbaik, namun kami tidak menjamin kelulusan Anda dalam seleksi CPNS/Kedinasan yang sebenarnya.
+                Hasil tryout di platform ini hanya sebagai simulasi dan alat bantu belajar.
             </p>
 
             <h3>6. Perubahan Syarat</h3>

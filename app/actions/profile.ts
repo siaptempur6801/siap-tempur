@@ -1,7 +1,9 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { env } from '@/lib/env'
+import { logger } from '@/lib/logger'
 
 export async function updateProfile(formData: FormData) {
     const supabase = await createClient()
@@ -29,8 +31,8 @@ export async function updateProfile(formData: FormData) {
         .eq('id', user.id)
 
     if (error) {
-        console.error('Update profile error', error)
-        return { error: error.message }
+        logger.error('Profile update failed', error, { userId: user.id })
+        return { error: 'Gagal memperbarui profil' }
     }
 
     revalidatePath('/cpns/dashboard', 'layout')
@@ -73,8 +75,8 @@ export async function updateProfileInfo(data: {
         .eq('id', user.id)
 
     if (error) {
-        console.error('Update profile error', error)
-        return { success: false, error: error.message }
+        logger.error('Profile info update failed', error, { userId: user.id })
+        return { success: false, error: 'Gagal memperbarui profil' }
     }
 
     revalidatePath('/', 'layout')
@@ -96,8 +98,8 @@ export async function updatePassword(data: { newPassword: string }) {
     })
 
     if (error) {
-        console.error('Update password error', error)
-        return { success: false, error: error.message }
+        logger.error('Password update failed', error, { userId: user.id })
+        return { success: false, error: 'Gagal memperbarui password' }
     }
 
     return { success: true }
@@ -114,8 +116,8 @@ export async function deleteAccount() {
     try {
         const { createClient: createAdminClient } = await import('@supabase/supabase-js')
         const adminClient = createAdminClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            env.supabaseUrl(),
+            env.supabaseServiceRoleKey(),
             {
                 auth: {
                     autoRefreshToken: false,
@@ -129,10 +131,10 @@ export async function deleteAccount() {
         await supabase.auth.signOut()
         return { success: true }
     } catch (error) {
-        console.error('Delete account error:', error)
+        logger.error('Delete account failed', error, { userId: user.id })
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Terjadi kesalahan saat menghapus akun'
+            error: 'Terjadi kesalahan saat menghapus akun'
         }
     }
 }

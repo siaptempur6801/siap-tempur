@@ -20,15 +20,16 @@ interface XPInfo {
 interface ResultXPWrapperProps {
     children: React.ReactNode
     xpInfo: XPInfo
+    disablePopup?: boolean
 }
 
-export default function ResultXPWrapper({ children, xpInfo }: ResultXPWrapperProps) {
+export default function ResultXPWrapper({ children, xpInfo, disablePopup }: ResultXPWrapperProps) {
     const [showPopup, setShowPopup] = useState(false)
     const [hasShown, setHasShown] = useState(false)
 
     useEffect(() => {
         // Only show popup once per session
-        if (!hasShown && xpInfo.xpEarned > 0) {
+        if (!hasShown && xpInfo.xpEarned > 0 && !disablePopup) {
             // Small delay to let the page render first
             const timer = setTimeout(() => {
                 setShowPopup(true)
@@ -36,7 +37,7 @@ export default function ResultXPWrapper({ children, xpInfo }: ResultXPWrapperPro
             }, 500)
             return () => clearTimeout(timer)
         }
-    }, [hasShown, xpInfo.xpEarned])
+    }, [disablePopup, hasShown, xpInfo.xpEarned])
 
     return (
         <>

@@ -1,6 +1,6 @@
 import QuestionEditorForm from '@/components/admin/QuestionEditorForm'
 import { buildCategoryMap, sanitizeAdminReturnPath } from '@/lib/admin-dashboard'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 

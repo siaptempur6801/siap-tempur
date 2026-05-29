@@ -1,4 +1,4 @@
-import { createAdminClient, createClient } from '@/utils/supabase/server'
+import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 // Cache leaderboard 15 menit agar selaras dengan refresh snapshot via pg_cron.
 export const revalidate = 900
 import LeaderboardClient from '@/components/dashboard/LeaderboardClient'

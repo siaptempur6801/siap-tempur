@@ -1,30 +1,56 @@
 import { createClient } from '@supabase/supabase-js'
-import { NextResponse } from 'next/server'
 import { PRICING_PACKAGES } from '@/lib/constants'
 import crypto from 'crypto'
+import { errorResponse, successResponse } from '@/lib/api-utils'
+import { webhookPayloadSchema } from '@/lib/validations/api'
+import { env } from '@/lib/env'
+import { logger } from '@/lib/logger'
 
-// Initialize Supabase with Service Role for backend updates
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
+
+function getWebhookSupabase() {
+    return createClient(
+        env.supabaseUrl(),
+        env.supabaseServiceRoleKey()
+    )
+}
 
 export async function POST(req: Request) {
+    const supabase = getWebhookSupabase()
+
     try {
-        const body = await req.json()
-        const { order_id, transaction_status, status_code, gross_amount, signature_key } = body
+        let body;
+        try {
+            body = await req.json()
+        } catch {
+            return errorResponse('invalid_json', 'Invalid JSON payload', 400)
+        }
+
+        const parsed = webhookPayloadSchema.safeParse(body)
+        if (!parsed.success) {
+            return errorResponse('validation_error', 'Invalid payload format', 400, parsed.error.issues)
+        }
+
+        const { order_id, transaction_status, status_code, gross_amount, signature_key } = parsed.data
 
         // === Signature Verification ===
-        const serverKey = process.env.MIDTRANS_SERVER_KEY || ''
+        const serverKey = env.midtransServerKey()
         const hash = crypto.createHash('sha512').update(`${order_id}${status_code}${gross_amount}${serverKey}`).digest('hex')
 
         if (hash !== signature_key) {
-            console.error('[Webhook] Invalid signature key for order:', order_id)
-            return NextResponse.json({ message: 'Invalid signature key' }, { status: 403 })
+            logger.warn('Invalid Midtrans webhook signature', { orderId: order_id })
+            return errorResponse('forbidden', 'Invalid signature key', 403)
         }
         // === End Signature Verification ===
 
-        console.log(`[Webhook] Received status for ${order_id}: ${transaction_status}`)
+        // Route by order ID prefix
+        // EVT-* = event ticket payment → event_payments table
+        // SKD-* = tryout token purchase → transactions table
+        if (order_id.startsWith('EVT-')) {
+            return handleEventPaymentWebhook(order_id, transaction_status)
+        }
+
+        // === Original token payment flow ===
 
         // 1. Get current transaction from DB
         const { data: transaction, error: txError } = await supabase
@@ -34,12 +60,12 @@ export async function POST(req: Request) {
             .single()
 
         if (txError || !transaction) {
-            return NextResponse.json({ message: 'Transaction not found' }, { status: 404 })
+            return errorResponse('not_found', 'Transaction not found', 404)
         }
 
         // If transaction already settled, don't double count
         if (transaction.status === 'settlement') {
-            return NextResponse.json({ message: 'Already processed' })
+            return successResponse({ message: 'Already processed' })
         }
 
         // 2. Update status in DB
@@ -65,23 +91,72 @@ export async function POST(req: Request) {
                 })
 
                 if (quotaError) {
-                    console.error('[Webhook] Failed to increment quota:', quotaError)
+                    logger.error('Failed to increment quota from webhook', quotaError, { orderId: order_id })
                     // Fallback to direct update if RPC fails
+                    const profileData = await supabase.from('profiles').select('tryout_quota').eq('id', transaction.user_id).single()
                     await supabase
                         .from('profiles')
                         .update({
-                            tryout_quota: (await supabase.from('profiles').select('tryout_quota').eq('id', transaction.user_id).single()).data?.tryout_quota + tokenCount
+                            tryout_quota: (profileData.data?.tryout_quota || 0) + tokenCount
                         })
                         .eq('id', transaction.user_id)
                 }
-
-                console.log(`[Webhook] Successfully added ${tokenCount} tokens to user ${transaction.user_id}`)
+                // Successfully added tokens
             }
         }
 
-        return NextResponse.json({ message: 'OK' })
-    } catch (error) {
-        console.error('[Webhook] Error:', error)
-        return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 })
+        return successResponse({ message: 'OK' })
+    } catch (error: unknown) {
+        logger.error('Payment webhook failed', error)
+        return errorResponse('internal_error', 'Internal Server Error', 500)
     }
+}
+
+// ─── Event Payment Handler ────────────────────────────────────────────────────
+async function handleEventPaymentWebhook(orderId: string, transactionStatus: string) {
+    const supabase = getWebhookSupabase()
+
+    const { data: payment, error: paymentError } = await supabase
+        .from('event_payments')
+        .select('id, user_id, event_id, status, amount')
+        .eq('order_id', orderId)
+        .single()
+
+    if (paymentError || !payment) {
+        logger.warn('Event payment not found for webhook', { orderId })
+        return errorResponse('not_found', 'Event payment not found', 404)
+    }
+
+    // Idempotency — already settled
+    if (SUCCESS_STATUSES.has(payment.status)) {
+        return successResponse({ message: 'Already processed' })
+    }
+
+    const isSuccess = SUCCESS_STATUSES.has(transactionStatus)
+
+    if (isSuccess) {
+        // Use atomic RPC: settle payment + register participant
+        const { error: rpcError } = await supabase.rpc('register_event_after_payment', {
+            p_user_id: payment.user_id,
+            p_event_id: payment.event_id,
+            p_order_id: orderId,
+        })
+
+        if (rpcError) {
+            logger.error('Event payment webhook registration RPC failed', rpcError, { orderId })
+            return errorResponse('internal_error', 'Failed to register participant', 500)
+        }
+    } else {
+        // Non-success: just update status
+        const { error: updateError } = await supabase
+            .from('event_payments')
+            .update({ status: transactionStatus, updated_at: new Date().toISOString() })
+            .eq('order_id', orderId)
+
+        if (updateError) {
+            logger.error('Event payment webhook status update failed', updateError, { orderId })
+        }
+    }
+
+    return successResponse({ message: 'OK' })
 }

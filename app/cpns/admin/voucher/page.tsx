@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/lib/utils/supabase/server'
 import VoucherAdminClient, { VoucherCreateController } from '@/components/admin/VoucherAdminClient'
 
 export const dynamic = 'force-dynamic'

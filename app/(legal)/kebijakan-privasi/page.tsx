@@ -18,7 +18,7 @@ export default function KebijakanPrivasiPage() {
                 <li>Nama Lengkap</li>
                 <li>Alamat Email</li>
                 <li>Password (Ter-enkripsi)</li>
-                <li>Data Aktivitas Latihan (Skor, Waktu Pengerjaan)</li>
+                <li>Data Aktivitas Tryout (Skor, Waktu Pengerjaan)</li>
             </ul>
 
             <h3>2. Penggunaan Data</h3>

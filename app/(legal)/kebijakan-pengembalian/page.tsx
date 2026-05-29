@@ -12,7 +12,7 @@ export default function KebijakanPengembalianPage() {
 
             <h3>1. Produk Digital</h3>
             <p>
-                Layanan yang kami tawarkan (Token Tryout, Paket Latihan) adalah produk digital (intangible goods).
+                Layanan yang kami tawarkan (Token Tryout, Paket Tryout) adalah produk digital (intangible goods).
                 Oleh karena itu, kami menerapkan kebijakan <strong>TIDAK ADA PENGEMBALIAN DANA (NO REFUND)</strong> setelah pembelian berhasil dikonfirmasi dan akses/token telah diberikan.
             </p>
 

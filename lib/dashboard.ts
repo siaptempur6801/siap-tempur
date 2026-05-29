@@ -232,22 +232,22 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     const priorityReasons: Record<'TWK' | 'TIU' | 'TKP', string> = {
         TWK: 'Skor TWK kamu masih di bawah passing grade',
         TIU: 'Skor TIU kamu perlu ditingkatkan',
-        TKP: 'TKP butuh latihan lebih untuk capai target',
+        TKP: 'TKP butuh tryout lebih untuk capai target',
     }
 
     const recommendations: DashboardData['recommendations'] = []
     if (avgScores.twk < PASSING_GRADES.TWK) {
-        recommendations.push({ type: 'TWK', title: 'Latihan TWK', description: `Tingkatkan skor dari ${avgScores.twk} ke ${PASSING_GRADES.TWK}` })
+        recommendations.push({ type: 'TWK', title: 'Tryout TWK', description: `Tingkatkan skor dari ${avgScores.twk} ke ${PASSING_GRADES.TWK}` })
     }
     if (avgScores.tiu < PASSING_GRADES.TIU) {
-        recommendations.push({ type: 'TIU', title: 'Latihan TIU', description: `Tingkatkan skor dari ${avgScores.tiu} ke ${PASSING_GRADES.TIU}` })
+        recommendations.push({ type: 'TIU', title: 'Tryout TIU', description: `Tingkatkan skor dari ${avgScores.tiu} ke ${PASSING_GRADES.TIU}` })
     }
     if (avgScores.tkp < PASSING_GRADES.TKP) {
-        recommendations.push({ type: 'TKP', title: 'Latihan TKP', description: `Tingkatkan skor dari ${avgScores.tkp} ke ${PASSING_GRADES.TKP}` })
+        recommendations.push({ type: 'TKP', title: 'Tryout TKP', description: `Tingkatkan skor dari ${avgScores.tkp} ke ${PASSING_GRADES.TKP}` })
     }
 
     if (recommendations.length === 0) {
-        recommendations.push({ type: 'TWK', title: 'Pertahankan TWK', description: 'Jaga konsistensi dengan latihan rutin' })
+        recommendations.push({ type: 'TWK', title: 'Pertahankan TWK', description: 'Jaga konsistensi dengan tryout rutin' })
     }
 
     const lastSession = sessions && sessions.length > 0 ? sessions[0] : null
@@ -298,5 +298,5 @@ export function getGreeting(hour: number): { greeting: string; message: string }
     if (hour >= 4 && hour < 11) return { greeting: 'Selamat Pagi', message: 'Pagi yang sempurna untuk memulai belajar!' }
     if (hour >= 11 && hour < 15) return { greeting: 'Selamat Siang', message: 'Semangat! Lanjutkan progres belajarmu.' }
     if (hour >= 15 && hour < 18) return { greeting: 'Selamat Sore', message: 'Waktu yang tepat untuk review materi.' }
-    return { greeting: 'Selamat Malam', message: 'Latihan sebelum tidur bisa memperkuat ingatan!' }
+    return { greeting: 'Selamat Malam', message: 'Tryout sebelum tidur bisa memperkuat ingatan!' }
 }

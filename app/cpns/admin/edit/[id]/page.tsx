@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/lib/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import EditQuestionForm from '@/components/admin/EditQuestionForm'
 import { buildCategoryMap, sanitizeAdminReturnPath } from '@/lib/admin-dashboard'
@@ -12,7 +12,7 @@ export default async function EditQuestionPage({
     params: Promise<{ id: string }>
     searchParams: Promise<{ returnTo?: string }>
 }) {
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     const { id } = await params
     const { returnTo } = await searchParams

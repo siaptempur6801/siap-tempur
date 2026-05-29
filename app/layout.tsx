@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     template: "%s | Siap Tempur"
   },
   description: "Platform tryout SKD CPNS 2026 dengan simulasi CAT BKN, pembahasan lengkap, ranking nasional, dan dashboard belajar yang fokus ke persiapan CPNS.",
-  keywords: ["siap tempur", "tryout cpns", "tryout skd", "cpns 2026", "skd bkn", "simulasi cat bkn", "bimbel cpns murah", "latihan soal cpns", "tryout kedinasan"],
+  keywords: ["siap tempur", "tryout cpns", "tryout skd", "cpns 2026", "skd bkn", "simulasi cat bkn", "bimbel cpns murah", "tryout soal cpns", "tryout kedinasan"],
   authors: [{ name: "Siap Tempur" }],
   creator: "Siap Tempur",
   publisher: "Siap Tempur",

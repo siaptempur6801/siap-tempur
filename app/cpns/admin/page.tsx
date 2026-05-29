@@ -1,4 +1,4 @@
-import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/lib/utils/supabase/server'
 import { Plus, FileText } from 'lucide-react'
 import Link from 'next/link'
 import QuestionCard, { type Question } from '@/components/admin/QuestionCard'
@@ -23,7 +23,7 @@ export default async function AdminDashboard({
         page_size?: string
     }>
 }) {
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
     const filters = normalizeAdminFilters(await searchParams)
     let filteredCountQuery = supabase
         .from('questions')
@@ -103,7 +103,7 @@ export default async function AdminDashboard({
                         Bank Soal
                     </h1>
                     <p className="relative mt-2 text-sm font-medium text-gray-600">
-                        Kelola soal, import Excel, dan periksa materi aktif dari area admin.
+                        Kelola soal, import CSV, dan periksa materi aktif dari area admin.
                     </p>
                 </div>
                 <div className="relative mt-5 flex flex-wrap items-center gap-3 md:mt-0">

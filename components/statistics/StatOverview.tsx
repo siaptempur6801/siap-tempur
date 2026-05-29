@@ -42,7 +42,7 @@ export default function StatOverview({ data, streak, type }: { data: StatsSummar
 
     const stats: Stat[] = [
         {
-            label: "Total Latihan",
+            label: "Total Tryout",
             value: data.summary.totalSessions,
             subValue: "Sesi Selesai",
             icon: Target,

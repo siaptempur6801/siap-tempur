@@ -119,9 +119,9 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                 <div className="space-y-3">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-yellow-200 border-2 border-gray-900 text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] -rotate-1">
                         <FileSearch size={14} />
-                        <span>Riwayat Ujian</span>
+                        <span>Riwayat Tryout</span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Hasil Ujian Sebelumnya</h1>
+                    <h1 className="text-4xl md:text-5xl font-bold text-gray-900">Hasil Tryout Sebelumnya</h1>
                     <p className="text-lg text-gray-600 max-w-3xl font-sans">
                         Saya padatkan jadi daftar yang lebih ringkas supaya lebih cepat discan dan gampang dicari.
                     </p>
@@ -276,7 +276,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
 
                                         <div className="flex justify-end">
                                             <Link
-                                                href={`/cpns/dashboard/latihan/${session.id}/result?from=${session.isEvent ? 'event' : 'riwayat'}`}
+                                                href={`/cpns/dashboard/tryout/${session.id}/result?from=${session.isEvent ? 'event' : 'riwayat'}`}
                                                 className="inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-3 py-2.5 md:px-2 md:py-2 lg:px-4 lg:py-3 text-xs md:text-[10px] lg:text-sm font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
                                             >
                                                 Lihat Hasil

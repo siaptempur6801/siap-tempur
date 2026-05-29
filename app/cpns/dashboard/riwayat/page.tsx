@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { PASSING_GRADES } from '@/lib/constants'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
 import HistoryClient from './HistoryClient'
 
 type SessionType = 'TWK' | 'TIU' | 'TKP'
@@ -26,10 +26,10 @@ function getHistoryTitle(mode: 'practice' | 'tryout', types: SessionType[], even
     }
 
     if (types[0]) {
-        return `Latihan ${types[0]}`
+        return `Tryout ${types[0]}`
     }
 
-    return 'Latihan Soal'
+    return 'tryout soal'
 }
 
 function getHistoryPassed(
