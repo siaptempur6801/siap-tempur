@@ -2,6 +2,7 @@ import { createClient } from '@/lib/utils/supabase/server'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import TryoutConfigClient from '@/components/admin/TryoutConfigClient'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +15,7 @@ export default async function TryoutConfigPage() {
         .order('sort_order', { ascending: true })
 
     if (error) {
-        console.error('Error fetching tryout configurations:', error)
+        logger.warn('Error fetching tryout configurations:', { error })
         return <div className="p-8 text-center font-bold text-red-500">Gagal memuat data konfigurasi</div>
     }
 

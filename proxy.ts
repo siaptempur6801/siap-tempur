@@ -1,8 +1,10 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/utils/supabase/middleware'
+import { CSRF_COOKIE } from '@/lib/csrf'
 
 export async function proxy(request: NextRequest) {
     const nonce = crypto.randomUUID().replace(/-/g, '')
+    const csrfToken = crypto.randomUUID()
     
     const cspHeader = `
         default-src 'self';
@@ -17,6 +19,7 @@ export async function proxy(request: NextRequest) {
         form-action 'self';
         frame-ancestors 'none';
         upgrade-insecure-requests;
+        ${process.env.CSP_REPORT_URI ? `report-uri ${process.env.CSP_REPORT_URI};` : ''}
     `.replace(/\s{2,}/g, ' ').trim()
 
     // Pass the modified headers to the downstream components
@@ -31,6 +34,15 @@ export async function proxy(request: NextRequest) {
 
     // Set the CSP header on the outgoing response
     response.headers.set('Content-Security-Policy', cspHeader)
+
+    // Set CSRF token cookie (double-submit pattern)
+    // httpOnly: false so client JS can read it for the custom header
+    response.cookies.set(CSRF_COOKIE, csrfToken, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+    })
     
     return response
 }

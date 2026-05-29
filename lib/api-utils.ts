@@ -44,6 +44,14 @@ export function errorResponse(code: string, message: string, status = 400, detai
 
 // Simple in-memory rate limiter using Map.
 // Key: IP or User ID, Value: { count: number, resetAt: number }
+//
+// ⚠️ SERVERLESS WARNING:
+// In-memory rate limiter resets on cold starts and does NOT share state across
+// instances. For production multi-instance deployments, configure Upstash Redis
+// via UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars to enable
+// shared rate limiting. Without Redis, each function instance has its own
+// independent counter — acceptable for single-instance deployments but
+// insufficient for horizontal scaling.
 const rateLimitCache = new Map<string, { count: number; resetAt: number }>();
 
 /**

@@ -3,6 +3,7 @@ import { isMissingProgressColumnError } from '@/lib/practice-session'
 import { createClient } from '@/lib/utils/supabase/server'
 import { errorResponse, successResponse, isRateLimited, getIp } from '@/lib/api-utils'
 import { beaconPayloadSchema } from '@/lib/validations/api'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,7 +73,7 @@ export async function POST(
             }
         }
 
-        console.error('[practice-session-beacon] Update error:', error)
+        logger.warn('[practice-session-beacon] Update error:', { error })
         return errorResponse('internal_error', 'Failed to save progress', 500)
     }
 

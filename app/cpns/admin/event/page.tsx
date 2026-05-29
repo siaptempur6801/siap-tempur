@@ -1,5 +1,6 @@
 import TryoutAkbarClient, { EventCreateController } from '@/components/admin/TryoutAkbarClient'
 import { createAdminClient } from '@/lib/utils/supabase/server'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +38,7 @@ export default async function EventAdminPage() {
         .order('starts_at', { ascending: false })
 
     if (error) {
-        console.error('[event-admin]', error)
+        logger.warn('[event-admin]', { error })
         return <div className="p-8 text-center font-bold text-gray-900">Gagal memuat data event</div>
     }
 

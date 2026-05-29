@@ -74,7 +74,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
             setSelectedImage(null)
 
             const fileExt = 'jpg'
-            const fileName = `${user.id}-${Math.random()}.${fileExt}`
+            const fileName = `${user.id}-${crypto.randomUUID()}.${fileExt}`
             const filePath = `${fileName}`
 
             const supabase = createClient()

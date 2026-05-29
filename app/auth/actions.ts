@@ -1,9 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/utils/supabase/server'
+import { createClient, createAdminClient } from '@/lib/utils/supabase/server'
+import { validateCsrf } from '@/lib/csrf'
+import { logger } from '@/lib/logger'
 
 export async function login(formData: FormData) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
 
     const email = formData.get('email') as string
@@ -15,7 +19,7 @@ export async function login(formData: FormData) {
     })
 
     if (error) {
-        console.error('Login error:', error)
+        logger.warn('Login failed', { error: error.message })
         if (error.message.includes('Email not confirmed')) {
             return { error: 'unverified' }
         }
@@ -27,6 +31,8 @@ export async function login(formData: FormData) {
 }
 
 export async function signup(formData: FormData) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
 
     const email = formData.get('email') as string
@@ -45,7 +51,7 @@ export async function signup(formData: FormData) {
     })
 
     if (error) {
-        console.error('Signup error:', error)
+        logger.warn('Signup failed', { error: error.message })
         return { error: error.message }
     }
 
@@ -54,6 +60,8 @@ export async function signup(formData: FormData) {
 }
 
 export async function signout() {
+    try { await validateCsrf() } catch { return { success: false, error: 'Invalid request' } }
+
     const supabase = await createClient()
     await supabase.auth.signOut()
     revalidatePath('/', 'layout')
@@ -62,6 +70,8 @@ export async function signout() {
 }
 
 export async function updatePassword(formData: FormData) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
     const password = formData.get('password') as string
     const oldPassword = formData.get('oldPassword') as string
@@ -99,11 +109,19 @@ export async function updatePassword(formData: FormData) {
         return { error: error.message }
     }
 
+    // 4. Sign out all other sessions for security
+    const admin = await createAdminClient()
+    await admin.auth.admin.signOut(user.id, 'others').catch(() => {
+        // Best-effort: don't block user if this fails
+    })
+
     revalidatePath('/cpns/dashboard/profile')
     return { success: true }
 }
 
 export async function loginWithGoogle() {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
 
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -129,6 +147,8 @@ export async function loginWithGoogle() {
 }
 
 export async function resendVerificationEmail(email: string) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
 
     const { error } = await supabase.auth.resend({
@@ -147,6 +167,8 @@ export async function resendVerificationEmail(email: string) {
 }
 
 export async function resetPassword(formData: FormData) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
     const password = formData.get('password') as string
 
@@ -166,6 +188,8 @@ export async function resetPassword(formData: FormData) {
 }
 
 export async function forgotPassword(formData: FormData) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
     const email = formData.get('email') as string
 

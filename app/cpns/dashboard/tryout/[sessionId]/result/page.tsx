@@ -1,6 +1,7 @@
 import { createClient, createAdminClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 import {
     CheckCircle2,
     XCircle,
@@ -228,7 +229,7 @@ export default async function PracticeResultPage({
         .eq('session_id', sessionId)
 
     if (answersError) {
-        console.error('Answers fetch error:', answersError)
+        logger.warn('Answers fetch error:', { error: answersError })
         return (
             <div className="mx-auto max-w-xl p-6 text-center">
                 <h1 className="text-2xl font-bold text-gray-900">Gagal memuat hasil tryout</h1>

@@ -1,5 +1,6 @@
 import ExportDataClient from '@/components/admin/ExportDataClient'
 import { createAdminClient } from '@/lib/utils/supabase/server'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ export default async function ExportDataPage() {
         .order('starts_at', { ascending: false })
 
     if (error) {
-        console.error('[export-events]', error)
+        logger.warn('[export-events]', { error })
     }
 
     return (

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import PracticeSessionClient from '@/components/practice/PracticeSessionClient'
 import { getOptionOrderForSession, orderOptionsById } from '@/lib/option-randomizer'
+import { logger } from '@/lib/logger'
 
 export default async function PracticeSessionPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const supabase = await createClient()
@@ -16,12 +17,12 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
         .single()
 
     if (sessionError) {
-        console.error('[PracticeSessionPage] Session Error Raw:', JSON.stringify(sessionError, null, 2))
+        logger.warn('[PracticeSessionPage] Session Error:', { error: sessionError })
         redirect('/cpns/dashboard/tryout') // Comment out redirect to see error on screen/logs
     }
 
     if (!session) {
-        console.error('[PracticeSessionPage] Session not found (Possible RLS issue)')
+        logger.warn('[PracticeSessionPage] Session not found (Possible RLS issue)')
         redirect('/cpns/dashboard/tryout')
     }
 
@@ -57,7 +58,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
         .eq('session_id', sessionId)
 
     if (answersError || !answersData) {
-        console.error('[PracticeSessionPage] Answers Error:', answersError)
+        logger.warn('[PracticeSessionPage] Answers Error:', { error: answersError })
         return <div>Error loading questions</div>
     }
 

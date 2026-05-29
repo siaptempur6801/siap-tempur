@@ -1,10 +1,12 @@
 'use server'
 
-import { createClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { createTransaction } from '@/lib/midtrans'
 import { PRICING_PACKAGES } from '@/lib/constants'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
+import { validateCsrf } from '@/lib/csrf'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
 const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
@@ -14,6 +16,8 @@ function isValidMidtransStatus(status: unknown): status is string {
 }
 
 export async function createPackageTransaction(packageId: string) {
+    try { await validateCsrf() } catch { throw new Error("Invalid request") }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -63,7 +67,8 @@ export async function createPackageTransaction(packageId: string) {
     }
 
     // 2. Log transaction in DB with the snap_token (single INSERT, avoids UPDATE RLS issues)
-    const { error: dbError } = await supabase
+    const admin = await createAdminClient()
+    const { error: dbError } = await admin
         .from('transactions')
         .insert({
             user_id: user.id,
@@ -87,9 +92,9 @@ export async function createPackageTransaction(packageId: string) {
     }
 }
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-
 export async function syncPaymentStatus(orderId: string) {
+    try { await validateCsrf() } catch { return false }
+
     const supabaseContext = await createClient()
     const { data: { user } } = await supabaseContext.auth.getUser()
     if (!user) return false;

@@ -70,7 +70,7 @@ function getInitialCorrectLabel(question?: EditableQuestion): OptionLabel {
 
 async function uploadImage(supabase: ReturnType<typeof createClient>, file: File, prefix: string) {
     const fileExt = file.name.split('.').pop() || 'png'
-    const fileName = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`
+    const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
         .from('question-images')

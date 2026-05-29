@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { isAdmin } from '@/lib/utils/admin'
 import { OPTION_LABELS, type QuestionType } from '@/lib/admin-dashboard'
 import { QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
+import { validateCsrf } from '@/lib/csrf'
+import { logger } from '@/lib/logger'
 
 interface TryoutConfigurationPayload {
     id: string
@@ -60,6 +62,8 @@ function buildOptionRows(questionId: string, formData: FormData, type: QuestionT
 }
 
 export async function deleteQuestion(id: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
         return { success: false, message: 'Unauthorized' }
@@ -72,12 +76,12 @@ export async function deleteQuestion(id: string) {
     // we use individual checks to ensure each step succeeds or logs correctly
     const { error: err1 } = await supabase.from('test_answers').delete().eq('question_id', id)
     if (err1 && err1.code !== 'PGRST116') { // Ignore "no rows found" if any
-        console.error('Error deleting test_answers:', err1)
+        logger.warn('Error deleting test_answers', { error: err1 })
     }
     
     const { error: err2 } = await supabase.from('options').delete().eq('question_id', id)
     if (err2 && err2.code !== 'PGRST116') {
-        console.error('Error deleting options:', err2)
+        logger.warn('Error deleting options', { error: err2 })
     }
     
     // 2. Finally delete the question
@@ -87,7 +91,7 @@ export async function deleteQuestion(id: string) {
         .eq('id', id)
 
     if (qErr) {
-        console.error('Final delete error:', qErr)
+        logger.warn('Final delete error', { error: qErr })
         return { success: false, message: `Gagal menghapus soal: ${qErr.message}` }
     }
 
@@ -96,6 +100,8 @@ export async function deleteQuestion(id: string) {
 }
 
 export async function createQuestion(formData: FormData) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
         return { success: false, message: 'Unauthorized' }
@@ -150,6 +156,8 @@ export async function createQuestion(formData: FormData) {
 }
 
 export async function updateQuestion(id: string, formData: FormData) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
         return { success: false, message: 'Unauthorized' }
@@ -247,6 +255,8 @@ interface ExcelQuestion {
 }
 
 export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) {
         return { success: false, message: 'Unauthorized' }
@@ -363,6 +373,8 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
 // =============================================
 
 export async function updateTryoutConfigurations(configs: TryoutConfigurationPayload[]) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -382,6 +394,8 @@ export async function updateTryoutConfigurations(configs: TryoutConfigurationPay
 }
 
 export async function addTryoutConfiguration(type: string, sub_category: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -415,6 +429,8 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
 }
 
 export async function toggleTryoutConfiguration(id: string, is_active: boolean) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -435,6 +451,8 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean) 
 }
 
 export async function deleteTryoutConfiguration(id: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -459,6 +477,8 @@ export async function deleteTryoutConfiguration(id: string) {
 // =============================================
 
 export async function createVoucher(formData: FormData) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -494,6 +514,8 @@ export async function createVoucher(formData: FormData) {
 }
 
 export async function toggleVoucher(id: string, isActive: boolean) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -510,6 +532,8 @@ export async function toggleVoucher(id: string, isActive: boolean) {
 }
 
 export async function updateVoucher(id: string, formData: FormData) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -559,6 +583,8 @@ export async function updateVoucher(id: string, formData: FormData) {
 }
 
 export async function deleteVoucher(id: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
     if (!id) return { success: false, message: 'Voucher tidak valid' }
@@ -628,6 +654,8 @@ function readTryoutEventForm(formData: FormData) {
 // Validation is handled by TryoutEventFormSchema
 
 export async function createTryoutEvent(formData: FormData) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -648,6 +676,8 @@ export async function createTryoutEvent(formData: FormData) {
 }
 
 export async function updateTryoutEvent(id: string, formData: FormData) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -669,6 +699,8 @@ export async function updateTryoutEvent(id: string, formData: FormData) {
 }
 
 export async function updateTryoutEventStatus(id: string, status: 'draft' | 'scheduled' | 'live' | 'closed' | 'cancelled') {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -685,6 +717,8 @@ export async function updateTryoutEventStatus(id: string, status: 'draft' | 'sch
 }
 
 export async function generateTryoutEventQuestions(id: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -700,6 +734,8 @@ export async function generateTryoutEventQuestions(id: string) {
 }
 
 export async function deleteTryoutEvent(id: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -739,6 +775,8 @@ export async function deleteTryoutEvent(id: string) {
 }
 
 export async function createTryoutEventCode(eventId: string, formData: FormData) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -771,6 +809,8 @@ export async function createTryoutEventCode(eventId: string, formData: FormData)
 }
 
 export async function toggleTryoutEventCode(id: string, isActive: boolean) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
@@ -787,6 +827,8 @@ export async function toggleTryoutEventCode(id: string, isActive: boolean) {
 }
 
 export async function deleteTryoutEventCode(id: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 

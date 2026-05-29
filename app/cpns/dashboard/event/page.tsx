@@ -1,6 +1,7 @@
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import EventClient from '@/components/dashboard/EventClient'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export default async function UserEventPage() {
         .order('starts_at', { ascending: true })
 
     if (error) {
-        console.error('[user-event-page]', error)
+        logger.warn('[user-event-page]', { error })
         return <div className="p-8 text-center font-bold text-gray-900">Gagal memuat event</div>
     }
 

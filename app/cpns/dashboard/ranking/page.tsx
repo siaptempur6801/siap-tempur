@@ -2,6 +2,7 @@ import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 // Cache leaderboard 15 menit agar selaras dengan refresh snapshot via pg_cron.
 export const revalidate = 900
 import LeaderboardClient from '@/components/dashboard/LeaderboardClient'
+import { logger } from '@/lib/logger'
 
 interface LeaderboardEntry {
     rank_pos: number
@@ -42,7 +43,7 @@ export default async function RankingPage() {
     ])
 
     if (error) {
-        console.error('Leaderboard Fetch Error:', error)
+        logger.warn('Leaderboard Fetch Error:', { error })
         return <div className="p-8 text-center">Error loading leaderboard. Please try again later.</div>
     }
 
@@ -57,7 +58,7 @@ export default async function RankingPage() {
             .maybeSingle()
 
         if (fallbackUserRankError) {
-            console.error('Current User Rank Fallback Error:', fallbackUserRankError)
+            logger.warn('Current User Rank Fallback Error:', { error: fallbackUserRankError })
         } else {
             resolvedCurrentUserRank = (fallbackUserRank as LeaderboardEntry | null) ?? null
         }

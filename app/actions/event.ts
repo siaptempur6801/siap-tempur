@@ -3,6 +3,7 @@
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { validateCsrf } from '@/lib/csrf'
 
 function isWithinStartWindow(event: {
     starts_at: string
@@ -19,6 +20,8 @@ function isWithinStartWindow(event: {
 }
 
 export async function registerTryoutEvent(eventId: string, eventCode?: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login?next=/cpns/dashboard/event')
@@ -124,6 +127,8 @@ export async function registerTryoutEvent(eventId: string, eventCode?: string) {
 }
 
 export async function startTryoutEvent(eventId: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login?next=/cpns/dashboard/event')

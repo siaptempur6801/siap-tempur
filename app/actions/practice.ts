@@ -4,6 +4,8 @@ import { isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-se
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { validateCsrf } from '@/lib/csrf'
+import { logger } from '@/lib/logger'
 
 type ResumeSessionResult = {
     sessionId: string
@@ -54,7 +56,7 @@ async function findExistingTryoutSession(
     const { data: sessions, error } = await queryInProgressSessions(supabase, userId, 'tryout', 1)
 
     if (error) {
-        console.error('[findExistingTryoutSession] DB Error:', error)
+        logger.warn('[findExistingTryoutSession] DB Error', { error: error.message })
         return null
     }
 
@@ -67,7 +69,7 @@ async function findExistingTryoutSession(
         })
 
         if (finishError) {
-            console.error('[findExistingTryoutSession] Failed to auto-finish expired session:', finishError)
+            logger.warn('[findExistingTryoutSession] Failed to auto-finish expired session', { error: finishError })
         }
 
         return null
@@ -84,7 +86,7 @@ async function findExistingPracticeSession(
     const { data: sessions, error } = await queryInProgressSessions(supabase, userId, 'practice', 10)
 
     if (error) {
-        console.error('[findExistingPracticeSession] Session query error:', error)
+        logger.warn('[findExistingPracticeSession] Session query error', { error: error.message })
         return null
     }
 
@@ -113,6 +115,8 @@ async function findExistingPracticeSession(
 }
 
 export async function startPractice(type: 'TWK' | 'TIU' | 'TKP') {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
 
     // Get current user
@@ -134,14 +138,14 @@ export async function startPractice(type: 'TWK' | 'TIU' | 'TKP') {
     })
 
     if (error) {
-        console.error('[startPractice] DB Error:', error)
+        logger.warn('[startPractice] DB Error', { error: error.message })
         return { error: 'Failed to start practice session' }
     }
 
 
 
     if (!data || data.length === 0) {
-        console.error('[startPractice] No data returned from RPC')
+        logger.warn('[startPractice] No data returned from RPC')
         return { error: 'No session created' }
     }
 
@@ -152,6 +156,8 @@ export async function startPractice(type: 'TWK' | 'TIU' | 'TKP') {
 }
 
 export async function startTryout() {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -168,7 +174,7 @@ export async function startTryout() {
     })
 
     if (error) {
-        console.error('[startTryout] DB Error:', error)
+        logger.warn('[startTryout] DB Error', { error: error.message })
         if (error.message?.includes('Not enough SKD tickets') || error.details?.includes('Not enough SKD tickets')) {
             return { error: 'Token tryout habis! Silakan beli paket baru.' }
         }
@@ -184,6 +190,8 @@ export async function startTryout() {
 }
 
 export async function submitAnswer(sessionId: string, questionId: string, optionId: string) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
 
     if (!isUuid(sessionId) || !isUuid(questionId) || !isUuid(optionId)) {
@@ -202,7 +210,7 @@ export async function submitAnswer(sessionId: string, questionId: string, option
         .maybeSingle()
 
     if (sessionError) {
-        console.error('Error validating answer session:', sessionError)
+        logger.warn('Error validating answer session', { error: sessionError })
         return { error: 'Failed to save answer' }
     }
 
@@ -226,7 +234,7 @@ export async function submitAnswer(sessionId: string, questionId: string, option
     ])
 
     if (answerError || optionError) {
-        console.error('Error validating submitted answer:', answerError || optionError)
+        logger.warn('Error validating submitted answer', { error: (answerError || optionError)?.message })
         return { error: 'Failed to save answer' }
     }
 
@@ -241,7 +249,7 @@ export async function submitAnswer(sessionId: string, questionId: string, option
         .eq('question_id', questionId)
 
     if (error) {
-        console.error('Error submitting answer:', error)
+        logger.warn('Error submitting answer', { error: error.message })
         return { error: 'Failed to save answer' }
     }
 
@@ -251,13 +259,15 @@ export async function submitAnswer(sessionId: string, questionId: string, option
         .eq('id', sessionId)
 
     if (activityError && !isMissingProgressColumnError(activityError)) {
-        console.error('Error updating session activity:', activityError)
+        logger.warn('Error updating session activity', { error: activityError.message })
     }
 
     return { success: true }
 }
 
 export async function finishPractice(sessionId: string) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
@@ -268,7 +278,7 @@ export async function finishPractice(sessionId: string) {
     })
 
     if (error) {
-        console.error('Error finishing practice:', error)
+        logger.warn('Error finishing practice', { error: error.message })
         return { error: 'Failed to finish session' }
     }
 

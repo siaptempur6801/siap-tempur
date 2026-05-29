@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
+import { validateCsrf } from '@/lib/csrf'
 
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
 
@@ -15,6 +16,8 @@ const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
  * Does NOT consume tryout tokens.
  */
 export async function createEventPaymentTransaction(eventId: string) {
+    try { await validateCsrf() } catch { throw new Error('Invalid request') }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login?next=/cpns/dashboard/event')
@@ -137,6 +140,8 @@ export async function syncEventPaymentStatus(orderId: string): Promise<{
     registered: boolean
     message: string
 }> {
+    try { await validateCsrf() } catch { return { status: 'error', registered: false, message: 'Invalid request' } }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { status: 'error', registered: false, message: 'Unauthorized' }

@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import Script from 'next/script'
+import { logger } from '@/lib/logger'
 
 type UserMetadata = {
     full_name?: string
@@ -54,7 +55,7 @@ export default async function DashboardLayout({
         if (!insertError) {
             profile = newProfile
         } else {
-            console.error('[DashboardLayout] Failed to create profile:', insertError)
+            logger.warn('[DashboardLayout] Failed to create profile:', { error: insertError })
         }
     }
 

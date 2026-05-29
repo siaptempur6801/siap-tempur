@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/utils/supabase/server'
 import VoucherAdminClient, { VoucherCreateController } from '@/components/admin/VoucherAdminClient'
+import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +12,7 @@ export default async function VoucherAdminPage() {
         .order('created_at', { ascending: false })
 
     if (error) {
-        console.error('[voucher-admin]', error)
+        logger.warn('[voucher-admin]', { error })
         return <div className="p-8 text-center font-bold text-gray-900">Gagal memuat data voucher</div>
     }
 

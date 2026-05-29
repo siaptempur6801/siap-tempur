@@ -4,8 +4,12 @@ import { createClient } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
+import { validateCsrf } from '@/lib/csrf'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 export async function updateProfile(formData: FormData) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -49,6 +53,8 @@ export async function updateProfileInfo(data: {
     education_level?: string;
     target_instance?: string;
 }) {
+    try { await validateCsrf() } catch { return { success: false, error: 'Invalid request' } }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -86,6 +92,8 @@ export async function updateProfileInfo(data: {
 }
 
 export async function updatePassword(data: { newPassword: string }) {
+    try { await validateCsrf() } catch { return { success: false, error: 'Invalid request' } }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -102,10 +110,20 @@ export async function updatePassword(data: { newPassword: string }) {
         return { success: false, error: 'Gagal memperbarui password' }
     }
 
+    // Sign out all other sessions for security
+    const admin = createSupabaseClient(
+        env.supabaseUrl(),
+        env.supabaseServiceRoleKey(),
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    await admin.auth.admin.signOut(user.id, 'others').catch(() => {})
+
     return { success: true }
 }
 
 export async function deleteAccount() {
+    try { await validateCsrf() } catch { return { success: false, error: 'Invalid request' } }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -114,8 +132,7 @@ export async function deleteAccount() {
     }
 
     try {
-        const { createClient: createAdminClient } = await import('@supabase/supabase-js')
-        const adminClient = createAdminClient(
+        const adminClient = createSupabaseClient(
             env.supabaseUrl(),
             env.supabaseServiceRoleKey(),
             {

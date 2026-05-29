@@ -40,10 +40,23 @@ const nextConfig: NextConfig = {
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains; preload',
           },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+          },
         ],
       },
     ];
   },
+  // Cache revalidation: Next.js defaults to no-store in prod, but setting
+  // explicit revalidate on layout pages or using fetch cache/revalidate is
+  // recommended. Uncomment and tune as needed:
+  // experimental: {
+  //   staleTimes: {
+  //     dynamic: 30,
+  //     static: 180,
+  //   },
+  // },
 };
 
 export default nextConfig;
