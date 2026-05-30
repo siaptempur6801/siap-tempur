@@ -1,7 +1,5 @@
 'use client'
 
-import { format } from 'date-fns'
-import { id } from 'date-fns/locale'
 import { Flame } from 'lucide-react'
 
 interface ConsistencyDay {
@@ -34,7 +32,7 @@ export default function ConsistencyTracker({ data, score, activeCount }: { data:
                 {data.map((day, idx) => (
                     <div
                         key={idx}
-                        title={`${format(new Date(day.date), 'd MMM yyyy', { locale: id })}: ${day.active ? 'Belajar' : 'Tidak'}`}
+                        title={`${new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }).format(new Date(day.date))}: ${day.active ? 'Belajar' : 'Tidak'}`}
                         className={`
                             w-4 h-4 md:w-5 md:h-5 transition-all hover:scale-125 border border-gray-400
                             ${day.active

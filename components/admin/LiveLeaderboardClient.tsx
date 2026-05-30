@@ -75,7 +75,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                             <span className="text-xs font-black uppercase tracking-widest">Update Terakhir</span>
                         </div>
                         <span className="text-xl font-black font-mono text-gray-900">
-                            {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta' })}
                         </span>
                     </div>
                 </div>

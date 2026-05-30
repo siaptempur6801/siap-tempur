@@ -41,11 +41,13 @@ interface EventClientProps {
 
 function formatDate(value: string) {
     return new Intl.DateTimeFormat('id-ID', {
+        weekday: 'long',
         day: '2-digit',
         month: 'short',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
     }).format(new Date(value))
 }
 
@@ -95,7 +97,9 @@ function getEventState(event: UserEvent, now: number) {
 function CountdownBadge({ targetMs, label, now }: { targetMs: number; label: string; now: number }) {
     const diff = targetMs - now
     if (diff <= 0) return null
-    const h = Math.floor(diff / 3600000)
+    const totalH = Math.floor(diff / 3600000)
+    const d = Math.floor(totalH / 24)
+    const h = totalH % 24
     const m = Math.floor((diff % 3600000) / 60000)
     const s = Math.floor((diff % 60000) / 1000)
 
@@ -104,7 +108,7 @@ function CountdownBadge({ targetMs, label, now }: { targetMs: number; label: str
             <Clock size={14} className="shrink-0" />
             <span>{label} </span>
             <span className="font-mono">
-                {h > 0 && `${h}j `}{m}m {String(s).padStart(2, '0')}d
+                {d > 0 && `${d}h `}{h > 0 && `${h}j `}{m}m {String(s).padStart(2, '0')}d
             </span>
         </div>
     )

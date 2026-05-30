@@ -117,7 +117,7 @@ export function HistoryTab({ transactions, usageSessions }: HistoryTabProps) {
                                             <div className="font-black text-lg text-gray-900 mb-1">{tx.package_name}</div>
                                             <div className="flex items-center gap-2 text-sm text-gray-600 font-bold">
                                                 <Calendar size={14} />
-                                                {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                                {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })}
                                             </div>
                                         </div>
                                     </div>
@@ -198,7 +198,7 @@ export function HistoryTab({ transactions, usageSessions }: HistoryTabProps) {
                                             {session.mode === 'tryout' ? 'Tryout SKD Full' : 'Tryout Soal'}
                                         </div>
                                         <div className="text-sm text-gray-500">
-                                            {new Date(session.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            {new Date(session.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                                         </div>
                                     </div>
                                 </div>

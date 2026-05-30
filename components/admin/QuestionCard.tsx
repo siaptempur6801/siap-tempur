@@ -227,7 +227,7 @@ export default function QuestionCard({
                         {/* Meta */}
                         <div className="text-[10px] text-gray-300 font-mono pt-2 flex justify-between">
                             <span>{questionCode}</span>
-                            <span>Dibuat: {new Date(q.created_at).toLocaleString('id-ID')}</span>
+                            <span>Dibuat: {new Date(q.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}</span>
                         </div>
                     </div>
                 )}

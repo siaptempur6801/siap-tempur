@@ -253,7 +253,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     const lastSession = sessions && sessions.length > 0 ? sessions[0] : null
     const lastExam = lastSession ? {
         id: lastSession.id,
-        date: new Date(lastSession.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        date: new Date(lastSession.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
         score_twk: lastSession.score_twk || 0,
         score_tiu: lastSession.score_tiu || 0,
         score_tkp: lastSession.score_tkp || 0,
@@ -263,7 +263,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
 
     const bestExam = bestSession ? {
         id: bestSession.id,
-        date: new Date(bestSession.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+        date: new Date(bestSession.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }),
         score_twk: bestSession.score_twk || 0,
         score_tiu: bestSession.score_tiu || 0,
         score_tkp: bestSession.score_tkp || 0,

@@ -56,7 +56,8 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
     const createdAt = new Date(user.created_at).toLocaleDateString('id-ID', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'Asia/Jakarta',
     })
 
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,7 +359,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                         <div>
                                             <div className="text-sm text-gray-500 font-bold">Tanggal Lahir</div>
                                             <div className="font-bold text-base text-gray-900">
-                                                {profile.birth_date ? new Date(profile.birth_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
+                                                {profile.birth_date ? new Date(profile.birth_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) : '-'}
                                             </div>
                                         </div>
                                     </div>

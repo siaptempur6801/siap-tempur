@@ -79,6 +79,7 @@ function formatDate(value: string | null) {
     return new Intl.DateTimeFormat('id-ID', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
     }).format(new Date(value))
 }
 
