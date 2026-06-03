@@ -658,7 +658,20 @@ export default function EventClient({ events }: EventClientProps) {
                                             <form
                                                 onSubmit={(e) => {
                                                     e.preventDefault()
-                                                    if (isPending || getEventState(event, now).action !== 'register') return
+                                                    if (isPending) return
+
+                                                    const code = (eventCodes[event.id] || '').trim()
+                                                    if (!code) {
+                                                        toast.error('Masukkan kode masuk terlebih dahulu')
+                                                        return
+                                                    }
+
+                                                    const state = getEventState(event, now)
+                                                    if (state.action === 'disabled') {
+                                                        toast.error(state.label)
+                                                        return
+                                                    }
+
                                                     doAction(event)
                                                 }}
                                                 className="mb-2 flex items-center gap-2 border-2 border-t-0 border-gray-900 border-t-transparent bg-gray-900 px-4 py-2"
@@ -675,6 +688,7 @@ export default function EventClient({ events }: EventClientProps) {
                                                 <button
                                                     type="submit"
                                                     disabled={isPending || !(eventCodes[event.id] || '').trim()}
+                                                    aria-label="Submit kode masuk"
                                                     className="flex shrink-0 items-center justify-center gap-1.5 border-2 border-white bg-blue-600 px-3 py-1.5 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.25)] transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-gray-600 disabled:bg-gray-700 disabled:text-gray-400 disabled:shadow-none"
                                                 >
                                                     {isPending && pendingEventId === event.id ? (
