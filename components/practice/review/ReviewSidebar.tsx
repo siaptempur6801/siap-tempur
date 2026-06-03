@@ -99,14 +99,14 @@ export default function ReviewSidebar({
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: 280, opacity: 0 }}
                         transition={{ duration: 0.22 }}
-                        className="hidden lg:block shrink-0 lg:w-[248px] xl:w-[260px] border-l-2 border-dashed border-gray-300 bg-[#fff9c4]/80 backdrop-blur-sm"
+                        className="hidden lg:flex h-full min-h-0 shrink-0 flex-col lg:w-[248px] xl:w-[260px] border-l-2 border-dashed border-gray-300 bg-[#fff9c4]/80 backdrop-blur-sm"
                     >
-                        <div className="px-2.5 py-3 border-b-2 border-dashed border-gray-300 font-bold text-sm flex items-center gap-2 bg-white/30">
+                        <div className="shrink-0 px-2.5 py-3 border-b-2 border-dashed border-gray-300 font-bold text-sm flex items-center gap-2 bg-white/30">
                             <Map size={16} />
                             <span>Daftar Pembahasan</span>
                         </div>
 
-                        <div className="px-2 py-3 space-y-3 max-h-[680px] overflow-y-auto">
+                        <div className="min-h-0 flex-1 px-2 py-3 space-y-3 overflow-y-auto">
                             <div className="hidden lg:flex items-center gap-3 text-[11px] text-gray-700">
                                 <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-500 border border-green-700"></div><span>Benar</span></div>
                                 <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-700"></div><span>Salah</span></div>

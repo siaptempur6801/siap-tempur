@@ -62,11 +62,11 @@ export default function DashboardShell({ children, user, profile, signoutAction,
     return (
         <div className="h-screen overflow-hidden flex font-body bg-[#fdfbf7]">
             {/* Sidebar */}
-            <aside className="w-64 bg-[#fdfbf7] border-r-2 border-gray-900 hidden md:flex flex-col z-20 relative shadow-[4px_0px_0px_0px_rgba(0,0,0,0.1)]">
+            <aside className="w-64 min-h-0 bg-[#fdfbf7] border-r-2 border-gray-900 hidden md:flex flex-col z-20 relative shadow-[4px_0px_0px_0px_rgba(0,0,0,0.1)]">
                 {/* Sidebar Pattern Grid */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
 
-                <div className="p-6 relative z-10">
+                <div className="p-6 relative z-10 shrink-0">
                     <Link href="/cpns" className="flex flex-col items-start group">
                         <span className="text-xl font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight uppercase">
                             CPNS & KEDINASAN
@@ -77,7 +77,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     </Link>
                 </div>
 
-                <nav className="flex-1 px-4 space-y-3 relative z-10">
+                <nav className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-3 relative z-10">
                     <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
                     <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
                     <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
@@ -95,7 +95,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     )}
                 </nav>
 
-                <div className="p-4 border-t-2 border-gray-900 relative z-10">
+                <div className="p-4 border-t-2 border-gray-900 relative z-10 shrink-0">
                     <div className="flex items-center gap-3 mb-4 px-2 p-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-1 hover:rotate-0 transition-transform">
                         <div className="w-10 h-10 border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold overflow-hidden relative bg-yellow-200">
                             {profile?.avatar_url ? (

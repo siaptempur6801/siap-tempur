@@ -165,7 +165,7 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
                         </Link>
                     </div>
 
-                    <nav className="relative z-10 min-h-0 flex-1 space-y-3 overflow-hidden px-4">
+                    <nav className="relative z-10 min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
                         {navItems.map((item) => (
                             <AdminNavLink key={item.href} {...item} />
                         ))}
