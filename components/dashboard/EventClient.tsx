@@ -117,6 +117,28 @@ function CountdownBadge({ targetMs, label, now }: { targetMs: number; label: str
     )
 }
 
+function EventTimeStatus({ startsAt, endsAt, now }: { startsAt: number; endsAt: number; now: number }) {
+    if (now < startsAt) {
+        return <CountdownBadge targetMs={startsAt} label="Event akan dimulai dalam" now={now} />
+    }
+
+    if (now <= endsAt) {
+        return (
+            <div className="flex items-center gap-2 border-2 border-green-500 bg-green-50 px-3 py-2 text-sm font-black text-green-700">
+                <Radio size={14} className="shrink-0 animate-pulse" />
+                <span>Event sedang berlangsung</span>
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex items-center gap-2 border-2 border-gray-300 bg-gray-50 px-3 py-2 text-sm font-black text-gray-600">
+            <Clock size={14} className="shrink-0" />
+            <span>Event telah berakhir pada {formatDate(new Date(endsAt).toISOString())}</span>
+        </div>
+    )
+}
+
 // --- Confirm Modal ---
 function ConfirmModal({ event, onConfirm, onCancel, isLoading }: {
     event: UserEvent
@@ -227,7 +249,6 @@ function EventCard({
     const startsAt = new Date(event.starts_at).getTime()
     const endsAt = new Date(event.ends_at).getTime()
     const isLive = event.status === 'live'
-    const isClosed = event.status === 'closed'
     const hasTicket = Boolean(event.participant_id) || SUCCESS_PAYMENT.has(event.payment_status || '')
 
     const statusConfig = {
@@ -303,13 +324,8 @@ function EventCard({
                         </div>
                     </div>
 
-                    {/* Countdown */}
-                    {!isClosed && event.status === 'scheduled' && now < startsAt && (
-                        <CountdownBadge targetMs={startsAt} label="Dimulai dalam" now={now} />
-                    )}
-                    {isLive && now < endsAt && (
-                        <CountdownBadge targetMs={endsAt} label="Event berakhir dalam" now={now} />
-                    )}
+                    {/* Time Status */}
+                    <EventTimeStatus startsAt={startsAt} endsAt={endsAt} now={now} />
 
                     {/* Timeline */}
                     <div className="pt-1">
