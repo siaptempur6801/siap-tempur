@@ -670,8 +670,20 @@ export default function EventClient({ events }: EventClientProps) {
                                                     onChange={(e) => setEventCodes((cur) => ({ ...cur, [event.id]: e.target.value.toUpperCase() }))}
                                                     placeholder="MASUKKAN KODE"
                                                     enterKeyHint="go"
-                                                    className="flex-1 border-2 border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-black uppercase text-white outline-none focus:border-blue-400 placeholder:text-gray-500"
+                                                    className="min-w-0 flex-1 border-2 border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-black uppercase text-white outline-none focus:border-blue-400 placeholder:text-gray-500"
                                                 />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isPending || !(eventCodes[event.id] || '').trim()}
+                                                    className="flex shrink-0 items-center justify-center gap-1.5 border-2 border-white bg-blue-600 px-3 py-1.5 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.25)] transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-gray-600 disabled:bg-gray-700 disabled:text-gray-400 disabled:shadow-none"
+                                                >
+                                                    {isPending && pendingEventId === event.id ? (
+                                                        <Loader2 size={13} className="animate-spin" />
+                                                    ) : (
+                                                        <ArrowRight size={13} />
+                                                    )}
+                                                    Submit
+                                                </button>
                                             </form>
                                         )}
                                         <EventCard
