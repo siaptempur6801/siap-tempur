@@ -620,6 +620,10 @@ export async function deleteVoucher(id: string) {
 // TRYOUT AKBAR EVENTS
 // =============================================
 
+function parseWibDateTime(value: string) {
+    return value ? new Date(`${value}:00+07:00`) : null
+}
+
 function readTryoutEventForm(formData: FormData) {
     const title = String(formData.get('title') || '').trim()
     const description = String(formData.get('description') || '').trim()
@@ -634,7 +638,7 @@ function readTryoutEventForm(formData: FormData) {
     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
     const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
     const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
-    const startsAtDate = startsAt ? new Date(startsAt) : null
+    const startsAtDate = parseWibDateTime(startsAt)
     const synchronizedCloseAt = startsAtDate && !Number.isNaN(startsAtDate.getTime())
         ? new Date(startsAtDate.getTime() + (normalizedDurationMinutes + normalizedStartGraceMinutes) * 60 * 1000).toISOString()
         : ''
@@ -642,7 +646,7 @@ function readTryoutEventForm(formData: FormData) {
     return {
         title,
         description: description || null,
-        starts_at: startsAt ? new Date(startsAt).toISOString() : '',
+        starts_at: startsAtDate ? startsAtDate.toISOString() : '',
         ends_at: synchronizedCloseAt || (endsAt ? new Date(endsAt).toISOString() : ''),
         start_grace_minutes: normalizedStartGraceMinutes,
         duration_minutes: normalizedDurationMinutes,

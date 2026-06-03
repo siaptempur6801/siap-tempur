@@ -79,6 +79,7 @@ function formatDate(value: string | null) {
     return new Intl.DateTimeFormat('id-ID', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit',
+        timeZoneName: 'short',
         timeZone: 'Asia/Jakarta',
     }).format(new Date(value))
 }
@@ -88,24 +89,24 @@ function toDateInputValue(value: string | null) {
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return ''
 
-    const offsetMs = date.getTimezoneOffset() * 60 * 1000
-    return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
-}
-
-function formatDateInputValue(date: Date) {
-    const pad = (value: number) => String(value).padStart(2, '0')
-    return [
-        date.getFullYear(),
-        pad(date.getMonth() + 1),
-        pad(date.getDate()),
-    ].join('-') + `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Jakarta',
+    }).formatToParts(date)
+    const getPart = (type: string) => parts.find((part) => part.type === type)?.value || '00'
+    return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}`
 }
 
 function addMinutesToInputValue(value: string, minutes: number) {
     if (!value) return ''
-    const date = new Date(value)
+    const date = new Date(`${value}:00+07:00`)
     if (Number.isNaN(date.getTime())) return ''
-    return formatDateInputValue(new Date(date.getTime() + minutes * 60 * 1000))
+    return toDateInputValue(new Date(date.getTime() + minutes * 60 * 1000).toISOString())
 }
 
 function getEventFormValues(event?: TryoutEvent | null) {
@@ -196,12 +197,12 @@ function EventForm({ event, action, isPending }: {
                         className="w-full resize-none border-2 border-gray-300 px-4 py-2.5 font-medium text-gray-900 outline-none focus:border-gray-900" />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Mulai</label>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Mulai (WIB)</label>
                     <input name="starts_at" type="datetime-local" required value={values.starts_at} onChange={(e) => updateValue('starts_at', e.target.value)}
                         className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Tutup Otomatis</label>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Tutup Otomatis (WIB)</label>
                     <input type="datetime-local" value={closeAt} readOnly
                         className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
                 </div>
@@ -221,12 +222,12 @@ function EventForm({ event, action, isPending }: {
                         className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Hasil Terlihat</label>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Hasil Terlihat (WIB)</label>
                     <input type="datetime-local" value={resultVisibleAt} readOnly
                         className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Pembahasan</label>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Pembahasan (WIB)</label>
                     <input type="datetime-local" value={explanationVisibleAt} readOnly
                         className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
                 </div>

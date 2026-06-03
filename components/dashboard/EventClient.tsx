@@ -47,6 +47,7 @@ function formatDate(value: string) {
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZoneName: 'short',
         timeZone: 'Asia/Jakarta',
     }).format(new Date(value))
 }
@@ -69,7 +70,8 @@ function getEventState(event: UserEvent, now: number) {
 
     if (isDone) return { label: 'Lihat Hasil', action: 'history' as const, step: 3 }
     if (event.session_id) return { label: 'Lanjutkan', action: 'start' as const, step: 2 }
-    if (event.status === 'closed') return { label: 'Event Selesai', action: 'disabled' as const, step: 3 }
+    if (event.status === 'closed') return { label: 'Event Berakhir', action: 'disabled' as const, step: 3 }
+    if (canUseScheduleWindow && now > endsAt) return { label: 'Event Berakhir', action: 'disabled' as const, step: 3 }
 
     // Registration is the source of truth for event access.
     if (event.participant_id) {
