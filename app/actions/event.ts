@@ -5,17 +5,15 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
 
-function isWithinStartWindow(event: {
-    starts_at: string
-    ends_at: string
-    start_grace_minutes: number
-    status: string
-}) {
-    const now = Date.now()
-    const startsAt = new Date(event.starts_at).getTime()
-    const latestStartAt = startsAt + event.start_grace_minutes * 60 * 1000
+type RegisterTryoutEventResult = {
+    success: boolean
+    message: string
+}
 
-    return ['scheduled', 'live'].includes(event.status) && now >= startsAt && now <= latestStartAt
+type StartTryoutEventResult = {
+    session_id: string | null
+    resumed: boolean
+    message: string
 }
 
 export async function registerTryoutEvent(eventId: string, eventCode?: string) {
@@ -27,102 +25,23 @@ export async function registerTryoutEvent(eventId: string, eventCode?: string) {
 
     const admin = await createAdminClient()
 
-    const { data: event, error: eventError } = await admin
-        .from('tryout_events')
-        .select('id, status, max_participants, requires_code')
-        .eq('id', eventId)
+    const { data, error } = await admin
+        .rpc('register_tryout_event_participant', {
+            p_user_id: user.id,
+            p_event_id: eventId,
+            p_event_code: eventCode || null,
+        })
         .single()
 
-    if (eventError || !event) {
-        return { success: false, message: 'Event tidak ditemukan' }
-    }
+    const result = data as RegisterTryoutEventResult | null
 
-    if (!['scheduled', 'live'].includes(event.status)) {
-        return { success: false, message: 'Event belum dibuka untuk pendaftaran' }
-    }
-
-    const { data: existingParticipant } = await admin
-        .from('tryout_event_participants')
-        .select('id')
-        .eq('event_id', eventId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-    if (existingParticipant) {
-        return { success: true, message: 'Kamu sudah terdaftar di event ini' }
-    }
-
-    if (event.max_participants) {
-        const { count } = await admin
-            .from('tryout_event_participants')
-            .select('*', { count: 'exact', head: true })
-            .eq('event_id', eventId)
-
-        if ((count || 0) >= event.max_participants) {
-            return { success: false, message: 'Kuota peserta event sudah penuh' }
-        }
-    }
-
-    let eventCodeId: string | null = null
-    const normalizedCode = String(eventCode || '').trim().toUpperCase()
-
-    if (event.requires_code) {
-        if (!normalizedCode) return { success: false, message: 'Kode masuk wajib diisi untuk event ini' }
-
-        const { data: code, error: codeError } = await admin
-            .from('tryout_event_codes')
-            .select('id, max_uses, used_count, is_active, expires_at')
-            .eq('event_id', eventId)
-            .eq('code', normalizedCode)
-            .maybeSingle()
-
-        if (codeError) return { success: false, message: codeError.message }
-        if (!code) return { success: false, message: 'Kode masuk tidak ditemukan' }
-        if (!code.is_active) return { success: false, message: 'Kode masuk sudah tidak aktif' }
-        if (code.expires_at && new Date(code.expires_at).getTime() <= Date.now()) {
-            return { success: false, message: 'Kode masuk sudah kadaluarsa' }
-        }
-        if (code.used_count >= code.max_uses) {
-            return { success: false, message: 'Limit penggunaan kode masuk sudah penuh' }
-        }
-
-        const { data: claimedCode, error: claimError } = await admin
-            .from('tryout_event_codes')
-            .update({
-                used_count: code.used_count + 1,
-                updated_at: new Date().toISOString(),
-            })
-            .eq('id', code.id)
-            .eq('used_count', code.used_count)
-            .select('id')
-            .single()
-
-        if (claimError || !claimedCode) {
-            return { success: false, message: 'Kode sedang dipakai peserta lain. Coba daftar lagi.' }
-        }
-
-        eventCodeId = claimedCode.id
-    }
-
-    const { error } = await admin
-        .from('tryout_event_participants')
-        .insert({
-            event_id: eventId,
-            event_code_id: eventCodeId,
-            user_id: user.id,
-            status: 'registered',
-        })
-
-    if (error) {
-        if (eventCodeId) {
-            await admin.rpc('decrement_tryout_event_code_usage', { p_code_id: eventCodeId })
-        }
-        return { success: false, message: error.message }
+    if (error || !result) {
+        return { success: false, message: error?.message || 'Gagal daftar Tryout Akbar' }
     }
 
     revalidatePath('/cpns/dashboard/event')
     revalidatePath('/cpns/dashboard')
-    return { success: true, message: 'Berhasil daftar Tryout Akbar' }
+    return { success: Boolean(result.success), message: result.message }
 }
 
 export async function startTryoutEvent(eventId: string) {
@@ -134,101 +53,19 @@ export async function startTryoutEvent(eventId: string) {
 
     const admin = await createAdminClient()
 
-    const { data: existingEventSession } = await admin
-        .from('tryout_event_sessions')
-        .select('session_id')
-        .eq('event_id', eventId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-    if (existingEventSession?.session_id) {
-        return { success: true, sessionId: existingEventSession.session_id, resumed: true }
-    }
-
-    const { data: event, error: eventError } = await admin
-        .from('tryout_events')
-        .select('id, status, starts_at, ends_at, start_grace_minutes')
-        .eq('id', eventId)
+    const { data, error } = await admin
+        .rpc('start_tryout_event_session', {
+            p_user_id: user.id,
+            p_event_id: eventId,
+        })
         .single()
 
-    if (eventError || !event) {
-        return { success: false, message: 'Event tidak ditemukan' }
+    const result = data as StartTryoutEventResult | null
+
+    if (error || !result?.session_id) {
+        return { success: false, message: error?.message || result?.message || 'Gagal membuat session event' }
     }
-
-    if (!isWithinStartWindow(event)) {
-        return { success: false, message: 'Event belum live atau start window sudah ditutup' }
-    }
-
-    const { data: participant } = await admin
-        .from('tryout_event_participants')
-        .select('id')
-        .eq('event_id', eventId)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-    if (!participant) {
-        return { success: false, message: 'Daftar event terlebih dahulu sebelum mulai' }
-    }
-
-    const { data: eventQuestions, error: questionsError } = await admin
-        .from('tryout_event_questions')
-        .select('question_id')
-        .eq('event_id', eventId)
-        .order('sort_order', { ascending: true })
-
-    if (questionsError || !eventQuestions || eventQuestions.length === 0) {
-        return { success: false, message: 'Paket soal event belum digenerate admin' }
-    }
-
-    const { data: session, error: sessionError } = await admin
-        .from('test_sessions')
-        .insert({
-            user_id: user.id,
-            mode: 'tryout',
-            status: 'in_progress',
-            start_time: new Date().toISOString(),
-            last_activity_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single()
-
-    if (sessionError || !session) {
-        return { success: false, message: sessionError?.message || 'Gagal membuat session event' }
-    }
-
-    const { error: answersError } = await admin
-        .from('test_answers')
-        .insert(eventQuestions.map((question) => ({
-            session_id: session.id,
-            question_id: question.question_id,
-        })))
-
-    if (answersError) {
-        await admin.from('test_sessions').delete().eq('id', session.id)
-        return { success: false, message: answersError.message }
-    }
-
-    const { error: eventSessionError } = await admin
-        .from('tryout_event_sessions')
-        .insert({
-            event_id: eventId,
-            user_id: user.id,
-            session_id: session.id,
-            status: 'started',
-            started_at: new Date().toISOString(),
-        })
-
-    if (eventSessionError) {
-        await admin.from('test_sessions').delete().eq('id', session.id)
-        return { success: false, message: eventSessionError.message }
-    }
-
-    await admin
-        .from('tryout_event_participants')
-        .update({ status: 'started' })
-        .eq('event_id', eventId)
-        .eq('user_id', user.id)
 
     revalidatePath('/cpns/dashboard/event')
-    return { success: true, sessionId: session.id, resumed: false }
+    return { success: true, sessionId: result.session_id, resumed: Boolean(result.resumed) }
 }

@@ -1,11 +1,12 @@
 'use server'
 
-import { createClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { validateCsrf } from '@/lib/csrf'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { passwordUpdateSchema, profileInfoSchema } from '@/lib/validations/profile'
 
 export async function updateProfile(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
@@ -17,17 +18,21 @@ export async function updateProfile(formData: FormData) {
         throw new Error("Unauthorized")
     }
 
-    // Extract Data
-    const avatarUrl = formData.get('avatarUrl') as string
+    const parsedProfile = profileInfoSchema.safeParse({
+        full_name: String(formData.get('fullName') || ''),
+        avatar_url: String(formData.get('avatarUrl') || ''),
+    })
+
+    if (!parsedProfile.success) {
+        return { error: parsedProfile.error.issues[0]?.message || 'Data profil tidak valid' }
+    }
 
     const updates: Record<string, string | undefined> = {
         updated_at: new Date().toISOString(),
-        full_name: formData.get('fullName') as string,
     }
 
-    if (avatarUrl) {
-        updates.avatar_url = avatarUrl
-    }
+    if (parsedProfile.data.full_name !== undefined) updates.full_name = parsedProfile.data.full_name
+    if (parsedProfile.data.avatar_url !== undefined) updates.avatar_url = parsedProfile.data.avatar_url || undefined
 
     const { error } = await supabase
         .from('profiles')
@@ -62,18 +67,27 @@ export async function updateProfileInfo(data: {
         return { success: false, error: 'Not authenticated' }
     }
 
+    const parsedProfile = profileInfoSchema.safeParse(data)
+
+    if (!parsedProfile.success) {
+        return {
+            success: false,
+            error: parsedProfile.error.issues[0]?.message || 'Data profil tidak valid',
+        }
+    }
+
     const updates: Record<string, string | null | undefined> = {
         updated_at: new Date().toISOString()
     }
 
-    if (data.full_name !== undefined) updates.full_name = data.full_name
-    if (data.bio !== undefined) updates.bio = data.bio
-    if (data.avatar_url !== undefined) updates.avatar_url = data.avatar_url
-    if (data.phone_number !== undefined) updates.phone_number = data.phone_number || null
-    if (data.birth_date !== undefined) updates.birth_date = data.birth_date || null
-    if (data.gender !== undefined) updates.gender = data.gender || null
-    if (data.education_level !== undefined) updates.education_level = data.education_level || null
-    if (data.target_instance !== undefined) updates.target_instance = data.target_instance || null
+    if (parsedProfile.data.full_name !== undefined) updates.full_name = parsedProfile.data.full_name
+    if (parsedProfile.data.bio !== undefined) updates.bio = parsedProfile.data.bio
+    if (parsedProfile.data.avatar_url !== undefined) updates.avatar_url = parsedProfile.data.avatar_url
+    if (parsedProfile.data.phone_number !== undefined) updates.phone_number = parsedProfile.data.phone_number
+    if (parsedProfile.data.birth_date !== undefined) updates.birth_date = parsedProfile.data.birth_date
+    if (parsedProfile.data.gender !== undefined) updates.gender = parsedProfile.data.gender
+    if (parsedProfile.data.education_level !== undefined) updates.education_level = parsedProfile.data.education_level
+    if (parsedProfile.data.target_instance !== undefined) updates.target_instance = parsedProfile.data.target_instance
 
     const { error } = await supabase
         .from('profiles')
@@ -101,8 +115,17 @@ export async function updatePassword(data: { newPassword: string }) {
         return { success: false, error: 'Not authenticated' }
     }
 
+    const parsedPassword = passwordUpdateSchema.safeParse(data)
+
+    if (!parsedPassword.success) {
+        return {
+            success: false,
+            error: parsedPassword.error.issues[0]?.message || 'Password tidak valid',
+        }
+    }
+
     const { error } = await supabase.auth.updateUser({
-        password: data.newPassword
+        password: parsedPassword.data.newPassword
     })
 
     if (error) {
@@ -119,6 +142,41 @@ export async function updatePassword(data: { newPassword: string }) {
     await admin.auth.admin.signOut(user.id, 'others').catch(() => {})
 
     return { success: true }
+}
+
+export async function claimVoucherCode(code: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
+    const normalizedCode = String(code || '').trim().toUpperCase()
+    if (!normalizedCode) {
+        return { success: false, message: 'Masukkan kode voucher terlebih dahulu' }
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { success: false, message: 'Not authenticated' }
+    }
+
+    const admin = await createAdminClient()
+    const { error } = await admin.rpc('claim_voucher', {
+        p_user_id: user.id,
+        p_voucher_code: normalizedCode,
+        p_user_email: user.email || null,
+    })
+
+    if (error) {
+        logger.warn('Voucher claim failed', { error: error.message, userId: user.id })
+        return { success: false, message: error.message || 'Gagal mengklaim voucher' }
+    }
+
+    revalidatePath('/', 'layout')
+    revalidatePath('/cpns/dashboard', 'layout')
+    revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/cpns/dashboard/tryout')
+
+    return { success: true, message: 'Voucher berhasil diklaim!' }
 }
 
 export async function deleteAccount() {
@@ -155,5 +213,3 @@ export async function deleteAccount() {
         }
     }
 }
-
-

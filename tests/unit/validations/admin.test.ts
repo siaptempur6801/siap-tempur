@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema } from '../../../lib/validations/admin';
+import { ExcelQuestionSchema, QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema } from '../../../lib/validations/admin';
 
 describe('Admin Validations (Zod Schemas)', () => {
 
@@ -100,6 +100,45 @@ describe('Admin Validations (Zod Schemas)', () => {
         const errorPaths = result.error.issues.map(issue => issue.path[0]);
         expect(errorPaths).toContain('ends_at');
       }
+    });
+  });
+
+  describe('ExcelQuestionSchema', () => {
+    const baseQuestion = {
+      type: 'TWK',
+      sub_category: 'Nasionalisme',
+      content: 'Contoh soal',
+      explanation: 'Contoh pembahasan',
+      option_a: 'A',
+      option_b: 'B',
+      option_c: 'C',
+      option_d: 'D',
+      option_e: 'E',
+      correct_answer: 'A',
+    };
+
+    it('should reject TKP import rows with score outside 1-5', () => {
+      const result = ExcelQuestionSchema.safeParse({
+        ...baseQuestion,
+        type: 'TKP',
+        correct_answer: 'E',
+        score_a: 0,
+        score_b: 2,
+        score_c: 3,
+        score_d: 4,
+        score_e: 5,
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject non-TKP import rows without a valid answer key', () => {
+      const result = ExcelQuestionSchema.safeParse({
+        ...baseQuestion,
+        correct_answer: undefined,
+      });
+
+      expect(result.success).toBe(false);
     });
   });
 });

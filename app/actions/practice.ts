@@ -268,6 +268,10 @@ export async function submitAnswer(sessionId: string, questionId: string, option
 export async function finishPractice(sessionId: string) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
 
+    if (!isUuid(sessionId)) {
+        return { error: 'Invalid session payload' }
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
@@ -283,29 +287,20 @@ export async function finishPractice(sessionId: string) {
     }
 
     const admin = await createAdminClient()
-    const { data: eventSession } = await admin
-        .from('tryout_event_sessions')
-        .select('event_id')
-        .eq('session_id', sessionId)
-        .eq('user_id', user.id)
+    const { error: eventCompletionError } = await admin
+        .rpc('complete_tryout_event_session', {
+            p_user_id: user.id,
+            p_session_id: sessionId,
+        })
         .maybeSingle()
 
-    if (eventSession) {
-        await Promise.all([
-            admin
-                .from('tryout_event_sessions')
-                .update({
-                    status: 'completed',
-                    finished_at: new Date().toISOString(),
-                })
-                .eq('session_id', sessionId)
-                .eq('user_id', user.id),
-            admin
-                .from('tryout_event_participants')
-                .update({ status: 'completed' })
-                .eq('event_id', eventSession.event_id)
-                .eq('user_id', user.id),
-        ])
+    if (eventCompletionError) {
+        logger.warn('Error completing event session', {
+            error: eventCompletionError.message,
+            sessionId,
+            userId: user.id,
+        })
+        return { error: 'Failed to finish event session' }
     }
 
     // Leaderboard is updated by pg_cron on a fixed interval.

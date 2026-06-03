@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { isAdmin } from '@/lib/utils/admin'
 import { OPTION_LABELS, type QuestionType } from '@/lib/admin-dashboard'
-import { QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
+import { ExcelQuestionsSchema, QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
 
@@ -266,15 +266,26 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
         return { success: false, message: 'Tidak ada data soal untuk diimport' }
     }
 
+    const parsed = ExcelQuestionsSchema.safeParse(questions)
+    if (!parsed.success) {
+        const firstIssue = parsed.error.issues[0]
+        const row = typeof firstIssue.path[0] === 'number' ? Number(firstIssue.path[0]) + 1 : null
+        return {
+            success: false,
+            message: row ? `Baris ${row}: ${firstIssue.message}` : firstIssue.message,
+        }
+    }
+
     const supabase = await createAdminClient()
+    const validatedQuestions = parsed.data
     let successCount = 0
     let failCount = 0
     const failedRows: number[] = []
 
     // Process in batches of 50 to avoid overwhelming the DB
     const BATCH_SIZE = 50
-    for (let i = 0; i < questions.length; i += BATCH_SIZE) {
-        const batch = questions.slice(i, i + BATCH_SIZE)
+    for (let i = 0; i < validatedQuestions.length; i += BATCH_SIZE) {
+        const batch = validatedQuestions.slice(i, i + BATCH_SIZE)
 
         for (let j = 0; j < batch.length; j++) {
             const q = batch[j]

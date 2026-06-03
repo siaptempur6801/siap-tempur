@@ -1,17 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/utils/supabase/client'
 import { Loader2, Tag, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { claimVoucherCode } from '@/app/actions/profile'
 
 interface VoucherClaimProps {
-    userId: string
-    userEmail: string
     onSuccessClaim?: () => void
 }
 
-export default function VoucherClaim({ userId, userEmail, onSuccessClaim }: VoucherClaimProps) {
+export default function VoucherClaim({ onSuccessClaim }: VoucherClaimProps) {
     const [code, setCode] = useState('')
     const [loading, setLoading] = useState(false)
 
@@ -26,20 +24,14 @@ export default function VoucherClaim({ userId, userEmail, onSuccessClaim }: Vouc
         setLoading(true)
 
         try {
-            const supabase = createClient()
+            const result = await claimVoucherCode(code)
 
-            const { error } = await supabase.rpc('claim_voucher', {
-                p_user_id: userId,
-                p_voucher_code: code.trim(),
-                p_user_email: userEmail,
-            })
-
-            if (error) {
-                toast.error(error.message || 'Gagal mengklaim voucher')
+            if (!result.success) {
+                toast.error(result.message || 'Gagal mengklaim voucher')
                 return
             }
 
-            toast.success('Voucher berhasil diklaim!', {
+            toast.success(result.message || 'Voucher berhasil diklaim!', {
                 description: 'Token gratis sudah ditambahkan ke akun Anda.',
                 icon: <CheckCircle2 className="text-green-500" size={18} />,
             })

@@ -7,6 +7,16 @@ import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
+const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
+
+export function shouldProcessTransactionWithRpc(status: string) {
+    return MIDTRANS_STATUSES.has(status)
+}
+
+export function getTokenIncrementForPackage(packageName: string, transactionStatus: string) {
+    if (!SUCCESS_STATUSES.has(transactionStatus)) return 0
+    return PRICING_PACKAGES.find((pkg) => pkg.name === packageName)?.tokens ?? 0
+}
 
 function getWebhookSupabase() {
     return createClient(
@@ -50,12 +60,14 @@ export async function POST(req: Request) {
             return handleEventPaymentWebhook(order_id, transaction_status)
         }
 
-        // === Original token payment flow ===
+        if (!shouldProcessTransactionWithRpc(transaction_status)) {
+            logger.warn('Unsupported Midtrans transaction status', { orderId: order_id, transactionStatus: transaction_status })
+            return errorResponse('validation_error', 'Unsupported transaction status', 400)
+        }
 
-        // 1. Get current transaction from DB
         const { data: transaction, error: txError } = await supabase
             .from('transactions')
-            .select('*')
+            .select('order_id, amount, package_name')
             .eq('order_id', order_id)
             .single()
 
@@ -63,46 +75,22 @@ export async function POST(req: Request) {
             return errorResponse('not_found', 'Transaction not found', 404)
         }
 
-        // If transaction already settled, don't double count
-        if (transaction.status === 'settlement') {
-            return successResponse({ message: 'Already processed' })
+        const midtransAmount = Number(gross_amount)
+        if (!Number.isFinite(midtransAmount) || midtransAmount !== transaction.amount) {
+            logger.warn('Payment webhook gross amount mismatch', { orderId: order_id })
+            return errorResponse('validation_error', 'Gross amount mismatch', 400)
         }
 
-        // 2. Update status in DB
-        const { error: updateError } = await supabase
-            .from('transactions')
-            .update({ status: transaction_status })
-            .eq('order_id', order_id)
+        const tokenCount = getTokenIncrementForPackage(transaction.package_name, transaction_status)
+        const { error: processError } = await supabase.rpc('process_paid_transaction', {
+            p_order_id: order_id,
+            p_transaction_status: transaction_status,
+            p_increment_by: tokenCount,
+        })
 
-        if (updateError) throw updateError
-
-        // 3. If settled/success, update user quota
-        if (transaction_status === 'settlement' || transaction_status === 'capture') {
-            // Find package to get token count
-            // Note: package_name matches pkg.name from constants
-            const pkg = PRICING_PACKAGES.find(p => p.name === transaction.package_name)
-            const tokenCount = pkg ? pkg.tokens : 0
-
-            if (tokenCount > 0) {
-                // Increment quota in profiles
-                const { error: quotaError } = await supabase.rpc('increment_tryout_quota', {
-                    user_id_param: transaction.user_id,
-                    increment_by: tokenCount
-                })
-
-                if (quotaError) {
-                    logger.error('Failed to increment quota from webhook', quotaError, { orderId: order_id })
-                    // Fallback to direct update if RPC fails
-                    const profileData = await supabase.from('profiles').select('tryout_quota').eq('id', transaction.user_id).single()
-                    await supabase
-                        .from('profiles')
-                        .update({
-                            tryout_quota: (profileData.data?.tryout_quota || 0) + tokenCount
-                        })
-                        .eq('id', transaction.user_id)
-                }
-                // Successfully added tokens
-            }
+        if (processError) {
+            logger.error('Failed to process token payment webhook', processError, { orderId: order_id })
+            return errorResponse('internal_error', 'Failed to process transaction', 500)
         }
 
         return successResponse({ message: 'OK' })

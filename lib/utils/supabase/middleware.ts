@@ -5,7 +5,7 @@ import { env } from '@/lib/env'
 // Route yang hanya bisa diakses kalau BELUM login
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password']
 // Route yang WAJIB login
-const PROTECTED_ROUTES = ['/cpns/dashboard']
+const PROTECTED_ROUTES = ['/cpns/dashboard', '/cpns/admin']
 
 export async function updateSession(request: NextRequest, customHeaders?: Headers) {
     let supabaseResponse = NextResponse.next({

@@ -401,8 +401,6 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
             {/* Voucher Claim Section */}
             <div className="mt-6 relative z-20">
                 <VoucherClaim
-                    userId={user.id}
-                    userEmail={user.email || ''}
                     onSuccessClaim={() => window.location.reload()}
                 />
             </div>

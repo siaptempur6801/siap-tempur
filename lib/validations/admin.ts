@@ -46,3 +46,67 @@ export const TryoutEventCodeSchema = z.object({
     max_uses: z.number().int().min(1, 'Limit penggunaan kode tidak valid'),
     expires_at: z.string().optional().nullable(),
 });
+
+const optionalText = z.string().optional().nullable().transform((value) => value?.trim() || '')
+const optionText = z.string().optional().nullable().transform((value) => value?.trim() || '')
+const scoreValue = z.coerce.number().int()
+
+export const ExcelQuestionSchema = z.object({
+    type: z.enum(['TWK', 'TIU', 'TKP']),
+    sub_category: z.string().min(1, 'Sub-kategori wajib diisi').transform((value) => value.trim()),
+    content: z.string().min(1, 'Pertanyaan wajib diisi').transform((value) => value.trim()),
+    explanation: z.string().min(1, 'Pembahasan wajib diisi').transform((value) => value.trim()),
+    image_url: optionalText,
+    option_a: optionText,
+    option_a_image_url: optionalText,
+    option_b: optionText,
+    option_b_image_url: optionalText,
+    option_c: optionText,
+    option_c_image_url: optionalText,
+    option_d: optionText,
+    option_d_image_url: optionalText,
+    option_e: optionText,
+    option_e_image_url: optionalText,
+    correct_answer: z.enum(['A', 'B', 'C', 'D', 'E']).optional(),
+    score_a: scoreValue.optional(),
+    score_b: scoreValue.optional(),
+    score_c: scoreValue.optional(),
+    score_d: scoreValue.optional(),
+    score_e: scoreValue.optional(),
+}).superRefine((data, ctx) => {
+    const optionKeys = ['a', 'b', 'c', 'd', 'e'] as const
+    for (const key of optionKeys) {
+        const content = data[`option_${key}`]
+        const imageUrl = data[`option_${key}_image_url`]
+        if (!content && !imageUrl) {
+            ctx.addIssue({
+                code: 'custom',
+                path: [`option_${key}`],
+                message: `Pilihan ${key.toUpperCase()} harus punya teks atau gambar`,
+            })
+        }
+    }
+
+    if (data.type !== 'TKP' && !data.correct_answer) {
+        ctx.addIssue({
+            code: 'custom',
+            path: ['correct_answer'],
+            message: 'Kunci jawaban wajib diisi untuk TWK/TIU',
+        })
+    }
+
+    if (data.type === 'TKP') {
+        for (const key of optionKeys) {
+            const score = data[`score_${key}`]
+            if (score === undefined || !Number.isInteger(score) || score < 1 || score > 5) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: [`score_${key}`],
+                    message: `Poin pilihan ${key.toUpperCase()} harus 1 sampai 5`,
+                })
+            }
+        }
+    }
+})
+
+export const ExcelQuestionsSchema = z.array(ExcelQuestionSchema).max(1000, 'Maksimal import 1000 soal per batch')
