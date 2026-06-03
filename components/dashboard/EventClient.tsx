@@ -661,7 +661,15 @@ export default function EventClient({ events }: EventClientProps) {
                                                 <input
                                                     value={eventCodes[event.id] || ''}
                                                     onChange={(e) => setEventCodes((cur) => ({ ...cur, [event.id]: e.target.value.toUpperCase() }))}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key !== 'Enter' || isPending) return
+                                                        e.preventDefault()
+                                                        if (getEventState(event, now).action === 'register') {
+                                                            doAction(event)
+                                                        }
+                                                    }}
                                                     placeholder="MASUKKAN KODE"
+                                                    enterKeyHint="go"
                                                     className="flex-1 border-2 border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-black uppercase text-white outline-none focus:border-blue-400 placeholder:text-gray-500"
                                                 />
                                             </div>
