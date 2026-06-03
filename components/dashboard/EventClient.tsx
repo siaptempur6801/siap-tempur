@@ -655,24 +655,24 @@ export default function EventClient({ events }: EventClientProps) {
                                     <div key={event.id}>
                                         {/* Inline code input if needs code + not registered */}
                                         {event.requires_code && !event.participant_id && (
-                                            <div className="mb-2 flex items-center gap-2 border-2 border-t-0 border-gray-900 border-t-transparent bg-gray-900 px-4 py-2">
+                                            <form
+                                                onSubmit={(e) => {
+                                                    e.preventDefault()
+                                                    if (isPending || getEventState(event, now).action !== 'register') return
+                                                    doAction(event)
+                                                }}
+                                                className="mb-2 flex items-center gap-2 border-2 border-t-0 border-gray-900 border-t-transparent bg-gray-900 px-4 py-2"
+                                            >
                                                 <Lock size={12} className="text-white shrink-0" />
                                                 <label className="text-xs font-black uppercase text-gray-300 shrink-0">Kode Masuk:</label>
                                                 <input
                                                     value={eventCodes[event.id] || ''}
                                                     onChange={(e) => setEventCodes((cur) => ({ ...cur, [event.id]: e.target.value.toUpperCase() }))}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key !== 'Enter' || isPending) return
-                                                        e.preventDefault()
-                                                        if (getEventState(event, now).action === 'register') {
-                                                            doAction(event)
-                                                        }
-                                                    }}
                                                     placeholder="MASUKKAN KODE"
                                                     enterKeyHint="go"
                                                     className="flex-1 border-2 border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-black uppercase text-white outline-none focus:border-blue-400 placeholder:text-gray-500"
                                                 />
-                                            </div>
+                                            </form>
                                         )}
                                         <EventCard
                                             event={event}
