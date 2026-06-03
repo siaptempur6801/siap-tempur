@@ -4,6 +4,17 @@ import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
+function getSynchronizedCloseAt(event: {
+    starts_at: string
+    duration_minutes: number
+    start_grace_minutes: number
+}) {
+    return new Date(
+        new Date(event.starts_at).getTime() +
+        (event.duration_minutes + event.start_grace_minutes) * 60 * 1000
+    ).toISOString()
+}
+
 export default async function EventAdminPage() {
     const supabase = await createAdminClient()
 
@@ -74,12 +85,14 @@ export default async function EventAdminPage() {
                 display_order: index + 1,
             }))
 
+        const synchronizedCloseAt = getSynchronizedCloseAt(event)
+
         return {
             id: event.id,
             title: event.title,
             description: event.description,
             starts_at: event.starts_at,
-            ends_at: event.ends_at,
+            ends_at: synchronizedCloseAt,
             start_grace_minutes: event.start_grace_minutes,
             duration_minutes: event.duration_minutes,
             max_participants: event.max_participants,
@@ -87,8 +100,8 @@ export default async function EventAdminPage() {
             is_paid: event.is_paid ?? false,
             price: event.price ?? 0,
             status: event.status,
-            result_visible_at: event.result_visible_at,
-            explanation_visible_at: event.explanation_visible_at,
+            result_visible_at: synchronizedCloseAt,
+            explanation_visible_at: synchronizedCloseAt,
             created_at: event.created_at,
             codes: event.tryout_event_codes || [],
             participant_count: event.tryout_event_participants?.length || 0,

@@ -5,6 +5,17 @@ import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
+function getSynchronizedCloseAt(event: {
+    starts_at: string
+    duration_minutes: number
+    start_grace_minutes: number
+}) {
+    return new Date(
+        new Date(event.starts_at).getTime() +
+        (event.duration_minutes + event.start_grace_minutes) * 60 * 1000
+    ).toISOString()
+}
+
 export default async function UserEventPage() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -81,7 +92,7 @@ export default async function UserEventPage() {
             title: event.title,
             description: event.description,
             starts_at: event.starts_at,
-            ends_at: event.ends_at,
+            ends_at: getSynchronizedCloseAt(event),
             start_grace_minutes: event.start_grace_minutes,
             duration_minutes: event.duration_minutes,
             max_participants: event.max_participants,

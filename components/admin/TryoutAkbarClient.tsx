@@ -92,17 +92,30 @@ function toDateInputValue(value: string | null) {
     return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16)
 }
 
+function formatDateInputValue(date: Date) {
+    const pad = (value: number) => String(value).padStart(2, '0')
+    return [
+        date.getFullYear(),
+        pad(date.getMonth() + 1),
+        pad(date.getDate()),
+    ].join('-') + `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function addMinutesToInputValue(value: string, minutes: number) {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    return formatDateInputValue(new Date(date.getTime() + minutes * 60 * 1000))
+}
+
 function getEventFormValues(event?: TryoutEvent | null) {
     return {
         title: event?.title || '',
         description: event?.description || '',
         starts_at: toDateInputValue(event?.starts_at || null),
-        ends_at: toDateInputValue(event?.ends_at || null),
         duration_minutes: String(event?.duration_minutes ?? 100),
         start_grace_minutes: String(event?.start_grace_minutes ?? 15),
         max_participants: event?.max_participants ? String(event.max_participants) : '',
-        result_visible_at: toDateInputValue(event?.result_visible_at || null),
-        explanation_visible_at: toDateInputValue(event?.explanation_visible_at || null),
         requires_code: event?.requires_code || false,
         is_paid: event?.is_paid || false,
         price: String(event?.price ?? 15000),
@@ -160,8 +173,17 @@ function EventForm({ event, action, isPending }: {
         setValues((current) => ({ ...current, [field]: value }))
     }
 
+    const durationMinutes = Number(values.duration_minutes) || 0
+    const startGraceMinutes = Number(values.start_grace_minutes) || 0
+    const closeAt = addMinutesToInputValue(values.starts_at, durationMinutes + startGraceMinutes)
+    const resultVisibleAt = closeAt
+    const explanationVisibleAt = closeAt
+
     return (
         <form action={action} className="space-y-4">
+            <input type="hidden" name="ends_at" value={closeAt} />
+            <input type="hidden" name="result_visible_at" value={resultVisibleAt} />
+            <input type="hidden" name="explanation_visible_at" value={explanationVisibleAt} />
             <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2 space-y-1.5">
                     <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Nama Event</label>
@@ -179,9 +201,9 @@ function EventForm({ event, action, isPending }: {
                         className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
                 </div>
                 <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Tutup</label>
-                    <input name="ends_at" type="datetime-local" required value={values.ends_at} onChange={(e) => updateValue('ends_at', e.target.value)}
-                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Tutup Otomatis</label>
+                    <input type="datetime-local" value={closeAt} readOnly
+                        className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
                 </div>
                 <div className="space-y-1.5">
                     <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Durasi (menit)</label>
@@ -200,13 +222,13 @@ function EventForm({ event, action, isPending }: {
                 </div>
                 <div className="space-y-1.5">
                     <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Hasil Terlihat</label>
-                    <input name="result_visible_at" type="datetime-local" value={values.result_visible_at} onChange={(e) => updateValue('result_visible_at', e.target.value)}
-                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    <input type="datetime-local" value={resultVisibleAt} readOnly
+                        className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
                 </div>
                 <div className="space-y-1.5">
                     <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Pembahasan</label>
-                    <input name="explanation_visible_at" type="datetime-local" value={values.explanation_visible_at} onChange={(e) => updateValue('explanation_visible_at', e.target.value)}
-                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    <input type="datetime-local" value={explanationVisibleAt} readOnly
+                        className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
                 </div>
                 <div className="sm:col-span-2">
                     <label className="flex items-center gap-3 border-2 border-gray-300 bg-gray-50 px-4 py-3 text-sm font-black text-gray-900 cursor-pointer hover:border-gray-900 transition">

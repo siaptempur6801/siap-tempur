@@ -628,26 +628,30 @@ function readTryoutEventForm(formData: FormData) {
     const startGraceMinutes = Number(formData.get('start_grace_minutes') || 15)
     const durationMinutes = Number(formData.get('duration_minutes') || 100)
     const maxParticipantsRaw = String(formData.get('max_participants') || '').trim()
-    const resultVisibleAt = String(formData.get('result_visible_at') || '').trim()
-    const explanationVisibleAt = String(formData.get('explanation_visible_at') || '').trim()
     const requiresCode = formData.get('requires_code') === 'on'
     const isPaid = formData.get('is_paid') === 'on' || formData.get('is_paid') === 'true'
     const priceRaw = String(formData.get('price') || '0').trim()
     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
+    const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
+    const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
+    const startsAtDate = startsAt ? new Date(startsAt) : null
+    const synchronizedCloseAt = startsAtDate && !Number.isNaN(startsAtDate.getTime())
+        ? new Date(startsAtDate.getTime() + (normalizedDurationMinutes + normalizedStartGraceMinutes) * 60 * 1000).toISOString()
+        : ''
 
     return {
         title,
         description: description || null,
         starts_at: startsAt ? new Date(startsAt).toISOString() : '',
-        ends_at: endsAt ? new Date(endsAt).toISOString() : '',
-        start_grace_minutes: Number.isInteger(startGraceMinutes) ? startGraceMinutes : 15,
-        duration_minutes: Number.isInteger(durationMinutes) ? durationMinutes : 100,
+        ends_at: synchronizedCloseAt || (endsAt ? new Date(endsAt).toISOString() : ''),
+        start_grace_minutes: normalizedStartGraceMinutes,
+        duration_minutes: normalizedDurationMinutes,
         max_participants: maxParticipantsRaw ? Number(maxParticipantsRaw) : null,
         requires_code: requiresCode,
         is_paid: isPaid,
         price,
-        result_visible_at: resultVisibleAt ? new Date(resultVisibleAt).toISOString() : null,
-        explanation_visible_at: explanationVisibleAt ? new Date(explanationVisibleAt).toISOString() : null,
+        result_visible_at: synchronizedCloseAt || null,
+        explanation_visible_at: synchronizedCloseAt || null,
     }
 }
 

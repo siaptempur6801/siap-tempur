@@ -13,10 +13,9 @@ function isWithinStartWindow(event: {
 }) {
     const now = Date.now()
     const startsAt = new Date(event.starts_at).getTime()
-    const endsAt = new Date(event.ends_at).getTime()
     const latestStartAt = startsAt + event.start_grace_minutes * 60 * 1000
 
-    return event.status === 'live' && now >= startsAt && now <= latestStartAt && now <= endsAt
+    return ['scheduled', 'live'].includes(event.status) && now >= startsAt && now <= latestStartAt
 }
 
 export async function registerTryoutEvent(eventId: string, eventCode?: string) {

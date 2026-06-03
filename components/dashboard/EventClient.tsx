@@ -57,6 +57,7 @@ function getEventState(event: UserEvent, now: number) {
     const startsAt = new Date(event.starts_at).getTime()
     const endsAt = new Date(event.ends_at).getTime()
     const latestStartAt = startsAt + event.start_grace_minutes * 60 * 1000
+    const canUseScheduleWindow = event.status === 'scheduled' || event.status === 'live'
 
     const isDone =
         event.session_id &&
@@ -64,7 +65,7 @@ function getEventState(event: UserEvent, now: number) {
             event.event_session_status === 'completed' ||
             event.participant_status === 'completed')
 
-    const canStart = event.status === 'live' && now >= startsAt && now <= latestStartAt && now <= endsAt
+    const canStart = canUseScheduleWindow && now >= startsAt && now <= latestStartAt && now <= endsAt
 
     if (isDone) return { label: 'Lihat Hasil', action: 'history' as const, step: 3 }
     if (event.session_id) return { label: 'Lanjutkan', action: 'start' as const, step: 2 }
@@ -73,7 +74,7 @@ function getEventState(event: UserEvent, now: number) {
     // Registration is the source of truth for event access.
     if (event.participant_id) {
         if (canStart) return { label: 'Mulai Tryout', action: 'start' as const, step: 2 }
-        if (event.status === 'live' && now > latestStartAt) return { label: 'Waktu Masuk Ditutup', action: 'disabled' as const, step: 1 }
+        if (canUseScheduleWindow && now > latestStartAt) return { label: 'Waktu Masuk Ditutup', action: 'disabled' as const, step: 1 }
         return { label: 'Menunggu Jadwal', action: 'disabled' as const, step: 1 }
     }
 
@@ -90,7 +91,7 @@ function getEventState(event: UserEvent, now: number) {
 
     if (!event.participant_id) return { label: 'Daftar Sekarang', action: 'register' as const, step: 0 }
     if (canStart) return { label: 'Mulai Tryout', action: 'start' as const, step: 2 }
-    if (event.status === 'live' && now > latestStartAt) return { label: 'Waktu Masuk Ditutup', action: 'disabled' as const, step: 1 }
+    if (canUseScheduleWindow && now > latestStartAt) return { label: 'Waktu Masuk Ditutup', action: 'disabled' as const, step: 1 }
     return { label: 'Menunggu Jadwal', action: 'disabled' as const, step: 1 }
 }
 

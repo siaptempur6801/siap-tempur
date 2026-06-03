@@ -117,6 +117,18 @@ function normalizeRelation<T>(value: T | T[] | null): T | null {
     return value
 }
 
+function formatDateTime(value: string) {
+    return new Intl.DateTimeFormat('id-ID', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
+    }).format(new Date(value))
+}
+
 export default async function PracticeResultPage({
     params,
     searchParams
@@ -147,17 +159,71 @@ export default async function PracticeResultPage({
 
     const { data: eventSession } = await supabase
         .from('tryout_event_sessions')
-        .select('id')
+        .select(`
+            id,
+            tryout_events (
+                title,
+                starts_at,
+                ends_at,
+                duration_minutes,
+                start_grace_minutes,
+                result_visible_at,
+                explanation_visible_at
+            )
+        `)
         .eq('session_id', sessionId)
         .maybeSingle()
 
     const isEventSession = from === 'event' || Boolean(eventSession)
+    const event = normalizeRelation(eventSession?.tryout_events || null)
     const backHref = cameFromHistory
         ? '/cpns/dashboard/riwayat'
         : isEventSession
             ? '/cpns/dashboard/event'
             : '/cpns/dashboard/tryout'
     const backLabel = cameFromHistory ? 'Riwayat' : isEventSession ? 'Event' : 'Dashboard'
+    const synchronizedCloseAt = event
+        ? new Date(
+            new Date(event.starts_at).getTime() +
+            (event.duration_minutes + event.start_grace_minutes) * 60 * 1000
+        ).toISOString()
+        : null
+    const resultVisibleAt = synchronizedCloseAt || event?.result_visible_at || event?.ends_at || null
+    const eventTitle = event?.title || 'event ini'
+    const isResultLocked = Boolean(
+        event &&
+        resultVisibleAt &&
+        new Date().getTime() < new Date(resultVisibleAt).getTime()
+    )
+
+    if (isResultLocked && resultVisibleAt) {
+        return (
+            <div className="mx-auto flex min-h-screen max-w-2xl items-center justify-center p-6 font-handwriting">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 text-center shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                    <PaperBackground />
+                    <div className="relative z-10">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-gray-900 bg-yellow-200 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <Clock className="h-7 w-7 text-gray-900" />
+                        </div>
+                        <h1 className="text-3xl font-black text-gray-900">Hasil Belum Dibuka</h1>
+                        <p className="mt-3 text-base font-bold text-gray-600">
+                            Hasil dan pembahasan <span className="text-gray-900">{eventTitle}</span> dibuka serentak pada:
+                        </p>
+                        <div className="mt-4 border-2 border-gray-900 bg-[#fff9c4] px-4 py-3 text-lg font-black text-gray-900">
+                            {formatDateTime(resultVisibleAt)}
+                        </div>
+                        <Link
+                            href={backHref}
+                            className="mt-6 inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.35)] transition hover:translate-x-px hover:translate-y-px hover:shadow-none"
+                        >
+                            <ArrowLeft size={16} />
+                            Kembali ke {backLabel}
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     // Fetch user's total XP and metadata before this session (for popups)
     const [prevSessionsRes, profileRes] = await Promise.all([
