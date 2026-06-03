@@ -573,6 +573,29 @@ export default function EventClient({ events }: EventClientProps) {
         setConfirmEvent(event)
     }
 
+    const submitEventCode = (event: UserEvent) => {
+        const code = (eventCodes[event.id] || '').trim()
+        if (!code) {
+            toast.error('Masukkan kode masuk terlebih dahulu')
+            return
+        }
+
+        setPendingEventId(event.id)
+        startTransition(async () => {
+            const result = await registerTryoutEvent(event.id, code)
+            setPendingEventId(null)
+            if (!result.success) {
+                toast.error(result.message)
+                return
+            }
+            toast.success(result.message || 'Berhasil daftar event dengan kode')
+            setEventCodes((current) => Object.fromEntries(
+                Object.entries(current).filter(([eventId]) => eventId !== event.id)
+            ))
+            router.refresh()
+        })
+    }
+
     const handleConfirmStart = () => {
         if (!confirmEvent) return
         setPendingEventId(confirmEvent.id)
@@ -659,20 +682,7 @@ export default function EventClient({ events }: EventClientProps) {
                                                 onSubmit={(e) => {
                                                     e.preventDefault()
                                                     if (isPending) return
-
-                                                    const code = (eventCodes[event.id] || '').trim()
-                                                    if (!code) {
-                                                        toast.error('Masukkan kode masuk terlebih dahulu')
-                                                        return
-                                                    }
-
-                                                    const state = getEventState(event, now)
-                                                    if (state.action === 'disabled') {
-                                                        toast.error(state.label)
-                                                        return
-                                                    }
-
-                                                    doAction(event)
+                                                    submitEventCode(event)
                                                 }}
                                                 className="mb-2 flex items-center gap-2 border-2 border-t-0 border-gray-900 border-t-transparent bg-gray-900 px-4 py-2"
                                             >
