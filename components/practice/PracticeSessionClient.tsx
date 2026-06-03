@@ -474,8 +474,6 @@ export default function PracticeSessionClient({
 
     const handleFinishSession = useCallback(async () => {
         if (finishing) return // Prevent double click
-        if (hasFinished && isTryout) return
-        if (isTryout) setHasFinished(true)
         setFinishing(true)
 
         try {
@@ -487,6 +485,7 @@ export default function PracticeSessionClient({
             }
 
             if (result?.success) {
+                setHasFinished(true)
                 clearProgressFromLocalStorage(sessionId)
                 toast.success(isTryout ? 'Tryout selesai!' : 'Tryout selesai!')
                 router.push(`/cpns/dashboard/tryout/${sessionId}/result${returnTo === 'event' ? '?from=event' : ''}`)
@@ -497,7 +496,7 @@ export default function PracticeSessionClient({
         } finally {
             setFinishing(false)
         }
-    }, [finishing, hasFinished, isTryout, returnTo, sessionId, router])
+    }, [finishing, isTryout, returnTo, sessionId, router])
 
     useEffect(() => {
         const savedProgress = loadProgressFromLocalStorage(sessionId)
@@ -677,10 +676,10 @@ export default function PracticeSessionClient({
     }, [])
 
     const handleTimeExpired = useCallback(() => {
-        if (hasFinished) return
-        setHasFinished(true)
+        if (finishing || hasFinished) return
+        setShowConfirmModal(false)
         void handleAutoFinish()
-    }, [handleAutoFinish, hasFinished])
+    }, [finishing, handleAutoFinish, hasFinished])
 
 
     // Calculate Answer Stats
@@ -690,6 +689,7 @@ export default function PracticeSessionClient({
     const markedCount = Object.values(marked).filter(Boolean).length
 
     const onFinishClick = () => {
+        if (finishing) return
         setShowConfirmModal(true)
     }
 
@@ -917,8 +917,8 @@ export default function PracticeSessionClient({
 
             {/* Custom Confirmation Modal */}
             {showConfirmModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] max-w-md w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4 py-6 animate-in fade-in duration-200 sm:items-center">
+                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] max-w-md w-full p-5 sm:p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                         <PaperBackground />
                         {/* Tape effect on modal */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-white/40 border border-gray-200 shadow-sm -rotate-2 z-20 pointer-events-none"></div>
@@ -956,16 +956,20 @@ export default function PracticeSessionClient({
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-6">
                                 <button
+                                    type="button"
                                     onClick={() => setShowConfirmModal(false)}
+                                    disabled={finishing}
                                     className="px-4 py-3 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Batal
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={handleConfirmFinish}
-                                    className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                    disabled={finishing}
+                                    className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    Siap Tempur!
+                                    {finishing ? 'Menyimpan...' : 'Siap Tempur!'}
                                 </button>
                             </div>
                         </div>
