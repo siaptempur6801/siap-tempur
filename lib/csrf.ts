@@ -27,12 +27,47 @@ function constantTimeEqual(a: string, b: string): boolean {
   return result === 0
 }
 
-function getSiteOrigin(): string {
+function normalizeOrigin(value: string | undefined): string | null {
+  if (!value) return null
+
+  try {
+    return new URL(value).origin
+  } catch {
+    return null
+  }
+}
+
+function addOriginWithWwwVariant(origins: Set<string>, origin: string | null) {
+  if (!origin) return
+
+  origins.add(origin)
+
+  const url = new URL(origin)
+  if (url.hostname.startsWith('www.')) {
+    url.hostname = url.hostname.replace(/^www\./, '')
+    origins.add(url.origin)
+    return
+  }
+
+  url.hostname = `www.${url.hostname}`
+  origins.add(url.origin)
+}
+
+function getAllowedOrigins(): Set<string> {
+  const origins = new Set<string>()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-  if (siteUrl) return siteUrl.replace(/\/+$/, '')
-  return process.env.NODE_ENV === 'production'
-    ? 'https://siaptempur.id'
-    : 'http://localhost:3000'
+  addOriginWithWwwVariant(origins, normalizeOrigin(siteUrl))
+
+  const vercelUrl = process.env.VERCEL_URL
+  addOriginWithWwwVariant(origins, normalizeOrigin(vercelUrl ? `https://${vercelUrl}` : undefined))
+
+  if (process.env.NODE_ENV === 'production') {
+    addOriginWithWwwVariant(origins, 'https://siaptempur.id')
+  } else {
+    origins.add('http://localhost:3000')
+  }
+
+  return origins
 }
 
 /**
@@ -70,9 +105,9 @@ export async function validateCsrf(): Promise<void> {
   // We additionally verify the Origin header matches our site to block
   // same-site request forgery from sibling origins.
   const origin = headersList.get('origin')
-  const expectedOrigin = getSiteOrigin()
+  const allowedOrigins = getAllowedOrigins()
 
-  if (!origin || origin !== expectedOrigin) {
+  if (!origin || !allowedOrigins.has(origin)) {
     throw new CsrfError('Invalid origin')
   }
 }

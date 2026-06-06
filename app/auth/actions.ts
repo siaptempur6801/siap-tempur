@@ -120,7 +120,14 @@ export async function updatePassword(formData: FormData) {
 }
 
 export async function loginWithGoogle() {
-    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+    try {
+        await validateCsrf()
+    } catch (error) {
+        logger.warn('Google login CSRF validation failed', {
+            error: error instanceof Error ? error.message : String(error),
+        })
+        return { error: 'Invalid request' }
+    }
 
     const supabase = await createClient()
 
