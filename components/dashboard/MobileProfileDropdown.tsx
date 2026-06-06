@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { Clock3, Library, LogOut, User, Ticket } from 'lucide-react'
+import { Clock3, GraduationCap, Library, LogOut, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -106,6 +106,15 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
                     </div>
 
                     <div className="p-2 relative z-10">
+                        <Link
+                            href="/cpns/dashboard/belajar-materi"
+                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            <GraduationCap size={18} />
+                            Materi
+                        </Link>
+
                         <Link
                             href="/cpns/dashboard/materi"
                             className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"

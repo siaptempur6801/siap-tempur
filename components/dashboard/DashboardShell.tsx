@@ -13,6 +13,7 @@ import {
     BarChart3,
     Shield,
     Library,
+    GraduationCap,
 } from 'lucide-react'
 
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
@@ -82,6 +83,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Riwayat" />
                     <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
                     <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
+                    <NavItem href="/cpns/dashboard/belajar-materi" icon={<GraduationCap size={20} />} label="Materi" />
                     <NavItem href="/cpns/dashboard/materi" icon={<Library size={20} />} label="Kisi-Kisi" />
                     <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
 
