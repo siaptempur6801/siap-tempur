@@ -1,16 +1,21 @@
 'use client'
 
 import React, { useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/utils/supabase/client'
 import { createQuestion, updateQuestion } from '@/app/actions/admin'
-import { AlertCircle, ArrowLeft, ImageIcon, Info, Loader2, Save, X } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Info, Loader2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { ADMIN_BASE_PATH, OPTION_LABELS, QUESTION_TYPES, type CategoryMap, type OptionLabel, type QuestionType } from '@/lib/admin-dashboard'
 import PaperBackground from '@/components/PaperBackground'
+import QuestionBlockEditor from '@/components/admin/QuestionBlockEditor'
+import {
+    legacyQuestionToBlocks,
+    serializeQuestionBlocks,
+    type QuestionContentBlock,
+} from '@/lib/admin-question-blocks'
 
 interface QuestionOption {
     id: string
@@ -38,22 +43,6 @@ interface QuestionEditorFormProps {
     returnHref?: string
 }
 
-type ImageState = {
-    file: File | null
-    preview: string | null
-    removed: boolean
-}
-
-function createOptionImageState(question?: EditableQuestion): Record<OptionLabel, ImageState> {
-    return {
-        A: { file: null, preview: question?.options?.[0]?.image_url || null, removed: false },
-        B: { file: null, preview: question?.options?.[1]?.image_url || null, removed: false },
-        C: { file: null, preview: question?.options?.[2]?.image_url || null, removed: false },
-        D: { file: null, preview: question?.options?.[3]?.image_url || null, removed: false },
-        E: { file: null, preview: question?.options?.[4]?.image_url || null, removed: false },
-    }
-}
-
 function getInitialCorrectLabel(question?: EditableQuestion): OptionLabel {
     if (!question?.options?.length) {
         return 'A'
@@ -68,7 +57,28 @@ function getInitialCorrectLabel(question?: EditableQuestion): OptionLabel {
     return OPTION_LABELS[question.options.indexOf(bestScored)] || 'A'
 }
 
+function createInitialOptionBlocks(question?: EditableQuestion): Record<OptionLabel, QuestionContentBlock[]> {
+    return {
+        A: legacyQuestionToBlocks(question?.options?.[0]?.content, question?.options?.[0]?.image_url),
+        B: legacyQuestionToBlocks(question?.options?.[1]?.content, question?.options?.[1]?.image_url),
+        C: legacyQuestionToBlocks(question?.options?.[2]?.content, question?.options?.[2]?.image_url),
+        D: legacyQuestionToBlocks(question?.options?.[3]?.content, question?.options?.[3]?.image_url),
+        E: legacyQuestionToBlocks(question?.options?.[4]?.content, question?.options?.[4]?.image_url),
+    }
+}
+
+const MAX_IMAGE_UPLOAD_SIZE_BYTES = 2 * 1024 * 1024
+const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+
 async function uploadImage(supabase: ReturnType<typeof createClient>, file: File, prefix: string) {
+    if (file.size > MAX_IMAGE_UPLOAD_SIZE_BYTES) {
+        throw new Error('Ukuran gambar maksimal 2MB')
+    }
+
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+        throw new Error('Format gambar harus JPG, PNG, WebP, atau GIF')
+    }
+
     const fileExt = file.name.split('.').pop() || 'png'
     const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
 
@@ -97,25 +107,29 @@ export default function QuestionEditorForm({
     const [loading, setLoading] = useState(false)
     const [type, setType] = useState<QuestionType>(question?.type || 'TWK')
     const [selectedCategory, setSelectedCategory] = useState(question?.category || '')
-    const [imageFile, setImageFile] = useState<File | null>(null)
-    const [imagePreview, setImagePreview] = useState<string | null>(question?.image_url || null)
-    const [isImageRemoved, setIsImageRemoved] = useState(false)
-    const [optionImages, setOptionImages] = useState<Record<OptionLabel, ImageState>>(() => createOptionImageState(question))
+    const [contentBlocks, setContentBlocks] = useState<QuestionContentBlock[]>(() => legacyQuestionToBlocks(question?.content, question?.image_url))
+    const [explanationBlocks, setExplanationBlocks] = useState<QuestionContentBlock[]>(() => legacyQuestionToBlocks(question?.explanation, null))
+    const [optionBlocks, setOptionBlocks] = useState<Record<OptionLabel, QuestionContentBlock[]>>(() => createInitialOptionBlocks(question))
 
     const categoryOptions = categoryMap[type] || []
     const initialCorrectLabel = getInitialCorrectLabel(question)
     const isEditMode = mode === 'edit'
 
-    const setOptionImage = (label: OptionLabel, nextState: ImageState) => {
-        setOptionImages((current) => ({
-            ...current,
-            [label]: nextState,
-        }))
-    }
-
     const handleTypeChange = (nextType: QuestionType) => {
         setType(nextType)
         setSelectedCategory('')
+    }
+
+    const handleUploadBlockImage = async (file: File, prefix: string) => {
+        const supabase = createClient()
+        return uploadImage(supabase, file, prefix)
+    }
+
+    const setOptionBlockList = (label: OptionLabel, blocks: QuestionContentBlock[]) => {
+        setOptionBlocks(current => ({
+            ...current,
+            [label]: blocks,
+        }))
     }
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -132,17 +146,36 @@ export default function QuestionEditorForm({
         }
 
         try {
-            const supabase = createClient()
+            const serializedContent = serializeQuestionBlocks(contentBlocks)
+            const serializedExplanation = serializeQuestionBlocks(explanationBlocks)
+
+            if (!serializedContent.trim()) {
+                toast.error('Narasi pertanyaan tidak boleh kosong')
+                setLoading(false)
+                return
+            }
+
+            if (!serializedExplanation.trim()) {
+                toast.error('Pembahasan tidak boleh kosong')
+                setLoading(false)
+                return
+            }
+
+            formData.set('content', serializedContent)
+            formData.set('explanation', serializedExplanation)
+            formData.set('image_url', '')
 
             for (const label of OPTION_LABELS) {
-                const textValue = String(formData.get(`option_${label.toLowerCase()}`) || '').trim()
-                const hasImage = Boolean(optionImages[label].file || (optionImages[label].preview && !optionImages[label].removed))
+                const optionContent = serializeQuestionBlocks(optionBlocks[label])
 
-                if (!textValue && !hasImage) {
-                    toast.error(`Pilihan ${label} harus punya teks atau gambar`)
+                if (!optionContent.trim()) {
+                    toast.error(`Pilihan ${label} harus punya isi block`)
                     setLoading(false)
                     return
                 }
+
+                formData.set(`option_${label.toLowerCase()}`, optionContent)
+                formData.set(`option_${label.toLowerCase()}_image_url`, '')
 
                 if (type === 'TKP') {
                     const scoreValue = Number(formData.get(`score_${label.toLowerCase()}`) || 0)
@@ -152,33 +185,6 @@ export default function QuestionEditorForm({
                         return
                     }
                 }
-            }
-
-            if (isImageRemoved && !imageFile) {
-                formData.set('image_url', '')
-            } else if (imageFile) {
-                const imageUrl = await uploadImage(supabase, imageFile, 'question')
-                formData.set('image_url', imageUrl)
-            } else if (question?.image_url) {
-                formData.set('image_url', question.image_url)
-            }
-
-            for (const label of OPTION_LABELS) {
-                const optionImage = optionImages[label]
-                if (optionImage.file) {
-                    const optionImageUrl = await uploadImage(
-                        supabase,
-                        optionImage.file,
-                        `option-${label.toLowerCase()}`
-                    )
-                    formData.set(`option_${label.toLowerCase()}_image_url`, optionImageUrl)
-                    continue
-                }
-
-                formData.set(
-                    `option_${label.toLowerCase()}_image_url`,
-                    optionImage.preview && !optionImage.removed ? optionImage.preview : ''
-                )
             }
 
             const result = isEditMode && question
@@ -300,71 +306,12 @@ export default function QuestionEditorForm({
                             <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                                 Narasi Pertanyaan
                             </label>
-                            <textarea
-                                name="content"
-                                required
-                                rows={6}
-                                defaultValue={question?.content || ''}
-                                className="w-full resize-none rounded-md border-2 border-gray-300 bg-white p-5 text-base font-medium leading-relaxed text-gray-900 outline-none transition focus:border-gray-900 sm:text-lg"
-                                placeholder="Tulis pertanyaan utama di sini..."
+                            <QuestionBlockEditor
+                                blocks={contentBlocks}
+                                onChange={setContentBlocks}
+                                onUploadImage={handleUploadBlockImage}
+                                uploadPrefix="question"
                             />
-                        </div>
-
-                        <div className="space-y-3">
-                            <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
-                                Gambar Soal
-                            </label>
-                            {imagePreview ? (
-                                <div className="relative inline-block max-w-sm border-2 border-gray-900 bg-gray-50 p-2">
-                                    <Image
-                                        src={imagePreview}
-                                        alt="Preview soal"
-                                        width={480}
-                                        height={320}
-                                        unoptimized
-                                        className="max-h-48 w-full object-contain"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setImageFile(null)
-                                            setImagePreview(null)
-                                            setIsImageRemoved(true)
-                                        }}
-                                        className="absolute -right-3 -top-3 border-2 border-gray-900 bg-gray-900 p-1.5 text-white transition hover:bg-gray-800"
-                                    >
-                                        <X size={16} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="relative flex max-w-sm cursor-pointer flex-col items-center justify-center border-2 border-dashed border-gray-400 bg-white px-6 py-8 text-center transition hover:bg-gray-100">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="absolute inset-0 cursor-pointer opacity-0"
-                                        onChange={(event) => {
-                                            const file = event.target.files?.[0]
-                                            if (!file) {
-                                                return
-                                            }
-
-                                            if (file.size > 2 * 1024 * 1024) {
-                                                toast.error('Ukuran gambar maksimal 2MB')
-                                                return
-                                            }
-
-                                            setImageFile(file)
-                                            setImagePreview(URL.createObjectURL(file))
-                                            setIsImageRemoved(false)
-                                        }}
-                                    />
-                                    <div className="mb-4 border-2 border-gray-900 bg-gray-100 p-3 text-gray-900">
-                                        <ImageIcon size={24} />
-                                    </div>
-                                    <p className="font-bold text-gray-900">Upload gambar pendukung</p>
-                                    <p className="mt-1 text-xs text-gray-500">PNG, JPG, JPEG sampai 2MB</p>
-                                </div>
-                            )}
                         </div>
 
                         <div className="space-y-6">
@@ -402,65 +349,12 @@ export default function QuestionEditorForm({
                                             </div>
 
                                             <div className="flex-1 space-y-3">
-                                                <textarea
-                                                    name={`option_${label.toLowerCase()}`}
-                                                    rows={2}
-                                                    defaultValue={question?.options?.[index]?.content || ''}
-                                                    className="w-full rounded-md border-2 border-gray-300 bg-white p-4 font-medium text-gray-800 outline-none transition focus:border-gray-900"
-                                                    placeholder={`Isi pilihan ${label}, atau kosongkan jika memakai gambar`}
+                                                <QuestionBlockEditor
+                                                    blocks={optionBlocks[label]}
+                                                    onChange={(blocks) => setOptionBlockList(label, blocks)}
+                                                    onUploadImage={handleUploadBlockImage}
+                                                    uploadPrefix={`option-${label.toLowerCase()}`}
                                                 />
-
-                                                {optionImages[label].preview ? (
-                                                    <div className="relative inline-block max-w-xs border-2 border-gray-900 bg-gray-50 p-2">
-                                                        <Image
-                                                            src={optionImages[label].preview || ''}
-                                                            alt={`Preview pilihan ${label}`}
-                                                            width={320}
-                                                            height={220}
-                                                            unoptimized
-                                                            className="max-h-40 w-full object-contain"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setOptionImage(label, { file: null, preview: null, removed: true })}
-                                                            className="absolute -right-3 -top-3 border-2 border-gray-900 bg-gray-900 p-1.5 text-white transition hover:bg-gray-800"
-                                                        >
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <div className="relative flex max-w-xs cursor-pointer flex-col items-center justify-center border-2 border-dashed border-gray-400 bg-white px-4 py-5 text-center transition hover:bg-gray-100">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="absolute inset-0 cursor-pointer opacity-0"
-                                                            onChange={(event) => {
-                                                                const file = event.target.files?.[0]
-                                                                if (!file) {
-                                                                    return
-                                                                }
-
-                                                                if (file.size > 2 * 1024 * 1024) {
-                                                                    toast.error(`Ukuran gambar pilihan ${label} maksimal 2MB`)
-                                                                    return
-                                                                }
-
-                                                                setOptionImage(label, {
-                                                                    file,
-                                                                    preview: URL.createObjectURL(file),
-                                                                    removed: false,
-                                                                })
-                                                            }}
-                                                        />
-                                                        <div className="mb-3 border-2 border-gray-900 bg-gray-100 p-2 text-gray-900">
-                                                            <ImageIcon size={18} />
-                                                        </div>
-                                                        <p className="text-sm font-bold text-gray-900">
-                                                            Upload gambar pilihan {label}
-                                                        </p>
-                                                        <p className="mt-1 text-xs text-gray-500">Opsional, maksimal 2MB</p>
-                                                    </div>
-                                                )}
 
                                                 {type === 'TKP' ? (
                                                     <div className="flex items-center gap-2">
@@ -499,13 +393,11 @@ export default function QuestionEditorForm({
                             <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
                                 Pembahasan
                             </label>
-                            <textarea
-                                name="explanation"
-                                required
-                                rows={6}
-                                defaultValue={question?.explanation || ''}
-                                className="w-full resize-none rounded-md border-2 border-gray-300 bg-gray-50 p-5 font-medium leading-relaxed text-gray-800 outline-none transition focus:border-gray-900 focus:bg-white"
-                                placeholder="Jelaskan alasan jawaban atau pendekatan penyelesaian..."
+                            <QuestionBlockEditor
+                                blocks={explanationBlocks}
+                                onChange={setExplanationBlocks}
+                                onUploadImage={handleUploadBlockImage}
+                                uploadPrefix="explanation"
                             />
                         </div>
                     </div>
