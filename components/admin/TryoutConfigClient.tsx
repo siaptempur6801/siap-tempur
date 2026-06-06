@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Save, Plus, Loader2, ArrowUp, ArrowDown, Trash2, Check, X, GripVertical, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -24,17 +24,40 @@ interface TryoutConfig {
     is_active: boolean
 }
 
+interface ConfirmDialogState {
+    title: string
+    message: string
+    confirmLabel: string
+    cancelLabel: string
+    tone?: 'default' | 'danger'
+}
+
+function serializeTryoutConfigs(configs: TryoutConfig[]) {
+    return JSON.stringify(
+        configs.map(config => ({
+            id: config.id,
+            question_count: config.question_count,
+            sort_order: config.sort_order,
+            is_active: config.is_active,
+        }))
+    )
+}
+
 export default function TryoutConfigClient({ initialConfigs }: { initialConfigs: TryoutConfig[] }) {
     const router = useRouter()
+    const confirmResolverRef = useRef<((confirmed: boolean) => void) | null>(null)
+    const allowNextNavigationRef = useRef(false)
 
     // We maintain a local state for the ordered items.
     const [configs, setConfigs] = useState<TryoutConfig[]>(initialConfigs)
+    const [savedSnapshot, setSavedSnapshot] = useState(() => serializeTryoutConfigs(initialConfigs))
     const [isSaving, setIsSaving] = useState(false)
     const [isAdding, setIsAdding] = useState(false)
     const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
     const [selectedConfigIds, setSelectedConfigIds] = useState<string[]>([])
     const [isApplyingDefault, setIsApplyingDefault] = useState(false)
+    const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null)
 
     // Form state for new category
     const [newType, setNewType] = useState('TWK')
@@ -43,8 +66,75 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
     // Reset local state if data from server changes
     useEffect(() => {
         setConfigs(initialConfigs)
+        setSavedSnapshot(serializeTryoutConfigs(initialConfigs))
         setSelectedConfigIds([])
     }, [initialConfigs])
+
+    const currentSnapshot = useMemo(() => serializeTryoutConfigs(configs), [configs])
+    const hasUnsavedChanges = currentSnapshot !== savedSnapshot
+
+    const requestConfirm = useCallback((dialog: ConfirmDialogState) => {
+        setConfirmDialog(dialog)
+
+        return new Promise<boolean>((resolve) => {
+            confirmResolverRef.current = resolve
+        })
+    }, [])
+
+    const resolveConfirm = (confirmed: boolean) => {
+        confirmResolverRef.current?.(confirmed)
+        confirmResolverRef.current = null
+        setConfirmDialog(null)
+    }
+
+    useEffect(() => {
+        if (!hasUnsavedChanges) return
+
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (allowNextNavigationRef.current) return
+
+            event.preventDefault()
+            event.returnValue = ''
+        }
+
+        const handleDocumentClick = (event: MouseEvent) => {
+            const target = event.target
+            if (!(target instanceof Element)) return
+
+            const link = target.closest('a[href]')
+            if (!(link instanceof HTMLAnchorElement)) return
+
+            const nextUrl = new URL(link.href, window.location.href)
+            const currentUrl = new URL(window.location.href)
+            const isSamePage = nextUrl.pathname === currentUrl.pathname && nextUrl.search === currentUrl.search
+
+            if (isSamePage || link.target === '_blank') return
+
+            event.preventDefault()
+            event.stopPropagation()
+
+            void requestConfirm({
+                title: 'Perubahan Belum Disimpan',
+                message: 'Ada perubahan konfigurasi tryout yang belum disimpan. Kalau pindah halaman sekarang, perubahan jumlah soal atau urutan materi bisa hilang.',
+                confirmLabel: 'Tinggalkan',
+                cancelLabel: 'Tetap di Sini',
+                tone: 'danger',
+            }).then((shouldLeave) => {
+                if (shouldLeave) {
+                    allowNextNavigationRef.current = true
+                    window.location.href = link.href
+                }
+            })
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        document.addEventListener('click', handleDocumentClick, true)
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+            document.removeEventListener('click', handleDocumentClick, true)
+        }
+    }, [hasUnsavedChanges, requestConfirm])
 
     // Compute total selected questions
     const totalQuestions = configs.reduce((sum, c) => sum + (c.is_active ? c.question_count : 0), 0)
@@ -90,15 +180,25 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
     }
 
     const handleToggleActive = async (id: string, currentlyActive: boolean) => {
+        const shouldContinue = await requestConfirm({
+            title: currentlyActive ? 'Nonaktifkan Kategori?' : 'Aktifkan Kategori?',
+            message: `Kategori ini akan langsung ${currentlyActive ? 'dinonaktifkan dari' : 'diaktifkan untuk'} paket tryout berikutnya.`,
+            confirmLabel: currentlyActive ? 'Nonaktifkan' : 'Aktifkan',
+            cancelLabel: 'Batal',
+            tone: currentlyActive ? 'danger' : 'default',
+        })
+        if (!shouldContinue) return
+
         const loadingToast = toast.loading(`${currentlyActive ? 'Menonaktifkan' : 'Mengaktifkan'} kategori...`)
 
-        // Optimistic update
-        setConfigs(configs.map(c => c.id === id ? { ...c, is_active: !currentlyActive } : c))
+        const nextConfigs = configs.map(c => c.id === id ? { ...c, is_active: !currentlyActive } : c)
+        setConfigs(nextConfigs)
 
         try {
             const res = await toggleTryoutConfiguration(id, !currentlyActive)
             if (res.success) {
                 toast.success(res.message, { id: loadingToast })
+                setSavedSnapshot(serializeTryoutConfigs(nextConfigs))
             } else {
                 toast.error(res.message, { id: loadingToast })
                 // Revert optimistic update
@@ -124,7 +224,9 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             const res = await deleteTryoutConfiguration(itemToDelete.id)
             if (res.success) {
                 toast.success(res.message, { id: loadingToast })
-                setConfigs(configs.filter(c => c.id !== itemToDelete.id))
+                const nextConfigs = configs.filter(c => c.id !== itemToDelete.id)
+                setConfigs(nextConfigs)
+                setSavedSnapshot(serializeTryoutConfigs(nextConfigs))
                 setSelectedConfigIds(current => current.filter(id => id !== itemToDelete.id))
                 router.refresh()
             } else {
@@ -144,6 +246,15 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             return
         }
 
+        const shouldDelete = await requestConfirm({
+            title: 'Hapus Kategori Terpilih?',
+            message: `${selectedConfigIds.length} kategori akan dihapus dan tidak dipakai lagi dalam pembuatan tryout berikutnya.`,
+            confirmLabel: 'Ya, Hapus',
+            cancelLabel: 'Batal',
+            tone: 'danger',
+        })
+        if (!shouldDelete) return
+
         setIsDeleting(true)
         const loadingToast = toast.loading(`Menghapus ${selectedConfigIds.length} kategori...`)
 
@@ -152,7 +263,9 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             if (res.success) {
                 toast.success(res.message, { id: loadingToast })
                 const selectedIds = new Set(selectedConfigIds)
-                setConfigs(configs.filter(c => !selectedIds.has(c.id)))
+                const nextConfigs = configs.filter(c => !selectedIds.has(c.id))
+                setConfigs(nextConfigs)
+                setSavedSnapshot(serializeTryoutConfigs(nextConfigs))
                 setSelectedConfigIds([])
                 router.refresh()
             } else {
@@ -166,6 +279,19 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
     }
 
     const handleSaveOrder = async () => {
+        if (!hasUnsavedChanges) {
+            toast.info('Tidak ada perubahan konfigurasi untuk disimpan')
+            return
+        }
+
+        const shouldSave = await requestConfirm({
+            title: 'Simpan Perubahan?',
+            message: 'Perubahan jumlah soal dan urutan materi akan dipakai untuk pembuatan tryout berikutnya.',
+            confirmLabel: 'Simpan',
+            cancelLabel: 'Cek Lagi',
+        })
+        if (!shouldSave) return
+
         setIsSaving(true)
         const loadingToast = toast.loading("Menyimpan konfigurasi...")
 
@@ -183,6 +309,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             const res = await updateTryoutConfigurations(payload)
             if (res.success) {
                 toast.success(res.message, { id: loadingToast })
+                setSavedSnapshot(serializeTryoutConfigs(configs))
                 router.refresh()
             } else {
                 toast.error(res.message, { id: loadingToast })
@@ -200,6 +327,14 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             toast.error("Nama materi tidak boleh kosong");
             return;
         }
+
+        const shouldAdd = await requestConfirm({
+            title: 'Tambah Topik?',
+            message: `Topik "${newCategory.trim()}" akan ditambahkan ke konfigurasi tryout.`,
+            confirmLabel: 'Tambahkan',
+            cancelLabel: 'Batal',
+        })
+        if (!shouldAdd) return
 
         setIsAdding(true)
         const loadingToast = toast.loading("Menambahkan kategori...")
@@ -221,6 +356,15 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
     }
 
     const handleApplyDefaultSkd = async () => {
+        const shouldApply = await requestConfirm({
+            title: 'Terapkan Default SKD?',
+            message: 'Struktur default SKD akan diterapkan. Konfigurasi yang sudah ada dapat berubah.',
+            confirmLabel: 'Terapkan',
+            cancelLabel: 'Batal',
+            tone: 'danger',
+        })
+        if (!shouldApply) return
+
         setIsApplyingDefault(true)
         const loadingToast = toast.loading('Menerapkan struktur default SKD...')
 
@@ -520,6 +664,51 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                     className="flex flex-1 items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-4 py-2.5 font-bold text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none focus:outline-none"
                                 >
                                     {isDeleting ? <Loader2 className="animate-spin" size={18} /> : 'Ya, Hapus'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {confirmDialog && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+                    <div className="relative w-full max-w-md overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:p-8">
+                        <PaperBackground />
+                        <div className="relative z-10">
+                            <div className={cn(
+                                "mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
+                                confirmDialog.tone === 'danger' ? "bg-yellow-300 text-gray-900" : "bg-blue-100 text-blue-900"
+                            )}>
+                                <AlertTriangle size={28} strokeWidth={3} />
+                            </div>
+
+                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                                {confirmDialog.title}
+                            </h3>
+                            <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
+                                {confirmDialog.message}
+                            </p>
+
+                            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => resolveConfirm(false)}
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100"
+                                >
+                                    {confirmDialog.cancelLabel}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => resolveConfirm(true)}
+                                    className={cn(
+                                        "rounded-md border-2 border-gray-900 px-5 py-2.5 font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5",
+                                        confirmDialog.tone === 'danger'
+                                            ? "bg-gray-900 text-white hover:bg-gray-800"
+                                            : "bg-blue-600 text-white hover:bg-blue-700"
+                                    )}
+                                >
+                                    {confirmDialog.confirmLabel}
                                 </button>
                             </div>
                         </div>
