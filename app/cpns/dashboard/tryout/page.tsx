@@ -45,9 +45,15 @@ export default async function PracticeListingPage() {
     const activeTryoutCandidate = fallbackTryoutQuery?.data ?? activeTryoutQuery.data
 
     if (activeTryoutCandidate?.id && isTryoutExpired(activeTryoutCandidate.start_time)) {
-        await supabase.rpc('calculate_session_score', {
+        const { error: finishError } = await supabase.rpc('calculate_session_score', {
             session_uuid: activeTryoutCandidate.id
         })
+
+        if (!finishError) {
+            await supabase.rpc('upsert_leaderboard_from_session', {
+                p_session_id: activeTryoutCandidate.id
+            })
+        }
     }
 
     const activeTryout =

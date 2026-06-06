@@ -53,7 +53,7 @@ export async function GET() {
         checks.database = !databaseError
 
         const { error: leaderboardError } = await admin
-            .from('leaderboard_snapshot')
+            .from('leaderboard_entries')
             .select('user_id')
             .limit(1)
 

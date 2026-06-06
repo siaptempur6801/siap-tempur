@@ -90,15 +90,17 @@ async function getSessionRows(request: NextRequest) {
 async function getRankingRows() {
     const supabase = await createAdminClient()
     const { data, error } = await supabase
-        .from('leaderboard_snapshot')
-        .select('rank_pos, user_id, full_name, top_score, score_twk, score_tiu, score_tkp')
-        .order('rank_pos', { ascending: true })
+        .from('leaderboard_entries')
+        .select('user_id, full_name, top_score, score_twk, score_tiu, score_tkp, completed_at')
+        .order('top_score', { ascending: false })
+        .order('completed_at', { ascending: true })
+        .order('user_id', { ascending: true })
         .limit(MAX_ROWS)
 
     if (error) throw new Error(error.message)
 
-    return (data || []).map((row) => ({
-        ranking: row.rank_pos,
+    return (data || []).map((row, index) => ({
+        ranking: index + 1,
         user_id: row.user_id,
         nama: row.full_name || '',
         skor_twk: row.score_twk || 0,

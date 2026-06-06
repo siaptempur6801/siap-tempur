@@ -1,5 +1,4 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { unstable_cache } from 'next/cache'
 import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
 import { isMissingProgressColumnError } from './practice-session'
 import { calculateCurrentStreak } from './utils'
@@ -113,21 +112,13 @@ export function getXPInfo(previousTotalXP: number, xpEarned: number) {
     }
 }
 
-// Cache rank leaderboard per user selama 15 menit.
-// Snapshot leaderboard juga direfresh via pg_cron tiap 15 menit.
-export function getCachedRank(supabase: SupabaseClient, userId: string) {
-    return unstable_cache(
-        async () => {
-            const { data } = await supabase
-                .rpc('get_leaderboard_snapshot')
-                .select('rank_pos')
-                .eq('user_id', userId)
-                .maybeSingle()
-            return data
-        },
-        [`rank-${userId}`],
-        { revalidate: 900, tags: [`rank-${userId}`] } // 15 menit
-    )()
+export async function getCurrentRank(supabase: SupabaseClient, userId: string) {
+    const { data } = await supabase.rpc('get_national_leaderboard', {
+        p_limit: 100,
+        p_user_id: userId,
+    })
+
+    return (data ?? []).find((entry: { user_id: string }) => entry.user_id === userId) ?? null
 }
 
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
@@ -156,8 +147,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .select('total_score')
             .eq('user_id', userId)
             .eq('status', 'completed'),
-        // Rank di-cache 5 menit — tidak perlu hit DB setiap request
-        getCachedRank(supabase, userId),
+        getCurrentRank(supabase, userId),
         supabase
             .from('test_sessions')
             .select('mode, start_time')
@@ -184,7 +174,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     const bestSession = bestSessionRes.data?.[0]
     const allSessions = allSessionsRes.data
     const activeSession = fallbackActiveSessionRes?.data ?? activeSessionRes.data
-    // rankData sudah di-resolve langsung dari getCachedRank via Promise.all
+    // rankData diambil dari leaderboard Postgres terbaru.
 
     const totalXp = allSessions?.reduce((sum: number, session) => sum + (session.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXp)

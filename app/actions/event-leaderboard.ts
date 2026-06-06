@@ -8,6 +8,7 @@ export interface LiveLeaderboardEntry {
     full_name: string
     avatar_url: string | null
     progress_count: number
+    total_score: number
     live_rank: number
 }
 

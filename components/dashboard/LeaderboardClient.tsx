@@ -7,6 +7,7 @@ import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import PaperBackground from '@/components/PaperBackground'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
+import { getNationalLeaderboardAction } from '@/app/actions/leaderboard'
 
 interface LeaderboardEntry {
     rank_pos: number
@@ -28,10 +29,32 @@ interface LeaderboardClientProps {
 
 export default function LeaderboardClient({ data, currentUserId, periodText = 'Edisi Minggu Ini', currentUserRank }: LeaderboardClientProps) {
     const [searchQuery, setSearchQuery] = React.useState('')
-    const currentUserInTopRankings = data.some((entry) => entry.user_id === currentUserId)
-    const showCurrentUserOutsideTop100 = Boolean(currentUserRank && !currentUserInTopRankings)
+    const [rankings, setRankings] = React.useState(data)
+    const [resolvedCurrentUserRank, setResolvedCurrentUserRank] = React.useState(currentUserRank ?? null)
+    const [lastUpdatedAt, setLastUpdatedAt] = React.useState<Date | null>(null)
+    const currentUserInTopRankings = rankings.some((entry) => entry.user_id === currentUserId)
+    const showCurrentUserOutsideTop100 = Boolean(resolvedCurrentUserRank && !currentUserInTopRankings)
 
-    const filteredData = data.filter(entry =>
+    React.useEffect(() => {
+        let isMounted = true
+
+        const refreshLeaderboard = async () => {
+            const result = await getNationalLeaderboardAction()
+            if (!isMounted || result.error) return
+
+            setRankings(result.rankings)
+            setResolvedCurrentUserRank(result.currentUserRank)
+            setLastUpdatedAt(new Date())
+        }
+
+        const interval = window.setInterval(refreshLeaderboard, 5000)
+        return () => {
+            isMounted = false
+            window.clearInterval(interval)
+        }
+    }, [])
+
+    const filteredData = rankings.filter(entry =>
         entry.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
     )
 
@@ -56,8 +79,18 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                         </div>
                         <h1 className="font-handwriting text-5xl md:text-7xl font-bold text-gray-900">Ranking Nasional</h1>
                         <p className="font-handwriting text-xl md:text-2xl text-gray-600 mt-2 italic">
-                            Top 100 pejuang CPNS nasional minggu ini.
+                            Top 100 pejuang CPNS nasional all-time.
                         </p>
+                        {lastUpdatedAt && (
+                            <p className="mt-2 text-xs font-bold uppercase tracking-wider text-gray-400">
+                                Update terakhir {lastUpdatedAt.toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    timeZone: 'Asia/Jakarta',
+                                })}
+                            </p>
+                        )}
                     </div>
 
                     {/* Search Bar */}
@@ -233,32 +266,32 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                             </div>
                         )}
 
-                        {showCurrentUserOutsideTop100 && currentUserRank && (
+                        {showCurrentUserOutsideTop100 && resolvedCurrentUserRank && (
                             <div className="border-t-2 border-blue-600 bg-blue-50 p-4">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                                     <div className="flex-shrink-0 text-center sm:w-20">
                                         <div className="text-xs font-bold uppercase tracking-widest text-blue-400">Posisi</div>
-                                        <div className="text-3xl font-black text-blue-700">#{currentUserRank.rank_pos}</div>
+                                        <div className="text-3xl font-black text-blue-700">#{resolvedCurrentUserRank.rank_pos}</div>
                                     </div>
                                     <div className="hidden h-14 w-px bg-blue-200 sm:block" />
                                     <div className="flex-1">
                                         <div className="text-sm font-black text-blue-800">Posisi kamu belum masuk Top 100 saat ini</div>
                                         <div className="mt-0.5 text-xs text-blue-500">
-                                            Skor terbaikmu: <strong>{currentUserRank.top_score}</strong>
+                                            Skor terbaikmu: <strong>{resolvedCurrentUserRank.top_score}</strong>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-3 gap-3 text-center sm:flex">
                                         <div>
                                             <div className="text-[10px] font-black uppercase text-blue-400">TWK</div>
-                                            <div className="text-sm font-bold text-blue-700">{currentUserRank.score_twk}</div>
+                                            <div className="text-sm font-bold text-blue-700">{resolvedCurrentUserRank.score_twk}</div>
                                         </div>
                                         <div>
                                             <div className="text-[10px] font-black uppercase text-blue-400">TIU</div>
-                                            <div className="text-sm font-bold text-blue-700">{currentUserRank.score_tiu}</div>
+                                            <div className="text-sm font-bold text-blue-700">{resolvedCurrentUserRank.score_tiu}</div>
                                         </div>
                                         <div>
                                             <div className="text-[10px] font-black uppercase text-blue-400">TKP</div>
-                                            <div className="text-sm font-bold text-blue-700">{currentUserRank.score_tkp}</div>
+                                            <div className="text-sm font-bold text-blue-700">{resolvedCurrentUserRank.score_tkp}</div>
                                         </div>
                                     </div>
                                 </div>

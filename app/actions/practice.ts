@@ -18,6 +18,22 @@ function isUuid(value: string) {
     return UUID_PATTERN.test(value)
 }
 
+async function syncLeaderboardFromSession(
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    sessionId: string
+) {
+    const { error } = await supabase.rpc('upsert_leaderboard_from_session', {
+        p_session_id: sessionId,
+    })
+
+    if (error) {
+        logger.warn('Leaderboard sync failed', {
+            error: error.message,
+            sessionId,
+        })
+    }
+}
+
 async function queryInProgressSessions(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string,
@@ -70,6 +86,8 @@ async function findExistingTryoutSession(
 
         if (finishError) {
             logger.warn('[findExistingTryoutSession] Failed to auto-finish expired session', { error: finishError })
+        } else {
+            await syncLeaderboardFromSession(supabase, session.id)
         }
 
         return null
@@ -286,6 +304,8 @@ export async function finishPractice(sessionId: string) {
         return { error: 'Failed to finish session' }
     }
 
+    await syncLeaderboardFromSession(supabase, sessionId)
+
     const admin = await createAdminClient()
     const { error: eventCompletionError } = await admin
         .rpc('complete_tryout_event_session', {
@@ -302,9 +322,6 @@ export async function finishPractice(sessionId: string) {
         })
         return { error: 'Failed to finish event session' }
     }
-
-    // Leaderboard is updated by pg_cron on a fixed interval.
-    // No need to trigger manual refresh here to save DB resources.
 
     revalidatePath(`/cpns/dashboard/tryout/${sessionId}/result`)
     revalidatePath('/cpns/dashboard')
