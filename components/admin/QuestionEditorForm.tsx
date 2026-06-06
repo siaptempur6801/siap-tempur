@@ -238,9 +238,9 @@ export default function QuestionEditorForm({
                                 {isEditMode ? 'Mode edit aktif' : 'Mode tambah soal'}
                             </p>
                             <p className="text-gray-700">
-                                Tulis rumus dengan format <code>$rumus$</code> atau <code>$$rumus$$</code>.
+                                Susun soal dengan block teks, gambar, matematika, dan jarak. Gunakan block matematika untuk rumus agar tampil rapi di tryout.
                                 {isEditMode && question ? (
-                                    <> Kode soal: <code>{question.question_code || question.id}</code></>
+                                    <> Kode soal: <code>{question.question_code || question.id}</code>.</>
                                 ) : null}
                             </p>
                         </div>
