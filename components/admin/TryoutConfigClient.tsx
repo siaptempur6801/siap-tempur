@@ -4,7 +4,14 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Save, Plus, Loader2, ArrowUp, ArrowDown, Trash2, Check, X, GripVertical, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
-import { updateTryoutConfigurations, addTryoutConfiguration, toggleTryoutConfiguration, deleteTryoutConfiguration } from '@/app/actions/admin'
+import {
+    updateTryoutConfigurations,
+    addTryoutConfiguration,
+    toggleTryoutConfiguration,
+    deleteTryoutConfiguration,
+    deleteTryoutConfigurationsBulk,
+    seedDefaultSkdTryoutConfigurations,
+} from '@/app/actions/admin'
 import { cn } from '@/lib/utils'
 import PaperBackground from '@/components/PaperBackground'
 
@@ -26,6 +33,8 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
     const [isAdding, setIsAdding] = useState(false)
     const [itemToDelete, setItemToDelete] = useState<{ id: string, name: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [selectedConfigIds, setSelectedConfigIds] = useState<string[]>([])
+    const [isApplyingDefault, setIsApplyingDefault] = useState(false)
 
     // Form state for new category
     const [newType, setNewType] = useState('TWK')
@@ -34,11 +43,19 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
     // Reset local state if data from server changes
     useEffect(() => {
         setConfigs(initialConfigs)
+        setSelectedConfigIds([])
     }, [initialConfigs])
 
     // Compute total selected questions
     const totalQuestions = configs.reduce((sum, c) => sum + (c.is_active ? c.question_count : 0), 0)
     const isValidTotal = totalQuestions === 110
+    const sectionBlocks = [
+        { label: 'TWK', value: configs.filter(c => c.is_active && c.type === 'TWK').reduce((sum, c) => sum + c.question_count, 0), target: 30 },
+        { label: 'TIU', value: configs.filter(c => c.is_active && c.type === 'TIU').reduce((sum, c) => sum + c.question_count, 0), target: 35 },
+        { label: 'TKP', value: configs.filter(c => c.is_active && c.type === 'TKP').reduce((sum, c) => sum + c.question_count, 0), target: 45 },
+    ]
+    const selectedConfigIdSet = new Set(selectedConfigIds)
+    const allConfigsSelected = configs.length > 0 && selectedConfigIds.length === configs.length
 
     const moveItem = (index: number, direction: 'up' | 'down') => {
         if (direction === 'up' && index === 0) return
@@ -58,6 +75,18 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
 
     const handleChangeCount = (id: string, count: number) => {
         setConfigs(configs.map(c => c.id === id ? { ...c, question_count: count } : c))
+    }
+
+    const handleToggleSelectAll = () => {
+        setSelectedConfigIds(allConfigsSelected ? [] : configs.map(config => config.id))
+    }
+
+    const handleToggleSelectConfig = (id: string) => {
+        setSelectedConfigIds(current =>
+            current.includes(id)
+                ? current.filter(selectedId => selectedId !== id)
+                : [...current, id]
+        )
     }
 
     const handleToggleActive = async (id: string, currentlyActive: boolean) => {
@@ -96,6 +125,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             if (res.success) {
                 toast.success(res.message, { id: loadingToast })
                 setConfigs(configs.filter(c => c.id !== itemToDelete.id))
+                setSelectedConfigIds(current => current.filter(id => id !== itemToDelete.id))
                 router.refresh()
             } else {
                 toast.error(res.message, { id: loadingToast })
@@ -105,6 +135,33 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
         } finally {
             setIsDeleting(false)
             setItemToDelete(null)
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (selectedConfigIds.length === 0) {
+            toast.error('Pilih minimal satu kategori')
+            return
+        }
+
+        setIsDeleting(true)
+        const loadingToast = toast.loading(`Menghapus ${selectedConfigIds.length} kategori...`)
+
+        try {
+            const res = await deleteTryoutConfigurationsBulk(selectedConfigIds)
+            if (res.success) {
+                toast.success(res.message, { id: loadingToast })
+                const selectedIds = new Set(selectedConfigIds)
+                setConfigs(configs.filter(c => !selectedIds.has(c.id)))
+                setSelectedConfigIds([])
+                router.refresh()
+            } else {
+                toast.error(res.message, { id: loadingToast })
+            }
+        } catch {
+            toast.error('Gagal menghapus kategori terpilih', { id: loadingToast })
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -163,23 +220,86 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
         }
     }
 
+    const handleApplyDefaultSkd = async () => {
+        setIsApplyingDefault(true)
+        const loadingToast = toast.loading('Menerapkan struktur default SKD...')
+
+        try {
+            const res = await seedDefaultSkdTryoutConfigurations()
+            if (res.success) {
+                toast.success(res.message, { id: loadingToast })
+                router.refresh()
+            } else {
+                toast.error(res.message, { id: loadingToast })
+            }
+        } catch {
+            toast.error('Gagal menerapkan default SKD', { id: loadingToast })
+        } finally {
+            setIsApplyingDefault(false)
+        }
+    }
+
     return (
         <div className="grid grid-cols-1 gap-8 pb-12 lg:grid-cols-3">
 
             {/* Left: Configuration List */}
             <div className="lg:col-span-2 space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="text-xs font-black uppercase tracking-widest text-gray-500">Total</div>
+                        <div className={cn("mt-1 text-3xl font-black", isValidTotal ? "text-green-600" : "text-gray-900")}>{totalQuestions}</div>
+                        <div className="text-xs font-bold text-gray-500">Target 110 soal</div>
+                    </div>
+                    {sectionBlocks.map(section => (
+                        <div key={section.label} className="border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="text-xs font-black uppercase tracking-widest text-gray-500">{section.label}</div>
+                            <div className={cn("mt-1 text-3xl font-black", section.value === section.target ? "text-green-600" : "text-gray-900")}>{section.value}</div>
+                            <div className="text-xs font-bold text-gray-500">Target {section.target} soal</div>
+                        </div>
+                    ))}
+                </div>
+
                 <div className="relative overflow-hidden border-2 border-gray-900 bg-white shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
                     <PaperBackground />
 
                     <div className="sticky top-0 z-10 flex flex-col gap-3 border-b-2 border-gray-900 bg-gray-100/90 p-6 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
-                        <h2 className="font-handwriting text-2xl font-black text-gray-900">Kategori Aktif</h2>
-                        <span className={cn(
-                            "w-fit border-2 px-4 py-2 text-sm font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-                            isValidTotal ? "border-gray-900 bg-gray-900 text-white" : "border-gray-900 bg-white text-gray-900"
-                        )}>
-                            Total: {totalQuestions} Soal
-                        </span>
+                        <div>
+                            <h2 className="font-handwriting text-2xl font-black text-gray-900">Struktur Materi</h2>
+                            <p className="mt-1 text-sm font-medium text-gray-600">Urutan ini dipakai saat paket soal tryout dibuat.</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={handleBulkDelete}
+                                disabled={isDeleting || selectedConfigIds.length === 0}
+                                className="flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:bg-gray-100 disabled:opacity-50"
+                            >
+                                <Trash2 size={16} />
+                                Hapus Terpilih{selectedConfigIds.length > 0 ? ` (${selectedConfigIds.length})` : ''}
+                            </button>
+                            <span className={cn(
+                                "w-fit border-2 px-4 py-2 text-sm font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                                isValidTotal ? "border-gray-900 bg-gray-900 text-white" : "border-gray-900 bg-white text-gray-900"
+                            )}>
+                                Total: {totalQuestions} Soal
+                            </span>
+                        </div>
                     </div>
+
+                    {configs.length > 0 && (
+                        <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b-2 border-gray-900 bg-white/80 px-4 py-3 sm:px-6">
+                            <label className="flex items-center gap-2 text-sm font-black text-gray-900">
+                                <input
+                                    type="checkbox"
+                                    checked={allConfigsSelected}
+                                    onChange={handleToggleSelectAll}
+                                    className="h-4 w-4 accent-gray-900"
+                                />
+                                Pilih semua materi
+                            </label>
+                            <span className="text-sm font-bold text-gray-500">{selectedConfigIds.length} dari {configs.length} dipilih</span>
+                        </div>
+                    )}
 
                     <div className="relative z-10 max-h-[600px] space-y-3 overflow-y-auto p-4 sm:p-6">
                         {configs.map((config, idx) => (
@@ -192,6 +312,13 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                         : "border-gray-300 bg-gray-100 opacity-60 grayscale"
                                 )}
                             >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedConfigIdSet.has(config.id)}
+                                    onChange={() => handleToggleSelectConfig(config.id)}
+                                    aria-label={`Pilih ${config.sub_category}`}
+                                    className="mt-1 h-4 w-4 shrink-0 accent-gray-900 sm:mt-0"
+                                />
                                 <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
                                     <div className="flex flex-col gap-1 items-center shrink-0">
                                         <button
@@ -226,7 +353,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto shrink-0 pl-11 sm:pl-0">
+                                <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto shrink-0 pl-16 sm:pl-0">
                                     <div className="flex items-center gap-2">
                                         <label className="text-xs font-bold text-gray-500">Soal:</label>
                                         <input
@@ -281,6 +408,23 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
 
             {/* Right: Add New Category & Sidebar Rules */}
             <div className="space-y-6">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
+                    <PaperBackground />
+                    <div className="relative z-10">
+                        <h3 className="mb-3 border-b-2 border-gray-900 pb-2 font-handwriting text-2xl font-black text-gray-900">Preset Struktur</h3>
+                        <p className="mb-4 text-sm font-medium text-gray-600">Pola blok materi: section, topik, jumlah soal, dan urutan.</p>
+                        <button
+                            type="button"
+                            onClick={handleApplyDefaultSkd}
+                            disabled={isApplyingDefault}
+                            className="flex w-full items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 p-3 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)] transition-all hover:-translate-y-0.5 hover:bg-gray-800 disabled:opacity-50"
+                        >
+                            {isApplyingDefault ? <Loader2 className="animate-spin" size={18} /> : <Check size={18} />}
+                            Terapkan Default SKD
+                        </button>
+                    </div>
+                </div>
+
                 <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10">

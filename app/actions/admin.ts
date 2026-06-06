@@ -439,6 +439,58 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
     return { success: true, message: 'Sub-Kategori berhasil ditambahkan' }
 }
 
+export async function seedDefaultSkdTryoutConfigurations() {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const defaults = [
+        ['TWK', 'Nasionalisme', 6],
+        ['TWK', 'Integritas', 6],
+        ['TWK', 'Bela Negara', 6],
+        ['TWK', 'Pilar Negara', 6],
+        ['TWK', 'Bahasa Negara', 6],
+        ['TIU', 'Analogi', 3],
+        ['TIU', 'Silogisme', 3],
+        ['TIU', 'Analitis', 4],
+        ['TIU', 'Berhitung', 5],
+        ['TIU', 'Deret Angka', 5],
+        ['TIU', 'Perbandingan Kuantitatif', 5],
+        ['TIU', 'Soal Cerita', 5],
+        ['TIU', 'Analogi Figural', 2],
+        ['TIU', 'Ketidaksamaan', 1],
+        ['TIU', 'Serial', 2],
+        ['TKP', 'Pelayanan Publik', 8],
+        ['TKP', 'Jejaring Kerja', 8],
+        ['TKP', 'Sosial Budaya', 7],
+        ['TKP', 'Teknologi Informasi dan Komunikasi', 7],
+        ['TKP', 'Profesionalisme', 7],
+        ['TKP', 'Anti-Radikalisme', 8],
+    ] as const
+
+    const rows = defaults.map(([type, subCategory, questionCount], index) => ({
+        type,
+        sub_category: subCategory,
+        question_count: questionCount,
+        sort_order: index + 1,
+        is_active: true,
+    }))
+
+    const { error } = await supabase
+        .from('tryout_configurations')
+        .upsert(rows, { onConflict: 'type,sub_category' })
+
+    if (error) {
+        return { success: false, message: error.message }
+    }
+
+    revalidatePath('/cpns/admin/tryout-config')
+    revalidatePath('/cpns/admin')
+    return { success: true, message: 'Struktur default SKD berhasil diterapkan' }
+}
+
 export async function toggleTryoutConfiguration(id: string, is_active: boolean) {
     try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
 
@@ -481,6 +533,33 @@ export async function deleteTryoutConfiguration(id: string) {
     revalidatePath('/cpns/admin/tryout-config')
     revalidatePath('/cpns/admin')
     return { success: true, message: 'Kategori berhasil dihapus secara permanen' }
+}
+
+export async function deleteTryoutConfigurationsBulk(ids: string[]) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const uniqueIds = Array.from(new Set(ids.filter(Boolean)))
+    if (uniqueIds.length === 0) {
+        return { success: false, message: 'Pilih minimal satu kategori' }
+    }
+
+    const supabase = await createAdminClient()
+
+    const { error } = await supabase
+        .from('tryout_configurations')
+        .delete()
+        .in('id', uniqueIds)
+
+    if (error) {
+        return { success: false, message: error.message }
+    }
+
+    revalidatePath('/cpns/admin/tryout-config')
+    revalidatePath('/cpns/admin')
+    return { success: true, message: `${uniqueIds.length} kategori berhasil dihapus` }
 }
 
 // =============================================

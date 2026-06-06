@@ -8,7 +8,6 @@ import {
     BookOpen,
     CalendarDays,
     Clock3,
-    User,
     Ticket,
     Target,
     BarChart3,
@@ -86,8 +85,6 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     <NavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" badge="XP" />
                     <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Riwayat" />
 
-                    <NavItem href="/cpns/dashboard/profile" icon={<User size={20} />} label="Profil" />
-
                     {isAdmin && (
                         <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
                             <NavItem href="/cpns/admin" icon={<Shield size={20} />} label="Admin" />
@@ -97,7 +94,12 @@ export default function DashboardShell({ children, user, profile, signoutAction,
 
                 <div className="p-4 border-t-2 border-gray-900 relative z-10 shrink-0">
                     <div className="flex items-center gap-3 mb-4 px-2 p-3 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-1 hover:rotate-0 transition-transform">
-                        <div className="w-10 h-10 border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold overflow-hidden relative bg-yellow-200">
+                        <Link
+                            href="/cpns/dashboard/profile"
+                            aria-label="Buka pengaturan profil"
+                            title="Buka pengaturan profil"
+                            className="w-10 h-10 border-2 border-gray-900 flex items-center justify-center text-gray-900 font-bold overflow-hidden relative bg-yellow-200 shrink-0 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                        >
                             {profile?.avatar_url ? (
                                 <Image
                                     src={profile.avatar_url}
@@ -109,7 +111,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                             ) : (
                                 <span className="text-lg">{user.email?.[0]?.toUpperCase() || '?'}</span>
                             )}
-                        </div>
+                        </Link>
                         <div className="overflow-hidden flex-1">
                             <p className="text-sm font-bold text-gray-900 truncate font-handwriting">
                                 {profile?.full_name ||
