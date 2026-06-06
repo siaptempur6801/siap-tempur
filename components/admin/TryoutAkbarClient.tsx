@@ -286,7 +286,9 @@ const STATUS_ACTIONS: Array<{
     label: string
     icon: React.ReactNode
     btnClass: string
-    confirm?: string
+    confirmTitle?: string
+    confirmMessage?: string
+    confirmLabel?: string
 }> = [
     {
         targetStatus: 'scheduled',
@@ -299,21 +301,27 @@ const STATUS_ACTIONS: Array<{
         label: 'Go Live',
         icon: <Radio size={14} />,
         btnClass: 'border-green-600 bg-green-600 text-white hover:bg-green-700',
-        confirm: 'Event akan langsung LIVE dan peserta bisa mulai. Lanjutkan?',
+        confirmTitle: 'Jadikan Event Live?',
+        confirmMessage: 'Event akan langsung LIVE dan peserta bisa mulai mengerjakan tryout.',
+        confirmLabel: 'Go Live',
     },
     {
         targetStatus: 'closed',
         label: 'Tutup',
         icon: <EyeOff size={14} />,
         btnClass: 'border-orange-600 bg-orange-600 text-white hover:bg-orange-700',
-        confirm: 'Event akan ditutup. Peserta tidak bisa mulai lagi. Lanjutkan?',
+        confirmTitle: 'Tutup Event?',
+        confirmMessage: 'Peserta tidak bisa mulai lagi setelah event ditutup. Peserta yang sudah selesai tetap tersimpan.',
+        confirmLabel: 'Tutup Event',
     },
     {
         targetStatus: 'cancelled',
         label: 'Cancel',
         icon: <X size={14} />,
         btnClass: 'border-red-600 bg-red-100 text-red-700 hover:bg-red-200',
-        confirm: 'Event akan dibatalkan permanen. Yakin?',
+        confirmTitle: 'Batalkan Event?',
+        confirmMessage: 'Event akan dibatalkan. Pastikan keputusan ini sudah benar sebelum lanjut.',
+        confirmLabel: 'Batalkan Event',
     },
 ]
 
@@ -331,6 +339,7 @@ function DetailPanel({
 }) {
     const [tab, setTab] = useState<DetailTab>('stats')
     const [codeToDelete, setCodeToDelete] = useState<EventCode | null>(null)
+    const [statusToConfirm, setStatusToConfirm] = useState<typeof STATUS_ACTIONS[number] | null>(null)
 
     const TABS: Array<{ id: DetailTab; label: string; icon: React.ReactNode }> = [
         { id: 'stats', label: 'Statistik', icon: <BarChart3 size={15} /> },
@@ -412,20 +421,24 @@ function DetailPanel({
                                 <Trophy size={14} /> Live Leaderboard
                             </a>
                             <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Ubah Status</p>
-                            {STATUS_ACTIONS.map(({ targetStatus, label, icon, btnClass, confirm }) => (
-                                <button key={targetStatus}
-                                    disabled={isPending || event.status === targetStatus}
+                            {STATUS_ACTIONS.map((action) => (
+                                <button key={action.targetStatus}
+                                    disabled={isPending || event.status === action.targetStatus}
                                     onClick={() => {
-                                        if (confirm && !window.confirm(confirm)) return
-                                        onRunAction(() => updateTryoutEventStatus(event.id, targetStatus))
+                                        if (action.confirmMessage) {
+                                            setStatusToConfirm(action)
+                                            return
+                                        }
+
+                                        onRunAction(() => updateTryoutEventStatus(event.id, action.targetStatus))
                                     }}
                                     className={cn(
                                         'flex w-full items-center justify-center gap-2 border-2 px-3 py-2.5 text-sm font-black transition shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-y-px hover:shadow-none disabled:opacity-40 disabled:cursor-not-allowed',
-                                        btnClass,
-                                        event.status === targetStatus && 'ring-2 ring-offset-1 ring-gray-900'
+                                        action.btnClass,
+                                        event.status === action.targetStatus && 'ring-2 ring-offset-1 ring-gray-900'
                                     )}>
-                                    {icon}{label}
-                                    {event.status === targetStatus && <CheckCircle2 size={13} />}
+                                    {action.icon}{action.label}
+                                    {event.status === action.targetStatus && <CheckCircle2 size={13} />}
                                 </button>
                             ))}
                             <div className="border-t-2 border-gray-200 pt-3 space-y-2">
@@ -568,6 +581,50 @@ function DetailPanel({
 
             {/* Delete code confirm */}
             <AnimatePresence>
+                {statusToConfirm && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.92, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.92, opacity: 0 }}
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                        >
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                <AlertTriangle size={28} strokeWidth={3} />
+                            </div>
+                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                                {statusToConfirm.confirmTitle}
+                            </h3>
+                            <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
+                                {statusToConfirm.confirmMessage}
+                            </p>
+                            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setStatusToConfirm(null)}
+                                    disabled={isPending}
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-60"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isPending}
+                                    onClick={() => {
+                                        const targetStatus = statusToConfirm.targetStatus
+                                        setStatusToConfirm(null)
+                                        onRunAction(() => updateTryoutEventStatus(event.id, targetStatus))
+                                    }}
+                                    className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-800 disabled:opacity-60"
+                                >
+                                    {isPending && <Loader2 className="animate-spin" size={16} />}
+                                    {statusToConfirm.confirmLabel}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
                 {codeToDelete && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                         <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
