@@ -78,12 +78,12 @@ export default function DashboardShell({ children, user, profile, signoutAction,
 
                 <nav className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-3 relative z-10">
                     <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
-                    <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
-                    <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
-                    <NavItem href="/cpns/dashboard/materi" icon={<Library size={20} />} label="Kisi-Kisi" />
-                    <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
                     <NavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" badge="XP" />
                     <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Riwayat" />
+                    <NavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking Nasional" />
+                    <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
+                    <NavItem href="/cpns/dashboard/materi" icon={<Library size={20} />} label="Kisi-Kisi" />
+                    <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Paket" />
 
                     {isAdmin && (
                         <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
@@ -161,10 +161,10 @@ export default function DashboardShell({ children, user, profile, signoutAction,
             <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#fdfbf7]/90 backdrop-blur-xl border-t-2 border-gray-900 z-40">
                 <div className="grid grid-cols-5 gap-1 px-2 py-2">
                     <MobileNavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Home" />
-                    <MobileNavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
                     <MobileNavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" />
                     <MobileNavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli" />
                     <MobileNavItem href="/cpns/dashboard/ranking" icon={<BarChart3 size={20} />} label="Ranking" />
+                    <MobileNavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
                 </div>
             </nav>
         </div>
