@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, CalendarDays, Loader2, Trophy, Clock, Users, BookOpen, CheckCircle2, AlertTriangle, Zap, Lock, Radio, Check, CreditCard, RefreshCw, Ticket } from 'lucide-react'
+import { ArrowRight, CalendarDays, Loader2, Trophy, Clock, Users, BookOpen, CheckCircle2, AlertTriangle, Zap, Lock, Radio, Check, CreditCard, RefreshCw, Ticket, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { registerTryoutEvent, startTryoutEvent } from '@/app/actions/event'
 import { createEventPaymentTransaction, syncEventPaymentStatus } from '@/app/actions/event-payment'
@@ -21,6 +21,7 @@ type UserEvent = {
     duration_minutes: number
     max_participants: number | null
     requires_code: boolean
+    group_link: string | null
     is_paid: boolean
     price: number
     status: EventStatus
@@ -353,6 +354,17 @@ function EventCard({
                                 </p>
                             </div>
                         </div>
+                    )}
+                    {event.group_link && (
+                        <a
+                            href={event.group_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex w-full items-center justify-center gap-2 border-2 border-green-700 bg-green-600 px-5 py-3 text-sm font-black uppercase text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-green-700 hover:shadow-none"
+                        >
+                            <ExternalLink size={16} />
+                            Join Group
+                        </a>
                     )}
                     <div className="flex items-center gap-3 border-2 border-gray-900 bg-gray-50 p-3">
                         <Trophy className="h-6 w-6 shrink-0 text-yellow-500" />

@@ -2,6 +2,7 @@ import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import EventClient from '@/components/dashboard/EventClient'
 import { logger } from '@/lib/logger'
+import { getVisibleEventGroupLink } from '@/lib/event-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,7 +26,7 @@ export default async function UserEventPage() {
     const admin = await createAdminClient()
     const { data: events, error } = await admin
         .from('tryout_events')
-        .select('id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, tryout_event_questions(id)')
+        .select('id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, group_link, is_paid, price, status, tryout_event_questions(id)')
         .in('status', ['scheduled', 'live', 'closed'])
         .order('starts_at', { ascending: true })
 
@@ -97,6 +98,7 @@ export default async function UserEventPage() {
             duration_minutes: event.duration_minutes,
             max_participants: event.max_participants,
             requires_code: event.requires_code,
+            group_link: getVisibleEventGroupLink(event.group_link, participant?.id),
             is_paid: event.is_paid ?? false,
             price: event.price ?? 0,
             status: event.status,

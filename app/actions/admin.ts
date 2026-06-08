@@ -726,6 +726,7 @@ function readTryoutEventForm(formData: FormData) {
     const isPaid = formData.get('is_paid') === 'on' || formData.get('is_paid') === 'true'
     const priceRaw = String(formData.get('price') || '0').trim()
     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
+    const groupLink = String(formData.get('group_link') || '').trim()
     const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
     const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
     const startsAtDate = parseWibDateTime(startsAt)
@@ -744,6 +745,7 @@ function readTryoutEventForm(formData: FormData) {
         requires_code: requiresCode,
         is_paid: isPaid,
         price,
+        group_link: groupLink || null,
         result_visible_at: synchronizedCloseAt || null,
         explanation_visible_at: synchronizedCloseAt || null,
     }

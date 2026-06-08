@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
     BarChart3, ChevronDown, ChevronUp, Copy, Download,
@@ -55,6 +55,7 @@ type TryoutEvent = {
     duration_minutes: number
     max_participants: number | null
     requires_code: boolean
+    group_link: string | null
     is_paid: boolean
     price: number
     status: EventStatus
@@ -118,9 +119,29 @@ function getEventFormValues(event?: TryoutEvent | null) {
         start_grace_minutes: String(event?.start_grace_minutes ?? 15),
         max_participants: event?.max_participants ? String(event.max_participants) : '',
         requires_code: event?.requires_code || false,
+        group_link: event?.group_link || '',
         is_paid: event?.is_paid || false,
         price: String(event?.price ?? 15000),
     }
+}
+
+type EventFormValues = ReturnType<typeof getEventFormValues>
+
+function getEventFormCloseAt(values: EventFormValues) {
+    const durationMinutes = Number(values.duration_minutes) || 0
+    const startGraceMinutes = Number(values.start_grace_minutes) || 0
+    return addMinutesToInputValue(values.starts_at, durationMinutes + startGraceMinutes)
+}
+
+function serializeEventFormValues(values: EventFormValues) {
+    const closeAt = getEventFormCloseAt(values)
+
+    return JSON.stringify({
+        ...values,
+        ends_at: closeAt,
+        result_visible_at: closeAt,
+        explanation_visible_at: closeAt,
+    })
 }
 
 // ─── Status Config ────────────────────────────────────────────────────────────
@@ -159,12 +180,16 @@ function ProgressRow({ label, value, max, color }: { label: string; value: numbe
 }
 
 // ─── Event Form ───────────────────────────────────────────────────────────────
-function EventForm({ event, action, isPending }: {
+function EventForm({ event, action, isPending, onDirtyChange }: {
     event?: TryoutEvent | null
     action: (formData: FormData) => void
     isPending: boolean
+    onDirtyChange?: (hasChanges: boolean) => void
 }) {
     const [values, setValues] = useState(() => getEventFormValues(event))
+    const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
+    const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null)
+    const allowNextNavigationRef = useRef(false)
 
     useEffect(() => {
         setValues(getEventFormValues(event))
@@ -174,109 +199,265 @@ function EventForm({ event, action, isPending }: {
         setValues((current) => ({ ...current, [field]: value }))
     }
 
-    const durationMinutes = Number(values.duration_minutes) || 0
-    const startGraceMinutes = Number(values.start_grace_minutes) || 0
-    const closeAt = addMinutesToInputValue(values.starts_at, durationMinutes + startGraceMinutes)
+    const closeAt = getEventFormCloseAt(values)
     const resultVisibleAt = closeAt
     const explanationVisibleAt = closeAt
+    const initialSnapshot = event ? serializeEventFormValues(getEventFormValues(event)) : null
+    const currentSnapshot = serializeEventFormValues(values)
+    const hasChanges = !event || currentSnapshot !== initialSnapshot
+
+    useEffect(() => {
+        onDirtyChange?.(Boolean(event && hasChanges))
+    }, [event, hasChanges, onDirtyChange])
+
+    const handleSubmit = (formData: FormData) => {
+        if (!event) {
+            action(formData)
+            return
+        }
+
+        if (!hasChanges) {
+            toast.info('Tidak ada perubahan pengaturan event untuk disimpan')
+            return
+        }
+
+        setPendingFormData(formData)
+    }
+
+    useEffect(() => {
+        if (!event || !hasChanges) return
+
+        const handleBeforeUnload = (browserEvent: BeforeUnloadEvent) => {
+            if (allowNextNavigationRef.current) return
+
+            browserEvent.preventDefault()
+            browserEvent.returnValue = ''
+        }
+
+        const handleDocumentClick = (browserEvent: MouseEvent) => {
+            const target = browserEvent.target
+            if (!(target instanceof Element)) return
+
+            const link = target.closest('a[href]')
+            if (!(link instanceof HTMLAnchorElement)) return
+            if (link.target === '_blank') return
+
+            const nextUrl = new URL(link.href, window.location.href)
+            const currentUrl = new URL(window.location.href)
+            const isSamePage = nextUrl.pathname === currentUrl.pathname && nextUrl.search === currentUrl.search
+
+            if (isSamePage) return
+
+            browserEvent.preventDefault()
+            browserEvent.stopPropagation()
+            setPendingNavigationHref(link.href)
+        }
+
+        window.addEventListener('beforeunload', handleBeforeUnload)
+        document.addEventListener('click', handleDocumentClick, true)
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload)
+            document.removeEventListener('click', handleDocumentClick, true)
+        }
+    }, [event, hasChanges])
 
     return (
-        <form action={action} className="space-y-4">
-            <input type="hidden" name="ends_at" value={closeAt} />
-            <input type="hidden" name="result_visible_at" value={resultVisibleAt} />
-            <input type="hidden" name="explanation_visible_at" value={explanationVisibleAt} />
-            <div className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2 space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Nama Event</label>
-                    <input name="title" required value={values.title} onChange={(e) => updateValue('title', e.target.value)} placeholder="Tryout Akbar SKD CPNS Nasional"
-                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
-                </div>
-                <div className="sm:col-span-2 space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Deskripsi</label>
-                    <textarea name="description" rows={2} value={values.description} onChange={(e) => updateValue('description', e.target.value)} placeholder="Deskripsi singkat event"
-                        className="w-full resize-none border-2 border-gray-300 px-4 py-2.5 font-medium text-gray-900 outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Mulai (WIB)</label>
-                    <input name="starts_at" type="datetime-local" required value={values.starts_at} onChange={(e) => updateValue('starts_at', e.target.value)}
-                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Tutup Otomatis (WIB)</label>
-                    <input type="datetime-local" value={closeAt} readOnly
-                        className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Durasi (menit)</label>
-                    <input name="duration_minutes" type="number" min="1" value={values.duration_minutes} onChange={(e) => updateValue('duration_minutes', e.target.value)} required
-                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Start Window (menit)</label>
-                    <input name="start_grace_minutes" type="number" min="0" value={values.start_grace_minutes} onChange={(e) => updateValue('start_grace_minutes', e.target.value)} required
-                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Max Peserta</label>
-                    <input name="max_participants" type="number" min="1" value={values.max_participants} onChange={(e) => updateValue('max_participants', e.target.value)}
-                        className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Hasil Terlihat (WIB)</label>
-                    <input type="datetime-local" value={resultVisibleAt} readOnly
-                        className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
-                </div>
-                <div className="space-y-1.5">
-                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Pembahasan (WIB)</label>
-                    <input type="datetime-local" value={explanationVisibleAt} readOnly
-                        className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
-                </div>
-                <div className="sm:col-span-2">
-                    <label className="flex items-center gap-3 border-2 border-gray-300 bg-gray-50 px-4 py-3 text-sm font-black text-gray-900 cursor-pointer hover:border-gray-900 transition">
-                        <input name="requires_code" type="checkbox" checked={values.requires_code} onChange={(e) => updateValue('requires_code', e.target.checked)} className="h-4 w-4 accent-gray-900" />
-                        Wajib kode masuk untuk daftar event
-                    </label>
-                </div>
-                {/* Payment Section */}
-                <div className="sm:col-span-2 border-t-2 border-gray-200 pt-4">
-                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3">Pembayaran</p>
-                    <label className="flex items-center gap-3 border-2 border-gray-300 bg-gray-50 px-4 py-3 text-sm font-black text-gray-900 cursor-pointer hover:border-gray-900 transition mb-3">
+        <>
+            <form action={handleSubmit} className="space-y-4">
+                <input type="hidden" name="ends_at" value={closeAt} />
+                <input type="hidden" name="result_visible_at" value={resultVisibleAt} />
+                <input type="hidden" name="explanation_visible_at" value={explanationVisibleAt} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2 space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Nama Event</label>
+                        <input name="title" required value={values.title} onChange={(e) => updateValue('title', e.target.value)} placeholder="Tryout Akbar SKD CPNS Nasional"
+                            className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    </div>
+                    <div className="sm:col-span-2 space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Deskripsi</label>
+                        <textarea name="description" rows={2} value={values.description} onChange={(e) => updateValue('description', e.target.value)} placeholder="Deskripsi singkat event"
+                            className="w-full resize-none border-2 border-gray-300 px-4 py-2.5 font-medium text-gray-900 outline-none focus:border-gray-900" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Mulai (WIB)</label>
+                        <input name="starts_at" type="datetime-local" required value={values.starts_at} onChange={(e) => updateValue('starts_at', e.target.value)}
+                            className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Tutup Otomatis (WIB)</label>
+                        <input type="datetime-local" value={closeAt} readOnly
+                            className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Durasi (menit)</label>
+                        <input name="duration_minutes" type="number" min="1" value={values.duration_minutes} onChange={(e) => updateValue('duration_minutes', e.target.value)} required
+                            className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Start Window (menit)</label>
+                        <input name="start_grace_minutes" type="number" min="0" value={values.start_grace_minutes} onChange={(e) => updateValue('start_grace_minutes', e.target.value)} required
+                            className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Max Peserta</label>
+                        <input name="max_participants" type="number" min="1" value={values.max_participants} onChange={(e) => updateValue('max_participants', e.target.value)}
+                            className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Hasil Terlihat (WIB)</label>
+                        <input type="datetime-local" value={resultVisibleAt} readOnly
+                            className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Pembahasan (WIB)</label>
+                        <input type="datetime-local" value={explanationVisibleAt} readOnly
+                            className="w-full border-2 border-gray-300 bg-gray-100 px-4 py-2.5 font-bold text-gray-600 outline-none" />
+                    </div>
+                    <div className="sm:col-span-2">
+                        <label className="flex items-center gap-3 border-2 border-gray-300 bg-gray-50 px-4 py-3 text-sm font-black text-gray-900 cursor-pointer hover:border-gray-900 transition">
+                            <input name="requires_code" type="checkbox" checked={values.requires_code} onChange={(e) => updateValue('requires_code', e.target.checked)} className="h-4 w-4 accent-gray-900" />
+                            Wajib kode masuk untuk daftar event
+                        </label>
+                    </div>
+                    <div className="sm:col-span-2 space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Link Group Peserta</label>
                         <input
-                            name="is_paid"
-                            type="checkbox"
-                            checked={values.is_paid}
-                            onChange={(e) => updateValue('is_paid', e.target.checked)}
-                            className="h-4 w-4 accent-gray-900"
+                            name="group_link"
+                            type="url"
+                            value={values.group_link}
+                            onChange={(e) => updateValue('group_link', e.target.value)}
+                            placeholder="https://chat.whatsapp.com/..."
+                            className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900"
                         />
-                        Event Berbayar (wajib beli tiket sebelum daftar)
-                    </label>
-                    {values.is_paid && (
-                        <div className="space-y-1.5">
-                            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Harga Tiket (Rp)</label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400">Rp</span>
-                                <input
-                                    name="price"
-                                    type="number"
-                                    min="0"
-                                    step="500"
-                                    required={values.is_paid}
-                                    value={values.price}
-                                    onChange={(e) => updateValue('price', e.target.value)}
-                                    className="w-full border-2 border-gray-300 pl-10 pr-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900"
-                                />
+                        <p className="text-xs font-medium text-gray-400">Link ini hanya tampil untuk user yang sudah terdaftar atau berhasil bayar.</p>
+                    </div>
+                    {/* Payment Section */}
+                    <div className="sm:col-span-2 border-t-2 border-gray-200 pt-4">
+                        <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3">Pembayaran</p>
+                        <label className="flex items-center gap-3 border-2 border-gray-300 bg-gray-50 px-4 py-3 text-sm font-black text-gray-900 cursor-pointer hover:border-gray-900 transition mb-3">
+                            <input
+                                name="is_paid"
+                                type="checkbox"
+                                checked={values.is_paid}
+                                onChange={(e) => updateValue('is_paid', e.target.checked)}
+                                className="h-4 w-4 accent-gray-900"
+                            />
+                            Event Berbayar (wajib beli tiket sebelum daftar)
+                        </label>
+                        {values.is_paid && (
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Harga Tiket (Rp)</label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400">Rp</span>
+                                    <input
+                                        name="price"
+                                        type="number"
+                                        min="0"
+                                        step="500"
+                                        required={values.is_paid}
+                                        value={values.price}
+                                        onChange={(e) => updateValue('price', e.target.value)}
+                                        className="w-full border-2 border-gray-300 pl-10 pr-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900"
+                                    />
+                                </div>
+                                <p className="text-xs font-medium text-gray-400">Tidak ada admin fee tambahan. Harga ini yang dibayar user.</p>
                             </div>
-                            <p className="text-xs font-medium text-gray-400">Tidak ada admin fee tambahan. Harga ini yang dibayar user.</p>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-            </div>
-            <button disabled={isPending}
-                className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-5 py-3 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none disabled:opacity-60">
-                {isPending ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                {event ? 'Simpan Perubahan' : 'Buat Event'}
-            </button>
-        </form>
+                <button disabled={isPending}
+                    className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-5 py-3 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none disabled:opacity-60">
+                    {isPending ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                    {event ? 'Simpan Perubahan' : 'Buat Event'}
+                </button>
+            </form>
+
+            <AnimatePresence>
+                {pendingFormData && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.92, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.92, opacity: 0 }}
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                        >
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-blue-100 text-blue-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                <AlertTriangle size={28} strokeWidth={3} />
+                            </div>
+                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                                Simpan Perubahan Event?
+                            </h3>
+                            <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
+                                Perubahan pengaturan event akan memengaruhi jadwal, akses kode, pembayaran, link group, atau info peserta yang tampil di dashboard user.
+                            </p>
+                            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingFormData(null)}
+                                    disabled={isPending}
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-60"
+                                >
+                                    Cek Lagi
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isPending}
+                                    onClick={() => {
+                                        action(pendingFormData)
+                                        setPendingFormData(null)
+                                    }}
+                                    className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-blue-600 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:opacity-60"
+                                >
+                                    {isPending && <Loader2 className="animate-spin" size={16} />}
+                                    Simpan
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {pendingNavigationHref && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.92, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.92, opacity: 0 }}
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                        >
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                <AlertTriangle size={28} strokeWidth={3} />
+                            </div>
+                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                                Perubahan Belum Disimpan
+                            </h3>
+                            <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
+                                Ada perubahan pengaturan event yang belum disimpan. Kalau pindah halaman sekarang, perubahan jadwal, akses, pembayaran, atau link group bisa hilang.
+                            </p>
+                            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingNavigationHref(null)}
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100"
+                                >
+                                    Tetap di Sini
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        allowNextNavigationRef.current = true
+                                        window.location.href = pendingNavigationHref
+                                    }}
+                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-800"
+                                >
+                                    Tinggalkan
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </>
     )
 }
 
@@ -329,17 +510,21 @@ const STATUS_ACTIONS: Array<{
 type DetailTab = 'stats' | 'settings' | 'questions' | 'codes'
 
 function DetailPanel({
-    event, onClose, isPending, onRunAction, onUpdate,
+    event, onClose, isPending, onRunAction, onUpdate, onSettingsDirtyChange,
 }: {
     event: TryoutEvent
     onClose: () => void
     isPending: boolean
     onRunAction: (cb: () => Promise<{ success: boolean; message: string }>) => void
     onUpdate: (eventId: string, fd: FormData) => void
+    onSettingsDirtyChange?: (hasChanges: boolean) => void
 }) {
     const [tab, setTab] = useState<DetailTab>('stats')
     const [codeToDelete, setCodeToDelete] = useState<EventCode | null>(null)
     const [statusToConfirm, setStatusToConfirm] = useState<typeof STATUS_ACTIONS[number] | null>(null)
+    const [settingsHasChanges, setSettingsHasChanges] = useState(false)
+    const [pendingTab, setPendingTab] = useState<DetailTab | null>(null)
+    const [pendingClose, setPendingClose] = useState(false)
 
     const TABS: Array<{ id: DetailTab; label: string; icon: React.ReactNode }> = [
         { id: 'stats', label: 'Statistik', icon: <BarChart3 size={15} /> },
@@ -347,6 +532,46 @@ function DetailPanel({
         { id: 'questions', label: `Soal (${event.questions.length})`, icon: <BookOpen size={15} /> },
         { id: 'codes', label: `Kode (${event.codes.length})`, icon: <Ticket size={15} /> },
     ]
+
+    const handleSettingsDirtyChange = useCallback((hasChanges: boolean) => {
+        setSettingsHasChanges(hasChanges)
+        onSettingsDirtyChange?.(hasChanges)
+    }, [onSettingsDirtyChange])
+
+    const requestTabChange = (nextTab: DetailTab) => {
+        if (nextTab === tab) return
+
+        if (tab === 'settings' && settingsHasChanges) {
+            setPendingTab(nextTab)
+            return
+        }
+
+        setTab(nextTab)
+    }
+
+    const requestClose = () => {
+        if (tab === 'settings' && settingsHasChanges) {
+            setPendingClose(true)
+            return
+        }
+
+        onClose()
+    }
+
+    const confirmLeaveSettings = () => {
+        setSettingsHasChanges(false)
+
+        if (pendingTab) {
+            setTab(pendingTab)
+            setPendingTab(null)
+            return
+        }
+
+        if (pendingClose) {
+            setPendingClose(false)
+            onClose()
+        }
+    }
 
     return (
         <motion.div
@@ -358,7 +583,7 @@ function DetailPanel({
             {/* Tab Bar */}
             <div className="flex items-center gap-0 border-b-2 border-gray-900 bg-white">
                 {TABS.map((t) => (
-                    <button key={t.id} onClick={() => setTab(t.id)}
+                    <button key={t.id} onClick={() => requestTabChange(t.id)}
                         className={cn(
                             'flex items-center gap-1.5 px-4 py-2.5 text-xs font-black uppercase tracking-wide border-r-2 border-gray-900 transition',
                             tab === t.id ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-50'
@@ -366,7 +591,7 @@ function DetailPanel({
                         {t.icon}{t.label}
                     </button>
                 ))}
-                <button onClick={onClose} className="ml-auto px-3 py-2.5 text-gray-400 hover:text-gray-900 transition">
+                <button onClick={requestClose} className="ml-auto px-3 py-2.5 text-gray-400 hover:text-gray-900 transition">
                     <X size={16} />
                 </button>
             </div>
@@ -457,7 +682,12 @@ function DetailPanel({
 
                 {/* ── SETTINGS TAB ── */}
                 {tab === 'settings' && (
-                    <EventForm event={event} action={(fd) => onUpdate(event.id, fd)} isPending={isPending} />
+                    <EventForm
+                        event={event}
+                        action={(fd) => onUpdate(event.id, fd)}
+                        isPending={isPending}
+                        onDirtyChange={handleSettingsDirtyChange}
+                    />
                 )}
 
                 {/* ── QUESTIONS TAB ── */}
@@ -641,6 +871,46 @@ function DetailPanel({
                         </motion.div>
                     </div>
                 )}
+
+                {(pendingTab || pendingClose) && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.92, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.92, opacity: 0 }}
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                        >
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                <AlertTriangle size={28} strokeWidth={3} />
+                            </div>
+                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                                Perubahan Belum Disimpan
+                            </h3>
+                            <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
+                                Ada perubahan pengaturan event yang belum disimpan. Kalau keluar dari tab Pengaturan sekarang, perubahan jadwal, akses, pembayaran, atau link group bisa hilang.
+                            </p>
+                            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPendingTab(null)
+                                        setPendingClose(false)
+                                    }}
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100"
+                                >
+                                    Tetap di Pengaturan
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmLeaveSettings}
+                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-800"
+                                >
+                                    Tinggalkan
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
             </AnimatePresence>
         </motion.div>
     )
@@ -741,6 +1011,8 @@ export function EventCreateController() {
 export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
     const [expandedId, setExpandedId] = useState<string | null>(null)
     const [eventToDelete, setEventToDelete] = useState<TryoutEvent | null>(null)
+    const [dirtySettingsEventId, setDirtySettingsEventId] = useState<string | null>(null)
+    const [pendingExpandedId, setPendingExpandedId] = useState<string | null | undefined>(undefined)
     const [isPending, startTransition] = useTransition()
     const router = useRouter()
 
@@ -790,6 +1062,21 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
         })
     }
 
+    const requestExpandedId = (nextExpandedId: string | null) => {
+        if (expandedId && dirtySettingsEventId === expandedId && nextExpandedId !== expandedId) {
+            setPendingExpandedId(nextExpandedId)
+            return
+        }
+
+        setExpandedId(nextExpandedId)
+    }
+
+    const confirmExpandChange = () => {
+        setDirtySettingsEventId(null)
+        setExpandedId(pendingExpandedId ?? null)
+        setPendingExpandedId(undefined)
+    }
+
     return (
         <div className="space-y-8">
             {/* Summary Stats */}
@@ -831,7 +1118,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                                     )}>
                                         <div className="flex items-center gap-4 p-4">
                                             {/* Expand toggle */}
-                                            <button onClick={() => setExpandedId(isExpanded ? null : event.id)}
+                                            <button onClick={() => requestExpandedId(isExpanded ? null : event.id)}
                                                 className="shrink-0 border-2 border-gray-900 p-1.5 hover:bg-gray-100 transition">
                                                 {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                             </button>
@@ -885,6 +1172,9 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                                                 isPending={isPending}
                                                 onRunAction={runAction}
                                                 onUpdate={handleUpdate}
+                                                onSettingsDirtyChange={(hasChanges) => {
+                                                    setDirtySettingsEventId(hasChanges ? event.id : null)
+                                                }}
                                             />
                                         )}
                                     </AnimatePresence>
@@ -897,6 +1187,43 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
 
             {/* Delete Event Modal */}
             <AnimatePresence>
+                {pendingExpandedId !== undefined && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.92, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.92, opacity: 0 }}
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                        >
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                <AlertTriangle size={28} strokeWidth={3} />
+                            </div>
+                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                                Perubahan Belum Disimpan
+                            </h3>
+                            <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
+                                Ada perubahan pengaturan event yang belum disimpan. Kalau membuka event lain sekarang, perubahan jadwal, akses, pembayaran, atau link group bisa hilang.
+                            </p>
+                            <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingExpandedId(undefined)}
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100"
+                                >
+                                    Tetap di Event Ini
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmExpandChange}
+                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-800"
+                                >
+                                    Tinggalkan
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
                 {eventToDelete && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                         <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}

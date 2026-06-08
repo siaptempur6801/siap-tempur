@@ -30,6 +30,7 @@ export const TryoutEventFormSchema = z.object({
     requires_code: z.boolean(),
     is_paid: z.boolean().default(false),
     price: z.number().int().min(0, 'Harga tidak valid').default(0),
+    group_link: z.string().url('Link group tidak valid').nullable().optional().or(z.literal('')),
     result_visible_at: z.string().nullable().optional(),
     explanation_visible_at: z.string().nullable().optional(),
 }).refine(data => new Date(data.ends_at).getTime() > new Date(data.starts_at).getTime(), {
