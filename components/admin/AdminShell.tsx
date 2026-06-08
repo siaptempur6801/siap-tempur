@@ -11,6 +11,7 @@ import {
     Settings,
     Shield,
     Ticket,
+    Wallet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
@@ -37,6 +38,7 @@ const navItems = [
     { href: '/cpns/admin/tryout-config', label: 'Konfigurasi Tryout', icon: Settings },
     { href: '/cpns/admin/event', label: 'Event', icon: BarChart3 },
     { href: '/cpns/admin/voucher', label: 'Voucher', icon: Ticket },
+    { href: '/cpns/admin/keuangan', label: 'Keuangan', icon: Wallet },
     { href: '/cpns/admin/export', label: 'Export Data', icon: FileSpreadsheet },
 ]
 
@@ -226,8 +228,8 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
                 </main>
 
                 <nav className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-gray-900 bg-[#f8f8f6]/90 backdrop-blur-xl md:hidden">
-                    <div className="grid grid-cols-5 gap-1 px-2 py-2">
-                        {[...navItems.slice(0, 4), userDashboardItem].map((item) => (
+                    <div className="grid grid-cols-6 gap-1 px-2 py-2">
+                        {[...navItems.slice(0, 5), userDashboardItem].map((item) => (
                             <AdminMobileNavLink key={item.href} {...item} />
                         ))}
                     </div>

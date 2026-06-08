@@ -37,8 +37,25 @@ export interface MidtransTransactionParameter {
     [key: string]: unknown;
 }
 
+export interface MidtransTransactionStatus {
+    order_id?: string;
+    transaction_id?: string;
+    payment_type?: string;
+    transaction_time?: string;
+    transaction_status?: string;
+    gross_amount?: string;
+    currency?: string;
+    status_code?: string;
+    status_message?: string;
+    fraud_status?: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _snap: any = null;
+
+function getMidtransApiBaseUrl(serverKey: string) {
+    return serverKey.includes('SB-') ? 'https://api.sandbox.midtrans.com' : 'https://api.midtrans.com'
+}
 
 function getSnap() {
     if (!_snap) {
@@ -86,4 +103,27 @@ export async function createTransaction(
         logger.error('Midtrans transaction error', error, { orderId });
         throw error;
     }
+}
+
+export async function getTransactionStatus(orderId: string): Promise<MidtransTransactionStatus | null> {
+    const serverKey = env.midtransServerKey()
+    const response = await fetch(`${getMidtransApiBaseUrl(serverKey)}/v2/${encodeURIComponent(orderId)}/status`, {
+        method: 'GET',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`,
+        },
+        cache: 'no-store',
+    })
+
+    if (response.status === 404) {
+        return null
+    }
+
+    if (!response.ok) {
+        throw new Error(`Midtrans status request failed for ${orderId}: ${response.status}`)
+    }
+
+    return response.json()
 }
