@@ -7,6 +7,11 @@ const migrationSql = readFileSync(
   'utf8'
 )
 
+const liveBreakdownMigrationSql = readFileSync(
+  resolve(__dirname, '../../supabase/migrations/202606140001_live_leaderboard_score_breakdown.sql'),
+  'utf8'
+)
+
 describe('realtime leaderboard migration', () => {
   it('creates a Postgres-backed leaderboard table with the expected score index', () => {
     expect(migrationSql).toContain('create table if not exists public.leaderboard_entries')
@@ -34,5 +39,16 @@ describe('realtime leaderboard migration', () => {
     expect(migrationSql).toContain('drop function if exists public.get_live_event_leaderboard(uuid)')
     expect(migrationSql).toContain('total_score bigint')
     expect(migrationSql).toContain('rank() over (order by ss.total_score desc, ss.started_at asc)')
+  })
+
+  it('adds live TWK, TIU, and TKP score breakdown without exposing answer keys to clients', () => {
+    expect(liveBreakdownMigrationSql).toContain('score_twk bigint')
+    expect(liveBreakdownMigrationSql).toContain('score_tiu bigint')
+    expect(liveBreakdownMigrationSql).toContain('score_tkp bigint')
+    expect(liveBreakdownMigrationSql).toContain("when q.type = 'TWK' and o.is_correct then 5")
+    expect(liveBreakdownMigrationSql).toContain("when q.type = 'TIU' and o.is_correct then 5")
+    expect(liveBreakdownMigrationSql).toContain("when q.type = 'TKP' then coalesce(o.score_value, 0)")
+    expect(liveBreakdownMigrationSql).toContain('if not public.is_admin() then')
+    expect(liveBreakdownMigrationSql).toContain('revoke execute on function public.get_live_event_leaderboard(uuid) from public, anon')
   })
 })

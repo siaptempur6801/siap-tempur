@@ -85,9 +85,10 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
             <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                 <div className="mx-auto max-w-6xl">
                     {/* Header Columns */}
-                    <div className="mb-4 grid grid-cols-[80px_1fr_160px_200px] items-center gap-6 px-6 text-sm font-black uppercase tracking-widest text-gray-500">
+                    <div className="mb-4 grid grid-cols-[80px_1fr_240px_140px_180px] items-center gap-5 px-6 text-sm font-black uppercase tracking-widest text-gray-500">
                         <div className="text-center">Rank</div>
                         <div>Peserta</div>
+                        <div className="text-center">Nilai Live</div>
                         <div className="text-center">Skor</div>
                         <div className="text-center">Progress</div>
                     </div>
@@ -113,7 +114,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                             stiffness: 300, 
                                             damping: 30,
                                         }}
-                                        className="group grid grid-cols-[80px_1fr_160px_200px] items-center gap-6 border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+                                        className="group grid grid-cols-[80px_1fr_240px_140px_180px] items-center gap-5 border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
                                     >
                                         {/* Rank Column */}
                                         <div className="flex flex-col items-center justify-center gap-1 border-r-2 border-gray-200 pr-6">
@@ -168,14 +169,31 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                             </div>
                                         </div>
 
+                                        {/* Live Score Breakdown */}
+                                        <div className="grid grid-cols-3 gap-2 border-l-2 border-gray-200 pl-5">
+                                            {[
+                                                { label: 'TWK', value: entry.score_twk ?? 0, className: 'bg-red-50 text-red-700 border-red-200' },
+                                                { label: 'TIU', value: entry.score_tiu ?? 0, className: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
+                                                { label: 'TKP', value: entry.score_tkp ?? 0, className: 'bg-blue-50 text-blue-700 border-blue-200' },
+                                            ].map((score) => (
+                                                <div
+                                                    key={score.label}
+                                                    className={cn('border-2 px-2 py-2 text-center font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.08)]', score.className)}
+                                                >
+                                                    <div className="text-[10px] uppercase tracking-widest">{score.label}</div>
+                                                    <div className="font-mono text-xl leading-none">{String(score.value).padStart(2, '0')}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+
                                         {/* Score Column */}
-                                        <div className="flex flex-col items-center justify-center border-l-2 border-gray-200 pl-6">
-                                            <span className="text-3xl font-black text-blue-600">{entry.total_score}</span>
+                                        <div className="flex flex-col items-center justify-center border-l-2 border-gray-200 pl-5">
+                                            <span className="text-3xl font-black text-blue-600">{entry.total_score ?? 0}</span>
                                             <span className="text-xs font-black uppercase tracking-widest text-gray-400">Poin</span>
                                         </div>
 
                                         {/* Progress Column */}
-                                        <div className="flex flex-col items-center justify-center gap-2 border-l-2 border-gray-200 pl-6">
+                                        <div className="flex flex-col items-center justify-center gap-2 border-l-2 border-gray-200 pl-5">
                                             <div className="flex items-end gap-1 font-mono">
                                                 <span className="text-3xl font-black text-gray-900">{entry.progress_count}</span>
                                                 <span className="mb-1 text-sm font-bold text-gray-500">/110</span>
