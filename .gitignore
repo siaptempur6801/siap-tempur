@@ -11,6 +11,7 @@
 # Test coverage
 /coverage
 /test-results
+/test-results-*/
 /playwright-report
 /playwright/.auth
 /blob-report
@@ -31,6 +32,10 @@
 .agent/
 .agents/
 .codex/
+supabase/.temp/
+testsprite_tests/tmp/*
+!testsprite_tests/tmp/prd_files/
+!testsprite_tests/tmp/prd_files/README.md
 
 # Debug logs
 npm-debug.log*
