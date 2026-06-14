@@ -9,12 +9,14 @@ import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema, LoginFormData } from '@/lib/validations/auth'
+import { resolvePostLoginRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 
 export default function LoginForm({ returnTo }: { returnTo: string }) {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
     const router = useRouter()
+    const safeReturnTo = sanitizeAuthReturnTo(returnTo)
 
     const {
         register,
@@ -48,7 +50,7 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
                 toast.success('Login Berhasil!', {
                     description: 'Selamat datang kembali!'
                 })
-                router.push(`${returnTo}/dashboard`)
+                router.push(resolvePostLoginRedirect(safeReturnTo))
             }
         } catch {
             toast.error('Terjadi kesalahan saat login')
@@ -229,7 +231,7 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
 
             <div className="text-center text-lg font-handwriting">
                 <span className="text-gray-600">Belum punya akun? </span>
-                <Link href={`/register?returnTo=${returnTo}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
+                <Link href={`/register?returnTo=${encodeURIComponent(safeReturnTo)}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
                     Daftar Gratis
                 </Link>
             </div>

@@ -2,9 +2,10 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import PaperBackground from '@/components/PaperBackground'
 import LoginForm from '@/components/auth/LoginForm'
+import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
-    const returnTo = (await searchParams).returnTo || '/cpns'
+    const returnTo = sanitizeAuthReturnTo((await searchParams).returnTo)
 
     return (
         <div className="font-sans min-h-screen flex items-center justify-center p-6 bg-[#fdfbf7] relative overflow-hidden">

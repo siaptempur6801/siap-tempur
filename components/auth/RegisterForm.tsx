@@ -9,11 +9,13 @@ import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { registerSchema, RegisterFormData } from '@/lib/validations/auth'
+import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 
 export default function RegisterForm({ returnTo }: { returnTo: string }) {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const router = useRouter()
+    const safeReturnTo = sanitizeAuthReturnTo(returnTo)
 
     const {
         register,
@@ -46,7 +48,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                     description: 'Silakan cek kotak masuk atau spam email Anda untuk verifikasi akun.',
                     duration: 5000,
                 })
-                router.push(`/login?verified=false&returnTo=${returnTo}`)
+                router.push(`/login?verified=false&returnTo=${encodeURIComponent(safeReturnTo)}`)
             }
         } catch {
             toast.error('Terjadi kesalahan saat pendaftaran')
@@ -188,7 +190,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
 
             <div className="text-center text-lg font-handwriting">
                 <span className="text-gray-600">Sudah punya akun? </span>
-                <Link href={`/login?returnTo=${returnTo}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
+                <Link href={`/login?returnTo=${encodeURIComponent(safeReturnTo)}`} className="font-bold text-blue-600 hover:underline decoration-wavy">
                     Masuk
                 </Link>
             </div>
