@@ -574,6 +574,7 @@ export default function EventClient({ events }: EventClientProps) {
         total: grouped.live.length + grouped.scheduled.length,
         registered: [...grouped.live, ...grouped.scheduled].filter((e) => e.participant_id).length,
         live: grouped.live.length,
+        closed: grouped.closed.length,
     }), [grouped])
 
     const doAction = (event: UserEvent) => {
@@ -672,11 +673,12 @@ export default function EventClient({ events }: EventClientProps) {
             </div>
 
             {/* Summary Stats */}
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {[
                     ['Event Aktif', summary.total, <CalendarDays key="event-active-icon" size={20} className="text-blue-500" />],
                     ['Terdaftar', summary.registered, <Check key="registered-icon" size={20} className="text-green-600" />],
                     ['Live', summary.live, <Radio key="live-icon" size={20} className="text-red-500" />],
+                    ['Selesai', summary.closed, <CheckCircle2 key="closed-event-icon" size={20} className="text-gray-500" />],
                 ].map(([label, value, icon]) => (
                     <div key={String(label)} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                         <div className="flex items-center justify-between">
