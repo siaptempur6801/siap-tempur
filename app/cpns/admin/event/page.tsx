@@ -1,6 +1,7 @@
 import TryoutAkbarClient, { EventCreateController } from '@/components/admin/TryoutAkbarClient'
 import { createAdminClient } from '@/lib/utils/supabase/server'
 import { logger } from '@/lib/logger'
+import { PASSING_GRADES } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +38,14 @@ export default async function EventAdminPage() {
             result_visible_at,
             explanation_visible_at,
             created_at,
-            tryout_event_participants(id, status),
+            tryout_event_participants(
+                id,
+                user_id,
+                status,
+                registered_at,
+                profiles(full_name),
+                tryout_event_codes(code)
+            ),
             tryout_event_codes(id, code, max_uses, used_count, is_active, expires_at, created_at),
             tryout_event_questions(
                 id,
@@ -55,7 +63,25 @@ export default async function EventAdminPage() {
                     options(id, content, image_url, is_correct, score_value, created_at)
                 )
             ),
-            tryout_event_sessions(id, status, test_sessions(status, is_passed))
+            tryout_event_sessions(
+                id,
+                user_id,
+                session_id,
+                status,
+                started_at,
+                finished_at,
+                test_sessions(
+                    id,
+                    status,
+                    start_time,
+                    end_time,
+                    score_twk,
+                    score_tiu,
+                    score_tkp,
+                    total_score,
+                    is_passed
+                )
+            )
         `)
         .order('starts_at', { ascending: false })
 
@@ -66,6 +92,9 @@ export default async function EventAdminPage() {
 
     const normalizedEvents = (events || []).map((event) => {
         const sessions = event.tryout_event_sessions || []
+        const sessionByUserId = new Map(
+            sessions.map((session) => [session.user_id, session])
+        )
         const questions = (event.tryout_event_questions || [])
             .map((eventQuestion) => {
                 const question = Array.isArray(eventQuestion.questions) ? eventQuestion.questions[0] : eventQuestion.questions
@@ -104,6 +133,41 @@ export default async function EventAdminPage() {
             }))
 
         const synchronizedCloseAt = getSynchronizedCloseAt(event)
+        const participants = (event.tryout_event_participants || [])
+            .map((participant) => {
+                const profile = Array.isArray(participant.profiles) ? participant.profiles[0] : participant.profiles
+                const code = Array.isArray(participant.tryout_event_codes) ? participant.tryout_event_codes[0] : participant.tryout_event_codes
+                const eventSession = sessionByUserId.get(participant.user_id)
+                const testSession = Array.isArray(eventSession?.test_sessions) ? eventSession?.test_sessions[0] : eventSession?.test_sessions
+                const scoreTwk = Number(testSession?.score_twk || 0)
+                const scoreTiu = Number(testSession?.score_tiu || 0)
+                const scoreTkp = Number(testSession?.score_tkp || 0)
+                const isPassed = Boolean(testSession?.is_passed) || (
+                    scoreTwk >= PASSING_GRADES.TWK &&
+                    scoreTiu >= PASSING_GRADES.TIU &&
+                    scoreTkp >= PASSING_GRADES.TKP
+                )
+
+                return {
+                    id: participant.id,
+                    user_id: participant.user_id,
+                    full_name: profile?.full_name || null,
+                    status: participant.status,
+                    registered_at: participant.registered_at,
+                    code: code?.code || null,
+                    session_id: eventSession?.session_id || null,
+                    event_session_status: eventSession?.status || null,
+                    test_session_status: testSession?.status || null,
+                    started_at: eventSession?.started_at || testSession?.start_time || null,
+                    finished_at: eventSession?.finished_at || testSession?.end_time || null,
+                    score_twk: testSession?.score_twk ?? null,
+                    score_tiu: testSession?.score_tiu ?? null,
+                    score_tkp: testSession?.score_tkp ?? null,
+                    total_score: testSession?.total_score ?? null,
+                    is_passed: testSession ? isPassed : null,
+                }
+            })
+            .sort((a, b) => new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime())
 
         return {
             id: event.id,
@@ -123,7 +187,8 @@ export default async function EventAdminPage() {
             explanation_visible_at: synchronizedCloseAt,
             created_at: event.created_at,
             codes: event.tryout_event_codes || [],
-            participant_count: event.tryout_event_participants?.length || 0,
+            participants,
+            participant_count: participants.length,
             questions,
             question_count: questions.length,
             session_count: sessions.length,

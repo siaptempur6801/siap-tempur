@@ -59,6 +59,25 @@ type EventQuestion = {
     options: EventQuestionOption[]
 }
 
+type EventParticipant = {
+    id: string
+    user_id: string
+    full_name: string | null
+    status: string
+    registered_at: string
+    code: string | null
+    session_id: string | null
+    event_session_status: string | null
+    test_session_status: string | null
+    started_at: string | null
+    finished_at: string | null
+    score_twk: number | null
+    score_tiu: number | null
+    score_tkp: number | null
+    total_score: number | null
+    is_passed: boolean | null
+}
+
 type TryoutEvent = {
     id: string
     title: string
@@ -83,6 +102,7 @@ type TryoutEvent = {
     passed_count: number
     codes: EventCode[]
     questions: EventQuestion[]
+    participants: EventParticipant[]
 }
 
 interface TryoutAkbarClientProps {
@@ -175,6 +195,31 @@ function StatusBadge({ status }: { status: EventStatus }) {
             {cfg.label}
         </span>
     )
+}
+
+const PARTICIPANT_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+    registered: { label: 'Terdaftar', className: 'border-blue-300 bg-blue-50 text-blue-700' },
+    started: { label: 'Mengerjakan', className: 'border-yellow-300 bg-yellow-50 text-yellow-700' },
+    completed: { label: 'Selesai', className: 'border-green-300 bg-green-50 text-green-700' },
+    timeout: { label: 'Timeout', className: 'border-orange-300 bg-orange-50 text-orange-700' },
+    cancelled: { label: 'Batal', className: 'border-gray-300 bg-gray-50 text-gray-600' },
+}
+
+function ParticipantStatusBadge({ status }: { status: string | null }) {
+    const cfg = PARTICIPANT_STATUS_CONFIG[status || ''] || {
+        label: status || 'Belum mulai',
+        className: 'border-gray-300 bg-gray-50 text-gray-600',
+    }
+
+    return (
+        <span className={cn('inline-flex border px-2 py-0.5 text-[10px] font-black uppercase tracking-wide', cfg.className)}>
+            {cfg.label}
+        </span>
+    )
+}
+
+function getParticipantName(participant: EventParticipant) {
+    return participant.full_name || `User ${participant.user_id.slice(0, 8)}`
 }
 
 // ─── Progress Bar ─────────────────────────────────────────────────────────────
@@ -534,7 +579,7 @@ const STATUS_ACTIONS: Array<{
 ]
 
 // ─── Detail Panel Tabs ────────────────────────────────────────────────────────
-type DetailTab = 'stats' | 'settings' | 'questions' | 'codes'
+type DetailTab = 'stats' | 'settings' | 'questions' | 'codes' | 'participants'
 
 function DetailPanel({
     event, onClose, isPending, onRunAction, onUpdate, onSettingsDirtyChange,
@@ -559,6 +604,7 @@ function DetailPanel({
         { id: 'settings', label: 'Pengaturan', icon: <Settings size={15} /> },
         { id: 'questions', label: `Soal (${event.questions.length})`, icon: <BookOpen size={15} /> },
         { id: 'codes', label: `Kode (${event.codes.length})`, icon: <Ticket size={15} /> },
+        { id: 'participants', label: `Peserta (${event.participants.length})`, icon: <Users size={15} /> },
     ]
 
     const handleSettingsDirtyChange = useCallback((hasChanges: boolean) => {
@@ -964,6 +1010,125 @@ function DetailPanel({
                                 </div>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {/* PARTICIPANTS TAB */}
+                {tab === 'participants' && (
+                    <div className="space-y-4">
+                        <div className="grid gap-3 sm:grid-cols-4">
+                            {[
+                                { label: 'Terdaftar', value: event.participants.length, className: 'text-blue-700' },
+                                { label: 'Mulai', value: event.participants.filter((participant) => participant.session_id).length, className: 'text-yellow-700' },
+                                { label: 'Selesai', value: event.participants.filter((participant) => participant.test_session_status === 'completed' || participant.event_session_status === 'completed').length, className: 'text-green-700' },
+                                { label: 'Lulus', value: event.participants.filter((participant) => participant.is_passed).length, className: 'text-emerald-700' },
+                            ].map((item) => (
+                                <div key={item.label} className="border-2 border-gray-200 bg-white p-3">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{item.label}</p>
+                                    <p className={cn('mt-1 text-2xl font-black', item.className)}>{item.value}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-col gap-3 border-2 border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h4 className="font-handwriting text-2xl font-black text-gray-900">Monitoring Peserta</h4>
+                                <p className="text-sm font-medium text-gray-500">
+                                    Pantau status daftar, pengerjaan, skor, dan kelulusan peserta event.
+                                </p>
+                            </div>
+                            <a href={`/api/admin/export?type=events&format=csv&event_id=${event.id}`}
+                                className="inline-flex items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2.5 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none">
+                                <Download size={14} /> Export CSV
+                            </a>
+                        </div>
+
+                        {event.participants.length === 0 ? (
+                            <div className="border-2 border-dashed border-gray-300 bg-white p-8 text-center">
+                                <Users className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+                                <p className="text-sm font-black uppercase tracking-widest text-gray-400">Belum ada peserta</p>
+                                <p className="mt-1 text-sm font-medium text-gray-500">Peserta yang daftar atau berhasil bayar akan muncul di sini.</p>
+                            </div>
+                        ) : (
+                            <div className="overflow-x-auto border-2 border-gray-200 bg-white">
+                                <table className="min-w-[980px] w-full text-left text-sm">
+                                    <thead className="border-b-2 border-gray-200 bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                                        <tr>
+                                            <th className="px-3 py-3">Peserta</th>
+                                            <th className="px-3 py-3">Daftar</th>
+                                            <th className="px-3 py-3">Kode</th>
+                                            <th className="px-3 py-3">Status</th>
+                                            <th className="px-3 py-3">Pengerjaan</th>
+                                            <th className="px-3 py-3 text-right">Skor</th>
+                                            <th className="px-3 py-3">Hasil</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {event.participants.map((participant) => (
+                                            <tr key={participant.id} className="align-top hover:bg-gray-50">
+                                                <td className="px-3 py-3">
+                                                    <p className="font-black text-gray-900">{getParticipantName(participant)}</p>
+                                                    <p className="mt-0.5 font-mono text-[11px] font-bold text-gray-400">{participant.user_id.slice(0, 8)}</p>
+                                                </td>
+                                                <td className="px-3 py-3">
+                                                    <p className="font-bold text-gray-700">{formatDate(participant.registered_at)}</p>
+                                                </td>
+                                                <td className="px-3 py-3">
+                                                    {participant.code ? (
+                                                        <span className="inline-flex border border-gray-300 bg-gray-50 px-2 py-1 font-mono text-xs font-black text-gray-700">
+                                                            {participant.code}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs font-bold text-gray-400">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-3">
+                                                    <ParticipantStatusBadge status={participant.status} />
+                                                </td>
+                                                <td className="px-3 py-3">
+                                                    <div className="space-y-1">
+                                                        <ParticipantStatusBadge status={participant.event_session_status || participant.test_session_status} />
+                                                        <p className="text-xs font-medium text-gray-500">
+                                                            {participant.started_at ? formatDate(participant.started_at) : 'Belum mulai'}
+                                                        </p>
+                                                        {participant.finished_at && (
+                                                            <p className="text-xs font-medium text-gray-400">Selesai {formatDate(participant.finished_at)}</p>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-3 text-right">
+                                                    {participant.total_score == null ? (
+                                                        <span className="text-xs font-bold text-gray-400">-</span>
+                                                    ) : (
+                                                        <div>
+                                                            <p className="text-xl font-black text-gray-900">{participant.total_score}</p>
+                                                            <p className="text-[11px] font-bold text-gray-400">
+                                                                {participant.score_twk ?? 0}/{participant.score_tiu ?? 0}/{participant.score_tkp ?? 0}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-3">
+                                                    {participant.is_passed == null ? (
+                                                        <span className="text-xs font-bold text-gray-400">-</span>
+                                                    ) : participant.is_passed ? (
+                                                        <span className="inline-flex border border-green-500 bg-green-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-green-700">Lulus</span>
+                                                    ) : (
+                                                        <span className="inline-flex border border-red-300 bg-red-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-red-700">Tidak Lulus</span>
+                                                    )}
+                                                    {participant.session_id && (
+                                                        <a href={`/cpns/dashboard/tryout/${participant.session_id}/result?from=event`}
+                                                            className="mt-2 inline-flex text-xs font-black text-blue-700 underline underline-offset-2">
+                                                            Lihat hasil
+                                                        </a>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
