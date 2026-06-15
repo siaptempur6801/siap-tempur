@@ -715,22 +715,22 @@ export default function EventClient({ events }: EventClientProps) {
                                                     if (isPending) return
                                                     submitEventCode(event)
                                                 }}
-                                                className="mb-2 flex items-center gap-2 border-2 border-t-0 border-gray-900 border-t-transparent bg-gray-900 px-4 py-2"
+                                                className="mb-2 flex items-center gap-2 border-2 border-blue-600 bg-blue-50 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(15,23,42,0.18)]"
                                             >
-                                                <Lock size={12} className="text-white shrink-0" />
-                                                <label className="text-xs font-black uppercase text-gray-300 shrink-0">Kode Masuk:</label>
+                                                <Lock size={12} className="text-blue-700 shrink-0" />
+                                                <label className="text-xs font-black uppercase text-blue-800 shrink-0">Kode Masuk:</label>
                                                 <input
                                                     value={eventCodes[event.id] || ''}
                                                     onChange={(e) => setEventCodes((cur) => ({ ...cur, [event.id]: e.target.value.toUpperCase() }))}
                                                     placeholder="MASUKKAN KODE"
                                                     enterKeyHint="go"
-                                                    className="min-w-0 flex-1 border-2 border-gray-700 bg-gray-800 px-3 py-1.5 text-sm font-black uppercase text-white outline-none focus:border-blue-400 placeholder:text-gray-500"
+                                                    className="min-w-0 flex-1 border-2 border-blue-200 bg-white px-3 py-1.5 text-sm font-black uppercase text-gray-900 outline-none focus:border-blue-600 placeholder:text-blue-300"
                                                 />
                                                 <button
                                                     type="submit"
                                                     disabled={isPending || !(eventCodes[event.id] || '').trim()}
                                                     aria-label="Submit kode masuk"
-                                                    className="flex shrink-0 items-center justify-center gap-1.5 border-2 border-white bg-blue-600 px-3 py-1.5 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.25)] transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-gray-600 disabled:bg-gray-700 disabled:text-gray-400 disabled:shadow-none"
+                                                    className="flex shrink-0 items-center justify-center gap-1.5 border-2 border-blue-900 bg-blue-600 px-3 py-1.5 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-gray-200 disabled:text-gray-500 disabled:shadow-none"
                                                 >
                                                     {isPending && pendingEventId === event.id ? (
                                                         <Loader2 size={13} className="animate-spin" />
