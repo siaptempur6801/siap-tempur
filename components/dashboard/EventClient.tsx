@@ -382,11 +382,6 @@ function EventCard({
                             </div>
                         </div>
                     )}
-                    {event.requires_code && !event.participant_id && (
-                        <div className="opacity-60 text-xs font-bold text-gray-500 text-center pt-1 italic">
-                            Input kode di bawah untuk daftar
-                        </div>
-                    )}
                     <button
                         type="button"
                         disabled={state.action === 'disabled' || isPending}
