@@ -55,6 +55,15 @@ function formatDate(value: string) {
 
 const SUCCESS_PAYMENT = new Set(['capture', 'settlement'])
 
+function getEffectiveEventStatus(event: UserEvent, now: number): EventStatus {
+    const startsAt = new Date(event.starts_at).getTime()
+    const endsAt = new Date(event.ends_at).getTime()
+
+    if (event.status === 'closed' || now > endsAt) return 'closed'
+    if (now >= startsAt && now <= endsAt) return 'live'
+    return 'scheduled'
+}
+
 function getEventState(event: UserEvent, now: number) {
     const startsAt = new Date(event.starts_at).getTime()
     const endsAt = new Date(event.ends_at).getTime()
@@ -249,14 +258,15 @@ function EventCard({
     const state = getEventState(event, now)
     const startsAt = new Date(event.starts_at).getTime()
     const endsAt = new Date(event.ends_at).getTime()
-    const isLive = event.status === 'live'
+    const effectiveStatus = getEffectiveEventStatus(event, now)
+    const isLive = effectiveStatus === 'live'
     const hasTicket = Boolean(event.participant_id) || SUCCESS_PAYMENT.has(event.payment_status || '')
 
     const statusConfig = {
         live: { label: 'LIVE', bg: 'bg-red-500', text: 'text-white', border: 'border-red-700', pulse: true },
         scheduled: { label: 'SEGERA', bg: 'bg-yellow-300', text: 'text-gray-900', border: 'border-yellow-500', pulse: false },
         closed: { label: 'SELESAI', bg: 'bg-gray-200', text: 'text-gray-600', border: 'border-gray-400', pulse: false },
-    }[event.status]
+    }[effectiveStatus]
 
     return (
         <motion.div
@@ -554,17 +564,17 @@ export default function EventClient({ events }: EventClientProps) {
     }, [])
 
     const grouped = useMemo(() => {
-        const live = events.filter((e) => e.status === 'live')
-        const scheduled = events.filter((e) => e.status === 'scheduled')
-        const closed = events.filter((e) => e.status === 'closed')
+        const live = events.filter((e) => getEffectiveEventStatus(e, now) === 'live')
+        const scheduled = events.filter((e) => getEffectiveEventStatus(e, now) === 'scheduled')
+        const closed = events.filter((e) => getEffectiveEventStatus(e, now) === 'closed')
         return { live, scheduled, closed }
-    }, [events])
+    }, [events, now])
 
     const summary = useMemo(() => ({
-        total: events.length,
-        registered: events.filter((e) => e.participant_id).length,
+        total: grouped.live.length + grouped.scheduled.length,
+        registered: [...grouped.live, ...grouped.scheduled].filter((e) => e.participant_id).length,
         live: grouped.live.length,
-    }), [events, grouped])
+    }), [grouped])
 
     const doAction = (event: UserEvent) => {
         const state = getEventState(event, now)
