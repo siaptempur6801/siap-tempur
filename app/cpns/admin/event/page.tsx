@@ -43,7 +43,17 @@ export default async function EventAdminPage() {
                 id,
                 sort_order,
                 created_at,
-                questions(id, question_code, content, type, category, sub_category)
+                questions(
+                    id,
+                    question_code,
+                    content,
+                    type,
+                    category,
+                    sub_category,
+                    explanation,
+                    image_url,
+                    options(id, content, image_url, is_correct, score_value, created_at)
+                )
             ),
             tryout_event_sessions(id, status, test_sessions(status, is_passed))
         `)
@@ -72,6 +82,13 @@ export default async function EventAdminPage() {
                     type: question.type,
                     category: question.category,
                     sub_category: question.sub_category,
+                    explanation: question.explanation,
+                    image_url: question.image_url,
+                    options: [...(question.options || [])].sort((a, b) => {
+                        const createdAtDiff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                        if (createdAtDiff !== 0) return createdAtDiff
+                        return a.id.localeCompare(b.id)
+                    }),
                 }
             })
             .filter((question): question is NonNullable<typeof question> => question !== null)

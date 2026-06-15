@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
     BarChart3, ChevronDown, ChevronUp, Copy, Download,
     Loader2, Plus, Radio, Save, Settings, Ticket, Trash2, Users, X,
@@ -20,6 +21,7 @@ import {
 } from '@/app/actions/admin'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
+import MathRenderer from '@/components/MathRenderer'
 
 type EventStatus = 'draft' | 'scheduled' | 'live' | 'closed' | 'cancelled'
 
@@ -33,6 +35,15 @@ type EventCode = {
     created_at: string
 }
 
+type EventQuestionOption = {
+    id: string
+    content: string
+    image_url: string | null
+    is_correct: boolean
+    score_value: number
+    created_at: string
+}
+
 type EventQuestion = {
     id: string
     sort_order: number
@@ -40,9 +51,12 @@ type EventQuestion = {
     question_id: string
     question_code: string
     content: string
+    explanation: string | null
+    image_url: string | null
     type: 'TWK' | 'TIU' | 'TKP'
     category: string | null
     sub_category: string | null
+    options: EventQuestionOption[]
 }
 
 type TryoutEvent = {
@@ -461,6 +475,19 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
     )
 }
 
+const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E']
+
+function getCorrectEventQuestionOption(question: EventQuestion) {
+    if (!question.options.length) return null
+
+    if (question.type === 'TKP') {
+        return question.options.find((option) => option.is_correct)
+            || [...question.options].sort((left, right) => right.score_value - left.score_value)[0]
+    }
+
+    return question.options.find((option) => option.is_correct) || null
+}
+
 // ─── Status Action Buttons ────────────────────────────────────────────────────
 const STATUS_ACTIONS: Array<{
     targetStatus: EventStatus
@@ -525,6 +552,7 @@ function DetailPanel({
     const [settingsHasChanges, setSettingsHasChanges] = useState(false)
     const [pendingTab, setPendingTab] = useState<DetailTab | null>(null)
     const [pendingClose, setPendingClose] = useState(false)
+    const [expandedQuestionIds, setExpandedQuestionIds] = useState<Set<string>>(() => new Set())
 
     const TABS: Array<{ id: DetailTab; label: string; icon: React.ReactNode }> = [
         { id: 'stats', label: 'Statistik', icon: <BarChart3 size={15} /> },
@@ -571,6 +599,18 @@ function DetailPanel({
             setPendingClose(false)
             onClose()
         }
+    }
+
+    const toggleQuestionDetail = (questionId: string) => {
+        setExpandedQuestionIds((current) => {
+            const next = new Set(current)
+            if (next.has(questionId)) {
+                next.delete(questionId)
+            } else {
+                next.add(questionId)
+            }
+            return next
+        })
     }
 
     return (
@@ -715,31 +755,150 @@ function DetailPanel({
                             </div>
                         ) : (
                             <div className="max-h-[520px] space-y-2 overflow-y-auto pr-2 custom-scrollbar">
-                                {event.questions.map((question) => (
-                                    <div key={question.id} className="grid gap-3 border-2 border-gray-200 bg-white p-4 sm:grid-cols-[64px_1fr]">
-                                        <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-gray-50 font-mono text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                            #{question.display_order}
-                                        </div>
-                                        <div className="min-w-0 space-y-2">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="border-2 border-gray-900 bg-gray-900 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
-                                                    {question.type}
-                                                </span>
-                                                <span className="border border-gray-300 px-2 py-0.5 font-mono text-[11px] font-black text-gray-600">
-                                                    {question.question_code}
-                                                </span>
-                                                {(question.sub_category || question.category) && (
-                                                    <span className="truncate text-xs font-bold text-gray-500">
-                                                        {question.sub_category || question.category}
-                                                    </span>
-                                                )}
+                                {event.questions.map((question) => {
+                                    const isExpanded = expandedQuestionIds.has(question.id)
+                                    const correctOption = getCorrectEventQuestionOption(question)
+
+                                    return (
+                                        <div key={question.id} className="border-2 border-gray-200 bg-white">
+                                            <div className="grid gap-3 p-4 sm:grid-cols-[64px_1fr]">
+                                                <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-gray-50 font-mono text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                    #{question.display_order}
+                                                </div>
+                                                <div className="min-w-0 space-y-3">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className="border-2 border-gray-900 bg-gray-900 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-white">
+                                                            {question.type}
+                                                        </span>
+                                                        <span className="border border-gray-300 px-2 py-0.5 font-mono text-[11px] font-black text-gray-600">
+                                                            {question.question_code}
+                                                        </span>
+                                                        {(question.sub_category || question.category) && (
+                                                            <span className="truncate text-xs font-bold text-gray-500">
+                                                                {question.sub_category || question.category}
+                                                            </span>
+                                                        )}
+                                                        <span className="ml-auto text-[11px] font-black uppercase text-gray-400">
+                                                            {question.options.length} opsi
+                                                        </span>
+                                                    </div>
+                                                    <div className="line-clamp-3 text-sm font-semibold leading-relaxed text-gray-900">
+                                                        <MathRenderer text={question.content} />
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+                                                        <span className="border border-gray-300 bg-gray-50 px-2 py-1 text-xs font-black text-gray-700">
+                                                            Kunci: {correctOption ? OPTION_LABELS[question.options.findIndex((option) => option.id === correctOption.id)] || '-' : '-'}
+                                                        </span>
+                                                        {question.type === 'TKP' && correctOption && (
+                                                            <span className="border border-gray-300 bg-gray-50 px-2 py-1 text-xs font-black text-gray-700">
+                                                                Skor tertinggi: {correctOption.score_value}
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleQuestionDetail(question.id)}
+                                                            className="ml-auto inline-flex items-center gap-1.5 border-2 border-gray-900 bg-white px-3 py-1.5 text-xs font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:translate-y-px hover:shadow-none"
+                                                        >
+                                                            {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                                                            {isExpanded ? 'Tutup Detail' : 'Lihat Detail'}
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <p className="line-clamp-3 text-sm font-semibold leading-relaxed text-gray-900">
-                                                {question.content}
-                                            </p>
+
+                                            {isExpanded && (
+                                                <div className="space-y-4 border-t-2 border-dashed border-gray-300 bg-gray-50 p-4">
+                                                    <div className="space-y-2">
+                                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Soal yang tampil</p>
+                                                        <div className="border border-gray-200 bg-white p-4 text-sm font-medium leading-relaxed text-gray-900">
+                                                            {question.image_url && (
+                                                                <Image
+                                                                    src={question.image_url}
+                                                                    alt={`Gambar soal ${question.question_code}`}
+                                                                    width={720}
+                                                                    height={420}
+                                                                    unoptimized
+                                                                    className="mb-4 max-h-72 w-full object-contain border border-gray-200 bg-white"
+                                                                />
+                                                            )}
+                                                            <MathRenderer text={question.content} />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Pilihan jawaban</p>
+                                                        {question.options.length === 0 ? (
+                                                            <div className="border border-gray-200 bg-white p-3 text-sm font-bold text-gray-500">
+                                                                Belum ada opsi jawaban.
+                                                            </div>
+                                                        ) : (
+                                                            <div className="grid gap-2">
+                                                                {question.options.map((option, optionIndex) => {
+                                                                    const isCorrect = correctOption?.id === option.id
+
+                                                                    return (
+                                                                        <div
+                                                                            key={option.id}
+                                                                            className={cn(
+                                                                                'flex gap-3 border p-3 text-sm',
+                                                                                isCorrect ? 'border-gray-900 bg-white text-gray-900' : 'border-gray-200 bg-white text-gray-700'
+                                                                            )}
+                                                                        >
+                                                                            <span className={cn(
+                                                                                'flex h-7 w-7 shrink-0 items-center justify-center border font-black',
+                                                                                isCorrect ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 bg-gray-50 text-gray-600'
+                                                                            )}>
+                                                                                {OPTION_LABELS[optionIndex] || '?'}
+                                                                            </span>
+                                                                            <div className="min-w-0 flex-1 space-y-2">
+                                                                                {option.image_url && (
+                                                                                    <Image
+                                                                                        src={option.image_url}
+                                                                                        alt={`Pilihan ${OPTION_LABELS[optionIndex] || '?'}`}
+                                                                                        width={420}
+                                                                                        height={260}
+                                                                                        unoptimized
+                                                                                        className="max-h-40 w-full max-w-sm object-contain border border-gray-200 bg-white"
+                                                                                    />
+                                                                                )}
+                                                                                {option.content.trim() ? (
+                                                                                    <MathRenderer text={option.content} />
+                                                                                ) : (
+                                                                                    <span className="font-bold text-gray-400">Opsi tanpa teks</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="shrink-0 text-right">
+                                                                                {question.type === 'TKP' ? (
+                                                                                    <span className={cn(
+                                                                                        'inline-flex border px-2 py-1 text-[11px] font-black',
+                                                                                        isCorrect ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 bg-gray-50 text-gray-600'
+                                                                                    )}>
+                                                                                        {option.score_value} poin
+                                                                                    </span>
+                                                                                ) : isCorrect ? (
+                                                                                    <span className="inline-flex border border-green-600 bg-green-50 px-2 py-1 text-[11px] font-black text-green-700">
+                                                                                        Benar
+                                                                                    </span>
+                                                                                ) : null}
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="space-y-2">
+                                                        <p className="text-xs font-black uppercase tracking-widest text-gray-400">Pembahasan</p>
+                                                        <div className="border border-gray-200 bg-white p-4 text-sm font-medium leading-relaxed text-gray-900">
+                                                            <MathRenderer text={question.explanation || '-'} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                             </div>
                         )}
                     </div>
