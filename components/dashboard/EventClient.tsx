@@ -432,7 +432,7 @@ function EventPaymentModal({
     const [isLoading, setIsLoading] = useState(true)
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
-    const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
+    const [pendingOrderId, setPendingOrderId] = useState<string | null>(event.payment_order_id)
     const [isCheckingStatus, setIsCheckingStatus] = useState(false)
 
     // Load Midtrans Snap script
