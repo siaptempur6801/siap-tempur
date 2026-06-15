@@ -301,7 +301,7 @@ function EventCard({
                                 <Check size={10} /> Terdaftar
                             </span>
                         )}
-                        {event.requires_code && (
+                        {event.requires_code && effectiveStatus !== 'closed' && (
                             <span className="inline-flex items-center gap-1 border-2 border-gray-900 bg-gray-900 px-2.5 py-1 text-[11px] font-black uppercase text-white">
                                 <Lock size={10} /> Kode Masuk
                             </span>
@@ -715,7 +715,7 @@ export default function EventClient({ events }: EventClientProps) {
                                 {sectionEvents.map((event) => (
                                     <div key={event.id}>
                                         {/* Inline code input if needs code + not registered */}
-                                        {event.requires_code && !event.participant_id && (
+                                        {event.requires_code && !event.participant_id && getEffectiveEventStatus(event, now) !== 'closed' && (
                                             <form
                                                 onSubmit={(e) => {
                                                     e.preventDefault()
