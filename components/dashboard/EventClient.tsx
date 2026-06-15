@@ -64,6 +64,10 @@ function getEffectiveEventStatus(event: UserEvent, now: number): EventStatus {
     return 'scheduled'
 }
 
+function getDisplayEventStatus(event: UserEvent, now: number | null): EventStatus {
+    return now == null ? event.status : getEffectiveEventStatus(event, now)
+}
+
 function getEventState(event: UserEvent, now: number) {
     const startsAt = new Date(event.starts_at).getTime()
     const endsAt = new Date(event.ends_at).getTime()
@@ -127,7 +131,16 @@ function CountdownBadge({ targetMs, label, now }: { targetMs: number; label: str
     )
 }
 
-function EventTimeStatus({ startsAt, endsAt, now }: { startsAt: number; endsAt: number; now: number }) {
+function EventTimeStatus({ startsAt, endsAt, now }: { startsAt: number; endsAt: number; now: number | null }) {
+    if (now == null) {
+        return (
+            <div className="flex items-center gap-2 border-2 border-gray-300 bg-gray-50 px-3 py-2 text-sm font-black text-gray-600">
+                <Clock size={14} className="shrink-0" />
+                <span>Mulai {formatDate(new Date(startsAt).toISOString())}</span>
+            </div>
+        )
+    }
+
     if (now < startsAt) {
         return <CountdownBadge targetMs={startsAt} label="Event akan dimulai dalam" now={now} />
     }
@@ -251,14 +264,15 @@ function EventCard({
     isPending,
 }: {
     event: UserEvent
-    now: number
+    now: number | null
     onAction: (event: UserEvent) => void
     isPending: boolean
 }) {
-    const state = getEventState(event, now)
     const startsAt = new Date(event.starts_at).getTime()
     const endsAt = new Date(event.ends_at).getTime()
-    const effectiveStatus = getEffectiveEventStatus(event, now)
+    const logicNow = now ?? startsAt - 1
+    const state = getEventState(event, logicNow)
+    const effectiveStatus = getDisplayEventStatus(event, now)
     const isLive = effectiveStatus === 'live'
     const hasTicket = Boolean(event.participant_id) || SUCCESS_PAYMENT.has(event.payment_status || '')
 
@@ -549,7 +563,7 @@ function EventPaymentModal({
 }
 
 export default function EventClient({ events }: EventClientProps) {
-    const [now, setNow] = useState(() => Date.now())
+    const [now, setNow] = useState<number | null>(null)
     const [pendingEventId, setPendingEventId] = useState<string | null>(null)
     const [confirmEvent, setConfirmEvent] = useState<UserEvent | null>(null)
     const [paymentEvent, setPaymentEvent] = useState<UserEvent | null>(null)
@@ -559,14 +573,19 @@ export default function EventClient({ events }: EventClientProps) {
 
     // Update `now` every second so states recalculate
     useEffect(() => {
-        const interval = setInterval(() => setNow(Date.now()), 1000)
-        return () => clearInterval(interval)
+        const updateNow = () => setNow(Date.now())
+        const timeout = window.setTimeout(updateNow, 0)
+        const interval = window.setInterval(updateNow, 1000)
+        return () => {
+            window.clearTimeout(timeout)
+            window.clearInterval(interval)
+        }
     }, [])
 
     const grouped = useMemo(() => {
-        const live = events.filter((e) => getEffectiveEventStatus(e, now) === 'live')
-        const scheduled = events.filter((e) => getEffectiveEventStatus(e, now) === 'scheduled')
-        const closed = events.filter((e) => getEffectiveEventStatus(e, now) === 'closed')
+        const live = events.filter((e) => getDisplayEventStatus(e, now) === 'live')
+        const scheduled = events.filter((e) => getDisplayEventStatus(e, now) === 'scheduled')
+        const closed = events.filter((e) => getDisplayEventStatus(e, now) === 'closed')
         return { live, scheduled, closed }
     }, [events, now])
 
@@ -578,6 +597,7 @@ export default function EventClient({ events }: EventClientProps) {
     }), [grouped])
 
     const doAction = (event: UserEvent) => {
+        if (now == null) return
         const state = getEventState(event, now)
         if (state.action === 'disabled') return
         if (state.action === 'history') {
@@ -715,7 +735,7 @@ export default function EventClient({ events }: EventClientProps) {
                                 {sectionEvents.map((event) => (
                                     <div key={event.id}>
                                         {/* Inline code input if needs code + not registered */}
-                                        {event.requires_code && !event.participant_id && getEffectiveEventStatus(event, now) !== 'closed' && (
+                                        {event.requires_code && !event.participant_id && getDisplayEventStatus(event, now) !== 'closed' && (
                                             <form
                                                 onSubmit={(e) => {
                                                     e.preventDefault()
