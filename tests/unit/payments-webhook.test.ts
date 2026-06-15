@@ -25,10 +25,21 @@ describe('payments webhook helpers', () => {
         expect(shouldProcessTransactionWithRpc('expire')).toBe(true)
     })
 
-    it('only grants package tokens for successful SKD payment statuses', () => {
+    it('grants the configured token quota for all main SKD packages on successful statuses', () => {
         expect(getTokenIncrementForPackage('Paket Perintis', 'capture')).toBe(1)
         expect(getTokenIncrementForPackage('Paket Perintis', 'settlement')).toBe(1)
+
+        expect(getTokenIncrementForPackage('Paket Pejuang', 'capture')).toBe(5)
+        expect(getTokenIncrementForPackage('Paket Pejuang', 'settlement')).toBe(5)
+
+        expect(getTokenIncrementForPackage('Paket Pasukan', 'capture')).toBe(10)
+        expect(getTokenIncrementForPackage('Paket Pasukan', 'settlement')).toBe(10)
+    })
+
+    it('does not grant token quota for non-successful or unknown SKD payments', () => {
         expect(getTokenIncrementForPackage('Paket Perintis', 'pending')).toBe(0)
+        expect(getTokenIncrementForPackage('Paket Pejuang', 'expire')).toBe(0)
+        expect(getTokenIncrementForPackage('Paket Pasukan', 'cancel')).toBe(0)
         expect(getTokenIncrementForPackage('Unknown Package', 'settlement')).toBe(0)
     })
 })
