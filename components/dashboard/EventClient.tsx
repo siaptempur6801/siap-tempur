@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, CalendarDays, Loader2, Trophy, Clock, Users, BookOpen, CheckCircle2, AlertTriangle, Zap, Lock, Radio, Check, CreditCard, RefreshCw, Ticket, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
@@ -8,6 +9,7 @@ import { registerTryoutEvent, startTryoutEvent } from '@/app/actions/event'
 import { createEventPaymentTransaction, syncEventPaymentStatus } from '@/app/actions/event-payment'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { canViewCompletedEventLeaderboard } from '@/lib/event-access'
 
 type EventStatus = 'scheduled' | 'live' | 'closed'
 
@@ -275,6 +277,11 @@ function EventCard({
     const effectiveStatus = getDisplayEventStatus(event, now)
     const isLive = effectiveStatus === 'live'
     const hasTicket = Boolean(event.participant_id) || SUCCESS_PAYMENT.has(event.payment_status || '')
+    const canViewEventLeaderboard = canViewCompletedEventLeaderboard({
+        event,
+        participantId: event.participant_id,
+        now: new Date(logicNow),
+    })
 
     const statusConfig = {
         live: { label: 'LIVE', bg: 'bg-red-500', text: 'text-white', border: 'border-red-700', pulse: true },
@@ -390,12 +397,23 @@ function EventCard({
                             Join Group
                         </a>
                     )}
-                    <div className="flex items-center gap-3 border-2 border-gray-900 bg-gray-50 p-3">
-                        <Trophy className="h-6 w-6 shrink-0 text-yellow-500" />
-                        <div>
-                            <p className="text-[10px] font-black uppercase text-gray-400">Ranking</p>
-                            <p className="text-xs font-bold text-gray-800">Terpisah dari ranking nasional</p>
+                    <div className="border-2 border-gray-900 bg-gray-50 p-3">
+                        <div className="flex items-center gap-3">
+                            <Trophy className="h-6 w-6 shrink-0 text-yellow-500" />
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-gray-400">Ranking</p>
+                                <p className="text-xs font-bold text-gray-800">Terpisah dari ranking nasional</p>
+                            </div>
                         </div>
+                        {canViewEventLeaderboard && (
+                            <Link
+                                href={`/cpns/dashboard/event/${event.id}/live`}
+                                className="mt-3 flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-yellow-300 px-3 py-2 text-xs font-black uppercase text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-yellow-200 hover:shadow-none"
+                            >
+                                <Trophy size={14} />
+                                Lihat Leaderboard
+                            </Link>
+                        )}
                     </div>
                     {event.max_participants && (
                         <div className="flex items-center gap-3 border-2 border-gray-200 bg-gray-50 p-3">
