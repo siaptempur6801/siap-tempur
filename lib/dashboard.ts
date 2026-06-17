@@ -227,13 +227,13 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
 
     const recommendations: DashboardData['recommendations'] = []
     if (avgScores.twk < PASSING_GRADES.TWK) {
-        recommendations.push({ type: 'TWK', title: 'Tryout TWK', description: `Tingkatkan skor dari ${avgScores.twk} ke ${PASSING_GRADES.TWK}` })
+        recommendations.push({ type: 'TWK', title: 'Mini Tryout TWK', description: `Tingkatkan skor dari ${avgScores.twk} ke ${PASSING_GRADES.TWK}` })
     }
     if (avgScores.tiu < PASSING_GRADES.TIU) {
-        recommendations.push({ type: 'TIU', title: 'Tryout TIU', description: `Tingkatkan skor dari ${avgScores.tiu} ke ${PASSING_GRADES.TIU}` })
+        recommendations.push({ type: 'TIU', title: 'Mini Tryout TIU', description: `Tingkatkan skor dari ${avgScores.tiu} ke ${PASSING_GRADES.TIU}` })
     }
     if (avgScores.tkp < PASSING_GRADES.TKP) {
-        recommendations.push({ type: 'TKP', title: 'Tryout TKP', description: `Tingkatkan skor dari ${avgScores.tkp} ke ${PASSING_GRADES.TKP}` })
+        recommendations.push({ type: 'TKP', title: 'Mini Tryout TKP', description: `Tingkatkan skor dari ${avgScores.tkp} ke ${PASSING_GRADES.TKP}` })
     }
 
     if (recommendations.length === 0) {

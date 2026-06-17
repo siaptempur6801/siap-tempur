@@ -31,6 +31,73 @@ export const SUBJECTS = {
     }
 } as const;
 
+export const MINI_TRYOUT_TYPES = ['TWK', 'TIU', 'TKP'] as const;
+
+export type MiniTryoutType = typeof MINI_TRYOUT_TYPES[number];
+
+export const TRYOUT_TOKEN_COST = 1 as const;
+
+type MiniTryoutProduct = {
+    type: MiniTryoutType;
+    title: string;
+    subtitle: string;
+    description: string;
+    questionCount: number;
+    maxScore: number;
+    passingGrade: number;
+    tokenCost: typeof TRYOUT_TOKEN_COST;
+    color: 'red' | 'yellow' | 'blue';
+    focusItems: readonly string[];
+};
+
+export const MINI_TRYOUT_PRODUCTS = [
+    {
+        type: 'TWK',
+        title: 'Mini Tryout TWK',
+        subtitle: SUBJECTS.TWK.name,
+        description: 'Latihan terfokus pada nasionalisme, integritas, bela negara, pilar negara, dan kemampuan berbahasa Indonesia.',
+        questionCount: SUBJECTS.TWK.fullMark / 5,
+        maxScore: SUBJECTS.TWK.fullMark,
+        passingGrade: SUBJECTS.TWK.passing,
+        tokenCost: TRYOUT_TOKEN_COST,
+        color: 'red',
+        focusItems: ['Nasionalisme', 'Integritas', 'Bela Negara', 'Pilar Negara', 'Bahasa Negara'],
+    },
+    {
+        type: 'TIU',
+        title: 'Mini Tryout TIU',
+        subtitle: SUBJECTS.TIU.name,
+        description: 'Latihan kemampuan verbal, numerik, figural, logika, analitis, dan penyelesaian masalah.',
+        questionCount: SUBJECTS.TIU.fullMark / 5,
+        maxScore: SUBJECTS.TIU.fullMark,
+        passingGrade: SUBJECTS.TIU.passing,
+        tokenCost: TRYOUT_TOKEN_COST,
+        color: 'yellow',
+        focusItems: ['Verbal', 'Numerik', 'Figural', 'Logika', 'Analitis'],
+    },
+    {
+        type: 'TKP',
+        title: 'Mini Tryout TKP',
+        subtitle: SUBJECTS.TKP.name,
+        description: 'Latihan soal situasional terkait pelayanan publik, profesionalisme, jejaring kerja, sosial budaya, teknologi informasi, dan pengendalian diri.',
+        questionCount: SUBJECTS.TKP.fullMark / 5,
+        maxScore: SUBJECTS.TKP.fullMark,
+        passingGrade: SUBJECTS.TKP.passing,
+        tokenCost: TRYOUT_TOKEN_COST,
+        color: 'blue',
+        focusItems: ['Pelayanan Publik', 'Profesionalisme', 'Jejaring Kerja', 'Sosial Budaya', 'TIK'],
+    },
+] as const satisfies readonly MiniTryoutProduct[];
+
+export function isMiniTryoutType(value: unknown): value is MiniTryoutType {
+    return typeof value === 'string' && MINI_TRYOUT_TYPES.includes(value as MiniTryoutType);
+}
+
+export function getMiniTryoutProduct(value: unknown): MiniTryoutProduct | null {
+    if (!isMiniTryoutType(value)) return null;
+    return MINI_TRYOUT_PRODUCTS.find((product) => product.type === value) ?? null;
+}
+
 /**
  * User Leveling thresholds
  */

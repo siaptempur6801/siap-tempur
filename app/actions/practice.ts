@@ -2,6 +2,7 @@
 
 import { isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-session'
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
+import { getMiniTryoutProduct, type MiniTryoutType } from '@/lib/constants'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
@@ -99,7 +100,7 @@ async function findExistingTryoutSession(
 async function findExistingPracticeSession(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string,
-    type: 'TWK' | 'TIU' | 'TKP'
+    type: MiniTryoutType
 ): Promise<ResumeSessionResult | null> {
     const { data: sessions, error } = await queryInProgressSessions(supabase, userId, 'practice', 10)
 
@@ -132,8 +133,13 @@ async function findExistingPracticeSession(
     return null
 }
 
-export async function startPractice(type: 'TWK' | 'TIU' | 'TKP') {
+export async function startPractice(type: MiniTryoutType) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    const miniTryoutProduct = getMiniTryoutProduct(type)
+    if (!miniTryoutProduct) {
+        return { error: 'Tipe mini tryout tidak valid' }
+    }
 
     const supabase = await createClient()
 
@@ -143,34 +149,48 @@ export async function startPractice(type: 'TWK' | 'TIU' | 'TKP') {
         redirect('/login')
     }
 
-    const existingSession = await findExistingPracticeSession(supabase, user.id, type)
+    const existingSession = await findExistingPracticeSession(supabase, user.id, miniTryoutProduct.type)
     if (existingSession) {
         return { success: true, ...existingSession }
     }
 
-    // Call DB Function
-    const { data, error } = await supabase.rpc('start_practice_session', {
+    // New mini tryout sessions cost one SKD token. Existing active sessions are returned above.
+    const { data, error } = await supabase.rpc('start_mini_tryout_session', {
         p_user_id: user.id,
-        p_type: type,
-        p_limit: type === 'TWK' ? 30 : type === 'TIU' ? 35 : type === 'TKP' ? 45 : 10, // 30 TWK, 35 TIU, 45 TKP, 10 others
+        p_type: miniTryoutProduct.type,
+        p_limit: miniTryoutProduct.questionCount,
     })
 
     if (error) {
         logger.warn('[startPractice] DB Error', { error: error.message })
-        return { error: 'Failed to start practice session' }
+        if (error.message?.includes('Not enough SKD tickets') || error.details?.includes('Not enough SKD tickets')) {
+            return { error: 'Token mini tryout habis! Silakan beli paket baru.' }
+        }
+        if (error.message?.includes('Bank soal mini tryout belum lengkap') || error.details?.includes('Bank soal mini tryout belum lengkap')) {
+            return { error: 'Bank soal mini tryout belum lengkap untuk produk ini.' }
+        }
+        return { error: 'Gagal memulai mini tryout.' }
     }
 
 
 
     if (!data || data.length === 0) {
         logger.warn('[startPractice] No data returned from RPC')
-        return { error: 'No session created' }
+        return { error: 'Sesi mini tryout tidak berhasil dibuat' }
     }
 
     // Return session ID for client-side redirect
     const sessionId = data[0].session_id
 
+    revalidatePath('/cpns/dashboard')
+    revalidatePath('/cpns/dashboard/mini-tryout')
+    revalidatePath('/cpns/dashboard/profile')
+
     return { success: true, sessionId, resumed: false }
+}
+
+export async function startMiniTryout(type: MiniTryoutType) {
+    return startPractice(type)
 }
 
 export async function startTryout() {
@@ -327,6 +347,7 @@ export async function finishPractice(sessionId: string) {
     revalidatePath('/cpns/dashboard')
     revalidatePath('/cpns/dashboard/ranking')
     revalidatePath('/cpns/dashboard/tryout')
+    revalidatePath('/cpns/dashboard/mini-tryout')
     revalidatePath('/cpns/dashboard/event')
     revalidatePath('/cpns/dashboard/riwayat')
     return { success: true }

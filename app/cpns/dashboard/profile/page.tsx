@@ -40,7 +40,7 @@ export default async function ProfilePage() {
             .from('test_sessions')
             .select('id, start_time, mode')
             .eq('user_id', user.id)
-            .eq('mode', 'tryout')
+            .in('mode', ['tryout', 'practice'])
             .order('start_time', { ascending: false })
     ])
 

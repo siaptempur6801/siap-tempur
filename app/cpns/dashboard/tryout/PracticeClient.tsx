@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 import PaperBackground from '@/components/PaperBackground'
+import { TRYOUT_TOKEN_COST } from '@/lib/constants'
+import TokenUsageConfirmModal from '@/components/practice/TokenUsageConfirmModal'
 
 interface PracticeClientProps {
     quota: number
@@ -57,6 +59,7 @@ export default function PracticeClient({
     activeStartedAt
 }: PracticeClientProps) {
     const [loadingTryout, setLoadingTryout] = useState(false)
+    const [showTokenConfirm, setShowTokenConfirm] = useState(false)
     const [hydratedResumeQuestionNumber, setHydratedResumeQuestionNumber] = useState<number | null>(activeResumeQuestionNumber)
     const [resumeTimeLabel, setResumeTimeLabel] = useState<string | null>(null)
     const router = useRouter()
@@ -142,18 +145,8 @@ export default function PracticeClient({
             : 'Sesi Masih Berjalan'
         : '110 Soal • 100 Menit'
 
-    const handleStartTryout = async () => {
-        if (!activeSessionId && quota <= 0) {
-            toast.error("Kuota Habis!", {
-                description: "Silahkan beli paket Tryout terlebih dahulu untuk melanjutkan.",
-                action: {
-                    label: "Beli Paket",
-                    onClick: () => router.push('/cpns/dashboard/beli-paket')
-                }
-            })
-            return
-        }
-
+    const startTryoutSession = async () => {
+        let isNavigating = false
         try {
             setLoadingTryout(true)
             const result = await startTryout()
@@ -165,13 +158,36 @@ export default function PracticeClient({
 
             if (result?.success && result?.sessionId) {
                 toast.success(result.resumed ? 'Melanjutkan sesi tryout tersimpan.' : 'Tryout SKD dimulai!')
+                isNavigating = true
                 router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
             }
         } catch {
             toast.error('Gagal memulai tryout')
         } finally {
-            setLoadingTryout(false)
+            if (!isNavigating) {
+                setLoadingTryout(false)
+            }
         }
+    }
+
+    const handleStartTryout = async () => {
+        if (activeSessionId) {
+            await startTryoutSession()
+            return
+        }
+
+        if (quota <= 0) {
+            toast.error("Kuota Habis!", {
+                description: "Silahkan beli paket Tryout terlebih dahulu untuk melanjutkan.",
+                action: {
+                    label: "Beli Paket",
+                    onClick: () => router.push('/cpns/dashboard/beli-paket')
+                }
+            })
+            return
+        }
+
+        setShowTokenConfirm(true)
     }
 
     return (
@@ -211,7 +227,7 @@ export default function PracticeClient({
                                     </h2>
                                     <p className="text-lg text-gray-600 leading-relaxed font-sans">
                                         Format soal, waktu, dan sistem penilaian disesuaikan dengan standar <strong className="text-gray-900">CAT BKN 2025/2026</strong>.
-                                        Cocok untuk persiapan <strong className="text-gray-900">CPNS</strong> maupun <strong className="text-gray-900">Sekolah Kedinasan</strong>. Satu kuota (1 Tiket) untuk satu kali pengerjaan simulasi full.
+                                        Cocok untuk persiapan <strong className="text-gray-900">CPNS</strong> maupun <strong className="text-gray-900">Sekolah Kedinasan</strong>. Akses full tryout membutuhkan <strong className="text-gray-900">{TRYOUT_TOKEN_COST} token</strong> untuk satu kali pengerjaan.
                                     </p>
                                 </div>
 
@@ -234,6 +250,12 @@ export default function PracticeClient({
                                             <ArrowRight size={14} />
                                         </div>
                                         <span className="font-bold">Ranking Nasional Otomatis</span>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-gray-700">
+                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 border border-blue-200">
+                                            <Ticket size={14} />
+                                        </div>
+                                        <span className="font-bold">Biaya akses: {TRYOUT_TOKEN_COST} token per full tryout</span>
                                     </div>
                                 </div>
 
@@ -354,6 +376,20 @@ export default function PracticeClient({
                     </div>
                 </PageAnimateItem>
             </PageAnimateContainer>
+
+            <TokenUsageConfirmModal
+                isOpen={showTokenConfirm}
+                title="Mulai Full Tryout SKD?"
+                description={`Full tryout baru akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu. Waktu 100 menit akan berjalan setelah sesi berhasil dibuat.`}
+                details={[
+                    { label: 'Soal', value: 110 },
+                    { label: 'Durasi', value: '100 Menit' },
+                ]}
+                quota={quota}
+                isLoading={loadingTryout}
+                onCancel={() => !loadingTryout && setShowTokenConfirm(false)}
+                onConfirm={startTryoutSession}
+            />
         </div>
     )
 }

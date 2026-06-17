@@ -141,6 +141,7 @@ export default async function PracticeResultPage({
     const { sessionId } = await params
     const { from, completed } = await searchParams
     const cameFromHistory = from === 'riwayat'
+    const cameFromMiniTryout = from === 'mini-tryout'
     const isCompleted = completed === 'true'
 
     // 1. Fetch Session Result
@@ -181,8 +182,10 @@ export default async function PracticeResultPage({
         ? '/cpns/dashboard/riwayat'
         : isEventSession
             ? '/cpns/dashboard/event'
-            : '/cpns/dashboard/tryout'
-    const backLabel = cameFromHistory ? 'Riwayat' : isEventSession ? 'Event' : 'Dashboard'
+            : cameFromMiniTryout
+                ? '/cpns/dashboard/mini-tryout'
+                : '/cpns/dashboard/tryout'
+    const backLabel = cameFromHistory ? 'Riwayat' : isEventSession ? 'Event' : cameFromMiniTryout ? 'Mini Tryout' : 'Dashboard'
     const synchronizedCloseAt = event
         ? new Date(
             new Date(event.starts_at).getTime() +
@@ -236,7 +239,7 @@ export default async function PracticeResultPage({
             .neq('id', sessionId), // Exclude current session
         supabase
             .from('profiles')
-            .select('streak_count, last_activity_date')
+            .select('streak_count, last_activity_date, tryout_quota')
             .eq('id', session.user_id)
             .single()
     ])
@@ -379,6 +382,22 @@ export default async function PracticeResultPage({
     const uniqueTypes = Array.from(new Set(answers.map((a) => a.questions.type)))
     const isCombined = uniqueTypes.length > 1
     const singleType: 'TWK' | 'TIU' | 'TKP' | null = isCombined ? null : (uniqueTypes[0] ?? null)
+    const isMiniTryoutSession = !isCombined && !isEventSession
+    const resolvedBackHref = cameFromHistory
+        ? '/cpns/dashboard/riwayat'
+        : isEventSession
+            ? '/cpns/dashboard/event'
+            : (cameFromMiniTryout || isMiniTryoutSession)
+                ? '/cpns/dashboard/mini-tryout'
+                : '/cpns/dashboard/tryout'
+    const resolvedBackLabel = cameFromHistory
+        ? 'Riwayat'
+        : isEventSession
+            ? 'Event'
+            : (cameFromMiniTryout || isMiniTryoutSession)
+                ? 'Mini Tryout'
+                : 'Dashboard'
+    const resultTitle = isCombined ? 'TRYOUT SKD' : `MINI TRYOUT ${formatSubjectName(singleType || '')}`
 
     // 2. Calculate Stats Helper
     const calculateStats = (filterType?: string) => {
@@ -457,7 +476,7 @@ export default async function PracticeResultPage({
                     <div className="relative p-5 sm:p-8 flex flex-col items-center text-center z-10">
                         <div className="mb-3">
                             <span className="px-3 py-1 rounded-full bg-gray-900 text-white text-[11px] sm:text-sm font-bold uppercase tracking-widest rotate-2 inline-flex items-center gap-1">
-                                HASIL {isCombined ? 'TRYOUT SKD' : `TRYOUT ${formatSubjectName(singleType || '')}`} <ClipboardList className="w-4 h-4" />
+                                HASIL {resultTitle} <ClipboardList className="w-4 h-4" />
                             </span>
                         </div>
 
@@ -583,7 +602,7 @@ export default async function PracticeResultPage({
                         if (allPassed) {
                             title = "Pertahankan Performamu!"
                             message = "Selamat! Kamu telah lulus passing grade di semua kategori. Pertahankan konsistensi tryout-mu dan coba kerjakan soal-soal yang lebih sulit untuk memantapkan kesiapanmu."
-                            linkText = "Lanjut Tryout Soal"
+                            linkText = "Lanjut Full Tryout"
                         } else if (failedSections.length === 3) {
                             title = "Perlu Evaluasi Menyeluruh"
                             message = (
@@ -648,13 +667,19 @@ export default async function PracticeResultPage({
                 {/* 4. ACTION BAR (Sticky Bottom or Inline) */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center pt-4 sm:pt-8 px-2 sm:px-0">
                     <Link
-                        href={backHref}
+                        href={resolvedBackHref}
                         className="flex justify-center items-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 sm:py-4 rounded-2xl border-2 border-gray-900 bg-white hover:bg-gray-50 font-black text-lg sm:text-xl transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                     >
-                        <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> {backLabel}
+                        <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> {resolvedBackLabel}
                     </Link>
 
-                    {!cameFromHistory && !isEventSession && <RetakeButton isCombined={isCombined} singleType={singleType} />}
+                    {!cameFromHistory && !isEventSession && (
+                        <RetakeButton
+                            isCombined={isCombined}
+                            singleType={singleType}
+                            quota={profile?.tryout_quota ?? 0}
+                        />
+                    )}
 
                     <ScrollToReviewButton />
                 </div>

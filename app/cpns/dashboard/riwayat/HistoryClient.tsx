@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 type HistorySession = {
     id: string
     title: string
+    kind: 'event' | 'full-tryout' | 'mini-tryout'
     isEvent: boolean
     completedAt: string
     completedAtLabel: string
@@ -19,7 +20,7 @@ type HistorySession = {
     passed: boolean | null
 }
 
-type TypeFilter = 'all' | 'event' | 'tryout'
+type TypeFilter = 'all' | 'event' | 'full-tryout' | 'mini-tryout'
 type StatusFilter = 'all' | 'passed' | 'failed'
 type SortMode = 'newest' | 'oldest' | 'highest'
 
@@ -30,7 +31,8 @@ interface HistoryClientProps {
 const typeOptions: Array<{ value: TypeFilter; label: string }> = [
     { value: 'all', label: 'Semua' },
     { value: 'event', label: 'Event' },
-    { value: 'tryout', label: 'Tryout (Token)' }
+    { value: 'full-tryout', label: 'Full Tryout' },
+    { value: 'mini-tryout', label: 'Mini Tryout' }
 ]
 
 const statusOptions: Array<{ value: StatusFilter; label: string }> = [
@@ -82,8 +84,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
 
             const matchesType =
                 typeFilter === 'all' ||
-                (typeFilter === 'event' && session.isEvent) ||
-                (typeFilter === 'tryout' && !session.isEvent)
+                session.kind === typeFilter
 
             const matchesStatus =
                 statusFilter === 'all' ||
@@ -224,6 +225,16 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                                             {session.isEvent && (
                                                 <span className="inline-flex items-center gap-1 border-2 border-gray-900 bg-blue-100 px-2 py-0.5 text-[9px] font-black uppercase text-blue-700">
                                                     Event
+                                                </span>
+                                            )}
+                                            {session.kind === 'full-tryout' && (
+                                                <span className="inline-flex items-center gap-1 border-2 border-gray-900 bg-yellow-100 px-2 py-0.5 text-[9px] font-black uppercase text-yellow-800">
+                                                    Full Tryout
+                                                </span>
+                                            )}
+                                            {session.kind === 'mini-tryout' && (
+                                                <span className="inline-flex items-center gap-1 border-2 border-gray-900 bg-green-100 px-2 py-0.5 text-[9px] font-black uppercase text-green-700">
+                                                    Mini Tryout
                                                 </span>
                                             )}
                                             {session.passed !== null && (

@@ -201,7 +201,7 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             initialMarked={initialMarked}
             endTime={endTime}
             isTryout={isTryout}
-            returnTo={eventSession ? 'event' : 'tryout'}
+            returnTo={eventSession ? 'event' : isTryout ? 'tryout' : 'mini-tryout'}
         />
     )
 }

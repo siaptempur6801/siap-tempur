@@ -4,6 +4,7 @@ import { createClient } from '@/lib/utils/supabase/server'
 import HistoryClient from './HistoryClient'
 
 type SessionType = 'TWK' | 'TIU' | 'TKP'
+type HistoryKind = 'event' | 'full-tryout' | 'mini-tryout'
 
 function formatCompletedAt(dateTime: string) {
     return new Intl.DateTimeFormat('id-ID', {
@@ -26,10 +27,16 @@ function getHistoryTitle(mode: 'practice' | 'tryout', types: SessionType[], even
     }
 
     if (types[0]) {
-        return `Tryout ${types[0]}`
+        return `Mini Tryout ${types[0]}`
     }
 
-    return 'tryout soal'
+    return 'Mini Tryout'
+}
+
+function getHistoryKind(mode: 'practice' | 'tryout', types: SessionType[], eventTitle?: string | null): HistoryKind {
+    if (eventTitle) return 'event'
+    if (mode === 'tryout' || types.length > 1) return 'full-tryout'
+    return 'mini-tryout'
 }
 
 function getHistoryPassed(
@@ -127,6 +134,7 @@ export default async function RiwayatPage() {
         return {
             id: session.id,
             title: getHistoryTitle(session.mode, types, eventTitle),
+            kind: getHistoryKind(session.mode, types, eventTitle),
             isEvent: Boolean(eventTitle),
             completedAt: session.end_time ?? session.start_time,
             completedAtLabel: formatCompletedAt(session.end_time ?? session.start_time),

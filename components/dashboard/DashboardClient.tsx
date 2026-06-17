@@ -103,11 +103,15 @@ export default function DashboardClient({ data, greeting }: Props) {
     }
 
     const hasActiveSession = Boolean(data.activeSession)
+    const activeSessionIsMiniTryout = data.activeSession?.mode === 'practice'
+    const primaryCtaHref = activeSessionIsMiniTryout
+        ? '/cpns/dashboard/mini-tryout'
+        : '/cpns/dashboard/tryout'
     const primaryCtaTitle = hasActiveSession
-        ? 'Lanjutkan Tryout'
+        ? activeSessionIsMiniTryout ? 'Lanjutkan Mini Tryout' : 'Lanjutkan Tryout'
         : 'Mulai Tryout'
     const primaryCtaDescription = hasActiveSession
-        ? 'Sesi tryout kamu masih berjalan'
+        ? activeSessionIsMiniTryout ? 'Sesi mini tryout kamu masih berjalan' : 'Sesi tryout kamu masih berjalan'
         : 'Asah kemampuan TWK, TIU, TKP'
 
     return (
@@ -165,7 +169,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
                             {/* Main CTA: Tryout */}
                             <Link
-                                href="/cpns/dashboard/tryout"
+                                href={primaryCtaHref}
                                 className="group relative p-8 bg-blue-600 text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex flex-col justify-between min-h-[160px]"
                             >
                                 <div>
@@ -357,7 +361,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                                         </div>
                                         <h3 className="font-bold text-lg text-gray-900 mb-1">Belum Ada Riwayat Tryout</h3>
                                         <p className="text-gray-500 text-sm max-w-xs mx-auto mb-6">
-                                            Kamu belum mengerjakan Tryout atau Tryout Soal. Yuk mulai sekarang!
+                                            Kamu belum mengerjakan Tryout atau Mini Tryout. Yuk mulai sekarang!
                                         </p>
                                         <Link href="/cpns/dashboard/tryout" className="px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">
                                             Mulai Tryout Pertama

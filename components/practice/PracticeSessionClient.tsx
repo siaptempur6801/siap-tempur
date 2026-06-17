@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import PaperBackground from '@/components/PaperBackground'
 import MathRenderer from '@/components/MathRenderer'
+import { getPracticeSessionStorageKey } from '@/lib/practice-progress'
 
 
 interface Question {
@@ -34,7 +35,7 @@ interface Props {
     initialMarked: Record<string, boolean>
     endTime?: string // ISO string for tryout mode
     isTryout?: boolean
-    returnTo?: 'tryout' | 'event'
+    returnTo?: 'tryout' | 'mini-tryout' | 'event'
 }
 
 type SessionProgressSnapshot = {
@@ -50,7 +51,7 @@ type AnswerSyncState = {
 }
 
 function getSessionStorageKey(sessionId: string) {
-    return `cpns-practice-session:${sessionId}`
+    return getPracticeSessionStorageKey(sessionId)
 }
 
 function saveProgressToLocalStorage(snapshot: SessionProgressSnapshot) {
@@ -436,6 +437,19 @@ export default function PracticeSessionClient({
     const lastSavedSnapshotRef = useRef('')
     const latestSnapshotRef = useRef<SessionProgressSnapshot | null>(null)
     const answerSyncStateRef = useRef<Record<string, AnswerSyncState>>({})
+    const sessionKindLabel = isTryout ? 'Tryout' : 'Mini Tryout'
+    const sessionKindLabelLower = sessionKindLabel.toLowerCase()
+    const resultFromQuery = returnTo === 'event' ? '?from=event' : returnTo === 'mini-tryout' ? '?from=mini-tryout' : ''
+    const returnPath = returnTo === 'event'
+        ? '/cpns/dashboard/event'
+        : returnTo === 'mini-tryout'
+            ? '/cpns/dashboard/mini-tryout'
+            : '/cpns/dashboard/tryout'
+    const returnLocationLabel = returnTo === 'event'
+        ? 'halaman event'
+        : returnTo === 'mini-tryout'
+            ? 'halaman mini tryout'
+            : 'dashboard'
 
     // Subcategory sorting and limits are now handled by dynamic tryout_configurations in the database fetch
     const sortedQuestions = useMemo(() => {
@@ -487,8 +501,8 @@ export default function PracticeSessionClient({
             if (result?.success) {
                 setHasFinished(true)
                 clearProgressFromLocalStorage(sessionId)
-                toast.success(isTryout ? 'Tryout selesai!' : 'Tryout selesai!')
-                router.push(`/cpns/dashboard/tryout/${sessionId}/result${returnTo === 'event' ? '?from=event' : ''}`)
+                toast.success(`${sessionKindLabel} selesai!`)
+                router.push(`/cpns/dashboard/tryout/${sessionId}/result${resultFromQuery}`)
             }
         } catch (error) {
             console.error('Error finishing practice:', error)
@@ -496,7 +510,7 @@ export default function PracticeSessionClient({
         } finally {
             setFinishing(false)
         }
-    }, [finishing, isTryout, returnTo, sessionId, router])
+    }, [finishing, resultFromQuery, sessionId, sessionKindLabel, router])
 
     useEffect(() => {
         const savedProgress = loadProgressFromLocalStorage(sessionId)
@@ -717,7 +731,7 @@ export default function PracticeSessionClient({
             }
         }
 
-        router.push(returnTo === 'event' ? '/cpns/dashboard/event' : '/cpns/dashboard/tryout')
+        router.push(returnPath)
     }
 
     // Safety check - prevent crash if no questions available
@@ -726,7 +740,7 @@ export default function PracticeSessionClient({
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center text-muted-foreground">
                     <p className="text-lg font-semibold">Tidak ada soal tersedia</p>
-                    <p className="text-sm">Silakan kembali ke halaman tryout</p>
+                    <p className="text-sm">Silakan kembali ke {returnLocationLabel}</p>
                 </div>
             </div>
         )
@@ -794,7 +808,7 @@ export default function PracticeSessionClient({
                                     onClick={() => setShowExitModal(true)}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-handwriting font-bold transition-all"
                                 >
-                                    <LogOut size={18} /> Keluar Tryout
+                                    <LogOut size={18} /> Keluar {sessionKindLabel}
                                 </button>
 
                                 <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
@@ -818,10 +832,10 @@ export default function PracticeSessionClient({
                                 <LogOut size={32} className="text-red-600" />
                             </div>
 
-                            <h3 className="text-3xl font-bold text-gray-900">Keluar Tryout?</h3>
+                            <h3 className="text-3xl font-bold text-gray-900">Keluar {sessionKindLabel}?</h3>
 
                             <p className="text-lg text-gray-700 font-medium flex items-center justify-center gap-2">
-                                Progres tryout dan nomor soal terakhir akan tersimpan. Anda bisa lanjut lagi nanti dari {returnTo === 'event' ? 'halaman event' : 'dashboard'}.
+                                Progres {sessionKindLabelLower} dan nomor soal terakhir akan tersimpan. Anda bisa lanjut lagi nanti dari {returnLocationLabel}.
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-4">
@@ -1034,7 +1048,7 @@ export default function PracticeSessionClient({
                                 ) : (
                                     <div className="hidden md:flex px-4 py-1.5 bg-white border-2 border-gray-900 rounded-full text-xs md:text-sm font-handwriting font-bold items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         <Clock size={14} />
-                                        <span>Tryout Santai</span>
+                                        <span>{sessionKindLabel}</span>
                                     </div>
                                 )}
 
@@ -1196,7 +1210,7 @@ export default function PracticeSessionClient({
                                 onClick={() => setShowExitModal(true)}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-handwriting font-bold transition-all text-base dashed"
                             >
-                                <LogOut size={18} /> Keluar Tryout
+                                <LogOut size={18} /> Keluar {sessionKindLabel}
                             </button>
                             <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>

@@ -195,7 +195,7 @@ export function HistoryTab({ transactions, usageSessions }: HistoryTabProps) {
                                     </div>
                                     <div>
                                         <div className="font-bold text-base text-gray-900">
-                                            {session.mode === 'tryout' ? 'Tryout SKD Full' : 'Tryout Soal'}
+                                            {session.mode === 'tryout' ? 'Tryout SKD Full' : 'Mini Tryout'}
                                         </div>
                                         <div className="text-sm text-gray-500">
                                             {new Date(session.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
