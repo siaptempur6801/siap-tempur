@@ -10,13 +10,21 @@ import { validateCsrf } from '@/lib/csrf'
 
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
 
+type CreateEventPaymentTransactionResult =
+    | { success: true; token: string; orderId: string }
+    | { success: false; message: string }
+
 /**
  * Creates a Midtrans Snap transaction for an event ticket.
  * Order ID format: EVT-{eventId[0..7]}-{userId[0..7]}-{timestamp}
  * Does NOT consume tryout tokens.
  */
-export async function createEventPaymentTransaction(eventId: string) {
-    try { await validateCsrf() } catch { throw new Error('Invalid request') }
+export async function createEventPaymentTransaction(eventId: string): Promise<CreateEventPaymentTransactionResult> {
+    try {
+        await validateCsrf()
+    } catch {
+        return { success: false, message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.' }
+    }
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -32,15 +40,15 @@ export async function createEventPaymentTransaction(eventId: string) {
         .single()
 
     if (eventError || !event) {
-        throw new Error('Event tidak ditemukan')
+        return { success: false, message: 'Event tidak ditemukan' }
     }
 
     if (!event.is_paid || event.price <= 0) {
-        throw new Error('Event ini tidak berbayar')
+        return { success: false, message: 'Event ini tidak berbayar' }
     }
 
     if (!['scheduled', 'live'].includes(event.status)) {
-        throw new Error('Event belum dibuka')
+        return { success: false, message: 'Event belum dibuka' }
     }
 
     const { data: existingParticipant } = await admin
@@ -51,7 +59,7 @@ export async function createEventPaymentTransaction(eventId: string) {
         .maybeSingle()
 
     if (existingParticipant) {
-        throw new Error('Kamu sudah terdaftar di event ini.')
+        return { success: false, message: 'Kamu sudah terdaftar di event ini.' }
     }
 
     // Check if user already paid / registered
@@ -64,10 +72,10 @@ export async function createEventPaymentTransaction(eventId: string) {
 
     if (existingPayment) {
         if (SUCCESS_STATUSES.has(existingPayment.status)) {
-            throw new Error('Tiket sudah dibeli. Kamu sudah terdaftar di event ini.')
+            return { success: false, message: 'Tiket sudah dibeli. Kamu sudah terdaftar di event ini.' }
         }
         // Pending payment exists — should not create new
-        throw new Error('Kamu sudah punya tagihan yang belum selesai. Cek status pembayaran.')
+        return { success: false, message: 'Kamu sudah punya tagihan yang belum selesai. Cek status pembayaran.' }
     }
 
     // Check quota
@@ -78,7 +86,7 @@ export async function createEventPaymentTransaction(eventId: string) {
             .eq('event_id', eventId)
 
         if ((count || 0) >= event.max_participants) {
-            throw new Error('Kuota peserta event sudah penuh')
+            return { success: false, message: 'Kuota peserta event sudah penuh' }
         }
     }
 
@@ -105,10 +113,13 @@ export async function createEventPaymentTransaction(eventId: string) {
         customerDetails,
         itemDetails,
         ['qris', 'other_qris']
-    )
+    ).catch((error) => {
+        logger.error('Event payment transaction failed', error, { eventId, orderId })
+        return null
+    })
 
     if (!transaction?.token) {
-        throw new Error('Gagal memperoleh token pembayaran dari Midtrans.')
+        return { success: false, message: 'Gagal memperoleh token pembayaran. Coba lagi.' }
     }
 
     // Log to event_payments table
@@ -125,10 +136,10 @@ export async function createEventPaymentTransaction(eventId: string) {
 
     if (dbError) {
         logger.error('Event payment insert failed', dbError, { eventId, orderId })
-        // Still return token so user can pay; webhook will handle the rest
+        return { success: false, message: 'Gagal menyimpan transaksi pembayaran. Coba lagi.' }
     }
 
-    return { token: transaction.token as string, orderId }
+    return { success: true, token: transaction.token as string, orderId }
 }
 
 /**

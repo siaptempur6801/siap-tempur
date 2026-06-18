@@ -11,6 +11,7 @@ type ExportType = 'sessions' | 'ranking' | 'questions' | 'vouchers' | 'events'
 type ExportFormat = 'csv'
 
 const MAX_ROWS = 5000
+const AUTH_USERS_PAGE_SIZE = 1000
 
 function getParam(request: NextRequest, key: string) {
     return request.nextUrl.searchParams.get(key)?.trim() || ''
@@ -40,6 +41,34 @@ function createFileResponse(rows: Record<string, unknown>[], type: ExportType, f
             'Content-Disposition': `attachment; filename="${filename}"`,
         },
     })
+}
+
+async function getAuthEmailMap(userIds: string[]) {
+    const supabase = await createAdminClient()
+    const remainingUserIds = new Set(userIds.filter(Boolean))
+    const emailByUserId = new Map<string, string>()
+    let page = 1
+
+    while (remainingUserIds.size > 0) {
+        const { data, error } = await supabase.auth.admin.listUsers({
+            page,
+            perPage: AUTH_USERS_PAGE_SIZE,
+        })
+
+        if (error) throw new Error(error.message)
+
+        const users = data.users || []
+        for (const user of users) {
+            if (!remainingUserIds.has(user.id)) continue
+            emailByUserId.set(user.id, user.email || '')
+            remainingUserIds.delete(user.id)
+        }
+
+        if (users.length < AUTH_USERS_PAGE_SIZE) break
+        page += 1
+    }
+
+    return emailByUserId
 }
 
 async function getSessionRows(request: NextRequest) {
@@ -256,6 +285,7 @@ async function getEventRows(request: NextRequest) {
     const sessionByEventUser = new Map(
         (sessions || []).map((session) => [`${session.event_id}:${session.user_id}`, session])
     )
+    const emailByUserId = await getAuthEmailMap((participants || []).map((participant) => participant.user_id))
 
     return events.flatMap((event) => {
         const eventParticipants = (participants || []).filter((participant) => participant.event_id === event.id)
@@ -274,6 +304,7 @@ async function getEventRows(request: NextRequest) {
                 participant_id: '',
                 user_id: '',
                 nama_peserta: '',
+                email_peserta: '',
                 no_hp: '',
                 gender: '',
                 pendidikan: '',
@@ -319,6 +350,7 @@ async function getEventRows(request: NextRequest) {
                 participant_id: participant.id,
                 user_id: participant.user_id,
                 nama_peserta: profile?.full_name || '',
+                email_peserta: emailByUserId.get(participant.user_id) || '',
                 no_hp: profile?.phone_number || '',
                 gender: profile?.gender || '',
                 pendidikan: profile?.education_level || '',

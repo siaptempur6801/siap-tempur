@@ -492,6 +492,11 @@ function EventPaymentModal({
         startTransition(async () => {
             try {
                 const result = await createEventPaymentTransaction(event.id)
+                if (!result.success) {
+                    setError(result.message)
+                    toast.error(result.message)
+                    return
+                }
                 setPendingOrderId(result.orderId)
                 if (!window.snap) { setError('Sistem pembayaran belum siap. Muat ulang halaman.'); return }
                 window.snap.pay(result.token, {
