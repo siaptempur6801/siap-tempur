@@ -11,6 +11,7 @@ import Image from 'next/image'
 import PaperBackground from '@/components/PaperBackground'
 import MathRenderer from '@/components/MathRenderer'
 import { getPracticeSessionStorageKey } from '@/lib/practice-progress'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 
 interface Question {
@@ -437,6 +438,7 @@ export default function PracticeSessionClient({
     const lastSavedSnapshotRef = useRef('')
     const latestSnapshotRef = useRef<SessionProgressSnapshot | null>(null)
     const answerSyncStateRef = useRef<Record<string, AnswerSyncState>>({})
+    const finishLockRef = useRef(false)
     const sessionKindLabel = isTryout ? 'Tryout' : 'Mini Tryout'
     const sessionKindLabelLower = sessionKindLabel.toLowerCase()
     const resultFromQuery = returnTo === 'event' ? '?from=event' : returnTo === 'mini-tryout' ? '?from=mini-tryout' : ''
@@ -486,9 +488,8 @@ export default function PracticeSessionClient({
         handleNavigateToIndex(currentIndex + 1)
     }, [currentIndex, handleNavigateToIndex])
 
-    const handleFinishSession = useCallback(async () => {
-        if (finishing) return // Prevent double click
-        setFinishing(true)
+    const finishSessionAfterLockAcquired = useCallback(async () => {
+        let didFinish = false
 
         try {
             const result = await finishPractice(sessionId)
@@ -499,6 +500,7 @@ export default function PracticeSessionClient({
             }
 
             if (result?.success) {
+                didFinish = true
                 setHasFinished(true)
                 clearProgressFromLocalStorage(sessionId)
                 toast.success(`${sessionKindLabel} selesai!`)
@@ -508,9 +510,12 @@ export default function PracticeSessionClient({
             console.error('Error finishing practice:', error)
             toast.error('Gagal menyelesaikan tryout')
         } finally {
-            setFinishing(false)
+            if (!didFinish) {
+                setFinishing(false)
+                releaseSingleFlightLock(finishLockRef)
+            }
         }
-    }, [finishing, resultFromQuery, sessionId, sessionKindLabel, router])
+    }, [resultFromQuery, sessionId, sessionKindLabel, router])
 
     useEffect(() => {
         const savedProgress = loadProgressFromLocalStorage(sessionId)
@@ -655,11 +660,31 @@ export default function PracticeSessionClient({
         await Promise.all(pendingQuestionIds.map((questionId) => syncAnswerForQuestion(questionId)))
     }, [syncAnswerForQuestion])
 
+    const startFinishFlow = useCallback(async () => {
+        if (!acquireSingleFlightLock(finishLockRef)) return false
+
+        setFinishing(true)
+        setShowConfirmModal(false)
+
+        try {
+            await flushPendingAnswers()
+            await finishSessionAfterLockAcquired()
+        } catch (error) {
+            console.error('Error preparing finish practice:', error)
+            toast.error('Gagal menyimpan jawaban sebelum menyelesaikan tryout')
+            setFinishing(false)
+            releaseSingleFlightLock(finishLockRef)
+        }
+
+        return true
+    }, [finishSessionAfterLockAcquired, flushPendingAnswers])
+
     const handleAutoFinish = useCallback(async () => {
+        if (finishLockRef.current || hasFinished) return
+
         toast.info('Waktu habis! Tryout diselesaikan otomatis.')
-        await flushPendingAnswers()
-        await handleFinishSession()
-    }, [flushPendingAnswers, handleFinishSession])
+        await startFinishFlow()
+    }, [hasFinished, startFinishFlow])
 
     const handleSelectOption = useCallback((optionId: string) => {
         const questionId = currentQuestionId
@@ -690,8 +715,7 @@ export default function PracticeSessionClient({
     }, [])
 
     const handleTimeExpired = useCallback(() => {
-        if (finishing || hasFinished) return
-        setShowConfirmModal(false)
+        if (finishing || finishLockRef.current || hasFinished) return
         void handleAutoFinish()
     }, [finishing, handleAutoFinish, hasFinished])
 
@@ -703,14 +727,12 @@ export default function PracticeSessionClient({
     const markedCount = Object.values(marked).filter(Boolean).length
 
     const onFinishClick = () => {
-        if (finishing) return
+        if (finishing || finishLockRef.current) return
         setShowConfirmModal(true)
     }
 
     const handleConfirmFinish = async () => {
-        setShowConfirmModal(false)
-        await flushPendingAnswers()
-        await handleFinishSession()
+        await startFinishFlow()
     }
 
 
@@ -1119,7 +1141,7 @@ export default function PracticeSessionClient({
                                 <button
                                     onClick={onFinishClick}
                                     disabled={finishing}
-                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {finishing ? '...' : 'Selesai'}
                                     <CheckCircle2 size={20} />
@@ -1150,7 +1172,7 @@ export default function PracticeSessionClient({
                             <button
                                 onClick={onFinishClick}
                                 disabled={finishing}
-                                className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)]"
+                                className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {finishing ? 'Menyimpan...' : 'Selesai & Hitung'}
                                 <CheckCircle2 size={20} />
