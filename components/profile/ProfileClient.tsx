@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, startTransition } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { User, Clock, Shield, ClipboardList } from 'lucide-react'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
@@ -74,7 +74,9 @@ export default function ProfileClient({
     useEffect(() => {
         const tab = searchParams.get('tab') as 'profile' | 'history' | 'settings' | null
         if (tab && ['profile', 'history', 'settings'].includes(tab)) {
-            setActiveTab(tab)
+            startTransition(() => {
+                setActiveTab(tab)
+            })
         }
     }, [searchParams])
 
