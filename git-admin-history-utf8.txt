@@ -1,0 +1,2945 @@
+﻿commit 18d113e90adaffaa67198328140f0995f2c0059b
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Sat Jun 20 02:01:36 2026 +0700
+
+    feat: implement landing UI and server-side utilities for event management, auditing, and rate limiting
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 408af54..73854a5 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -7,6 +7,8 @@ import { OPTION_LABELS, type QuestionType } from '@/lib/admin-dashboard'
+ import { ExcelQuestionsSchema, QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
+ import { validateCsrf } from '@/lib/csrf'
+ import { logger } from '@/lib/logger'
++import { logAuditEvent } from '@/lib/audit-log'
++import { createClient } from '@/lib/utils/supabase/server'
+ 
+ interface TryoutConfigurationPayload {
+     id: string
+@@ -95,6 +97,16 @@ export async function deleteQuestion(id: string) {
+         return { success: false, message: `Gagal menghapus soal: ${qErr.message}` }
+     }
+ 
++    const { data: { user } } = await (await createClient()).auth.getUser()
++    if (user) {
++        await logAuditEvent({
++            action: 'DELETE_QUESTION',
++            actor_id: user.id,
++            target_type: 'question',
++            target_id: id
++        })
++    }
++
+     revalidatePath('/cpns/admin')
+     return { success: true, message: 'Soal berhasil dihapus' }
+ }
+@@ -151,6 +163,16 @@ export async function createQuestion(formData: FormData) {
+         return { success: false, message: oError.message }
+     }
+ 
++    const { data: { user } } = await (await createClient()).auth.getUser()
++    if (user) {
++        await logAuditEvent({
++            action: 'CREATE_QUESTION',
++            actor_id: user.id,
++            target_type: 'question',
++            target_id: question.id
++        })
++    }
++
+     revalidatePath('/cpns/admin')
+     return { success: true, message: 'Soal baru berhasil dibuat' }
+ }
+@@ -564,151 +586,6 @@ export async function deleteTryoutConfigurationsBulk(ids: string[]) {
+ 
+ // =============================================
+ // VOUCHERS
+-// =============================================
+-
+-export async function createVoucher(formData: FormData) {
+-    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+-
+-    const isUserAdmin = await isAdmin()
+-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+-
+-    const rawData = {
+-        code: String(formData.get('code') || '').trim(),
+-        quota_amount: Number(formData.get('quota_amount') || 0),
+-        max_uses: Number(formData.get('max_uses') || 0),
+-        expires_at: String(formData.get('expires_at') || '').trim() || null,
+-        is_active: formData.get('is_active') === 'on',
+-    }
+-
+-    const parsed = VoucherFormSchema.safeParse(rawData)
+-    if (!parsed.success) {
+-        return { success: false, message: parsed.error.issues[0].message }
+-    }
+-    const data = parsed.data
+-
+-    const supabase = await createAdminClient()
+-    const { error } = await supabase
+-        .from('vouchers')
+-        .insert({
+-            code: data.code,
+-            quota_amount: data.quota_amount,
+-            max_uses: data.max_uses,
+-            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
+-            is_active: data.is_active,
+-        })
+-
+-    if (error) return { success: false, message: error.message }
+-
+-    revalidatePath('/cpns/admin/voucher')
+-    return { success: true, message: 'Voucher berhasil dibuat' }
+-}
+-
+-export async function toggleVoucher(id: string, isActive: boolean) {
+-    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+-
+-    const isUserAdmin = await isAdmin()
+-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+-
+-    const supabase = await createAdminClient()
+-    const { error } = await supabase
+-        .from('vouchers')
+-        .update({ is_active: isActive, updated_at: new Date().toISOString() })
+-        .eq('id', id)
+-
+-    if (error) return { success: false, message: error.message }
+-
+-    revalidatePath('/cpns/admin/voucher')
+-    return { success: true, message: `Voucher berhasil di${isActive ? 'aktifkan' : 'nonaktifkan'}` }
+-}
+-
+-export async function updateVoucher(id: string, formData: FormData) {
+-    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+-
+-    const isUserAdmin = await isAdmin()
+-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+-
+-    const rawData = {
+-        code: String(formData.get('code') || '').trim(),
+-        quota_amount: Number(formData.get('quota_amount') || 0),
+-        max_uses: Number(formData.get('max_uses') || 0),
+-        expires_at: String(formData.get('expires_at') || '').trim() || null,
+-        is_active: formData.get('is_active') === 'on',
+-    }
+-
+-    if (!id) return { success: false, message: 'Voucher tidak valid' }
+-
+-    const parsed = VoucherFormSchema.safeParse(rawData)
+-    if (!parsed.success) {
+-        return { success: false, message: parsed.error.issues[0].message }
+-    }
+-    const data = parsed.data
+-
+-    const supabase = await createAdminClient()
+-    const { data: voucher } = await supabase
+-        .from('vouchers')
+-        .select('used_count')
+-        .eq('id', id)
+-        .single()
+-
+-    if (voucher && data.max_uses < voucher.used_count) {
+-        return { success: false, message: `Max penggunaan tidak boleh kurang dari klaim saat ini (${voucher.used_count})` }
+-    }
+-
+-    const { error } = await supabase
+-        .from('vouchers')
+-        .update({
+-            code: data.code,
+-            quota_amount: data.quota_amount,
+-            max_uses: data.max_uses,
+-            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
+-            is_active: data.is_active,
+-            updated_at: new Date().toISOString(),
+-        })
+-        .eq('id', id)
+-
+-    if (error) return { success: false, message: error.message }
+-
+-    revalidatePath('/cpns/admin/voucher')
+-    return { success: true, message: 'Voucher berhasil diupdate' }
+-}
+-
+-export async function deleteVoucher(id: string) {
+-    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+-
+-    const isUserAdmin = await isAdmin()
+-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+-    if (!id) return { success: false, message: 'Voucher tidak valid' }
+-
+-    const supabase = await createAdminClient()
+-    const { data: voucher, error: readError } = await supabase
+-        .from('vouchers')
+-        .select('used_count')
+-        .eq('id', id)
+-        .single()
+-
+-    if (readError) return { success: false, message: readError.message }
+-
+-    if ((voucher?.used_count || 0) > 0) {
+-        return {
+-            success: false,
+-            message: 'Voucher yang sudah pernah diklaim tidak bisa dihapus. Nonaktifkan voucher agar riwayat klaim tetap aman.',
+-        }
+-    }
+-
+-    const { error } = await supabase
+-        .from('vouchers')
+-        .delete()
+-        .eq('id', id)
+-
+-    if (error) return { success: false, message: error.message }
+-
+-    revalidatePath('/cpns/admin/voucher')
+-    return { success: true, message: 'Voucher berhasil dihapus' }
+-}
+-
+-// =============================================
+-// TRYOUT AKBAR EVENTS
+-// =============================================
+ 
+ function parseWibDateTime(value: string) {
+     return value ? new Date(`${value}:00+07:00`) : null
+
+commit ed12b986087af63b90494918191275b205199b36
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Sat Jun 20 01:20:52 2026 +0700
+
+    feat: implement event registration, payment flow, and live tryout dashboard with countdown functionality
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index ef67d16..408af54 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -728,6 +728,7 @@ function readTryoutEventForm(formData: FormData) {
+     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
+     const groupLink = String(formData.get('group_link') || '').trim()
+     const flyerImageUrl = String(formData.get('flyer_image_url') || '').trim()
++    const documentationUrl = String(formData.get('documentation_url') || '').trim()
+     const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
+     const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
+     const startsAtDate = parseWibDateTime(startsAt)
+@@ -748,6 +749,7 @@ function readTryoutEventForm(formData: FormData) {
+         price,
+         group_link: groupLink || null,
+         flyer_image_url: flyerImageUrl || null,
++        documentation_url: documentationUrl || null,
+         result_visible_at: synchronizedCloseAt || null,
+         explanation_visible_at: synchronizedCloseAt || null,
+     }
+@@ -775,6 +777,7 @@ export async function createTryoutEvent(formData: FormData) {
+ 
+     revalidatePath('/cpns/admin/event')
+     revalidatePath('/cpns/dashboard/event')
++    revalidatePath('/cpns')
+     return { success: true, message: 'Event Tryout Akbar berhasil dibuat' }
+ }
+ 
+@@ -799,6 +802,7 @@ export async function updateTryoutEvent(id: string, formData: FormData) {
+ 
+     revalidatePath('/cpns/admin/event')
+     revalidatePath('/cpns/dashboard/event')
++    revalidatePath('/cpns')
+     return { success: true, message: 'Event Tryout Akbar berhasil diupdate' }
+ }
+ 
+
+commit d842464e40aafdd4a723c2ef104a81112d2d8724
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Fri Jun 19 19:11:51 2026 +0700
+
+    feat: implement tryout event management system with flyer support and participant monitoring
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 7412f70..ef67d16 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -727,6 +727,7 @@ function readTryoutEventForm(formData: FormData) {
+     const priceRaw = String(formData.get('price') || '0').trim()
+     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
+     const groupLink = String(formData.get('group_link') || '').trim()
++    const flyerImageUrl = String(formData.get('flyer_image_url') || '').trim()
+     const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
+     const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
+     const startsAtDate = parseWibDateTime(startsAt)
+@@ -746,6 +747,7 @@ function readTryoutEventForm(formData: FormData) {
+         is_paid: isPaid,
+         price,
+         group_link: groupLink || null,
++        flyer_image_url: flyerImageUrl || null,
+         result_visible_at: synchronizedCloseAt || null,
+         explanation_visible_at: synchronizedCloseAt || null,
+     }
+@@ -772,6 +774,7 @@ export async function createTryoutEvent(formData: FormData) {
+     if (error) return { success: false, message: error.message }
+ 
+     revalidatePath('/cpns/admin/event')
++    revalidatePath('/cpns/dashboard/event')
+     return { success: true, message: 'Event Tryout Akbar berhasil dibuat' }
+ }
+ 
+@@ -795,6 +798,7 @@ export async function updateTryoutEvent(id: string, formData: FormData) {
+     if (error) return { success: false, message: error.message }
+ 
+     revalidatePath('/cpns/admin/event')
++    revalidatePath('/cpns/dashboard/event')
+     return { success: true, message: 'Event Tryout Akbar berhasil diupdate' }
+ }
+ 
+
+commit 6b3309902e21c99f149c76410f8082bbfbe46970
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Mon Jun 8 22:41:16 2026 +0700
+
+    feat: add group link functionality to Tryout events
+    
+    - Updated the admin action to read and store a group link for Tryout events.
+    - Modified the EventAdminPage to include the group link in the event data.
+    - Enhanced the UserEventPage to fetch and display the group link for participants.
+    - Added group link input field in the EventForm component for event creation and editing.
+    - Implemented logic to conditionally display the group link based on participant registration status.
+    - Created a utility function to manage visibility of the group link based on participant ID.
+    - Added database migration to include the group link column in the tryout_events table.
+    - Developed unit tests for the group link visibility logic.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index c43397a..7412f70 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -726,6 +726,7 @@ function readTryoutEventForm(formData: FormData) {
+     const isPaid = formData.get('is_paid') === 'on' || formData.get('is_paid') === 'true'
+     const priceRaw = String(formData.get('price') || '0').trim()
+     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
++    const groupLink = String(formData.get('group_link') || '').trim()
+     const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
+     const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
+     const startsAtDate = parseWibDateTime(startsAt)
+@@ -744,6 +745,7 @@ function readTryoutEventForm(formData: FormData) {
+         requires_code: requiresCode,
+         is_paid: isPaid,
+         price,
++        group_link: groupLink || null,
+         result_visible_at: synchronizedCloseAt || null,
+         explanation_visible_at: synchronizedCloseAt || null,
+     }
+
+commit 94ab2eaadd5f142353bda52f884020efe7f97b1b
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Sun Jun 7 01:19:12 2026 +0700
+
+    feat: add admin dashboard and tryout configuration management components with server actions
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 8e0bc49..c43397a 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -439,6 +439,58 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
+     return { success: true, message: 'Sub-Kategori berhasil ditambahkan' }
+ }
+ 
++export async function seedDefaultSkdTryoutConfigurations() {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const supabase = await createAdminClient()
++    const defaults = [
++        ['TWK', 'Nasionalisme', 6],
++        ['TWK', 'Integritas', 6],
++        ['TWK', 'Bela Negara', 6],
++        ['TWK', 'Pilar Negara', 6],
++        ['TWK', 'Bahasa Negara', 6],
++        ['TIU', 'Analogi', 3],
++        ['TIU', 'Silogisme', 3],
++        ['TIU', 'Analitis', 4],
++        ['TIU', 'Berhitung', 5],
++        ['TIU', 'Deret Angka', 5],
++        ['TIU', 'Perbandingan Kuantitatif', 5],
++        ['TIU', 'Soal Cerita', 5],
++        ['TIU', 'Analogi Figural', 2],
++        ['TIU', 'Ketidaksamaan', 1],
++        ['TIU', 'Serial', 2],
++        ['TKP', 'Pelayanan Publik', 8],
++        ['TKP', 'Jejaring Kerja', 8],
++        ['TKP', 'Sosial Budaya', 7],
++        ['TKP', 'Teknologi Informasi dan Komunikasi', 7],
++        ['TKP', 'Profesionalisme', 7],
++        ['TKP', 'Anti-Radikalisme', 8],
++    ] as const
++
++    const rows = defaults.map(([type, subCategory, questionCount], index) => ({
++        type,
++        sub_category: subCategory,
++        question_count: questionCount,
++        sort_order: index + 1,
++        is_active: true,
++    }))
++
++    const { error } = await supabase
++        .from('tryout_configurations')
++        .upsert(rows, { onConflict: 'type,sub_category' })
++
++    if (error) {
++        return { success: false, message: error.message }
++    }
++
++    revalidatePath('/cpns/admin/tryout-config')
++    revalidatePath('/cpns/admin')
++    return { success: true, message: 'Struktur default SKD berhasil diterapkan' }
++}
++
+ export async function toggleTryoutConfiguration(id: string, is_active: boolean) {
+     try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+ 
+@@ -483,6 +535,33 @@ export async function deleteTryoutConfiguration(id: string) {
+     return { success: true, message: 'Kategori berhasil dihapus secara permanen' }
+ }
+ 
++export async function deleteTryoutConfigurationsBulk(ids: string[]) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const uniqueIds = Array.from(new Set(ids.filter(Boolean)))
++    if (uniqueIds.length === 0) {
++        return { success: false, message: 'Pilih minimal satu kategori' }
++    }
++
++    const supabase = await createAdminClient()
++
++    const { error } = await supabase
++        .from('tryout_configurations')
++        .delete()
++        .in('id', uniqueIds)
++
++    if (error) {
++        return { success: false, message: error.message }
++    }
++
++    revalidatePath('/cpns/admin/tryout-config')
++    revalidatePath('/cpns/admin')
++    return { success: true, message: `${uniqueIds.length} kategori berhasil dihapus` }
++}
++
+ // =============================================
+ // VOUCHERS
+ // =============================================
+
+commit 52323d59a6da85bae6b0d419f34d9c83e1c05845
+Author: 8shagrid <halimdirga8@gmail.com>
+Date:   Wed Jun 3 16:21:51 2026 +0700
+
+    feat: update dependencies and add health check API
+    
+    - Removed `date-fns` dependency from package.json and package-lock.json.
+    - Updated `postcss` to version 8.5.10 in package.json and package-lock.json.
+    - Added health check API endpoint to monitor environment and database status.
+    - Introduced profile validation schemas for user profile and password updates.
+    - Created new SQL functions for managing tryout event sessions and participants.
+    - Added unit tests for profile validations and payments webhook helpers.
+    - Documented agent instructions for improved development workflow and security guidelines.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index f07c3ab..8e0bc49 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/utils/supabase/server'
+ import { revalidatePath } from 'next/cache'
+ import { isAdmin } from '@/lib/utils/admin'
+ import { OPTION_LABELS, type QuestionType } from '@/lib/admin-dashboard'
+-import { QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
++import { ExcelQuestionsSchema, QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
+ import { validateCsrf } from '@/lib/csrf'
+ import { logger } from '@/lib/logger'
+ 
+@@ -266,15 +266,26 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+         return { success: false, message: 'Tidak ada data soal untuk diimport' }
+     }
+ 
++    const parsed = ExcelQuestionsSchema.safeParse(questions)
++    if (!parsed.success) {
++        const firstIssue = parsed.error.issues[0]
++        const row = typeof firstIssue.path[0] === 'number' ? Number(firstIssue.path[0]) + 1 : null
++        return {
++            success: false,
++            message: row ? `Baris ${row}: ${firstIssue.message}` : firstIssue.message,
++        }
++    }
++
+     const supabase = await createAdminClient()
++    const validatedQuestions = parsed.data
+     let successCount = 0
+     let failCount = 0
+     const failedRows: number[] = []
+ 
+     // Process in batches of 50 to avoid overwhelming the DB
+     const BATCH_SIZE = 50
+-    for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+-        const batch = questions.slice(i, i + BATCH_SIZE)
++    for (let i = 0; i < validatedQuestions.length; i += BATCH_SIZE) {
++        const batch = validatedQuestions.slice(i, i + BATCH_SIZE)
+ 
+         for (let j = 0; j < batch.length; j++) {
+             const q = batch[j]
+
+commit 07a3e4ac632b2c1a7b2f8c3e6d03d1067b60ed1e
+Author: 8shagrid <halimdirga8@gmail.com>
+Date:   Wed Jun 3 14:18:54 2026 +0700
+
+    feat: enhance date formatting and labels for event times in EventClient and TryoutAkbarClient
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index e80b351..f07c3ab 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -620,6 +620,10 @@ export async function deleteVoucher(id: string) {
+ // TRYOUT AKBAR EVENTS
+ // =============================================
+ 
++function parseWibDateTime(value: string) {
++    return value ? new Date(`${value}:00+07:00`) : null
++}
++
+ function readTryoutEventForm(formData: FormData) {
+     const title = String(formData.get('title') || '').trim()
+     const description = String(formData.get('description') || '').trim()
+@@ -634,7 +638,7 @@ function readTryoutEventForm(formData: FormData) {
+     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
+     const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
+     const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
+-    const startsAtDate = startsAt ? new Date(startsAt) : null
++    const startsAtDate = parseWibDateTime(startsAt)
+     const synchronizedCloseAt = startsAtDate && !Number.isNaN(startsAtDate.getTime())
+         ? new Date(startsAtDate.getTime() + (normalizedDurationMinutes + normalizedStartGraceMinutes) * 60 * 1000).toISOString()
+         : ''
+@@ -642,7 +646,7 @@ function readTryoutEventForm(formData: FormData) {
+     return {
+         title,
+         description: description || null,
+-        starts_at: startsAt ? new Date(startsAt).toISOString() : '',
++        starts_at: startsAtDate ? startsAtDate.toISOString() : '',
+         ends_at: synchronizedCloseAt || (endsAt ? new Date(endsAt).toISOString() : ''),
+         start_grace_minutes: normalizedStartGraceMinutes,
+         duration_minutes: normalizedDurationMinutes,
+
+commit 135759da07b4a08fa7b528bcf967f1f081304503
+Author: 8shagrid <halimdirga8@gmail.com>
+Date:   Wed Jun 3 14:12:19 2026 +0700
+
+    feat: refine event scheduling logic in EventClient and isWithinStartWindow function
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index e72e141..e80b351 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -628,26 +628,30 @@ function readTryoutEventForm(formData: FormData) {
+     const startGraceMinutes = Number(formData.get('start_grace_minutes') || 15)
+     const durationMinutes = Number(formData.get('duration_minutes') || 100)
+     const maxParticipantsRaw = String(formData.get('max_participants') || '').trim()
+-    const resultVisibleAt = String(formData.get('result_visible_at') || '').trim()
+-    const explanationVisibleAt = String(formData.get('explanation_visible_at') || '').trim()
+     const requiresCode = formData.get('requires_code') === 'on'
+     const isPaid = formData.get('is_paid') === 'on' || formData.get('is_paid') === 'true'
+     const priceRaw = String(formData.get('price') || '0').trim()
+     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
++    const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
++    const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
++    const startsAtDate = startsAt ? new Date(startsAt) : null
++    const synchronizedCloseAt = startsAtDate && !Number.isNaN(startsAtDate.getTime())
++        ? new Date(startsAtDate.getTime() + (normalizedDurationMinutes + normalizedStartGraceMinutes) * 60 * 1000).toISOString()
++        : ''
+ 
+     return {
+         title,
+         description: description || null,
+         starts_at: startsAt ? new Date(startsAt).toISOString() : '',
+-        ends_at: endsAt ? new Date(endsAt).toISOString() : '',
+-        start_grace_minutes: Number.isInteger(startGraceMinutes) ? startGraceMinutes : 15,
+-        duration_minutes: Number.isInteger(durationMinutes) ? durationMinutes : 100,
++        ends_at: synchronizedCloseAt || (endsAt ? new Date(endsAt).toISOString() : ''),
++        start_grace_minutes: normalizedStartGraceMinutes,
++        duration_minutes: normalizedDurationMinutes,
+         max_participants: maxParticipantsRaw ? Number(maxParticipantsRaw) : null,
+         requires_code: requiresCode,
+         is_paid: isPaid,
+         price,
+-        result_visible_at: resultVisibleAt ? new Date(resultVisibleAt).toISOString() : null,
+-        explanation_visible_at: explanationVisibleAt ? new Date(explanationVisibleAt).toISOString() : null,
++        result_visible_at: synchronizedCloseAt || null,
++        explanation_visible_at: synchronizedCloseAt || null,
+     }
+ }
+ 
+
+commit 00873e64ddc1c75ca4f56d02c74c96543ba80f7e
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Sat May 30 03:00:05 2026 +0700
+
+    feat: implement full-stack event management, CSRF protection, and administrative question editor system
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 1440574..e72e141 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
+ import { isAdmin } from '@/lib/utils/admin'
+ import { OPTION_LABELS, type QuestionType } from '@/lib/admin-dashboard'
+ import { QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
++import { validateCsrf } from '@/lib/csrf'
++import { logger } from '@/lib/logger'
+ 
+ interface TryoutConfigurationPayload {
+     id: string
+@@ -60,6 +62,8 @@ function buildOptionRows(questionId: string, formData: FormData, type: QuestionT
+ }
+ 
+ export async function deleteQuestion(id: string) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) {
+         return { success: false, message: 'Unauthorized' }
+@@ -72,12 +76,12 @@ export async function deleteQuestion(id: string) {
+     // we use individual checks to ensure each step succeeds or logs correctly
+     const { error: err1 } = await supabase.from('test_answers').delete().eq('question_id', id)
+     if (err1 && err1.code !== 'PGRST116') { // Ignore "no rows found" if any
+-        console.error('Error deleting test_answers:', err1)
++        logger.warn('Error deleting test_answers', { error: err1 })
+     }
+     
+     const { error: err2 } = await supabase.from('options').delete().eq('question_id', id)
+     if (err2 && err2.code !== 'PGRST116') {
+-        console.error('Error deleting options:', err2)
++        logger.warn('Error deleting options', { error: err2 })
+     }
+     
+     // 2. Finally delete the question
+@@ -87,7 +91,7 @@ export async function deleteQuestion(id: string) {
+         .eq('id', id)
+ 
+     if (qErr) {
+-        console.error('Final delete error:', qErr)
++        logger.warn('Final delete error', { error: qErr })
+         return { success: false, message: `Gagal menghapus soal: ${qErr.message}` }
+     }
+ 
+@@ -96,6 +100,8 @@ export async function deleteQuestion(id: string) {
+ }
+ 
+ export async function createQuestion(formData: FormData) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) {
+         return { success: false, message: 'Unauthorized' }
+@@ -150,6 +156,8 @@ export async function createQuestion(formData: FormData) {
+ }
+ 
+ export async function updateQuestion(id: string, formData: FormData) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) {
+         return { success: false, message: 'Unauthorized' }
+@@ -247,6 +255,8 @@ interface ExcelQuestion {
+ }
+ 
+ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) {
+         return { success: false, message: 'Unauthorized' }
+@@ -363,6 +373,8 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+ // =============================================
+ 
+ export async function updateTryoutConfigurations(configs: TryoutConfigurationPayload[]) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -382,6 +394,8 @@ export async function updateTryoutConfigurations(configs: TryoutConfigurationPay
+ }
+ 
+ export async function addTryoutConfiguration(type: string, sub_category: string) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -415,6 +429,8 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
+ }
+ 
+ export async function toggleTryoutConfiguration(id: string, is_active: boolean) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -435,6 +451,8 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean)
+ }
+ 
+ export async function deleteTryoutConfiguration(id: string) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -459,6 +477,8 @@ export async function deleteTryoutConfiguration(id: string) {
+ // =============================================
+ 
+ export async function createVoucher(formData: FormData) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -494,6 +514,8 @@ export async function createVoucher(formData: FormData) {
+ }
+ 
+ export async function toggleVoucher(id: string, isActive: boolean) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -510,6 +532,8 @@ export async function toggleVoucher(id: string, isActive: boolean) {
+ }
+ 
+ export async function updateVoucher(id: string, formData: FormData) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -559,6 +583,8 @@ export async function updateVoucher(id: string, formData: FormData) {
+ }
+ 
+ export async function deleteVoucher(id: string) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+     if (!id) return { success: false, message: 'Voucher tidak valid' }
+@@ -628,6 +654,8 @@ function readTryoutEventForm(formData: FormData) {
+ // Validation is handled by TryoutEventFormSchema
+ 
+ export async function createTryoutEvent(formData: FormData) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -648,6 +676,8 @@ export async function createTryoutEvent(formData: FormData) {
+ }
+ 
+ export async function updateTryoutEvent(id: string, formData: FormData) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -669,6 +699,8 @@ export async function updateTryoutEvent(id: string, formData: FormData) {
+ }
+ 
+ export async function updateTryoutEventStatus(id: string, status: 'draft' | 'scheduled' | 'live' | 'closed' | 'cancelled') {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -685,6 +717,8 @@ export async function updateTryoutEventStatus(id: string, status: 'draft' | 'sch
+ }
+ 
+ export async function generateTryoutEventQuestions(id: string) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -700,6 +734,8 @@ export async function generateTryoutEventQuestions(id: string) {
+ }
+ 
+ export async function deleteTryoutEvent(id: string) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -739,6 +775,8 @@ export async function deleteTryoutEvent(id: string) {
+ }
+ 
+ export async function createTryoutEventCode(eventId: string, formData: FormData) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -771,6 +809,8 @@ export async function createTryoutEventCode(eventId: string, formData: FormData)
+ }
+ 
+ export async function toggleTryoutEventCode(id: string, isActive: boolean) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+@@ -787,6 +827,8 @@ export async function toggleTryoutEventCode(id: string, isActive: boolean) {
+ }
+ 
+ export async function deleteTryoutEventCode(id: string) {
++    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
++
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+
+commit 5e0b53add42e56c47313bb034910d6a3690bf98f
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Sat May 30 02:02:30 2026 +0700
+
+    feat: implement complete CPNS dashboard, admin management system, payment integration, and E2E test suite
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 97da932..1440574 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -1,9 +1,10 @@
+ 'use server'
+ 
+-import { createAdminClient } from '@/utils/supabase/server'
++import { createAdminClient } from '@/lib/utils/supabase/server'
+ import { revalidatePath } from 'next/cache'
+-import { isAdmin } from '@/utils/admin'
+-import { OPTION_LABELS, type OptionLabel, type QuestionType } from '@/lib/admin-dashboard'
++import { isAdmin } from '@/lib/utils/admin'
++import { OPTION_LABELS, type QuestionType } from '@/lib/admin-dashboard'
++import { QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
+ 
+ interface TryoutConfigurationPayload {
+     id: string
+@@ -34,15 +35,6 @@ function readQuestionFormPayload(formData: FormData): QuestionFormPayload {
+     }
+ }
+ 
+-function validateQuestionFormPayload(payload: QuestionFormPayload) {
+-    if (!payload.content) return 'Pertanyaan wajib diisi'
+-    if (!payload.category) return 'Materi wajib dipilih'
+-    if (!payload.explanation) return 'Pembahasan wajib diisi'
+-    if (!OPTION_LABELS.includes(payload.correctAnswer as OptionLabel)) return 'Kunci jawaban tidak valid'
+-
+-    return null
+-}
+-
+ function buildOptionRows(questionId: string, formData: FormData, type: QuestionType, correctAnswer: string) {
+     return OPTION_LABELS.map((label) => {
+         const content = String(formData.get(`option_${label.toLowerCase()}`) || '').trim()
+@@ -109,11 +101,12 @@ export async function createQuestion(formData: FormData) {
+         return { success: false, message: 'Unauthorized' }
+     }
+ 
+-    const payload = readQuestionFormPayload(formData)
+-    const validationError = validateQuestionFormPayload(payload)
+-    if (validationError) {
+-        return { success: false, message: validationError }
++    const rawPayload = readQuestionFormPayload(formData)
++    const parsed = QuestionFormSchema.safeParse(rawPayload)
++    if (!parsed.success) {
++        return { success: false, message: parsed.error.issues[0].message }
+     }
++    const payload = parsed.data
+ 
+     const supabase = await createAdminClient()
+ 
+@@ -162,11 +155,12 @@ export async function updateQuestion(id: string, formData: FormData) {
+         return { success: false, message: 'Unauthorized' }
+     }
+ 
+-    const payload = readQuestionFormPayload(formData)
+-    const validationError = validateQuestionFormPayload(payload)
+-    if (validationError) {
+-        return { success: false, message: validationError }
++    const rawPayload = readQuestionFormPayload(formData)
++    const parsed = QuestionFormSchema.safeParse(rawPayload)
++    if (!parsed.success) {
++        return { success: false, message: parsed.error.issues[0].message }
+     }
++    const payload = parsed.data
+ 
+     let optionsToInsert
+     try {
+@@ -468,25 +462,29 @@ export async function createVoucher(formData: FormData) {
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const code = String(formData.get('code') || '').trim().toUpperCase()
+-    const quotaAmount = Number(formData.get('quota_amount') || 0)
+-    const maxUses = Number(formData.get('max_uses') || 0)
+-    const expiresAt = String(formData.get('expires_at') || '').trim()
+-    const isActive = formData.get('is_active') === 'on'
++    const rawData = {
++        code: String(formData.get('code') || '').trim(),
++        quota_amount: Number(formData.get('quota_amount') || 0),
++        max_uses: Number(formData.get('max_uses') || 0),
++        expires_at: String(formData.get('expires_at') || '').trim() || null,
++        is_active: formData.get('is_active') === 'on',
++    }
+ 
+-    if (!code) return { success: false, message: 'Kode voucher wajib diisi' }
+-    if (!Number.isInteger(quotaAmount) || quotaAmount < 1) return { success: false, message: 'Jumlah token harus minimal 1' }
+-    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Maksimal penggunaan harus minimal 1' }
++    const parsed = VoucherFormSchema.safeParse(rawData)
++    if (!parsed.success) {
++        return { success: false, message: parsed.error.issues[0].message }
++    }
++    const data = parsed.data
+ 
+     const supabase = await createAdminClient()
+     const { error } = await supabase
+         .from('vouchers')
+         .insert({
+-            code,
+-            quota_amount: quotaAmount,
+-            max_uses: maxUses,
+-            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+-            is_active: isActive,
++            code: data.code,
++            quota_amount: data.quota_amount,
++            max_uses: data.max_uses,
++            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
++            is_active: data.is_active,
+         })
+ 
+     if (error) return { success: false, message: error.message }
+@@ -515,16 +513,21 @@ export async function updateVoucher(id: string, formData: FormData) {
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const code = String(formData.get('code') || '').trim().toUpperCase()
+-    const quotaAmount = Number(formData.get('quota_amount') || 0)
+-    const maxUses = Number(formData.get('max_uses') || 0)
+-    const expiresAt = String(formData.get('expires_at') || '').trim()
+-    const isActive = formData.get('is_active') === 'on'
++    const rawData = {
++        code: String(formData.get('code') || '').trim(),
++        quota_amount: Number(formData.get('quota_amount') || 0),
++        max_uses: Number(formData.get('max_uses') || 0),
++        expires_at: String(formData.get('expires_at') || '').trim() || null,
++        is_active: formData.get('is_active') === 'on',
++    }
+ 
+     if (!id) return { success: false, message: 'Voucher tidak valid' }
+-    if (!code) return { success: false, message: 'Kode voucher wajib diisi' }
+-    if (!Number.isInteger(quotaAmount) || quotaAmount < 1) return { success: false, message: 'Jumlah token harus minimal 1' }
+-    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Maksimal penggunaan harus minimal 1' }
++
++    const parsed = VoucherFormSchema.safeParse(rawData)
++    if (!parsed.success) {
++        return { success: false, message: parsed.error.issues[0].message }
++    }
++    const data = parsed.data
+ 
+     const supabase = await createAdminClient()
+     const { data: voucher } = await supabase
+@@ -533,18 +536,18 @@ export async function updateVoucher(id: string, formData: FormData) {
+         .eq('id', id)
+         .single()
+ 
+-    if (voucher && maxUses < voucher.used_count) {
++    if (voucher && data.max_uses < voucher.used_count) {
+         return { success: false, message: `Max penggunaan tidak boleh kurang dari klaim saat ini (${voucher.used_count})` }
+     }
+ 
+     const { error } = await supabase
+         .from('vouchers')
+         .update({
+-            code,
+-            quota_amount: quotaAmount,
+-            max_uses: maxUses,
+-            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+-            is_active: isActive,
++            code: data.code,
++            quota_amount: data.quota_amount,
++            max_uses: data.max_uses,
++            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
++            is_active: data.is_active,
+             updated_at: new Date().toISOString(),
+         })
+         .eq('id', id)
+@@ -602,6 +605,9 @@ function readTryoutEventForm(formData: FormData) {
+     const resultVisibleAt = String(formData.get('result_visible_at') || '').trim()
+     const explanationVisibleAt = String(formData.get('explanation_visible_at') || '').trim()
+     const requiresCode = formData.get('requires_code') === 'on'
++    const isPaid = formData.get('is_paid') === 'on' || formData.get('is_paid') === 'true'
++    const priceRaw = String(formData.get('price') || '0').trim()
++    const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
+ 
+     return {
+         title,
+@@ -612,33 +618,23 @@ function readTryoutEventForm(formData: FormData) {
+         duration_minutes: Number.isInteger(durationMinutes) ? durationMinutes : 100,
+         max_participants: maxParticipantsRaw ? Number(maxParticipantsRaw) : null,
+         requires_code: requiresCode,
++        is_paid: isPaid,
++        price,
+         result_visible_at: resultVisibleAt ? new Date(resultVisibleAt).toISOString() : null,
+         explanation_visible_at: explanationVisibleAt ? new Date(explanationVisibleAt).toISOString() : null,
+     }
+ }
+ 
+-function validateTryoutEventPayload(payload: ReturnType<typeof readTryoutEventForm>) {
+-    if (!payload.title) return 'Nama event wajib diisi'
+-    if (!payload.starts_at) return 'Jadwal mulai wajib diisi'
+-    if (!payload.ends_at) return 'Jadwal tutup wajib diisi'
+-    if (new Date(payload.ends_at).getTime() <= new Date(payload.starts_at).getTime()) {
+-        return 'Jadwal tutup harus setelah jadwal mulai'
+-    }
+-    if (!Number.isInteger(payload.start_grace_minutes) || payload.start_grace_minutes < 0) return 'Start window tidak valid'
+-    if (!Number.isInteger(payload.duration_minutes) || payload.duration_minutes < 1) return 'Durasi tidak valid'
+-    if (payload.max_participants !== null && (!Number.isInteger(payload.max_participants) || payload.max_participants < 1)) {
+-        return 'Max peserta tidak valid'
+-    }
+-    return null
+-}
++// Validation is handled by TryoutEventFormSchema
+ 
+ export async function createTryoutEvent(formData: FormData) {
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const payload = readTryoutEventForm(formData)
+-    const validationError = validateTryoutEventPayload(payload)
+-    if (validationError) return { success: false, message: validationError }
++    const rawPayload = readTryoutEventForm(formData)
++    const parsed = TryoutEventFormSchema.safeParse(rawPayload)
++    if (!parsed.success) return { success: false, message: parsed.error.issues[0].message }
++    const payload = parsed.data
+ 
+     const supabase = await createAdminClient()
+     const { error } = await supabase
+@@ -655,9 +651,10 @@ export async function updateTryoutEvent(id: string, formData: FormData) {
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const payload = readTryoutEventForm(formData)
+-    const validationError = validateTryoutEventPayload(payload)
+-    if (validationError) return { success: false, message: validationError }
++    const rawPayload = readTryoutEventForm(formData)
++    const parsed = TryoutEventFormSchema.safeParse(rawPayload)
++    if (!parsed.success) return { success: false, message: parsed.error.issues[0].message }
++    const payload = parsed.data
+ 
+     const supabase = await createAdminClient()
+     const { error } = await supabase
+@@ -745,25 +742,26 @@ export async function createTryoutEventCode(eventId: string, formData: FormData)
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const code = String(formData.get('code') || '').trim().toUpperCase()
+-    const maxUses = Number(formData.get('max_uses') || 1)
+-    const expiresAt = String(formData.get('expires_at') || '').trim()
+-
+     if (!eventId) return { success: false, message: 'Event tidak valid' }
+-    if (!code) return { success: false, message: 'Kode masuk wajib diisi' }
+-    if (!/^[A-Z0-9-]{4,32}$/.test(code)) {
+-        return { success: false, message: 'Kode hanya boleh huruf, angka, strip, minimal 4 karakter' }
++
++    const rawData = {
++        code: String(formData.get('code') || '').trim().toUpperCase(),
++        max_uses: Number(formData.get('max_uses') || 1),
++        expires_at: String(formData.get('expires_at') || '').trim() || null,
+     }
+-    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Limit penggunaan kode tidak valid' }
++
++    const parsed = TryoutEventCodeSchema.safeParse(rawData)
++    if (!parsed.success) return { success: false, message: parsed.error.issues[0].message }
++    const data = parsed.data
+ 
+     const supabase = await createAdminClient()
+     const { error } = await supabase
+         .from('tryout_event_codes')
+         .insert({
+             event_id: eventId,
+-            code,
+-            max_uses: maxUses,
+-            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
++            code: data.code,
++            max_uses: data.max_uses,
++            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
+         })
+ 
+     if (error) return { success: false, message: error.message }
+
+commit f6c8bb94f0cb52b4c543d0ef80caf506744c2123
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Wed Apr 22 23:51:21 2026 +0700
+
+    feat: implement admin question management and infrastructure for tryout event dashboards
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 3b382d8..97da932 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -586,3 +586,231 @@ export async function deleteVoucher(id: string) {
+     revalidatePath('/cpns/admin/voucher')
+     return { success: true, message: 'Voucher berhasil dihapus' }
+ }
++
++// =============================================
++// TRYOUT AKBAR EVENTS
++// =============================================
++
++function readTryoutEventForm(formData: FormData) {
++    const title = String(formData.get('title') || '').trim()
++    const description = String(formData.get('description') || '').trim()
++    const startsAt = String(formData.get('starts_at') || '').trim()
++    const endsAt = String(formData.get('ends_at') || '').trim()
++    const startGraceMinutes = Number(formData.get('start_grace_minutes') || 15)
++    const durationMinutes = Number(formData.get('duration_minutes') || 100)
++    const maxParticipantsRaw = String(formData.get('max_participants') || '').trim()
++    const resultVisibleAt = String(formData.get('result_visible_at') || '').trim()
++    const explanationVisibleAt = String(formData.get('explanation_visible_at') || '').trim()
++    const requiresCode = formData.get('requires_code') === 'on'
++
++    return {
++        title,
++        description: description || null,
++        starts_at: startsAt ? new Date(startsAt).toISOString() : '',
++        ends_at: endsAt ? new Date(endsAt).toISOString() : '',
++        start_grace_minutes: Number.isInteger(startGraceMinutes) ? startGraceMinutes : 15,
++        duration_minutes: Number.isInteger(durationMinutes) ? durationMinutes : 100,
++        max_participants: maxParticipantsRaw ? Number(maxParticipantsRaw) : null,
++        requires_code: requiresCode,
++        result_visible_at: resultVisibleAt ? new Date(resultVisibleAt).toISOString() : null,
++        explanation_visible_at: explanationVisibleAt ? new Date(explanationVisibleAt).toISOString() : null,
++    }
++}
++
++function validateTryoutEventPayload(payload: ReturnType<typeof readTryoutEventForm>) {
++    if (!payload.title) return 'Nama event wajib diisi'
++    if (!payload.starts_at) return 'Jadwal mulai wajib diisi'
++    if (!payload.ends_at) return 'Jadwal tutup wajib diisi'
++    if (new Date(payload.ends_at).getTime() <= new Date(payload.starts_at).getTime()) {
++        return 'Jadwal tutup harus setelah jadwal mulai'
++    }
++    if (!Number.isInteger(payload.start_grace_minutes) || payload.start_grace_minutes < 0) return 'Start window tidak valid'
++    if (!Number.isInteger(payload.duration_minutes) || payload.duration_minutes < 1) return 'Durasi tidak valid'
++    if (payload.max_participants !== null && (!Number.isInteger(payload.max_participants) || payload.max_participants < 1)) {
++        return 'Max peserta tidak valid'
++    }
++    return null
++}
++
++export async function createTryoutEvent(formData: FormData) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const payload = readTryoutEventForm(formData)
++    const validationError = validateTryoutEventPayload(payload)
++    if (validationError) return { success: false, message: validationError }
++
++    const supabase = await createAdminClient()
++    const { error } = await supabase
++        .from('tryout_events')
++        .insert({ ...payload, status: 'draft' })
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/event')
++    return { success: true, message: 'Event Tryout Akbar berhasil dibuat' }
++}
++
++export async function updateTryoutEvent(id: string, formData: FormData) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const payload = readTryoutEventForm(formData)
++    const validationError = validateTryoutEventPayload(payload)
++    if (validationError) return { success: false, message: validationError }
++
++    const supabase = await createAdminClient()
++    const { error } = await supabase
++        .from('tryout_events')
++        .update({ ...payload, updated_at: new Date().toISOString() })
++        .eq('id', id)
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/event')
++    return { success: true, message: 'Event Tryout Akbar berhasil diupdate' }
++}
++
++export async function updateTryoutEventStatus(id: string, status: 'draft' | 'scheduled' | 'live' | 'closed' | 'cancelled') {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const supabase = await createAdminClient()
++    const { error } = await supabase
++        .from('tryout_events')
++        .update({ status, updated_at: new Date().toISOString() })
++        .eq('id', id)
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/event')
++    return { success: true, message: `Status event berhasil diubah ke ${status}` }
++}
++
++export async function generateTryoutEventQuestions(id: string) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const supabase = await createAdminClient()
++    const { data, error } = await supabase.rpc('generate_tryout_event_questions', {
++        p_event_id: id,
++    })
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/event')
++    return { success: true, message: `Paket soal event berhasil digenerate (${data || 0} soal)` }
++}
++
++export async function deleteTryoutEvent(id: string) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const supabase = await createAdminClient()
++    const { data: eventSessions, error: sessionReadError } = await supabase
++        .from('tryout_event_sessions')
++        .select('session_id')
++        .eq('event_id', id)
++
++    if (sessionReadError) return { success: false, message: sessionReadError.message }
++
++    const sessionIds = (eventSessions || [])
++        .map((session) => session.session_id)
++        .filter(Boolean)
++
++    if (sessionIds.length > 0) {
++        const { error: sessionDeleteError } = await supabase
++            .from('test_sessions')
++            .delete()
++            .in('id', sessionIds)
++
++        if (sessionDeleteError) return { success: false, message: sessionDeleteError.message }
++    }
++
++    const { error } = await supabase
++        .from('tryout_events')
++        .delete()
++        .eq('id', id)
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/event')
++    revalidatePath('/cpns/dashboard/event')
++    revalidatePath('/cpns/dashboard/riwayat')
++    revalidatePath('/cpns/dashboard/ranking')
++    return { success: true, message: 'Event Tryout Akbar berhasil dihapus' }
++}
++
++export async function createTryoutEventCode(eventId: string, formData: FormData) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const code = String(formData.get('code') || '').trim().toUpperCase()
++    const maxUses = Number(formData.get('max_uses') || 1)
++    const expiresAt = String(formData.get('expires_at') || '').trim()
++
++    if (!eventId) return { success: false, message: 'Event tidak valid' }
++    if (!code) return { success: false, message: 'Kode masuk wajib diisi' }
++    if (!/^[A-Z0-9-]{4,32}$/.test(code)) {
++        return { success: false, message: 'Kode hanya boleh huruf, angka, strip, minimal 4 karakter' }
++    }
++    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Limit penggunaan kode tidak valid' }
++
++    const supabase = await createAdminClient()
++    const { error } = await supabase
++        .from('tryout_event_codes')
++        .insert({
++            event_id: eventId,
++            code,
++            max_uses: maxUses,
++            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
++        })
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/event')
++    return { success: true, message: 'Kode masuk event berhasil dibuat' }
++}
++
++export async function toggleTryoutEventCode(id: string, isActive: boolean) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const supabase = await createAdminClient()
++    const { error } = await supabase
++        .from('tryout_event_codes')
++        .update({ is_active: isActive, updated_at: new Date().toISOString() })
++        .eq('id', id)
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/event')
++    return { success: true, message: isActive ? 'Kode masuk diaktifkan' : 'Kode masuk dinonaktifkan' }
++}
++
++export async function deleteTryoutEventCode(id: string) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const supabase = await createAdminClient()
++    const { data: code, error: readError } = await supabase
++        .from('tryout_event_codes')
++        .select('used_count')
++        .eq('id', id)
++        .single()
++
++    if (readError) return { success: false, message: readError.message }
++    if ((code?.used_count || 0) > 0) {
++        return { success: false, message: 'Kode yang sudah dipakai peserta tidak bisa dihapus. Nonaktifkan kode agar riwayat tetap aman.' }
++    }
++
++    const { error } = await supabase
++        .from('tryout_event_codes')
++        .delete()
++        .eq('id', id)
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/event')
++    return { success: true, message: 'Kode masuk event berhasil dihapus' }
++}
+
+commit 8acc8fc05492a7523724bf505f134f04e63741de
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Wed Apr 22 22:14:33 2026 +0700
+
+    feat: implement admin dashboard shell and voucher management system with data export capabilities
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 17cffd0..3b382d8 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -459,3 +459,130 @@ export async function deleteTryoutConfiguration(id: string) {
+     revalidatePath('/cpns/admin')
+     return { success: true, message: 'Kategori berhasil dihapus secara permanen' }
+ }
++
++// =============================================
++// VOUCHERS
++// =============================================
++
++export async function createVoucher(formData: FormData) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const code = String(formData.get('code') || '').trim().toUpperCase()
++    const quotaAmount = Number(formData.get('quota_amount') || 0)
++    const maxUses = Number(formData.get('max_uses') || 0)
++    const expiresAt = String(formData.get('expires_at') || '').trim()
++    const isActive = formData.get('is_active') === 'on'
++
++    if (!code) return { success: false, message: 'Kode voucher wajib diisi' }
++    if (!Number.isInteger(quotaAmount) || quotaAmount < 1) return { success: false, message: 'Jumlah token harus minimal 1' }
++    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Maksimal penggunaan harus minimal 1' }
++
++    const supabase = await createAdminClient()
++    const { error } = await supabase
++        .from('vouchers')
++        .insert({
++            code,
++            quota_amount: quotaAmount,
++            max_uses: maxUses,
++            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
++            is_active: isActive,
++        })
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/voucher')
++    return { success: true, message: 'Voucher berhasil dibuat' }
++}
++
++export async function toggleVoucher(id: string, isActive: boolean) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const supabase = await createAdminClient()
++    const { error } = await supabase
++        .from('vouchers')
++        .update({ is_active: isActive, updated_at: new Date().toISOString() })
++        .eq('id', id)
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/voucher')
++    return { success: true, message: `Voucher berhasil di${isActive ? 'aktifkan' : 'nonaktifkan'}` }
++}
++
++export async function updateVoucher(id: string, formData: FormData) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++
++    const code = String(formData.get('code') || '').trim().toUpperCase()
++    const quotaAmount = Number(formData.get('quota_amount') || 0)
++    const maxUses = Number(formData.get('max_uses') || 0)
++    const expiresAt = String(formData.get('expires_at') || '').trim()
++    const isActive = formData.get('is_active') === 'on'
++
++    if (!id) return { success: false, message: 'Voucher tidak valid' }
++    if (!code) return { success: false, message: 'Kode voucher wajib diisi' }
++    if (!Number.isInteger(quotaAmount) || quotaAmount < 1) return { success: false, message: 'Jumlah token harus minimal 1' }
++    if (!Number.isInteger(maxUses) || maxUses < 1) return { success: false, message: 'Maksimal penggunaan harus minimal 1' }
++
++    const supabase = await createAdminClient()
++    const { data: voucher } = await supabase
++        .from('vouchers')
++        .select('used_count')
++        .eq('id', id)
++        .single()
++
++    if (voucher && maxUses < voucher.used_count) {
++        return { success: false, message: `Max penggunaan tidak boleh kurang dari klaim saat ini (${voucher.used_count})` }
++    }
++
++    const { error } = await supabase
++        .from('vouchers')
++        .update({
++            code,
++            quota_amount: quotaAmount,
++            max_uses: maxUses,
++            expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
++            is_active: isActive,
++            updated_at: new Date().toISOString(),
++        })
++        .eq('id', id)
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/voucher')
++    return { success: true, message: 'Voucher berhasil diupdate' }
++}
++
++export async function deleteVoucher(id: string) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
++    if (!id) return { success: false, message: 'Voucher tidak valid' }
++
++    const supabase = await createAdminClient()
++    const { data: voucher, error: readError } = await supabase
++        .from('vouchers')
++        .select('used_count')
++        .eq('id', id)
++        .single()
++
++    if (readError) return { success: false, message: readError.message }
++
++    if ((voucher?.used_count || 0) > 0) {
++        return {
++            success: false,
++            message: 'Voucher yang sudah pernah diklaim tidak bisa dihapus. Nonaktifkan voucher agar riwayat klaim tetap aman.',
++        }
++    }
++
++    const { error } = await supabase
++        .from('vouchers')
++        .delete()
++        .eq('id', id)
++
++    if (error) return { success: false, message: error.message }
++
++    revalidatePath('/cpns/admin/voucher')
++    return { success: true, message: 'Voucher berhasil dihapus' }
++}
+
+commit fae074c4e2e26d0db1c7d9943eb19acb15ffc82f
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Wed Apr 22 21:46:38 2026 +0700
+
+    feat: implement administrative dashboard with question management, search, filtering, and export capabilities
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index c76cca4..17cffd0 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -99,7 +99,7 @@ export async function deleteQuestion(id: string) {
+         return { success: false, message: `Gagal menghapus soal: ${qErr.message}` }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/cpns/admin')
+     return { success: true, message: 'Soal berhasil dihapus' }
+ }
+ 
+@@ -152,7 +152,7 @@ export async function createQuestion(formData: FormData) {
+         return { success: false, message: oError.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/cpns/admin')
+     return { success: true, message: 'Soal baru berhasil dibuat' }
+ }
+ 
+@@ -220,7 +220,7 @@ export async function updateQuestion(id: string, formData: FormData) {
+ 
+     if (oError) return { success: false, message: oError.message }
+ 
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/cpns/admin')
+     return { success: true, message: 'Soal berhasil diupdate' }
+ }
+ 
+@@ -349,7 +349,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+         }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/cpns/admin')
+ 
+     if (failCount === 0) {
+         return {
+@@ -382,8 +382,8 @@ export async function updateTryoutConfigurations(configs: TryoutConfigurationPay
+         return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config')
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/cpns/admin/tryout-config')
++    revalidatePath('/cpns/admin')
+     return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' }
+ }
+ 
+@@ -415,8 +415,8 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
+         return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config')
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/cpns/admin/tryout-config')
++    revalidatePath('/cpns/admin')
+     return { success: true, message: 'Sub-Kategori berhasil ditambahkan' }
+ }
+ 
+@@ -435,8 +435,8 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean)
+         return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config')
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/cpns/admin/tryout-config')
++    revalidatePath('/cpns/admin')
+     return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` }
+ }
+ 
+@@ -455,7 +455,7 @@ export async function deleteTryoutConfiguration(id: string) {
+         return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config')
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/cpns/admin/tryout-config')
++    revalidatePath('/cpns/admin')
+     return { success: true, message: 'Kategori berhasil dihapus secara permanen' }
+ }
+
+commit 9d6c5905106ab53b15ffb700ca8753434d131fef
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Fri Apr 10 11:06:06 2026 +0700
+
+    Refactor ProfileClient and remove TOEFL-related code
+    
+    - Updated Transaction type to include 'capture' status.
+    - Removed portal prop from ProfileClientProps and adjusted related logic.
+    - Hardcoded portal value in routing and links to '/cpns'.
+    - Removed TOEFL subjects and pricing packages from constants.
+    - Deleted unused toefl-dashboard.ts file.
+    - Dropped tryout-related tables and columns from the database schema.
+    - Updated database types to reflect changes in profiles and transactions.
+    - Adjusted middleware to restrict access to CPNS dashboard only.
+    - Added migrations to clean up unused legacy tables and rollback CPNS instansi schema.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 5d8a747..c76cca4 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -88,11 +88,6 @@ export async function deleteQuestion(id: string) {
+         console.error('Error deleting options:', err2)
+     }
+     
+-    const { error: err3 } = await supabase.from('tryout_questions').delete().eq('question_id', id)
+-    if (err3 && err3.code !== 'PGRST116') {
+-        console.error('Error deleting tryout_questions:', err3)
+-    }
+-
+     // 2. Finally delete the question
+     const { error: qErr } = await supabase
+         .from('questions')
+
+commit c5861950533c0b6012c1815d6bb7e8692b58e193
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Thu Apr 9 09:00:43 2026 +0700
+
+    feat: add QuestionEditorForm component for creating and editing questions
+    
+    - Implemented QuestionEditorForm to handle question creation and editing with image uploads and validation.
+    - Integrated Supabase for image storage and question management.
+    - Added support for multiple question types and options with images.
+    - Created a new PRD for CPNS Instansi Managed Service detailing the product scope and user flows.
+    - Introduced utility functions for managing question types and filters in the admin dashboard.
+    - Added database migrations for generating and updating question codes with specific formats.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index b03cf7b..5d8a747 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -1,10 +1,9 @@
+ 'use server'
+ 
+-import { createClient, createAdminClient } from '@/utils/supabase/server'
++import { createAdminClient } from '@/utils/supabase/server'
+ import { revalidatePath } from 'next/cache'
+ import { isAdmin } from '@/utils/admin'
+-
+-type QuestionType = 'TWK' | 'TIU' | 'TKP'
++import { OPTION_LABELS, type OptionLabel, type QuestionType } from '@/lib/admin-dashboard'
+ 
+ interface TryoutConfigurationPayload {
+     id: string
+@@ -15,6 +14,59 @@ interface TryoutConfigurationPayload {
+     is_active: boolean
+ }
+ 
++interface QuestionFormPayload {
++    type: QuestionType
++    content: string
++    category: string
++    explanation: string
++    correctAnswer: string
++    imageUrl: string | null
++}
++
++function readQuestionFormPayload(formData: FormData): QuestionFormPayload {
++    return {
++        type: formData.get('type') as QuestionType,
++        content: String(formData.get('content') || '').trim(),
++        category: String(formData.get('category') || '').trim(),
++        explanation: String(formData.get('explanation') || '').trim(),
++        correctAnswer: String(formData.get('correct_answer') || '').trim(),
++        imageUrl: String(formData.get('image_url') || '').trim() || null,
++    }
++}
++
++function validateQuestionFormPayload(payload: QuestionFormPayload) {
++    if (!payload.content) return 'Pertanyaan wajib diisi'
++    if (!payload.category) return 'Materi wajib dipilih'
++    if (!payload.explanation) return 'Pembahasan wajib diisi'
++    if (!OPTION_LABELS.includes(payload.correctAnswer as OptionLabel)) return 'Kunci jawaban tidak valid'
++
++    return null
++}
++
++function buildOptionRows(questionId: string, formData: FormData, type: QuestionType, correctAnswer: string) {
++    return OPTION_LABELS.map((label) => {
++        const content = String(formData.get(`option_${label.toLowerCase()}`) || '').trim()
++        const imageUrl = String(formData.get(`option_${label.toLowerCase()}_image_url`) || '').trim() || null
++        const score = Number(formData.get(`score_${label.toLowerCase()}`) || 0)
++
++        if (!content && !imageUrl) {
++            throw new Error(`Pilihan ${label} harus punya teks atau gambar`)
++        }
++
++        if (type === 'TKP' && (!Number.isInteger(score) || score < 1 || score > 5)) {
++            throw new Error(`Poin pilihan ${label} harus 1 sampai 5`)
++        }
++
++        return {
++            question_id: questionId,
++            content,
++            image_url: imageUrl,
++            is_correct: label === correctAnswer,
++            score_value: type === 'TKP' ? score : (label === correctAnswer ? 1 : 0),
++        }
++    })
++}
++
+ export async function deleteQuestion(id: string) {
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) {
+@@ -62,43 +114,37 @@ export async function createQuestion(formData: FormData) {
+         return { success: false, message: 'Unauthorized' }
+     }
+ 
+-    const type = formData.get('type') as QuestionType
+-    const content = formData.get('content') as string
+-    const category = formData.get('category') as string // Sub-category
+-    const explanation = formData.get('explanation') as string
+-    const correctAnswer = formData.get('correct_answer') as string // A, B, C...
+-    const imageUrl = formData.get('image_url') as string | null // NEW FIELD
++    const payload = readQuestionFormPayload(formData)
++    const validationError = validateQuestionFormPayload(payload)
++    if (validationError) {
++        return { success: false, message: validationError }
++    }
+ 
+-    const supabase = await createClient()
++    const supabase = await createAdminClient()
+ 
+     // 1. Insert Question
+     const { data: question, error: qError } = await supabase
+         .from('questions')
+         .insert({
+-            type,
+-            content,
+-            category,
+-            sub_category: category,
+-            explanation,
+-            image_url: imageUrl || null
++            type: payload.type,
++            content: payload.content,
++            category: payload.category,
++            sub_category: payload.category,
++            explanation: payload.explanation,
++            image_url: payload.imageUrl
+         })
+         .select()
+         .single()
+ 
+     if (qError) return { success: false, message: qError.message }
+ 
+-    // 2. Prepare Options
+-    const optionLabels: OptionLabel[] = ['A', 'B', 'C', 'D', 'E']
+-    const optionsToInsert = optionLabels.map((label) => {
+-        const score = formData.get(`score_${label.toLowerCase()}`)
+-        return {
+-            question_id: question.id,
+-            content: ((formData.get(`option_${label.toLowerCase()}`) as string) || '').trim(),
+-            image_url: ((formData.get(`option_${label.toLowerCase()}_image_url`) as string) || '').trim() || null,
+-            is_correct: label === correctAnswer,
+-            score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
+-        }
+-    })
++    let optionsToInsert
++    try {
++        optionsToInsert = buildOptionRows(question.id, formData, payload.type, payload.correctAnswer)
++    } catch (error) {
++        await supabase.from('questions').delete().eq('id', question.id)
++        return { success: false, message: error instanceof Error ? error.message : 'Pilihan jawaban tidak valid' }
++    }
+ 
+     // 3. Insert Options
+     const { error: oError } = await supabase
+@@ -121,26 +167,30 @@ export async function updateQuestion(id: string, formData: FormData) {
+         return { success: false, message: 'Unauthorized' }
+     }
+ 
+-    const type = formData.get('type') as QuestionType
+-    const content = formData.get('content') as string
+-    const category = formData.get('category') as string
+-    const explanation = formData.get('explanation') as string
+-    const correctAnswer = formData.get('correct_answer') as string
+-    const imageUrl = formData.get('image_url') as string | null // NEW FIELD
++    const payload = readQuestionFormPayload(formData)
++    const validationError = validateQuestionFormPayload(payload)
++    if (validationError) {
++        return { success: false, message: validationError }
++    }
++
++    let optionsToInsert
++    try {
++        optionsToInsert = buildOptionRows(id, formData, payload.type, payload.correctAnswer)
++    } catch (error) {
++        return { success: false, message: error instanceof Error ? error.message : 'Pilihan jawaban tidak valid' }
++    }
+ 
+-    // Use admin client to bypass RLS for cleanup steps
+     const supabase = await createAdminClient()
+ 
+-    // 1. Update Question
+     const { error: qError } = await supabase
+         .from('questions')
+         .update({
+-            type,
+-            content,
+-            category,
+-            sub_category: category,
+-            explanation,
+-            image_url: imageUrl || null
++            type: payload.type,
++            content: payload.content,
++            category: payload.category,
++            sub_category: payload.category,
++            explanation: payload.explanation,
++            image_url: payload.imageUrl
+         })
+         .eq('id', id)
+ 
+@@ -169,19 +219,6 @@ export async function updateQuestion(id: string, formData: FormData) {
+ 
+     if (dError) return { success: false, message: dError.message }
+ 
+-    // 3. Insert New Options
+-    const optionLabels: OptionLabel[] = ['A', 'B', 'C', 'D', 'E']
+-    const optionsToInsert = optionLabels.map((label) => {
+-        const score = formData.get(`score_${label.toLowerCase()}`)
+-        return {
+-            question_id: id,
+-            content: ((formData.get(`option_${label.toLowerCase()}`) as string) || '').trim(),
+-            image_url: ((formData.get(`option_${label.toLowerCase()}_image_url`) as string) || '').trim() || null,
+-            is_correct: label === correctAnswer,
+-            score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
+-        }
+-    })
+-
+     const { error: oError } = await supabase
+         .from('options')
+         .insert(optionsToInsert)
+@@ -203,10 +240,15 @@ interface ExcelQuestion {
+     explanation: string
+     image_url?: string // NEW FIELD
+     option_a: string
++    option_a_image_url?: string
+     option_b: string
++    option_b_image_url?: string
+     option_c: string
++    option_c_image_url?: string
+     option_d: string
++    option_d_image_url?: string
+     option_e: string
++    option_e_image_url?: string
+     correct_answer?: string  // A/B/C/D/E for TWK & TIU
+     score_a?: number  // For TKP (1-5)
+     score_b?: number
+@@ -215,8 +257,6 @@ interface ExcelQuestion {
+     score_e?: number
+ }
+ 
+-type OptionLabel = 'A' | 'B' | 'C' | 'D' | 'E'
+-
+ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) {
+@@ -227,7 +267,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+         return { success: false, message: 'Tidak ada data soal untuk diimport' }
+     }
+ 
+-    const supabase = await createClient()
++    const supabase = await createAdminClient()
+     let successCount = 0
+     let failCount = 0
+     const failedRows: number[] = []
+@@ -265,16 +305,30 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+                 // 2. Build Options
+                 const optionLabels = ['a', 'b', 'c', 'd', 'e'] as const
+                 const optionKeys = ['option_a', 'option_b', 'option_c', 'option_d', 'option_e'] as const
++                const optionImageKeys = [
++                    'option_a_image_url',
++                    'option_b_image_url',
++                    'option_c_image_url',
++                    'option_d_image_url',
++                    'option_e_image_url',
++                ] as const
+                 const scoreKeys = ['score_a', 'score_b', 'score_c', 'score_d', 'score_e'] as const
+ 
+                 const optionsToInsert = optionLabels.map((label, idx) => {
+                     const letterUpper = label.toUpperCase()
+                     const isTKP = q.type === 'TKP'
++                    const optionContent = q[optionKeys[idx]] || ''
++                    const optionImageUrl = q[optionImageKeys[idx]] || ''
++
++                    if (!optionContent.trim() && !optionImageUrl.trim()) {
++                        throw new Error(`Pilihan ${letterUpper} kosong`)
++                    }
+ 
+                     return {
+                         question_id: question.id,
+-                        content: q[optionKeys[idx]] || '',
+-                        is_correct: isTKP ? false : letterUpper === q.correct_answer,
++                        content: optionContent,
++                        image_url: optionImageUrl || null,
++                        is_correct: isTKP ? letterUpper === q.correct_answer : letterUpper === q.correct_answer,
+                         score_value: isTKP ? (q[scoreKeys[idx]] || 0) : (letterUpper === q.correct_answer ? 5 : 0),
+                     }
+                 })
+@@ -305,7 +359,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+     if (failCount === 0) {
+         return {
+             success: true,
+-            message: `Ô£à Berhasil import ${successCount} soal!`
++            message: `Berhasil import ${successCount} soal`
+         }
+     }
+ 
+@@ -320,38 +374,37 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+ // =============================================
+ 
+ export async function updateTryoutConfigurations(configs: TryoutConfigurationPayload[]) {
+-    const isUserAdmin = await isAdmin();
+-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const supabase = await createClient();
++    const supabase = await createAdminClient()
+ 
+-    // We can use an upsert to update multiple rows efficiently
+     const { error } = await supabase
+         .from('tryout_configurations')
+-        .upsert(configs, { onConflict: 'id' });
++        .upsert(configs, { onConflict: 'id' })
+ 
+     if (error) {
+-        return { success: false, message: error.message };
++        return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config');
+-    return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' };
++    revalidatePath('/cpns/dashboard/admin/tryout-config')
++    revalidatePath('/cpns/dashboard/admin')
++    return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' }
+ }
+ 
+ export async function addTryoutConfiguration(type: string, sub_category: string) {
+-    const isUserAdmin = await isAdmin();
+-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const supabase = await createClient();
++    const supabase = await createAdminClient()
+ 
+-    // Get the max sort_order for the given type to append to bottom
+     const { data: maxOrderData } = await supabase
+         .from('tryout_configurations')
+         .select('sort_order')
+         .order('sort_order', { ascending: false })
+-        .limit(1);
++        .limit(1)
+ 
+-    const nextSortOrder = (maxOrderData && maxOrderData.length > 0) ? (maxOrderData[0].sort_order + 1) : 1;
++    const nextSortOrder = (maxOrderData && maxOrderData.length > 0) ? (maxOrderData[0].sort_order + 1) : 1
+ 
+     const { error } = await supabase
+         .from('tryout_configurations')
+@@ -361,50 +414,53 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
+             question_count: 0,
+             sort_order: nextSortOrder,
+             is_active: true
+-        });
++        })
+ 
+     if (error) {
+-        return { success: false, message: error.message };
++        return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config');
+-    return { success: true, message: 'Sub-Kategori berhasil ditambahkan' };
++    revalidatePath('/cpns/dashboard/admin/tryout-config')
++    revalidatePath('/cpns/dashboard/admin')
++    return { success: true, message: 'Sub-Kategori berhasil ditambahkan' }
+ }
+ 
+ export async function toggleTryoutConfiguration(id: string, is_active: boolean) {
+-    const isUserAdmin = await isAdmin();
+-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const supabase = await createClient();
++    const supabase = await createAdminClient()
+ 
+     const { error } = await supabase
+         .from('tryout_configurations')
+         .update({ is_active })
+-        .eq('id', id);
++        .eq('id', id)
+ 
+     if (error) {
+-        return { success: false, message: error.message };
++        return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config');
+-    return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
++    revalidatePath('/cpns/dashboard/admin/tryout-config')
++    revalidatePath('/cpns/dashboard/admin')
++    return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` }
+ }
+ 
+ export async function deleteTryoutConfiguration(id: string) {
+-    const isUserAdmin = await isAdmin();
+-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+ 
+-    const supabase = await createClient();
++    const supabase = await createAdminClient()
+ 
+     const { error } = await supabase
+         .from('tryout_configurations')
+         .delete()
+-        .eq('id', id);
++        .eq('id', id)
+ 
+     if (error) {
+-        return { success: false, message: error.message };
++        return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config');
+-    return { success: true, message: 'Kategori berhasil dihapus secara permanen' };
++    revalidatePath('/cpns/dashboard/admin/tryout-config')
++    revalidatePath('/cpns/dashboard/admin')
++    return { success: true, message: 'Kategori berhasil dihapus secara permanen' }
+ }
+
+commit 702d349ddbc1dead2bf7d21722d7d4431dcf77ba
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Wed Apr 8 23:49:47 2026 +0700
+
+    feat: remove temp_parse.py and related output files
+    
+    refactor: update tsconfig.json to remove baseUrl
+    
+    feat: add image_url field to database types and migration
+    
+    chore: add prompt documentation for unused index detection
+    
+    chore: add query-performance.md for query analysis
+    
+    feat: add MidtransSnapCallbacks interface for payment handling
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 2d5e1ff..b03cf7b 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -4,6 +4,17 @@ import { createClient, createAdminClient } from '@/utils/supabase/server'
+ import { revalidatePath } from 'next/cache'
+ import { isAdmin } from '@/utils/admin'
+ 
++type QuestionType = 'TWK' | 'TIU' | 'TKP'
++
++interface TryoutConfigurationPayload {
++    id: string
++    type: string
++    sub_category: string
++    question_count: number
++    sort_order: number
++    is_active: boolean
++}
++
+ export async function deleteQuestion(id: string) {
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) {
+@@ -51,7 +62,7 @@ export async function createQuestion(formData: FormData) {
+         return { success: false, message: 'Unauthorized' }
+     }
+ 
+-    const type = formData.get('type') as any // TWK, TIU, TKP
++    const type = formData.get('type') as QuestionType
+     const content = formData.get('content') as string
+     const category = formData.get('category') as string // Sub-category
+     const explanation = formData.get('explanation') as string
+@@ -77,12 +88,13 @@ export async function createQuestion(formData: FormData) {
+     if (qError) return { success: false, message: qError.message }
+ 
+     // 2. Prepare Options
+-    const optionLabels = ['A', 'B', 'C', 'D', 'E']
+-    const optionsToInsert = optionLabels.map(label => {
++    const optionLabels: OptionLabel[] = ['A', 'B', 'C', 'D', 'E']
++    const optionsToInsert = optionLabels.map((label) => {
+         const score = formData.get(`score_${label.toLowerCase()}`)
+         return {
+             question_id: question.id,
+-            content: formData.get(`option_${label.toLowerCase()}`) as string,
++            content: ((formData.get(`option_${label.toLowerCase()}`) as string) || '').trim(),
++            image_url: ((formData.get(`option_${label.toLowerCase()}_image_url`) as string) || '').trim() || null,
+             is_correct: label === correctAnswer,
+             score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
+         }
+@@ -109,7 +121,7 @@ export async function updateQuestion(id: string, formData: FormData) {
+         return { success: false, message: 'Unauthorized' }
+     }
+ 
+-    const type = formData.get('type') as any
++    const type = formData.get('type') as QuestionType
+     const content = formData.get('content') as string
+     const category = formData.get('category') as string
+     const explanation = formData.get('explanation') as string
+@@ -158,12 +170,13 @@ export async function updateQuestion(id: string, formData: FormData) {
+     if (dError) return { success: false, message: dError.message }
+ 
+     // 3. Insert New Options
+-    const optionLabels = ['A', 'B', 'C', 'D', 'E']
+-    const optionsToInsert = optionLabels.map(label => {
++    const optionLabels: OptionLabel[] = ['A', 'B', 'C', 'D', 'E']
++    const optionsToInsert = optionLabels.map((label) => {
+         const score = formData.get(`score_${label.toLowerCase()}`)
+         return {
+             question_id: id,
+-            content: formData.get(`option_${label.toLowerCase()}`) as string,
++            content: ((formData.get(`option_${label.toLowerCase()}`) as string) || '').trim(),
++            image_url: ((formData.get(`option_${label.toLowerCase()}_image_url`) as string) || '').trim() || null,
+             is_correct: label === correctAnswer,
+             score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
+         }
+@@ -202,6 +215,8 @@ interface ExcelQuestion {
+     score_e?: number
+ }
+ 
++type OptionLabel = 'A' | 'B' | 'C' | 'D' | 'E'
++
+ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+     const isUserAdmin = await isAdmin()
+     if (!isUserAdmin) {
+@@ -304,7 +319,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+ // TRYOUT CONFIGURATIONS
+ // =============================================
+ 
+-export async function updateTryoutConfigurations(configs: any[]) {
++export async function updateTryoutConfigurations(configs: TryoutConfigurationPayload[]) {
+     const isUserAdmin = await isAdmin();
+     if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
+ 
+
+commit c798c5b8e8558fb4b8312499e673997b0e81ae77
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Wed Mar 18 06:41:54 2026 +0700
+
+    feat: implement admin question management actions including bulk import and image support, and add a migration to fix options foreign key cascading.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 822cbef..2d5e1ff 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -116,7 +116,8 @@ export async function updateQuestion(id: string, formData: FormData) {
+     const correctAnswer = formData.get('correct_answer') as string
+     const imageUrl = formData.get('image_url') as string | null // NEW FIELD
+ 
+-    const supabase = await createClient()
++    // Use admin client to bypass RLS for cleanup steps
++    const supabase = await createAdminClient()
+ 
+     // 1. Update Question
+     const { error: qError } = await supabase
+@@ -133,7 +134,22 @@ export async function updateQuestion(id: string, formData: FormData) {
+ 
+     if (qError) return { success: false, message: qError.message }
+ 
+-    // 2. Clear Existing Options
++    // 2. Get existing option IDs for this question (to clean up test_answers references)
++    const { data: existingOptions } = await supabase
++        .from('options')
++        .select('id')
++        .eq('question_id', id)
++
++    // 3. Nullify test_answers referencing old options (prevents FK violation)
++    if (existingOptions && existingOptions.length > 0) {
++        const optionIds = existingOptions.map(o => o.id)
++        await supabase
++            .from('test_answers')
++            .update({ option_id: null })
++            .in('option_id', optionIds)
++    }
++
++    // 4. Delete Existing Options
+     const { error: dError } = await supabase
+         .from('options')
+         .delete()
+
+commit 84852aeaa9af739cd872c48609abd58084b59184
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Tue Mar 17 11:07:57 2026 +0700
+
+    Final production audit: Activate middleware, fix cross-portal revalidation, update contact email, and stabilize scoped routing
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 65b520c..822cbef 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -1,6 +1,6 @@
+ 'use server'
+ 
+-import { createClient } from '@/utils/supabase/server'
++import { createClient, createAdminClient } from '@/utils/supabase/server'
+ import { revalidatePath } from 'next/cache'
+ import { isAdmin } from '@/utils/admin'
+ 
+@@ -10,17 +10,38 @@ export async function deleteQuestion(id: string) {
+         return { success: false, message: 'Unauthorized' }
+     }
+ 
+-    const supabase = await createClient()
+-    const { error } = await supabase
++    // Use admin client to bypass RLS for cleanup
++    const supabase = await createAdminClient()
++
++    // 1. Delete associations first to avoid FK violations
++    // we use individual checks to ensure each step succeeds or logs correctly
++    const { error: err1 } = await supabase.from('test_answers').delete().eq('question_id', id)
++    if (err1 && err1.code !== 'PGRST116') { // Ignore "no rows found" if any
++        console.error('Error deleting test_answers:', err1)
++    }
++    
++    const { error: err2 } = await supabase.from('options').delete().eq('question_id', id)
++    if (err2 && err2.code !== 'PGRST116') {
++        console.error('Error deleting options:', err2)
++    }
++    
++    const { error: err3 } = await supabase.from('tryout_questions').delete().eq('question_id', id)
++    if (err3 && err3.code !== 'PGRST116') {
++        console.error('Error deleting tryout_questions:', err3)
++    }
++
++    // 2. Finally delete the question
++    const { error: qErr } = await supabase
+         .from('questions')
+         .delete()
+         .eq('id', id)
+ 
+-    if (error) {
+-        return { success: false, message: error.message }
++    if (qErr) {
++        console.error('Final delete error:', qErr)
++        return { success: false, message: `Gagal menghapus soal: ${qErr.message}` }
+     }
+ 
+-    revalidatePath('/dashboard/admin')
++    revalidatePath('/cpns/dashboard/admin')
+     return { success: true, message: 'Soal berhasil dihapus' }
+ }
+ 
+@@ -78,7 +99,7 @@ export async function createQuestion(formData: FormData) {
+         return { success: false, message: oError.message }
+     }
+ 
+-    revalidatePath('/dashboard/admin')
++    revalidatePath('/cpns/dashboard/admin')
+     return { success: true, message: 'Soal baru berhasil dibuat' }
+ }
+ 
+@@ -138,7 +159,7 @@ export async function updateQuestion(id: string, formData: FormData) {
+ 
+     if (oError) return { success: false, message: oError.message }
+ 
+-    revalidatePath('/dashboard/admin')
++    revalidatePath('/cpns/dashboard/admin')
+     return { success: true, message: 'Soal berhasil diupdate' }
+ }
+ 
+@@ -248,7 +269,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+         }
+     }
+ 
+-    revalidatePath('/dashboard/admin')
++    revalidatePath('/cpns/dashboard/admin')
+ 
+     if (failCount === 0) {
+         return {
+@@ -282,7 +303,7 @@ export async function updateTryoutConfigurations(configs: any[]) {
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/dashboard/admin/tryout-config');
++    revalidatePath('/cpns/dashboard/admin/tryout-config');
+     return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' };
+ }
+ 
+@@ -315,7 +336,7 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/dashboard/admin/tryout-config');
++    revalidatePath('/cpns/dashboard/admin/tryout-config');
+     return { success: true, message: 'Sub-Kategori berhasil ditambahkan' };
+ }
+ 
+@@ -334,7 +355,7 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean)
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/dashboard/admin/tryout-config');
++    revalidatePath('/cpns/dashboard/admin/tryout-config');
+     return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
+ }
+ 
+@@ -353,6 +374,6 @@ export async function deleteTryoutConfiguration(id: string) {
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/dashboard/admin/tryout-config');
++    revalidatePath('/cpns/dashboard/admin/tryout-config');
+     return { success: true, message: 'Kategori berhasil dihapus secara permanen' };
+ }
+
+commit 66824f90fc1909e6d27b0289ba06ba7c94520fa0
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Tue Mar 17 10:17:00 2026 +0700
+
+    feat: refactor CPNS paths to root and fix payment build errors
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index da8c3e2..65b520c 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -20,7 +20,7 @@ export async function deleteQuestion(id: string) {
+         return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/dashboard/admin')
+     return { success: true, message: 'Soal berhasil dihapus' }
+ }
+ 
+@@ -78,7 +78,7 @@ export async function createQuestion(formData: FormData) {
+         return { success: false, message: oError.message }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/dashboard/admin')
+     return { success: true, message: 'Soal baru berhasil dibuat' }
+ }
+ 
+@@ -138,7 +138,7 @@ export async function updateQuestion(id: string, formData: FormData) {
+ 
+     if (oError) return { success: false, message: oError.message }
+ 
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/dashboard/admin')
+     return { success: true, message: 'Soal berhasil diupdate' }
+ }
+ 
+@@ -248,7 +248,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+         }
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin')
++    revalidatePath('/dashboard/admin')
+ 
+     if (failCount === 0) {
+         return {
+@@ -282,7 +282,7 @@ export async function updateTryoutConfigurations(configs: any[]) {
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config');
++    revalidatePath('/dashboard/admin/tryout-config');
+     return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' };
+ }
+ 
+@@ -315,7 +315,7 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config');
++    revalidatePath('/dashboard/admin/tryout-config');
+     return { success: true, message: 'Sub-Kategori berhasil ditambahkan' };
+ }
+ 
+@@ -334,7 +334,7 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean)
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config');
++    revalidatePath('/dashboard/admin/tryout-config');
+     return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
+ }
+ 
+@@ -353,6 +353,6 @@ export async function deleteTryoutConfiguration(id: string) {
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/cpns/dashboard/admin/tryout-config');
++    revalidatePath('/dashboard/admin/tryout-config');
+     return { success: true, message: 'Kategori berhasil dihapus secara permanen' };
+ }
+
+commit 561f205fd6deff05e5b09546c9c3f24c43a0321c
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Mon Mar 16 02:28:38 2026 +0700
+
+    feat: Implement a comprehensive TOEFL ITP portal including landing pages, practice sessions, admin functionalities, and a user dashboard.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 65b520c..da8c3e2 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -20,7 +20,7 @@ export async function deleteQuestion(id: string) {
+         return { success: false, message: error.message }
+     }
+ 
+-    revalidatePath('/dashboard/admin')
++    revalidatePath('/cpns/dashboard/admin')
+     return { success: true, message: 'Soal berhasil dihapus' }
+ }
+ 
+@@ -78,7 +78,7 @@ export async function createQuestion(formData: FormData) {
+         return { success: false, message: oError.message }
+     }
+ 
+-    revalidatePath('/dashboard/admin')
++    revalidatePath('/cpns/dashboard/admin')
+     return { success: true, message: 'Soal baru berhasil dibuat' }
+ }
+ 
+@@ -138,7 +138,7 @@ export async function updateQuestion(id: string, formData: FormData) {
+ 
+     if (oError) return { success: false, message: oError.message }
+ 
+-    revalidatePath('/dashboard/admin')
++    revalidatePath('/cpns/dashboard/admin')
+     return { success: true, message: 'Soal berhasil diupdate' }
+ }
+ 
+@@ -248,7 +248,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+         }
+     }
+ 
+-    revalidatePath('/dashboard/admin')
++    revalidatePath('/cpns/dashboard/admin')
+ 
+     if (failCount === 0) {
+         return {
+@@ -282,7 +282,7 @@ export async function updateTryoutConfigurations(configs: any[]) {
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/dashboard/admin/tryout-config');
++    revalidatePath('/cpns/dashboard/admin/tryout-config');
+     return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' };
+ }
+ 
+@@ -315,7 +315,7 @@ export async function addTryoutConfiguration(type: string, sub_category: string)
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/dashboard/admin/tryout-config');
++    revalidatePath('/cpns/dashboard/admin/tryout-config');
+     return { success: true, message: 'Sub-Kategori berhasil ditambahkan' };
+ }
+ 
+@@ -334,7 +334,7 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean)
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/dashboard/admin/tryout-config');
++    revalidatePath('/cpns/dashboard/admin/tryout-config');
+     return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
+ }
+ 
+@@ -353,6 +353,6 @@ export async function deleteTryoutConfiguration(id: string) {
+         return { success: false, message: error.message };
+     }
+ 
+-    revalidatePath('/dashboard/admin/tryout-config');
++    revalidatePath('/cpns/dashboard/admin/tryout-config');
+     return { success: true, message: 'Kategori berhasil dihapus secara permanen' };
+ }
+
+commit 828b1d4d15fe1ddfeddcf926a6e1d06efb736218
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Sat Feb 28 19:14:18 2026 +0700
+
+    feat: Implement admin question management, tryout configuration, voucher system, and Midtrans payment, alongside security and performance database fixes.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 2caefed..65b520c 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -338,3 +338,21 @@ export async function toggleTryoutConfiguration(id: string, is_active: boolean)
+     return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
+ }
+ 
++export async function deleteTryoutConfiguration(id: string) {
++    const isUserAdmin = await isAdmin();
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
++
++    const supabase = await createClient();
++
++    const { error } = await supabase
++        .from('tryout_configurations')
++        .delete()
++        .eq('id', id);
++
++    if (error) {
++        return { success: false, message: error.message };
++    }
++
++    revalidatePath('/dashboard/admin/tryout-config');
++    return { success: true, message: 'Kategori berhasil dihapus secara permanen' };
++}
+
+commit f8e88b3f9a0a76cf2821863363d1acf2446c6781
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Wed Feb 25 17:56:24 2026 +0700
+
+    feat: Implement tryout and practice session features, including client-side session management, result display, and an admin configuration panel.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 1834818..2caefed 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -262,3 +262,79 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+         message: `Import selesai: ${successCount} berhasil, ${failCount} gagal (baris: ${failedRows.slice(0, 10).join(', ')}${failedRows.length > 10 ? '...' : ''})`
+     }
+ }
++
++// =============================================
++// TRYOUT CONFIGURATIONS
++// =============================================
++
++export async function updateTryoutConfigurations(configs: any[]) {
++    const isUserAdmin = await isAdmin();
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
++
++    const supabase = await createClient();
++
++    // We can use an upsert to update multiple rows efficiently
++    const { error } = await supabase
++        .from('tryout_configurations')
++        .upsert(configs, { onConflict: 'id' });
++
++    if (error) {
++        return { success: false, message: error.message };
++    }
++
++    revalidatePath('/dashboard/admin/tryout-config');
++    return { success: true, message: 'Konfigurasi Tryout berhasil disimpan' };
++}
++
++export async function addTryoutConfiguration(type: string, sub_category: string) {
++    const isUserAdmin = await isAdmin();
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
++
++    const supabase = await createClient();
++
++    // Get the max sort_order for the given type to append to bottom
++    const { data: maxOrderData } = await supabase
++        .from('tryout_configurations')
++        .select('sort_order')
++        .order('sort_order', { ascending: false })
++        .limit(1);
++
++    const nextSortOrder = (maxOrderData && maxOrderData.length > 0) ? (maxOrderData[0].sort_order + 1) : 1;
++
++    const { error } = await supabase
++        .from('tryout_configurations')
++        .insert({
++            type,
++            sub_category,
++            question_count: 0,
++            sort_order: nextSortOrder,
++            is_active: true
++        });
++
++    if (error) {
++        return { success: false, message: error.message };
++    }
++
++    revalidatePath('/dashboard/admin/tryout-config');
++    return { success: true, message: 'Sub-Kategori berhasil ditambahkan' };
++}
++
++export async function toggleTryoutConfiguration(id: string, is_active: boolean) {
++    const isUserAdmin = await isAdmin();
++    if (!isUserAdmin) return { success: false, message: 'Unauthorized' };
++
++    const supabase = await createClient();
++
++    const { error } = await supabase
++        .from('tryout_configurations')
++        .update({ is_active })
++        .eq('id', id);
++
++    if (error) {
++        return { success: false, message: error.message };
++    }
++
++    revalidatePath('/dashboard/admin/tryout-config');
++    return { success: true, message: `Sub-Kategori berhasil di${is_active ? 'aktifkan' : 'nonaktifkan'}` };
++}
++
+
+commit 8b765e9da6b0515d99b76b47dc0ef99d7600ca2a
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Mon Feb 23 22:18:02 2026 +0700
+
+    feat: Implement admin question CRUD operations and Excel bulk import functionality with an accompanying template.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 2afd9f9..1834818 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -151,6 +151,7 @@ interface ExcelQuestion {
+     sub_category: string
+     content: string
+     explanation: string
++    image_url?: string // NEW FIELD
+     option_a: string
+     option_b: string
+     option_c: string
+@@ -198,6 +199,7 @@ export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
+                         category: q.sub_category,
+                         sub_category: q.sub_category,
+                         explanation: q.explanation || null,
++                        image_url: q.image_url || null, // NEW FIELD
+                     })
+                     .select('id')
+                     .single()
+
+commit cf22964b37e9a62859084034e7b5d1895102224c
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Mon Feb 23 22:05:17 2026 +0700
+
+    feat: Implement admin question CRUD, bulk import, and image support, alongside practice session pages.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index 5c79482..2afd9f9 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -35,6 +35,7 @@ export async function createQuestion(formData: FormData) {
+     const category = formData.get('category') as string // Sub-category
+     const explanation = formData.get('explanation') as string
+     const correctAnswer = formData.get('correct_answer') as string // A, B, C...
++    const imageUrl = formData.get('image_url') as string | null // NEW FIELD
+ 
+     const supabase = await createClient()
+ 
+@@ -46,7 +47,8 @@ export async function createQuestion(formData: FormData) {
+             content,
+             category,
+             sub_category: category,
+-            explanation
++            explanation,
++            image_url: imageUrl || null
+         })
+         .select()
+         .single()
+@@ -91,6 +93,7 @@ export async function updateQuestion(id: string, formData: FormData) {
+     const category = formData.get('category') as string
+     const explanation = formData.get('explanation') as string
+     const correctAnswer = formData.get('correct_answer') as string
++    const imageUrl = formData.get('image_url') as string | null // NEW FIELD
+ 
+     const supabase = await createClient()
+ 
+@@ -102,7 +105,8 @@ export async function updateQuestion(id: string, formData: FormData) {
+             content,
+             category,
+             sub_category: category,
+-            explanation
++            explanation,
++            image_url: imageUrl || null
+         })
+         .eq('id', id)
+ 
+
+commit 8e3961a9e2b8cca8e83aeab4d0e4037f6fc3bb53
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Mon Feb 23 21:16:33 2026 +0700
+
+    feat: Implement comprehensive exam question seeding, admin management, and practice session features.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+index d885787..5c79482 100644
+--- a/app/actions/admin.ts
++++ b/app/actions/admin.ts
+@@ -45,6 +45,7 @@ export async function createQuestion(formData: FormData) {
+             type,
+             content,
+             category,
++            sub_category: category,
+             explanation
+         })
+         .select()
+@@ -100,6 +101,7 @@ export async function updateQuestion(id: string, formData: FormData) {
+             type,
+             content,
+             category,
++            sub_category: category,
+             explanation
+         })
+         .eq('id', id)
+@@ -135,3 +137,122 @@ export async function updateQuestion(id: string, formData: FormData) {
+     revalidatePath('/dashboard/admin')
+     return { success: true, message: 'Soal berhasil diupdate' }
+ }
++
++// =============================================
++// EXCEL BULK IMPORT
++// =============================================
++
++interface ExcelQuestion {
++    type: 'TWK' | 'TIU' | 'TKP'
++    sub_category: string
++    content: string
++    explanation: string
++    option_a: string
++    option_b: string
++    option_c: string
++    option_d: string
++    option_e: string
++    correct_answer?: string  // A/B/C/D/E for TWK & TIU
++    score_a?: number  // For TKP (1-5)
++    score_b?: number
++    score_c?: number
++    score_d?: number
++    score_e?: number
++}
++
++export async function importQuestionsFromExcel(questions: ExcelQuestion[]) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) {
++        return { success: false, message: 'Unauthorized' }
++    }
++
++    if (!questions || questions.length === 0) {
++        return { success: false, message: 'Tidak ada data soal untuk diimport' }
++    }
++
++    const supabase = await createClient()
++    let successCount = 0
++    let failCount = 0
++    const failedRows: number[] = []
++
++    // Process in batches of 50 to avoid overwhelming the DB
++    const BATCH_SIZE = 50
++    for (let i = 0; i < questions.length; i += BATCH_SIZE) {
++        const batch = questions.slice(i, i + BATCH_SIZE)
++
++        for (let j = 0; j < batch.length; j++) {
++            const q = batch[j]
++            const rowIndex = i + j + 1
++
++            try {
++                // 1. Insert Question
++                const { data: question, error: qError } = await supabase
++                    .from('questions')
++                    .insert({
++                        type: q.type,
++                        content: q.content,
++                        category: q.sub_category,
++                        sub_category: q.sub_category,
++                        explanation: q.explanation || null,
++                    })
++                    .select('id')
++                    .single()
++
++                if (qError || !question) {
++                    failCount++
++                    failedRows.push(rowIndex)
++                    continue
++                }
++
++                // 2. Build Options
++                const optionLabels = ['a', 'b', 'c', 'd', 'e'] as const
++                const optionKeys = ['option_a', 'option_b', 'option_c', 'option_d', 'option_e'] as const
++                const scoreKeys = ['score_a', 'score_b', 'score_c', 'score_d', 'score_e'] as const
++
++                const optionsToInsert = optionLabels.map((label, idx) => {
++                    const letterUpper = label.toUpperCase()
++                    const isTKP = q.type === 'TKP'
++
++                    return {
++                        question_id: question.id,
++                        content: q[optionKeys[idx]] || '',
++                        is_correct: isTKP ? false : letterUpper === q.correct_answer,
++                        score_value: isTKP ? (q[scoreKeys[idx]] || 0) : (letterUpper === q.correct_answer ? 5 : 0),
++                    }
++                })
++
++                // 3. Insert Options
++                const { error: oError } = await supabase
++                    .from('options')
++                    .insert(optionsToInsert)
++
++                if (oError) {
++                    // Cleanup the question if options fail
++                    await supabase.from('questions').delete().eq('id', question.id)
++                    failCount++
++                    failedRows.push(rowIndex)
++                    continue
++                }
++
++                successCount++
++            } catch {
++                failCount++
++                failedRows.push(rowIndex)
++            }
++        }
++    }
++
++    revalidatePath('/dashboard/admin')
++
++    if (failCount === 0) {
++        return {
++            success: true,
++            message: `Ô£à Berhasil import ${successCount} soal!`
++        }
++    }
++
++    return {
++        success: successCount > 0,
++        message: `Import selesai: ${successCount} berhasil, ${failCount} gagal (baris: ${failedRows.slice(0, 10).join(', ')}${failedRows.length > 10 ? '...' : ''})`
++    }
++}
+
+commit e467a2ddbe61df2c9e88ca27f6be2f2ec1ae4a70
+Author: 8shagrid <8shagrid@users.noreply.github.com>
+Date:   Fri Feb 13 17:39:54 2026 +0700
+
+    feat: Implement dashboard, admin question management, payment processing, and user profile features.
+
+diff --git a/app/actions/admin.ts b/app/actions/admin.ts
+new file mode 100644
+index 0000000..d885787
+--- /dev/null
++++ b/app/actions/admin.ts
+@@ -0,0 +1,137 @@
++'use server'
++
++import { createClient } from '@/utils/supabase/server'
++import { revalidatePath } from 'next/cache'
++import { isAdmin } from '@/utils/admin'
++
++export async function deleteQuestion(id: string) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) {
++        return { success: false, message: 'Unauthorized' }
++    }
++
++    const supabase = await createClient()
++    const { error } = await supabase
++        .from('questions')
++        .delete()
++        .eq('id', id)
++
++    if (error) {
++        return { success: false, message: error.message }
++    }
++
++    revalidatePath('/dashboard/admin')
++    return { success: true, message: 'Soal berhasil dihapus' }
++}
++
++export async function createQuestion(formData: FormData) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) {
++        return { success: false, message: 'Unauthorized' }
++    }
++
++    const type = formData.get('type') as any // TWK, TIU, TKP
++    const content = formData.get('content') as string
++    const category = formData.get('category') as string // Sub-category
++    const explanation = formData.get('explanation') as string
++    const correctAnswer = formData.get('correct_answer') as string // A, B, C...
++
++    const supabase = await createClient()
++
++    // 1. Insert Question
++    const { data: question, error: qError } = await supabase
++        .from('questions')
++        .insert({
++            type,
++            content,
++            category,
++            explanation
++        })
++        .select()
++        .single()
++
++    if (qError) return { success: false, message: qError.message }
++
++    // 2. Prepare Options
++    const optionLabels = ['A', 'B', 'C', 'D', 'E']
++    const optionsToInsert = optionLabels.map(label => {
++        const score = formData.get(`score_${label.toLowerCase()}`)
++        return {
++            question_id: question.id,
++            content: formData.get(`option_${label.toLowerCase()}`) as string,
++            is_correct: label === correctAnswer,
++            score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
++        }
++    })
++
++    // 3. Insert Options
++    const { error: oError } = await supabase
++        .from('options')
++        .insert(optionsToInsert)
++
++    if (oError) {
++        // Cleanup question if options fail?
++        await supabase.from('questions').delete().eq('id', question.id)
++        return { success: false, message: oError.message }
++    }
++
++    revalidatePath('/dashboard/admin')
++    return { success: true, message: 'Soal baru berhasil dibuat' }
++}
++
++export async function updateQuestion(id: string, formData: FormData) {
++    const isUserAdmin = await isAdmin()
++    if (!isUserAdmin) {
++        return { success: false, message: 'Unauthorized' }
++    }
++
++    const type = formData.get('type') as any
++    const content = formData.get('content') as string
++    const category = formData.get('category') as string
++    const explanation = formData.get('explanation') as string
++    const correctAnswer = formData.get('correct_answer') as string
++
++    const supabase = await createClient()
++
++    // 1. Update Question
++    const { error: qError } = await supabase
++        .from('questions')
++        .update({
++            type,
++            content,
++            category,
++            explanation
++        })
++        .eq('id', id)
++
++    if (qError) return { success: false, message: qError.message }
++
++    // 2. Clear Existing Options
++    const { error: dError } = await supabase
++        .from('options')
++        .delete()
++        .eq('question_id', id)
++
++    if (dError) return { success: false, message: dError.message }
++
++    // 3. Insert New Options
++    const optionLabels = ['A', 'B', 'C', 'D', 'E']
++    const optionsToInsert = optionLabels.map(label => {
++        const score = formData.get(`score_${label.toLowerCase()}`)
++        return {
++            question_id: id,
++            content: formData.get(`option_${label.toLowerCase()}`) as string,
++            is_correct: label === correctAnswer,
++            score_value: type === 'TKP' ? parseInt(score as string || '0') : (label === correctAnswer ? 1 : 0)
++        }
++    })
++
++    const { error: oError } = await supabase
++        .from('options')
++        .insert(optionsToInsert)
++
++    if (oError) return { success: false, message: oError.message }
++
++    revalidatePath('/dashboard/admin')
++    return { success: true, message: 'Soal berhasil diupdate' }
++}
