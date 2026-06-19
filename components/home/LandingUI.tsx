@@ -222,8 +222,16 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
             </header>
 
             {/* --- HERO SECTION (Kertas Tryout) --- */}
-            <Section paper className="pt-32 pb-32">
-                <div className="text-center relative z-10">
+            <Section paper className="pt-32 pb-32 relative overflow-hidden">
+                {/* Mascots - Desktop Only */}
+                <div className="hidden lg:block absolute left-0 bottom-0 z-0 pointer-events-none opacity-90">
+                    <Image src="/tamapng.png" alt="Mascot Boy" width={300} height={420} className="object-contain w-auto h-[350px] xl:h-[420px] drop-shadow-xl" priority />
+                </div>
+                <div className="hidden lg:block absolute right-0 bottom-0 z-0 pointer-events-none opacity-90">
+                    <Image src="/tarapng.png" alt="Mascot Girl" width={300} height={420} className="object-contain w-auto h-[350px] xl:h-[420px] drop-shadow-xl" priority />
+                </div>
+
+                <div className="text-center relative z-10 max-w-3xl mx-auto">
                     {/* Label Stabilo */}
                     <Badge variant="yellow" className="mb-6">
                         🎯 Persiapan CPNS & Kedinasan 2026
@@ -342,13 +350,13 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         </div>
                         <h3 className="font-handwriting text-3xl font-bold mb-4">Mini Tryout</h3>
                         <p className="text-gray-600 mb-6 min-h-[80px]">Latihan cepat dan fokus per bagian tes. Cocok buat kamu yang lagi sibuk tapi tetap mau nyicil belajar setiap hari.</p>
-                        
+
                         <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Fokus 1 subtes (TWK / TIU / TKP)</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu pengerjaan singkat</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Pembahasan per soal</li>
                         </ul>
-                        
+
                         <Button variant="outline" className="w-full py-6 text-xl" onClick={() => scrollToSection("products")}>
                             Coba Mini Tryout
                         </Button>
@@ -356,18 +364,18 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                     {/* Full Tryout */}
                     <Card interactive className="p-8 bg-white border-4 border-gray-900 flex flex-col">
-                         <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
+                        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
                             <Monitor className="w-8 h-8 text-blue-600" />
                         </div>
                         <h3 className="font-handwriting text-3xl font-bold mb-4">Full Tryout SKD</h3>
                         <p className="text-gray-600 mb-6 min-h-[80px]">Simulasi ujian SKD CPNS yang sesungguhnya. Latih manajemen waktu dan mentalmu sebelum hari H tiba.</p>
-                        
+
                         <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> 110 Soal (TWK + TIU + TKP)</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu 100 menit (Timer berjalan)</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Ranking Nasional</li>
                         </ul>
-                        
+
                         <Button className="w-full py-6 text-xl" onClick={() => scrollToSection("products")}>
                             Mulai Full Tryout
                         </Button>
@@ -381,177 +389,177 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     <Badge variant="blue" className="mb-4">
                         <Eye className="w-5 h-5" /> Sneak Peek!
                     </Badge>
-                        <h2 className="font-handwriting text-5xl font-bold mb-4">Begini Rasanya Tryout di Sini</h2>
-                        <p className="font-handwriting text-2xl text-gray-600">Sistem penilaian sama persis dengan CAT BKN. Bedanya, ini tryout — salah di sini gratis, salah di sana hilang kursi ASN.</p>
+                    <h2 className="font-handwriting text-5xl font-bold mb-4">Begini Rasanya Tryout di Sini</h2>
+                    <p className="font-handwriting text-2xl text-gray-600">Sistem penilaian sama persis dengan CAT BKN. Bedanya, ini tryout — salah di sini gratis, salah di sana hilang kursi ASN.</p>
+                </div>
+
+                {/* Exam Mockup Container */}
+                <div className="max-w-5xl mx-auto relative">
+
+                    {/* Floating Annotations */}
+                    <div className="hidden md:block absolute -top-6 -right-4 lg:-right-16 z-30">
+                        <div className="bg-yellow-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm -rotate-3 animate-float-annotation">
+                            <Clock className="w-4 h-4 inline -mt-0.5 mr-1 text-red-500" />
+                            Timer real-time persis CAT BKN!
+                        </div>
                     </div>
 
-                    {/* Exam Mockup Container */}
-                    <div className="max-w-5xl mx-auto relative">
-
-                        {/* Floating Annotations */}
-                        <div className="hidden md:block absolute -top-6 -right-4 lg:-right-16 z-30">
-                            <div className="bg-yellow-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm -rotate-3 animate-float-annotation">
-                                <Clock className="w-4 h-4 inline -mt-0.5 mr-1 text-red-500" />
-                                Timer real-time persis CAT BKN!
-                            </div>
+                    <div className="hidden md:block absolute bottom-24 -left-4 lg:-left-24 z-30">
+                        <div className="bg-green-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm rotate-2 animate-float-annotation" style={{ animationDelay: '1s' }}>
+                            <Flag className="w-4 h-4 inline -mt-0.5 mr-1 text-orange-500" />
+                            Tandai soal ragu-ragu!
                         </div>
+                    </div>
 
-                        <div className="hidden md:block absolute bottom-24 -left-4 lg:-left-24 z-30">
-                            <div className="bg-green-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm rotate-2 animate-float-annotation" style={{ animationDelay: '1s' }}>
-                                <Flag className="w-4 h-4 inline -mt-0.5 mr-1 text-orange-500" />
-                                Tandai soal ragu-ragu!
-                            </div>
+                    <div className="hidden md:block absolute -bottom-4 -right-4 lg:-right-12 z-30">
+                        <div className="bg-pink-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm rotate-1 animate-float-annotation" style={{ animationDelay: '2s' }}>
+                            <Monitor className="w-4 h-4 inline -mt-0.5 mr-1 text-blue-600" />
+                            Navigasi soal satu layar!
                         </div>
+                    </div>
 
-                        <div className="hidden md:block absolute -bottom-4 -right-4 lg:-right-12 z-30">
-                            <div className="bg-pink-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm rotate-1 animate-float-annotation" style={{ animationDelay: '2s' }}>
-                                <Monitor className="w-4 h-4 inline -mt-0.5 mr-1 text-blue-600" />
-                                Navigasi soal satu layar!
-                            </div>
-                        </div>
+                    {/* Main Mockup Card */}
+                    <div className="bg-white/90 backdrop-blur-sm border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
 
-                        {/* Main Mockup Card */}
-                        <div className="bg-white/90 backdrop-blur-sm border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
-
-                            {/* Mock Header */}
-                            <div className="border-b-2 border-dashed border-gray-300 bg-yellow-50/50 p-3 md:p-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex flex-col gap-0.5">
-                                            <div className="flex items-baseline gap-1">
-                                                <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900">Soal #15</span>
-                                                <span className="font-handwriting text-sm text-gray-500 md:text-lg">/ 110</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[10px] md:text-[11px] font-bold rounded uppercase tracking-wider">TWK</span>
-                                                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] md:text-xs font-bold font-handwriting rounded shadow-sm">Pancasila</span>
-                                            </div>
+                        {/* Mock Header */}
+                        <div className="border-b-2 border-dashed border-gray-300 bg-yellow-50/50 p-3 md:p-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex flex-col gap-0.5">
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900">Soal #15</span>
+                                            <span className="font-handwriting text-sm text-gray-500 md:text-lg">/ 110</span>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="px-2 py-1 md:px-4 md:py-1 rounded-full text-xs md:text-sm font-mono flex items-center gap-1.5 bg-blue-50 text-blue-700 border-2 border-blue-900 shadow-[2px_2px_0px_0px_rgba(30,58,138,1)]">
-                                            <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
-                                            <span className="blink-timer">01:25:30</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[10px] md:text-[11px] font-bold rounded uppercase tracking-wider">TWK</span>
+                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] md:text-xs font-bold font-handwriting rounded shadow-sm">Pancasila</span>
                                         </div>
                                     </div>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="px-2 py-1 md:px-4 md:py-1 rounded-full text-xs md:text-sm font-mono flex items-center gap-1.5 bg-blue-50 text-blue-700 border-2 border-blue-900 shadow-[2px_2px_0px_0px_rgba(30,58,138,1)]">
+                                        <Clock className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                                        <span className="blink-timer">01:25:30</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Mock Content Area */}
+                        <div className="flex flex-col lg:flex-row">
+
+                            {/* Question Panel */}
+                            <div className="flex-1 p-4 md:p-6">
+                                <div className="mb-6">
+                                    <p className="text-lg md:text-2xl leading-relaxed font-handwriting font-bold text-gray-900">
+                                        Pancasila sebagai dasar negara mengandung nilai-nilai yang menjadi pedoman dalam kehidupan bermasyarakat, berbangsa, dan bernegara. Sila ke-3 Pancasila berbunyi...
+                                    </p>
+                                </div>
+
+                                <div className="space-y-2 md:space-y-3">
+                                    {[
+                                        { key: 'A', text: 'Ketuhanan Yang Maha Esa' },
+                                        { key: 'B', text: 'Kemanusiaan yang Adil dan Beradab' },
+                                        { key: 'C', text: 'Persatuan Indonesia' },
+                                        { key: 'D', text: 'Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan' },
+                                        { key: 'E', text: 'Keadilan Sosial bagi Seluruh Rakyat Indonesia' },
+                                    ].map((opt) => {
+                                        const isSelected = selectedOption === opt.key;
+                                        return (
+                                            <button
+                                                key={opt.key}
+                                                type="button"
+                                                onClick={() => setSelectedOption(opt.key)}
+                                                className={`w-full p-3 md:p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 cursor-pointer text-left ${isSelected
+                                                    ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-px translate-y-px relative overflow-hidden'
+                                                    : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'
+                                                    }`}
+                                            >
+                                                {isSelected && <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10" />}
+                                                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg transition-all duration-200 ${isSelected
+                                                    ? 'border-blue-600 bg-blue-600 text-white scale-110'
+                                                    : 'border-gray-400 text-gray-400'
+                                                    }`}>{opt.key}</div>
+                                                <span className={`text-base md:text-lg leading-relaxed font-handwriting transition-colors duration-200 ${isSelected
+                                                    ? 'text-blue-900 font-bold'
+                                                    : 'text-gray-600 font-medium'
+                                                    }`}>{opt.text}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
-                            {/* Mock Content Area */}
-                            <div className="flex flex-col lg:flex-row">
-
-                                {/* Question Panel */}
-                                <div className="flex-1 p-4 md:p-6">
-                                    <div className="mb-6">
-                                        <p className="text-lg md:text-2xl leading-relaxed font-handwriting font-bold text-gray-900">
-                                            Pancasila sebagai dasar negara mengandung nilai-nilai yang menjadi pedoman dalam kehidupan bermasyarakat, berbangsa, dan bernegara. Sila ke-3 Pancasila berbunyi...
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2 md:space-y-3">
-                                        {[
-                                            { key: 'A', text: 'Ketuhanan Yang Maha Esa' },
-                                            { key: 'B', text: 'Kemanusiaan yang Adil dan Beradab' },
-                                            { key: 'C', text: 'Persatuan Indonesia' },
-                                            { key: 'D', text: 'Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan' },
-                                            { key: 'E', text: 'Keadilan Sosial bagi Seluruh Rakyat Indonesia' },
-                                        ].map((opt) => {
-                                            const isSelected = selectedOption === opt.key;
+                            {/* Navigation Panel (visible on md+) */}
+                            <div className="hidden lg:flex w-72 shrink-0 flex-col bg-white/90 border-l-2 border-gray-900">
+                                <div className="p-4 border-b-2 border-dashed border-gray-300 font-handwriting font-bold text-lg flex items-center gap-2 text-gray-800">
+                                    Navigasi Soal
+                                </div>
+                                <div className="p-4 flex-1 overflow-y-auto">
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {Array.from({ length: 30 }, (_, i) => {
+                                            const num = i + 1;
+                                            // Simulate some answered (blue), some marked (yellow), active (ring)
+                                            const isActive = num === 15;
+                                            const isAnswered = [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15].includes(num);
+                                            const isMarked = [6, 14].includes(num);
                                             return (
-                                                <button
-                                                    key={opt.key}
-                                                    type="button"
-                                                    onClick={() => setSelectedOption(opt.key)}
-                                                    className={`w-full p-3 md:p-4 rounded-xl border-2 flex items-start gap-4 transition-all duration-200 cursor-pointer text-left ${isSelected
-                                                        ? 'border-blue-600 bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)] translate-x-px translate-y-px relative overflow-hidden'
-                                                        : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/30'
+                                                <div
+                                                    key={num}
+                                                    className={`aspect-square rounded-lg font-handwriting font-bold text-sm flex items-center justify-center border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] ${isActive ? 'ring-2 ring-blue-400 ring-offset-1 border-blue-600 z-10' : ''
+                                                        } ${isMarked
+                                                            ? 'bg-yellow-500 text-yellow-950 border-yellow-700'
+                                                            : isAnswered
+                                                                ? 'bg-blue-700 text-white border-blue-900'
+                                                                : 'bg-white text-gray-600 border-gray-300'
                                                         }`}
                                                 >
-                                                    {isSelected && <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10" />}
-                                                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg transition-all duration-200 ${isSelected
-                                                        ? 'border-blue-600 bg-blue-600 text-white scale-110'
-                                                        : 'border-gray-400 text-gray-400'
-                                                        }`}>{opt.key}</div>
-                                                    <span className={`text-base md:text-lg leading-relaxed font-handwriting transition-colors duration-200 ${isSelected
-                                                        ? 'text-blue-900 font-bold'
-                                                        : 'text-gray-600 font-medium'
-                                                        }`}>{opt.text}</span>
-                                                </button>
+                                                    {num}
+                                                </div>
                                             );
                                         })}
+                                        {/* More indicator */}
+                                        <div className="col-span-5 text-center font-handwriting text-gray-400 text-sm mt-1">... sampai 110</div>
                                     </div>
                                 </div>
-
-                                {/* Navigation Panel (visible on md+) */}
-                                <div className="hidden lg:flex w-72 shrink-0 flex-col bg-white/90 border-l-2 border-gray-900">
-                                    <div className="p-4 border-b-2 border-dashed border-gray-300 font-handwriting font-bold text-lg flex items-center gap-2 text-gray-800">
-                                        Navigasi Soal
+                                <div className="p-3 border-t-2 border-dashed border-gray-300 bg-gray-50/50">
+                                    <div className="p-2 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1 rounded-lg font-handwriting font-bold shadow-sm">
+                                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
+                                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ragu-ragu</span></div>
+                                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>
                                     </div>
-                                    <div className="p-4 flex-1 overflow-y-auto">
-                                        <div className="grid grid-cols-5 gap-2">
-                                            {Array.from({ length: 30 }, (_, i) => {
-                                                const num = i + 1;
-                                                // Simulate some answered (blue), some marked (yellow), active (ring)
-                                                const isActive = num === 15;
-                                                const isAnswered = [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15].includes(num);
-                                                const isMarked = [6, 14].includes(num);
-                                                return (
-                                                    <div
-                                                        key={num}
-                                                        className={`aspect-square rounded-lg font-handwriting font-bold text-sm flex items-center justify-center border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] ${isActive ? 'ring-2 ring-blue-400 ring-offset-1 border-blue-600 z-10' : ''
-                                                            } ${isMarked
-                                                                ? 'bg-yellow-500 text-yellow-950 border-yellow-700'
-                                                                : isAnswered
-                                                                    ? 'bg-blue-700 text-white border-blue-900'
-                                                                    : 'bg-white text-gray-600 border-gray-300'
-                                                            }`}
-                                                    >
-                                                        {num}
-                                                    </div>
-                                                );
-                                            })}
-                                            {/* More indicator */}
-                                            <div className="col-span-5 text-center font-handwriting text-gray-400 text-sm mt-1">... sampai 110</div>
-                                        </div>
-                                    </div>
-                                    <div className="p-3 border-t-2 border-dashed border-gray-300 bg-gray-50/50">
-                                        <div className="p-2 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1 rounded-lg font-handwriting font-bold shadow-sm">
-                                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
-                                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ragu-ragu</span></div>
-                                            <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Mock Footer Nav */}
-                            <div className="hidden sm:flex p-4 border-t-2 border-dashed border-gray-300 justify-between items-center bg-white/50">
-                                <div className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-handwriting font-bold bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                    ← Sebelumnya
-                                </div>
-                                <div className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg font-handwriting font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]">
-                                    Selanjutnya →
                                 </div>
                             </div>
                         </div>
 
-                        {/* Decorative "DEMO" Label */}
-                        <div className="absolute top-4 left-4 bg-red-700 text-white font-handwriting text-xs font-bold px-3 py-1 rounded-full -rotate-12 shadow-lg z-30 border-2 border-red-900">
-                            DEMO
+                        {/* Mock Footer Nav */}
+                        <div className="hidden sm:flex p-4 border-t-2 border-dashed border-gray-300 justify-between items-center bg-white/50">
+                            <div className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-handwriting font-bold bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                ← Sebelumnya
+                            </div>
+                            <div className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg font-handwriting font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]">
+                                Selanjutnya →
+                            </div>
                         </div>
                     </div>
 
-                    {/* CTA */}
-                    <div className="text-center mt-12">
-                        <button
-                            onClick={() => user ? router.push("/cpns/dashboard") : router.push("/login?returnTo=/cpns")}
-                            className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
-                        >
-                            Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                        </button>
-                        <p className="font-handwriting text-lg text-gray-500 mt-4">Mulai dari Rp 7.500/token. Lebih murah dari kopi, tapi bisa ubah masa depanmu.</p>
+                    {/* Decorative "DEMO" Label */}
+                    <div className="absolute top-4 left-4 bg-red-700 text-white font-handwriting text-xs font-bold px-3 py-1 rounded-full -rotate-12 shadow-lg z-30 border-2 border-red-900">
+                        DEMO
                     </div>
-                </Section>
+                </div>
+
+                {/* CTA */}
+                <div className="text-center mt-12">
+                    <button
+                        onClick={() => user ? router.push("/cpns/dashboard") : router.push("/login?returnTo=/cpns")}
+                        className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
+                    >
+                        Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                    <p className="font-handwriting text-lg text-gray-500 mt-4">Mulai dari Rp 7.500/token. Lebih murah dari kopi, tapi bisa ubah masa depanmu.</p>
+                </div>
+            </Section>
 
             {/* --- EVENT AKTIF --- */}
             <Section id="active-event" dashedBorder="both" className="bg-[#fffdf0]">
@@ -569,138 +577,138 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 <div className="max-w-6xl mx-auto">
                     <div className="relative">
                         {activeEvent ? (
-                        <>
-                        <Card className="p-0 overflow-hidden border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] grid grid-cols-1 md:grid-cols-[0.92fr_1.08fr]">
-                            <div className="bg-blue-600 p-4 md:p-5 text-white flex items-center justify-center">
-                                <div className="flex h-full w-full max-w-md flex-col items-center justify-center">
-                                    {activeEventFlyerUrl ? (
-                                        <Image
-                                            src={activeEventFlyerUrl}
-                                            alt={`Poster ${activeEvent?.title || "event aktif"}`}
-                                            width={480}
-                                            height={600}
-                                            className="aspect-4/5 h-auto w-full rounded-lg object-contain"
-                                        />
-                                    ) : (
-                                        <div className="flex aspect-4/5 w-full items-center justify-center rounded-lg bg-blue-700">
-                                            <Clock className="h-20 w-20 text-yellow-400" />
+                            <>
+                                <Card className="p-0 overflow-hidden border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] grid grid-cols-1 md:grid-cols-[0.92fr_1.08fr]">
+                                    <div className="bg-blue-600 p-4 md:p-5 text-white flex items-center justify-center">
+                                        <div className="flex h-full w-full max-w-md flex-col items-center justify-center">
+                                            {activeEventFlyerUrl ? (
+                                                <Image
+                                                    src={activeEventFlyerUrl}
+                                                    alt={`Poster ${activeEvent?.title || "event aktif"}`}
+                                                    width={480}
+                                                    height={600}
+                                                    className="aspect-4/5 h-auto w-full rounded-lg object-contain"
+                                                />
+                                            ) : (
+                                                <div className="flex aspect-4/5 w-full items-center justify-center rounded-lg bg-blue-700">
+                                                    <Clock className="h-20 w-20 text-yellow-400" />
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 md:p-8">
-                                <div className="flex flex-col gap-4">
-                                    <div>
-                                        <p className="font-body text-sm font-extrabold uppercase tracking-[0.12em] text-blue-600">Event Aktif</p>
-                                        <h4 className="mt-1 font-handwriting text-3xl font-bold leading-tight text-gray-950">Tryout Akbar SKD CPNS 2026 Batch 2</h4>
-                                        <p className="mt-2 font-body text-sm leading-6 text-gray-600">
-                                            Simulasi Full SKD dengan sistem CAT, analisis nilai, ranking nasional, sertifikat, dan hadiah untuk Top 3.
-                                        </p>
                                     </div>
-
-                                    <div>
-                                        <p className="mb-2 font-body text-sm font-bold text-gray-800">Pilih sesi</p>
-                                        {activeEvents.length > 0 ? (
-                                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                                {activeEvents.map((event, index) => {
-                                                const isSelected = index === activeEventIndex;
-                                                return (
-                                                    <button
-                                                        key={event.id}
-                                                        type="button"
-                                                        onClick={() => setActiveEventIndex(index)}
-                                                        className={cn(
-                                                            "rounded-lg border-2 px-4 py-3 text-left font-body transition-all",
-                                                            isSelected
-                                                                ? "border-blue-700 bg-blue-600 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
-                                                                : "border-gray-200 bg-[#fdfbf7] text-gray-800 hover:border-blue-500"
-                                                        )}
-                                                    >
-                                                        <span className="block text-sm font-extrabold">{getEventSessionLabel(event, index)}</span>
-                                                        <span className={cn("mt-1 block text-xs font-semibold", isSelected ? "text-blue-100" : "text-gray-500")}>
-                                                            {formatEventStartTime(event)}
-                                                        </span>
-                                                    </button>
-                                                );
-                                                })}
+                                    <div className="bg-white p-6 md:p-8">
+                                        <div className="flex flex-col gap-4">
+                                            <div>
+                                                <p className="font-body text-sm font-extrabold uppercase tracking-[0.12em] text-blue-600">Event Aktif</p>
+                                                <h4 className="mt-1 font-handwriting text-3xl font-bold leading-tight text-gray-950">Tryout Akbar SKD CPNS 2026 Batch 2</h4>
+                                                <p className="mt-2 font-body text-sm leading-6 text-gray-600">
+                                                    Simulasi Full SKD dengan sistem CAT, analisis nilai, ranking nasional, sertifikat, dan hadiah untuk Top 3.
+                                                </p>
                                             </div>
-                                        ) : (
-                                            <div className="rounded-lg border-2 border-dashed border-gray-300 bg-[#fdfbf7] px-4 py-4 font-body text-sm font-semibold text-gray-600">
-                                                Belum ada event aktif yang dibuka. Jadwal baru akan tampil otomatis di sini saat admin membuat event.
+
+                                            <div>
+                                                <p className="mb-2 font-body text-sm font-bold text-gray-800">Pilih sesi</p>
+                                                {activeEvents.length > 0 ? (
+                                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                                        {activeEvents.map((event, index) => {
+                                                            const isSelected = index === activeEventIndex;
+                                                            return (
+                                                                <button
+                                                                    key={event.id}
+                                                                    type="button"
+                                                                    onClick={() => setActiveEventIndex(index)}
+                                                                    className={cn(
+                                                                        "rounded-lg border-2 px-4 py-3 text-left font-body transition-all",
+                                                                        isSelected
+                                                                            ? "border-blue-700 bg-blue-600 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+                                                                            : "border-gray-200 bg-[#fdfbf7] text-gray-800 hover:border-blue-500"
+                                                                    )}
+                                                                >
+                                                                    <span className="block text-sm font-extrabold">{getEventSessionLabel(event, index)}</span>
+                                                                    <span className={cn("mt-1 block text-xs font-semibold", isSelected ? "text-blue-100" : "text-gray-500")}>
+                                                                        {formatEventStartTime(event)}
+                                                                    </span>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <div className="rounded-lg border-2 border-dashed border-gray-300 bg-[#fdfbf7] px-4 py-4 font-body text-sm font-semibold text-gray-600">
+                                                        Belum ada event aktif yang dibuka. Jadwal baru akan tampil otomatis di sini saat admin membuat event.
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
 
-                                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                                        {miniStats.map((stat) => (
-                                            <div key={stat.label} className="rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-3 py-3 text-center">
-                                                <p className="font-body text-[11px] font-bold uppercase tracking-wide text-gray-500">{stat.label}</p>
-                                                <p className="mt-1 font-body text-base font-black text-gray-950">{stat.value}</p>
+                                            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                                                {miniStats.map((stat) => (
+                                                    <div key={stat.label} className="rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-3 py-3 text-center">
+                                                        <p className="font-body text-[11px] font-bold uppercase tracking-wide text-gray-500">{stat.label}</p>
+                                                        <p className="mt-1 font-body text-base font-black text-gray-950">{stat.value}</p>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
 
-                                    <div className="grid gap-3 sm:grid-cols-2">
-                                        <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
-                                            <Target className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-                                            <span><strong className="text-gray-950">Materi:</strong> TWK, TIU, TKP dengan 110 soal.</span>
-                                        </div>
-                                        <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
-                                            <Monitor className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-                                            <span><strong className="text-gray-950">Sistem:</strong> simulasi CAT dan timer ujian.</span>
-                                        </div>
-                                        <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
-                                            <BarChart3 className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-                                            <span><strong className="text-gray-950">Evaluasi:</strong> analisis nilai dan ranking nasional.</span>
-                                        </div>
-                                        <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
-                                            <Trophy className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
-                                            <span><strong className="text-gray-950">Bonus:</strong> sertifikat dan hadiah Top 3.</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-lg border-2 border-red-200 bg-red-50 p-4">
-                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                                            <div className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 font-body text-sm font-extrabold text-red-600">
-                                                <span className="h-2 w-2 rounded-full bg-red-500" />
-                                                {activeEvent ? "Pendaftaran Dibuka" : "Belum Ada Event Aktif"}
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                                <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
+                                                    <Target className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                                    <span><strong className="text-gray-950">Materi:</strong> TWK, TIU, TKP dengan 110 soal.</span>
+                                                </div>
+                                                <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
+                                                    <Monitor className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                                    <span><strong className="text-gray-950">Sistem:</strong> simulasi CAT dan timer ujian.</span>
+                                                </div>
+                                                <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
+                                                    <BarChart3 className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                                    <span><strong className="text-gray-950">Evaluasi:</strong> analisis nilai dan ranking nasional.</span>
+                                                </div>
+                                                <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
+                                                    <Trophy className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                                    <span><strong className="text-gray-950">Bonus:</strong> sertifikat dan hadiah Top 3.</span>
+                                                </div>
                                             </div>
-                                            <p className="font-body text-sm font-bold text-gray-700">
-                                                {activeEvent ? `Kuota terbatas untuk ${miniStats[3].value}` : "Cek kembali saat jadwal event dibuka"}
-                                            </p>
-                                        </div>
-                                        <Button size="lg" className="w-full justify-center bg-blue-600 py-4 font-body text-lg font-black" disabled={!activeEvent} onClick={() => router.push(user ? "/cpns/dashboard/event" : "/login?returnTo=/cpns/dashboard/event")}>
-                                            {activeEvent ? "Daftar Event Sekarang" : "Menunggu Event Berikutnya"} <ArrowRight className="ml-1 h-5 w-5" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
 
-                        {hasMultipleActiveEvents && (
-                            <div className="mt-6 flex items-center justify-center gap-3">
-                                <button
-                                    type="button"
-                                    onClick={showPreviousEvent}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
-                                    aria-label="Lihat event sebelumnya"
-                                >
-                                    <ChevronLeft className="h-6 w-6" />
-                                </button>
-                                <div className="min-w-24 rounded-full border-2 border-gray-900 bg-white px-4 py-2 text-center font-handwriting text-lg font-bold">
-                                    {activeEventIndex + 1} / {activeEvents.length}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={showNextEvent}
-                                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
-                                    aria-label="Lihat event berikutnya"
-                                >
-                                    <ChevronRight className="h-6 w-6" />
-                                </button>
-                            </div>
-                        )}
-                        </>
+                                            <div className="rounded-lg border-2 border-red-200 bg-red-50 p-4">
+                                                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                                    <div className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 font-body text-sm font-extrabold text-red-600">
+                                                        <span className="h-2 w-2 rounded-full bg-red-500" />
+                                                        {activeEvent ? "Pendaftaran Dibuka" : "Belum Ada Event Aktif"}
+                                                    </div>
+                                                    <p className="font-body text-sm font-bold text-gray-700">
+                                                        {activeEvent ? `Kuota terbatas untuk ${miniStats[3].value}` : "Cek kembali saat jadwal event dibuka"}
+                                                    </p>
+                                                </div>
+                                                <Button size="lg" className="w-full justify-center bg-blue-600 py-4 font-body text-lg font-black" disabled={!activeEvent} onClick={() => router.push(user ? "/cpns/dashboard/event" : "/login?returnTo=/cpns/dashboard/event")}>
+                                                    {activeEvent ? "Daftar Event Sekarang" : "Menunggu Event Berikutnya"} <ArrowRight className="ml-1 h-5 w-5" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Card>
+
+                                {hasMultipleActiveEvents && (
+                                    <div className="mt-6 flex items-center justify-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={showPreviousEvent}
+                                            className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+                                            aria-label="Lihat event sebelumnya"
+                                        >
+                                            <ChevronLeft className="h-6 w-6" />
+                                        </button>
+                                        <div className="min-w-24 rounded-full border-2 border-gray-900 bg-white px-4 py-2 text-center font-handwriting text-lg font-bold">
+                                            {activeEventIndex + 1} / {activeEvents.length}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={showNextEvent}
+                                            className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+                                            aria-label="Lihat event berikutnya"
+                                        >
+                                            <ChevronRight className="h-6 w-6" />
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         ) : (
                             <Card className="mx-auto max-w-3xl border-4 border-gray-900 bg-white p-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                                 <Clock className="mx-auto mb-4 h-12 w-12 text-blue-600" />
@@ -722,41 +730,41 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 </div>
 
                 {completedEvents.length > 0 ? (
-                <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                    {completedEvents.map((event) => {
-                        const flyerUrl = getEventFlyerUrl(event);
-                        return (
-                        <Card key={event.id} className="overflow-hidden border-2 border-gray-900 bg-[#fdfbf7] flex flex-col hover:-translate-y-1 transition-transform">
-                            {flyerUrl ? (
-                                <div className="relative aspect-4/5 w-full border-b-2 border-gray-900 bg-blue-600">
-                                    <Image
-                                        src={flyerUrl}
-                                        alt={`Flyer ${event.title}`}
-                                        fill
-                                        sizes="(min-width: 768px) 33vw, 100vw"
-                                        className="object-cover"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="flex aspect-4/3 w-full items-center justify-center border-b-2 border-gray-900 bg-blue-50 px-6 text-center">
-                                    <div>
-                                        <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
-                                        <p className="font-handwriting text-2xl font-bold text-gray-900">Dokumentasi Event</p>
+                    <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                        {completedEvents.map((event) => {
+                            const flyerUrl = getEventFlyerUrl(event);
+                            return (
+                                <Card key={event.id} className="overflow-hidden border-2 border-gray-900 bg-[#fdfbf7] flex flex-col hover:-translate-y-1 transition-transform">
+                                    {flyerUrl ? (
+                                        <div className="relative aspect-4/5 w-full border-b-2 border-gray-900 bg-blue-600">
+                                            <Image
+                                                src={flyerUrl}
+                                                alt={`Flyer ${event.title}`}
+                                                fill
+                                                sizes="(min-width: 768px) 33vw, 100vw"
+                                                className="object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex aspect-4/3 w-full items-center justify-center border-b-2 border-gray-900 bg-blue-50 px-6 text-center">
+                                            <div>
+                                                <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
+                                                <p className="font-handwriting text-2xl font-bold text-gray-900">Dokumentasi Event</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="flex flex-1 flex-col p-6">
+                                        <h3 className="font-handwriting text-2xl font-bold mb-6 text-gray-900 leading-tight flex-1">{event.title}</h3>
+                                        <Button variant="outline" className="w-full text-sm font-bold border-2 border-gray-900 text-gray-800 hover:bg-gray-100" asChild>
+                                            <a href={getEventDocumentationUrl(event)} target="_blank" rel="noopener noreferrer">
+                                                Lihat Dokumentasi
+                                            </a>
+                                        </Button>
                                     </div>
-                                </div>
-                            )}
-                            <div className="flex flex-1 flex-col p-6">
-                            <h3 className="font-handwriting text-2xl font-bold mb-6 text-gray-900 leading-tight flex-1">{event.title}</h3>
-                            <Button variant="outline" className="w-full text-sm font-bold border-2 border-gray-900 text-gray-800 hover:bg-gray-100" asChild>
-                                <a href={getEventDocumentationUrl(event)} target="_blank" rel="noopener noreferrer">
-                                    Lihat Dokumentasi
-                                </a>
-                            </Button>
-                            </div>
-                        </Card>
-                        );
-                    })}
-                </div>
+                                </Card>
+                            );
+                        })}
+                    </div>
                 ) : (
                     <Card className="mx-auto max-w-2xl border-2 border-dashed border-gray-300 bg-[#fdfbf7] p-8 text-center">
                         <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
@@ -782,10 +790,10 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                             {leaderboardWinners.map((winner, i) => (
                                 <div key={i} className={`flex items-center p-4 md:p-5 border-b-2 border-dashed border-gray-200 last:border-b-0 hover:bg-blue-50 transition-colors ${i < 3 ? 'bg-yellow-50/30' : ''}`}>
                                     <div className="w-12 font-handwriting font-bold text-2xl text-center">
-                                        {i === 0 ? <span className="text-yellow-500 text-3xl">🥇</span> : 
-                                         i === 1 ? <span className="text-gray-400 text-3xl">🥈</span> : 
-                                         i === 2 ? <span className="text-orange-600 text-3xl">🥉</span> : 
-                                         <span className="text-gray-400">#{winner.rank}</span>}
+                                        {i === 0 ? <span className="text-yellow-500 text-3xl">🥇</span> :
+                                            i === 1 ? <span className="text-gray-400 text-3xl">🥈</span> :
+                                                i === 2 ? <span className="text-orange-600 text-3xl">🥉</span> :
+                                                    <span className="text-gray-400">#{winner.rank}</span>}
                                     </div>
                                     <div className="flex-1 ml-4">
                                         <div className="font-handwriting font-bold text-lg md:text-xl text-gray-900">{winner.name}</div>
@@ -997,25 +1005,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 </div>
             </footer>
 
-            {/* Sticky Mobile CTA */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t-2 border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-2">
-                <div className="text-center text-xs font-handwriting font-bold text-gray-500">Siap mulai latihan?</div>
-                <div className="flex gap-3">
-                    <Button 
-                        variant="secondary"
-                        className="flex-1 shadow-none py-4 text-base border-2 border-gray-900 bg-red-100 text-red-700 hover:bg-red-200" 
-                        onClick={() => scrollToSection("active-event")}
-                    >
-                        Lihat Event
-                    </Button>
-                    <Button 
-                        className="flex-1 shadow-none py-4 text-base"
-                        onClick={() => scrollToSection("products")}
-                    >
-                        Mulai Tryout
-                    </Button>
-                </div>
-            </div>
+
         </main>
     );
 }
