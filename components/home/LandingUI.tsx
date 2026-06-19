@@ -276,7 +276,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 <div className="container mx-auto px-4">
                     <div className="flex overflow-x-auto pb-4 md:pb-0 hide-scrollbar gap-4 md:gap-8 justify-start md:justify-center items-center">
                         {trustBadges.map((badge, i) => {
-                            const IconMap: Record<string, any> = { Award, BookOpen, Trophy, ShieldCheck, Monitor, Layers };
+                            const IconMap: Record<string, typeof Award> = { Award, BookOpen, Trophy, ShieldCheck, Monitor, Layers };
                             const IconComponent = IconMap[badge.icon] || Award;
                             return (
                                 <div key={i} className="flex items-center gap-2 bg-gray-100 px-4 py-2.5 rounded-full border-2 border-gray-200 shrink-0 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-default">

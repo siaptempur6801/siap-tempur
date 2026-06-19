@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Section } from "@/components/ui/Section";
-import { faqItems } from "@/lib/data/landing";
 
 export const metadata: Metadata = {
     title: "Mini Tryout CPNS: Latihan Soal TWK, TIU, TKP Singkat | SiapTempur",

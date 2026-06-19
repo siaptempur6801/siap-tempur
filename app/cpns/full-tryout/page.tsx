@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Monitor, Target, CheckCircle2, Award, Clock, Activity, Coins } from "lucide-react";
+import { ArrowRight, Monitor, Target, CheckCircle2, Award, Activity } from "lucide-react";
 import StructuredData from "@/components/StructuredData";
 import SeoNavbar from "@/components/SeoNavbar";
 import { Button } from "@/components/ui/Button";
