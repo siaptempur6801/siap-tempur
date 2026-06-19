@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, CalendarDays, Loader2, Trophy, Clock, Users, BookOpen, CheckCircle2, AlertTriangle, Zap, Lock, Radio, Check, CreditCard, RefreshCw, Ticket, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
@@ -24,6 +25,7 @@ type UserEvent = {
     max_participants: number | null
     requires_code: boolean
     group_link: string | null
+    flyer_image_url: string | null
     is_paid: boolean
     price: number
     status: EventStatus
@@ -103,7 +105,7 @@ function getEventState(event: UserEvent, now: number) {
         const hasPendingPayment = event.payment_status === 'pending'
 
         if (!hasPaid) {
-            if (hasPendingPayment) return { label: 'Cek Pembayaran', action: 'check_payment' as const, step: 0 }
+            if (hasPendingPayment) return { label: `Beli Tiket`, action: 'check_payment' as const, step: 0 }
             return { label: `Beli Tiket`, action: 'pay' as const, step: 0 }
         }
     }
@@ -313,6 +315,19 @@ function EventCard({
             <div className="relative p-5 sm:p-6 grid gap-5 md:grid-cols-[1fr_220px] md:items-start">
                 {/* --- LEFT: Info --- */}
                 <div className="space-y-4">
+                    {event.flyer_image_url && (
+                        <div className="relative aspect-[16/7] overflow-hidden border-2 border-gray-900 bg-gray-100">
+                            <Image
+                                src={event.flyer_image_url}
+                                alt={`Flyer ${event.title}`}
+                                fill
+                                className="object-cover"
+                                sizes="(min-width: 768px) calc(100vw - 320px), calc(100vw - 48px)"
+                                priority={isLive}
+                            />
+                        </div>
+                    )}
+
                     {/* Badges row */}
                     <div className="flex flex-wrap items-center gap-2">
                         <span className={cn('inline-flex items-center gap-1.5 border-2 border-gray-900 px-2.5 py-1 text-[11px] font-black uppercase', statusConfig.bg, statusConfig.text)}>
@@ -431,10 +446,8 @@ function EventCard({
                         onClick={() => onAction(event)}
                         className={cn(
                             'flex w-full items-center justify-center gap-2 border-2 border-gray-900 px-5 py-4 text-lg font-black transition-all',
-                            state.action === 'pay'
+                            state.action === 'pay' || state.action === 'check_payment'
                                 ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none'
-                                : state.action === 'check_payment'
-                                ? 'bg-blue-100 text-blue-800 hover:bg-blue-200 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:translate-x-px hover:translate-y-px hover:shadow-none'
                                 : ({
                                     register: 'bg-blue-600 hover:bg-blue-700 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none',
                                     start: 'bg-green-500 hover:bg-green-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none',
@@ -444,10 +457,9 @@ function EventCard({
                         )}
                     >
                         {isPending ? <Loader2 className="animate-spin" size={18} />
-                            : state.action === 'pay' ? <CreditCard size={18} />
-                            : state.action === 'check_payment' ? <RefreshCw size={18} />
+                            : state.action === 'pay' || state.action === 'check_payment' ? <CreditCard size={18} />
                             : <ArrowRight size={18} />}
-                        {state.action === 'pay'
+                        {state.action === 'pay' || state.action === 'check_payment'
                             ? `Beli Tiket Rp ${event.price.toLocaleString('id-ID')}`
                             : state.label}
                     </button>

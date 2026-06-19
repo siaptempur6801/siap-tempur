@@ -26,7 +26,7 @@ export default async function UserEventPage() {
     const admin = await createAdminClient()
     const { data: events, error } = await admin
         .from('tryout_events')
-        .select('id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, group_link, is_paid, price, status, tryout_event_questions(id)')
+        .select('id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, group_link, flyer_image_url, is_paid, price, status, tryout_event_questions(id)')
         .in('status', ['scheduled', 'live', 'closed'])
         .order('starts_at', { ascending: true })
 
@@ -99,6 +99,7 @@ export default async function UserEventPage() {
             max_participants: event.max_participants,
             requires_code: event.requires_code,
             group_link: getVisibleEventGroupLink(event.group_link, participant?.id),
+            flyer_image_url: event.flyer_image_url || null,
             is_paid: event.is_paid ?? false,
             price: event.price ?? 0,
             status: event.status,

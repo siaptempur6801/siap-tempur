@@ -6,7 +6,7 @@ import Image from 'next/image'
 import {
     BarChart3, ChevronDown, ChevronUp, Copy, Download,
     Loader2, Plus, Radio, Save, Settings, Ticket, Trash2, Users, X,
-    CheckCircle2, Clock, BookOpen, AlertTriangle, Zap, EyeOff, Eye, Trophy
+    CheckCircle2, Clock, BookOpen, AlertTriangle, Zap, EyeOff, Eye, Trophy, Upload, ImageIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -22,6 +22,7 @@ import {
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import MathRenderer from '@/components/MathRenderer'
+import { createClient } from '@/lib/utils/supabase/client'
 
 type EventStatus = 'draft' | 'scheduled' | 'live' | 'closed' | 'cancelled'
 
@@ -89,6 +90,7 @@ type TryoutEvent = {
     max_participants: number | null
     requires_code: boolean
     group_link: string | null
+    flyer_image_url: string | null
     is_paid: boolean
     price: number
     status: EventStatus
@@ -154,12 +156,45 @@ function getEventFormValues(event?: TryoutEvent | null) {
         max_participants: event?.max_participants ? String(event.max_participants) : '',
         requires_code: event?.requires_code || false,
         group_link: event?.group_link || '',
+        flyer_image_url: event?.flyer_image_url || '',
         is_paid: event?.is_paid || false,
         price: String(event?.price ?? 15000),
     }
 }
 
 type EventFormValues = ReturnType<typeof getEventFormValues>
+
+const MAX_FLYER_UPLOAD_SIZE_BYTES = 4 * 1024 * 1024
+const ALLOWED_FLYER_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
+async function uploadEventFlyer(file: File, prefix: string) {
+    if (file.size > MAX_FLYER_UPLOAD_SIZE_BYTES) {
+        throw new Error('Ukuran flyer maksimal 4MB')
+    }
+
+    if (!ALLOWED_FLYER_IMAGE_TYPES.has(file.type)) {
+        throw new Error('Format flyer harus JPG, PNG, atau WebP')
+    }
+
+    const supabase = createClient()
+    const fileExt = file.name.split('.').pop() || 'jpg'
+    const fileName = `${prefix}-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
+
+    const { error } = await supabase.storage
+        .from('event-flyers')
+        .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false,
+        })
+
+    if (error) throw new Error(error.message)
+
+    const { data } = supabase.storage
+        .from('event-flyers')
+        .getPublicUrl(fileName)
+
+    return data.publicUrl
+}
 
 function getEventFormCloseAt(values: EventFormValues) {
     const durationMinutes = Number(values.duration_minutes) || 0
@@ -248,6 +283,7 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
     const [values, setValues] = useState(() => getEventFormValues(event))
     const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
     const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null)
+    const [isUploadingFlyer, setIsUploadingFlyer] = useState(false)
     const allowNextNavigationRef = useRef(false)
 
     useEffect(() => {
@@ -256,6 +292,22 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
 
     const updateValue = (field: keyof ReturnType<typeof getEventFormValues>, value: string | boolean) => {
         setValues((current) => ({ ...current, [field]: value }))
+    }
+
+    const handleFlyerUpload = async (file: File | null) => {
+        if (!file) return
+
+        setIsUploadingFlyer(true)
+        try {
+            const publicUrl = await uploadEventFlyer(file, event?.id ? `event-${event.id}` : 'event-new')
+            updateValue('flyer_image_url', publicUrl)
+            toast.success('Flyer event berhasil diupload')
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Gagal upload flyer event'
+            toast.error(message)
+        } finally {
+            setIsUploadingFlyer(false)
+        }
     }
 
     const closeAt = getEventFormCloseAt(values)
@@ -327,6 +379,7 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                 <input type="hidden" name="ends_at" value={closeAt} />
                 <input type="hidden" name="result_visible_at" value={resultVisibleAt} />
                 <input type="hidden" name="explanation_visible_at" value={explanationVisibleAt} />
+                <input type="hidden" name="flyer_image_url" value={values.flyer_image_url} />
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2 space-y-1.5">
                         <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Nama Event</label>
@@ -337,6 +390,55 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                         <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Deskripsi</label>
                         <textarea name="description" rows={2} value={values.description} onChange={(e) => updateValue('description', e.target.value)} placeholder="Deskripsi singkat event"
                             className="w-full resize-none border-2 border-gray-300 px-4 py-2.5 font-medium text-gray-900 outline-none focus:border-gray-900" />
+                    </div>
+                    <div className="sm:col-span-2 space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Flyer Event</label>
+                        <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
+                            <div className="relative aspect-[4/5] overflow-hidden border-2 border-gray-300 bg-gray-50">
+                                {values.flyer_image_url ? (
+                                    <Image
+                                        src={values.flyer_image_url}
+                                        alt="Flyer event"
+                                        fill
+                                        className="object-cover"
+                                        sizes="160px"
+                                    />
+                                ) : (
+                                    <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
+                                        <ImageIcon size={28} />
+                                        <span className="text-xs font-black uppercase">Belum Ada</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="space-y-3">
+                                <label className="flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-5 text-center transition hover:border-gray-900 hover:bg-white">
+                                    {isUploadingFlyer ? <Loader2 size={20} className="animate-spin text-gray-900" /> : <Upload size={20} className="text-gray-500" />}
+                                    <span className="text-sm font-black text-gray-900">
+                                        {isUploadingFlyer ? 'Mengupload flyer...' : 'Upload flyer JPG, PNG, atau WebP'}
+                                    </span>
+                                    <span className="text-xs font-medium text-gray-400">Maksimal 4MB. Disarankan rasio 4:5 atau 16:9.</span>
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        disabled={isUploadingFlyer}
+                                        onChange={(e) => {
+                                            void handleFlyerUpload(e.target.files?.[0] || null)
+                                            e.target.value = ''
+                                        }}
+                                        className="sr-only"
+                                    />
+                                </label>
+                                {values.flyer_image_url && (
+                                    <button
+                                        type="button"
+                                        onClick={() => updateValue('flyer_image_url', '')}
+                                        className="inline-flex items-center gap-2 border-2 border-red-200 bg-red-50 px-3 py-2 text-xs font-black uppercase text-red-600 hover:border-red-400"
+                                    >
+                                        <Trash2 size={13} /> Hapus Flyer
+                                    </button>
+                                )}
+                            </div>
+                        </div>
                     </div>
                     <div className="space-y-1.5">
                         <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Mulai (WIB)</label>
@@ -425,10 +527,10 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                         )}
                     </div>
                 </div>
-                <button disabled={isPending}
+                <button disabled={isPending || isUploadingFlyer}
                     className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-5 py-3 font-black text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none disabled:opacity-60">
-                    {isPending ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                    {event ? 'Simpan Perubahan' : 'Buat Event'}
+                    {isPending || isUploadingFlyer ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                    {isUploadingFlyer ? 'Menunggu Upload...' : event ? 'Simpan Perubahan' : 'Buat Event'}
                 </button>
             </form>
 
@@ -1446,6 +1548,22 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                                                 className="shrink-0 border-2 border-gray-900 p-1.5 hover:bg-gray-100 transition">
                                                 {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                                             </button>
+
+                                            <div className="relative hidden h-14 w-20 shrink-0 overflow-hidden border-2 border-gray-200 bg-gray-50 sm:block">
+                                                {event.flyer_image_url ? (
+                                                    <Image
+                                                        src={event.flyer_image_url}
+                                                        alt={`Flyer ${event.title}`}
+                                                        fill
+                                                        className="object-cover"
+                                                        sizes="80px"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full items-center justify-center text-gray-300">
+                                                        <ImageIcon size={18} />
+                                                    </div>
+                                                )}
+                                            </div>
 
                                             {/* Info */}
                                             <div className="min-w-0 flex-1">
