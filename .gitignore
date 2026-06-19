@@ -64,3 +64,28 @@ load-test/*.txt
 Thumbs.db
 *.pem
 next-env.d.ts
+
+# IDE / Editor
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.sw?
+*.suo
+
+# Cache / Build
+.turbo/
+
+# Local DB / Dumps
+*.sqlite
+*.sqlite3
+*.db
+*.dump.sql
+
+# Temporary / Scratch
+tmp/
+temp/
+scratch/
