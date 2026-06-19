@@ -66,18 +66,15 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                 {/* Sidebar Pattern Grid */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
 
-                <div className="p-6 relative z-10 shrink-0">
-                    <Link href="/cpns" className="flex flex-col items-start group">
-                        <span className="text-xl font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight uppercase">
-                            CPNS & KEDINASAN
-                        </span>
-                        <span className="text-xs font-handwriting font-bold text-gray-500 ml-1 -mt-1 group-hover:text-gray-900 transition-colors">
-                            by Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                <div className="p-6 relative z-10 shrink-0 flex items-center justify-center">
+                    <Link href="/cpns" className="flex items-center group">
+                        <span className="text-3xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
+                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                         </span>
                     </Link>
                 </div>
 
-                <nav className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 space-y-3 relative z-10">
+                <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-2 pl-4 pr-6 pb-4 space-y-3 relative z-10">
                     <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
                     <NavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" badge="XP" />
                     <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={20} />} label="Mini Tryout" />
@@ -139,12 +136,9 @@ export default function DashboardShell({ children, user, profile, signoutAction,
             <main className="flex-1 overflow-y-auto pb-20 md:pb-0 relative scrollbar-hide">
                 {/* Mobile Header (Hidden on Desktop) */}
                 <div className="md:hidden h-16 border-b-2 border-gray-900 flex items-center px-6 justify-between sticky top-0 bg-[#fdfbf7]/90 backdrop-blur-md z-30 shadow-sm">
-                    <Link href="/" className="flex flex-col items-start group">
-                        <span className="text-lg font-handwriting font-bold text-gray-800 rotate-[-1deg] group-hover:rotate-0 transition-transform leading-tight uppercase">
-                            CPNS & KEDINASAN
-                        </span>
-                        <span className="text-[10px] font-handwriting font-bold text-gray-500 ml-1 -mt-1 group-hover:text-gray-900 transition-colors">
-                            by Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                    <Link href="/cpns" className="flex items-center group">
+                        <span className="text-2xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
+                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                         </span>
                     </Link>
                     <MobileProfileDropdown 
