@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import ProfileClient from '@/components/profile/ProfileClient'
 import { getLevel } from '@/lib/dashboard'
 import { calculateCurrentStreak } from '@/lib/utils'
@@ -53,6 +54,8 @@ export default async function ProfilePage() {
     const totalXP = rawSessions?.reduce((sum, s) => sum + (s.total_score || 0), 0) || 0
     const levelInfo = getLevel(totalXP)
 
+
+
     if (profile) {
         profile.streak_count = calculateCurrentStreak(profile.streak_count, profile.last_activity_date);
     }
@@ -69,7 +72,7 @@ export default async function ProfilePage() {
             .single()
 
         return (
-            <>
+            <Suspense fallback={<div className="flex h-screen items-center justify-center font-handwriting text-2xl">Memuat Profil...</div>}>
                 <ProfileClient
                     profile={newProfile || { id: user.id, full_name: null, avatar_url: null, bio: null }}
                     user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
@@ -77,12 +80,12 @@ export default async function ProfilePage() {
                     usageSessions={usageSessions || []}
                     level={levelInfo.level}
                 />
-            </>
+            </Suspense>
         )
     }
 
     return (
-        <>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center font-handwriting text-2xl">Memuat Profil...</div>}>
             <ProfileClient
                 profile={profile}
                 user={{ id: user.id, email: user.email!, created_at: user.created_at! }}
@@ -90,6 +93,6 @@ export default async function ProfilePage() {
                 usageSessions={usageSessions || []}
                 level={levelInfo.level}
             />
-        </>
+        </Suspense>
     )
 }

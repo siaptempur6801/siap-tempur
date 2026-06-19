@@ -3,6 +3,7 @@
 import { Sparkles, Flame, Zap, Package, Smartphone, CheckCircle, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import CheckDoodle from '@/components/CheckDoodle'
+import { useRouter } from 'next/navigation'
 import { createPackageTransaction, syncPaymentStatus } from '@/app/actions/payment'
 import { cn } from '@/lib/utils'
 import { PRICING_PACKAGES as PRICING_PACKAGES_DATA } from '@/lib/constants'
@@ -10,6 +11,8 @@ import { PRICING_PACKAGES as PRICING_PACKAGES_DATA } from '@/lib/constants'
 const PRICING_PACKAGES = PRICING_PACKAGES_DATA
 
 export default function BeliPaketClient() {
+    const router = useRouter()
+
     const handleBuy = async (packageId: string) => {
         const loadingToast = toast.loading("Memproses pesanan...")
 
@@ -39,6 +42,7 @@ export default function BeliPaketClient() {
                         id: loadingId,
                         description: "Silakan selesaikan pembayaran sesuai instruksi."
                     })
+                    router.push('/cpns/dashboard/profile?tab=history')
                     void result
                 },
                 onError: function (result) {
