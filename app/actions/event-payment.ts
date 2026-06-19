@@ -7,12 +7,12 @@ import { revalidatePath } from 'next/cache'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { validateCsrf } from '@/lib/csrf'
+import {
+    getReusableEventPaymentResult,
+    type CreateEventPaymentTransactionResult,
+} from '@/lib/event-payment'
 
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
-
-type CreateEventPaymentTransactionResult =
-    | { success: true; token: string; orderId: string }
-    | { success: false; message: string }
 
 /**
  * Creates a Midtrans Snap transaction for an event ticket.
@@ -65,12 +65,15 @@ export async function createEventPaymentTransaction(eventId: string): Promise<Cr
     // Check if user already paid / registered
     const { data: existingPayment } = await admin
         .from('event_payments')
-        .select('id, status')
+        .select('id, status, order_id, snap_token')
         .eq('user_id', user.id)
         .eq('event_id', eventId)
         .maybeSingle()
 
-    if (existingPayment) {
+    const reusablePayment = getReusableEventPaymentResult(existingPayment)
+    if (reusablePayment) return reusablePayment
+
+    if (existingPayment && existingPayment.status === 'pending') {
         if (SUCCESS_STATUSES.has(existingPayment.status)) {
             return { success: false, message: 'Tiket sudah dibeli. Kamu sudah terdaftar di event ini.' }
         }
@@ -122,20 +125,32 @@ export async function createEventPaymentTransaction(eventId: string): Promise<Cr
         return { success: false, message: 'Gagal memperoleh token pembayaran. Coba lagi.' }
     }
 
-    // Log to event_payments table
-    const { error: dbError } = await admin
-        .from('event_payments')
-        .insert({
-            user_id: user.id,
-            event_id: eventId,
-            order_id: orderId,
-            amount,
-            status: 'pending',
-            snap_token: transaction.token,
-        })
+    const paymentPayload = {
+        user_id: user.id,
+        event_id: eventId,
+        order_id: orderId,
+        amount,
+        status: 'pending',
+        snap_token: transaction.token,
+    }
+
+    const { error: dbError } = existingPayment
+        ? await admin
+            .from('event_payments')
+            .update({
+                ...paymentPayload,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', existingPayment.id)
+            .eq('user_id', user.id)
+            .eq('event_id', eventId)
+        : await admin
+            .from('event_payments')
+            .insert(paymentPayload)
 
     if (dbError) {
-        logger.error('Event payment insert failed', dbError, { eventId, orderId })
+        logger.error('Event payment save failed', dbError, { eventId, orderId })
         return { success: false, message: 'Gagal menyimpan transaksi pembayaran. Coba lagi.' }
     }
 

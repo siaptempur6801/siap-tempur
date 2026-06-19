@@ -56,7 +56,7 @@ export default async function UserEventPage() {
         eventIds.length > 0
             ? admin
                 .from('event_payments')
-                .select('event_id, order_id, status, amount')
+                .select('event_id, order_id, status, amount, snap_token')
                 .eq('user_id', user.id)
                 .in('event_id', eventIds)
             : Promise.resolve({ data: [] }),
@@ -111,6 +111,7 @@ export default async function UserEventPage() {
             // Payment info (null if gratis or belum bayar)
             payment_status: payment?.status || null,
             payment_order_id: payment?.order_id || null,
+            payment_snap_token: payment?.snap_token || null,
         }
     })
 

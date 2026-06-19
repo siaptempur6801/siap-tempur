@@ -36,6 +36,7 @@ type UserEvent = {
     // Payment
     payment_status: string | null
     payment_order_id: string | null
+    payment_snap_token: string | null
 }
 
 interface EventClientProps {
@@ -470,6 +471,7 @@ function EventPaymentModal({
     const [isPending, startTransition] = useTransition()
     const [error, setError] = useState<string | null>(null)
     const [pendingOrderId, setPendingOrderId] = useState<string | null>(event.payment_order_id)
+    const [pendingSnapToken, setPendingSnapToken] = useState<string | null>(event.payment_snap_token)
     const [isCheckingStatus, setIsCheckingStatus] = useState(false)
 
     // Load Midtrans Snap script
@@ -488,7 +490,27 @@ function EventPaymentModal({
         document.head.appendChild(script)
     }, [])
 
+    const openSnapPayment = (token: string) => {
+        if (!window.snap) {
+            setError('Sistem pembayaran belum siap. Muat ulang halaman.')
+            return
+        }
+
+        setError(null)
+        window.snap.pay(token, {
+            onSuccess: () => { toast.success('Pembayaran berhasil! Kamu sudah terdaftar.'); onSuccess() },
+            onPending: () => { toast.info('Pembayaran pending. Kamu bisa cek status nanti.') },
+            onError: () => { toast.error('Pembayaran gagal. Coba lagi.') },
+            onClose: () => { toast('Pembayaran dibatalkan.') },
+        })
+    }
+
     const handleBuy = () => {
+        if (pendingSnapToken) {
+            openSnapPayment(pendingSnapToken)
+            return
+        }
+
         startTransition(async () => {
             try {
                 const result = await createEventPaymentTransaction(event.id)
@@ -498,13 +520,8 @@ function EventPaymentModal({
                     return
                 }
                 setPendingOrderId(result.orderId)
-                if (!window.snap) { setError('Sistem pembayaran belum siap. Muat ulang halaman.'); return }
-                window.snap.pay(result.token, {
-                    onSuccess: () => { toast.success('Pembayaran berhasil! Kamu sudah terdaftar.'); onSuccess() },
-                    onPending: () => { toast.info('Pembayaran pending. Kamu bisa cek status nanti.') },
-                    onError: () => { toast.error('Pembayaran gagal. Coba lagi.') },
-                    onClose: () => { toast('Pembayaran dibatalkan.') },
-                })
+                setPendingSnapToken(result.token)
+                openSnapPayment(result.token)
             } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : 'Gagal membuat transaksi'
                 setError(msg)
