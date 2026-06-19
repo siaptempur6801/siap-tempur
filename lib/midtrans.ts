@@ -34,6 +34,9 @@ export interface MidtransTransactionParameter {
         expiry_duration: number;
         unit: string;
     };
+    callbacks?: {
+        finish?: string;
+    };
     [key: string]: unknown;
 }
 
@@ -57,6 +60,10 @@ function getMidtransApiBaseUrl(serverKey: string) {
     return serverKey.includes('SB-') ? 'https://api.sandbox.midtrans.com' : 'https://api.midtrans.com'
 }
 
+function getMidtransAuthHeader(serverKey: string) {
+    return `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`
+}
+
 function getSnap() {
     if (!_snap) {
         const serverKey = env.midtransServerKey()
@@ -69,12 +76,19 @@ function getSnap() {
     return _snap;
 }
 
+function buildFinishRedirectUrl(path: string) {
+    const baseUrl = env.siteUrl().replace(/\/+$/, '')
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    return `${baseUrl}${normalizedPath}`
+}
+
 export async function createTransaction(
     orderId: string,
     amount: number,
     customerDetails?: MidtransCustomerDetails,
     itemDetails?: MidtransItemDetails[],
-    enabledPayments?: string[]
+    enabledPayments?: string[],
+    finishRedirectPath = '/cpns/dashboard'
 ) {
     const parameter: MidtransTransactionParameter = {
         "transaction_details": {
@@ -85,6 +99,9 @@ export async function createTransaction(
         "custom_expiry": {
             "expiry_duration": 15,
             "unit": "minute"
+        },
+        "callbacks": {
+            "finish": buildFinishRedirectUrl(finishRedirectPath)
         }
     };
 
@@ -112,7 +129,7 @@ export async function getTransactionStatus(orderId: string): Promise<MidtransTra
         headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
-            Authorization: `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`,
+            Authorization: getMidtransAuthHeader(serverKey),
         },
         cache: 'no-store',
     })
@@ -126,4 +143,25 @@ export async function getTransactionStatus(orderId: string): Promise<MidtransTra
     }
 
     return response.json()
+}
+
+export async function expireTransaction(orderId: string) {
+    const serverKey = env.midtransServerKey()
+    const response = await fetch(`${getMidtransApiBaseUrl(serverKey)}/v2/${encodeURIComponent(orderId)}/expire`, {
+        method: 'POST',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            Authorization: getMidtransAuthHeader(serverKey),
+        },
+        cache: 'no-store',
+    })
+
+    if (response.status === 404) return false
+
+    if (!response.ok) {
+        throw new Error(`Midtrans expire request failed for ${orderId}: ${response.status}`)
+    }
+
+    return true
 }

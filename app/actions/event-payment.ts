@@ -1,7 +1,7 @@
 'use server'
 
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
-import { createTransaction } from '@/lib/midtrans'
+import { createTransaction, expireTransaction } from '@/lib/midtrans'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { env } from '@/lib/env'
@@ -19,7 +19,10 @@ const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
  * Order ID format: EVT-{eventId[0..7]}-{userId[0..7]}-{timestamp}
  * Does NOT consume tryout tokens.
  */
-export async function createEventPaymentTransaction(eventId: string): Promise<CreateEventPaymentTransactionResult> {
+export async function createEventPaymentTransaction(
+    eventId: string,
+    options: { refreshPending?: boolean } = {}
+): Promise<CreateEventPaymentTransactionResult> {
     try {
         await validateCsrf()
     } catch {
@@ -70,10 +73,25 @@ export async function createEventPaymentTransaction(eventId: string): Promise<Cr
         .eq('event_id', eventId)
         .maybeSingle()
 
-    const reusablePayment = getReusableEventPaymentResult(existingPayment)
-    if (reusablePayment) return reusablePayment
+    if (existingPayment?.status === 'pending' && options.refreshPending) {
+        try {
+            await expireTransaction(existingPayment.order_id)
+        } catch (error) {
+            logger.error('Event pending payment expire failed', error, {
+                eventId,
+                orderId: existingPayment.order_id,
+            })
+            return {
+                success: false,
+                message: 'Gagal membatalkan tagihan lama. Cek status pembayaran dulu.',
+            }
+        }
+    } else {
+        const reusablePayment = getReusableEventPaymentResult(existingPayment)
+        if (reusablePayment) return reusablePayment
+    }
 
-    if (existingPayment && existingPayment.status === 'pending') {
+    if (existingPayment && existingPayment.status === 'pending' && !options.refreshPending) {
         if (SUCCESS_STATUSES.has(existingPayment.status)) {
             return { success: false, message: 'Tiket sudah dibeli. Kamu sudah terdaftar di event ini.' }
         }
@@ -115,7 +133,8 @@ export async function createEventPaymentTransaction(eventId: string): Promise<Cr
         amount,
         customerDetails,
         itemDetails,
-        ['qris', 'other_qris']
+        ['qris', 'other_qris'],
+        '/cpns/dashboard/event'
     ).catch((error) => {
         logger.error('Event payment transaction failed', error, { eventId, orderId })
         return null

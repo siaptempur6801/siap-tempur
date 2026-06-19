@@ -60,7 +60,14 @@ export async function createPackageTransaction(packageId: string) {
         }
     ]
 
-    const transaction = await createTransaction(orderId, grossAmount, customerDetails, itemDetails, enabledPayments)
+    const transaction = await createTransaction(
+        orderId,
+        grossAmount,
+        customerDetails,
+        itemDetails,
+        enabledPayments,
+        '/cpns/dashboard/profile'
+    )
 
     if (!transaction || !transaction.token) {
         throw new Error("Gagal memperoleh token pembayaran dari Midtrans.")

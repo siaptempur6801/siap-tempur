@@ -472,6 +472,7 @@ function EventPaymentModal({
     const [error, setError] = useState<string | null>(null)
     const [pendingOrderId, setPendingOrderId] = useState<string | null>(event.payment_order_id)
     const [pendingSnapToken, setPendingSnapToken] = useState<string | null>(event.payment_snap_token)
+    const [shouldRefreshPendingToken, setShouldRefreshPendingToken] = useState(Boolean(event.payment_snap_token))
     const [isCheckingStatus, setIsCheckingStatus] = useState(false)
 
     // Load Midtrans Snap script
@@ -506,14 +507,16 @@ function EventPaymentModal({
     }
 
     const handleBuy = () => {
-        if (pendingSnapToken) {
+        if (pendingSnapToken && !shouldRefreshPendingToken) {
             openSnapPayment(pendingSnapToken)
             return
         }
 
         startTransition(async () => {
             try {
-                const result = await createEventPaymentTransaction(event.id)
+                const result = await createEventPaymentTransaction(event.id, {
+                    refreshPending: shouldRefreshPendingToken,
+                })
                 if (!result.success) {
                     setError(result.message)
                     toast.error(result.message)
@@ -521,6 +524,7 @@ function EventPaymentModal({
                 }
                 setPendingOrderId(result.orderId)
                 setPendingSnapToken(result.token)
+                setShouldRefreshPendingToken(false)
                 openSnapPayment(result.token)
             } catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : 'Gagal membuat transaksi'
@@ -593,7 +597,7 @@ function EventPaymentModal({
                         <button onClick={handleBuy} disabled={isPending || isLoading}
                             className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-900 bg-amber-500 py-3 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none transition disabled:opacity-60">
                             {isPending || isLoading ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
-                            {isLoading ? 'Memuat...' : 'Bayar Sekarang'}
+                            {isLoading ? 'Memuat...' : shouldRefreshPendingToken ? 'Buat QRIS Baru' : 'Bayar Sekarang'}
                         </button>
                     </div>
                 </div>
