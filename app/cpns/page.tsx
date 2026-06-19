@@ -6,9 +6,9 @@ const eventSelect = 'id, title, description, starts_at, ends_at, start_grace_min
 const legacyEventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url'
 
 export const metadata: Metadata = {
-  title: 'Tryout SKD CPNS 2026 - Simulasi CAT BKN Terlengkap',
+  title: 'Tryout SKD CPNS 2026 Online - Simulasi CAT BKN',
   description:
-    'Tryout simulasi SKD CPNS & Kedinasan 2026 dengan sistem CAT BKN asli. Akses ribuan soal TWK, TIU, TKP, pembahasan lengkap, dan ranking nasional se-Indonesia.',
+    'Platform tryout CPNS online & Kedinasan 2026. Latihan soal CPNS dengan simulasi CAT BKN asli. Akses ribuan soal TWK, TIU, TKP, pembahasan lengkap, dan ranking nasional.',
   alternates: {
     canonical: '/cpns',
   },

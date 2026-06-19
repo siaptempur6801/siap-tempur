@@ -238,8 +238,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     </Badge>
 
                     <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                        Tryout SKD Sampai Lulus, <br />
-                        <span className="text-blue-600">Bukan</span> Sampai <br />
+                        Tryout SKD CPNS 2026 Online,<br />
+                        <span className="text-blue-600">Sampai Lulus</span> Bukan Sampai <br />
                         <span className="relative inline-block mt-2">
                             Dompet Tipis.
                             {/* Coretan bawah */}
@@ -939,7 +939,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
             </Section>
 
             {/* --- FAQ SECTION --- */}
-            <Section dashedBorder="top" className="bg-white">
+            <Section id="faq" dashedBorder="top" className="bg-white">
                 <div className="max-w-3xl mx-auto">
                     <div className="text-center mb-12">
                         <Badge variant="blue" className="mb-4">Tanya Jawab</Badge>
@@ -991,15 +991,48 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         Ambil Amunisi Sekarang
                     </Button>
 
-                    <div className="mt-16 pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-6 font-handwriting text-lg text-gray-500">
+                    <div className="mt-16 pt-8 border-t border-gray-800 text-left mb-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 font-body text-sm text-gray-400">
+                            <div>
+                                <h3 className="font-bold text-white mb-4">Layanan Utama</h3>
+                                <ul className="space-y-2">
+                                    <li><Link href="/cpns/full-tryout" className="hover:text-blue-400 transition-colors">Full Tryout CPNS</Link></li>
+                                    <li><Link href="/cpns/mini-tryout" className="hover:text-blue-400 transition-colors">Mini Tryout CPNS</Link></li>
+                                    <li><Link href="/cpns/event" className="hover:text-blue-400 transition-colors">Event Tryout Akbar</Link></li>
+                                    <li><button onClick={() => scrollToSection("products")} className="hover:text-blue-400 transition-colors">Harga Token Tryout</button></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white mb-4">Latihan Subtes</h3>
+                                <ul className="space-y-2">
+                                    <li><Link href="/cpns/twk" className="hover:text-blue-400 transition-colors">Latihan Soal TWK</Link></li>
+                                    <li><Link href="/cpns/tiu" className="hover:text-blue-400 transition-colors">Latihan Soal TIU</Link></li>
+                                    <li><Link href="/cpns/tkp" className="hover:text-blue-400 transition-colors">Latihan Soal TKP</Link></li>
+                                    <li><Link href="/cpns/dashboard" className="hover:text-blue-400 transition-colors">Simulasi CAT BKN</Link></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white mb-4">Informasi</h3>
+                                <ul className="space-y-2">
+                                    <li><Link href="/blog" className="hover:text-blue-400 transition-colors">Blog & Info CPNS</Link></li>
+                                    <li><button onClick={() => scrollToSection("faq")} className="hover:text-blue-400 transition-colors">FAQ</button></li>
+                                    <li><Link href="/syarat-ketentuan" className="hover:text-blue-400 transition-colors">Syarat & Ketentuan</Link></li>
+                                    <li><Link href="/kebijakan-privasi" className="hover:text-blue-400 transition-colors">Kebijakan Privasi</Link></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-white mb-4">Bantuan</h3>
+                                <ul className="space-y-2">
+                                    <li><Link href="/kebijakan-pengembalian" className="hover:text-blue-400 transition-colors">Kebijakan Pengembalian</Link></li>
+                                    <li><a href="mailto:halo@siaptempur.id" className="hover:text-blue-400 transition-colors">Hubungi Kami</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-6 font-handwriting text-lg text-gray-500">
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-white">Siap Tempur</span> © 2026
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-6">
-                            <Link href="/syarat-ketentuan" className="hover:text-white transition-colors">Syarat & Ketentuan</Link>
-                            <Link href="/kebijakan-privasi" className="hover:text-white transition-colors">Kebijakan Privasi</Link>
-                            <Link href="/kebijakan-pengembalian" className="hover:text-white transition-colors">Kebijakan Pengembalian</Link>
-                            <a href="mailto:halo@siaptempur.id" className="hover:text-white transition-colors font-bold underline decoration-wavy decoration-blue-500">Hubungi Kami</a>
                         </div>
                     </div>
                 </div>

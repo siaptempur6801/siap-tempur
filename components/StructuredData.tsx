@@ -3,6 +3,7 @@ type StructuredDataValue =
   | number
   | boolean
   | null
+  | undefined
   | { [key: string]: StructuredDataValue }
   | StructuredDataValue[]
 

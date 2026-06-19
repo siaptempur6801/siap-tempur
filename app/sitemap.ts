@@ -12,6 +12,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/kebijakan-pengembalian',
     '/kebijakan-privasi',
     '/syarat-ketentuan',
+    // SEO Routes
+    '/cpns/mini-tryout',
+    '/cpns/full-tryout',
+    '/cpns/event',
+    '/cpns/twk',
+    '/cpns/tiu',
+    '/cpns/tkp',
+    '/blog',
+    '/faq'
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),

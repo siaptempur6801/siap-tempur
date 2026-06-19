@@ -11,6 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         '/api/',
         '/auth/callback',
         '/*/dashboard/', // Prevent dashboard indexing
+        '/admin/',
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,

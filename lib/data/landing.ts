@@ -29,24 +29,73 @@ export const faqItems = [
     }
 ];
 
-export const cpnsSchema = {
-    "@context": "https://schema.org",
-    "@type": "Course",
-    "name": "Tryout SKD CPNS 2026 Siap Tempur",
-    "description": "Simulasi tryout SKD CPNS dengan sistem CAT BKN asli. Materi TWK, TIU, TKP, dan ranking nasional.",
-    "provider": {
+export const cpnsSchema = [
+    {
+        "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Siap Tempur",
-        "sameAs": "https://siaptempur.id"
+        "url": "https://siaptempur.id",
+        "logo": "https://siaptempur.id/favicon.ico",
+        "sameAs": [
+            "https://www.youtube.com/@siaptempur"
+        ]
     },
-    "offers": {
-        "@type": "Offer",
-        "category": "Education",
-        "price": "8000.00",
-        "priceCurrency": "IDR",
-        "availability": "https://schema.org/InStock"
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "url": "https://siaptempur.id/",
+        "name": "Siap Tempur"
+    },
+    {
+        "@context": "https://schema.org",
+        "@type": "Course",
+        "name": "Tryout SKD CPNS 2026 Siap Tempur",
+        "description": "Simulasi tryout SKD CPNS dengan sistem CAT BKN asli. Materi TWK, TIU, TKP, dan ranking nasional.",
+        "provider": {
+            "@type": "Organization",
+            "name": "Siap Tempur",
+            "sameAs": "https://siaptempur.id"
+        },
+        "offers": {
+            "@type": "Offer",
+            "category": "Education",
+            "price": "10000.00",
+            "priceCurrency": "IDR",
+            "availability": "https://schema.org/InStock",
+            "name": "Token Tryout CPNS"
+        }
+    },
+    {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqItems.map(item => ({
+            "@type": "Question",
+            "name": item.q,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": item.a
+            }
+        }))
+    },
+    {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": 1,
+                "name": "Beranda",
+                "item": "https://siaptempur.id"
+            },
+            {
+                "@type": "ListItem",
+                "position": 2,
+                "name": "Tryout CPNS",
+                "item": "https://siaptempur.id/cpns"
+            }
+        ]
     }
-};
+];
 
 export const testimonials = [
     {
