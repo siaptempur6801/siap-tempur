@@ -6,7 +6,7 @@ import { PRICING_PACKAGES } from '@/lib/constants'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { validateCsrf } from '@/lib/csrf'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { isServerActionRateLimited } from '@/lib/server-rate-limit'
 
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
 const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
@@ -25,10 +25,14 @@ export async function createPackageTransaction(packageId: string) {
         throw new Error("Unauthorized")
     }
 
+    if (await isServerActionRateLimited(user.id, 'create_transaction', 5, 60000)) {
+        throw new Error("Terlalu banyak permintaan. Silakan coba lagi nanti.")
+    }
+
     // Find the package from constants
     const pkg = PRICING_PACKAGES.find(p => p.id === packageId)
     if (!pkg) {
-        throw new Error("Package not found")
+        throw new Error("Paket tidak ditemukan")
     }
 
     const orderId = `SKD-${pkg.id.toUpperCase()}-${user.id.substring(0, 8)}-${Date.now()}`
@@ -70,7 +74,8 @@ export async function createPackageTransaction(packageId: string) {
     )
 
     if (!transaction || !transaction.token) {
-        throw new Error("Gagal memperoleh token pembayaran dari Midtrans.")
+        logger.error('Midtrans transaction creation failed', { orderId })
+        throw new Error("Terjadi kesalahan sistem saat memproses pembayaran. Silakan coba lagi.")
     }
 
     // 2. Log transaction in DB with the snap_token (single INSERT, avoids UPDATE RLS issues)
@@ -107,6 +112,11 @@ export async function syncPaymentStatus(orderId: string) {
     if (!user) return false;
     if (typeof orderId !== 'string' || orderId.trim() === '') return false;
 
+    if (await isServerActionRateLimited(user.id, 'sync_payment', 10, 60000)) {
+        logger.warn('Rate limit exceeded for syncPaymentStatus', { userId: user.id, orderId })
+        return false;
+    }
+
     try {
         const serverKey = env.midtransServerKey()
         const isSandbox = serverKey.includes('SB-')
@@ -126,10 +136,7 @@ export async function syncPaymentStatus(orderId: string) {
             // Jika Midtrans API melempar 404 (Not Found), seringkali karena snap session expired
             // Mari kita cek umur transaksi di database
             if (response.status === 404) {
-                const adminSupabase = createSupabaseClient(
-                    env.supabaseUrl(),
-                    env.supabaseServiceRoleKey()
-                )
+                const adminSupabase = await createAdminClient()
 
                 const { data: txInfo } = await adminSupabase
                     .from('transactions')
@@ -160,10 +167,7 @@ export async function syncPaymentStatus(orderId: string) {
         if (!isValidMidtransStatus(transaction_status)) return false;
 
         // Use Admin client to bypass RLS for updating transaction and quota safely
-        const adminSupabase = createSupabaseClient(
-            env.supabaseUrl(),
-            env.supabaseServiceRoleKey()
-        )
+        const adminSupabase = await createAdminClient()
 
         const { data: tx } = await adminSupabase
             .from('transactions')

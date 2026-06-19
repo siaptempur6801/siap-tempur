@@ -572,17 +572,17 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <>
                         <Card className="p-0 overflow-hidden border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] grid grid-cols-1 md:grid-cols-[0.92fr_1.08fr]">
                             <div className="bg-blue-600 p-4 md:p-5 text-white flex items-center justify-center">
-                                <div className="flex h-full w-full max-w-[28rem] flex-col items-center justify-center">
+                                <div className="flex h-full w-full max-w-md flex-col items-center justify-center">
                                     {activeEventFlyerUrl ? (
                                         <Image
                                             src={activeEventFlyerUrl}
                                             alt={`Poster ${activeEvent?.title || "event aktif"}`}
                                             width={480}
                                             height={600}
-                                            className="aspect-[4/5] h-auto w-full rounded-lg object-contain"
+                                            className="aspect-4/5 h-auto w-full rounded-lg object-contain"
                                         />
                                     ) : (
-                                        <div className="flex aspect-[4/5] w-full items-center justify-center rounded-lg bg-blue-700">
+                                        <div className="flex aspect-4/5 w-full items-center justify-center rounded-lg bg-blue-700">
                                             <Clock className="h-20 w-20 text-yellow-400" />
                                         </div>
                                     )}
@@ -728,7 +728,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         return (
                         <Card key={event.id} className="overflow-hidden border-2 border-gray-900 bg-[#fdfbf7] flex flex-col hover:-translate-y-1 transition-transform">
                             {flyerUrl ? (
-                                <div className="relative aspect-[4/5] w-full border-b-2 border-gray-900 bg-blue-600">
+                                <div className="relative aspect-4/5 w-full border-b-2 border-gray-900 bg-blue-600">
                                     <Image
                                         src={flyerUrl}
                                         alt={`Flyer ${event.title}`}
@@ -738,7 +738,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                     />
                                 </div>
                             ) : (
-                                <div className="flex aspect-[4/3] w-full items-center justify-center border-b-2 border-gray-900 bg-blue-50 px-6 text-center">
+                                <div className="flex aspect-4/3 w-full items-center justify-center border-b-2 border-gray-900 bg-blue-50 px-6 text-center">
                                     <div>
                                         <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
                                         <p className="font-handwriting text-2xl font-bold text-gray-900">Dokumentasi Event</p>

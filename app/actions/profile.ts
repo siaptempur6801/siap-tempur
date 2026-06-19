@@ -2,10 +2,9 @@
 
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { validateCsrf } from '@/lib/csrf'
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { isServerActionRateLimited } from '@/lib/server-rate-limit'
 import { passwordUpdateSchema, profileInfoSchema } from '@/lib/validations/profile'
 
 export async function updateProfile(formData: FormData) {
@@ -134,11 +133,7 @@ export async function updatePassword(data: { newPassword: string }) {
     }
 
     // Sign out all other sessions for security
-    const admin = createSupabaseClient(
-        env.supabaseUrl(),
-        env.supabaseServiceRoleKey(),
-        { auth: { autoRefreshToken: false, persistSession: false } }
-    )
+    const admin = await createAdminClient()
     await admin.auth.admin.signOut(user.id, 'others').catch(() => {})
 
     return { success: true }
@@ -159,6 +154,10 @@ export async function claimVoucherCode(code: string) {
         return { success: false, message: 'Not authenticated' }
     }
 
+    if (await isServerActionRateLimited(user.id, 'claim_voucher', 5, 60000)) {
+        return { success: false, message: 'Terlalu banyak permintaan klaim. Silakan tunggu beberapa saat.' }
+    }
+
     const admin = await createAdminClient()
     const { error } = await admin.rpc('claim_voucher', {
         p_user_id: user.id,
@@ -168,7 +167,7 @@ export async function claimVoucherCode(code: string) {
 
     if (error) {
         logger.warn('Voucher claim failed', { error: error.message, userId: user.id })
-        return { success: false, message: error.message || 'Gagal mengklaim voucher' }
+        return { success: false, message: 'Voucher tidak valid atau sudah digunakan.' }
     }
 
     revalidatePath('/', 'layout')
@@ -190,16 +189,7 @@ export async function deleteAccount() {
     }
 
     try {
-        const adminClient = createSupabaseClient(
-            env.supabaseUrl(),
-            env.supabaseServiceRoleKey(),
-            {
-                auth: {
-                    autoRefreshToken: false,
-                    persistSession: false
-                }
-            }
-        )
+        const adminClient = await createAdminClient()
 
         const { error: deleteError } = await adminClient.auth.admin.deleteUser(user.id)
         if (deleteError) throw deleteError

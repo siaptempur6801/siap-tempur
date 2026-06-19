@@ -7,6 +7,8 @@ import { OPTION_LABELS, type QuestionType } from '@/lib/admin-dashboard'
 import { ExcelQuestionsSchema, QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema, TryoutEventCodeSchema } from '@/lib/validations/admin'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
+import { logAuditEvent } from '@/lib/audit-log'
+import { createClient } from '@/lib/utils/supabase/server'
 
 interface TryoutConfigurationPayload {
     id: string
@@ -95,6 +97,16 @@ export async function deleteQuestion(id: string) {
         return { success: false, message: `Gagal menghapus soal: ${qErr.message}` }
     }
 
+    const { data: { user } } = await (await createClient()).auth.getUser()
+    if (user) {
+        await logAuditEvent({
+            action: 'DELETE_QUESTION',
+            actor_id: user.id,
+            target_type: 'question',
+            target_id: id
+        })
+    }
+
     revalidatePath('/cpns/admin')
     return { success: true, message: 'Soal berhasil dihapus' }
 }
@@ -149,6 +161,16 @@ export async function createQuestion(formData: FormData) {
         // Cleanup question if options fail?
         await supabase.from('questions').delete().eq('id', question.id)
         return { success: false, message: oError.message }
+    }
+
+    const { data: { user } } = await (await createClient()).auth.getUser()
+    if (user) {
+        await logAuditEvent({
+            action: 'CREATE_QUESTION',
+            actor_id: user.id,
+            target_type: 'question',
+            target_id: question.id
+        })
     }
 
     revalidatePath('/cpns/admin')
@@ -564,151 +586,6 @@ export async function deleteTryoutConfigurationsBulk(ids: string[]) {
 
 // =============================================
 // VOUCHERS
-// =============================================
-
-export async function createVoucher(formData: FormData) {
-    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
-
-    const isUserAdmin = await isAdmin()
-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
-
-    const rawData = {
-        code: String(formData.get('code') || '').trim(),
-        quota_amount: Number(formData.get('quota_amount') || 0),
-        max_uses: Number(formData.get('max_uses') || 0),
-        expires_at: String(formData.get('expires_at') || '').trim() || null,
-        is_active: formData.get('is_active') === 'on',
-    }
-
-    const parsed = VoucherFormSchema.safeParse(rawData)
-    if (!parsed.success) {
-        return { success: false, message: parsed.error.issues[0].message }
-    }
-    const data = parsed.data
-
-    const supabase = await createAdminClient()
-    const { error } = await supabase
-        .from('vouchers')
-        .insert({
-            code: data.code,
-            quota_amount: data.quota_amount,
-            max_uses: data.max_uses,
-            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
-            is_active: data.is_active,
-        })
-
-    if (error) return { success: false, message: error.message }
-
-    revalidatePath('/cpns/admin/voucher')
-    return { success: true, message: 'Voucher berhasil dibuat' }
-}
-
-export async function toggleVoucher(id: string, isActive: boolean) {
-    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
-
-    const isUserAdmin = await isAdmin()
-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
-
-    const supabase = await createAdminClient()
-    const { error } = await supabase
-        .from('vouchers')
-        .update({ is_active: isActive, updated_at: new Date().toISOString() })
-        .eq('id', id)
-
-    if (error) return { success: false, message: error.message }
-
-    revalidatePath('/cpns/admin/voucher')
-    return { success: true, message: `Voucher berhasil di${isActive ? 'aktifkan' : 'nonaktifkan'}` }
-}
-
-export async function updateVoucher(id: string, formData: FormData) {
-    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
-
-    const isUserAdmin = await isAdmin()
-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
-
-    const rawData = {
-        code: String(formData.get('code') || '').trim(),
-        quota_amount: Number(formData.get('quota_amount') || 0),
-        max_uses: Number(formData.get('max_uses') || 0),
-        expires_at: String(formData.get('expires_at') || '').trim() || null,
-        is_active: formData.get('is_active') === 'on',
-    }
-
-    if (!id) return { success: false, message: 'Voucher tidak valid' }
-
-    const parsed = VoucherFormSchema.safeParse(rawData)
-    if (!parsed.success) {
-        return { success: false, message: parsed.error.issues[0].message }
-    }
-    const data = parsed.data
-
-    const supabase = await createAdminClient()
-    const { data: voucher } = await supabase
-        .from('vouchers')
-        .select('used_count')
-        .eq('id', id)
-        .single()
-
-    if (voucher && data.max_uses < voucher.used_count) {
-        return { success: false, message: `Max penggunaan tidak boleh kurang dari klaim saat ini (${voucher.used_count})` }
-    }
-
-    const { error } = await supabase
-        .from('vouchers')
-        .update({
-            code: data.code,
-            quota_amount: data.quota_amount,
-            max_uses: data.max_uses,
-            expires_at: data.expires_at ? new Date(data.expires_at).toISOString() : null,
-            is_active: data.is_active,
-            updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-
-    if (error) return { success: false, message: error.message }
-
-    revalidatePath('/cpns/admin/voucher')
-    return { success: true, message: 'Voucher berhasil diupdate' }
-}
-
-export async function deleteVoucher(id: string) {
-    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
-
-    const isUserAdmin = await isAdmin()
-    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
-    if (!id) return { success: false, message: 'Voucher tidak valid' }
-
-    const supabase = await createAdminClient()
-    const { data: voucher, error: readError } = await supabase
-        .from('vouchers')
-        .select('used_count')
-        .eq('id', id)
-        .single()
-
-    if (readError) return { success: false, message: readError.message }
-
-    if ((voucher?.used_count || 0) > 0) {
-        return {
-            success: false,
-            message: 'Voucher yang sudah pernah diklaim tidak bisa dihapus. Nonaktifkan voucher agar riwayat klaim tetap aman.',
-        }
-    }
-
-    const { error } = await supabase
-        .from('vouchers')
-        .delete()
-        .eq('id', id)
-
-    if (error) return { success: false, message: error.message }
-
-    revalidatePath('/cpns/admin/voucher')
-    return { success: true, message: 'Voucher berhasil dihapus' }
-}
-
-// =============================================
-// TRYOUT AKBAR EVENTS
-// =============================================
 
 function parseWibDateTime(value: string) {
     return value ? new Date(`${value}:00+07:00`) : null

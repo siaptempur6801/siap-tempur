@@ -256,6 +256,7 @@ export async function submitAnswer(sessionId: string, questionId: string, option
         return { error: 'Session is not active' }
     }
 
+    const admin = await createAdminClient()
     const [{ data: answerRow, error: answerError }, { data: optionRow, error: optionError }] = await Promise.all([
         supabase
             .from('test_answers')
@@ -263,7 +264,7 @@ export async function submitAnswer(sessionId: string, questionId: string, option
             .eq('session_id', sessionId)
             .eq('question_id', questionId)
             .maybeSingle(),
-        supabase
+        admin
             .from('options')
             .select('id')
             .eq('id', optionId)
@@ -313,6 +314,19 @@ export async function finishPractice(sessionId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
+
+    // Validate session belongs to current user and is still in progress
+    const { data: ownedSession } = await supabase
+        .from('test_sessions')
+        .select('id')
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .eq('status', 'in_progress')
+        .maybeSingle()
+
+    if (!ownedSession) {
+        return { error: 'Session not found or already completed' }
+    }
 
     // Call scoring function
     const { error } = await supabase.rpc('calculate_session_score', {
