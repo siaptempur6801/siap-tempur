@@ -291,6 +291,12 @@ function EventCard({
         scheduled: { label: 'SEGERA', bg: 'bg-yellow-300', text: 'text-gray-900', border: 'border-yellow-500', pulse: false },
         closed: { label: 'SELESAI', bg: 'bg-gray-200', text: 'text-gray-600', border: 'border-gray-400', pulse: false },
     }[effectiveStatus]
+    const eventStats = [
+        { icon: CalendarDays, label: 'Mulai', value: formatDate(event.starts_at) },
+        { icon: Clock, label: 'Durasi', value: `${event.duration_minutes}m` },
+        { icon: BookOpen, label: 'Soal', value: `${event.question_count}` },
+        { icon: Users, label: 'Kuota', value: event.max_participants ? `${event.max_participants} peserta` : 'Tidak dibatasi' },
+    ]
 
     return (
         <motion.div
@@ -312,22 +318,25 @@ function EventCard({
                 </div>
             )}
 
-            <div className="relative p-5 sm:p-6 grid gap-5 md:grid-cols-[1fr_220px] md:items-start">
-                {/* --- LEFT: Info --- */}
-                <div className="space-y-4">
+            <div className="relative grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(230px,320px)_1fr_220px] lg:items-start">
+                {/* --- Poster --- */}
+                <div className="w-full max-w-[360px] justify-self-center lg:max-w-none lg:justify-self-stretch">
                     {event.flyer_image_url && (
-                        <div className="relative aspect-[16/7] overflow-hidden border-2 border-gray-900 bg-gray-100">
+                        <div className="relative aspect-[4/5] overflow-hidden border-2 border-gray-900 bg-blue-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             <Image
                                 src={event.flyer_image_url}
                                 alt={`Flyer ${event.title}`}
                                 fill
                                 className="object-cover"
-                                sizes="(min-width: 768px) calc(100vw - 320px), calc(100vw - 48px)"
+                                sizes="(min-width: 1024px) 320px, (min-width: 640px) 360px, calc(100vw - 32px)"
                                 priority={isLive}
                             />
                         </div>
                     )}
+                </div>
 
+                {/* --- Main Info --- */}
+                <div className="space-y-4">
                     {/* Badges row */}
                     <div className="flex flex-wrap items-center gap-2">
                         <span className={cn('inline-flex items-center gap-1.5 border-2 border-gray-900 px-2.5 py-1 text-[11px] font-black uppercase', statusConfig.bg, statusConfig.text)}>
@@ -352,24 +361,25 @@ function EventCard({
 
                     {/* Title & Desc */}
                     <div>
-                        <h2 className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight">{event.title}</h2>
-                        <p className="mt-1.5 text-sm font-medium text-gray-600 leading-relaxed">{event.description || 'Tryout Akbar SKD CPNS nasional.'}</p>
+                        <h2 className="font-handwriting text-2xl font-black leading-tight text-gray-900 sm:text-3xl">{event.title}</h2>
+                        <p className="mt-2 max-w-3xl text-sm font-medium leading-relaxed text-gray-600">{event.description || 'Tryout Akbar SKD CPNS nasional.'}</p>
                     </div>
 
                     {/* Meta info */}
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="border-2 border-gray-200 bg-gray-50 p-2.5">
-                            <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 mb-1"><CalendarDays size={10} /> Mulai</div>
-                            <p className="text-xs font-black text-gray-800">{formatDate(event.starts_at)}</p>
-                        </div>
-                        <div className="border-2 border-gray-200 bg-gray-50 p-2.5">
-                            <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 mb-1"><Clock size={10} /> Durasi</div>
-                            <p className="text-sm font-black text-gray-800">{event.duration_minutes}m</p>
-                        </div>
-                        <div className="border-2 border-gray-200 bg-gray-50 p-2.5">
-                            <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 mb-1"><BookOpen size={10} /> Soal</div>
-                            <p className="text-sm font-black text-gray-800">{event.question_count}</p>
-                        </div>
+                    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                        {eventStats.map((item) => {
+                            const Icon = item.icon
+
+                            return (
+                                <div key={item.label} className="border-2 border-gray-200 bg-gray-50 p-3">
+                                    <div className="mb-1 flex items-center gap-1.5 text-[10px] font-black uppercase text-gray-400">
+                                        <Icon size={12} />
+                                        {item.label}
+                                    </div>
+                                    <p className="text-xs font-black leading-snug text-gray-900">{item.value}</p>
+                                </div>
+                            )
+                        })}
                     </div>
 
                     {/* Time Status */}
@@ -382,7 +392,7 @@ function EventCard({
                 </div>
 
                 {/* --- RIGHT: Action --- */}
-                <div className="space-y-3">
+                <div className="space-y-3 lg:sticky lg:top-24">
                     {/* Price info for paid events */}
                     {event.is_paid && event.price > 0 && (
                         <div className={cn(

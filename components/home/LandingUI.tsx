@@ -1,29 +1,118 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import Link from "next/link";
-import { Target, Timer, BarChart3, ArrowRight, Sparkles, Menu, X, Rocket, Eye, Monitor, Flag, Clock, ChevronDown } from "lucide-react";
+import { Target, Timer, BarChart3, ArrowRight, Sparkles, Menu, X, Rocket, Eye, Monitor, Flag, Clock, ChevronDown, ChevronLeft, ChevronRight, Award, BookOpen, Trophy, ShieldCheck, Layers, MapPin, Zap } from "lucide-react";
 import StructuredData from "@/components/StructuredData";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Section } from "@/components/ui/Section";
 import { cn } from "@/lib/utils";
-import { faqItems, cpnsSchema, testimonials } from "@/lib/data/landing";
+import { faqItems, cpnsSchema, testimonials, trustBadges, leaderboardWinners } from "@/lib/data/landing";
 
 
 
 
 
 type LandingUser = { id: string } | null;
+type ActiveEvent = {
+    id: string;
+    title: string;
+    description: string | null;
+    starts_at: string;
+    ends_at: string;
+    start_grace_minutes: number;
+    duration_minutes: number;
+    max_participants: number | null;
+    requires_code: boolean;
+    is_paid: boolean;
+    price: number;
+    status: "scheduled" | "live" | "closed";
+    flyer_image_url: string | null;
+    documentation_url: string | null;
+};
 
-export default function Home({ user: initialUser }: { user: LandingUser }) {
+const BATCH_2_FLYER_PATH = "/images/flyer-batch-2.jpeg";
+const BATCH_1_FLYER_PATH = "/images/flyer-batch-1.jpeg";
+const YOUTUBE_DOCUMENTATION_BY_TITLE: Array<{ pattern: RegExp; url: string }> = [
+    { pattern: /batch\s*1/i, url: "https://youtu.be/7adUHwlFzks" },
+];
+
+const eventTimeFormatter = new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Asia/Jakarta",
+});
+
+function formatEventStartTime(event: ActiveEvent) {
+    return `${eventTimeFormatter.format(new Date(event.starts_at))} WIB`;
+}
+
+function formatEventPrice(event: ActiveEvent) {
+    if (!event.is_paid || event.price <= 0) return "Gratis";
+
+    return new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0,
+    }).format(event.price);
+}
+
+function formatEventPriceCompact(event: ActiveEvent) {
+    return formatEventPrice(event).replace(/\s/g, "");
+}
+
+function getEventSessionLabel(event: ActiveEvent, index: number) {
+    const match = event.title.match(/sesi\s*\d+/i);
+    if (!match) return `Sesi ${index + 1}`;
+
+    return match[0].replace(/\s+/, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function getEventFlyerUrl(event: ActiveEvent | null) {
+    if (!event) return null;
+    if (event.flyer_image_url) return event.flyer_image_url;
+    if (event.title.toLowerCase().includes("batch 1")) return BATCH_1_FLYER_PATH;
+    if (event.title.toLowerCase().includes("batch 2")) return BATCH_2_FLYER_PATH;
+
+    return null;
+}
+
+function getEventDocumentationUrl(event: ActiveEvent) {
+    if (event.documentation_url) return event.documentation_url;
+
+    return YOUTUBE_DOCUMENTATION_BY_TITLE.find(({ pattern }) => pattern.test(event.title))?.url || "https://www.youtube.com/@siaptempur";
+}
+
+export default function Home({ user: initialUser, activeEvents = [], completedEvents = [] }: { user: LandingUser; activeEvents?: ActiveEvent[]; completedEvents?: ActiveEvent[] }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isTryoutOpen, setIsTryoutOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [selectedOption, setSelectedOption] = useState<string>('C');
+    const [activeEventIndex, setActiveEventIndex] = useState(0);
     const user = initialUser;
     const router = useRouter();
+    const activeEvent = activeEvents[activeEventIndex] || null;
+    const activeEventFlyerUrl = getEventFlyerUrl(activeEvent);
+    const hasMultipleActiveEvents = activeEvents.length > 1;
+    const miniStats = [
+        { label: "Biaya", value: activeEvent ? formatEventPriceCompact(activeEvent) : "Rp35.000" },
+        { label: "Durasi", value: activeEvent ? `${activeEvent.duration_minutes} Menit` : "100 Menit" },
+        { label: "Materi", value: "110 Soal" },
+        { label: "Kuota", value: activeEvent?.max_participants ? `${activeEvent.max_participants.toLocaleString("id-ID")} Peserta` : "200 Peserta" },
+    ];
+
+    const showPreviousEvent = () => {
+        setActiveEventIndex((current) => current === 0 ? activeEvents.length - 1 : current - 1);
+    };
+
+    const showNextEvent = () => {
+        setActiveEventIndex((current) => current === activeEvents.length - 1 ? 0 : current + 1);
+    };
 
     const scrollToSection = (id: string) => {
         const element = document.getElementById(id);
@@ -33,29 +122,45 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
     };
 
     return (
-        <main className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 selection:bg-yellow-200 selection:text-black overflow-x-hidden">
+        <main className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 selection:bg-yellow-200 selection:text-black overflow-x-hidden pb-32 md:pb-0">
             <StructuredData data={cpnsSchema} />
 
             {/* --- NAVBAR (Binder Style) --- */}
             <header className="fixed top-0 w-full z-50 bg-[#fdfbf7]/90 backdrop-blur-sm border-b-4 border-gray-800/10">
                 <nav className="container mx-auto px-4 h-20 flex items-center justify-between relative">
 
-
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="flex flex-col items-start group cursor-pointer pl-0 md:pl-0">
-                        <span className="text-2xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
-                            CPNS & KEDINASAN
-                        </span>
-                        <span className="text-sm font-handwriting font-bold text-gray-500 ml-1 -mt-1 group-hover:text-gray-900 transition-colors">
-                            by Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="flex items-center group cursor-pointer">
+                        <span className="text-3xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
+                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                         </span>
                     </button>
 
-                    {/* Desktop Navigation (Centered) */}
-                    <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex gap-6 font-handwriting text-xl text-gray-700">
+                    {/* Desktop Navigation */}
+                    <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 font-handwriting text-xl text-gray-700">
                         <button onClick={() => scrollToSection("features")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Fitur</button>
-                        <button onClick={() => scrollToSection("exam-preview")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Intip Simulasi</button>
                         <button onClick={() => scrollToSection("products")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Harga</button>
-                        <button onClick={() => scrollToSection("memorials")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Kata Mereka</button>
+                        <button onClick={() => scrollToSection("active-event")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Event</button>
+
+                        {/* Tryout Dropdown */}
+                        <div className="relative" onMouseEnter={() => setIsTryoutOpen(true)} onMouseLeave={() => setIsTryoutOpen(false)}>
+                            <button className="flex items-center gap-1 hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">
+                                Tryout <ChevronDown size={16} className={cn("transition-transform", isTryoutOpen && "rotate-180")} />
+                            </button>
+                            {isTryoutOpen && (
+                                <>
+                                    {/* Jembatan transparan agar dropdown tidak nutup saat hover ke menu */}
+                                    <div className="absolute top-full left-0 w-full h-3" />
+                                    <div className="absolute top-[calc(100%+0.5rem)] left-1/2 -translate-x-1/2 w-52 bg-[#fdfbf7] border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-md overflow-hidden z-50">
+                                        <Link href="/cpns/mini-tryout" className="flex items-center gap-2 px-4 py-3 hover:bg-yellow-50 border-b border-gray-200 font-handwriting text-lg text-gray-800 hover:text-blue-600 transition-colors">
+                                            <Zap size={16} className="text-yellow-500" /> Mini Tryout
+                                        </Link>
+                                        <Link href="/cpns/full-tryout" className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 border-b border-gray-200 font-handwriting text-lg text-gray-800 hover:text-blue-600 transition-colors">
+                                            <Monitor size={16} className="text-blue-500" /> Full Tryout
+                                        </Link>
+                                    </div>
+                                </>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -91,9 +196,10 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     {isMenuOpen && (
                         <div className="absolute top-20 left-0 w-full bg-[#fdfbf7] border-b-4 border-gray-800/10 shadow-lg p-6 flex flex-col gap-4 md:hidden z-40">
                             <button onClick={() => { scrollToSection("features"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Fitur</button>
-                            <button onClick={() => { scrollToSection("exam-preview"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Intip Simulasi</button>
                             <button onClick={() => { scrollToSection("products"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Harga</button>
-                            <button onClick={() => { scrollToSection("memorials"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Kata Mereka</button>
+                            <button onClick={() => { scrollToSection("active-event"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-red-600 text-left py-2 border-b border-gray-200">Event</button>
+                            <Link href="/cpns/mini-tryout" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Mini Tryout</Link>
+                            <Link href="/cpns/full-tryout" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Full Tryout</Link>
                             {user ? (
                                 <Button
                                     onClick={() => { router.push("/cpns/dashboard"); setIsMenuOpen(false); }}
@@ -136,9 +242,9 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     </h1>
 
                     <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto mb-10 font-handwriting leading-relaxed">
-                        Tryout SKD dengan <strong>sistem penilaian standar CAT BKN</strong> — mulai dari
-                        <span className="bg-green-200 px-1 mx-1">Rp 8.000/tryout.</span>
-                        Beli ketengan, langsung tryout. Tanpa langganan, tanpa ribet.
+                        Tryout SKD dengan <strong>sistem penilaian standar CAT BKN</strong>. Hanya
+                        <span className="bg-green-200 px-1 mx-1">Rp 10.000/token</span>
+                        untuk 1x akses tryout lengkap. Tanpa langganan, tanpa ribet.
                     </p>
 
                     <div className="flex flex-col items-center gap-8">
@@ -153,16 +259,35 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
 
                             <Button
                                 size="lg"
-                                variant="outline"
-                                onClick={() => scrollToSection("exam-preview")}
-                                className="w-full sm:w-auto"
+                                variant="secondary"
+                                onClick={() => scrollToSection("active-event")}
+                                className="w-full sm:w-auto bg-red-100 text-red-700 border-2 border-red-700 hover:bg-red-200"
                             >
-                                Lihat Dulu Tampilannya <Eye className="w-6 h-6" />
+                                Lihat Event Aktif <Flag className="w-6 h-6 ml-2 text-red-600" />
                             </Button>
+
                         </div>
                     </div>
                 </div>
             </Section>
+
+            {/* --- TRUST BADGES --- */}
+            <section className="bg-white py-6 border-b-4 border-gray-900/10 overflow-hidden">
+                <div className="container mx-auto px-4">
+                    <div className="flex overflow-x-auto pb-4 md:pb-0 hide-scrollbar gap-4 md:gap-8 justify-start md:justify-center items-center">
+                        {trustBadges.map((badge, i) => {
+                            const IconMap: Record<string, any> = { Award, BookOpen, Trophy, ShieldCheck, Monitor, Layers };
+                            const IconComponent = IconMap[badge.icon] || Award;
+                            return (
+                                <div key={i} className="flex items-center gap-2 bg-gray-100 px-4 py-2.5 rounded-full border-2 border-gray-200 shrink-0 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-default">
+                                    <IconComponent className="w-5 h-5 text-blue-600" />
+                                    <span className="font-handwriting font-bold text-gray-700 whitespace-nowrap text-sm md:text-base">{badge.label}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
 
             {/* --- KEUNGGULAN (Doodle Icons) --- */}
             <Section id="features" dashedBorder="both" pattern="grid" className="bg-white">
@@ -197,6 +322,55 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                         </div>
                         <h3 className="font-handwriting text-2xl font-bold mb-2">Tahu Kelemahanmu</h3>
                         <p className="text-gray-700">Analisis skor TWK, TIU, TKP + ranking nasional. Langsung tahu bagian mana yang harus diperbaiki sebelum tes sesungguhnya.</p>
+                    </Card>
+                </div>
+            </Section>
+
+            {/* --- MINI VS FULL TRYOUT --- */}
+            <Section id="tryout-types" dashedBorder="both" className="bg-[#f0f4f8]">
+                <div className="text-center max-w-3xl mx-auto mb-16">
+                    <Badge variant="blue" className="mb-4">Pilih Cara Belajarmu</Badge>
+                    <h2 className="font-handwriting text-5xl font-bold mb-4">Satu Token, Dua Pilihan Tempur</h2>
+                    <p className="font-handwriting text-2xl text-gray-600">Sesuaikan dengan waktu dan target belajarmu hari ini.</p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                    {/* Mini Tryout */}
+                    <Card interactive className="p-8 bg-white border-4 border-gray-900 flex flex-col">
+                        <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
+                            <Target className="w-8 h-8 text-yellow-600" />
+                        </div>
+                        <h3 className="font-handwriting text-3xl font-bold mb-4">Mini Tryout</h3>
+                        <p className="text-gray-600 mb-6 min-h-[80px]">Latihan cepat dan fokus per bagian tes. Cocok buat kamu yang lagi sibuk tapi tetap mau nyicil belajar setiap hari.</p>
+                        
+                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Fokus 1 subtes (TWK / TIU / TKP)</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu pengerjaan singkat</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Pembahasan per soal</li>
+                        </ul>
+                        
+                        <Button variant="outline" className="w-full py-6 text-xl" onClick={() => scrollToSection("products")}>
+                            Coba Mini Tryout
+                        </Button>
+                    </Card>
+
+                    {/* Full Tryout */}
+                    <Card interactive className="p-8 bg-white border-4 border-gray-900 flex flex-col">
+                         <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
+                            <Monitor className="w-8 h-8 text-blue-600" />
+                        </div>
+                        <h3 className="font-handwriting text-3xl font-bold mb-4">Full Tryout SKD</h3>
+                        <p className="text-gray-600 mb-6 min-h-[80px]">Simulasi ujian SKD CPNS yang sesungguhnya. Latih manajemen waktu dan mentalmu sebelum hari H tiba.</p>
+                        
+                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> 110 Soal (TWK + TIU + TKP)</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu 100 menit (Timer berjalan)</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Ranking Nasional</li>
+                        </ul>
+                        
+                        <Button className="w-full py-6 text-xl" onClick={() => scrollToSection("products")}>
+                            Mulai Full Tryout
+                        </Button>
                     </Card>
                 </div>
             </Section>
@@ -375,27 +549,278 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                         >
                             Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                         </button>
-                        <p className="font-handwriting text-lg text-gray-500 mt-4">Mulai dari Rp 8.000/tryout. Lebih murah dari kopi, tapi bisa ubah masa depanmu.</p>
+                        <p className="font-handwriting text-lg text-gray-500 mt-4">Mulai dari Rp 7.500/token. Lebih murah dari kopi, tapi bisa ubah masa depanmu.</p>
                     </div>
                 </Section>
+
+            {/* --- EVENT AKTIF --- */}
+            <Section id="active-event" dashedBorder="both" className="bg-[#fffdf0]">
+                <div className="text-center mb-10 relative z-10">
+                    <div className="inline-flex items-center gap-2 bg-red-100 text-red-600 font-bold px-4 py-2 rounded-full border-2 border-red-200 mb-5 animate-pulse">
+                        <div className="w-2 h-2 rounded-full bg-red-600" />
+                        {activeEvent ? "Event Aktif Sekarang" : "Belum Ada Event Aktif"}
+                    </div>
+                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-3 text-gray-950">Event Tryout Aktif</h2>
+                    <p className="font-body text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                        Ikuti tryout terjadwal untuk mengukur kesiapanmu, melihat ranking nasional, dan mendapatkan evaluasi hasil secara lebih realistis.
+                    </p>
+                </div>
+
+                <div className="max-w-6xl mx-auto">
+                    <div className="relative">
+                        {activeEvent ? (
+                        <>
+                        <Card className="p-0 overflow-hidden border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] grid grid-cols-1 md:grid-cols-[0.92fr_1.08fr]">
+                            <div className="bg-blue-600 p-4 md:p-5 text-white flex items-center justify-center">
+                                <div className="flex h-full w-full max-w-[28rem] flex-col items-center justify-center">
+                                    {activeEventFlyerUrl ? (
+                                        <Image
+                                            src={activeEventFlyerUrl}
+                                            alt={`Poster ${activeEvent?.title || "event aktif"}`}
+                                            width={480}
+                                            height={600}
+                                            className="aspect-[4/5] h-auto w-full rounded-lg object-contain"
+                                        />
+                                    ) : (
+                                        <div className="flex aspect-[4/5] w-full items-center justify-center rounded-lg bg-blue-700">
+                                            <Clock className="h-20 w-20 text-yellow-400" />
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="bg-white p-6 md:p-8">
+                                <div className="flex flex-col gap-4">
+                                    <div>
+                                        <p className="font-body text-sm font-extrabold uppercase tracking-[0.12em] text-blue-600">Event Aktif</p>
+                                        <h4 className="mt-1 font-handwriting text-3xl font-bold leading-tight text-gray-950">Tryout Akbar SKD CPNS 2026 Batch 2</h4>
+                                        <p className="mt-2 font-body text-sm leading-6 text-gray-600">
+                                            Simulasi Full SKD dengan sistem CAT, analisis nilai, ranking nasional, sertifikat, dan hadiah untuk Top 3.
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p className="mb-2 font-body text-sm font-bold text-gray-800">Pilih sesi</p>
+                                        {activeEvents.length > 0 ? (
+                                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                                {activeEvents.map((event, index) => {
+                                                const isSelected = index === activeEventIndex;
+                                                return (
+                                                    <button
+                                                        key={event.id}
+                                                        type="button"
+                                                        onClick={() => setActiveEventIndex(index)}
+                                                        className={cn(
+                                                            "rounded-lg border-2 px-4 py-3 text-left font-body transition-all",
+                                                            isSelected
+                                                                ? "border-blue-700 bg-blue-600 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+                                                                : "border-gray-200 bg-[#fdfbf7] text-gray-800 hover:border-blue-500"
+                                                        )}
+                                                    >
+                                                        <span className="block text-sm font-extrabold">{getEventSessionLabel(event, index)}</span>
+                                                        <span className={cn("mt-1 block text-xs font-semibold", isSelected ? "text-blue-100" : "text-gray-500")}>
+                                                            {formatEventStartTime(event)}
+                                                        </span>
+                                                    </button>
+                                                );
+                                                })}
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border-2 border-dashed border-gray-300 bg-[#fdfbf7] px-4 py-4 font-body text-sm font-semibold text-gray-600">
+                                                Belum ada event aktif yang dibuka. Jadwal baru akan tampil otomatis di sini saat admin membuat event.
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                                        {miniStats.map((stat) => (
+                                            <div key={stat.label} className="rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-3 py-3 text-center">
+                                                <p className="font-body text-[11px] font-bold uppercase tracking-wide text-gray-500">{stat.label}</p>
+                                                <p className="mt-1 font-body text-base font-black text-gray-950">{stat.value}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
+                                            <Target className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                            <span><strong className="text-gray-950">Materi:</strong> TWK, TIU, TKP dengan 110 soal.</span>
+                                        </div>
+                                        <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
+                                            <Monitor className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                            <span><strong className="text-gray-950">Sistem:</strong> simulasi CAT dan timer ujian.</span>
+                                        </div>
+                                        <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
+                                            <BarChart3 className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                            <span><strong className="text-gray-950">Evaluasi:</strong> analisis nilai dan ranking nasional.</span>
+                                        </div>
+                                        <div className="flex items-start gap-3 rounded-lg bg-blue-50 p-3 font-body text-sm text-gray-700">
+                                            <Trophy className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+                                            <span><strong className="text-gray-950">Bonus:</strong> sertifikat dan hadiah Top 3.</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="rounded-lg border-2 border-red-200 bg-red-50 p-4">
+                                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                                            <div className="inline-flex items-center gap-2 rounded-md bg-white px-3 py-2 font-body text-sm font-extrabold text-red-600">
+                                                <span className="h-2 w-2 rounded-full bg-red-500" />
+                                                {activeEvent ? "Pendaftaran Dibuka" : "Belum Ada Event Aktif"}
+                                            </div>
+                                            <p className="font-body text-sm font-bold text-gray-700">
+                                                {activeEvent ? `Kuota terbatas untuk ${miniStats[3].value}` : "Cek kembali saat jadwal event dibuka"}
+                                            </p>
+                                        </div>
+                                        <Button size="lg" className="w-full justify-center bg-blue-600 py-4 font-body text-lg font-black" disabled={!activeEvent} onClick={() => router.push(user ? "/cpns/dashboard/event" : "/login?returnTo=/cpns/dashboard/event")}>
+                                            {activeEvent ? "Daftar Event Sekarang" : "Menunggu Event Berikutnya"} <ArrowRight className="ml-1 h-5 w-5" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        {hasMultipleActiveEvents && (
+                            <div className="mt-6 flex items-center justify-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={showPreviousEvent}
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+                                    aria-label="Lihat event sebelumnya"
+                                >
+                                    <ChevronLeft className="h-6 w-6" />
+                                </button>
+                                <div className="min-w-24 rounded-full border-2 border-gray-900 bg-white px-4 py-2 text-center font-handwriting text-lg font-bold">
+                                    {activeEventIndex + 1} / {activeEvents.length}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={showNextEvent}
+                                    className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+                                    aria-label="Lihat event berikutnya"
+                                >
+                                    <ChevronRight className="h-6 w-6" />
+                                </button>
+                            </div>
+                        )}
+                        </>
+                        ) : (
+                            <Card className="mx-auto max-w-3xl border-4 border-gray-900 bg-white p-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                                <Clock className="mx-auto mb-4 h-12 w-12 text-blue-600" />
+                                <h3 className="font-handwriting text-3xl font-bold text-gray-950">Belum Ada Event Aktif</h3>
+                                <p className="mx-auto mt-3 max-w-xl font-body text-base leading-relaxed text-gray-600">
+                                    Saat admin membuka event baru, jadwal dan tombol pendaftaran akan otomatis tampil di landing page ini.
+                                </p>
+                            </Card>
+                        )}
+                    </div>
+                </div>
+            </Section>
+
+            {/* --- HISTORI EVENT --- */}
+            <Section id="event-history" dashedBorder="both" className="bg-white">
+                <div className="text-center mb-12">
+                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Jejak Event SiapTempur</h2>
+                    <p className="font-handwriting text-xl md:text-2xl text-gray-600">Terbukti selalu ramai dan jadi ajang pemanasan nasional.</p>
+                </div>
+
+                {completedEvents.length > 0 ? (
+                <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                    {completedEvents.map((event) => {
+                        const flyerUrl = getEventFlyerUrl(event);
+                        return (
+                        <Card key={event.id} className="overflow-hidden border-2 border-gray-900 bg-[#fdfbf7] flex flex-col hover:-translate-y-1 transition-transform">
+                            {flyerUrl ? (
+                                <div className="relative aspect-[4/5] w-full border-b-2 border-gray-900 bg-blue-600">
+                                    <Image
+                                        src={flyerUrl}
+                                        alt={`Flyer ${event.title}`}
+                                        fill
+                                        sizes="(min-width: 768px) 33vw, 100vw"
+                                        className="object-cover"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="flex aspect-[4/3] w-full items-center justify-center border-b-2 border-gray-900 bg-blue-50 px-6 text-center">
+                                    <div>
+                                        <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
+                                        <p className="font-handwriting text-2xl font-bold text-gray-900">Dokumentasi Event</p>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="flex flex-1 flex-col p-6">
+                            <h3 className="font-handwriting text-2xl font-bold mb-6 text-gray-900 leading-tight flex-1">{event.title}</h3>
+                            <Button variant="outline" className="w-full text-sm font-bold border-2 border-gray-900 text-gray-800 hover:bg-gray-100" asChild>
+                                <a href={getEventDocumentationUrl(event)} target="_blank" rel="noopener noreferrer">
+                                    Lihat Dokumentasi
+                                </a>
+                            </Button>
+                            </div>
+                        </Card>
+                        );
+                    })}
+                </div>
+                ) : (
+                    <Card className="mx-auto max-w-2xl border-2 border-dashed border-gray-300 bg-[#fdfbf7] p-8 text-center">
+                        <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
+                        <h3 className="font-handwriting text-2xl font-bold text-gray-900">Belum Ada Event Selesai</h3>
+                        <p className="mt-2 font-body text-sm text-gray-600">Event yang sudah selesai akan otomatis tampil di sini.</p>
+                    </Card>
+                )}
+            </Section>
+
+            {/* --- LEADERBOARD --- */}
+            <Section id="leaderboard" dashedBorder="both" className="bg-[#f0f4f8]" pattern="grid">
+                <div className="text-center mb-12">
+                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Pemenang dan Ranking Terbaik</h2>
+                    <p className="font-handwriting text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">Ranking membantu peserta membandingkan kemampuan secara sehat dan mengetahui posisi mereka secara nasional.</p>
+                </div>
+
+                <div className="max-w-4xl mx-auto">
+                    <Card className="p-0 overflow-hidden border-4 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
+                        <div className="bg-blue-600 p-4 text-white font-handwriting text-xl font-bold flex items-center gap-2">
+                            <Trophy className="text-yellow-400" /> Top 5 Simulasi Terakhir
+                        </div>
+                        <div className="flex flex-col">
+                            {leaderboardWinners.map((winner, i) => (
+                                <div key={i} className={`flex items-center p-4 md:p-5 border-b-2 border-dashed border-gray-200 last:border-b-0 hover:bg-blue-50 transition-colors ${i < 3 ? 'bg-yellow-50/30' : ''}`}>
+                                    <div className="w-12 font-handwriting font-bold text-2xl text-center">
+                                        {i === 0 ? <span className="text-yellow-500 text-3xl">🥇</span> : 
+                                         i === 1 ? <span className="text-gray-400 text-3xl">🥈</span> : 
+                                         i === 2 ? <span className="text-orange-600 text-3xl">🥉</span> : 
+                                         <span className="text-gray-400">#{winner.rank}</span>}
+                                    </div>
+                                    <div className="flex-1 ml-4">
+                                        <div className="font-handwriting font-bold text-lg md:text-xl text-gray-900">{winner.name}</div>
+                                        <div className="text-sm text-gray-500 flex items-center gap-1"><MapPin size={12} /> {winner.region}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="font-handwriting font-bold text-3xl text-blue-600">{winner.score}</div>
+                                        <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Skor Akhir</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </div>
+            </Section>
 
             {/* --- PRICING SECTION --- */}
             <Section id="products" pattern="dots" dashedBorder="both" className="bg-[#f0f4f8]">
                 <div className="text-center mb-16 relative z-10">
                     <Badge variant="red" className="mb-4">BISA SCAN QRIS</Badge>
                     <h2 className="font-handwriting text-5xl font-bold mb-4">Investasi ASN Sekali Bayar</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">Tanpa biaya bulanan. Beli token sesuai kebutuhan tempurmu.</p>
+                    <p className="font-handwriting text-2xl text-gray-600">1 Token = 1x Tryout. Tanpa batas masa berlaku.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
                     {/* Paket 1 */}
-                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px]">
+                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] flex flex-col">
                         <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PERINTIS</span>
-                        <div className="flex items-end gap-1 mb-6">
+                        <div className="flex items-end gap-1 mb-2">
                             <span className="text-2xl font-bold mb-2">Rp</span>
-                            <span className="text-6xl font-bold text-gray-900">10k</span>
+                            <span className="text-6xl font-bold text-gray-900">10.000</span>
+                            <span className="text-xl text-gray-500 mb-2">/token</span>
                         </div>
-                        <Badge variant="pink" className="mb-8">1x TOKEN TRYOUT</Badge>
+                        <div className="text-gray-700 font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 10.000 (Dapat 1 Token)</div>
+                        <Badge variant="pink" className="mb-8 w-max">1x TOKEN TRYOUT</Badge>
                         <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
                             <li className="flex items-center gap-3"><Flag size={20} className="text-blue-600" /> 110 Soal Prediksi</li>
                             <li className="flex items-center gap-3"><Clock size={20} className="text-blue-600" /> Waktu 100 Menit</li>
@@ -411,14 +836,16 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     </Card>
 
                     {/* Paket 2 (Featured) */}
-                    <Card variant="standard" interactive className="p-10 bg-blue-600 border-4 border-gray-900 relative overflow-hidden group scale-105 z-20">
+                    <Card variant="standard" interactive className="p-10 bg-blue-600 border-4 border-gray-900 relative overflow-hidden group scale-105 z-20 flex flex-col">
                         <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 font-bold px-4 py-1 rounded-full text-sm shadow-md z-10 animate-pulse">PALING LARIS!</div>
                         <span className="font-handwriting font-bold text-blue-100 mb-2 block">PAKET PEJUANG</span>
-                        <div className="flex items-end gap-1 mb-6">
+                        <div className="flex items-end gap-1 mb-2">
                             <span className="text-2xl font-bold mb-2 text-white">Rp</span>
-                            <span className="text-6xl font-bold text-yellow-400">40k</span>
+                            <span className="text-6xl font-bold text-yellow-400">8.000</span>
+                            <span className="text-xl text-blue-200 mb-2">/token</span>
                         </div>
-                        <Badge variant="yellow" className="mb-8">5x TOKEN TRYOUT</Badge>
+                        <div className="text-white font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 40.000 (Dapat 5 Token)</div>
+                        <Badge variant="yellow" className="mb-8 w-max">5x TOKEN TRYOUT</Badge>
                         <ul className="space-y-4 mb-8 w-full font-handwriting text-xl font-bold text-white">
                             <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Semua Fitur Tryout</li>
                             <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Lebih Hemat Rp 10rb</li>
@@ -435,13 +862,15 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     </Card>
 
                     {/* Paket 3 */}
-                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px]">
+                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] flex flex-col">
                         <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PASUKAN</span>
-                        <div className="flex items-end gap-1 mb-6">
+                        <div className="flex items-end gap-1 mb-2">
                             <span className="text-2xl font-bold mb-2">Rp</span>
-                            <span className="text-6xl font-bold text-gray-900">75k</span>
+                            <span className="text-6xl font-bold text-gray-900">7.500</span>
+                            <span className="text-xl text-gray-500 mb-2">/token</span>
                         </div>
-                        <Badge variant="green" className="mb-8">10x TOKEN TRYOUT</Badge>
+                        <div className="text-gray-700 font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 75.000 (Dapat 10 Token)</div>
+                        <Badge variant="green" className="mb-8 w-max">10x TOKEN TRYOUT</Badge>
                         <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
                             <li className="flex items-center gap-3 text-green-600 font-bold"><Sparkles size={20} /> Persiapan Maksimal</li>
                             <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Tryout Tiap Minggu</li>
@@ -461,29 +890,41 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
             {/* --- TESTIMONIALS (Sketsa Orang) --- */}
             <Section id="memorials" className="bg-white" dashedBorder="top" pattern="dots">
                 <div className="text-center max-w-4xl mx-auto mb-16">
-                    <h2 className="font-handwriting text-5xl font-bold mb-4">"Gak Nyangka, Soalnya Mirip Banget!"</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">Kata mereka yang udah "tempur" duluan dan sekarang udah pakai seragam.</p>
+                    <h2 className="font-handwriting text-5xl font-bold mb-4">Apa Kata Peserta?</h2>
+                    <p className="font-handwriting text-2xl text-gray-600">Kata mereka yang udah "tempur" duluan dan merasakan manfaatnya secara langsung.</p>
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {testimonials.map((testi, i) => (
-                        <Card key={i} interactive className={`p-8 ${testi.rotateClass}`}>
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className={`w-16 h-16 ${testi.bgClass} border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl`}>
+                        <Card key={i} interactive className={`p-8 flex flex-col ${testi.rotateClass}`}>
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className={`w-16 h-16 ${testi.bgClass} border-2 border-gray-900 rounded-full flex items-center justify-center text-3xl shrink-0`}>
                                     {testi.avatar}
                                 </div>
                                 <div>
-                                    <h4 className="font-handwriting text-xl font-bold">{testi.name}</h4>
-                                    <div className="flex text-yellow-500">
-                                        {[...Array(5)].map((_, idx) => (
-                                            <Sparkles key={idx} size={16} fill="currentColor" />
-                                        ))}
-                                    </div>
+                                    <h4 className="font-handwriting text-xl font-bold leading-none mb-1">{testi.name}</h4>
+                                    <span className="text-sm text-gray-500 font-handwriting">{testi.region} • {testi.event}</span>
                                 </div>
                             </div>
-                            <p className="font-handwriting text-xl text-gray-700 italic leading-relaxed">
+                            <div className="mb-4 flex items-center justify-center gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                <div className="text-center">
+                                    <span className="text-xs text-gray-500 block">Sebelumnya</span>
+                                    <span className="font-handwriting font-bold text-red-500">{testi.scoreBefore}</span>
+                                </div>
+                                <ArrowRight size={16} className="text-gray-300" />
+                                <div className="text-center">
+                                    <span className="text-xs text-gray-500 block">Sesudahnya</span>
+                                    <span className="font-handwriting font-bold text-green-600 text-xl">{testi.scoreAfter}</span>
+                                </div>
+                            </div>
+                            <p className="font-handwriting text-lg text-gray-700 italic leading-relaxed flex-1">
                                 {testi.text}
                             </p>
+                            <div className="flex text-yellow-500 mt-4">
+                                {[...Array(5)].map((_, idx) => (
+                                    <Sparkles key={idx} size={16} fill="currentColor" />
+                                ))}
+                            </div>
                         </Card>
                     ))}
                 </div>
@@ -555,6 +996,26 @@ export default function Home({ user: initialUser }: { user: LandingUser }) {
                     </div>
                 </div>
             </footer>
+
+            {/* Sticky Mobile CTA */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t-2 border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-50 flex flex-col gap-2">
+                <div className="text-center text-xs font-handwriting font-bold text-gray-500">Siap mulai latihan?</div>
+                <div className="flex gap-3">
+                    <Button 
+                        variant="secondary"
+                        className="flex-1 shadow-none py-4 text-base border-2 border-gray-900 bg-red-100 text-red-700 hover:bg-red-200" 
+                        onClick={() => scrollToSection("active-event")}
+                    >
+                        Lihat Event
+                    </Button>
+                    <Button 
+                        className="flex-1 shadow-none py-4 text-base"
+                        onClick={() => scrollToSection("products")}
+                    >
+                        Mulai Tryout
+                    </Button>
+                </div>
+            </div>
         </main>
     );
 }

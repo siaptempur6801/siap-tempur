@@ -91,6 +91,7 @@ type TryoutEvent = {
     requires_code: boolean
     group_link: string | null
     flyer_image_url: string | null
+    documentation_url: string | null
     is_paid: boolean
     price: number
     status: EventStatus
@@ -157,6 +158,7 @@ function getEventFormValues(event?: TryoutEvent | null) {
         requires_code: event?.requires_code || false,
         group_link: event?.group_link || '',
         flyer_image_url: event?.flyer_image_url || '',
+        documentation_url: event?.documentation_url || '',
         is_paid: event?.is_paid || false,
         price: String(event?.price ?? 15000),
     }
@@ -492,6 +494,18 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                             className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900"
                         />
                         <p className="text-xs font-medium text-gray-400">Link ini hanya tampil untuk user yang sudah terdaftar atau berhasil bayar.</p>
+                    </div>
+                    <div className="sm:col-span-2 space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Link Dokumentasi Event</label>
+                        <input
+                            name="documentation_url"
+                            type="url"
+                            value={values.documentation_url}
+                            onChange={(e) => updateValue('documentation_url', e.target.value)}
+                            placeholder="https://youtu.be/..."
+                            className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900"
+                        />
+                        <p className="text-xs font-medium text-gray-400">Link publik untuk dokumentasi event selesai. Akan tampil di landing page bagian Jejak Event.</p>
                     </div>
                     {/* Payment Section */}
                     <div className="sm:col-span-2 border-t-2 border-gray-200 pt-4">

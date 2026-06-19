@@ -728,6 +728,7 @@ function readTryoutEventForm(formData: FormData) {
     const price = isPaid ? Math.max(0, Number(priceRaw) || 0) : 0
     const groupLink = String(formData.get('group_link') || '').trim()
     const flyerImageUrl = String(formData.get('flyer_image_url') || '').trim()
+    const documentationUrl = String(formData.get('documentation_url') || '').trim()
     const normalizedDurationMinutes = Number.isInteger(durationMinutes) && durationMinutes > 0 ? durationMinutes : 100
     const normalizedStartGraceMinutes = Number.isInteger(startGraceMinutes) && startGraceMinutes >= 0 ? startGraceMinutes : 15
     const startsAtDate = parseWibDateTime(startsAt)
@@ -748,6 +749,7 @@ function readTryoutEventForm(formData: FormData) {
         price,
         group_link: groupLink || null,
         flyer_image_url: flyerImageUrl || null,
+        documentation_url: documentationUrl || null,
         result_visible_at: synchronizedCloseAt || null,
         explanation_visible_at: synchronizedCloseAt || null,
     }
@@ -775,6 +777,7 @@ export async function createTryoutEvent(formData: FormData) {
 
     revalidatePath('/cpns/admin/event')
     revalidatePath('/cpns/dashboard/event')
+    revalidatePath('/cpns')
     return { success: true, message: 'Event Tryout Akbar berhasil dibuat' }
 }
 
@@ -799,6 +802,7 @@ export async function updateTryoutEvent(id: string, formData: FormData) {
 
     revalidatePath('/cpns/admin/event')
     revalidatePath('/cpns/dashboard/event')
+    revalidatePath('/cpns')
     return { success: true, message: 'Event Tryout Akbar berhasil diupdate' }
 }
 

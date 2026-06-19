@@ -1,6 +1,9 @@
 import LandingUI from '@/components/home/LandingUI'
 import { Metadata } from 'next'
-import { createClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
+
+const eventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url, documentation_url'
+const legacyEventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url'
 
 export const metadata: Metadata = {
   title: 'Tryout SKD CPNS 2026 - Simulasi CAT BKN Terlengkap',
@@ -17,5 +20,48 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  return <LandingUI user={user ? { id: user.id } : null} />
+  const admin = await createAdminClient()
+  const now = new Date().toISOString()
+
+  const activeEventsResult = await admin
+    .from('tryout_events')
+    .select(eventSelect)
+    .in('status', ['scheduled', 'live'])
+    .gte('ends_at', now)
+    .order('starts_at', { ascending: true })
+    .limit(8)
+  const activeEvents = activeEventsResult.error
+    ? (await admin
+      .from('tryout_events')
+      .select(legacyEventSelect)
+      .in('status', ['scheduled', 'live'])
+      .gte('ends_at', now)
+      .order('starts_at', { ascending: true })
+      .limit(8)).data?.map((event) => ({ ...event, documentation_url: null }))
+    : activeEventsResult.data
+
+  const completedEventsResult = await admin
+    .from('tryout_events')
+    .select(eventSelect)
+    .in('status', ['scheduled', 'live', 'closed'])
+    .or(`status.eq.closed,ends_at.lt.${now}`)
+    .order('ends_at', { ascending: false })
+    .limit(6)
+  const completedEvents = completedEventsResult.error
+    ? (await admin
+      .from('tryout_events')
+      .select(legacyEventSelect)
+      .in('status', ['scheduled', 'live', 'closed'])
+      .or(`status.eq.closed,ends_at.lt.${now}`)
+      .order('ends_at', { ascending: false })
+      .limit(6)).data?.map((event) => ({ ...event, documentation_url: null }))
+    : completedEventsResult.data
+
+  return (
+    <LandingUI
+      user={user ? { id: user.id } : null}
+      activeEvents={activeEvents || []}
+      completedEvents={completedEvents || []}
+    />
+  )
 }
