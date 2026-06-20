@@ -366,7 +366,7 @@ export default function PracticeClient({
                 {/* Warning Section */}
                 <PageAnimateItem className="p-6 bg-red-50 border-2 border-gray-900 text-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-[-0.5deg]">
                     <div className="flex items-start gap-4">
-                        <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-1" />
+                        <AlertCircle className="w-6 h-6 text-red-600 shrink-0 mt-1" />
                         <div>
                             <h4 className="font-bold text-lg mb-1 italic">Perhatian:</h4>
                             <p className="text-sm md:text-base font-sans leading-relaxed">
