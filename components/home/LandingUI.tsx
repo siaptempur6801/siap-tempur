@@ -231,14 +231,14 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     <Image src="/tarapng.png" alt="Mascot Girl" width={300} height={420} className="object-contain w-auto h-[350px] xl:h-[420px] drop-shadow-xl" priority />
                 </div>
 
-                <div className="text-center relative z-10 max-w-3xl mx-auto">
+                <div className="text-center relative z-10 max-w-4xl mx-auto">
                     {/* Label Stabilo */}
                     <Badge variant="yellow" className="mb-6">
-                        🎯 Persiapan CPNS & Kedinasan 2026
+                        🎯 Persiapan CPNS 2026
                     </Badge>
 
                     <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                        Tryout SKD CPNS 2026 Online,<br />
+                        Platform Tryout CPNS Online,<br />
                         <span className="text-blue-600">Sampai Lulus</span> Bukan Sampai <br />
                         <span className="relative inline-block mt-2">
                             Dompet Tipis.
