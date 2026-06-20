@@ -145,8 +145,8 @@ export default function DashboardClient({ data, greeting }: Props) {
 
                     <div className="relative z-10">
                         {/* Status Bar */}
-                        <div className="flex flex-wrap items-center justify-between gap-4 mb-8 max-w-6xl mx-auto">
-                            <div className="flex items-center gap-4">
+                        <div className="flex flex-col md:flex-row items-center md:justify-between gap-4 mb-8 max-w-6xl mx-auto">
+                            <div className="flex flex-wrap justify-center md:justify-start items-center gap-4">
                                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-green-300 border-2 border-gray-900 text-gray-900 text-sm font-bold uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform -rotate-1">
                                     <Rocket className="w-4 h-4 fill-current" /> Siap Tempur
                                 </div>
@@ -274,14 +274,14 @@ export default function DashboardClient({ data, greeting }: Props) {
                                 {((activeTab === 'last' && data.lastExam) || (activeTab === 'best' && data.bestExam)) ? (
                                     <>
                                         {/* Total Score Banner */}
-                                        <div className="p-4 bg-gray-900 text-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] mb-2 flex items-center justify-between">
+                                        <div className="p-4 bg-gray-900 text-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] mb-2 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-2 sm:gap-0 text-center sm:text-left">
                                             <div>
                                                 <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Skor</div>
                                                 <div className="text-4xl font-black tracking-tight text-white">
                                                     {activeTab === 'last' ? data.lastExam?.total_score : data.bestExam?.total_score}
                                                 </div>
                                             </div>
-                                            <div className="text-right">
+                                            <div className="text-center sm:text-right">
                                                 <div className={cn(
                                                     "px-3 py-1 text-xs font-bold uppercase rounded-full inline-block mb-1",
                                                     (activeTab === 'last' ? data.lastExam?.passed : data.bestExam?.passed) ? "bg-green-500 text-white" : "bg-red-500 text-white"

@@ -108,20 +108,20 @@ export function HistoryTab({ transactions, usageSessions }: HistoryTabProps) {
                     <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                         {transactions.map((tx) => (
                             <div key={tx.id} className="w-full shrink-0 p-5 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all relative overflow-hidden group">
-                                <div className="flex items-center justify-between gap-4 relative z-10">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-blue-100 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0 group-hover:rotate-12 transition-transform">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+                                    <div className="flex items-start sm:items-center gap-4">
+                                        <div className="w-12 h-12 bg-blue-100 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0 group-hover:rotate-12 transition-transform mt-1 sm:mt-0">
                                             <Coins className="w-6 h-6 text-gray-900" />
                                         </div>
                                         <div>
-                                            <div className="font-black text-lg text-gray-900 mb-1">{tx.package_name}</div>
+                                            <div className="font-black text-lg text-gray-900 mb-1 leading-tight">{tx.package_name}</div>
                                             <div className="flex items-center gap-2 text-sm text-gray-600 font-bold">
-                                                <Calendar size={14} />
-                                                {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })}
+                                                <Calendar size={14} className="shrink-0" />
+                                                <span className="truncate">{new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })}</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-left sm:text-right pl-16 sm:pl-0">
                                         <div className="font-black text-xl text-gray-900">Rp {tx.amount.toLocaleString('id-ID')}</div>
                                         {(() => {
                                             const isLocallyExpired = tx.status === 'pending' && (new Date().getTime() - new Date(tx.created_at).getTime() > 15 * 60 * 1000)

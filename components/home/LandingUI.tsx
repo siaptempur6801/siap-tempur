@@ -127,7 +127,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
             {/* --- NAVBAR (Binder Style) --- */}
             <header className="fixed top-0 w-full z-50 bg-[#fdfbf7]/90 backdrop-blur-sm border-b-4 border-gray-800/10">
-                <nav className="container mx-auto px-4 h-20 flex items-center justify-between relative">
+                <nav className="container mx-auto px-4 md:px-6 lg:px-8 h-20 flex items-center justify-between relative">
 
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="flex items-center group cursor-pointer">
                         <span className="text-3xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
@@ -281,7 +281,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
             {/* --- TRUST BADGES --- */}
             <section className="bg-white py-6 border-b-4 border-gray-900/10 overflow-hidden">
-                <div className="container mx-auto px-4">
+                <div className="container mx-auto px-4 md:px-6 lg:px-8">
                     <div className="flex overflow-x-auto pb-4 md:pb-0 hide-scrollbar gap-4 md:gap-8 justify-start md:justify-center items-center">
                         {trustBadges.map((badge, i) => {
                             const IconMap: Record<string, typeof Award> = { Award, BookOpen, Trophy, ShieldCheck, Monitor, Layers };
@@ -979,7 +979,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     <Rocket size={120} />
                 </div>
 
-                <div className="max-w-4xl mx-auto text-center relative z-10 px-4">
+                <div className="max-w-4xl mx-auto text-center relative z-10 px-4 md:px-6 lg:px-8">
                     <h2 className="font-handwriting text-4xl font-bold mb-6 italic">"Jangan Tempur Tanpa Amunisi."</h2>
                     <p className="text-gray-400 mb-8 max-w-lg mx-auto font-handwriting text-xl">Lolos CPNS bukan soal pintar saja, tapi soal siapa yang paling siap menghadapi sistem CAT yang aslinya.</p>
 

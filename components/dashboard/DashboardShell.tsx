@@ -148,7 +148,7 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     />
                 </div>
 
-                <div className="p-6 md:p-8 max-w-7xl mx-auto">
+                <div className="p-4 md:p-8 max-w-7xl mx-auto">
                     {children}
                 </div>
             </main>

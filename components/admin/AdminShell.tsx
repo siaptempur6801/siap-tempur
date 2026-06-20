@@ -35,7 +35,7 @@ interface AdminShellProps {
 
 const navItems = [
     { href: '/cpns/admin', label: 'Bank Soal', icon: ClipboardList },
-    { href: '/cpns/admin/tryout-config', label: 'Konfigurasi Tryout', icon: Settings },
+    { href: '/cpns/admin/tryout-config', label: 'Konfigurasi Tryout', mobileLabel: 'Konfig', icon: Settings },
     { href: '/cpns/admin/event', label: 'Event', icon: BarChart3 },
     { href: '/cpns/admin/voucher', label: 'Voucher', icon: Ticket },
     { href: '/cpns/admin/keuangan', label: 'Keuangan', icon: Wallet },
@@ -95,11 +95,13 @@ function AdminNavLink({
 function AdminMobileNavLink({
     href,
     label,
+    mobileLabel,
     icon: Icon,
     disabled = false,
 }: {
     href: string
     label: string
+    mobileLabel?: string
     icon: typeof Shield
     disabled?: boolean
 }) {
@@ -116,7 +118,7 @@ function AdminMobileNavLink({
                 <Icon size={20} />
             </div>
             <span className={cn('mt-1 text-[10px] font-handwriting text-lg leading-none', isActive && 'font-bold text-gray-900')}>
-                {label}
+                {mobileLabel || label}
             </span>
         </>
     )
@@ -228,8 +230,8 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
                 </main>
 
                 <nav className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-gray-900 bg-[#f8f8f6]/90 backdrop-blur-xl md:hidden">
-                    <div className="grid grid-cols-6 gap-1 px-2 py-2">
-                        {[...navItems.slice(0, 5), userDashboardItem].map((item) => (
+                    <div className="grid grid-cols-5 gap-1 px-2 py-2">
+                        {navItems.slice(0, 5).map((item) => (
                             <AdminMobileNavLink key={item.href} {...item} />
                         ))}
                     </div>

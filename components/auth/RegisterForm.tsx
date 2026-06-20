@@ -75,7 +75,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
     }
 
     return (
-        <div className="w-full max-w-md space-y-8 relative z-10 bg-white p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl rotate-1">
+        <div className="w-full max-w-md space-y-8 relative z-10 bg-white p-6 md:p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl rotate-1">
             {/* Tape Effect */}
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-pink-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 

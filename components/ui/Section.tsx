@@ -42,7 +42,7 @@ const Section = React.forwardRef<HTMLElement, SectionProps>(
           />
         )}
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="container mx-auto px-4 md:px-6 lg:px-8 relative z-10">
           {children}
         </div>
       </section>
