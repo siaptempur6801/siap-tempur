@@ -37,7 +37,7 @@ export const cpnsSchema = [
         "url": "https://siaptempur.id",
         "logo": "https://siaptempur.id/favicon.ico",
         "sameAs": [
-            "https://www.youtube.com/@siaptempur"
+            "https://www.youtube.com/@siaptempurID"
         ]
     },
     {

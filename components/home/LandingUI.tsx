@@ -85,7 +85,7 @@ function getEventFlyerUrl(event: ActiveEvent | null) {
 function getEventDocumentationUrl(event: ActiveEvent) {
     if (event.documentation_url) return event.documentation_url;
 
-    return YOUTUBE_DOCUMENTATION_BY_TITLE.find(({ pattern }) => pattern.test(event.title))?.url || "https://www.youtube.com/@siaptempur";
+    return YOUTUBE_DOCUMENTATION_BY_TITLE.find(({ pattern }) => pattern.test(event.title))?.url || "https://www.youtube.com/@siaptempurID";
 }
 
 export default function Home({ user: initialUser, activeEvents = [], completedEvents = [] }: { user: LandingUser; activeEvents?: ActiveEvent[]; completedEvents?: ActiveEvent[] }) {
