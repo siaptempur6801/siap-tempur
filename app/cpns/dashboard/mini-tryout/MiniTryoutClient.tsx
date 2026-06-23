@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -109,6 +109,7 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
     const [loadingType, setLoadingType] = useState<MiniTryoutType | null>(null)
     const [confirmType, setConfirmType] = useState<MiniTryoutType | null>(null)
     const [hydratedActiveSessionsByType, setHydratedActiveSessionsByType] = useState(activeSessionsByType)
+    const startLockRef = useRef<MiniTryoutType | null>(null)
     const hasToken = quota >= TRYOUT_TOKEN_COST
 
     const hydrateActiveSessionsFromLocalStorage = useCallback(() => {
@@ -166,6 +167,9 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
     )
 
     const startMiniTryoutSession = async (type: MiniTryoutType) => {
+        if (startLockRef.current) return
+
+        startLockRef.current = type
         let isNavigating = false
         try {
             setLoadingType(type)
@@ -185,6 +189,7 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
             toast.error('Gagal memulai mini tryout')
         } finally {
             if (!isNavigating) {
+                startLockRef.current = null
                 setLoadingType(null)
             }
         }

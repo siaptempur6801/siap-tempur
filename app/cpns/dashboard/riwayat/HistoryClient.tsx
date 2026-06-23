@@ -9,8 +9,9 @@ import { cn } from '@/lib/utils'
 type HistorySession = {
     id: string
     title: string
-    kind: 'event' | 'full-tryout' | 'mini-tryout'
+    kind: 'event' | 'full-tryout' | 'mini-tryout' | 'drilling-materi'
     isEvent: boolean
+    subCategory?: string | null
     completedAt: string
     completedAtLabel: string
     totalScore: number
@@ -20,7 +21,7 @@ type HistorySession = {
     passed: boolean | null
 }
 
-type TypeFilter = 'all' | 'event' | 'full-tryout' | 'mini-tryout'
+type TypeFilter = 'all' | 'event' | 'full-tryout' | 'mini-tryout' | 'drilling-materi'
 type StatusFilter = 'all' | 'passed' | 'failed'
 type SortMode = 'newest' | 'oldest' | 'highest'
 
@@ -32,7 +33,8 @@ const typeOptions: Array<{ value: TypeFilter; label: string }> = [
     { value: 'all', label: 'Semua' },
     { value: 'event', label: 'Event' },
     { value: 'full-tryout', label: 'Full Tryout' },
-    { value: 'mini-tryout', label: 'Mini Tryout' }
+    { value: 'mini-tryout', label: 'Mini Tryout' },
+    { value: 'drilling-materi', label: 'Drilling Materi' }
 ]
 
 const statusOptions: Array<{ value: StatusFilter; label: string }> = [
@@ -79,8 +81,10 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
             const matchesQuery =
                 normalizedQuery.length === 0 ||
                 session.title.toLowerCase().includes(normalizedQuery) ||
+                (session.subCategory?.toLowerCase().includes(normalizedQuery) ?? false) ||
                 session.completedAtLabel.toLowerCase().includes(normalizedQuery) ||
-                (session.isEvent && 'event'.includes(normalizedQuery))
+                (session.isEvent && 'event'.includes(normalizedQuery)) ||
+                (session.kind === 'drilling-materi' && 'drilling materi'.includes(normalizedQuery))
 
             const matchesType =
                 typeFilter === 'all' ||
@@ -235,6 +239,11 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                                             {session.kind === 'mini-tryout' && (
                                                 <span className="inline-flex items-center gap-1 border-2 border-gray-900 bg-green-100 px-2 py-0.5 text-[9px] font-black uppercase text-green-700">
                                                     Mini Tryout
+                                                </span>
+                                            )}
+                                            {session.kind === 'drilling-materi' && (
+                                                <span className="inline-flex items-center gap-1 border-2 border-gray-900 bg-purple-100 px-2 py-0.5 text-[9px] font-black uppercase text-purple-700">
+                                                    Drilling Materi
                                                 </span>
                                             )}
                                             {session.passed !== null && (

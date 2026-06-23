@@ -1,8 +1,8 @@
 'use server'
 
-import { isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-session'
+import { DRILLING_MATERI_QUESTION_COUNT, isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-session'
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
-import { getMiniTryoutProduct, type MiniTryoutType } from '@/lib/constants'
+import { getMiniTryoutProduct, isMiniTryoutType, type MiniTryoutType } from '@/lib/constants'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
@@ -43,7 +43,7 @@ async function queryInProgressSessions(
 ) {
     const baseQuery = supabase
         .from('test_sessions')
-        .select('id, start_time')
+        .select('id, start_time, session_kind')
         .eq('user_id', userId)
         .eq('mode', mode)
         .eq('status', 'in_progress')
@@ -58,7 +58,7 @@ async function queryInProgressSessions(
 
     return supabase
         .from('test_sessions')
-        .select('id, start_time')
+        .select('id, start_time, session_kind')
         .eq('user_id', userId)
         .eq('mode', mode)
         .eq('status', 'in_progress')
@@ -100,7 +100,9 @@ async function findExistingTryoutSession(
 async function findExistingPracticeSession(
     supabase: Awaited<ReturnType<typeof createClient>>,
     userId: string,
-    type: MiniTryoutType
+    type: MiniTryoutType,
+    expectedQuestionCount?: number,
+    expectedSubCategory?: string
 ): Promise<ResumeSessionResult | null> {
     const { data: sessions, error } = await queryInProgressSessions(supabase, userId, 'practice', 10)
 
@@ -110,22 +112,39 @@ async function findExistingPracticeSession(
     }
 
     for (const session of sessions ?? []) {
-        const { data: answerRow, error: answerError } = await supabase
-            .from('test_answers')
-            .select('questions!inner(type)')
-            .eq('session_id', session.id)
-            .limit(1)
-            .maybeSingle()
-
-        if (answerError || !answerRow) {
+        if (expectedSubCategory && session.session_kind && session.session_kind !== 'drilling_materi') {
             continue
         }
 
-        const questionData = Array.isArray(answerRow.questions)
-            ? answerRow.questions[0]
-            : answerRow.questions
+        if (!expectedSubCategory && session.session_kind === 'drilling_materi') {
+            continue
+        }
 
-        if (questionData?.type === type) {
+        const { data: answerRows, error: answerError } = await supabase
+            .from('test_answers')
+            .select('questions!inner(type, sub_category)')
+            .eq('session_id', session.id)
+            .limit(expectedQuestionCount ? expectedQuestionCount + 1 : 1)
+
+        if (answerError || !answerRows?.length) {
+            continue
+        }
+
+        if (expectedQuestionCount && answerRows.length !== expectedQuestionCount) {
+            continue
+        }
+
+        const questionRows = answerRows
+            .map((answer) => Array.isArray(answer.questions) ? answer.questions[0] : answer.questions)
+            .filter(Boolean)
+
+        if (
+            questionRows.length === answerRows.length &&
+            questionRows.every((question) => (
+                question?.type === type &&
+                (!expectedSubCategory || question.sub_category?.trim() === expectedSubCategory)
+            ))
+        ) {
             return { sessionId: session.id, resumed: true }
         }
     }
@@ -149,7 +168,7 @@ export async function startPractice(type: MiniTryoutType) {
         redirect('/login')
     }
 
-    const existingSession = await findExistingPracticeSession(supabase, user.id, miniTryoutProduct.type)
+    const existingSession = await findExistingPracticeSession(supabase, user.id, miniTryoutProduct.type, miniTryoutProduct.questionCount)
     if (existingSession) {
         return { success: true, ...existingSession }
     }
@@ -191,6 +210,62 @@ export async function startPractice(type: MiniTryoutType) {
 
 export async function startMiniTryout(type: MiniTryoutType) {
     return startPractice(type)
+}
+
+export async function startDrillingMateri(type: MiniTryoutType, subCategory: string) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    if (!isMiniTryoutType(type)) {
+        return { error: 'Tipe drilling tidak valid' }
+    }
+
+    const normalizedSubCategory = subCategory.trim()
+    if (!normalizedSubCategory) {
+        return { error: 'Materi drilling tidak valid' }
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/login')
+
+    const existingSession = await findExistingPracticeSession(supabase, user.id, type, DRILLING_MATERI_QUESTION_COUNT, normalizedSubCategory)
+    if (existingSession) {
+        return { success: true, ...existingSession }
+    }
+
+    const { data, error } = await supabase.rpc('start_drilling_materi_session', {
+        p_user_id: user.id,
+        p_type: type,
+        p_sub_category: normalizedSubCategory,
+    })
+
+    if (error) {
+        logger.warn('[startDrillingMateri] DB Error', { error: error.message })
+        if (error.message?.includes('Not enough SKD tickets') || error.details?.includes('Not enough SKD tickets')) {
+            return { error: 'Token drilling materi habis! Silakan beli paket baru.' }
+        }
+        if (error.message?.includes('Bank soal drilling materi belum lengkap') || error.details?.includes('Bank soal drilling materi belum lengkap')) {
+            const selectedCount = error.message?.match(/selected (\d+)/)?.[1] || error.details?.match(/selected (\d+)/)?.[1]
+            return {
+                error: selectedCount
+                    ? `Bank soal ${type} - ${normalizedSubCategory} baru terbaca ${selectedCount}/${DRILLING_MATERI_QUESTION_COUNT} soal.`
+                    : `Bank soal ${type} - ${normalizedSubCategory} belum cukup untuk drilling ${DRILLING_MATERI_QUESTION_COUNT} soal.`
+            }
+        }
+        return { error: 'Gagal memulai drilling materi.' }
+    }
+
+    if (!data || data.length === 0) {
+        logger.warn('[startDrillingMateri] No data returned from RPC')
+        return { error: 'Sesi drilling materi tidak berhasil dibuat' }
+    }
+
+    revalidatePath('/cpns/dashboard')
+    revalidatePath('/cpns/dashboard/drilling-materi')
+    revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/cpns/dashboard/riwayat')
+
+    return { success: true, sessionId: data[0].session_id, resumed: !data[0].questions }
 }
 
 export async function startTryout() {

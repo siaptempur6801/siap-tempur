@@ -1,10 +1,17 @@
 import { redirect } from 'next/navigation'
 import { PASSING_GRADES } from '@/lib/constants'
+import { isDrillingMateriQuestionSet, normalizeTestSessionKind } from '@/lib/practice-session'
 import { createClient } from '@/lib/utils/supabase/server'
 import HistoryClient from './HistoryClient'
 
 type SessionType = 'TWK' | 'TIU' | 'TKP'
-type HistoryKind = 'event' | 'full-tryout' | 'mini-tryout'
+type HistoryKind = 'event' | 'full-tryout' | 'mini-tryout' | 'drilling-materi'
+
+type HistoryMeta = {
+    types: Set<SessionType>
+    subCategories: Set<string>
+    answerCount: number
+}
 
 function formatCompletedAt(dateTime: string) {
     return new Intl.DateTimeFormat('id-ID', {
@@ -17,13 +24,22 @@ function formatCompletedAt(dateTime: string) {
     }).format(new Date(dateTime))
 }
 
-function getHistoryTitle(mode: 'practice' | 'tryout', types: SessionType[], eventTitle?: string | null) {
+function getHistoryTitle(
+    mode: 'practice' | 'tryout',
+    types: SessionType[],
+    eventTitle?: string | null,
+    drillingSubCategory?: string | null
+) {
     if (eventTitle) {
         return eventTitle
     }
 
     if (mode === 'tryout' || types.length > 1) {
         return 'Tryout SKD Full'
+    }
+
+    if (drillingSubCategory) {
+        return `Drilling Materi ${drillingSubCategory}`
     }
 
     if (types[0]) {
@@ -33,9 +49,15 @@ function getHistoryTitle(mode: 'practice' | 'tryout', types: SessionType[], even
     return 'Mini Tryout'
 }
 
-function getHistoryKind(mode: 'practice' | 'tryout', types: SessionType[], eventTitle?: string | null): HistoryKind {
+function getHistoryKind(
+    mode: 'practice' | 'tryout',
+    types: SessionType[],
+    eventTitle?: string | null,
+    drillingSubCategory?: string | null
+): HistoryKind {
     if (eventTitle) return 'event'
     if (mode === 'tryout' || types.length > 1) return 'full-tryout'
+    if (drillingSubCategory) return 'drilling-materi'
     return 'mini-tryout'
 }
 
@@ -70,14 +92,14 @@ export default async function RiwayatPage() {
 
     const { data: completedSessions } = await supabase
         .from('test_sessions')
-        .select('id, mode, start_time, end_time, total_score, score_twk, score_tiu, score_tkp')
+        .select('id, mode, session_kind, start_time, end_time, total_score, score_twk, score_tiu, score_tkp')
         .eq('user_id', user.id)
         .eq('status', 'completed')
         .order('end_time', { ascending: false })
         .limit(24)
 
     const sessionIds = completedSessions?.map((session) => session.id) ?? []
-    const historyTypesMap = new Map<string, Set<SessionType>>()
+    const historyMetaMap = new Map<string, HistoryMeta>()
     const eventTitleMap = new Map<string, string>()
 
     if (sessionIds.length > 0) {
@@ -87,7 +109,9 @@ export default async function RiwayatPage() {
                 .select(`
                     session_id,
                     questions (
-                        type
+                        type,
+                        category,
+                        sub_category
                     )
                 `)
                 .in('session_id', sessionIds),
@@ -105,12 +129,24 @@ export default async function RiwayatPage() {
         historyAnswers?.forEach((answer) => {
             const question = Array.isArray(answer.questions) ? answer.questions[0] : answer.questions
             const type = question?.type as SessionType | undefined
+            const subCategorySource = typeof question?.sub_category === 'string' && question.sub_category.trim()
+                ? question.sub_category
+                : typeof question?.category === 'string'
+                    ? question.category
+                    : ''
+            const subCategory = subCategorySource.trim()
 
             if (!type) return
 
-            const currentTypes = historyTypesMap.get(answer.session_id) ?? new Set<SessionType>()
-            currentTypes.add(type)
-            historyTypesMap.set(answer.session_id, currentTypes)
+            const currentMeta = historyMetaMap.get(answer.session_id) ?? {
+                types: new Set<SessionType>(),
+                subCategories: new Set<string>(),
+                answerCount: 0,
+            }
+            currentMeta.types.add(type)
+            if (subCategory) currentMeta.subCategories.add(subCategory)
+            currentMeta.answerCount += 1
+            historyMetaMap.set(answer.session_id, currentMeta)
         })
 
         eventSessions?.forEach((eventSession) => {
@@ -125,17 +161,31 @@ export default async function RiwayatPage() {
     }
 
     const historySessions = (completedSessions ?? []).map((session) => {
-        const types = Array.from(historyTypesMap.get(session.id) ?? [])
+        const meta = historyMetaMap.get(session.id)
+        const types = Array.from(meta?.types ?? [])
+        const subCategories = Array.from(meta?.subCategories ?? [])
         const eventTitle = eventTitleMap.get(session.id) ?? null
         const scoreTwk = session.score_twk ?? 0
         const scoreTiu = session.score_tiu ?? 0
         const scoreTkp = session.score_tkp ?? 0
+        const sessionKind = normalizeTestSessionKind(session.session_kind)
+        const drillingSubCategory =
+            isDrillingMateriQuestionSet({
+                sessionKind,
+                isCombined: types.length > 1,
+                answerCount: meta?.answerCount ?? 0,
+                uniqueSubCategoryCount: subCategories.length,
+                isEventSession: Boolean(eventTitle),
+            }) && subCategories.length >= 1
+                ? subCategories[0]
+                : null
 
         return {
             id: session.id,
-            title: getHistoryTitle(session.mode, types, eventTitle),
-            kind: getHistoryKind(session.mode, types, eventTitle),
+            title: getHistoryTitle(session.mode, types, eventTitle, drillingSubCategory),
+            kind: getHistoryKind(session.mode, types, eventTitle, drillingSubCategory),
             isEvent: Boolean(eventTitle),
+            subCategory: drillingSubCategory,
             completedAt: session.end_time ?? session.start_time,
             completedAtLabel: formatCompletedAt(session.end_time ?? session.start_time),
             totalScore: session.total_score ?? 0,

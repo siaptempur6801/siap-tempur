@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
-import { isMissingProgressColumnError } from './practice-session'
+import { getDashboardActiveSessionKind, isMissingProgressColumnError, type DashboardActiveSessionKind } from './practice-session'
 import { calculateCurrentStreak } from './utils'
 
 interface DashboardData {
@@ -58,6 +58,7 @@ interface DashboardData {
     } | null
     activeSession: {
         mode: 'practice' | 'tryout'
+        kind: DashboardActiveSessionKind
     } | null
 }
 
@@ -122,7 +123,7 @@ export async function getCurrentRank(supabase: SupabaseClient, userId: string) {
 }
 
 export async function getDashboardData(supabase: SupabaseClient, userId: string): Promise<DashboardData> {
-    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, rankData, activeSessionRes] = await Promise.all([
+    const [profileRes, sessionsRes, bestSessionRes, allSessionsRes, completedCountRes, rankData, activeSessionRes] = await Promise.all([
         supabase
             .from('profiles')
             .select('full_name, streak_count, tryout_quota, last_activity_date')
@@ -147,10 +148,15 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
             .select('total_score')
             .eq('user_id', userId)
             .eq('status', 'completed'),
+        supabase
+            .from('test_sessions')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('status', 'completed'),
         getCurrentRank(supabase, userId),
         supabase
             .from('test_sessions')
-            .select('mode, start_time')
+            .select('id, mode, session_kind, start_time')
             .eq('user_id', userId)
             .eq('status', 'in_progress')
             .order('last_activity_at', { ascending: false })
@@ -161,7 +167,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     const fallbackActiveSessionRes = activeSessionRes.error && isMissingProgressColumnError(activeSessionRes.error)
         ? await supabase
             .from('test_sessions')
-            .select('mode, start_time')
+            .select('id, mode, start_time')
             .eq('user_id', userId)
             .eq('status', 'in_progress')
             .order('start_time', { ascending: false })
@@ -174,6 +180,19 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
     const bestSession = bestSessionRes.data?.[0]
     const allSessions = allSessionsRes.data
     const activeSession = fallbackActiveSessionRes?.data ?? activeSessionRes.data
+    const activeEventSessionRes = activeSession?.id
+        ? await supabase
+            .from('tryout_event_sessions')
+            .select('id')
+            .eq('session_id', activeSession.id)
+            .maybeSingle()
+        : null
+    const activeSessionKind = activeSession
+        ? getDashboardActiveSessionKind(
+            activeSession.mode,
+            activeEventSessionRes?.data ? 'event' : 'session_kind' in activeSession ? activeSession.session_kind : null
+        )
+        : null
     // rankData diambil dari leaderboard Postgres terbaru.
 
     const totalXp = allSessions?.reduce((sum: number, session) => sum + (session.total_score || 0), 0) || 0
@@ -263,7 +282,7 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
 
     return {
         user: { id: userId, name: profile?.full_name || 'Calon ASN', streak: calculateCurrentStreak(profile?.streak_count, profile?.last_activity_date), tryoutQuota: profile?.tryout_quota || 0 },
-        stats: { totalSessions: recentSessions.length, xp: totalXp, level: levelInfo.level, levelName: levelInfo.name, levelProgress: getLevelProgress(totalXp).progress, rank: rankData?.rank_pos || null },
+        stats: { totalSessions: completedCountRes.count ?? recentSessions.length, xp: totalXp, level: levelInfo.level, levelName: levelInfo.name, levelProgress: getLevelProgress(totalXp).progress, rank: rankData?.rank_pos || null },
         progress: {
             twk: { score: avgScores.twk, target: PASSING_GRADES.TWK, passed: avgScores.twk >= PASSING_GRADES.TWK },
             tiu: { score: avgScores.tiu, target: PASSING_GRADES.TIU, passed: avgScores.tiu >= PASSING_GRADES.TIU },
@@ -278,8 +297,8 @@ export async function getDashboardData(supabase: SupabaseClient, userId: string)
         },
         recommendations: recommendations.slice(0, 2),
         nextTryout: null,
-        activeSession: activeSession?.mode === 'practice' || activeSession?.mode === 'tryout'
-            ? { mode: activeSession.mode }
+        activeSession: (activeSession?.mode === 'practice' || activeSession?.mode === 'tryout') && activeSessionKind
+            ? { mode: activeSession.mode, kind: activeSessionKind }
             : null,
     }
 }

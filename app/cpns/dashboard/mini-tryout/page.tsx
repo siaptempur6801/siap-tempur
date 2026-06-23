@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { MINI_TRYOUT_TYPES, isMiniTryoutType, type MiniTryoutType } from '@/lib/constants'
-import { isMissingProgressColumnError } from '@/lib/practice-session'
+import { isMissingProgressColumnError, normalizeTestSessionKind } from '@/lib/practice-session'
 import { createClient } from '@/lib/utils/supabase/server'
 import MiniTryoutClient, { type MiniTryoutActiveSessions } from './MiniTryoutClient'
 
@@ -16,6 +16,7 @@ type SupabaseClient = Awaited<ReturnType<typeof createClient>>
 type ActivePracticeSessionRow = {
     id: string
     start_time: string | null
+    session_kind?: string | null
     current_question_index?: number | null
 }
 
@@ -36,7 +37,7 @@ async function getActiveMiniTryoutSessions(
 ): Promise<MiniTryoutActiveSessions> {
     const activePracticeQuery = await supabase
         .from('test_sessions')
-        .select('id, start_time, current_question_index')
+        .select('id, start_time, session_kind, current_question_index')
         .eq('user_id', userId)
         .eq('mode', 'practice')
         .eq('status', 'in_progress')
@@ -83,6 +84,10 @@ async function getActiveMiniTryoutSessions(
     const activeSessionsByType: MiniTryoutActiveSessions = {}
 
     sessions.forEach((session) => {
+        if (normalizeTestSessionKind(session.session_kind) === 'drilling_materi') {
+            return
+        }
+
         const sessionAnswers = answersBySessionId.get(session.id) ?? []
         const type = sessionAnswers.map(getQuestionType).find(isMiniTryoutType)
 

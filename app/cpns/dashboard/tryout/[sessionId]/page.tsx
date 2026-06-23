@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import PracticeSessionClient from '@/components/practice/PracticeSessionClient'
 import { getOptionOrderForSession, orderOptionsById } from '@/lib/option-randomizer'
 import { logger } from '@/lib/logger'
+import { isDrillingMateriQuestionSet, normalizeTestSessionKind, TRYOUT_DURATION_MINUTES } from '@/lib/practice-session'
 
 export default async function PracticeSessionPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const supabase = await createClient()
@@ -177,18 +178,42 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
 
     const { data: eventSession } = await supabase
         .from('tryout_event_sessions')
-        .select('id')
+        .select(`
+            id,
+            tryout_events (
+                duration_minutes
+            )
+        `)
         .eq('session_id', sessionId)
         .maybeSingle()
 
     // Check if this is a tryout session (has all three types)
     const questionTypes = new Set(questions.map((q) => q.type))
     const isTryout = questionTypes.has('TWK') && questionTypes.has('TIU') && questionTypes.has('TKP')
+    const questionSubCategories = new Set(
+        questions.map((q) => (q.sub_category || q.category || '').trim()).filter(Boolean)
+    )
+    const sessionKind = normalizeTestSessionKind(session.session_kind)
+    const isEventSession = Boolean(eventSession)
+    const isDrillingMateri = isDrillingMateriQuestionSet({
+        sessionKind,
+        isCombined: isTryout,
+        answerCount: questions.length,
+        uniqueSubCategoryCount: questionSubCategories.size,
+        isEventSession,
+    })
+    const isTimedSession = session.mode === 'tryout'
+    const event = Array.isArray(eventSession?.tryout_events)
+        ? eventSession.tryout_events[0]
+        : eventSession?.tryout_events
 
     // Calculate end time for tryout (100 minutes from start)
     let endTime: string | undefined
-    if (isTryout && session.start_time) {
-        const endTimeMs = new Date(session.start_time).getTime() + (100 * 60 * 1000)
+    if (isTimedSession && session.start_time) {
+        const durationMinutes = typeof event?.duration_minutes === 'number'
+            ? event.duration_minutes
+            : TRYOUT_DURATION_MINUTES
+        const endTimeMs = new Date(session.start_time).getTime() + (durationMinutes * 60 * 1000)
         endTime = new Date(endTimeMs).toISOString()
     }
 
@@ -200,8 +225,8 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
             initialCurrentIndex={initialCurrentIndex}
             initialMarked={initialMarked}
             endTime={endTime}
-            isTryout={isTryout}
-            returnTo={eventSession ? 'event' : isTryout ? 'tryout' : 'mini-tryout'}
+            isTryout={isTimedSession}
+            returnTo={isEventSession ? 'event' : isTimedSession ? 'tryout' : isDrillingMateri ? 'drilling-materi' : 'mini-tryout'}
         />
     )
 }

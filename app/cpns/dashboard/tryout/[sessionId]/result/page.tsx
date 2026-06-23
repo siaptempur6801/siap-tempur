@@ -23,6 +23,7 @@ import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import PaperBackground from '@/components/PaperBackground'
 import { getXPInfo } from '@/lib/dashboard'
 import { getOptionOrderForSession, orderOptionsById } from '@/lib/option-randomizer'
+import { isDrillingMateriQuestionSet, normalizeTestSessionKind } from '@/lib/practice-session'
 import { cn, formatSubjectName, calculateCurrentStreak, getDateKeyInTimeZone } from '@/lib/utils'
 import { PASSING_GRADES } from '@/lib/constants'
 
@@ -142,6 +143,7 @@ export default async function PracticeResultPage({
     const { from, completed } = await searchParams
     const cameFromHistory = from === 'riwayat'
     const cameFromMiniTryout = from === 'mini-tryout'
+    const cameFromDrillingMateri = from === 'drilling-materi'
     const isCompleted = completed === 'true'
 
     // 1. Fetch Session Result
@@ -182,10 +184,12 @@ export default async function PracticeResultPage({
         ? '/cpns/dashboard/riwayat'
         : isEventSession
             ? '/cpns/dashboard/event'
-            : cameFromMiniTryout
-                ? '/cpns/dashboard/mini-tryout'
-                : '/cpns/dashboard/tryout'
-    const backLabel = cameFromHistory ? 'Riwayat' : isEventSession ? 'Event' : cameFromMiniTryout ? 'Mini Tryout' : 'Dashboard'
+            : cameFromDrillingMateri
+                ? '/cpns/dashboard/drilling-materi'
+                : cameFromMiniTryout
+                    ? '/cpns/dashboard/mini-tryout'
+                    : '/cpns/dashboard/tryout'
+    const backLabel = cameFromHistory ? 'Riwayat' : isEventSession ? 'Event' : cameFromDrillingMateri ? 'Drilling Materi' : cameFromMiniTryout ? 'Mini Tryout' : 'Dashboard'
     const synchronizedCloseAt = event
         ? new Date(
             new Date(event.starts_at).getTime() +
@@ -382,22 +386,46 @@ export default async function PracticeResultPage({
     const uniqueTypes = Array.from(new Set(answers.map((a) => a.questions.type)))
     const isCombined = uniqueTypes.length > 1
     const singleType: 'TWK' | 'TIU' | 'TKP' | null = isCombined ? null : (uniqueTypes[0] ?? null)
-    const isMiniTryoutSession = !isCombined && !isEventSession
+    const singleSubCategory = !isCombined ? (answers[0]?.questions.sub_category || answers[0]?.questions.category || null) : null
+    const uniqueSubCategories = Array.from(new Set(
+        answers
+            .map((answer) => (answer.questions.sub_category || answer.questions.category || '').trim())
+            .filter(Boolean)
+    ))
+    const sessionKind = normalizeTestSessionKind(session.session_kind)
+    const isDrillingMateriSession = isDrillingMateriQuestionSet({
+        sessionKind,
+        isCombined,
+        answerCount: answers.length,
+        uniqueSubCategoryCount: uniqueSubCategories.length,
+        isEventSession,
+    })
+    const isMiniTryoutSession = !isCombined && !isEventSession && !isDrillingMateriSession
     const resolvedBackHref = cameFromHistory
         ? '/cpns/dashboard/riwayat'
         : isEventSession
             ? '/cpns/dashboard/event'
-            : (cameFromMiniTryout || isMiniTryoutSession)
-                ? '/cpns/dashboard/mini-tryout'
-                : '/cpns/dashboard/tryout'
+            : (cameFromDrillingMateri || isDrillingMateriSession)
+                ? '/cpns/dashboard/drilling-materi'
+                : (cameFromMiniTryout || isMiniTryoutSession)
+                    ? '/cpns/dashboard/mini-tryout'
+                    : '/cpns/dashboard/tryout'
     const resolvedBackLabel = cameFromHistory
         ? 'Riwayat'
         : isEventSession
             ? 'Event'
-            : (cameFromMiniTryout || isMiniTryoutSession)
-                ? 'Mini Tryout'
-                : 'Dashboard'
-    const resultTitle = isCombined ? 'TRYOUT SKD' : `MINI TRYOUT ${formatSubjectName(singleType || '')}`
+            : (cameFromDrillingMateri || isDrillingMateriSession)
+                ? 'Drilling Materi'
+                : (cameFromMiniTryout || isMiniTryoutSession)
+                    ? 'Mini Tryout'
+                    : 'Dashboard'
+    const resultTitle = isEventSession
+        ? eventTitle.toUpperCase()
+        : isCombined
+            ? 'TRYOUT SKD'
+            : (cameFromDrillingMateri || isDrillingMateriSession)
+                ? `DRILLING MATERI ${formatSubjectName(singleSubCategory || singleType || '')}`
+                : `MINI TRYOUT ${formatSubjectName(singleType || '')}`
 
     // 2. Calculate Stats Helper
     const calculateStats = (filterType?: string) => {
@@ -673,7 +701,7 @@ export default async function PracticeResultPage({
                         <ArrowLeft size={20} className="sm:w-6 sm:h-6" /> {resolvedBackLabel}
                     </Link>
 
-                    {!cameFromHistory && !isEventSession && (
+                    {!cameFromHistory && !isEventSession && !cameFromDrillingMateri && !isDrillingMateriSession && (
                         <RetakeButton
                             isCombined={isCombined}
                             singleType={singleType}

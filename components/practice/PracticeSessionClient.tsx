@@ -36,7 +36,7 @@ interface Props {
     initialMarked: Record<string, boolean>
     endTime?: string // ISO string for tryout mode
     isTryout?: boolean
-    returnTo?: 'tryout' | 'mini-tryout' | 'event'
+    returnTo?: 'tryout' | 'mini-tryout' | 'drilling-materi' | 'event'
 }
 
 type SessionProgressSnapshot = {
@@ -433,25 +433,37 @@ export default function PracticeSessionClient({
     const [showMobileNav, setShowMobileNav] = useState(false)
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [showExitModal, setShowExitModal] = useState(false)
+    const [exiting, setExiting] = useState(false)
     const [showNav, setShowNav] = useState(true) // Toggleable desktop side nav
     const [hasHydratedResumeState, setHasHydratedResumeState] = useState(false)
     const lastSavedSnapshotRef = useRef('')
     const latestSnapshotRef = useRef<SessionProgressSnapshot | null>(null)
     const answerSyncStateRef = useRef<Record<string, AnswerSyncState>>({})
     const finishLockRef = useRef(false)
-    const sessionKindLabel = isTryout ? 'Tryout' : 'Mini Tryout'
+    const exitLockRef = useRef(false)
+    const sessionKindLabel = isTryout ? 'Tryout' : returnTo === 'drilling-materi' ? 'Drilling Materi' : 'Mini Tryout'
     const sessionKindLabelLower = sessionKindLabel.toLowerCase()
-    const resultFromQuery = returnTo === 'event' ? '?from=event' : returnTo === 'mini-tryout' ? '?from=mini-tryout' : ''
+    const resultFromQuery = returnTo === 'event'
+        ? '?from=event'
+        : returnTo === 'drilling-materi'
+            ? '?from=drilling-materi'
+            : returnTo === 'mini-tryout'
+                ? '?from=mini-tryout'
+                : ''
     const returnPath = returnTo === 'event'
         ? '/cpns/dashboard/event'
-        : returnTo === 'mini-tryout'
-            ? '/cpns/dashboard/mini-tryout'
-            : '/cpns/dashboard/tryout'
+        : returnTo === 'drilling-materi'
+            ? '/cpns/dashboard/drilling-materi'
+            : returnTo === 'mini-tryout'
+                ? '/cpns/dashboard/mini-tryout'
+                : '/cpns/dashboard/tryout'
     const returnLocationLabel = returnTo === 'event'
         ? 'halaman event'
-        : returnTo === 'mini-tryout'
-            ? 'halaman mini tryout'
-            : 'dashboard'
+        : returnTo === 'drilling-materi'
+            ? 'halaman drilling materi'
+            : returnTo === 'mini-tryout'
+                ? 'halaman mini tryout'
+                : 'dashboard'
 
     // Subcategory sorting and limits are now handled by dynamic tryout_configurations in the database fetch
     const sortedQuestions = useMemo(() => {
@@ -738,22 +750,31 @@ export default function PracticeSessionClient({
 
 
     const handleExit = async () => {
-        await flushPendingAnswers()
+        if (exitLockRef.current) return
 
-        const snapshot = latestSnapshotRef.current
+        exitLockRef.current = true
+        setExiting(true)
 
-        if (snapshot) {
-            try {
+        try {
+            await flushPendingAnswers()
+
+            const snapshot = latestSnapshotRef.current
+
+            if (snapshot) {
                 const result = await saveProgressSnapshot(snapshot, lastSavedSnapshotRef.current, true)
                 if (result.success || result.skipped) {
                     lastSavedSnapshotRef.current = result.serialized
                 }
-            } catch (error) {
-                console.error('Failed to save progress before exit:', error)
             }
-        }
+        } catch (error) {
+            console.error('Failed to save progress before exit:', error)
 
-        router.push(returnPath)
+            if (latestSnapshotRef.current) {
+                flushProgressWithBeacon(latestSnapshotRef.current)
+            }
+        } finally {
+            router.push(returnPath)
+        }
     }
 
     // Safety check - prevent crash if no questions available
@@ -862,16 +883,26 @@ export default function PracticeSessionClient({
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-4">
                                 <button
-                                    onClick={() => setShowExitModal(false)}
-                                    className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                    onClick={() => {
+                                        if (!exiting) setShowExitModal(false)
+                                    }}
+                                    disabled={exiting}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none",
+                                        exiting && "cursor-not-allowed opacity-60 hover:bg-white"
+                                    )}
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={handleExit}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                    disabled={exiting}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none",
+                                        exiting && "cursor-wait opacity-80 hover:bg-red-600"
+                                    )}
                                 >
-                                    Keluar
+                                    {exiting ? 'Menyimpan...' : 'Keluar'}
                                 </button>
                             </div>
                         </div>

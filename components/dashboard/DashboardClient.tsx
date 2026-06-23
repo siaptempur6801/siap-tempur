@@ -66,6 +66,7 @@ interface DashboardData {
     } | null
     activeSession: {
         mode: 'practice' | 'tryout'
+        kind: 'full-tryout' | 'mini-tryout' | 'drilling-materi' | 'event'
     } | null
 }
 
@@ -102,17 +103,33 @@ export default function DashboardClient({ data, greeting }: Props) {
         }
     }
 
-    const hasActiveSession = Boolean(data.activeSession)
-    const activeSessionIsMiniTryout = data.activeSession?.mode === 'practice'
-    const primaryCtaHref = activeSessionIsMiniTryout
-        ? '/cpns/dashboard/mini-tryout'
-        : '/cpns/dashboard/tryout'
-    const primaryCtaTitle = hasActiveSession
-        ? activeSessionIsMiniTryout ? 'Lanjutkan Mini Tryout' : 'Lanjutkan Tryout'
-        : 'Mulai Tryout'
-    const primaryCtaDescription = hasActiveSession
-        ? activeSessionIsMiniTryout ? 'Sesi mini tryout kamu masih berjalan' : 'Sesi tryout kamu masih berjalan'
-        : 'Asah kemampuan TWK, TIU, TKP'
+    const activeSessionCta = data.activeSession
+        ? {
+            'full-tryout': {
+                href: '/cpns/dashboard/tryout',
+                title: 'Lanjutkan Tryout',
+                description: 'Sesi tryout kamu masih berjalan',
+            },
+            'mini-tryout': {
+                href: '/cpns/dashboard/mini-tryout',
+                title: 'Lanjutkan Mini Tryout',
+                description: 'Sesi mini tryout kamu masih berjalan',
+            },
+            'drilling-materi': {
+                href: '/cpns/dashboard/drilling-materi',
+                title: 'Lanjutkan Drilling Materi',
+                description: 'Sesi drilling materi kamu masih berjalan',
+            },
+            event: {
+                href: '/cpns/dashboard/event',
+                title: 'Lanjutkan Event',
+                description: 'Sesi event tryout kamu masih berjalan',
+            },
+        }[data.activeSession.kind]
+        : null
+    const primaryCtaHref = activeSessionCta?.href ?? '/cpns/dashboard/tryout'
+    const primaryCtaTitle = activeSessionCta?.title ?? 'Mulai Tryout'
+    const primaryCtaDescription = activeSessionCta?.description ?? 'Asah kemampuan TWK, TIU, TKP'
 
     return (
         <motion.div
