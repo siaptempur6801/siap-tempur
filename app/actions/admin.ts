@@ -28,6 +28,8 @@ interface QuestionFormPayload {
     imageUrl: string | null
 }
 
+type EventQuestionGenerationMode = 'full' | QuestionType
+
 function readQuestionFormPayload(formData: FormData): QuestionFormPayload {
     return {
         type: formData.get('type') as QuestionType,
@@ -835,11 +837,117 @@ export async function updateTryoutEventStatus(id: string, status: 'draft' | 'sch
     return { success: true, message: `Status event berhasil diubah ke ${status}` }
 }
 
-export async function generateTryoutEventQuestions(id: string) {
+function isEventQuestionGenerationMode(value: unknown): value is EventQuestionGenerationMode {
+    return value === 'full' || value === 'TWK' || value === 'TIU' || value === 'TKP'
+}
+
+function shuffleRows<T>(rows: T[]) {
+    const next = [...rows]
+    for (let index = next.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1))
+        ;[next[index], next[randomIndex]] = [next[randomIndex], next[index]]
+    }
+    return next
+}
+
+async function generateFocusedEventQuestions(id: string, mode: QuestionType) {
+    const supabase = await createAdminClient()
+
+    const { data: event, error: eventError } = await supabase
+        .from('tryout_events')
+        .select('id')
+        .eq('id', id)
+        .single()
+
+    if (eventError || !event) {
+        return { success: false, message: eventError?.message || 'Event tidak ditemukan' }
+    }
+
+    const { data: configs, error: configError } = await supabase
+        .from('tryout_configurations')
+        .select('type, sub_category, question_count, sort_order')
+        .eq('is_active', true)
+        .eq('type', mode)
+        .order('sort_order', { ascending: true })
+
+    if (configError) return { success: false, message: configError.message }
+    if (!configs?.length) return { success: false, message: `Konfigurasi mini ${mode} belum aktif` }
+
+    const selectedQuestionIds: string[] = []
+
+    for (const config of configs) {
+        const questionCount = Number(config.question_count || 0)
+        const subCategory = String(config.sub_category || '').trim()
+
+        if (!subCategory || questionCount <= 0) continue
+
+        const { data: questions, error: questionError } = await supabase
+            .from('questions')
+            .select('id')
+            .eq('type', mode)
+            .eq('sub_category', subCategory)
+
+        if (questionError) return { success: false, message: questionError.message }
+        if (!questions || questions.length < questionCount) {
+            return {
+                success: false,
+                message: `Bank soal ${mode} - ${subCategory} belum cukup (${questions?.length || 0}/${questionCount})`,
+            }
+        }
+
+        selectedQuestionIds.push(...shuffleRows(questions).slice(0, questionCount).map((question) => question.id))
+    }
+
+    if (selectedQuestionIds.length === 0) {
+        return { success: false, message: `Tidak ada soal ${mode} yang bisa digenerate` }
+    }
+
+    const { data: existingRows } = await supabase
+        .from('tryout_event_questions')
+        .select('event_id, question_id, sort_order')
+        .eq('event_id', id)
+        .order('sort_order', { ascending: true })
+
+    const { error: deleteError } = await supabase
+        .from('tryout_event_questions')
+        .delete()
+        .eq('event_id', id)
+
+    if (deleteError) return { success: false, message: deleteError.message }
+
+    const rows = selectedQuestionIds.map((questionId, index) => ({
+        event_id: id,
+        question_id: questionId,
+        sort_order: index + 1,
+    }))
+
+    const { error: insertError } = await supabase
+        .from('tryout_event_questions')
+        .insert(rows)
+
+    if (insertError) {
+        if (existingRows?.length) {
+            await supabase.from('tryout_event_questions').insert(existingRows)
+        }
+
+        return { success: false, message: insertError.message }
+    }
+
+    revalidatePath('/cpns/admin/event')
+    revalidatePath('/cpns/dashboard/event')
+    return { success: true, message: `Paket mini ${mode} berhasil digenerate (${rows.length} soal)` }
+}
+
+export async function generateTryoutEventQuestions(id: string, mode: EventQuestionGenerationMode = 'full') {
     try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
 
     const isUserAdmin = await isAdmin()
     if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+    if (!isEventQuestionGenerationMode(mode)) return { success: false, message: 'Mode generate soal tidak valid' }
+
+    if (mode !== 'full') {
+        return generateFocusedEventQuestions(id, mode)
+    }
 
     const supabase = await createAdminClient()
     const { data, error } = await supabase.rpc('generate_tryout_event_questions', {

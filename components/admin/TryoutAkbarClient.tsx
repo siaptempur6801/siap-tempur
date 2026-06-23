@@ -696,6 +696,68 @@ const STATUS_ACTIONS: Array<{
 
 // ─── Detail Panel Tabs ────────────────────────────────────────────────────────
 type DetailTab = 'stats' | 'settings' | 'questions' | 'codes' | 'participants'
+type EventQuestionGenerationMode = 'full' | 'TWK' | 'TIU' | 'TKP'
+
+const QUESTION_GENERATION_OPTIONS: Array<{
+    value: EventQuestionGenerationMode
+    label: string
+    description: string
+}> = [
+    { value: 'full', label: 'Full TO', description: '110 soal SKD' },
+    { value: 'TWK', label: 'Mini TWK', description: '30 soal TWK' },
+    { value: 'TIU', label: 'Mini TIU', description: '35 soal TIU' },
+    { value: 'TKP', label: 'Mini TKP', description: '45 soal TKP' },
+]
+
+function GenerateQuestionsControl({
+    eventId,
+    isPending,
+    onRunAction,
+    variant = 'light',
+}: {
+    eventId: string
+    isPending: boolean
+    onRunAction: (cb: () => Promise<{ success: boolean; message: string }>) => void
+    variant?: 'light' | 'dark'
+}) {
+    const [mode, setMode] = useState<EventQuestionGenerationMode>('full')
+    const selectedOption = QUESTION_GENERATION_OPTIONS.find((option) => option.value === mode)
+
+    return (
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            <label className="sr-only" htmlFor={`generate-mode-${eventId}-${variant}`}>
+                Pilih jenis paket soal
+            </label>
+            <select
+                id={`generate-mode-${eventId}-${variant}`}
+                value={mode}
+                disabled={isPending}
+                onChange={(event) => setMode(event.target.value as EventQuestionGenerationMode)}
+                className="min-w-0 border-2 border-gray-900 bg-white px-3 py-2.5 text-sm font-black text-gray-900 outline-none disabled:opacity-60"
+            >
+                {QUESTION_GENERATION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                        {option.label} - {option.description}
+                    </option>
+                ))}
+            </select>
+            <button
+                disabled={isPending}
+                onClick={() => onRunAction(() => generateTryoutEventQuestions(eventId, mode))}
+                className={cn(
+                    'inline-flex items-center justify-center gap-2 border-2 px-4 py-2.5 text-sm font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none disabled:opacity-60',
+                    variant === 'dark'
+                        ? 'border-gray-900 bg-gray-900 text-white'
+                        : 'border-gray-900 bg-white text-gray-900'
+                )}
+                title={selectedOption?.description}
+            >
+                {isPending ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                Generate
+            </button>
+        </div>
+    )
+}
 
 function DetailPanel({
     event, onClose, isPending, onRunAction, onUpdate, onSettingsDirtyChange,
@@ -869,10 +931,7 @@ function DetailPanel({
                                 </button>
                             ))}
                             <div className="border-t-2 border-gray-200 pt-3 space-y-2">
-                                <button disabled={isPending} onClick={() => onRunAction(() => generateTryoutEventQuestions(event.id))}
-                                    className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-white px-3 py-2.5 text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-y-px hover:shadow-none transition disabled:opacity-60">
-                                    <Zap size={14} /> Generate Soal
-                                </button>
+                                <GenerateQuestionsControl eventId={event.id} isPending={isPending} onRunAction={onRunAction} />
                                 <a href={`/api/admin/export?type=events&format=csv&event_id=${event.id}`}
                                     className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-3 py-2.5 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] hover:translate-y-px hover:shadow-none transition">
                                     <Download size={14} /> Export CSV
@@ -902,11 +961,7 @@ function DetailPanel({
                                     {event.questions.length} soal tersusun sesuai urutan paket event.
                                 </p>
                             </div>
-                            <button disabled={isPending} onClick={() => onRunAction(() => generateTryoutEventQuestions(event.id))}
-                                className="inline-flex items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2.5 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] transition hover:translate-y-px hover:shadow-none disabled:opacity-60">
-                                {isPending ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                                Generate Ulang
-                            </button>
+                            <GenerateQuestionsControl eventId={event.id} isPending={isPending} onRunAction={onRunAction} variant="dark" />
                         </div>
 
                         {event.questions.length === 0 ? (
