@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import EventClient from '@/components/dashboard/EventClient'
 import { logger } from '@/lib/logger'
 import { getVisibleEventGroupLink } from '@/lib/event-access'
+import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,6 +25,7 @@ export default async function UserEventPage() {
     if (!user) redirect('/login?next=/cpns/dashboard/event')
 
     const admin = await createAdminClient()
+    await autoCloseExpiredTryoutEvents(admin)
     const { data: events, error } = await admin
         .from('tryout_events')
         .select('id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, group_link, flyer_image_url, is_paid, price, status, tryout_event_questions(id)')

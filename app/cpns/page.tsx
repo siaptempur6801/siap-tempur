@@ -1,6 +1,7 @@
 import LandingUI from '@/components/home/LandingUI'
 import { Metadata } from 'next'
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
+import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
 
 const eventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url, documentation_url'
 const legacyEventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url'
@@ -21,6 +22,7 @@ export default async function Home() {
   } = await supabase.auth.getUser()
 
   const admin = await createAdminClient()
+  await autoCloseExpiredTryoutEvents(admin)
   const now = new Date().toISOString()
 
   const activeEventsResult = await admin

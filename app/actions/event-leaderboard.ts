@@ -4,6 +4,7 @@ import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { logger } from '@/lib/logger'
 import { getEffectiveEventCloseTime } from '@/lib/event-access'
 import { AnswerProgressRow, buildAnsweredProgressMap } from '@/lib/event-leaderboard-progress'
+import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
 
 export interface LiveLeaderboardEntry {
     user_id: string
@@ -182,6 +183,7 @@ export async function getLiveLeaderboardAction(eventId: string) {
 
     const supabase = await createClient()
     const admin = await createAdminClient()
+    await autoCloseExpiredTryoutEvents(admin)
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

@@ -931,7 +931,6 @@ function DetailPanel({
                                 </button>
                             ))}
                             <div className="border-t-2 border-gray-200 pt-3 space-y-2">
-                                <GenerateQuestionsControl eventId={event.id} isPending={isPending} onRunAction={onRunAction} />
                                 <a href={`/api/admin/export?type=events&format=csv&event_id=${event.id}`}
                                     className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-3 py-2.5 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] hover:translate-y-px hover:shadow-none transition">
                                     <Download size={14} /> Export CSV

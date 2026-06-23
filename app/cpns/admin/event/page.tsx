@@ -2,6 +2,7 @@ import TryoutAkbarClient, { EventCreateController } from '@/components/admin/Try
 import { createAdminClient } from '@/lib/utils/supabase/server'
 import { logger } from '@/lib/logger'
 import { PASSING_GRADES } from '@/lib/constants'
+import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,6 +19,7 @@ function getSynchronizedCloseAt(event: {
 
 export default async function EventAdminPage() {
     const supabase = await createAdminClient()
+    await autoCloseExpiredTryoutEvents(supabase)
 
     const { data: events, error } = await supabase
         .from('tryout_events')
