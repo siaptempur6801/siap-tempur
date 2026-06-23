@@ -651,7 +651,14 @@ export default function EventClient({ events }: EventClientProps) {
     const grouped = useMemo(() => {
         const live = events.filter((e) => getDisplayEventStatus(e, now) === 'live')
         const scheduled = events.filter((e) => getDisplayEventStatus(e, now) === 'scheduled')
-        const closed = events.filter((e) => getDisplayEventStatus(e, now) === 'closed')
+        const closed = events
+            .filter((e) => getDisplayEventStatus(e, now) === 'closed')
+            .sort((left, right) => {
+                const rightTime = new Date(right.ends_at || right.starts_at).getTime()
+                const leftTime = new Date(left.ends_at || left.starts_at).getTime()
+
+                return rightTime - leftTime
+            })
         return { live, scheduled, closed }
     }, [events, now])
 
