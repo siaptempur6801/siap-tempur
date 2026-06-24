@@ -202,8 +202,11 @@ function ImageButton({ editor }: { editor: Editor }) {
     try {
       setIsUploading(true)
       const supabase = createClient()
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) throw new Error('Sesi login tidak valid')
+
       const fileExt = file.name.split('.').pop() || 'png'
-      const fileName = `article-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
+      const fileName = `articles/${user.id}/content-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
 
       const { error: uploadError } = await supabase.storage
         .from('question-images')
@@ -216,8 +219,8 @@ function ImageButton({ editor }: { editor: Editor }) {
         .getPublicUrl(fileName)
 
       editor.chain().focus().setImage({ src: data.publicUrl }).run()
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal mengupload gambar')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal mengupload gambar')
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) {

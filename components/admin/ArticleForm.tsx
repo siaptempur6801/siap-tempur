@@ -42,6 +42,10 @@ function SubmitButton() {
 
 export default function ArticleForm({ title, action, defaultValues }: ArticleFormProps) {
     const [state, formAction] = useActionState(action, initialState)
+    const [articleTitle, setArticleTitle] = useState(defaultValues?.title || '')
+    const [slug, setSlug] = useState(defaultValues?.slug || '')
+    const [category, setCategory] = useState(defaultValues?.category || '')
+    const [excerpt, setExcerpt] = useState(defaultValues?.excerpt || '')
     const [content, setContent] = useState(defaultValues?.content || '')
     const [coverImageUrl, setCoverImageUrl] = useState(defaultValues?.cover_image_url || '')
     const [isUploadingCover, setIsUploadingCover] = useState(false)
@@ -66,8 +70,11 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
         try {
             setIsUploadingCover(true)
             const supabase = createClient()
+            const { data: { user }, error: userError } = await supabase.auth.getUser()
+            if (userError || !user) throw new Error('Sesi login tidak valid')
+
             const fileExt = file.name.split('.').pop() || 'png'
-            const fileName = `article-cover-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
+            const fileName = `articles/${user.id}/cover-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
 
             const { error: uploadError } = await supabase.storage
                 .from('question-images')
@@ -80,8 +87,8 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
                 .getPublicUrl(fileName)
 
             setCoverImageUrl(data.publicUrl)
-        } catch (error: any) {
-            toast.error(error.message || 'Gagal mengupload cover')
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Gagal mengupload cover')
         } finally {
             setIsUploadingCover(false)
             if (coverInputRef.current) {
@@ -117,7 +124,8 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
                         <span className="text-sm font-black text-gray-700">Judul</span>
                         <input
                             name="title"
-                            defaultValue={defaultValues?.title || ''}
+                            value={articleTitle}
+                            onChange={(event) => setArticleTitle(event.target.value)}
                             required
                             minLength={3}
                             maxLength={160}
@@ -129,7 +137,8 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
                         <span className="text-sm font-black text-gray-700">Slug</span>
                         <input
                             name="slug"
-                            defaultValue={defaultValues?.slug || ''}
+                            value={slug}
+                            onChange={(event) => setSlug(event.target.value)}
                             required
                             minLength={3}
                             maxLength={180}
@@ -144,7 +153,8 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
                         <span className="text-sm font-black text-gray-700">Kategori</span>
                         <input
                             name="category"
-                            defaultValue={defaultValues?.category || ''}
+                            value={category}
+                            onChange={(event) => setCategory(event.target.value)}
                             maxLength={80}
                             placeholder="Tips, Berita, Strategi SKD"
                             className="w-full rounded-md border-2 border-gray-900 px-3 py-2 font-bold focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -186,7 +196,8 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
                     <span className="text-sm font-black text-gray-700">Ringkasan</span>
                     <textarea
                         name="excerpt"
-                        defaultValue={defaultValues?.excerpt || ''}
+                        value={excerpt}
+                        onChange={(event) => setExcerpt(event.target.value)}
                         maxLength={320}
                         rows={3}
                         className="w-full rounded-md border-2 border-gray-900 px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-blue-300"

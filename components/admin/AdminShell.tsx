@@ -8,7 +8,6 @@ import {
     BarChart3,
     BookOpen,
     ClipboardList,
-    FileSpreadsheet,
     Settings,
     Shield,
     Ticket,
@@ -44,7 +43,6 @@ const navItems = [
     { href: '/cpns/admin/event', label: 'Event', icon: BarChart3 },
     { href: '/cpns/admin/voucher', label: 'Voucher', icon: Ticket },
     { href: '/cpns/admin/keuangan', label: 'Keuangan', icon: Wallet },
-    { href: '/cpns/admin/export', label: 'Export Data', icon: FileSpreadsheet },
 ]
 
 const userDashboardItem = { href: '/cpns/dashboard', label: 'Dashboard User', icon: ArrowLeft }

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, Clock3, Library, LogOut, User, Ticket } from 'lucide-react'
+import { BarChart3, Clock3, Library, LogOut, PenLine, Shield, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -22,9 +22,17 @@ interface MobileProfileDropdownProps {
     } | null
 
     signoutAction: () => Promise<{ success: boolean }>
+    canAccessArticles?: boolean
+    isAdmin?: boolean
 }
 
-export default function MobileProfileDropdown({ user, profile, signoutAction }: MobileProfileDropdownProps) {
+export default function MobileProfileDropdown({
+    user,
+    profile,
+    signoutAction,
+    canAccessArticles = false,
+    isAdmin = false,
+}: MobileProfileDropdownProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [showModal, setShowModal] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -141,6 +149,32 @@ export default function MobileProfileDropdown({ user, profile, signoutAction }: 
                             <User size={18} />
                             Profil Saya
                         </Link>
+
+                        {(canAccessArticles || isAdmin) && (
+                            <div className="my-2 border-t-2 border-dashed border-gray-200 pt-2">
+                                {canAccessArticles && (
+                                    <Link
+                                        href="/cpns/admin/articles"
+                                        className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        <PenLine size={18} />
+                                        Tulis Artikel
+                                    </Link>
+                                )}
+
+                                {isAdmin && (
+                                    <Link
+                                        href="/cpns/admin"
+                                        className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        <Shield size={18} />
+                                        Admin
+                                    </Link>
+                                )}
+                            </div>
+                        )}
 
                         <button
                             onClick={() => {

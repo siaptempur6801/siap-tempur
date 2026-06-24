@@ -14,6 +14,7 @@ import {
     Library,
     ListChecks,
     Dumbbell,
+    PenLine,
 } from 'lucide-react'
 
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
@@ -40,9 +41,17 @@ interface DashboardShellProps {
 
     signoutAction: () => Promise<{ success: boolean }>
     isAdmin?: boolean
+    canAccessArticles?: boolean
 }
 
-export default function DashboardShell({ children, user, profile, signoutAction, isAdmin = false }: DashboardShellProps) {
+export default function DashboardShell({
+    children,
+    user,
+    profile,
+    signoutAction,
+    isAdmin = false,
+    canAccessArticles = false,
+}: DashboardShellProps) {
     const pathname = usePathname()
 
     // Check if we're on a practice session page (mengerjakan soal atau result)
@@ -84,9 +93,14 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                     <NavItem href="/cpns/dashboard/materi" icon={<Library size={20} />} label="Kisi-Kisi" />
                     <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Token" />
 
-                    {isAdmin && (
+                    {(isAdmin || canAccessArticles) && (
                         <div className="pt-4 mt-4 border-t-2 border-dashed border-gray-300">
-                            <NavItem href="/cpns/admin" icon={<Shield size={20} />} label="Admin" />
+                            {canAccessArticles && (
+                                <NavItem href="/cpns/admin/articles" icon={<PenLine size={20} />} label="Tulis Artikel" />
+                            )}
+                            {isAdmin && (
+                                <NavItem href="/cpns/admin" icon={<Shield size={20} />} label="Admin" />
+                            )}
                         </div>
                     )}
                 </nav>
@@ -145,6 +159,8 @@ export default function DashboardShell({ children, user, profile, signoutAction,
                         user={user} 
                         profile={profile} 
                         signoutAction={signoutAction}
+                        canAccessArticles={canAccessArticles}
+                        isAdmin={isAdmin}
                     />
                 </div>
 

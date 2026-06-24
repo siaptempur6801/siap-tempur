@@ -5,7 +5,7 @@ import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import Script from 'next/script'
 import { logger } from '@/lib/logger'
-import { isAdminRole } from '@/lib/utils/roles'
+import { isAdminRole, isArticleWriterRole } from '@/lib/utils/roles'
 
 type UserMetadata = {
     full_name?: string
@@ -60,7 +60,9 @@ export default async function DashboardLayout({
         }
     }
 
-    const isAdminUser = isAdminRole((profile as DashboardProfile | null)?.role)
+    const role = (profile as DashboardProfile | null)?.role
+    const isAdminUser = isAdminRole(role)
+    const canAccessArticles = isArticleWriterRole(role)
 
     return (
         <>
@@ -70,7 +72,13 @@ export default async function DashboardLayout({
                 strategy="afterInteractive"
                 nonce={nonce}
             />
-            <DashboardShell user={user} profile={profile} signoutAction={signout} isAdmin={isAdminUser}>
+            <DashboardShell
+                user={user}
+                profile={profile}
+                signoutAction={signout}
+                isAdmin={isAdminUser}
+                canAccessArticles={canAccessArticles}
+            >
                 {children}
             </DashboardShell>
         </>
