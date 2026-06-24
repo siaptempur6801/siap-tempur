@@ -1,5 +1,3 @@
-import DOMPurify from 'isomorphic-dompurify'
-
 export function slugifyArticleTitle(title: string): string {
     return title
         .toLowerCase()
@@ -17,31 +15,6 @@ export function estimateReadTime(content: string): string {
         .split(/\s+/)
         .filter(Boolean).length
     return `${Math.max(1, Math.ceil(words / 200))} min read`
-}
-
-export function sanitizeArticleHtml(content: string): string {
-    return DOMPurify.sanitize(content, {
-        ALLOWED_TAGS: [
-            'a',
-            'blockquote',
-            'br',
-            'code',
-            'em',
-            'h2',
-            'h3',
-            'h4',
-            'li',
-            'ol',
-            'p',
-            'pre',
-            'strong',
-            'ul',
-            'img',
-            's',
-            'u',
-        ],
-        ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'title'],
-    })
 }
 
 export function formatArticleDate(value: string | null | undefined): string {

@@ -5,7 +5,8 @@ import { ArrowLeft, Clock } from 'lucide-react'
 import SeoNavbar from '@/components/SeoNavbar'
 import { Badge } from '@/components/ui/Badge'
 import { createClient } from '@/lib/utils/supabase/server'
-import { estimateReadTime, formatArticleDate, sanitizeArticleHtml } from '@/lib/articles'
+import { estimateReadTime, formatArticleDate } from '@/lib/articles'
+import { sanitizeArticleHtml } from '@/lib/article-sanitize'
 
 type Article = {
     title: string

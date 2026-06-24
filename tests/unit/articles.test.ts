@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { estimateReadTime, sanitizeArticleHtml, slugifyArticleTitle } from '../../lib/articles'
+import { estimateReadTime, slugifyArticleTitle } from '../../lib/articles'
+import { sanitizeArticleHtml } from '../../lib/article-sanitize'
 
 describe('article utilities', () => {
     it('creates URL-safe article slugs from titles', () => {
