@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
     ArrowLeft,
     BarChart3,
+    BookOpen,
     ClipboardList,
     FileSpreadsheet,
     Settings,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
+import { isAdminRole } from '@/lib/utils/roles'
 
 interface AdminShellProps {
     children: React.ReactNode
@@ -29,12 +31,15 @@ interface AdminShellProps {
     profile: {
         avatar_url?: string | null
         full_name?: string | null
+        role?: string | null
     } | null
+    role: string
     signoutAction: () => Promise<{ success: boolean }>
 }
 
 const navItems = [
     { href: '/cpns/admin', label: 'Bank Soal', icon: ClipboardList },
+    { href: '/cpns/admin/articles', label: 'Artikel', icon: BookOpen },
     { href: '/cpns/admin/tryout-config', label: 'Konfigurasi Tryout', mobileLabel: 'Konfig', icon: Settings },
     { href: '/cpns/admin/event', label: 'Event', icon: BarChart3 },
     { href: '/cpns/admin/voucher', label: 'Voucher', icon: Ticket },
@@ -144,13 +149,18 @@ function AdminMobileNavLink({
     )
 }
 
-export default function AdminShell({ children, user, profile, signoutAction }: AdminShellProps) {
+export default function AdminShell({ children, user, profile, role, signoutAction }: AdminShellProps) {
     const displayName =
         profile?.full_name ||
         user.user_metadata?.full_name ||
         user.user_metadata?.name ||
         user.email ||
         'Admin'
+    const isFullAdmin = isAdminRole(role)
+    const visibleNavItems = isFullAdmin
+        ? navItems
+        : navItems.filter((item) => item.href === '/cpns/admin/articles')
+    const roleLabel = isFullAdmin ? 'Admin' : 'Writer'
 
     return (
         <div className="flex h-screen overflow-hidden bg-[#f8f8f6] font-body text-gray-950">
@@ -170,7 +180,7 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
                     </div>
 
                     <nav className="relative z-10 min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
-                        {navItems.map((item) => (
+                        {visibleNavItems.map((item) => (
                             <AdminNavLink key={item.href} {...item} />
                         ))}
                         <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
@@ -191,7 +201,7 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
                                 <p className="truncate font-handwriting text-sm font-bold text-gray-900">{displayName}</p>
                                 <span className="mt-0.5 inline-flex items-center gap-1 border border-gray-900 bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
                                     <Shield size={12} />
-                                    Admin
+                                    {roleLabel}
                                 </span>
                             </div>
                         </div>
@@ -231,7 +241,7 @@ export default function AdminShell({ children, user, profile, signoutAction }: A
 
                 <nav className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-gray-900 bg-[#f8f8f6]/90 backdrop-blur-xl md:hidden">
                     <div className="grid grid-cols-5 gap-1 px-2 py-2">
-                        {navItems.slice(0, 5).map((item) => (
+                        {visibleNavItems.slice(0, 5).map((item) => (
                             <AdminMobileNavLink key={item.href} {...item} />
                         ))}
                     </div>

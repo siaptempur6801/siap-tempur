@@ -50,6 +50,19 @@ export const TryoutEventCodeSchema = z.object({
     expires_at: z.string().optional().nullable(),
 });
 
+export const ArticleFormSchema = z.object({
+    title: z.string().min(3, 'Judul minimal 3 karakter').max(160, 'Judul maksimal 160 karakter').transform((value) => value.trim()),
+    slug: z.string()
+        .min(3, 'Slug minimal 3 karakter')
+        .max(180, 'Slug maksimal 180 karakter')
+        .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug hanya boleh huruf kecil, angka, dan strip')
+        .transform((value) => value.trim()),
+    excerpt: z.string().max(320, 'Ringkasan maksimal 320 karakter').optional().nullable().transform((value) => value?.trim() || null),
+    content: z.string().min(20, 'Konten artikel minimal 20 karakter').max(50000, 'Konten artikel terlalu panjang').transform((value) => value.trim()),
+    category: z.string().max(80, 'Kategori maksimal 80 karakter').optional().nullable().transform((value) => value?.trim() || null),
+    cover_image_url: z.string().url('URL cover tidak valid').optional().nullable().or(z.literal('')).transform((value) => value?.trim() || null),
+})
+
 const optionalText = z.string().optional().nullable().transform((value) => value?.trim() || '')
 const optionText = z.string().optional().nullable().transform((value) => value?.trim() || '')
 const scoreValue = z.coerce.number().int()

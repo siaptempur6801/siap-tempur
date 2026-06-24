@@ -6,6 +6,8 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ArrowLeft, BookOpen, Clock } from "lucide-react";
 import SeoNavbar from "@/components/SeoNavbar";
+import { createClient } from "@/lib/utils/supabase/server";
+import { estimateReadTime, formatArticleDate } from "@/lib/articles";
 
 export const metadata: Metadata = {
     title: "Blog & Info CPNS 2026 - Jadwal, Syarat & Tips Lulus",
@@ -16,42 +18,23 @@ export const metadata: Metadata = {
     },
 };
 
-const DUMMY_ARTICLES = [
-    {
-        title: "Bocoran Jadwal Pendaftaran CPNS 2026 Resmi BKN",
-        category: "Berita",
-        readTime: "3 min read",
-        excerpt: "Pemerintah kembali membuka seleksi CASN/CPNS di tahun 2026. Kapan tepatnya portal SSCASN akan dibuka? Simak bocoran jadwal dari Menpan RB di sini.",
-        date: "12 Mar 2026",
-        slug: "bocoran-jadwal-cpns-2026"
-    },
-    {
-        title: "5 Syarat Administrasi yang Sering Bikin Gagal Seleksi Berkas",
-        category: "Tips",
-        readTime: "5 min read",
-        excerpt: "Jangan sampai gugur sebelum bertempur! Kesalahan format surat lamaran, meterai, dan resolusi foto sering menjadi momok. Hindari 5 kesalahan fatal ini.",
-        date: "05 Mar 2026",
-        slug: "syarat-administrasi-gagal-berkas"
-    },
-    {
-        title: "Cara Mendapatkan Poin 5 Terus-Menerus di Soal TKP",
-        category: "Strategi SKD",
-        readTime: "8 min read",
-        excerpt: "TKP (Tes Karakteristik Pribadi) tidak ada jawaban salah, tapi Anda butuh poin 5 untuk lulus passing grade. Pelajari trik psikologis membedah soal TKP.",
-        date: "28 Feb 2026",
-        slug: "cara-dapat-poin-5-tkp"
-    },
-    {
-        title: "Daftar Instansi Sepi Peminat 2025 yang Bisa Anda Coba Tahun Ini",
-        category: "Analisa Data",
-        readTime: "6 min read",
-        excerpt: "Bermain strategi dalam memilih formasi adalah kunci lulus CPNS. Ini daftar kementerian dan pemda yang selalu kekurangan pelamar setiap tahunnya.",
-        date: "15 Feb 2026",
-        slug: "instansi-sepi-peminat"
-    }
-];
+type Article = {
+    title: string
+    slug: string
+    excerpt: string | null
+    content: string
+    category: string | null
+    published_at: string | null
+}
 
-export default function BlogIndexPage() {
+export default async function BlogIndexPage() {
+    const supabase = await createClient()
+    const { data: articles } = await supabase
+        .from('articles')
+        .select('title, slug, excerpt, content, category, published_at')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+
     return (
         <div className="min-h-screen bg-[#fdfbf7]">
             <SeoNavbar />
@@ -74,29 +57,29 @@ export default function BlogIndexPage() {
 
                     {/* Blog List */}
                     <div className="grid md:grid-cols-2 gap-8 mb-16">
-                        {DUMMY_ARTICLES.map((article, index) => (
-                            <Card key={index} variant="standard" className="flex flex-col hover:-translate-y-2 transition-transform duration-300">
+                        {(articles as Article[] | null)?.map((article, index) => (
+                            <Card key={article.slug} variant="standard" className="flex flex-col hover:-translate-y-2 transition-transform duration-300">
                                 <div className="p-6 flex-1 flex flex-col">
                                     <div className="flex items-center justify-between mb-4">
                                         <Badge variant={index % 2 === 0 ? "blue" : "red"}>
-                                            {article.category}
+                                            {article.category || 'Artikel'}
                                         </Badge>
                                         <div className="flex items-center text-gray-500 text-sm font-body font-bold">
                                             <Clock className="w-4 h-4 mr-1" />
-                                            {article.readTime}
+                                            {estimateReadTime(article.content)}
                                         </div>
                                     </div>
                                     <h2 className="text-2xl font-bold font-handwriting mb-3 line-clamp-2 hover:text-blue-600 transition-colors">
-                                        <Link href={`#`}>
+                                        <Link href={`/blog/${article.slug}`}>
                                             {article.title}
                                         </Link>
                                     </h2>
                                     <p className="text-gray-600 font-body mb-6 flex-1 line-clamp-3">
-                                        {article.excerpt}
+                                        {article.excerpt || 'Baca artikel lengkap di Jurnal Pejuang NIP.'}
                                     </p>
                                     <div className="flex items-center justify-between mt-auto pt-4 border-t-2 border-gray-100">
-                                        <span className="text-sm font-bold text-gray-400 font-body">{article.date}</span>
-                                        <Link href={`#`} className="inline-flex items-center text-blue-600 font-bold font-body hover:underline decoration-wavy">
+                                        <span className="text-sm font-bold text-gray-400 font-body">{formatArticleDate(article.published_at)}</span>
+                                        <Link href={`/blog/${article.slug}`} className="inline-flex items-center text-blue-600 font-bold font-body hover:underline decoration-wavy">
                                             Baca Selengkapnya
                                             <BookOpen className="w-4 h-4 ml-2" />
                                         </Link>
@@ -105,6 +88,13 @@ export default function BlogIndexPage() {
                             </Card>
                         ))}
                     </div>
+
+                    {(!articles || articles.length === 0) && (
+                        <div className="mb-16 border-2 border-dashed border-gray-300 bg-white p-10 text-center">
+                            <h2 className="font-handwriting text-3xl font-bold text-gray-900">Artikel segera hadir</h2>
+                            <p className="mt-2 font-body text-gray-600">Tim Siap Tempur sedang menyiapkan konten CPNS terbaru.</p>
+                        </div>
+                    )}
 
                     {/* Newsletter Section */}
                     <Section pattern="grid" className="rounded-3xl bg-gray-900 text-white text-center p-12">

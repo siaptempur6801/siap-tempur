@@ -59,11 +59,19 @@ export default async function Home() {
       .limit(6)).data?.map((event) => ({ ...event, documentation_url: null }))
     : completedEventsResult.data
 
+  const { data: latestArticles } = await supabase
+    .from('articles')
+    .select('id, title, slug, cover_image_url, published_at, excerpt')
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(3)
+
   return (
     <LandingUI
       user={user ? { id: user.id } : null}
       activeEvents={activeEvents || []}
       completedEvents={completedEvents || []}
+      latestArticles={latestArticles || []}
     />
   )
 }

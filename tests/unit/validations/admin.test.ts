@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ExcelQuestionSchema, QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema } from '../../../lib/validations/admin';
+import { ArticleFormSchema, ExcelQuestionSchema, QuestionFormSchema, VoucherFormSchema, TryoutEventFormSchema } from '../../../lib/validations/admin';
 
 describe('Admin Validations (Zod Schemas)', () => {
 
@@ -138,6 +138,38 @@ describe('Admin Validations (Zod Schemas)', () => {
         correct_answer: undefined,
       });
 
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('ArticleFormSchema', () => {
+    const article = {
+      title: 'Strategi Belajar SKD CPNS',
+      slug: 'strategi-belajar-skd-cpns',
+      excerpt: 'Ringkasan artikel',
+      content: 'Konten artikel yang cukup panjang untuk melewati validasi minimal.',
+      category: 'Tips',
+      cover_image_url: '',
+    };
+
+    it('should accept a valid article draft payload', () => {
+      const result = ArticleFormSchema.safeParse(article);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject unsafe slug formats', () => {
+      const result = ArticleFormSchema.safeParse({
+        ...article,
+        slug: 'Strategi CPNS 2026!',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject invalid cover URLs', () => {
+      const result = ArticleFormSchema.safeParse({
+        ...article,
+        cover_image_url: 'not-a-url',
+      });
       expect(result.success).toBe(false);
     });
   });

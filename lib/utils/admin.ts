@@ -1,14 +1,13 @@
 import { createClient, createAdminClient } from '@/lib/utils/supabase/server'
+export { canAccessArticleAdmin, canPublishArticle, isAdminRole, isArticleWriterRole } from '@/lib/utils/roles'
+import { isAdminRole } from '@/lib/utils/roles'
 
-export async function isAdmin() {
-    // 1. Get authenticated user via cookie-based client (respects session)
+export async function getCurrentUserRole(): Promise<{ userId: string; role: string } | null> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) return false
+    if (!user) return null
 
-    // 2. Use service role client to bypass RLS when reading role from profiles
-    // This prevents unauthorized errors if RLS on profiles table blocks the read
     const adminClient = await createAdminClient()
     const { data } = await adminClient
         .from('profiles')
@@ -16,5 +15,10 @@ export async function isAdmin() {
         .eq('id', user.id)
         .single()
 
-    return data?.role === 'admin' || data?.role === 'superadmin'
+    return { userId: user.id, role: data?.role || 'user' }
+}
+
+export async function isAdmin() {
+    const actor = await getCurrentUserRole()
+    return isAdminRole(actor?.role)
 }

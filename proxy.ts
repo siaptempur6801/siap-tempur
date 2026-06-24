@@ -25,6 +25,7 @@ export async function proxy(request: NextRequest) {
     // Pass the modified headers to the downstream components
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-nonce', nonce)
+    requestHeaders.set('x-pathname', request.nextUrl.pathname)
     requestHeaders.set('Content-Security-Policy', cspHeader)
 
     // Call updateSession but we need to ensure the request headers are passed.

@@ -62,6 +62,50 @@ export interface Database {
                     created_at?: string
                 }
             }
+            articles: {
+                Row: {
+                    id: string
+                    title: string
+                    slug: string
+                    excerpt: string | null
+                    content: string
+                    category: string | null
+                    cover_image_url: string | null
+                    status: 'draft' | 'published' | 'archived'
+                    author_id: string | null
+                    published_at: string | null
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    title: string
+                    slug: string
+                    excerpt?: string | null
+                    content: string
+                    category?: string | null
+                    cover_image_url?: string | null
+                    status?: 'draft' | 'published' | 'archived'
+                    author_id?: string | null
+                    published_at?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    title?: string
+                    slug?: string
+                    excerpt?: string | null
+                    content?: string
+                    category?: string | null
+                    cover_image_url?: string | null
+                    status?: 'draft' | 'published' | 'archived'
+                    author_id?: string | null
+                    published_at?: string | null
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
             questions: {
                 Row: {
                     id: string

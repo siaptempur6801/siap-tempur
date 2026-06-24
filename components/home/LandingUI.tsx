@@ -35,6 +35,15 @@ type ActiveEvent = {
     documentation_url: string | null;
 };
 
+type ArticleSummary = {
+    id: string;
+    title: string;
+    slug: string;
+    cover_image_url: string | null;
+    published_at: string | null;
+    excerpt: string | null;
+};
+
 const BATCH_2_FLYER_PATH = "/images/flyer-batch-2.jpeg";
 const BATCH_1_FLYER_PATH = "/images/flyer-batch-1.jpeg";
 const YOUTUBE_DOCUMENTATION_BY_TITLE: Array<{ pattern: RegExp; url: string }> = [
@@ -88,7 +97,7 @@ function getEventDocumentationUrl(event: ActiveEvent) {
     return YOUTUBE_DOCUMENTATION_BY_TITLE.find(({ pattern }) => pattern.test(event.title))?.url || "https://www.youtube.com/@siaptempurID";
 }
 
-export default function Home({ user: initialUser, activeEvents = [], completedEvents = [] }: { user: LandingUser; activeEvents?: ActiveEvent[]; completedEvents?: ActiveEvent[] }) {
+export default function Home({ user: initialUser, activeEvents = [], completedEvents = [], latestArticles = [] }: { user: LandingUser; activeEvents?: ActiveEvent[]; completedEvents?: ActiveEvent[]; latestArticles?: ArticleSummary[] }) {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isTryoutOpen, setIsTryoutOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -144,7 +153,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         {/* Tryout Dropdown */}
                         <div className="relative" onMouseEnter={() => setIsTryoutOpen(true)} onMouseLeave={() => setIsTryoutOpen(false)}>
                             <button className="flex items-center gap-1 hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">
-                                Tryout <ChevronDown size={16} className={cn("transition-transform", isTryoutOpen && "rotate-180")} />
+                                Tempur <ChevronDown size={16} className={cn("transition-transform", isTryoutOpen && "rotate-180")} />
                             </button>
                             {isTryoutOpen && (
                                 <>
@@ -157,10 +166,15 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                         <Link href="/cpns/full-tryout" className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 border-b border-gray-200 font-handwriting text-lg text-gray-800 hover:text-blue-600 transition-colors">
                                             <Monitor size={16} className="text-blue-500" /> Full Tryout
                                         </Link>
+                                        <Link href="/cpns/drilling-materi" className="flex items-center gap-2 px-4 py-3 hover:bg-red-50 border-b border-gray-200 font-handwriting text-lg text-gray-800 hover:text-blue-600 transition-colors">
+                                            <Target size={16} className="text-red-500" /> Drilling Materi
+                                        </Link>
                                     </div>
                                 </>
                             )}
                         </div>
+
+                        <Link href="/blog" className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Artikel</Link>
                     </div>
 
                     <div className="flex items-center gap-4">
@@ -200,6 +214,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                             <button onClick={() => { scrollToSection("active-event"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-red-600 text-left py-2 border-b border-gray-200">Event</button>
                             <Link href="/cpns/mini-tryout" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Mini Tryout</Link>
                             <Link href="/cpns/full-tryout" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Full Tryout</Link>
+                            <Link href="/cpns/drilling-materi" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Drilling Materi</Link>
+                            <Link href="/blog" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Artikel</Link>
                             {user ? (
                                 <Button
                                     onClick={() => { router.push("/cpns/dashboard"); setIsMenuOpen(false); }}
@@ -223,25 +239,24 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
             {/* --- HERO SECTION (Kertas Tryout) --- */}
             <Section paper className="pt-32 pb-32 relative overflow-hidden">
-                {/* Mascots - Desktop Only */}
-                <div className="hidden lg:block absolute left-0 bottom-0 z-0 pointer-events-none opacity-90">
-                    <Image src="/tamapng.png" alt="Mascot Boy" width={300} height={420} className="object-contain w-auto h-[350px] xl:h-[420px] drop-shadow-xl" priority />
-                </div>
-                <div className="hidden lg:block absolute right-0 bottom-0 z-0 pointer-events-none opacity-90">
-                    <Image src="/tarapng.png" alt="Mascot Girl" width={300} height={420} className="object-contain w-auto h-[350px] xl:h-[420px] drop-shadow-xl" priority />
-                </div>
-
-                <div className="text-center relative z-10 max-w-4xl mx-auto">
+                <div className="text-center relative z-10 max-w-5xl mx-auto">
+                    {/* Mascots - Desktop Only - Anchored to Center Text */}
+                    <div className="hidden lg:block absolute right-full mr-[-60px] xl:mr-[-40px] bottom-0 z-0 pointer-events-none opacity-90 w-[300px] xl:w-[450px] 2xl:w-[550px]">
+                        <Image src="/tamapng.png" alt="Mascot Boy" width={600} height={800} className="w-full h-auto drop-shadow-2xl translate-y-10 xl:translate-y-16" priority />
+                    </div>
+                    <div className="hidden lg:block absolute left-full ml-[-60px] xl:ml-[-40px] bottom-0 z-0 pointer-events-none opacity-90 w-[300px] xl:w-[450px] 2xl:w-[550px]">
+                        <Image src="/tarapng.png" alt="Mascot Girl" width={600} height={800} className="w-full h-auto drop-shadow-2xl translate-y-10 xl:translate-y-16" priority />
+                    </div>
                     {/* Label Stabilo */}
                     <Badge variant="yellow" className="mb-6">
-                        🎯 Persiapan CPNS 2026
+                        🎯 Persiapan CPNS 2026 Dimulai!
                     </Badge>
 
-                    <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                        Platform Tryout CPNS Online,<br />
-                        <span className="text-blue-600">Sampai Lulus</span> Bukan Sampai <br />
+                    <h1 className="font-handwriting text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+                        Jangan Kaget di Hari H.<br />
+                        <span className="text-blue-600">Simulasikan SKD-mu Sekarang</span><br />
                         <span className="relative inline-block mt-2">
-                            Dompet Tipis.
+                            dengan Sistem Standar CAT BKN Asli.
                             {/* Coretan bawah */}
                             <svg className="absolute w-full h-3 -bottom-1 left-0 text-blue-500/50" viewBox="0 0 100 10" preserveAspectRatio="none">
                                 <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
@@ -249,32 +264,23 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         </span>
                     </h1>
 
-                    <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto mb-10 font-handwriting leading-relaxed">
-                        Tryout SKD dengan <strong>sistem penilaian standar CAT BKN</strong>. Hanya
-                        <span className="bg-green-200 px-1 mx-1">Rp 10.000/token</span>
-                        untuk 1x akses tryout lengkap. Tanpa langganan, tanpa ribet.
+                    <p className="text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto mb-10 font-handwriting leading-relaxed px-4">
+                        Latih manajemen waktumu dalam 100 menit. Dilengkapi soal akurat TWK, TIU, TKP, pembahasan tuntas, dan perankingan nasional. Cuma 
+                        <span className="bg-green-200 px-1 mx-1 font-bold">Rp 10.000</span>
+                        bayar per tryout tanpa langganan.
                     </p>
 
-                    <div className="flex flex-col items-center gap-8">
-                        <div className="flex flex-col sm:flex-row justify-center gap-4 w-full">
-                            <Button
-                                size="lg"
-                                onClick={() => scrollToSection("products")}
-                                className="w-full sm:w-auto"
-                            >
-                                Mulai Tryout Sekarang <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-
-                            <Button
-                                size="lg"
-                                variant="secondary"
-                                onClick={() => scrollToSection("active-event")}
-                                className="w-full sm:w-auto bg-red-100 text-red-700 border-2 border-red-700 hover:bg-red-200"
-                            >
-                                Lihat Event Aktif <Flag className="w-6 h-6 ml-2 text-red-600" />
-                            </Button>
-
-                        </div>
+                    <div className="flex flex-col items-center justify-center gap-2 w-full max-w-md mx-auto mt-8">
+                        <Button
+                            size="lg"
+                            onClick={() => scrollToSection("products")}
+                            className="w-full text-xl py-6"
+                        >
+                            Buat Akun & Mulai Tryout <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                        <span className="text-sm font-handwriting font-bold text-gray-500 bg-white/80 px-3 py-1 rounded-full border border-gray-200">
+                            ⭐ 1 Token = 1x Tryout Full/Mini/Drilling. Tidak ada biaya langganan bulanan.
+                        </span>
                     </div>
                 </div>
             </Section>
@@ -330,55 +336,6 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         </div>
                         <h3 className="font-handwriting text-2xl font-bold mb-2">Tahu Kelemahanmu</h3>
                         <p className="text-gray-700">Analisis skor TWK, TIU, TKP + ranking nasional. Langsung tahu bagian mana yang harus diperbaiki sebelum tes sesungguhnya.</p>
-                    </Card>
-                </div>
-            </Section>
-
-            {/* --- MINI VS FULL TRYOUT --- */}
-            <Section id="tryout-types" dashedBorder="both" className="bg-[#f0f4f8]">
-                <div className="text-center max-w-3xl mx-auto mb-16">
-                    <Badge variant="blue" className="mb-4">Pilih Cara Belajarmu</Badge>
-                    <h2 className="font-handwriting text-5xl font-bold mb-4">Satu Token, Dua Pilihan Tempur</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">Sesuaikan dengan waktu dan target belajarmu hari ini.</p>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                    {/* Mini Tryout */}
-                    <Card interactive className="p-8 bg-white border-4 border-gray-900 flex flex-col">
-                        <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
-                            <Target className="w-8 h-8 text-yellow-600" />
-                        </div>
-                        <h3 className="font-handwriting text-3xl font-bold mb-4">Mini Tryout</h3>
-                        <p className="text-gray-600 mb-6 min-h-[80px]">Latihan cepat dan fokus per bagian tes. Cocok buat kamu yang lagi sibuk tapi tetap mau nyicil belajar setiap hari.</p>
-
-                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
-                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Fokus 1 subtes (TWK / TIU / TKP)</li>
-                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu pengerjaan singkat</li>
-                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Pembahasan per soal</li>
-                        </ul>
-
-                        <Button variant="outline" className="w-full py-6 text-xl" onClick={() => scrollToSection("products")}>
-                            Coba Mini Tryout
-                        </Button>
-                    </Card>
-
-                    {/* Full Tryout */}
-                    <Card interactive className="p-8 bg-white border-4 border-gray-900 flex flex-col">
-                        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
-                            <Monitor className="w-8 h-8 text-blue-600" />
-                        </div>
-                        <h3 className="font-handwriting text-3xl font-bold mb-4">Full Tryout SKD</h3>
-                        <p className="text-gray-600 mb-6 min-h-[80px]">Simulasi ujian SKD CPNS yang sesungguhnya. Latih manajemen waktu dan mentalmu sebelum hari H tiba.</p>
-
-                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
-                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> 110 Soal (TWK + TIU + TKP)</li>
-                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu 100 menit (Timer berjalan)</li>
-                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Ranking Nasional</li>
-                        </ul>
-
-                        <Button className="w-full py-6 text-xl" onClick={() => scrollToSection("products")}>
-                            Mulai Full Tryout
-                        </Button>
                     </Card>
                 </div>
             </Section>
@@ -558,6 +515,75 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     </button>
                     <p className="font-handwriting text-lg text-gray-500 mt-4">Mulai dari Rp 7.500/token. Lebih murah dari kopi, tapi bisa ubah masa depanmu.</p>
+                </div>
+            </Section>
+
+            {/* --- TIGA PILIHAN TEMPUR --- */}
+            <Section id="tryout-types" dashedBorder="both" className="bg-[#f0f4f8]">
+                <div className="text-center max-w-3xl mx-auto mb-16">
+                    <Badge variant="blue" className="mb-4">Pilih Cara Belajarmu</Badge>
+                    <h2 className="font-handwriting text-5xl font-bold mb-4">Satu Token, Tiga Pilihan Tempur</h2>
+                    <p className="font-handwriting text-2xl text-gray-600">Sesuaikan dengan waktu dan target belajarmu hari ini.</p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+                    {/* Drilling Materi */}
+                    <Card interactive className="p-8 bg-white border-4 border-gray-900 flex flex-col">
+                        <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
+                            <Layers className="w-8 h-8 text-red-600" />
+                        </div>
+                        <h3 className="font-handwriting text-3xl font-bold mb-4">Drilling Materi</h3>
+                        <p className="text-gray-600 mb-6 min-h-[80px]">Fokus latihan ke 1 materi spesifik (misal: hanya materi Analogi TIU atau Nasionalisme TWK) untuk memperbaiki titik lemahmu.</p>
+
+                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> 30 Soal spesifik per sub-materi</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Evaluasi detail kelemahan</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Cepat tingkatkan skor spesifik</li>
+                        </ul>
+
+                        <Button variant="outline" className="w-full py-6 text-xl mt-auto" onClick={() => scrollToSection("products")}>
+                            Coba Drilling
+                        </Button>
+                    </Card>
+
+                    {/* Mini Tryout */}
+                    <Card interactive className="p-8 bg-white border-4 border-gray-900 flex flex-col">
+                        <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
+                            <Target className="w-8 h-8 text-yellow-600" />
+                        </div>
+                        <h3 className="font-handwriting text-3xl font-bold mb-4">Mini Tryout</h3>
+                        <p className="text-gray-600 mb-6 min-h-[80px]">Latihan cepat dan fokus per bagian tes. Cocok buat kamu yang lagi sibuk tapi tetap mau nyicil belajar setiap hari.</p>
+
+                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Fokus 1 subtes (TWK/TIU/TKP)</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu pengerjaan singkat</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Pembahasan per soal</li>
+                        </ul>
+
+                        <Button variant="outline" className="w-full py-6 text-xl mt-auto" onClick={() => scrollToSection("products")}>
+                            Coba Mini Tryout
+                        </Button>
+                    </Card>
+
+                    {/* Full Tryout */}
+                    <Card interactive className="p-8 bg-blue-50 border-4 border-gray-900 flex flex-col relative overflow-hidden">
+                        <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 font-bold px-3 py-1 rounded-full text-xs shadow-sm z-10 border-2 border-gray-900">RECOMMENDED</div>
+                        <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
+                            <Monitor className="w-8 h-8 text-blue-600" />
+                        </div>
+                        <h3 className="font-handwriting text-3xl font-bold mb-4">Full Tryout SKD</h3>
+                        <p className="text-gray-600 mb-6 min-h-[80px]">Simulasi ujian SKD CPNS yang sesungguhnya. Latih manajemen waktu dan mentalmu sebelum hari H tiba.</p>
+
+                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> 110 Soal (TWK + TIU + TKP)</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu 100 menit berjalan</li>
+                            <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Perankingan Nasional</li>
+                        </ul>
+
+                        <Button className="w-full py-6 text-xl mt-auto" onClick={() => scrollToSection("products")}>
+                            Mulai Full Tryout
+                        </Button>
+                    </Card>
                 </div>
             </Section>
 
@@ -774,6 +800,161 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 )}
             </Section>
 
+            {/* --- PRICING SECTION --- */}
+            <Section id="products" pattern="dots" dashedBorder="both" className="bg-[#f0f4f8]">
+                <div className="text-center mb-16 relative z-10">
+                    <Badge variant="red" className="mb-4">BISA SCAN QRIS</Badge>
+                    <h2 className="font-handwriting text-5xl font-bold mb-4">Investasi ASN Sekali Bayar</h2>
+                    <p className="font-handwriting text-2xl text-gray-600">1 Token = 1x Tryout. Tanpa batas masa berlaku.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+                    {/* Paket 1 */}
+                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] flex flex-col">
+                        <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PERINTIS</span>
+                        <div className="flex items-end gap-1 mb-2">
+                            <span className="text-2xl font-bold mb-2">Rp</span>
+                            <span className="text-6xl font-bold text-gray-900">10.000</span>
+                            <span className="text-xl text-gray-500 mb-2">/token</span>
+                        </div>
+                        <div className="text-gray-700 font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 10.000 (Dapat 1 Token)</div>
+                        <Badge variant="pink" className="mb-8 w-max">1x TOKEN TRYOUT</Badge>
+                        <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
+                            <li className="flex items-center gap-3"><Flag size={20} className="text-blue-600" /> 110 Soal Prediksi</li>
+                            <li className="flex items-center gap-3"><Clock size={20} className="text-blue-600" /> Waktu 100 Menit</li>
+                            <li className="flex items-center gap-3"><Monitor size={20} className="text-blue-600" /> CAT BKN Interface</li>
+                            <li className="flex items-center gap-3"><BarChart3 size={20} className="text-blue-600" /> Pembahasan Lengkap</li>
+                        </ul>
+                        <Button
+                            className="w-full text-xl py-6 mt-auto"
+                            onClick={() => router.push("/login?returnTo=/cpns")}
+                        >
+                            Beli Sekarang
+                        </Button>
+                        <div className="text-center mt-3 text-sm font-bold text-gray-500 flex items-center justify-center gap-1">
+                            <ShieldCheck size={16} className="text-green-600" /> Pembayaran Otomatis via QRIS
+                        </div>
+                    </Card>
+
+                    {/* Paket 2 (Featured) */}
+                    <Card variant="standard" interactive className="p-10 bg-blue-600 border-4 border-gray-900 relative overflow-hidden group scale-105 z-20 flex flex-col">
+                        <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 font-bold px-4 py-1 rounded-full text-sm shadow-md z-10 animate-pulse">PALING LARIS!</div>
+                        <span className="font-handwriting font-bold text-blue-100 mb-2 block">PAKET PEJUANG</span>
+                        <div className="flex items-end gap-1 mb-2">
+                            <span className="text-2xl font-bold mb-2 text-white">Rp</span>
+                            <span className="text-6xl font-bold text-yellow-400">8.000</span>
+                            <span className="text-xl text-blue-200 mb-2">/token</span>
+                        </div>
+                        <div className="text-white font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 40.000 (Dapat 5 Token)</div>
+                        <Badge variant="yellow" className="mb-8 w-max">5x TOKEN TRYOUT</Badge>
+                        <ul className="space-y-4 mb-8 w-full font-handwriting text-xl font-bold text-white">
+                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Semua Fitur Tryout</li>
+                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Lebih Hemat Rp 10rb</li>
+                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Ranking Nasional</li>
+                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Token Selamanya</li>
+                        </ul>
+                        <Button
+                            size="lg"
+                            className="w-full text-2xl py-6 bg-yellow-400 text-gray-900 hover:bg-yellow-300 mt-auto"
+                            onClick={() => router.push("/login?returnTo=/cpns")}
+                        >
+                            Ambil Paket Ini <Rocket className="ml-2 animate-bounce" />
+                        </Button>
+                        <div className="text-center mt-3 text-sm font-bold text-blue-200 flex items-center justify-center gap-1">
+                            <ShieldCheck size={16} className="text-yellow-400" /> Pembayaran Otomatis via QRIS
+                        </div>
+                    </Card>
+
+                    {/* Paket 3 */}
+                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] flex flex-col">
+                        <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PASUKAN</span>
+                        <div className="flex items-end gap-1 mb-2">
+                            <span className="text-2xl font-bold mb-2">Rp</span>
+                            <span className="text-6xl font-bold text-gray-900">7.500</span>
+                            <span className="text-xl text-gray-500 mb-2">/token</span>
+                        </div>
+                        <div className="text-gray-700 font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 75.000 (Dapat 10 Token)</div>
+                        <Badge variant="green" className="mb-8 w-max">10x TOKEN TRYOUT</Badge>
+                        <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
+                            <li className="flex items-center gap-3 text-green-600 font-bold"><Sparkles size={20} /> Persiapan Maksimal</li>
+                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Tryout Tiap Minggu</li>
+                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Ranking Terupdate</li>
+                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Hemat Rp 25.000!</li>
+                        </ul>
+                        <Button
+                            className="w-full text-xl py-6 mt-auto"
+                            onClick={() => router.push("/login?returnTo=/cpns")}
+                        >
+                            Hajar Gaskeun!
+                        </Button>
+                        <div className="text-center mt-3 text-sm font-bold text-gray-500 flex items-center justify-center gap-1">
+                            <ShieldCheck size={16} className="text-green-600" /> Pembayaran Otomatis via QRIS
+                        </div>
+                    </Card>
+                </div>
+            </Section>
+
+            {/* --- ARTIKEL TERBARU --- */}
+            {latestArticles && latestArticles.length > 0 && (
+                <Section id="articles" dashedBorder="both" className="bg-[#fffdf0]">
+                    <div className="text-center mb-12">
+                        <Badge variant="yellow" className="mb-4">Info Penting & Tips</Badge>
+                        <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Artikel & Update Terbaru</h2>
+                        <p className="font-handwriting text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">Jangan ketinggalan info seputar CPNS, tips lulus, dan update kebijakan dari BKN.</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                        {latestArticles.map((article) => (
+                            <Link href={`/blog/${article.slug}`} key={article.id} className="block group">
+                                <Card className="p-0 overflow-hidden h-full flex flex-col hover:-translate-y-2 transition-transform border-4 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
+                                    {article.cover_image_url ? (
+                                        <div className="relative aspect-video w-full border-b-4 border-gray-900 bg-gray-100 overflow-hidden">
+                                            <Image 
+                                                src={article.cover_image_url} 
+                                                alt={article.title} 
+                                                fill 
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500" 
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="relative aspect-video w-full border-b-4 border-gray-900 bg-blue-100 flex items-center justify-center overflow-hidden">
+                                            <BookOpen className="w-16 h-16 text-blue-300 group-hover:scale-110 transition-transform duration-500" />
+                                        </div>
+                                    )}
+                                    <div className="p-6 flex flex-col flex-1">
+                                        {article.published_at && (
+                                            <div className="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2">
+                                                <Clock className="w-4 h-4" />
+                                                {new Date(article.published_at).toLocaleDateString("id-ID", {
+                                                    day: "numeric",
+                                                    month: "short",
+                                                    year: "numeric"
+                                                })}
+                                            </div>
+                                        )}
+                                        <h3 className="font-handwriting text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                            {article.title}
+                                        </h3>
+                                        <p className="text-gray-600 line-clamp-3 mb-4 flex-1">
+                                            {article.excerpt || "Baca selengkapnya artikel ini untuk mendapatkan informasi detail terkait persiapan CPNS."}
+                                        </p>
+                                        <div className="font-bold text-blue-600 flex items-center gap-2 group-hover:gap-3 transition-all mt-auto">
+                                            Baca Selengkapnya <ArrowRight className="w-4 h-4" />
+                                        </div>
+                                    </div>
+                                </Card>
+                            </Link>
+                        ))}
+                    </div>
+                    
+                    <div className="text-center mt-12">
+                        <Button variant="outline" size="lg" className="text-xl" asChild>
+                            <Link href="/blog">Lihat Semua Artikel</Link>
+                        </Button>
+                    </div>
+                </Section>
+            )}
+
             {/* --- LEADERBOARD --- */}
             <Section id="leaderboard" dashedBorder="both" className="bg-[#f0f4f8]" pattern="grid">
                 <div className="text-center mb-12">
@@ -806,91 +987,6 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                 </div>
                             ))}
                         </div>
-                    </Card>
-                </div>
-            </Section>
-
-            {/* --- PRICING SECTION --- */}
-            <Section id="products" pattern="dots" dashedBorder="both" className="bg-[#f0f4f8]">
-                <div className="text-center mb-16 relative z-10">
-                    <Badge variant="red" className="mb-4">BISA SCAN QRIS</Badge>
-                    <h2 className="font-handwriting text-5xl font-bold mb-4">Investasi ASN Sekali Bayar</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">1 Token = 1x Tryout. Tanpa batas masa berlaku.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-                    {/* Paket 1 */}
-                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] flex flex-col">
-                        <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PERINTIS</span>
-                        <div className="flex items-end gap-1 mb-2">
-                            <span className="text-2xl font-bold mb-2">Rp</span>
-                            <span className="text-6xl font-bold text-gray-900">10.000</span>
-                            <span className="text-xl text-gray-500 mb-2">/token</span>
-                        </div>
-                        <div className="text-gray-700 font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 10.000 (Dapat 1 Token)</div>
-                        <Badge variant="pink" className="mb-8 w-max">1x TOKEN TRYOUT</Badge>
-                        <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
-                            <li className="flex items-center gap-3"><Flag size={20} className="text-blue-600" /> 110 Soal Prediksi</li>
-                            <li className="flex items-center gap-3"><Clock size={20} className="text-blue-600" /> Waktu 100 Menit</li>
-                            <li className="flex items-center gap-3"><Monitor size={20} className="text-blue-600" /> CAT BKN Interface</li>
-                            <li className="flex items-center gap-3"><BarChart3 size={20} className="text-blue-600" /> Pembahasan Lengkap</li>
-                        </ul>
-                        <Button
-                            className="w-full text-xl py-6 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/cpns")}
-                        >
-                            Beli Sekarang
-                        </Button>
-                    </Card>
-
-                    {/* Paket 2 (Featured) */}
-                    <Card variant="standard" interactive className="p-10 bg-blue-600 border-4 border-gray-900 relative overflow-hidden group scale-105 z-20 flex flex-col">
-                        <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 font-bold px-4 py-1 rounded-full text-sm shadow-md z-10 animate-pulse">PALING LARIS!</div>
-                        <span className="font-handwriting font-bold text-blue-100 mb-2 block">PAKET PEJUANG</span>
-                        <div className="flex items-end gap-1 mb-2">
-                            <span className="text-2xl font-bold mb-2 text-white">Rp</span>
-                            <span className="text-6xl font-bold text-yellow-400">8.000</span>
-                            <span className="text-xl text-blue-200 mb-2">/token</span>
-                        </div>
-                        <div className="text-white font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 40.000 (Dapat 5 Token)</div>
-                        <Badge variant="yellow" className="mb-8 w-max">5x TOKEN TRYOUT</Badge>
-                        <ul className="space-y-4 mb-8 w-full font-handwriting text-xl font-bold text-white">
-                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Semua Fitur Tryout</li>
-                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Lebih Hemat Rp 10rb</li>
-                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Ranking Nasional</li>
-                            <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Token Selamanya</li>
-                        </ul>
-                        <Button
-                            size="lg"
-                            className="w-full text-2xl py-6 bg-yellow-400 text-gray-900 hover:bg-yellow-300 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/cpns")}
-                        >
-                            Ambil Paket Ini <Rocket className="ml-2 animate-bounce" />
-                        </Button>
-                    </Card>
-
-                    {/* Paket 3 */}
-                    <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] flex flex-col">
-                        <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PASUKAN</span>
-                        <div className="flex items-end gap-1 mb-2">
-                            <span className="text-2xl font-bold mb-2">Rp</span>
-                            <span className="text-6xl font-bold text-gray-900">7.500</span>
-                            <span className="text-xl text-gray-500 mb-2">/token</span>
-                        </div>
-                        <div className="text-gray-700 font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 75.000 (Dapat 10 Token)</div>
-                        <Badge variant="green" className="mb-8 w-max">10x TOKEN TRYOUT</Badge>
-                        <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
-                            <li className="flex items-center gap-3 text-green-600 font-bold"><Sparkles size={20} /> Persiapan Maksimal</li>
-                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Tryout Tiap Minggu</li>
-                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Ranking Terupdate</li>
-                            <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Hemat Rp 25.000!</li>
-                        </ul>
-                        <Button
-                            className="w-full text-xl py-6 mt-auto"
-                            onClick={() => router.push("/login?returnTo=/cpns")}
-                        >
-                            Hajar Gaskeun!
-                        </Button>
                     </Card>
                 </div>
             </Section>

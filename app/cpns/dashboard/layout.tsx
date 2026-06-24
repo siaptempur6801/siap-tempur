@@ -5,6 +5,7 @@ import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import Script from 'next/script'
 import { logger } from '@/lib/logger'
+import { isAdminRole } from '@/lib/utils/roles'
 
 type UserMetadata = {
     full_name?: string
@@ -59,7 +60,7 @@ export default async function DashboardLayout({
         }
     }
 
-    const isAdminUser = (profile as DashboardProfile | null)?.role === 'admin'
+    const isAdminUser = isAdminRole((profile as DashboardProfile | null)?.role)
 
     return (
         <>
