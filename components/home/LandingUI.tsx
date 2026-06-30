@@ -626,7 +626,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                         <div className="flex flex-col gap-4">
                                             <div>
                                                 <p className="font-body text-sm font-extrabold uppercase tracking-[0.12em] text-blue-600">Event Aktif</p>
-                                                <h4 className="mt-1 font-handwriting text-3xl font-bold leading-tight text-gray-950">Tryout Akbar SKD CPNS 2026 Batch 2</h4>
+                                                <h4 className="mt-1 font-handwriting text-3xl font-bold leading-tight text-gray-950">{activeEvent.title.replace(/\s*-?\s*Sesi\s*\d+/i, '').trim()}</h4>
                                                 <p className="mt-2 font-body text-sm leading-6 text-gray-600">
                                                     Simulasi Full SKD dengan sistem CAT, analisis nilai, ranking nasional, sertifikat, dan hadiah untuk Top 3.
                                                 </p>
