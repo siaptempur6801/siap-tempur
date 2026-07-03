@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
 import Highlight from '@tiptap/extension-highlight'
 import { TextStyle } from '@tiptap/extension-text-style'
 import { Color } from '@tiptap/extension-color'
@@ -351,7 +350,6 @@ export default function ArticleRichTextEditor({
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
     }),
-    Underline,
     Highlight.configure({ multicolor: false }),
     TextStyle,
     Color,
