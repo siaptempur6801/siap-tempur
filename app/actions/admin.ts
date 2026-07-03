@@ -9,6 +9,7 @@ import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
 import { logAuditEvent } from '@/lib/audit-log'
 import { createClient } from '@/lib/utils/supabase/server'
+import { normalizeBulkQuestionIds } from '@/lib/admin-question-bulk-delete'
 
 interface TryoutConfigurationPayload {
     id: string
@@ -111,6 +112,71 @@ export async function deleteQuestion(id: string) {
 
     revalidatePath('/cpns/admin')
     return { success: true, message: 'Soal berhasil dihapus' }
+}
+
+export async function deleteQuestionsBulk(ids: string[]) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) {
+        return { success: false, message: 'Unauthorized' }
+    }
+
+    const questionIds = normalizeBulkQuestionIds(ids)
+    if (questionIds.length === 0) {
+        return { success: false, message: 'Pilih minimal satu soal' }
+    }
+
+    const supabase = await createAdminClient()
+
+    const { error: answerError } = await supabase
+        .from('test_answers')
+        .delete()
+        .in('question_id', questionIds)
+
+    if (answerError && answerError.code !== 'PGRST116') {
+        logger.warn('Error deleting bulk test_answers', { error: answerError })
+        return { success: false, message: `Gagal menghapus jawaban terkait: ${answerError.message}` }
+    }
+
+    const { error: optionError } = await supabase
+        .from('options')
+        .delete()
+        .in('question_id', questionIds)
+
+    if (optionError && optionError.code !== 'PGRST116') {
+        logger.warn('Error deleting bulk options', { error: optionError })
+        return { success: false, message: `Gagal menghapus pilihan terkait: ${optionError.message}` }
+    }
+
+    const { data: deletedQuestions, error: questionError } = await supabase
+        .from('questions')
+        .delete()
+        .in('id', questionIds)
+        .select('id')
+
+    if (questionError) {
+        logger.warn('Bulk question delete error', { error: questionError })
+        return { success: false, message: `Gagal menghapus soal: ${questionError.message}` }
+    }
+
+    const deletedCount = deletedQuestions?.length || questionIds.length
+    const { data: { user } } = await (await createClient()).auth.getUser()
+    if (user) {
+        await logAuditEvent({
+            action: 'BULK_DELETE_QUESTIONS',
+            actor_id: user.id,
+            target_type: 'question',
+            details: {
+                requested_count: questionIds.length,
+                deleted_count: deletedCount,
+                question_ids: questionIds,
+            },
+        })
+    }
+
+    revalidatePath('/cpns/admin')
+    return { success: true, message: `${deletedCount} soal berhasil dihapus` }
 }
 
 export async function createQuestion(formData: FormData) {

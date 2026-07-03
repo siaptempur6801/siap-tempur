@@ -1,12 +1,13 @@
 import { createAdminClient } from '@/lib/utils/supabase/server'
 import { Plus, FileText } from 'lucide-react'
 import Link from 'next/link'
-import QuestionCard, { type Question } from '@/components/admin/QuestionCard'
+import type { Question } from '@/components/admin/QuestionCard'
 import AdminSearch from '@/components/admin/AdminSearch'
 import ExcelImportDialog from '@/components/admin/ExcelImportDialog'
 import AdminOverview from '@/components/admin/AdminOverview'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { buildActiveCategoryMap, buildCategoryMap, normalizeAdminFilters } from '@/lib/admin-dashboard'
+import QuestionBulkActions from '@/components/admin/QuestionBulkActions'
 
 type QuestionWithOptions = Question
 
@@ -127,16 +128,15 @@ export default async function AdminDashboard({
 
             <AdminSearch categoryMap={allCategories} />
 
-            <div className="grid grid-cols-1 gap-4">
-                {questions?.map((q) => (
-                    <QuestionCard
-                        key={q.id}
-                        q={q as QuestionWithOptions}
-                        editHref={`/cpns/admin/edit/${q.id}?returnTo=${encodeURIComponent(currentAdminHref)}`}
-                    />
-                ))}
+            {questions && questions.length > 0 && (
+                <QuestionBulkActions
+                    questions={questions as QuestionWithOptions[]}
+                    currentAdminHref={currentAdminHref}
+                />
+            )}
 
-                {(!questions || questions.length === 0) && (
+            {(!questions || questions.length === 0) && (
+                <div className="grid grid-cols-1 gap-4">
                     <div className="border-2 border-dashed border-gray-900 bg-white py-20 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,0.12)]">
                         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center border-2 border-gray-900 bg-gray-100">
                             <FileText className="h-8 w-8 text-gray-500" />
@@ -150,8 +150,8 @@ export default async function AdminDashboard({
                             <Plus size={18} /> Buat Soal Baru
                         </Link>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             <AdminPagination
                 currentPage={currentPage}
