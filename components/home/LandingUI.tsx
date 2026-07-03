@@ -905,7 +905,12 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                     <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
                         {latestArticles.map((article) => (
-                            <Link href={`/blog/${article.slug}`} key={article.id} className="block group">
+                            <article key={article.id} className="group relative">
+                                <Link
+                                    href={`/blog/${article.slug}`}
+                                    className="absolute inset-0 z-10"
+                                    aria-label={`Baca artikel ${article.title}`}
+                                />
                                 <Card className="p-0 overflow-hidden h-full flex flex-col hover:-translate-y-2 transition-transform border-4 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
                                     {article.cover_image_url ? (
                                         <div className="relative aspect-video w-full border-b-4 border-gray-900 bg-gray-100 overflow-hidden">
@@ -938,12 +943,12 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                         <p className="text-gray-600 line-clamp-3 mb-4 flex-1">
                                             {article.excerpt || "Baca selengkapnya artikel ini untuk mendapatkan informasi detail terkait persiapan CPNS."}
                                         </p>
-                                        <div className="font-bold text-blue-600 flex items-center gap-2 group-hover:gap-3 transition-all mt-auto">
+                                        <div className="font-bold text-blue-600 flex items-center gap-2 group-hover:gap-3 transition-all mt-auto" aria-hidden="true">
                                             Baca Selengkapnya <ArrowRight className="w-4 h-4" />
                                         </div>
                                     </div>
                                 </Card>
-                            </Link>
+                            </article>
                         ))}
                     </div>
                     

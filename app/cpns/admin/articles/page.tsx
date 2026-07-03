@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { Eye, Plus } from 'lucide-react'
 import { createAdminClient } from '@/lib/utils/supabase/server'
 import { canPublishArticle, getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
 import { formatArticleDate } from '@/lib/articles'
@@ -99,6 +99,17 @@ export default async function AdminArticlesPage() {
                                 </div>
 
                                 <div className="flex flex-col gap-2 lg:min-w-48">
+                                    {article.status === 'published' && (
+                                        <Link
+                                            href={`/blog/${article.slug}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-blue-600 px-3 py-2 text-center text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5"
+                                        >
+                                            <Eye size={16} />
+                                            Lihat Artikel
+                                        </Link>
+                                    )}
                                     {canEdit && (
                                         <Link
                                             href={`/cpns/admin/articles/${article.id}/edit`}
