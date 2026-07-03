@@ -6,7 +6,7 @@ import SeoNavbar from '@/components/SeoNavbar'
 import { Badge } from '@/components/ui/Badge'
 import { createClient } from '@/lib/utils/supabase/server'
 import { estimateReadTime, formatArticleDate } from '@/lib/articles'
-import { sanitizeArticleHtml } from '@/lib/article-sanitize'
+import { escapeHtml, sanitizeArticleHtml } from '@/lib/article-sanitize'
 import { logger } from '@/lib/logger'
 
 type Article = {
@@ -40,16 +40,6 @@ function getSafeArticleContent(article: Article) {
     return typeof article.content === 'string' ? article.content : ''
 }
 
-function escapeHtml(content: string) {
-    return content
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/\n/g, '<br />')
-}
-
 function getSafeArticleHtml(article: Article) {
     const content = getSafeArticleContent(article)
 
@@ -60,7 +50,7 @@ function getSafeArticleHtml(article: Article) {
             error: error instanceof Error ? error.message : String(error),
             slug: article.slug,
         })
-        return escapeHtml(content)
+        return escapeHtml(content).replace(/\n/g, '<br />')
     }
 }
 

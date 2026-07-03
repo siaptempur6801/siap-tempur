@@ -8,11 +8,14 @@ describe('article utilities', () => {
     })
 
     it('strips unsafe HTML from article content', () => {
-        const clean = sanitizeArticleHtml('<p>Aman</p><script>alert("xss")</script><a href="https://example.com" onclick="bad()">Link</a>')
+        const clean = sanitizeArticleHtml('<p>Aman</p><script>alert("xss")</script><a href="https://example.com" onclick="bad()">Link</a><img src="javascript:alert(1)" onerror="bad()" alt="x" />')
 
         expect(clean).toContain('<p>Aman</p>')
+        expect(clean).toContain('<a href="https://example.com">Link</a>')
         expect(clean).not.toContain('script')
         expect(clean).not.toContain('onclick')
+        expect(clean).not.toContain('onerror')
+        expect(clean).not.toContain('javascript:')
     })
 
     it('estimates read time with a minimum of one minute', () => {

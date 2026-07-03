@@ -2,9 +2,9 @@
 
 import React from 'react'
 import Image from 'next/image'
-import DOMPurify from 'isomorphic-dompurify'
 import 'katex/dist/katex.min.css'
 import { InlineMath, BlockMath } from 'react-katex'
+import { sanitizeHtmlAllowlist } from '@/lib/article-sanitize'
 
 interface MathRendererProps {
     text: string
@@ -21,28 +21,12 @@ function isSafeImageUrl(value: string) {
 }
 
 function sanitizeRichText(value: string) {
-    return DOMPurify.sanitize(value, {
-        ALLOWED_TAGS: [
-            'p',
-            'br',
-            'strong',
-            'b',
-            'em',
-            'i',
-            'u',
-            's',
-            'mark',
-            'h1',
-            'h2',
-            'h3',
-            'ul',
-            'ol',
-            'li',
-            'hr',
-            'span',
-        ],
-        ALLOWED_ATTR: ['style'],
-    })
+    return sanitizeHtmlAllowlist(
+        value,
+        new Set(['p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'mark', 'h1', 'h2', 'h3', 'ul', 'ol', 'li', 'hr', 'span']),
+        new Set(['style']),
+        { allowStyle: true }
+    )
 }
 
 export default function MathRenderer({ text, className }: MathRendererProps) {
