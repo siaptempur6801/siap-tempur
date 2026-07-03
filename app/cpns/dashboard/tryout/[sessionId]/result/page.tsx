@@ -22,7 +22,6 @@ import ScrollToReviewButton from '@/components/practice/ScrollToReviewButton'
 import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import PaperBackground from '@/components/PaperBackground'
 import { getXPInfo } from '@/lib/dashboard'
-import { getOptionOrderForSession, orderOptionsById } from '@/lib/option-randomizer'
 import { isDrillingMateriQuestionSet, normalizeTestSessionKind } from '@/lib/practice-session'
 import { cn, formatSubjectName, calculateCurrentStreak, getDateKeyInTimeZone } from '@/lib/utils'
 import { PASSING_GRADES } from '@/lib/constants'
@@ -50,7 +49,6 @@ type RawAnswer = {
     id: string
     question_id: string
     option_id: string | null
-    option_order: string[] | null
     questions: AnswerQuestion | AnswerQuestion[] | null
     selected_option: AnswerOption | AnswerOption[] | null
 }
@@ -275,7 +273,6 @@ export default async function PracticeResultPage({
             id,
             question_id,
             option_id,
-            option_order,
             questions (
                 id,
                 content,
@@ -331,21 +328,12 @@ export default async function PracticeResultPage({
         })
     }
 
-    const optionOrderUpdates: Array<{ answerId: string; optionOrder: string[] }> = []
-
     const answers: ReviewAnswer[] = ((rawAnswers || []) as RawAnswer[]).flatMap((ans) => {
         const qRaw = normalizeRelation(ans.questions)
         if (!qRaw) return []
         const sortKey = qRaw ? `${qRaw.type}-${qRaw.sub_category}` : ''
         const sortOrder = configSortMap[sortKey] || 999
         const rawOptions = qRaw.options || []
-        const optionOrder = ans.option_order?.length
-            ? ans.option_order
-            : getOptionOrderForSession(rawOptions, sessionId, qRaw.id)
-
-        if (!ans.option_order?.length && optionOrder.length > 0) {
-            optionOrderUpdates.push({ answerId: ans.id, optionOrder })
-        }
 
         return [{
             ...ans,
@@ -354,23 +342,12 @@ export default async function PracticeResultPage({
                 ...qRaw,
                 explanation: qRaw.explanation || '',
                 category: qRaw.category || '',
-                options: orderOptionsById(rawOptions, optionOrder)
+                options: rawOptions
             },
             sort_order: sortOrder,
             selected_option: normalizeRelation(ans.selected_option)
         }]
     })
-
-    if (optionOrderUpdates.length > 0) {
-        await Promise.all(
-            optionOrderUpdates.map((item) => (
-                supabase
-                    .from('test_answers')
-                    .update({ option_order: item.optionOrder })
-                    .eq('id', item.answerId)
-            ))
-        )
-    }
 
     // Pre-sort on server based on configuration sort_order
     answers.sort((a, b) => {
