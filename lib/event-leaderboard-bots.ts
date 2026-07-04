@@ -277,11 +277,11 @@ function getRealisticBotProgressRatio(seed: number, rawRatio: number) {
     if (rawRatio <= 0 || rawRatio >= 1) return rawRatio
 
     const random = randomFromSeed(seed ^ 0x9e3779b9)
-    const pace = 0.88 + random() * 0.24
+    const pace = 1.12 + random() * 0.28
     const pauseOneStart = 0.18 + random() * 0.16
     const pauseTwoStart = 0.52 + random() * 0.18
-    const pauseOneLength = 0.025 + random() * 0.035
-    const pauseTwoLength = 0.035 + random() * 0.05
+    const pauseOneLength = 0.015 + random() * 0.025
+    const pauseTwoLength = 0.02 + random() * 0.035
     const pausePenalty = (start: number, length: number) => {
         if (rawRatio <= start) return 0
         return Math.min(rawRatio - start, length)
