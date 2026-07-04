@@ -202,7 +202,7 @@ export function reconcileEventBotEntries({
         const seed = hashString(`${event.id}:${index}`)
         const random = randomFromSeed(seed)
         const score = buildBotScorePlan(seed)
-        const startedAt = new Date(startTime.getTime() + Math.floor(random() * Math.min(eventWindowMs * 0.25, 15 * 60 * 1000)))
+        const startedAt = startTime
         const workDurationMs = Math.max(
             15 * 60 * 1000,
             Math.floor(eventWindowMs * (0.55 + random() * 0.35))
