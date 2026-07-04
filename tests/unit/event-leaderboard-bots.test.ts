@@ -190,6 +190,30 @@ describe('event leaderboard bots', () => {
         expect(firstScoredSections.size).toBeGreaterThan(1)
     })
 
+    it('shows non-zero live progress immediately when a bot is visible', () => {
+        const entry: EventBotEntry = {
+            id: 'bot-1',
+            event_id: 'event-1',
+            display_name: 'Andi Pratama',
+            seed: 10,
+            target_progress_count: 100,
+            target_score_twk: 60,
+            target_score_tiu: 70,
+            target_score_tkp: 150,
+            target_total_score: 280,
+            started_at: '2026-07-05T03:00:00.000Z',
+            finished_at: '2026-07-05T04:40:00.000Z',
+        }
+
+        const displayed = computeDisplayedBotEntry({
+            entry,
+            eventStatus: 'live',
+            now: new Date('2026-07-05T03:00:00.000Z'),
+        })
+
+        expect(displayed.progress_count).toBeGreaterThan(0)
+    })
+
     it('merges and ranks real participants with bots using score then start time', () => {
         const ranked = rankEventLeaderboardEntries([
             {

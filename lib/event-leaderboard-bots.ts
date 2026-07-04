@@ -251,10 +251,13 @@ export function computeDisplayedBotEntry({
     const startedAt = new Date(entry.started_at).getTime()
     const finishedAt = new Date(entry.finished_at).getTime()
     const duration = Math.max(finishedAt - startedAt, 1)
+    const rawRatio = clamp((now.getTime() - startedAt) / duration, 0, 1)
     const ratio = eventStatus === 'live'
-        ? getRealisticBotProgressRatio(entry.seed, clamp((now.getTime() - startedAt) / duration, 0, 1))
+        ? getRealisticBotProgressRatio(entry.seed, Math.max(rawRatio, 0.08))
         : 1
-    const progressCount = Math.floor(entry.target_progress_count * ratio)
+    const progressCount = eventStatus === 'live'
+        ? Math.max(1, Math.floor(entry.target_progress_count * ratio))
+        : Math.floor(entry.target_progress_count * ratio)
     const scores = computeRealisticBotScores(entry, progressCount)
 
     return {
