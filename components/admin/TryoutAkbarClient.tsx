@@ -88,6 +88,7 @@ type TryoutEvent = {
     start_grace_minutes: number
     duration_minutes: number
     max_participants: number | null
+    bot_count: number
     requires_code: boolean
     group_link: string | null
     flyer_image_url: string | null
@@ -155,6 +156,7 @@ function getEventFormValues(event?: TryoutEvent | null) {
         duration_minutes: String(event?.duration_minutes ?? 100),
         start_grace_minutes: String(event?.start_grace_minutes ?? 15),
         max_participants: event?.max_participants ? String(event.max_participants) : '',
+        bot_count: String(event?.bot_count ?? 0),
         requires_code: event?.requires_code || false,
         group_link: event?.group_link || '',
         flyer_image_url: event?.flyer_image_url || '',
@@ -466,6 +468,19 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                         <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Max Peserta</label>
                         <input name="max_participants" type="number" min="1" value={values.max_participants} onChange={(e) => updateValue('max_participants', e.target.value)}
                             className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900" />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Jumlah Bot Leaderboard</label>
+                        <input
+                            name="bot_count"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={values.bot_count}
+                            onChange={(e) => updateValue('bot_count', e.target.value)}
+                            className="w-full border-2 border-gray-300 px-4 py-2.5 font-bold text-gray-900 outline-none focus:border-gray-900"
+                        />
+                        <p className="text-xs font-medium text-gray-400">Bot hanya tampil di leaderboard, bukan peserta asli.</p>
                     </div>
                     <div className="space-y-1.5">
                         <label className="block text-xs font-bold uppercase tracking-widest text-gray-500">Hasil Terlihat (WIB)</label>
@@ -872,6 +887,7 @@ function DetailPanel({
                                     { label: 'Durasi', value: `${event.duration_minutes}m`, icon: <Clock size={14} className="text-orange-500" /> },
                                     { label: 'Window', value: `${event.start_grace_minutes}m`, icon: <Clock size={14} className="text-yellow-500" /> },
                                     { label: 'Max', value: event.max_participants || '∞', icon: <Users size={14} className="text-green-500" /> },
+                                    { label: 'Bot', value: event.bot_count, icon: <Users size={14} className="text-indigo-500" /> },
                                 ].map(({ label, value, icon }) => (
                                     <div key={label} className="border-2 border-gray-200 bg-white p-3">
                                         <div className="flex items-center gap-1 text-[10px] font-bold uppercase text-gray-400 mb-1">{icon}{label}</div>
@@ -884,6 +900,7 @@ function DetailPanel({
                             <div className="border-2 border-gray-200 bg-white p-4 space-y-3">
                                 <h4 className="text-xs font-black uppercase tracking-widest text-gray-500 mb-3">Progres Peserta</h4>
                                 <ProgressRow label="Pendaftar" value={event.participant_count} max={event.max_participants || event.participant_count || 1} color="bg-blue-400" />
+                                <ProgressRow label="Bot Leaderboard" value={event.bot_count} max={Math.max(event.bot_count, 1)} color="bg-indigo-400" />
                                 <ProgressRow label="Mulai Tryout" value={event.session_count} max={event.participant_count || 1} color="bg-yellow-400" />
                                 <ProgressRow label="Selesai" value={event.completed_count} max={event.session_count || 1} color="bg-green-400" />
                                 <ProgressRow label="Lulus" value={event.passed_count} max={event.completed_count || 1} color="bg-emerald-500" />
@@ -1515,6 +1532,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
         scheduled: events.filter((e) => e.status === 'scheduled').length,
         live: events.filter((e) => e.status === 'live').length,
         participants: events.reduce((sum, e) => sum + e.participant_count, 0),
+        bots: events.reduce((sum, e) => sum + e.bot_count, 0),
     }), [events])
 
     const runAction = (callback: () => Promise<{ success: boolean; message: string }>) => {
@@ -1574,12 +1592,13 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
     return (
         <div className="space-y-8">
             {/* Summary Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-5">
                 {[
                     { label: 'Total Event', value: summary.total, icon: <BarChart3 size={18} className="text-gray-400" /> },
                     { label: 'Scheduled', value: summary.scheduled, icon: <Clock size={18} className="text-blue-400" /> },
                     { label: 'Live', value: summary.live, icon: <Radio size={18} className="text-red-500" /> },
                     { label: 'Total Peserta', value: summary.participants, icon: <Users size={18} className="text-green-500" /> },
+                    { label: 'Bot Leaderboard', value: summary.bots, icon: <Users size={18} className="text-indigo-500" /> },
                 ].map(({ label, value, icon }) => (
                     <div key={label} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                         <div className="flex items-center justify-between">

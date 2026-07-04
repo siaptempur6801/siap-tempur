@@ -27,6 +27,7 @@ export const TryoutEventFormSchema = z.object({
     start_grace_minutes: z.number().int().min(0, 'Start window tidak valid'),
     duration_minutes: z.number().int().min(1, 'Durasi tidak valid'),
     max_participants: z.number().int().min(1, 'Max peserta tidak valid').nullable().optional(),
+    bot_count: z.number().int().min(0, 'Jumlah bot tidak valid').max(100, 'Jumlah bot maksimal 100').default(0),
     requires_code: z.boolean(),
     is_paid: z.boolean().default(false),
     price: z.number().int().min(0, 'Harga tidak valid').default(0),

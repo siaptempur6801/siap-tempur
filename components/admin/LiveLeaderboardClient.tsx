@@ -32,7 +32,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 setEntries((currentEntries) => {
                     if (currentEntries.length > 0) {
                         setPrevRanks(Object.fromEntries(
-                            currentEntries.map((entry) => [entry.user_id, entry.live_rank])
+                            currentEntries.map((entry) => [entry.entry_id, entry.live_rank])
                         ))
                     }
 
@@ -73,15 +73,9 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
         let direction: 'down' | 'up' = 'down'
 
         const edgePauseMs = 1200
-        const pixelsPerSecond = 42
+        const pixelsPerSecond = 1
         const minDurationMs = 3000
-        const maxDurationMs = 45000
-
-        const easeInOutCubic = (progress: number) => (
-            progress < 0.5
-                ? 4 * progress * progress * progress
-                : 1 - Math.pow(-2 * progress + 2, 3) / 2
-        )
+        const maxDurationMs = 10 * 60 * 1000
 
         const scheduleNextScroll = () => {
             if (isCancelled) return
@@ -112,7 +106,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 if (isCancelled) return
 
                 const progress = Math.min((now - startedAt) / duration, 1)
-                scrollContainer.scrollTop = startScrollTop + distance * easeInOutCubic(progress)
+                scrollContainer.scrollTop = startScrollTop + distance * progress
 
                 if (progress < 1) {
                     frameId = window.requestAnimationFrame(step)
@@ -195,7 +189,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     <div className="flex flex-col gap-4 pb-20">
                         <AnimatePresence mode="popLayout">
                             {entries.map((entry) => {
-                                const previousRank = prevRanks[entry.user_id]
+                                const previousRank = prevRanks[entry.entry_id]
                                 const rankDelta = previousRank ? previousRank - entry.live_rank : 0
                                 const isRankUp = rankDelta > 0
                                 const isRankDown = rankDelta < 0
@@ -203,7 +197,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
 
                                 return (
                                     <motion.div
-                                        key={entry.user_id}
+                                        key={entry.entry_id}
                                         layout
                                         initial={{ opacity: 0, y: 20, scale: 0.98 }}
                                         animate={{
@@ -214,12 +208,13 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                         exit={{ opacity: 0, scale: 0.98 }}
                                         transition={{
                                             layout: {
-                                                type: 'spring',
-                                                stiffness: 520,
-                                                damping: 34,
+                                                type: 'tween',
+                                                duration: 0.85,
+                                                ease: [0.22, 1, 0.36, 1],
                                             },
-                                            opacity: { duration: 0.2 },
-                                            scale: { duration: 1.2, ease: 'easeOut' },
+                                            opacity: { duration: 0.35, ease: 'easeOut' },
+                                            y: { duration: 0.45, ease: 'easeOut' },
+                                            scale: { duration: 1.4, ease: 'easeOut' },
                                         }}
                                         className={cn(
                                             'group relative grid overflow-hidden grid-cols-[58px_minmax(0,1fr)] items-center gap-x-3 gap-y-4 border-2 bg-white p-3 transition-transform hover:-translate-y-1 sm:grid-cols-[70px_minmax(0,1fr)] sm:p-4 lg:grid-cols-[80px_minmax(0,1fr)_240px_140px_180px] lg:gap-5',
@@ -234,7 +229,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                             {(isRankUp || isRankDown) && (
                                                 <>
                                                     <motion.div
-                                                        key={`flash-${entry.user_id}-${entry.live_rank}`}
+                                                        key={`flash-${entry.entry_id}-${entry.live_rank}`}
                                                         className={cn(
                                                             'pointer-events-none absolute inset-0',
                                                             isRankUp
@@ -247,7 +242,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                                         transition={{ duration: 1.4, ease: 'easeOut' }}
                                                     />
                                                     <motion.div
-                                                        key={`stripe-${entry.user_id}-${entry.live_rank}`}
+                                                        key={`stripe-${entry.entry_id}-${entry.live_rank}`}
                                                         className={cn(
                                                             'pointer-events-none absolute inset-y-0 left-0 w-2',
                                                             isRankUp ? 'bg-green-500' : 'bg-red-500'
@@ -258,7 +253,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                                         transition={{ duration: 0.75, ease: 'easeOut' }}
                                                     />
                                                     <motion.div
-                                                        key={`badge-${entry.user_id}-${entry.live_rank}`}
+                                                        key={`badge-${entry.entry_id}-${entry.live_rank}`}
                                                         className={cn(
                                                             'pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 border-2 border-gray-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:right-4 sm:top-4 sm:text-xs',
                                                             isRankUp

@@ -5,8 +5,15 @@ import { logger } from '@/lib/logger'
 import { getEffectiveEventCloseTime } from '@/lib/event-access'
 import { AnswerProgressRow, buildAnsweredProgressMap } from '@/lib/event-leaderboard-progress'
 import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
+import {
+    computeDisplayedBotEntry,
+    ensureEventLeaderboardBots,
+    rankEventLeaderboardEntries,
+    type LeaderboardRankableEntry,
+} from '@/lib/event-leaderboard-bots'
 
 export interface LiveLeaderboardEntry {
+    entry_id: string
     user_id: string
     full_name: string
     avatar_url: string | null
@@ -16,6 +23,8 @@ export interface LiveLeaderboardEntry {
     score_tkp: number
     total_score: number
     live_rank: number
+    is_bot: boolean
+    started_at: string
 }
 
 type EventLeaderboardEvent = {
@@ -87,7 +96,7 @@ async function getAnswerProgressRows(
     return rows
 }
 
-async function getCompletedEventLeaderboard(eventId: string): Promise<LiveLeaderboardEntry[]> {
+async function getCompletedEventLeaderboardEntries(eventId: string): Promise<LeaderboardRankableEntry[]> {
     const admin = await createAdminClient()
 
     const { data: eventSessions, error: eventSessionsError } = await admin
@@ -140,12 +149,13 @@ async function getCompletedEventLeaderboard(eventId: string): Promise<LiveLeader
     )
     const progressMap = buildAnsweredProgressMap(answerProgress)
 
-    const rankedEntries = sessions
+    return sessions
         .map((eventSession) => {
             const score = scoreMap.get(eventSession.session_id)
             const profile = profileMap.get(eventSession.user_id)
 
             return {
+                entry_id: `user:${eventSession.user_id}`,
                 user_id: eventSession.user_id,
                 full_name: profile?.full_name || 'Pejuang Tanpa Nama',
                 avatar_url: profile?.avatar_url || null,
@@ -154,26 +164,11 @@ async function getCompletedEventLeaderboard(eventId: string): Promise<LiveLeader
                 score_tiu: toNumber(score?.score_tiu),
                 score_tkp: toNumber(score?.score_tkp),
                 total_score: toNumber(score?.total_score),
+                live_rank: 0,
+                is_bot: false,
                 started_at: eventSession.started_at,
             }
         })
-        .sort((a, b) => {
-            if (b.total_score !== a.total_score) return b.total_score - a.total_score
-            return new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
-        })
-        .slice(0, 100)
-
-    return rankedEntries.map((entry, index) => ({
-        user_id: entry.user_id,
-        full_name: entry.full_name,
-        avatar_url: entry.avatar_url,
-        progress_count: entry.progress_count,
-        score_twk: entry.score_twk,
-        score_tiu: entry.score_tiu,
-        score_tkp: entry.score_tkp,
-        total_score: entry.total_score,
-        live_rank: index + 1,
-    }))
 }
 
 export async function getLiveLeaderboardAction(eventId: string) {
@@ -230,7 +225,13 @@ export async function getLiveLeaderboardAction(eventId: string) {
 
         return {
             event: { ...leaderboardEvent, status: 'closed' },
-            leaderboard: await getCompletedEventLeaderboard(eventId),
+            leaderboard: rankEventLeaderboardEntries([
+                ...await getCompletedEventLeaderboardEntries(eventId),
+                ...(await ensureEventLeaderboardBots(admin, eventId)).map((entry) => computeDisplayedBotEntry({
+                    entry,
+                    eventStatus: 'closed',
+                })),
+            ]),
         }
     }
 
@@ -254,9 +255,14 @@ export async function getLiveLeaderboardAction(eventId: string) {
         if (error.code === 'PGRST202' || error.message.includes('schema cache')) {
             logger.warn('Live leaderboard RPC unavailable in schema cache', { eventId, error })
 
+            const botEntries = await ensureEventLeaderboardBots(admin, eventId)
+
             return {
                 event,
-                leaderboard: []
+                leaderboard: rankEventLeaderboardEntries(botEntries.map((entry) => computeDisplayedBotEntry({
+                    entry,
+                    eventStatus: leaderboardEvent.status,
+                })))
             }
         }
 
@@ -264,8 +270,21 @@ export async function getLiveLeaderboardAction(eventId: string) {
         throw new Error('Gagal memuat leaderboard')
     }
 
+    const realEntries = ((leaderboard as LiveLeaderboardEntry[]) || []).map((entry) => ({
+        ...entry,
+        entry_id: entry.entry_id || `user:${entry.user_id}`,
+        is_bot: false,
+        started_at: entry.started_at || new Date(
+            new Date(leaderboardEvent.starts_at).getTime() + (entry.live_rank || 0)
+        ).toISOString(),
+    }))
+    const botEntries = (await ensureEventLeaderboardBots(admin, eventId)).map((entry) => computeDisplayedBotEntry({
+        entry,
+        eventStatus: leaderboardEvent.status,
+    }))
+
     return {
         event: leaderboardEvent,
-        leaderboard: (leaderboard as LiveLeaderboardEntry[]) || []
+        leaderboard: rankEventLeaderboardEntries([...realEntries, ...botEntries])
     }
 }

@@ -10,6 +10,7 @@ import { logger } from '@/lib/logger'
 import { logAuditEvent } from '@/lib/audit-log'
 import { createClient } from '@/lib/utils/supabase/server'
 import { normalizeBulkQuestionIds } from '@/lib/admin-question-bulk-delete'
+import { ensureEventLeaderboardBots } from '@/lib/event-leaderboard-bots'
 
 interface TryoutConfigurationPayload {
     id: string
@@ -801,6 +802,7 @@ function readTryoutEventForm(formData: FormData) {
     const startGraceMinutes = Number(formData.get('start_grace_minutes') || 15)
     const durationMinutes = Number(formData.get('duration_minutes') || 100)
     const maxParticipantsRaw = String(formData.get('max_participants') || '').trim()
+    const botCount = Number(formData.get('bot_count') || 0)
     const requiresCode = formData.get('requires_code') === 'on'
     const isPaid = formData.get('is_paid') === 'on' || formData.get('is_paid') === 'true'
     const priceRaw = String(formData.get('price') || '0').trim()
@@ -823,6 +825,7 @@ function readTryoutEventForm(formData: FormData) {
         start_grace_minutes: normalizedStartGraceMinutes,
         duration_minutes: normalizedDurationMinutes,
         max_participants: maxParticipantsRaw ? Number(maxParticipantsRaw) : null,
+        bot_count: Number.isInteger(botCount) ? botCount : 0,
         requires_code: requiresCode,
         is_paid: isPaid,
         price,
@@ -898,6 +901,15 @@ export async function updateTryoutEventStatus(id: string, status: 'draft' | 'sch
         .eq('id', id)
 
     if (error) return { success: false, message: error.message }
+
+    if (status === 'live') {
+        try {
+            await ensureEventLeaderboardBots(supabase, id)
+        } catch (botError) {
+            logger.warn('[event-admin] Failed to prepare leaderboard bots', { error: botError, eventId: id })
+            return { success: false, message: botError instanceof Error ? botError.message : 'Gagal menyiapkan bot leaderboard' }
+        }
+    }
 
     revalidatePath('/cpns/admin/event')
     return { success: true, message: `Status event berhasil diubah ke ${status}` }

@@ -77,10 +77,31 @@ describe('Admin Validations (Zod Schemas)', () => {
         start_grace_minutes: 15,
         duration_minutes: 120,
         requires_code: false,
+        bot_count: 25,
       };
 
       const result = TryoutEventFormSchema.safeParse(validData);
       expect(result.success).toBe(true);
+    });
+
+    it('should reject bot count above 100', () => {
+      const invalidData = {
+        title: 'Tryout Akbar Nasional',
+        description: 'Simulasi',
+        starts_at: new Date('2026-06-01T00:00:00Z').toISOString(),
+        ends_at: new Date('2026-06-05T00:00:00Z').toISOString(),
+        start_grace_minutes: 15,
+        duration_minutes: 120,
+        requires_code: false,
+        bot_count: 101,
+      };
+
+      const result = TryoutEventFormSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const errorPaths = result.error.issues.map(issue => issue.path[0]);
+        expect(errorPaths).toContain('bot_count');
+      }
     });
 
     it('should reject when ends_at is before starts_at', () => {
