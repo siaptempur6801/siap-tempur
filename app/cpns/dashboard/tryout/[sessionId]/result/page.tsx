@@ -472,7 +472,7 @@ export default async function PracticeResultPage({
 
     return (
         <ResultXPWrapper xpInfo={enrichedXPInfo} disablePopup={!isCompleted}>
-            <div className="max-w-5xl mx-auto p-3 sm:p-6 space-y-5 sm:space-y-6 pb-28 font-handwriting">
+            <div className="max-w-[1600px] mx-auto p-3 sm:p-6 space-y-5 sm:space-y-6 pb-28 font-handwriting">
 
                 {/* 1. HERO SECTION */}
                 <div className="relative overflow-hidden rounded-3xl bg-[#fff9c4] border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">

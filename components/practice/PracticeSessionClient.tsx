@@ -790,7 +790,7 @@ export default function PracticeSessionClient({
     }
 
     return (
-        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 p-2 md:p-8 h-auto md:h-[calc(100vh-64px)] md:overflow-hidden relative font-body">
+        <div className="flex flex-col lg:flex-row gap-4 xl:gap-6 p-2 md:p-4 xl:p-6 h-auto md:h-[calc(100vh-56px)] xl:h-[calc(100vh-64px)] md:overflow-hidden relative font-body">
             <PaperBackground />
 
             {/* Mobile Navigation Drawer */}
@@ -1046,8 +1046,8 @@ export default function PracticeSessionClient({
 
             {/* LEFT: Question Area Wrapper */}
             <div className={cn(
-                "flex-1 flex flex-col md:h-full relative transition-all duration-500",
-                showNav ? "" : "lg:max-w-4xl lg:mx-auto"
+                "flex-1 min-w-0 flex flex-col md:h-full relative transition-all duration-500",
+                showNav ? "" : "lg:max-w-6xl lg:mx-auto"
             )}>
                 <div className="flex-1 flex flex-col bg-white/80 backdrop-blur-sm border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] md:overflow-hidden relative">
                     {/* Header - Optimized for Mobile */}
@@ -1228,7 +1228,7 @@ export default function PracticeSessionClient({
                         initial={{ x: 300, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: 300, opacity: 0 }}
-                        className="hidden lg:flex w-full lg:w-80 shrink-0 flex-col bg-white/90 border-2 border-gray-900 rounded-xl h-full shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] z-10 relative"
+                        className="hidden lg:flex w-full lg:w-80 xl:w-88 2xl:w-96 shrink-0 flex-col bg-white/90 border-2 border-gray-900 rounded-xl h-full shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] z-10 relative"
                     >
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/60 border border-white/40 shadow-sm rotate-2 z-20 pointer-events-none"></div>

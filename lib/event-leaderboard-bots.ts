@@ -1,6 +1,16 @@
 export const MAX_EVENT_BOT_COUNT = 100
 export const MAX_EVENT_BOT_SCORE = 360
 export const MIN_EVENT_BOT_SCORE = 260
+export const EVENT_BOT_QUESTION_COUNT = 110
+export const DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS = {
+    twk: 30,
+    tiu: 35,
+    tkp: 45,
+} as const
+type EventBotSection = keyof typeof DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS
+export type EventBotQuestionCounts = Record<EventBotSection, number>
+const EVENT_BOT_STARTER_SECTIONS: EventBotSection[] = ['twk', 'tiu', 'tkp']
+type QuestionType = 'TWK' | 'TIU' | 'TKP'
 
 export type EventBotName = {
     id: string
@@ -19,6 +29,7 @@ export type EventBotEntry = {
     target_total_score: number
     started_at: string
     finished_at: string
+    question_counts?: EventBotQuestionCounts
 }
 
 export type EventBotConfig = {
@@ -35,6 +46,8 @@ export type LeaderboardRankableEntry = {
     full_name: string
     avatar_url: string | null
     progress_count: number
+    question_count?: number
+    question_counts?: EventBotQuestionCounts
     score_twk: number
     score_tiu: number
     score_tkp: number
@@ -48,6 +61,7 @@ type ReconcileBotEntriesInput = {
     event: EventBotConfig
     existingEntries: EventBotEntry[]
     botNames: EventBotName[]
+    questionCounts?: EventBotQuestionCounts
 }
 
 type ReconcileBotEntriesResult = {
@@ -82,6 +96,9 @@ type SupabaseLikeClient = {
 type EventBotEntryRow = EventBotEntry
 type EventBotNameRow = EventBotName
 type EventBotConfigRow = EventBotConfig
+type EventQuestionRow = {
+    questions: { type: QuestionType | string | null } | Array<{ type: QuestionType | string | null }> | null
+}
 
 const FALLBACK_FIRST_NAMES = [
     'Aditya', 'Aldi', 'Ananda', 'Bima', 'Cahya', 'Daffa', 'Dinda', 'Erlangga', 'Fikri', 'Gita',
@@ -98,6 +115,20 @@ const FALLBACK_THIRD_NAMES = [
 
 function clamp(value: number, min: number, max: number) {
     return Math.min(Math.max(value, min), max)
+}
+
+function normalizeQuestionCounts(questionCounts?: Partial<EventBotQuestionCounts> | null): EventBotQuestionCounts {
+    return {
+        twk: Math.max(0, Math.trunc(Number(questionCounts?.twk ?? DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS.twk))),
+        tiu: Math.max(0, Math.trunc(Number(questionCounts?.tiu ?? DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS.tiu))),
+        tkp: Math.max(0, Math.trunc(Number(questionCounts?.tkp ?? DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS.tkp))),
+    }
+}
+
+export function getEventBotQuestionCount(questionCounts?: Partial<EventBotQuestionCounts> | null) {
+    const normalizedCounts = normalizeQuestionCounts(questionCounts)
+    const total = normalizedCounts.twk + normalizedCounts.tiu + normalizedCounts.tkp
+    return total > 0 ? total : EVENT_BOT_QUESTION_COUNT
 }
 
 function hashString(value: string) {
@@ -161,20 +192,52 @@ function pickBotName(botNames: EventBotName[], usedNames: Set<string>, seed: num
     return 'Ananda Kusuma Pradipta'
 }
 
-export function buildBotScorePlan(seed: number) {
+function isDefaultFullQuestionCounts(questionCounts: EventBotQuestionCounts) {
+    return questionCounts.twk === DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS.twk
+        && questionCounts.tiu === DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS.tiu
+        && questionCounts.tkp === DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS.tkp
+}
+
+function scaleScore(value: number, section: EventBotSection, questionCounts: EventBotQuestionCounts) {
+    const questionCount = questionCounts[section]
+    if (questionCount <= 0) return 0
+
+    return Math.floor(value * (questionCount / DEFAULT_EVENT_BOT_SECTION_QUESTION_COUNTS[section]))
+}
+
+export function buildBotScorePlan(seed: number, questionCountsInput?: Partial<EventBotQuestionCounts> | null) {
+    const questionCounts = normalizeQuestionCounts(questionCountsInput)
     const random = randomFromSeed(seed)
+    const progressCount = getEventBotQuestionCount(questionCounts)
     const totalScore = MIN_EVENT_BOT_SCORE + Math.floor(random() * (MAX_EVENT_BOT_SCORE - MIN_EVENT_BOT_SCORE + 1))
-    const scoreTwk = 50 + Math.floor(random() * 36)
-    const scoreTiu = 55 + Math.floor(random() * 36)
-    const scoreTkp = clamp(totalScore - scoreTwk - scoreTiu, 120, 220)
-    const adjustedTotal = Math.min(scoreTwk + scoreTiu + scoreTkp, MAX_EVENT_BOT_SCORE)
-    const adjustedTkp = adjustedTotal - scoreTwk - scoreTiu
+    const baseScoreTwk = 50 + Math.floor(random() * 36)
+    const baseScoreTiu = 55 + Math.floor(random() * 36)
+
+    if (isDefaultFullQuestionCounts(questionCounts)) {
+        const scoreTkp = clamp(totalScore - baseScoreTwk - baseScoreTiu, 120, 220)
+        const adjustedTotal = Math.min(baseScoreTwk + baseScoreTiu + scoreTkp, MAX_EVENT_BOT_SCORE)
+        const adjustedTkp = adjustedTotal - baseScoreTwk - baseScoreTiu
+
+        return {
+            progress_count: progressCount,
+            score_twk: baseScoreTwk,
+            score_tiu: baseScoreTiu,
+            score_tkp: adjustedTkp,
+            total_score: adjustedTotal,
+        }
+    }
+
+    const baseScoreTkp = 120 + Math.floor(random() * 101)
+    const scoreTwk = scaleScore(baseScoreTwk, 'twk', questionCounts)
+    const scoreTiu = scaleScore(baseScoreTiu, 'tiu', questionCounts)
+    const scoreTkp = scaleScore(baseScoreTkp, 'tkp', questionCounts)
+    const adjustedTotal = scoreTwk + scoreTiu + scoreTkp
 
     return {
-        progress_count: 80 + Math.floor(random() * 31),
+        progress_count: progressCount,
         score_twk: scoreTwk,
         score_tiu: scoreTiu,
-        score_tkp: adjustedTkp,
+        score_tkp: scoreTkp,
         total_score: adjustedTotal,
     }
 }
@@ -183,7 +246,9 @@ export function reconcileEventBotEntries({
     event,
     existingEntries,
     botNames,
+    questionCounts: questionCountsInput,
 }: ReconcileBotEntriesInput): ReconcileBotEntriesResult {
+    const questionCounts = normalizeQuestionCounts(questionCountsInput)
     const desiredCount = clamp(Math.trunc(event.bot_count || 0), 0, MAX_EVENT_BOT_COUNT)
     const sortedExisting = [...existingEntries].sort((a, b) => {
         const startedDiff = new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
@@ -201,7 +266,7 @@ export function reconcileEventBotEntries({
     for (let index = keptEntries.length; index < desiredCount; index += 1) {
         const seed = hashString(`${event.id}:${index}`)
         const random = randomFromSeed(seed)
-        const score = buildBotScorePlan(seed)
+        const score = buildBotScorePlan(seed, questionCounts)
         const startedAt = startTime
         const workDurationMs = Math.max(
             15 * 60 * 1000,
@@ -223,10 +288,15 @@ export function reconcileEventBotEntries({
             target_total_score: score.total_score,
             started_at: startedAt.toISOString(),
             finished_at: finishedAt.toISOString(),
+            question_counts: questionCounts,
         })
     }
 
-    const nextEntries = [...keptEntries, ...entriesToInsert].sort((a, b) => {
+    const nextEntries = [...keptEntries, ...entriesToInsert].map((entry) => ({
+        ...entry,
+        question_counts: questionCounts,
+        target_progress_count: getEventBotQuestionCount(questionCounts),
+    })).sort((a, b) => {
         const startedDiff = new Date(a.started_at).getTime() - new Date(b.started_at).getTime()
         if (startedDiff !== 0) return startedDiff
         return a.id.localeCompare(b.id)
@@ -248,17 +318,19 @@ export function computeDisplayedBotEntry({
     eventStatus: string
     now?: Date
 }): LeaderboardRankableEntry {
+    const questionCounts = normalizeQuestionCounts(entry.question_counts)
     const startedAt = new Date(entry.started_at).getTime()
     const finishedAt = new Date(entry.finished_at).getTime()
     const duration = Math.max(finishedAt - startedAt, 1)
     const rawRatio = clamp((now.getTime() - startedAt) / duration, 0, 1)
     const ratio = eventStatus === 'live'
-        ? getRealisticBotProgressRatio(entry.seed, Math.max(rawRatio, 0.08))
+        ? getRealisticBotProgressRatio(entry.seed, rawRatio)
         : 1
+    const targetProgressCount = getEventBotQuestionCount(questionCounts)
     const progressCount = eventStatus === 'live'
-        ? Math.max(1, Math.floor(entry.target_progress_count * ratio))
-        : Math.floor(entry.target_progress_count * ratio)
-    const scores = computeRealisticBotScores(entry, progressCount)
+        ? Math.floor(targetProgressCount * ratio)
+        : targetProgressCount
+    const scores = computeRealisticBotScores(entry, progressCount, questionCounts)
 
     return {
         entry_id: `bot:${entry.id}`,
@@ -266,6 +338,8 @@ export function computeDisplayedBotEntry({
         full_name: entry.display_name,
         avatar_url: null,
         progress_count: progressCount,
+        question_count: targetProgressCount,
+        question_counts: questionCounts,
         score_twk: scores.score_twk,
         score_tiu: scores.score_tiu,
         score_tkp: scores.score_tkp,
@@ -299,37 +373,30 @@ function getRealisticBotProgressRatio(seed: number, rawRatio: number) {
     return clamp(Math.pow(activeRatio, curve), 0, 1)
 }
 
-function computeRealisticBotScores(entry: EventBotEntry, progressCount: number) {
-    const targetProgress = Math.max(entry.target_progress_count, 1)
-    const sections = shuffleBotSections(entry.seed).map((section) => ({
-        section,
-        questionCount: section === 'twk'
-            ? Math.min(targetProgress, 30)
-            : section === 'tiu'
-                ? Math.min(Math.max(targetProgress - 30, 0), 35)
-                : Math.max(targetProgress - 65, 0),
-    }))
-    const answered = { twk: 0, tiu: 0, tkp: 0 }
-    let remainingProgress = progressCount
+function computeRealisticBotScores(entry: EventBotEntry, progressCount: number, questionCounts: EventBotQuestionCounts) {
+    const answeredCount = clamp(progressCount, 0, getEventBotQuestionCount(questionCounts))
+    const answeredBySection: Record<EventBotSection, number> = {
+        twk: 0,
+        tiu: 0,
+        tkp: 0,
+    }
+    let remainingProgress = answeredCount
 
-    for (const { section, questionCount } of sections) {
-        const answeredCount = Math.min(Math.max(remainingProgress, 0), questionCount)
-        answered[section] = answeredCount
-        remainingProgress -= answeredCount
+    for (const section of getBotSectionOrder(entry.seed, questionCounts)) {
+        const sectionQuestionCount = questionCounts[section]
+        const answeredInSection = Math.min(remainingProgress, sectionQuestionCount)
+        answeredBySection[section] = answeredInSection
+        remainingProgress -= answeredInSection
+
+        if (remainingProgress <= 0) break
     }
 
-    const twkQuestionCount = sections.find((section) => section.section === 'twk')?.questionCount || 0
-    const tiuQuestionCount = sections.find((section) => section.section === 'tiu')?.questionCount || 0
-    const tkpQuestionCount = sections.find((section) => section.section === 'tkp')?.questionCount || 0
-    const scoreTwk = twkQuestionCount > 0
-        ? Math.floor(entry.target_score_twk * (answered.twk / twkQuestionCount))
-        : 0
-    const scoreTiu = tiuQuestionCount > 0
-        ? Math.floor(entry.target_score_tiu * (answered.tiu / tiuQuestionCount))
-        : 0
-    const scoreTkp = tkpQuestionCount > 0
-        ? Math.floor(entry.target_score_tkp * (answered.tkp / tkpQuestionCount))
-        : 0
+    const answeredTwk = answeredBySection.twk
+    const answeredTiu = answeredBySection.tiu
+    const answeredTkp = answeredBySection.tkp
+    const scoreTwk = questionCounts.twk > 0 ? Math.floor(entry.target_score_twk * (answeredTwk / questionCounts.twk)) : 0
+    const scoreTiu = questionCounts.tiu > 0 ? Math.floor(entry.target_score_tiu * (answeredTiu / questionCounts.tiu)) : 0
+    const scoreTkp = questionCounts.tkp > 0 ? Math.floor(entry.target_score_tkp * (answeredTkp / questionCounts.tkp)) : 0
 
     return {
         score_twk: scoreTwk,
@@ -339,16 +406,19 @@ function computeRealisticBotScores(entry: EventBotEntry, progressCount: number) 
     }
 }
 
-function shuffleBotSections(seed: number): Array<'twk' | 'tiu' | 'tkp'> {
-    const sections: Array<'twk' | 'tiu' | 'tkp'> = ['twk', 'tiu', 'tkp']
+function getBotSectionOrder(seed: number, questionCounts: EventBotQuestionCounts): EventBotSection[] {
+    const availableSections = EVENT_BOT_STARTER_SECTIONS.filter((section) => questionCounts[section] > 0)
+    if (availableSections.length <= 1) return availableSections
+
+    const starter = availableSections[Math.abs(seed) % availableSections.length]
+    const remaining = availableSections.filter((section) => section !== starter)
     const random = randomFromSeed(seed ^ 0x7f4a7c15)
 
-    for (let index = sections.length - 1; index > 0; index -= 1) {
-        const randomIndex = Math.floor(random() * (index + 1))
-        ;[sections[index], sections[randomIndex]] = [sections[randomIndex], sections[index]]
+    if (random() >= 0.5) {
+        remaining.reverse()
     }
 
-    return sections
+    return [starter, ...remaining]
 }
 
 export function rankEventLeaderboardEntries<T extends LeaderboardRankableEntry>(entries: T[]) {
@@ -379,12 +449,52 @@ function mapBotEntryRow(row: EventBotEntryRow): EventBotEntry {
         target_total_score: Number(row.target_total_score || 0),
         started_at: String(row.started_at),
         finished_at: String(row.finished_at),
+        question_counts: row.question_counts,
     }
+}
+
+function mapEventQuestionCounts(rows: EventQuestionRow[] | null): EventBotQuestionCounts {
+    const counts: EventBotQuestionCounts = { twk: 0, tiu: 0, tkp: 0 }
+
+    for (const row of rows || []) {
+        const question = Array.isArray(row.questions) ? row.questions[0] : row.questions
+        const type = String(question?.type || '').toUpperCase()
+
+        if (type === 'TWK') counts.twk += 1
+        if (type === 'TIU') counts.tiu += 1
+        if (type === 'TKP') counts.tkp += 1
+    }
+
+    return counts.twk + counts.tiu + counts.tkp > 0 ? counts : normalizeQuestionCounts()
+}
+
+export async function getEventLeaderboardQuestionCounts(
+    client: SupabaseLikeClient,
+    eventId: string
+): Promise<EventBotQuestionCounts> {
+    const eventQuestionTable = client.from('tryout_event_questions') as SupabaseTableBuilder
+    const { data, error } = await eventQuestionTable
+        .select<EventQuestionRow[]>('questions(type)')
+        .eq('event_id', eventId)
+        .order('sort_order', { ascending: true })
+
+    if (error) throw new Error(error.message)
+
+    return mapEventQuestionCounts(data || [])
+}
+
+function attachQuestionCounts(entries: EventBotEntry[], questionCounts: EventBotQuestionCounts) {
+    return entries.map((entry) => ({
+        ...entry,
+        question_counts: questionCounts,
+        target_progress_count: getEventBotQuestionCount(questionCounts),
+    }))
 }
 
 export async function ensureEventLeaderboardBots(
     client: SupabaseLikeClient,
-    eventId: string
+    eventId: string,
+    questionCountsInput?: EventBotQuestionCounts
 ): Promise<EventBotEntry[]> {
     const eventTable = client.from('tryout_events') as SupabaseTableBuilder
     const botEntryTable = client.from('tryout_event_bot_entries') as SupabaseTableBuilder
@@ -398,6 +508,8 @@ export async function ensureEventLeaderboardBots(
     if (eventError || !event) {
         throw new Error(eventError?.message || 'Event tidak ditemukan')
     }
+
+    const questionCounts = questionCountsInput || await getEventLeaderboardQuestionCounts(client, eventId)
 
     const { data: existingRows, error: existingError } = await botEntryTable
         .select<EventBotEntryRow[]>('id, event_id, display_name, seed, target_progress_count, target_score_twk, target_score_tiu, target_score_tkp, target_total_score, started_at, finished_at')
@@ -429,6 +541,7 @@ export async function ensureEventLeaderboardBots(
             id: String(row.id),
             full_name: String(row.full_name),
         })),
+        questionCounts,
     })
 
     if (reconciled.entryIdsToDelete.length > 0) {
@@ -468,8 +581,8 @@ export async function ensureEventLeaderboardBots(
 
         if (refreshError) throw new Error(refreshError.message)
 
-        return (refreshedRows || []).map(mapBotEntryRow)
+        return attachQuestionCounts((refreshedRows || []).map(mapBotEntryRow), questionCounts)
     }
 
-    return reconciled.nextEntries
+    return attachQuestionCounts(reconciled.nextEntries, questionCounts)
 }

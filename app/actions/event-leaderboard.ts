@@ -8,7 +8,10 @@ import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
 import {
     computeDisplayedBotEntry,
     ensureEventLeaderboardBots,
+    getEventBotQuestionCount,
+    getEventLeaderboardQuestionCounts,
     rankEventLeaderboardEntries,
+    type EventBotQuestionCounts,
     type LeaderboardRankableEntry,
 } from '@/lib/event-leaderboard-bots'
 
@@ -18,6 +21,8 @@ export interface LiveLeaderboardEntry {
     full_name: string
     avatar_url: string | null
     progress_count: number
+    question_count?: number
+    question_counts?: EventBotQuestionCounts
     score_twk: number
     score_tiu: number
     score_tkp: number
@@ -96,7 +101,11 @@ async function getAnswerProgressRows(
     return rows
 }
 
-async function getCompletedEventLeaderboardEntries(eventId: string): Promise<LeaderboardRankableEntry[]> {
+async function getCompletedEventLeaderboardEntries(
+    eventId: string,
+    questionCount: number,
+    questionCounts: EventBotQuestionCounts
+): Promise<LeaderboardRankableEntry[]> {
     const admin = await createAdminClient()
 
     const { data: eventSessions, error: eventSessionsError } = await admin
@@ -160,6 +169,8 @@ async function getCompletedEventLeaderboardEntries(eventId: string): Promise<Lea
                 full_name: profile?.full_name || 'Pejuang Tanpa Nama',
                 avatar_url: profile?.avatar_url || null,
                 progress_count: progressMap.get(eventSession.session_id) || 0,
+                question_count: questionCount,
+                question_counts: questionCounts,
                 score_twk: toNumber(score?.score_twk),
                 score_tiu: toNumber(score?.score_tiu),
                 score_tkp: toNumber(score?.score_tkp),
@@ -187,17 +198,23 @@ export async function getLiveLeaderboardAction(eventId: string) {
 
     // 1. Fetch event details first. Scheduled/closed events should show an empty board,
     // not fail because the live RPC is not relevant yet.
-    const { data: event, error: eventError } = await supabase
+    const { data: event, error: eventError } = await admin
         .from('tryout_events')
         .select('id, title, status, starts_at, duration_minutes, start_grace_minutes')
         .eq('id', eventId)
-        .single()
+        .maybeSingle()
         
-    if (eventError) {
+    if (eventError || !event) {
+        logger.warn('Live leaderboard event not found', {
+            eventId,
+            error: eventError?.message,
+        })
         throw new Error('Event tidak ditemukan')
     }
 
     const leaderboardEvent = event as EventLeaderboardEvent
+    const questionCounts = await getEventLeaderboardQuestionCounts(admin, eventId)
+    const questionCount = getEventBotQuestionCount(questionCounts)
     const closeTime = getEffectiveEventCloseTime(leaderboardEvent)
     const isEventFinished = leaderboardEvent.status === 'closed' || Date.now() > closeTime.getTime()
 
@@ -226,8 +243,8 @@ export async function getLiveLeaderboardAction(eventId: string) {
         return {
             event: { ...leaderboardEvent, status: 'closed' },
             leaderboard: rankEventLeaderboardEntries([
-                ...await getCompletedEventLeaderboardEntries(eventId),
-                ...(await ensureEventLeaderboardBots(admin, eventId)).map((entry) => computeDisplayedBotEntry({
+                ...await getCompletedEventLeaderboardEntries(eventId, questionCount, questionCounts),
+                ...(await ensureEventLeaderboardBots(admin, eventId, questionCounts)).map((entry) => computeDisplayedBotEntry({
                     entry,
                     eventStatus: 'closed',
                 })),
@@ -255,7 +272,7 @@ export async function getLiveLeaderboardAction(eventId: string) {
         if (error.code === 'PGRST202' || error.message.includes('schema cache')) {
             logger.warn('Live leaderboard RPC unavailable in schema cache', { eventId, error })
 
-            const botEntries = await ensureEventLeaderboardBots(admin, eventId)
+            const botEntries = await ensureEventLeaderboardBots(admin, eventId, questionCounts)
 
             return {
                 event,
@@ -273,12 +290,14 @@ export async function getLiveLeaderboardAction(eventId: string) {
     const realEntries = ((leaderboard as LiveLeaderboardEntry[]) || []).map((entry) => ({
         ...entry,
         entry_id: entry.entry_id || `user:${entry.user_id}`,
+        question_count: questionCount,
+        question_counts: questionCounts,
         is_bot: false,
         started_at: entry.started_at || new Date(
             new Date(leaderboardEvent.starts_at).getTime() + (entry.live_rank || 0)
         ).toISOString(),
     }))
-    const botEntries = (await ensureEventLeaderboardBots(admin, eventId)).map((entry) => computeDisplayedBotEntry({
+    const botEntries = (await ensureEventLeaderboardBots(admin, eventId, questionCounts)).map((entry) => computeDisplayedBotEntry({
         entry,
         eventStatus: leaderboardEvent.status,
     }))

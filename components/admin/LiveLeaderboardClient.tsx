@@ -1,12 +1,18 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, Users, RefreshCw, ChevronUp, ChevronDown, Minus, Clock, Pause, Play } from 'lucide-react'
+import { Trophy, Users, RefreshCw, ChevronUp, ChevronDown, Minus, Clock, Pause, Play, Plus } from 'lucide-react'
 import { getLiveLeaderboardAction, LiveLeaderboardEntry } from '@/app/actions/event-leaderboard'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { shouldRefreshEventLeaderboard } from '@/lib/event-leaderboard-refresh'
+import { buildPassingGradeLeaderboardSections } from '@/lib/leaderboard-passing-grade'
+
+const DEFAULT_AUTO_SCROLL_SPEED = 10
+const MIN_AUTO_SCROLL_SPEED = 5
+const MAX_AUTO_SCROLL_SPEED = 80
+const AUTO_SCROLL_SPEED_STEP = 5
 
 export default function LiveLeaderboardClient({ eventId }: { eventId: string }) {
     const scrollContainerRef = useRef<HTMLElement | null>(null)
@@ -14,9 +20,18 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
     const [prevRanks, setPrevRanks] = useState<Record<string, number>>({})
     const [event, setEvent] = useState<{ title: string; status: string } | null>(null)
     const [loading, setLoading] = useState(true)
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
     const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true)
+    const [autoScrollSpeed, setAutoScrollSpeed] = useState(DEFAULT_AUTO_SCROLL_SPEED)
     const isFinalLeaderboard = event?.status === 'closed'
+    const leaderboardSections = useMemo(() => buildPassingGradeLeaderboardSections(entries), [entries])
+    const decreaseAutoScrollSpeed = () => {
+        setAutoScrollSpeed((current) => Math.max(current - AUTO_SCROLL_SPEED_STEP, MIN_AUTO_SCROLL_SPEED))
+    }
+    const increaseAutoScrollSpeed = () => {
+        setAutoScrollSpeed((current) => Math.min(current + AUTO_SCROLL_SPEED_STEP, MAX_AUTO_SCROLL_SPEED))
+    }
 
     useEffect(() => {
         let isCancelled = false
@@ -24,6 +39,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
 
         const fetchLeaderboard = async () => {
             try {
+                setErrorMessage(null)
                 const result = await getLiveLeaderboardAction(eventId)
                 if (isCancelled) return
 
@@ -31,8 +47,11 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
 
                 setEntries((currentEntries) => {
                     if (currentEntries.length > 0) {
+                        const currentSectionEntries = buildPassingGradeLeaderboardSections(currentEntries)
+                            .flatMap((section) => section.entries)
+
                         setPrevRanks(Object.fromEntries(
-                            currentEntries.map((entry) => [entry.entry_id, entry.live_rank])
+                            currentSectionEntries.map((entry) => [entry.entry_id, entry.live_rank])
                         ))
                     }
 
@@ -44,7 +63,9 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     refreshTimer = window.setTimeout(fetchLeaderboard, 5000)
                 }
             } catch (error) {
-                console.error(error)
+                if (!isCancelled) {
+                    setErrorMessage(error instanceof Error ? error.message : 'Gagal memuat leaderboard')
+                }
             } finally {
                 if (!isCancelled) {
                     setLoading(false)
@@ -70,29 +91,29 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
         let frameId: number | null = null
         let pauseTimer: number | null = null
         let isCancelled = false
-        let direction: 'down' | 'up' = 'down'
-
-        const edgePauseMs = 1200
-        const pixelsPerSecond = 1
-        const minDurationMs = 3000
+        const topPauseMs = 600
+        const bottomPauseMs = 700
+        const pixelsPerSecond = autoScrollSpeed
+        const minDurationMs = 1800
         const maxDurationMs = 10 * 60 * 1000
 
-        const scheduleNextScroll = () => {
+        const scheduleNextScroll = (delayMs = topPauseMs) => {
             if (isCancelled) return
-            pauseTimer = window.setTimeout(() => animateScroll(), edgePauseMs)
+            pauseTimer = window.setTimeout(() => animateScroll(), delayMs)
         }
 
         const animateScroll = () => {
             const maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight
             if (maxScrollTop <= 4) return
 
-            const targetScrollTop = direction === 'down' ? maxScrollTop : 0
             const startScrollTop = scrollContainer.scrollTop
-            const distance = targetScrollTop - startScrollTop
+            const distance = maxScrollTop - startScrollTop
 
             if (Math.abs(distance) <= 2) {
-                direction = direction === 'down' ? 'up' : 'down'
-                scheduleNextScroll()
+                pauseTimer = window.setTimeout(() => {
+                    scrollContainer.scrollTop = 0
+                    scheduleNextScroll()
+                }, bottomPauseMs)
                 return
             }
 
@@ -113,8 +134,10 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     return
                 }
 
-                direction = direction === 'down' ? 'up' : 'down'
-                scheduleNextScroll()
+                pauseTimer = window.setTimeout(() => {
+                    scrollContainer.scrollTop = 0
+                    scheduleNextScroll()
+                }, bottomPauseMs)
             }
 
             frameId = window.requestAnimationFrame(step)
@@ -131,7 +154,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 window.clearTimeout(pauseTimer)
             }
         }
-    }, [entries.length, isAutoScrollEnabled])
+    }, [entries.length, isAutoScrollEnabled, autoScrollSpeed])
 
     if (loading && entries.length === 0) {
         return (
@@ -139,6 +162,18 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 <div className="flex flex-col items-center gap-4 text-center">
                     <RefreshCw className="animate-spin text-gray-900" size={44} />
                     <h2 className="text-xl font-black uppercase tracking-widest sm:text-2xl">Memuat Live Data...</h2>
+                </div>
+            </div>
+        )
+    }
+
+    if (errorMessage && entries.length === 0) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-yellow-400 px-4 text-gray-900">
+                <div className="max-w-lg border-4 border-gray-900 bg-white p-6 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                    <Trophy className="mx-auto mb-4 text-gray-900" size={44} />
+                    <h2 className="text-xl font-black uppercase tracking-widest sm:text-2xl">Leaderboard Tidak Tersedia</h2>
+                    <p className="mt-3 text-sm font-bold text-gray-600 sm:text-base">{errorMessage}</p>
                 </div>
             </div>
         )
@@ -186,14 +221,32 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     </div>
 
                     {/* Leaderboard List */}
-                    <div className="flex flex-col gap-4 pb-20">
-                        <AnimatePresence mode="popLayout">
-                            {entries.map((entry) => {
+                    <div className="flex flex-col gap-8 pb-20">
+                        {entries.length > 0 ? leaderboardSections.map((section) => (
+                            <section key={section.key} className="flex flex-col gap-4">
+                                <div className={cn(
+                                    'flex flex-col gap-2 border-2 border-gray-900 px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:flex-row sm:items-center sm:justify-between sm:px-6',
+                                    section.key === 'passed' ? 'bg-green-100' : 'bg-yellow-100'
+                                )}>
+                                    <div>
+                                        <h2 className="text-lg font-black uppercase tracking-widest text-gray-900 sm:text-2xl">{section.title}</h2>
+                                        <p className="mt-1 text-xs font-bold uppercase tracking-wide text-gray-600 sm:text-sm">{section.description}</p>
+                                    </div>
+                                    <div className="inline-flex w-fit items-center gap-2 border-2 border-gray-900 bg-white px-3 py-2 text-sm font-black uppercase tracking-widest text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        <Users size={16} strokeWidth={3} />
+                                        {section.entries.length} Peserta
+                                    </div>
+                                </div>
+
+                                {section.entries.length > 0 ? (
+                                    <AnimatePresence mode="popLayout">
+                                        {section.entries.map((entry) => {
                                 const previousRank = prevRanks[entry.entry_id]
                                 const rankDelta = previousRank ? previousRank - entry.live_rank : 0
                                 const isRankUp = rankDelta > 0
                                 const isRankDown = rankDelta < 0
                                 const isSameRank = !previousRank || rankDelta === 0
+                                const questionCount = Math.max(entry.question_count || 110, 1)
 
                                 return (
                                     <motion.div
@@ -217,7 +270,8 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                             scale: { duration: 1.4, ease: 'easeOut' },
                                         }}
                                         className={cn(
-                                            'group relative grid overflow-hidden grid-cols-[58px_minmax(0,1fr)] items-center gap-x-3 gap-y-4 border-2 bg-white p-3 transition-transform hover:-translate-y-1 sm:grid-cols-[70px_minmax(0,1fr)] sm:p-4 lg:grid-cols-[80px_minmax(0,1fr)_240px_140px_180px] lg:gap-5',
+                                            'group relative grid overflow-hidden grid-cols-[58px_minmax(0,1fr)] items-center gap-x-3 gap-y-4 border-2 p-3 transition-transform hover:-translate-y-1 sm:grid-cols-[70px_minmax(0,1fr)] sm:p-4 lg:grid-cols-[80px_minmax(0,1fr)_240px_140px_180px] lg:gap-5',
+                                            section.key === 'passed' ? 'bg-blue-50' : 'bg-white',
                                             isRankUp
                                                 ? 'border-green-500 shadow-[6px_6px_0px_0px_rgba(22,163,74,1)] hover:shadow-[8px_8px_0px_0px_rgba(22,163,74,1)]'
                                                 : isRankDown
@@ -353,23 +407,33 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                         <div className="relative z-10 flex min-w-0 flex-col items-center justify-center gap-2 border-t-2 border-gray-100 pt-3 lg:border-l-2 lg:border-t-0 lg:border-gray-200 lg:pl-5 lg:pt-0">
                                             <div className="flex items-end gap-1 font-mono">
                                                 <span className="text-2xl font-black text-gray-900 sm:text-3xl">{entry.progress_count}</span>
-                                                <span className="mb-1 text-xs font-bold text-gray-500 sm:text-sm">/110</span>
+                                                <span className="mb-1 text-xs font-bold text-gray-500 sm:text-sm">/{questionCount}</span>
                                             </div>
                                             <div className="h-4 w-full min-w-0 overflow-hidden border-2 border-gray-900 bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                                 <motion.div 
                                                     className="h-full bg-blue-500 border-r-2 border-gray-900" 
                                                     initial={{ width: 0 }}
-                                                    animate={{ width: `${Math.min((entry.progress_count / 110) * 100, 100)}%` }}
+                                                    animate={{ width: `${Math.min((entry.progress_count / questionCount) * 100, 100)}%` }}
                                                     transition={{ duration: 1 }}
                                                 />
                                             </div>
                                         </div>
                                     </motion.div>
                                 )
-                            })}
-                        </AnimatePresence>
-                        
-                        {entries.length === 0 && !loading && (
+                                        })}
+                                    </AnimatePresence>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center border-4 border-dashed border-gray-300 bg-white/60 py-12 text-center text-gray-500">
+                                        <Users size={48} className="mb-3 text-gray-400 opacity-60" />
+                                        <p className="text-base font-black uppercase tracking-widest text-gray-400">
+                                            {section.key === 'passed'
+                                                ? 'Belum ada peserta yang melewati passing grade'
+                                                : 'Belum ada peserta di section ini'}
+                                        </p>
+                                    </div>
+                                )}
+                            </section>
+                        )) : !loading && (
                             <div className="flex flex-col items-center justify-center py-20 text-gray-500 border-4 border-dashed border-gray-300">
                                 <Users size={64} className="mb-4 opacity-50 text-gray-400" />
                                 <p className="text-xl font-black uppercase tracking-widest text-gray-400">
@@ -381,20 +445,51 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 </div>
             </main>
 
-            <button
-                type="button"
-                aria-pressed={isAutoScrollEnabled}
-                onClick={() => setIsAutoScrollEnabled((current) => !current)}
-                className={cn(
-                    'fixed bottom-4 right-4 z-30 flex items-center gap-2 border-2 border-gray-900 px-4 py-3 text-xs font-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none sm:bottom-6 sm:right-6 sm:text-sm',
-                    isAutoScrollEnabled
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-gray-900'
-                )}
-            >
-                {isAutoScrollEnabled ? <Pause size={18} strokeWidth={3} /> : <Play size={18} strokeWidth={3} />}
-                {isAutoScrollEnabled ? 'Autoscroll ON' : 'Autoscroll OFF'}
-            </button>
+            <div className="fixed bottom-4 right-4 z-30 flex w-[220px] flex-col gap-2 sm:bottom-6 sm:right-6">
+                <div className="overflow-hidden border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="border-b-2 border-gray-900 bg-gray-50 px-3 py-1 text-center text-[10px] font-black uppercase tracking-widest text-gray-500">
+                        Speed
+                    </div>
+                    <div className="grid grid-cols-[48px_1fr_48px]">
+                        <button
+                            type="button"
+                            aria-label="Kurangi kecepatan autoscroll"
+                            onClick={decreaseAutoScrollSpeed}
+                            disabled={autoScrollSpeed <= MIN_AUTO_SCROLL_SPEED}
+                            className="flex h-12 items-center justify-center border-r-2 border-gray-900 bg-white text-gray-900 transition-colors hover:bg-yellow-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
+                        >
+                            <Minus size={18} strokeWidth={4} />
+                        </button>
+                        <div className="flex h-12 items-center justify-center bg-white px-2 text-center font-mono text-sm font-black text-gray-900">
+                            {autoScrollSpeed}
+                        </div>
+                        <button
+                            type="button"
+                            aria-label="Tambah kecepatan autoscroll"
+                            onClick={increaseAutoScrollSpeed}
+                            disabled={autoScrollSpeed >= MAX_AUTO_SCROLL_SPEED}
+                            className="flex h-12 items-center justify-center border-l-2 border-gray-900 bg-white text-gray-900 transition-colors hover:bg-yellow-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
+                        >
+                            <Plus size={18} strokeWidth={4} />
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    aria-pressed={isAutoScrollEnabled}
+                    onClick={() => setIsAutoScrollEnabled((current) => !current)}
+                    className={cn(
+                        'flex h-14 w-full items-center justify-center gap-2 border-2 border-gray-900 px-4 text-xs font-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none sm:text-sm',
+                        isAutoScrollEnabled
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white text-gray-900'
+                    )}
+                >
+                    {isAutoScrollEnabled ? <Pause size={18} strokeWidth={3} /> : <Play size={18} strokeWidth={3} />}
+                    {isAutoScrollEnabled ? 'Autoscroll ON' : 'Autoscroll OFF'}
+                </button>
+            </div>
             
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {

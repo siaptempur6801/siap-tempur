@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import LiveLeaderboardClient from '@/components/admin/LiveLeaderboardClient'
 
 export const metadata = {
@@ -20,7 +20,8 @@ export default async function LiveLeaderboardPage({
         redirect('/login')
     }
 
-    const { data: profile } = await supabase
+    const admin = await createAdminClient()
+    const { data: profile } = await admin
         .from('profiles')
         .select('role')
         .eq('id', user.id)

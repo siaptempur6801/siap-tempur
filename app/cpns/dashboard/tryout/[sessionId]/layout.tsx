@@ -17,7 +17,7 @@ export default async function PracticeSessionLayout({
         <div className="h-screen overflow-hidden bg-background">
             {/* Full-screen layout without sidebar for practice sessions */}
             <main className="h-full overflow-y-auto">
-                <div className="p-4 md:p-6 max-w-5xl mx-auto">
+                <div className="p-3 md:p-5 xl:p-6 max-w-[1600px] mx-auto">
                     {children}
                 </div>
             </main>

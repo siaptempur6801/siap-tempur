@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import PaperBackground from '@/components/PaperBackground'
 import ReviewSidebar from './review/ReviewSidebar'
@@ -15,6 +15,16 @@ interface Props {
 export default function ResultReviewClient({ answers }: Props) {
     const [currentIndex, setCurrentIndex] = useState(0)
     const [showNav, setShowNav] = useState(false)
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(min-width: 1024px)')
+        const syncDesktopNav = () => setShowNav(mediaQuery.matches)
+
+        syncDesktopNav()
+        mediaQuery.addEventListener('change', syncDesktopNav)
+
+        return () => mediaQuery.removeEventListener('change', syncDesktopNav)
+    }, [])
 
     const sortedAnswers = useMemo(() => {
         return answers
@@ -46,11 +56,11 @@ export default function ResultReviewClient({ answers }: Props) {
     const status = getReviewStatus(currentAnswer, question)
 
     return (
-        <div className="flex flex-col gap-6 min-h-[500px] font-handwriting">
-            <div className="flex-1 flex flex-col bg-white border-2 border-gray-900 rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative min-h-[500px]">
+        <div className="flex flex-col gap-5 lg:min-h-[720px] lg:flex-row font-handwriting">
+            <div className="flex-1 flex min-w-0 flex-col bg-white border-2 border-gray-900 rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative min-h-[500px] lg:min-h-[720px]">
                 <PaperBackground />
-                
-                <ReviewHeader 
+
+                <ReviewHeader
                     currentIndex={currentIndex}
                     question={question}
                     currentAnswer={currentAnswer}
@@ -60,22 +70,11 @@ export default function ResultReviewClient({ answers }: Props) {
                 />
 
                 <div className="flex-1 relative z-10 overflow-hidden">
-                    <div className="flex h-full flex-col lg:flex-row">
-                        <ReviewContent 
-                            question={question}
-                            currentAnswer={currentAnswer}
-                            maxScoreOption={maxScoreOption}
-                        />
-
-                        <ReviewSidebar 
-                            showNav={showNav}
-                            setShowNav={setShowNav}
-                            sortedAnswers={sortedAnswers}
-                            currentIndex={currentIndex}
-                            setCurrentIndex={setCurrentIndex}
-                            getReviewStatus={getReviewStatus}
-                        />
-                    </div>
+                    <ReviewContent
+                        question={question}
+                        currentAnswer={currentAnswer}
+                        maxScoreOption={maxScoreOption}
+                    />
                 </div>
 
                 {/* Footer Nav */}
@@ -99,6 +98,15 @@ export default function ResultReviewClient({ answers }: Props) {
                     </button>
                 </div>
             </div>
+
+            <ReviewSidebar
+                showNav={showNav}
+                setShowNav={setShowNav}
+                sortedAnswers={sortedAnswers}
+                currentIndex={currentIndex}
+                setCurrentIndex={setCurrentIndex}
+                getReviewStatus={getReviewStatus}
+            />
         </div>
     )
 }

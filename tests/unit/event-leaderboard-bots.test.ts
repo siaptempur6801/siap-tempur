@@ -22,9 +22,18 @@ describe('event leaderboard bots', () => {
             expect(score.total_score).toBeGreaterThanOrEqual(260)
             expect(score.total_score).toBeLessThanOrEqual(360)
             expect(score.score_twk + score.score_tiu + score.score_tkp).toBe(score.total_score)
-            expect(score.progress_count).toBeGreaterThanOrEqual(80)
-            expect(score.progress_count).toBeLessThanOrEqual(110)
+            expect(score.progress_count).toBe(110)
         }
+    })
+
+    it('builds TWK-only bot plans using the event question count', () => {
+        const score = buildBotScorePlan(12, { twk: 30, tiu: 0, tkp: 0 })
+
+        expect(score.progress_count).toBe(30)
+        expect(score.score_twk).toBeGreaterThan(0)
+        expect(score.score_tiu).toBe(0)
+        expect(score.score_tkp).toBe(0)
+        expect(score.total_score).toBe(score.score_twk)
     })
 
     it('creates stable bot entries up to the configured count without duplicate names when the pool is sufficient', () => {
@@ -116,7 +125,7 @@ describe('event leaderboard bots', () => {
         expect(liveEntry.progress_count).toBeLessThan(entry.target_progress_count)
         expect(liveEntry.total_score).toBeGreaterThan(0)
         expect(liveEntry.total_score).toBeLessThan(entry.target_total_score)
-        expect(finalEntry.progress_count).toBe(entry.target_progress_count)
+        expect(finalEntry.progress_count).toBe(110)
         expect(finalEntry.total_score).toBe(entry.target_total_score)
     })
 
@@ -158,39 +167,90 @@ describe('event leaderboard bots', () => {
         expect(late.total_score).toBeLessThanOrEqual(entry.target_total_score)
     })
 
-    it('allows bots to start from different score sections', () => {
+    it('uses TWK-first, TIU-first, and TKP-first bot categories', () => {
         const baseEntry: EventBotEntry = {
             id: 'bot-1',
             event_id: 'event-1',
             display_name: 'Andi Pratama',
-            seed: 1,
+            seed: 0,
             target_progress_count: 110,
-            target_score_twk: 65,
-            target_score_tiu: 75,
-            target_score_tkp: 160,
-            target_total_score: 300,
+            target_score_twk: 60,
+            target_score_tiu: 70,
+            target_score_tkp: 150,
+            target_total_score: 280,
             started_at: '2026-07-05T03:00:00.000Z',
             finished_at: '2026-07-05T04:40:00.000Z',
         }
-        const firstScoredSections = new Set<string>()
 
-        for (let seed = 1; seed <= 20; seed += 1) {
-            const entry = { ...baseEntry, seed }
+        const firstScoredSections = [0, 1, 2].map((seed) => {
             const displayed = computeDisplayedBotEntry({
-                entry,
+                entry: { ...baseEntry, seed },
                 eventStatus: 'live',
-                now: new Date('2026-07-05T03:20:00.000Z'),
+                now: new Date('2026-07-05T03:10:00.000Z'),
             })
 
-            if (displayed.score_twk > 0) firstScoredSections.add('twk')
-            if (displayed.score_tiu > 0) firstScoredSections.add('tiu')
-            if (displayed.score_tkp > 0) firstScoredSections.add('tkp')
-        }
+            return {
+                twk: displayed.score_twk > 0,
+                tiu: displayed.score_tiu > 0,
+                tkp: displayed.score_tkp > 0,
+            }
+        })
+        const final = computeDisplayedBotEntry({
+            entry: { ...baseEntry, seed: 2 },
+            eventStatus: 'closed',
+            now: new Date('2026-07-05T05:00:00.000Z'),
+        })
 
-        expect(firstScoredSections.size).toBeGreaterThan(1)
+        expect(firstScoredSections).toEqual([
+            { twk: true, tiu: false, tkp: false },
+            { twk: false, tiu: true, tkp: false },
+            { twk: false, tiu: false, tkp: true },
+        ])
+        expect(final.progress_count).toBe(110)
+        expect(final.score_twk).toBe(baseEntry.target_score_twk)
+        expect(final.score_tiu).toBe(baseEntry.target_score_tiu)
+        expect(final.score_tkp).toBe(baseEntry.target_score_tkp)
     })
 
-    it('shows non-zero live progress immediately when a bot is visible', () => {
+    it('only works through TWK when the event package only contains TWK questions', () => {
+        const entry: EventBotEntry = {
+            id: 'bot-1',
+            event_id: 'event-1',
+            display_name: 'Andi Pratama',
+            seed: 2,
+            target_progress_count: 30,
+            target_score_twk: 70,
+            target_score_tiu: 0,
+            target_score_tkp: 0,
+            target_total_score: 70,
+            started_at: '2026-07-05T03:00:00.000Z',
+            finished_at: '2026-07-05T04:40:00.000Z',
+            question_counts: { twk: 30, tiu: 0, tkp: 0 },
+        }
+
+        const live = computeDisplayedBotEntry({
+            entry,
+            eventStatus: 'live',
+            now: new Date('2026-07-05T03:55:00.000Z'),
+        })
+        const final = computeDisplayedBotEntry({
+            entry,
+            eventStatus: 'closed',
+            now: new Date('2026-07-05T05:00:00.000Z'),
+        })
+
+        expect(live.question_count).toBe(30)
+        expect(live.progress_count).toBeGreaterThan(0)
+        expect(live.progress_count).toBeLessThanOrEqual(30)
+        expect(live.score_twk).toBeGreaterThan(0)
+        expect(live.score_tiu).toBe(0)
+        expect(live.score_tkp).toBe(0)
+        expect(final.progress_count).toBe(30)
+        expect(final.question_count).toBe(30)
+        expect(final.total_score).toBe(entry.target_score_twk)
+    })
+
+    it('starts live bot progress from zero when the event starts', () => {
         const entry: EventBotEntry = {
             id: 'bot-1',
             event_id: 'event-1',
@@ -211,7 +271,8 @@ describe('event leaderboard bots', () => {
             now: new Date('2026-07-05T03:00:00.000Z'),
         })
 
-        expect(displayed.progress_count).toBeGreaterThan(0)
+        expect(displayed.progress_count).toBe(0)
+        expect(displayed.total_score).toBe(0)
     })
 
     it('merges and ranks real participants with bots using score then start time', () => {

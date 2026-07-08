@@ -20,7 +20,7 @@ export default function ReviewContent({
     const options = question.options || []
 
     return (
-        <div className="flex-1 p-4 sm:p-10 overflow-y-auto">
+        <div className="flex-1 min-w-0 p-4 sm:p-8 xl:p-10 overflow-y-auto">
             <div className="relative mb-6 sm:mb-10 space-y-5">
                 <div className="absolute -left-4 sm:-left-6 top-1 w-1 sm:h-full bg-blue-400 rounded-full opacity-50"></div>
                 {question.image_url && (
@@ -38,12 +38,12 @@ export default function ReviewContent({
                         />
                     </div>
                 )}
-                <div className="text-lg sm:text-2xl font-bold leading-relaxed text-gray-800 max-w-4xl">
+                <div className="text-lg sm:text-2xl font-bold leading-relaxed text-gray-800 max-w-none">
                     <MathRenderer text={question.content} />
                 </div>
             </div>
 
-            <div className="space-y-2 sm:space-y-2.5 mb-7 sm:mb-8 max-w-4xl">
+            <div className="space-y-2 sm:space-y-2.5 mb-7 sm:mb-8 max-w-none">
                 {options.map((option: Option, i: number) => {
                     const isSelected = currentAnswer.option_id === option.id
                     const isCorrect = option.is_correct
@@ -133,7 +133,7 @@ export default function ReviewContent({
             </div>
 
             {question.explanation && (
-                <div className="relative group max-w-4xl">
+                <div className="relative group max-w-none">
                     <div className="absolute -top-3 left-10 w-24 h-7 bg-yellow-200/50 border border-white/40 shadow-sm rotate-2 z-20"></div>
 
                     <div className="bg-[#fff740] border-2 border-gray-900 p-5 sm:p-8 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">

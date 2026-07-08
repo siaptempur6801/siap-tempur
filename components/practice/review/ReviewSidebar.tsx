@@ -50,7 +50,7 @@ export default function ReviewSidebar({
                     <div className="text-[11px] font-bold text-gray-800 mb-2 px-1 uppercase tracking-[0.2em] border-s-4 border-gray-900 ps-2">
                         {questionType}
                     </div>
-                    <div className="grid grid-cols-5 gap-1">
+                    <div className="grid grid-cols-5 2xl:grid-cols-6 gap-1">
                         {filteredAnswers.map(({ ans, idx }, positionInGroup) => {
                             const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
                             const s = getReviewStatus(ans, q)
@@ -99,14 +99,14 @@ export default function ReviewSidebar({
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: 280, opacity: 0 }}
                         transition={{ duration: 0.22 }}
-                        className="hidden lg:flex h-full min-h-0 shrink-0 flex-col lg:w-[248px] xl:w-[260px] border-l-2 border-dashed border-gray-300 bg-[#fff9c4]/80 backdrop-blur-sm"
+                        className="hidden lg:flex min-h-[720px] shrink-0 flex-col overflow-hidden rounded-xl border-2 border-gray-900 bg-[#fff9c4]/90 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] backdrop-blur-sm lg:w-80 2xl:w-96"
                     >
-                        <div className="shrink-0 px-2.5 py-3 border-b-2 border-dashed border-gray-300 font-bold text-sm flex items-center gap-2 bg-white/30">
+                        <div className="shrink-0 px-3 py-4 border-b-2 border-dashed border-gray-300 font-bold text-sm flex items-center gap-2 bg-white/50">
                             <Map size={16} />
                             <span>Daftar Pembahasan</span>
                         </div>
 
-                        <div className="min-h-0 flex-1 px-2 py-3 space-y-3 overflow-y-auto">
+                        <div className="min-h-0 flex-1 px-3 py-4 space-y-4 overflow-y-auto">
                             <div className="hidden lg:flex items-center gap-3 text-[11px] text-gray-700">
                                 <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-500 border border-green-700"></div><span>Benar</span></div>
                                 <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-700"></div><span>Salah</span></div>
