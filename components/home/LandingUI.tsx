@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -98,6 +98,7 @@ function getEventDocumentationUrl(event: ActiveEvent) {
 }
 
 export default function Home({ user: initialUser, activeEvents = [], completedEvents = [], latestArticles = [] }: { user: LandingUser; activeEvents?: ActiveEvent[]; completedEvents?: ActiveEvent[]; latestArticles?: ArticleSummary[] }) {
+    const eventHistoryScrollRef = useRef<HTMLDivElement | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isTryoutOpen, setIsTryoutOpen] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -128,6 +129,20 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
         if (element) {
             element.scrollIntoView({ behavior: "smooth" });
         }
+    };
+
+    const scrollEventHistory = (direction: "left" | "right") => {
+        const container = eventHistoryScrollRef.current;
+        if (!container) return;
+
+        const firstCard = container.querySelector<HTMLElement>("[data-event-history-card]");
+        const cardWidth = firstCard?.offsetWidth || 360;
+        const gap = 24;
+
+        container.scrollBy({
+            left: (cardWidth + gap) * (direction === "left" ? -1 : 1),
+            behavior: "smooth",
+        });
     };
 
     return (
@@ -756,40 +771,67 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 </div>
 
                 {completedEvents.length > 0 ? (
-                    <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                        {completedEvents.map((event) => {
-                            const flyerUrl = getEventFlyerUrl(event);
-                            return (
-                                <Card key={event.id} className="overflow-hidden border-2 border-gray-900 bg-[#fdfbf7] flex flex-col hover:-translate-y-1 transition-transform">
-                                    {flyerUrl ? (
-                                        <div className="relative aspect-4/5 w-full border-b-2 border-gray-900 bg-blue-600">
-                                            <Image
-                                                src={flyerUrl}
-                                                alt={`Flyer ${event.title}`}
-                                                fill
-                                                sizes="(min-width: 768px) 33vw, 100vw"
-                                                className="object-cover"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="flex aspect-4/3 w-full items-center justify-center border-b-2 border-gray-900 bg-blue-50 px-6 text-center">
-                                            <div>
-                                                <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
-                                                <p className="font-handwriting text-2xl font-bold text-gray-900">Dokumentasi Event</p>
+                    <div className="relative mx-auto max-w-7xl px-16">
+                        <button
+                            type="button"
+                            onClick={() => scrollEventHistory("left")}
+                            className="absolute left-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-colors hover:bg-yellow-100 md:inline-flex"
+                            aria-label="Geser jejak event ke kiri"
+                        >
+                            <ChevronLeft className="h-7 w-7" />
+                        </button>
+
+                        <div
+                            ref={eventHistoryScrollRef}
+                            className="mx-auto flex max-w-6xl snap-x snap-mandatory gap-6 overflow-x-auto pb-4 scroll-smooth hide-scrollbar"
+                        >
+                            {completedEvents.map((event) => {
+                                const flyerUrl = getEventFlyerUrl(event);
+                                return (
+                                    <Card
+                                        key={event.id}
+                                        data-event-history-card
+                                        className="flex w-[82vw] shrink-0 snap-start flex-col overflow-hidden border-2 border-gray-900 bg-[#fdfbf7] transition-transform hover:-translate-y-1 md:w-[calc((100%-3rem)/3)]"
+                                    >
+                                        {flyerUrl ? (
+                                            <div className="relative aspect-4/5 w-full border-b-2 border-gray-900 bg-blue-600">
+                                                <Image
+                                                    src={flyerUrl}
+                                                    alt={`Flyer ${event.title}`}
+                                                    fill
+                                                    sizes="370px"
+                                                    className="object-cover"
+                                                />
                                             </div>
+                                        ) : (
+                                            <div className="flex aspect-4/3 w-full items-center justify-center border-b-2 border-gray-900 bg-blue-50 px-6 text-center">
+                                                <div>
+                                                    <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
+                                                    <p className="font-handwriting text-2xl font-bold text-gray-900">Dokumentasi Event</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex flex-1 flex-col p-6">
+                                            <h3 className="mb-6 flex-1 font-handwriting text-2xl font-bold leading-tight text-gray-900">{event.title}</h3>
+                                            <Button variant="outline" className="w-full border-2 border-gray-900 text-sm font-bold text-gray-800 hover:bg-gray-100" asChild>
+                                                <a href={getEventDocumentationUrl(event)} target="_blank" rel="noopener noreferrer">
+                                                    Lihat Dokumentasi
+                                                </a>
+                                            </Button>
                                         </div>
-                                    )}
-                                    <div className="flex flex-1 flex-col p-6">
-                                        <h3 className="font-handwriting text-2xl font-bold mb-6 text-gray-900 leading-tight flex-1">{event.title}</h3>
-                                        <Button variant="outline" className="w-full text-sm font-bold border-2 border-gray-900 text-gray-800 hover:bg-gray-100" asChild>
-                                            <a href={getEventDocumentationUrl(event)} target="_blank" rel="noopener noreferrer">
-                                                Lihat Dokumentasi
-                                            </a>
-                                        </Button>
-                                    </div>
-                                </Card>
-                            );
-                        })}
+                                    </Card>
+                                );
+                            })}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={() => scrollEventHistory("right")}
+                            className="absolute right-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-colors hover:bg-yellow-100 md:inline-flex"
+                            aria-label="Geser jejak event ke kanan"
+                        >
+                            <ChevronRight className="h-7 w-7" />
+                        </button>
                     </div>
                 ) : (
                     <Card className="mx-auto max-w-2xl border-2 border-dashed border-gray-300 bg-[#fdfbf7] p-8 text-center">
