@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
-import { ArrowRight, Brain, Clock3, Dumbbell, Loader2, ShieldCheck, UserCheck } from 'lucide-react'
+import { ArrowRight, Brain, Clock3, Dumbbell, Loader2, ShieldCheck, UserCheck, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { startDrillingMateri } from '@/app/actions/practice'
 import PaperBackground from '@/components/PaperBackground'
@@ -71,6 +71,8 @@ const DRILL_STYLES: Record<MiniTryoutType, DrillStyle> = {
         softClassName: 'bg-blue-50 text-blue-700 border-blue-200',
     },
 }
+
+const DRILLING_MATERI_MAX_XP = DRILLING_MATERI_QUESTION_COUNT * 5
 
 function formatStartedAt(value: string | null) {
     if (!value) return null
@@ -222,7 +224,7 @@ export default function DrillingMateriClient({ activeSessionsByKey, materials, q
                                 Pilih materi yang ingin kamu perkuat, lalu kerjakan 30 soal acak yang fokus di materi itu saja. Cocok untuk mengulang bagian yang masih sering salah sebelum lanjut ke mini tryout atau full tryout.
                             </p>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 font-sans text-sm sm:min-w-[280px]">
+                        <div className="grid grid-cols-3 gap-2 font-sans text-sm sm:min-w-[360px]">
                             <div className="border-2 border-gray-900 bg-white px-3 py-3 text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 <div className="text-2xl font-black text-gray-900">{DRILLING_MATERI_QUESTION_COUNT}</div>
                                 <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Soal/Materi</div>
@@ -230,6 +232,10 @@ export default function DrillingMateriClient({ activeSessionsByKey, materials, q
                             <div className="border-2 border-gray-900 bg-white px-3 py-3 text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 <div className="text-2xl font-black text-gray-900">1</div>
                                 <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Token/Materi</div>
+                            </div>
+                            <div className="border-2 border-gray-900 bg-white px-3 py-3 text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                                <div className="text-2xl font-black text-gray-900">XP</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Aktif</div>
                             </div>
                         </div>
                     </div>
@@ -323,9 +329,14 @@ export default function DrillingMateriClient({ activeSessionsByKey, materials, q
                                                             <div className="text-xl font-black text-gray-900">{DRILLING_MATERI_QUESTION_COUNT}</div>
                                                         </div>
                                                         <div className="border-2 border-gray-200 bg-gray-50 p-2">
-                                                            <div className="text-[10px] font-black uppercase text-gray-400">Mode</div>
-                                                            <div className="text-xl font-black text-gray-900">Acak</div>
+                                                            <div className="text-[10px] font-black uppercase text-gray-400">Maks XP</div>
+                                                            <div className="text-xl font-black text-gray-900">{DRILLING_MATERI_MAX_XP}</div>
                                                         </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-2 border-2 border-yellow-300 bg-yellow-50 px-3 py-2 font-sans text-sm font-black text-yellow-800">
+                                                        <Zap size={16} className="fill-current" />
+                                                        <span>Reward XP mengikuti skor akhir drilling</span>
                                                     </div>
 
                                                     {activeSession && (
@@ -379,10 +390,11 @@ export default function DrillingMateriClient({ activeSessionsByKey, materials, q
                 <TokenUsageConfirmModal
                     isOpen={Boolean(confirmMaterial)}
                     title={`Mulai Drilling ${confirmMaterial.subCategory}?`}
-                    description={`Drilling ${confirmMaterial.subCategory} akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu. Sesi berisi ${DRILLING_MATERI_QUESTION_COUNT} soal dan progres tetap tersimpan kalau kamu keluar sebelum selesai.`}
+                    description={`Drilling ${confirmMaterial.subCategory} akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu. Setelah selesai, skor kamu otomatis masuk sebagai XP.`}
                     details={[
                         { label: 'Materi', value: confirmMaterial.subCategory },
                         { label: 'Soal', value: DRILLING_MATERI_QUESTION_COUNT },
+                        { label: 'Maks XP', value: DRILLING_MATERI_MAX_XP },
                     ]}
                     quota={quota}
                     isLoading={loadingKey === confirmMaterial.key}

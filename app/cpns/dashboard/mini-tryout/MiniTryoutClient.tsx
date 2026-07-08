@@ -240,8 +240,8 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
                                 <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Produk</div>
                             </div>
                             <div className="border-2 border-gray-900 bg-white px-3 py-3 text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                <div className="text-2xl font-black text-gray-900">110</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Bank Soal</div>
+                                <div className="text-2xl font-black text-gray-900">XP</div>
+                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Aktif</div>
                             </div>
                             <div className="border-2 border-gray-900 bg-white px-3 py-3 text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 <div className="text-2xl font-black text-gray-900">{TRYOUT_TOKEN_COST}</div>
@@ -342,6 +342,11 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
                                             <span>Biaya akses: {product.tokenCost} token per produk</span>
                                         </div>
 
+                                        <div className="flex items-center gap-2 border-2 border-yellow-300 bg-yellow-50 px-3 py-2 font-sans text-sm font-black text-yellow-800">
+                                            <Zap size={16} className="fill-current" />
+                                            <span>Reward XP: sampai {product.maxScore} XP setelah selesai</span>
+                                        </div>
+
                                         <div className="flex flex-wrap gap-2">
                                             {product.focusItems.map((item) => (
                                                 <span
@@ -427,10 +432,11 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
                 <TokenUsageConfirmModal
                     isOpen={Boolean(confirmType)}
                     title={`Mulai ${confirmProduct.title}?`}
-                    description={`${confirmProduct.title} baru akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu. Progres tetap tersimpan kalau kamu keluar sebelum selesai.`}
+                    description={`${confirmProduct.title} baru akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu. Setelah selesai, skor kamu otomatis masuk sebagai XP.`}
                     details={[
                         { label: 'Soal', value: confirmProduct.questionCount },
                         { label: 'Target', value: confirmProduct.passingGrade },
+                        { label: 'Maks XP', value: confirmProduct.maxScore },
                     ]}
                     quota={quota}
                     isLoading={loadingType === confirmProduct.type}

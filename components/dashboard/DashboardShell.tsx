@@ -86,8 +86,8 @@ export default function DashboardShell({
                 <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pt-2 pl-4 pr-6 pb-4 space-y-3 relative z-10">
                     <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
                     <NavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" badge="XP" />
-                    <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={20} />} label="Mini Tryout" />
-                    <NavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={20} />} label="Drilling Materi" />
+                    <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={20} />} label="Mini Tryout" badge="XP" />
+                    <NavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={20} />} label="Drilling Materi" badge="XP" />
                     <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Riwayat" />
                     <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
                     <NavItem href="/cpns/dashboard/materi" icon={<Library size={20} />} label="Kisi-Kisi" />
