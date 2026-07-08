@@ -89,7 +89,7 @@ export default function DashboardShell({
                     <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={20} />} label="Mini Tryout" badge="XP" />
                     <NavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={20} />} label="Drilling Materi" badge="XP" />
                     <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Riwayat" />
-                    <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" />
+                    <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={20} />} label="Event" badge="LIVE" />
                     <NavItem href="/cpns/dashboard/materi" icon={<Library size={20} />} label="Kisi-Kisi" />
                     <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={20} />} label="Beli Token" />
 
