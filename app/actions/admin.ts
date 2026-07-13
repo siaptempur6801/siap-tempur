@@ -11,6 +11,8 @@ import { logAuditEvent } from '@/lib/audit-log'
 import { createClient } from '@/lib/utils/supabase/server'
 import { normalizeBulkQuestionIds } from '@/lib/admin-question-bulk-delete'
 import { ensureEventLeaderboardBots } from '@/lib/event-leaderboard-bots'
+import { normalizeCertificateName } from '@/lib/event-certificates'
+import { createMissingEventCertificateSnapshots } from '@/lib/event-certificate-snapshots'
 
 interface TryoutConfigurationPayload {
     id: string
@@ -913,6 +915,154 @@ export async function updateTryoutEventStatus(id: string, status: 'draft' | 'sch
 
     revalidatePath('/cpns/admin/event')
     return { success: true, message: `Status event berhasil diubah ke ${status}` }
+}
+
+export async function updateTryoutEventCertificateRelease(id: string, enabled: boolean) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
+
+    const authClient = await createClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    if (!user) return { success: false, message: 'Unauthorized' }
+
+    const supabase = await createAdminClient()
+    const { data: event, error: eventError } = await supabase
+        .from('tryout_events')
+        .select('id, title, status')
+        .eq('id', id)
+        .maybeSingle()
+
+    if (eventError || !event) return { success: false, message: eventError?.message || 'Event tidak ditemukan' }
+    if (enabled && event.status !== 'closed') {
+        return { success: false, message: 'Sertifikat hanya bisa dirilis setelah event berstatus closed.' }
+    }
+
+    let snapshotMessage = ''
+    if (enabled) {
+        try {
+            const snapshot = await createMissingEventCertificateSnapshots({
+                admin: supabase,
+                eventId: event.id,
+                eventTitle: event.title,
+                actorId: user.id,
+            })
+
+            if (snapshot.total === 0) {
+                return { success: false, message: 'Belum ada peserta selesai yang bisa dibuatkan sertifikat.' }
+            }
+
+            snapshotMessage = ` (${snapshot.created} sertifikat baru, ${snapshot.total} total peserta selesai)`
+        } catch (snapshotError) {
+            logger.error('[event-certificate-release] Failed to snapshot certificates', snapshotError, { eventId: id })
+            return { success: false, message: 'Gagal membuat snapshot sertifikat. Cek data ranking peserta.' }
+        }
+    }
+
+    const { error } = await supabase
+        .from('tryout_events')
+        .update({
+            certificate_enabled: enabled,
+            certificate_released_at: enabled ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+
+    if (error) return { success: false, message: error.message }
+
+    revalidatePath('/cpns/admin/event')
+    revalidatePath('/cpns/dashboard/event')
+    return { success: true, message: enabled ? `Sertifikat event dirilis${snapshotMessage}` : 'Sertifikat event dinonaktifkan' }
+}
+
+export async function updateEventCertificateName(certificateId: string, rawCertificateName: string) {
+    try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
+
+    const actor = await (async () => {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return null
+
+        const admin = await createAdminClient()
+        const { data: profile } = await admin
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle()
+
+        return profile && ['admin', 'superadmin'].includes(String(profile.role))
+            ? { userId: user.id, role: String(profile.role) }
+            : null
+    })()
+
+    if (!actor) return { success: false, message: 'Unauthorized' }
+
+    const nameResult = normalizeCertificateName(rawCertificateName)
+    if (!nameResult.success) return { success: false, message: nameResult.message }
+
+    const supabase = await createAdminClient()
+    const { data: certificate, error: readError } = await supabase
+        .from('event_certificates')
+        .select('id, event_id, user_id, certificate_number, certificate_name, storage_path, name_locked_at')
+        .eq('id', certificateId)
+        .maybeSingle()
+
+    if (readError || !certificate) {
+        return { success: false, message: readError?.message || 'Sertifikat tidak ditemukan' }
+    }
+
+    const previousName = String(certificate.certificate_name || '')
+    if (previousName === nameResult.name) {
+        return { success: true, message: 'Nama sertifikat tidak berubah' }
+    }
+
+    const storagePath = certificate.storage_path ? String(certificate.storage_path) : null
+    if (storagePath) {
+        const { error: removeError } = await supabase.storage
+            .from('event-certificates')
+            .remove([storagePath])
+
+        if (removeError) {
+            logger.warn('[event-certificate-admin] Failed to remove old certificate PDF', {
+                error: removeError.message,
+                certificateId,
+                storagePath,
+            })
+        }
+    }
+
+    const updatedAt = new Date().toISOString()
+    const { error } = await supabase
+        .from('event_certificates')
+        .update({
+            certificate_name: nameResult.name,
+            generated_at: updatedAt,
+            name_locked_at: certificate.name_locked_at || updatedAt,
+            updated_at: updatedAt,
+            updated_by: actor.userId,
+        })
+        .eq('id', certificateId)
+
+    if (error) return { success: false, message: error.message }
+
+    await logAuditEvent({
+        action: 'event_certificate_name_updated',
+        actor_id: actor.userId,
+        target_type: 'event_certificate',
+        target_id: certificateId,
+        details: {
+            event_id: certificate.event_id,
+            user_id: certificate.user_id,
+            previous_name: previousName,
+            next_name: nameResult.name,
+        },
+    })
+
+    revalidatePath('/cpns/admin/event')
+    revalidatePath('/cpns/dashboard/event')
+    revalidatePath(`/cpns/dashboard/certificates/${certificate.certificate_number}`)
+    return { success: true, message: 'Nama sertifikat berhasil dikoreksi' }
 }
 
 function isEventQuestionGenerationMode(value: unknown): value is EventQuestionGenerationMode {

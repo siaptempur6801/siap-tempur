@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 190" fill="none">
+  <title>Siap Tempur</title>
+  <g filter="url(#softShadow)">
+    <text x="22" y="104" fill="#101828" font-family="Arial Rounded MT Bold, Trebuchet MS, Arial, sans-serif" font-size="88" font-weight="900">Siap</text>
+    <text x="238" y="104" fill="#1463ff" font-family="Arial Rounded MT Bold, Trebuchet MS, Arial, sans-serif" font-size="88" font-weight="900">Tempur</text>
+    <circle cx="604" cy="87" r="15" fill="#101828"/>
+    <path d="M246 137c18-21 37-21 55 0 18 21 37 21 55 0 18-21 37-21 55 0 18 21 37 21 55 0 18-21 37-21 55 0 18 21 37 21 55 0" stroke="#1463ff" stroke-width="13" stroke-linecap="round"/>
+  </g>
+  <defs>
+    <filter id="softShadow" x="0" y="0" width="640" height="190" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#101828" flood-opacity=".16"/>
+    </filter>
+  </defs>
+</svg>

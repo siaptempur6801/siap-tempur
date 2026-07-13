@@ -28,7 +28,7 @@ export default async function UserEventPage() {
     await autoCloseExpiredTryoutEvents(admin)
     const { data: events, error } = await admin
         .from('tryout_events')
-        .select('id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, group_link, flyer_image_url, is_paid, price, status, tryout_event_questions(id)')
+        .select('id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, group_link, flyer_image_url, is_paid, price, status, certificate_enabled, certificate_released_at, tryout_event_questions(id)')
         .in('status', ['scheduled', 'live', 'closed'])
         .order('starts_at', { ascending: true })
 
@@ -39,7 +39,7 @@ export default async function UserEventPage() {
 
     const eventIds = (events || []).map((event) => event.id)
 
-    const [{ data: participants }, { data: eventSessions }, { data: eventPayments }] = await Promise.all([
+    const [{ data: participants }, { data: eventSessions }, { data: eventPayments }, { data: certificates }] = await Promise.all([
         eventIds.length > 0
             ? admin
                 .from('tryout_event_participants')
@@ -62,10 +62,18 @@ export default async function UserEventPage() {
                 .eq('user_id', user.id)
                 .in('event_id', eventIds)
             : Promise.resolve({ data: [] }),
+        eventIds.length > 0
+            ? admin
+                .from('event_certificates')
+                .select('event_id, certificate_number, certificate_name, certificate_kind, name_locked_at')
+                .eq('user_id', user.id)
+                .in('event_id', eventIds)
+            : Promise.resolve({ data: [] }),
     ])
 
     const participantMap = new Map((participants || []).map((participant) => [participant.event_id, participant]))
     const sessionMap = new Map((eventSessions || []).map((session) => [session.event_id, session]))
+    const certificateMap = new Map((certificates || []).map((certificate) => [certificate.event_id, certificate]))
     const successStatuses = new Set(['capture', 'settlement'])
     const paymentMap = new Map<string, NonNullable<typeof eventPayments>[number]>()
     for (const payment of eventPayments || []) {
@@ -86,6 +94,7 @@ export default async function UserEventPage() {
         const participant = participantMap.get(event.id)
         const eventSession = sessionMap.get(event.id)
         const payment = paymentMap.get(event.id)
+        const certificate = certificateMap.get(event.id)
         const testSession = Array.isArray(eventSession?.test_sessions)
             ? eventSession.test_sessions[0]
             : eventSession?.test_sessions
@@ -105,6 +114,12 @@ export default async function UserEventPage() {
             is_paid: event.is_paid ?? false,
             price: event.price ?? 0,
             status: event.status,
+            certificate_enabled: event.certificate_enabled ?? false,
+            certificate_released_at: event.certificate_released_at || null,
+            certificate_number: certificate?.certificate_number || null,
+            certificate_name: certificate?.certificate_name || null,
+            certificate_kind: certificate?.certificate_kind || null,
+            certificate_name_locked_at: certificate?.name_locked_at || null,
             participant_id: participant?.id || null,
             participant_status: participant?.status || null,
             session_id: eventSession?.session_id || null,

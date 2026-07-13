@@ -4,10 +4,12 @@ import { useMemo, useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, CalendarDays, Loader2, Trophy, Clock, Users, BookOpen, CheckCircle2, AlertTriangle, Zap, Lock, Radio, Check, CreditCard, RefreshCw, Ticket, ExternalLink } from 'lucide-react'
+import { ArrowRight, CalendarDays, Loader2, Trophy, Clock, Users, BookOpen, CheckCircle2, AlertTriangle, Zap, Lock, Radio, Check, CreditCard, RefreshCw, Ticket, ExternalLink, Award, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { registerTryoutEvent, startTryoutEvent } from '@/app/actions/event'
+import { claimEventCertificate } from '@/app/actions/event-certificate'
 import { createEventPaymentTransaction, syncEventPaymentStatus } from '@/app/actions/event-payment'
+import { EventCertificatePreview } from '@/components/certificates/EventCertificatePreview'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { canViewCompletedEventLeaderboard } from '@/lib/event-access'
@@ -29,6 +31,12 @@ type UserEvent = {
     is_paid: boolean
     price: number
     status: EventStatus
+    certificate_enabled: boolean
+    certificate_released_at: string | null
+    certificate_number: string | null
+    certificate_name: string | null
+    certificate_kind: string | null
+    certificate_name_locked_at: string | null
     participant_id: string | null
     participant_status: string | null
     session_id: string | null
@@ -266,11 +274,13 @@ function EventCard({
     event,
     now,
     onAction,
+    onCertificate,
     isPending,
 }: {
     event: UserEvent
     now: number | null
     onAction: (event: UserEvent) => void
+    onCertificate: (event: UserEvent) => void
     isPending: boolean
 }) {
     const startsAt = new Date(event.starts_at).getTime()
@@ -285,6 +295,17 @@ function EventCard({
         participantId: event.participant_id,
         now: new Date(logicNow),
     })
+    const isDone =
+        event.session_id &&
+        (event.test_session_status === 'completed' ||
+            event.event_session_status === 'completed' ||
+            event.participant_status === 'completed')
+    const canUseCertificate = Boolean(
+        isDone &&
+        event.certificate_enabled &&
+        event.certificate_released_at &&
+        effectiveStatus === 'closed'
+    )
 
     const statusConfig = {
         live: { label: 'LIVE', bg: 'bg-red-500', text: 'text-white', border: 'border-red-700', pulse: true },
@@ -441,6 +462,16 @@ function EventCard({
                             </Link>
                         )}
                     </div>
+                    {canUseCertificate && (
+                        <button
+                            type="button"
+                            onClick={() => onCertificate(event)}
+                            className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-500 px-3 py-3 text-sm font-black uppercase text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-emerald-600 hover:shadow-none"
+                        >
+                            {event.certificate_number && event.certificate_name_locked_at ? <Download size={16} /> : <Award size={16} />}
+                            {event.certificate_number && event.certificate_name_locked_at ? 'Preview Sertifikat' : 'Klaim Sertifikat'}
+                        </button>
+                    )}
                     {event.max_participants && (
                         <div className="flex items-center gap-3 border-2 border-gray-200 bg-gray-50 p-3">
                             <Users className="h-5 w-5 shrink-0 text-gray-400" />
@@ -480,6 +511,122 @@ function EventCard({
 }
 
 // ─── Event Payment Modal (Midtrans Snap) ─────────────────────────────────────
+function CertificateModal({
+    event,
+    onClose,
+    onClaimed,
+}: {
+    event: UserEvent
+    onClose: () => void
+    onClaimed: (certificateNumber: string) => void
+}) {
+    const [name, setName] = useState(event.certificate_name || '')
+    const [confirmed, setConfirmed] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [isPending, startTransition] = useTransition()
+    const previewName = name.replace(/\s+/g, ' ').trim() || 'Nama Lengkap Peserta'
+
+    const submit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setError(null)
+
+        if (!confirmed) {
+            setError('Centang konfirmasi bahwa nama sudah benar.')
+            return
+        }
+
+        startTransition(async () => {
+            const result = await claimEventCertificate(event.id, name)
+            if (!result.success || !result.certificateNumber) {
+                setError(result.message || 'Gagal membuat sertifikat.')
+                toast.error(result.message || 'Gagal membuat sertifikat.')
+                return
+            }
+
+            toast.success(result.message || 'Nama sertifikat tersimpan.')
+            onClaimed(result.certificateNumber)
+        })
+    }
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <motion.form
+                onSubmit={submit}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="max-h-[92vh] w-full max-w-3xl overflow-y-auto border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+            >
+                <div className="flex items-center gap-3 border-b-4 border-gray-900 bg-emerald-400 px-6 py-4">
+                    <Award className="h-7 w-7 text-gray-900" />
+                    <h2 className="font-handwriting text-2xl font-black text-gray-900">Nama Sertifikat</h2>
+                </div>
+                <div className="space-y-5 p-6">
+                    <div>
+                        <p className="text-xs font-black uppercase text-gray-500">Event</p>
+                        <p className="mt-1 text-lg font-black leading-snug text-gray-900">{event.title}</p>
+                    </div>
+                    <label className="block">
+                        <span className="text-xs font-black uppercase text-gray-500">Nama lengkap sesuai sertifikat</span>
+                        <input
+                            value={name}
+                            onChange={(inputEvent) => setName(inputEvent.target.value)}
+                            maxLength={100}
+                            placeholder="Masukkan nama lengkap"
+                            className="mt-2 w-full border-2 border-gray-900 bg-white px-4 py-3 text-base font-black text-gray-900 outline-none focus:border-emerald-600"
+                        />
+                    </label>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-black uppercase text-gray-500">Preview sebelum dikunci</p>
+                            <span className="border border-blue-300 bg-blue-50 px-2 py-1 text-[10px] font-black uppercase text-blue-700">Draft</span>
+                        </div>
+                        {event.certificate_number ? (
+                            <EventCertificatePreview
+                                certificateNumber={event.certificate_number}
+                                previewName={previewName}
+                            />
+                        ) : (
+                            <div className="border-2 border-yellow-500 bg-yellow-50 p-4 text-sm font-bold text-yellow-900">
+                                Snapshot sertifikat belum tersedia. Simpan nama akan membuat sertifikat berdasarkan data ranking final.
+                            </div>
+                        )}
+                    </div>
+                    <label className="flex gap-3 border-2 border-yellow-500 bg-yellow-50 p-3 text-sm font-bold text-yellow-900">
+                        <input
+                            type="checkbox"
+                            checked={confirmed}
+                            onChange={(inputEvent) => setConfirmed(inputEvent.target.checked)}
+                            className="mt-1 h-4 w-4 shrink-0"
+                        />
+                        <span>Nama yang sudah disimpan akan dicetak pada sertifikat dan tidak bisa diedit lagi oleh user. Pastikan ejaan, gelar, dan spasi sudah benar.</span>
+                    </label>
+                    {error && (
+                        <div className="border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</div>
+                    )}
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 border-2 border-gray-900 bg-white py-3 font-black text-gray-900 transition hover:bg-gray-50"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isPending}
+                            className="flex flex-1 items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-600 py-3 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-emerald-700 hover:shadow-none disabled:opacity-60"
+                        >
+                            {isPending ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                            Simpan Nama
+                        </button>
+                    </div>
+                </div>
+            </motion.form>
+        </div>
+    )
+}
+
 function EventPaymentModal({
     event,
     onClose,
@@ -633,6 +780,7 @@ export default function EventClient({ events }: EventClientProps) {
     const [pendingEventId, setPendingEventId] = useState<string | null>(null)
     const [confirmEvent, setConfirmEvent] = useState<UserEvent | null>(null)
     const [paymentEvent, setPaymentEvent] = useState<UserEvent | null>(null)
+    const [certificateEvent, setCertificateEvent] = useState<UserEvent | null>(null)
     const [eventCodes, setEventCodes] = useState<Record<string, string>>({})
     const [isPending, startTransition] = useTransition()
     const router = useRouter()
@@ -701,6 +849,21 @@ export default function EventClient({ events }: EventClientProps) {
         }
         // For start: show confirm modal
         setConfirmEvent(event)
+    }
+
+    const doCertificate = (event: UserEvent) => {
+        if (event.certificate_number && event.certificate_name_locked_at) {
+            router.push(`/cpns/dashboard/certificates/${encodeURIComponent(event.certificate_number)}`)
+            return
+        }
+
+        setCertificateEvent(event)
+    }
+
+    const handleCertificateClaimed = (certificateNumber: string) => {
+        setCertificateEvent(null)
+        router.refresh()
+        router.push(`/cpns/dashboard/certificates/${encodeURIComponent(certificateNumber)}`)
     }
 
     const submitEventCode = (event: UserEvent) => {
@@ -845,6 +1008,7 @@ export default function EventClient({ events }: EventClientProps) {
                                             event={event}
                                             now={now}
                                             onAction={doAction}
+                                            onCertificate={doCertificate}
                                             isPending={isPending && pendingEventId === event.id}
                                         />
                                     </div>
@@ -868,6 +1032,16 @@ export default function EventClient({ events }: EventClientProps) {
             </AnimatePresence>
 
             {/* Payment Modal */}
+            <AnimatePresence>
+                {certificateEvent && (
+                    <CertificateModal
+                        event={certificateEvent}
+                        onClose={() => setCertificateEvent(null)}
+                        onClaimed={handleCertificateClaimed}
+                    />
+                )}
+            </AnimatePresence>
+
             <AnimatePresence>
                 {paymentEvent && (
                     <EventPaymentModal

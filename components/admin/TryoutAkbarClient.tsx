@@ -1,14 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
     BarChart3, ChevronDown, ChevronUp, Copy, Download,
     Loader2, Plus, Radio, Save, Settings, Ticket, Trash2, Users, X,
-    CheckCircle2, Clock, BookOpen, AlertTriangle, Zap, EyeOff, Eye, Trophy, Upload, ImageIcon
+    CheckCircle2, Clock, BookOpen, AlertTriangle, Zap, EyeOff, Eye, Trophy, Upload, ImageIcon, Award
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { EventCertificatePreview } from '@/components/certificates/EventCertificatePreview'
 import {
     createTryoutEventCode,
     createTryoutEvent,
@@ -17,6 +18,8 @@ import {
     generateTryoutEventQuestions,
     toggleTryoutEventCode,
     updateTryoutEvent,
+    updateTryoutEventCertificateRelease,
+    updateEventCertificateName,
     updateTryoutEventStatus,
 } from '@/app/actions/admin'
 import { cn } from '@/lib/utils'
@@ -77,6 +80,14 @@ type EventParticipant = {
     score_tkp: number | null
     total_score: number | null
     is_passed: boolean | null
+    certificate_id: string | null
+    certificate_number: string | null
+    certificate_name: string | null
+    certificate_kind: string | null
+    certificate_rank: number | null
+    certificate_score: number | null
+    certificate_updated_at: string | null
+    certificate_name_locked_at: string | null
 }
 
 type TryoutEvent = {
@@ -96,6 +107,8 @@ type TryoutEvent = {
     is_paid: boolean
     price: number
     status: EventStatus
+    certificate_enabled: boolean
+    certificate_released_at: string | null
     result_visible_at: string | null
     explanation_visible_at: string | null
     created_at: string
@@ -262,6 +275,165 @@ function getParticipantName(participant: EventParticipant) {
 }
 
 // ─── Progress Bar ─────────────────────────────────────────────────────────────
+function getCertificateKindLabel(kind: string | null) {
+    if (kind === 'winner_1') return 'Juara 1'
+    if (kind === 'winner_2') return 'Juara 2'
+    if (kind === 'winner_3') return 'Juara 3'
+    if (kind === 'participant') return 'Peserta'
+    return '-'
+}
+
+function CertificateNameEditModal({
+    participant,
+    onClose,
+}: {
+    participant: EventParticipant
+    onClose: () => void
+}) {
+    const [name, setName] = useState(participant.certificate_name || '')
+    const [error, setError] = useState<string | null>(null)
+    const [isSaving, startSaving] = useTransition()
+    const router = useRouter()
+
+    const submit = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault()
+        setError(null)
+
+        if (!participant.certificate_id) {
+            setError('Sertifikat belum tersedia untuk peserta ini.')
+            return
+        }
+
+        startSaving(async () => {
+            const result = await updateEventCertificateName(participant.certificate_id as string, name)
+            if (!result.success) {
+                setError(result.message)
+                toast.error(result.message)
+                return
+            }
+
+            toast.success(result.message)
+            router.refresh()
+            onClose()
+        })
+    }
+
+    return (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <motion.form
+                onSubmit={submit}
+                initial={{ scale: 0.92, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.92, opacity: 0 }}
+                className="w-full max-w-lg border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+            >
+                <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-emerald-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                    <Award size={28} strokeWidth={3} />
+                </div>
+                <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">Koreksi Nama Sertifikat</h3>
+                <p className="mt-2 text-sm font-medium text-gray-600">
+                    Koreksi ini hanya bisa dilakukan admin. PDF lama akan dibatalkan dan file baru dibuat saat sertifikat di-download lagi.
+                </p>
+                <div className="mt-5 space-y-4">
+                    <div className="border-2 border-gray-200 bg-gray-50 p-3">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Peserta</p>
+                        <p className="mt-1 font-black text-gray-900">{getParticipantName(participant)}</p>
+                        <p className="mt-1 break-all font-mono text-[11px] font-bold text-gray-400">{participant.certificate_number}</p>
+                    </div>
+                    <label className="block">
+                        <span className="text-xs font-black uppercase tracking-widest text-gray-500">Nama pada sertifikat</span>
+                        <input
+                            value={name}
+                            onChange={(inputEvent) => setName(inputEvent.target.value)}
+                            maxLength={100}
+                            className="mt-2 w-full border-2 border-gray-900 bg-white px-4 py-3 text-base font-black text-gray-900 outline-none focus:border-emerald-600"
+                        />
+                    </label>
+                    {error && (
+                        <div className="border-2 border-red-400 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</div>
+                    )}
+                </div>
+                <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:bg-gray-100"
+                    >
+                        Batal
+                    </button>
+                    <button
+                        type="submit"
+                        disabled={isSaving}
+                        className="inline-flex items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-600 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                        {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        Simpan Koreksi
+                    </button>
+                </div>
+            </motion.form>
+        </div>
+    )
+}
+
+function CertificatePreviewModal({
+    participant,
+    onClose,
+    onEdit,
+}: {
+    participant: EventParticipant
+    onClose: () => void
+    onEdit: () => void
+}) {
+    return (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+            <motion.div
+                initial={{ scale: 0.94, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.94, opacity: 0 }}
+                className="max-h-[92vh] w-full max-w-5xl overflow-y-auto border-2 border-gray-900 bg-white p-5 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+            >
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="inline-flex items-center gap-2 border-2 border-gray-900 bg-blue-50 px-3 py-1 text-xs font-black uppercase text-blue-700">
+                            <Eye size={14} /> Preview Admin
+                        </p>
+                        <h3 className="mt-2 font-handwriting text-3xl font-black text-gray-900">Cek Sertifikat Peserta</h3>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={onEdit}
+                            className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        >
+                            <Save size={15} /> Edit Nama
+                        </button>
+                        {participant.certificate_number && participant.certificate_name_locked_at && (
+                            <a
+                                href={`/api/certificates/${encodeURIComponent(participant.certificate_number)}/download`}
+                                className="inline-flex items-center gap-2 border-2 border-gray-900 bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            >
+                                <Download size={15} /> Download PDF
+                            </a>
+                        )}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="border-2 border-gray-900 bg-gray-900 px-4 py-2 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                        >
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+
+                <EventCertificatePreview
+                    certificateNumber={participant.certificate_number || '-'}
+                    cacheKey={participant.certificate_updated_at || participant.certificate_name_locked_at}
+                />
+            </motion.div>
+        </div>
+    )
+}
+
 function ProgressRow({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
     const pct = max > 0 ? Math.round((value / max) * 100) : 0
     return (
@@ -787,6 +959,8 @@ function DetailPanel({
     const [tab, setTab] = useState<DetailTab>('stats')
     const [codeToDelete, setCodeToDelete] = useState<EventCode | null>(null)
     const [statusToConfirm, setStatusToConfirm] = useState<typeof STATUS_ACTIONS[number] | null>(null)
+    const [certificateToEdit, setCertificateToEdit] = useState<EventParticipant | null>(null)
+    const [certificateToPreview, setCertificateToPreview] = useState<EventParticipant | null>(null)
     const [settingsHasChanges, setSettingsHasChanges] = useState(false)
     const [pendingTab, setPendingTab] = useState<DetailTab | null>(null)
     const [pendingClose, setPendingClose] = useState(false)
@@ -947,6 +1121,31 @@ function DetailPanel({
                                     {event.status === action.targetStatus && <CheckCircle2 size={13} />}
                                 </button>
                             ))}
+                            <div className="border-t-2 border-gray-200 pt-3 space-y-2">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Sertifikat</p>
+                                <div className={cn(
+                                    'border-2 p-3 text-xs font-bold',
+                                    event.certificate_enabled ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-gray-200 bg-white text-gray-600'
+                                )}>
+                                    {event.certificate_enabled
+                                        ? `Dirilis ${formatDate(event.certificate_released_at)}`
+                                        : 'Belum dirilis ke peserta'}
+                                </div>
+                                <button
+                                    type="button"
+                                    disabled={isPending || (event.status !== 'closed' && !event.certificate_enabled)}
+                                    onClick={() => onRunAction(() => updateTryoutEventCertificateRelease(event.id, !event.certificate_enabled))}
+                                    className={cn(
+                                        'flex w-full items-center justify-center gap-2 border-2 px-3 py-2.5 text-sm font-black transition shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)] hover:translate-y-px hover:shadow-none disabled:cursor-not-allowed disabled:opacity-40',
+                                        event.certificate_enabled
+                                            ? 'border-red-700 bg-red-50 text-red-700'
+                                            : 'border-emerald-700 bg-emerald-600 text-white'
+                                    )}
+                                >
+                                    <Award size={14} />
+                                    {event.certificate_enabled ? 'Nonaktifkan Sertifikat' : 'Rilis Sertifikat'}
+                                </button>
+                            </div>
                             <div className="border-t-2 border-gray-200 pt-3 space-y-2">
                                 <a href={`/api/admin/export?type=events&format=csv&event_id=${event.id}`}
                                     className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-3 py-2.5 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)] hover:translate-y-px hover:shadow-none transition">
@@ -1238,7 +1437,7 @@ function DetailPanel({
                             </div>
                         ) : (
                             <div className="overflow-x-auto border-2 border-gray-200 bg-white">
-                                <table className="min-w-[980px] w-full text-left text-sm">
+                                <table className="min-w-[1120px] w-full text-left text-sm">
                                     <thead className="border-b-2 border-gray-200 bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-500">
                                         <tr>
                                             <th className="px-3 py-3">Peserta</th>
@@ -1247,7 +1446,7 @@ function DetailPanel({
                                             <th className="px-3 py-3">Status</th>
                                             <th className="px-3 py-3">Pengerjaan</th>
                                             <th className="px-3 py-3 text-right">Skor</th>
-                                            <th className="px-3 py-3">Hasil</th>
+                                            <th className="px-3 py-3">Sertifikat</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
@@ -1292,22 +1491,62 @@ function DetailPanel({
                                                             <p className="text-[11px] font-bold text-gray-400">
                                                                 {participant.score_twk ?? 0}/{participant.score_tiu ?? 0}/{participant.score_tkp ?? 0}
                                                             </p>
+                                                            <div className="mt-2">
+                                                                {participant.is_passed == null ? (
+                                                                    <span className="text-xs font-bold text-gray-400">-</span>
+                                                                ) : participant.is_passed ? (
+                                                                    <span className="inline-flex border border-green-500 bg-green-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-green-700">Lulus</span>
+                                                                ) : (
+                                                                    <span className="inline-flex border border-red-300 bg-red-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-red-700">Tidak Lulus</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </td>
                                                 <td className="px-3 py-3">
-                                                    {participant.is_passed == null ? (
-                                                        <span className="text-xs font-bold text-gray-400">-</span>
-                                                    ) : participant.is_passed ? (
-                                                        <span className="inline-flex border border-green-500 bg-green-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-green-700">Lulus</span>
+                                                    {participant.certificate_id ? (
+                                                        <div className="space-y-2">
+                                                            <div>
+                                                                <span className="inline-flex border border-emerald-500 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                                                                    {getCertificateKindLabel(participant.certificate_kind)}
+                                                                </span>
+                                                                <p className="mt-1 max-w-[220px] truncate font-black text-gray-900">{participant.certificate_name}</p>
+                                                                <p className="mt-0.5 max-w-[220px] truncate font-mono text-[10px] font-bold text-gray-400">{participant.certificate_number}</p>
+                                                                {!participant.certificate_name_locked_at && (
+                                                                    <p className="mt-1 text-[10px] font-black uppercase text-yellow-700">Nama belum dikunci</p>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setCertificateToEdit(participant)}
+                                                                    className="inline-flex items-center gap-1 border border-gray-300 bg-white px-2 py-1 text-[11px] font-black text-gray-700 transition hover:border-gray-900"
+                                                                >
+                                                                    <Save size={11} /> Edit Nama
+                                                                </button>
+                                                                {participant.certificate_number && (
+                                                                    <>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setCertificateToPreview(participant)}
+                                                                            className="inline-flex items-center gap-1 border border-blue-300 bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700 transition hover:border-blue-600"
+                                                                        >
+                                                                            <Eye size={11} /> Preview
+                                                                        </button>
+                                                                        {participant.certificate_name_locked_at && (
+                                                                            <a
+                                                                                href={`/api/certificates/${encodeURIComponent(participant.certificate_number)}/download`}
+                                                                                className="inline-flex items-center gap-1 border border-emerald-300 bg-emerald-50 px-2 py-1 text-[11px] font-black text-emerald-700 transition hover:border-emerald-600"
+                                                                            >
+                                                                                <Download size={11} /> PDF
+                                                                            </a>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     ) : (
-                                                        <span className="inline-flex border border-red-300 bg-red-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-red-700">Tidak Lulus</span>
-                                                    )}
-                                                    {participant.session_id && (
-                                                        <a href={`/cpns/dashboard/tryout/${participant.session_id}/result?from=event`}
-                                                            className="mt-2 inline-flex text-xs font-black text-blue-700 underline underline-offset-2">
-                                                            Lihat hasil
-                                                        </a>
+                                                        <span className="text-xs font-bold text-gray-400">Belum klaim</span>
                                                     )}
                                                 </td>
                                             </tr>
@@ -1319,6 +1558,28 @@ function DetailPanel({
                     </div>
                 )}
             </div>
+
+            <AnimatePresence>
+                {certificateToPreview && (
+                    <CertificatePreviewModal
+                        participant={certificateToPreview}
+                        onClose={() => setCertificateToPreview(null)}
+                        onEdit={() => {
+                            setCertificateToEdit(certificateToPreview)
+                            setCertificateToPreview(null)
+                        }}
+                    />
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {certificateToEdit && (
+                    <CertificateNameEditModal
+                        participant={certificateToEdit}
+                        onClose={() => setCertificateToEdit(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Delete code confirm */}
             <AnimatePresence>

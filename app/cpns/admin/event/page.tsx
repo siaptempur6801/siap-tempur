@@ -40,6 +40,8 @@ export default async function EventAdminPage() {
             is_paid,
             price,
             status,
+            certificate_enabled,
+            certificate_released_at,
             result_visible_at,
             explanation_visible_at,
             created_at,
@@ -95,6 +97,22 @@ export default async function EventAdminPage() {
         return <div className="p-8 text-center font-bold text-gray-900">Gagal memuat data event</div>
     }
 
+    const eventIds = (events || []).map((event) => event.id)
+    const { data: certificates, error: certificatesError } = eventIds.length > 0
+        ? await supabase
+            .from('event_certificates')
+            .select('id, event_id, user_id, certificate_number, certificate_name, certificate_kind, rank, score, updated_at, name_locked_at')
+            .in('event_id', eventIds)
+        : { data: [], error: null }
+
+    if (certificatesError) {
+        logger.warn('[event-admin-certificates]', { error: certificatesError })
+    }
+
+    const certificateMap = new Map(
+        (certificates || []).map((certificate) => [`${certificate.event_id}:${certificate.user_id}`, certificate])
+    )
+
     const normalizedEvents = (events || []).map((event) => {
         const sessions = event.tryout_event_sessions || []
         const sessionByUserId = new Map(
@@ -144,6 +162,7 @@ export default async function EventAdminPage() {
                 const code = Array.isArray(participant.tryout_event_codes) ? participant.tryout_event_codes[0] : participant.tryout_event_codes
                 const eventSession = sessionByUserId.get(participant.user_id)
                 const testSession = Array.isArray(eventSession?.test_sessions) ? eventSession?.test_sessions[0] : eventSession?.test_sessions
+                const certificate = certificateMap.get(`${event.id}:${participant.user_id}`)
                 const scoreTwk = Number(testSession?.score_twk || 0)
                 const scoreTiu = Number(testSession?.score_tiu || 0)
                 const scoreTkp = Number(testSession?.score_tkp || 0)
@@ -170,6 +189,14 @@ export default async function EventAdminPage() {
                     score_tkp: testSession?.score_tkp ?? null,
                     total_score: testSession?.total_score ?? null,
                     is_passed: testSession ? isPassed : null,
+                    certificate_id: certificate?.id || null,
+                    certificate_number: certificate?.certificate_number || null,
+                    certificate_name: certificate?.certificate_name || null,
+                    certificate_kind: certificate?.certificate_kind || null,
+                    certificate_rank: certificate?.rank ?? null,
+                    certificate_score: certificate?.score ?? null,
+                    certificate_updated_at: certificate?.updated_at || null,
+                    certificate_name_locked_at: certificate?.name_locked_at || null,
                 }
             })
             .sort((a, b) => new Date(a.registered_at).getTime() - new Date(b.registered_at).getTime())
@@ -191,6 +218,8 @@ export default async function EventAdminPage() {
             is_paid: event.is_paid ?? false,
             price: event.price ?? 0,
             status: event.status,
+            certificate_enabled: event.certificate_enabled ?? false,
+            certificate_released_at: event.certificate_released_at || null,
             result_visible_at: synchronizedCloseAt,
             explanation_visible_at: synchronizedCloseAt,
             created_at: event.created_at,
