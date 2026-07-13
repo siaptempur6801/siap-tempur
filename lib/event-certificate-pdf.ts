@@ -20,6 +20,11 @@ const PAGE_WIDTH = 1684
 const PAGE_HEIGHT = 1190
 const PDF_WIDTH = 842
 const PDF_HEIGHT = 595
+const CERTIFICATE_FONT_FAMILY = 'KaTeX SansSerif'
+const CERTIFICATE_FONT_FILES = [
+    path.join(process.cwd(), 'node_modules/katex/dist/fonts/KaTeX_SansSerif-Regular.ttf'),
+    path.join(process.cwd(), 'node_modules/katex/dist/fonts/KaTeX_SansSerif-Bold.ttf'),
+]
 
 function escapeXml(value: string) {
     return value
@@ -113,32 +118,32 @@ function buildCertificateSvg(input: CertificateRenderInput, logoUri: string, sig
   <rect x="0" y="1146" width="${PAGE_WIDTH}" height="44" fill="#15214c"/>
   <path d="M1178 40h506v278l-650-54z" fill="#ffdc1f"/>
   <image href="${logoUri}" x="88" y="108" width="420" height="108" preserveAspectRatio="xMinYMid meet"/>
-  <text x="548" y="136" font-family="Arial, sans-serif" font-size="20" font-weight="900" fill="#1463ff" letter-spacing="8">OFFICIAL EVENT</text>
-  <text x="548" y="176" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#101828">Tryout SKD CPNS</text>
+  <text x="548" y="136" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="20" font-weight="900" fill="#1463ff" letter-spacing="8">OFFICIAL EVENT</text>
+  <text x="548" y="176" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="22" font-weight="700" fill="#101828">Tryout SKD CPNS</text>
   <path d="M80 270h1526" stroke="#15214c" stroke-width="8"/>
   <rect x="1318" y="132" width="246" height="72" fill="#05070c"/>
   <rect x="1312" y="124" width="246" height="72" fill="#1463ff" stroke="#15214c" stroke-width="5"/>
-  <text x="1435" y="169" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="900" fill="#ffffff" letter-spacing="5">E-CERTIFICATE</text>
+  <text x="1435" y="169" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="18" font-weight="900" fill="#ffffff" letter-spacing="5">E-CERTIFICATE</text>
   <rect x="790" y="342" width="104" height="104" fill="#05070c"/>
   <rect x="782" y="334" width="104" height="104" fill="#ffdc1f" stroke="#15214c" stroke-width="7"/>
   <circle cx="834" cy="378" r="18" fill="none" stroke="#15214c" stroke-width="5"/>
   <path d="M820 396l-10 30 24-12 24 12-10-30" fill="none" stroke="#15214c" stroke-width="5" stroke-linejoin="round"/>
-  <text x="842" y="530" text-anchor="middle" font-family="Arial, sans-serif" font-size="58" font-weight="900" fill="#101828" letter-spacing="11">${escapeXml(title.toUpperCase())}</text>
-  <text x="842" y="612" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="900" fill="#667085" letter-spacing="4">DIBERIKAN KEPADA</text>
-  <text x="842" y="704" text-anchor="middle" font-family="Arial, sans-serif" font-size="${nameFontSize(input.certificateName)}" font-weight="900" fill="#101828">${certName}</text>
+  <text x="842" y="530" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="58" font-weight="900" fill="#101828" letter-spacing="11">${escapeXml(title.toUpperCase())}</text>
+  <text x="842" y="612" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="24" font-weight="900" fill="#667085" letter-spacing="4">DIBERIKAN KEPADA</text>
+  <text x="842" y="704" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="${nameFontSize(input.certificateName)}" font-weight="900" fill="#101828">${certName}</text>
   <rect x="196" y="746" width="1292" height="8" fill="#ffdc1f"/>
-  <text x="842" y="815" text-anchor="middle" font-family="Arial, sans-serif" font-size="27" font-weight="700" fill="#344054">Atas partisipasi dan pencapaian pada event ${eventLines.length === 1 ? escapeXml(eventLines[0]) : ''}</text>
-  ${eventLines.length > 1 ? eventLines.map((line, index) => `<text x="842" y="${860 + index * 38}" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#101828">${escapeXml(line)}</text>`).join('\n  ') : ''}
+  <text x="842" y="815" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="27" font-weight="700" fill="#344054">Atas partisipasi dan pencapaian pada event ${eventLines.length === 1 ? escapeXml(eventLines[0]) : ''}</text>
+  ${eventLines.length > 1 ? eventLines.map((line, index) => `<text x="842" y="${860 + index * 38}" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="28" font-weight="900" fill="#101828">${escapeXml(line)}</text>`).join('\n  ') : ''}
   <rect x="${achievementX}" y="882" width="${achievementWidth}" height="66" fill="#eef6ff" stroke="#15214c" stroke-width="4"/>
-  <text x="842" y="924" text-anchor="middle" font-family="Arial, sans-serif" font-size="${achievementFontSize}" font-weight="900" fill="#101828">${escapeXml(achievementLabel)}</text>
+  <text x="842" y="924" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="${achievementFontSize}" font-weight="900" fill="#101828">${escapeXml(achievementLabel)}</text>
   <rect x="92" y="1002" width="8" height="98" fill="#1463ff"/>
-  <text x="120" y="1030" font-family="Arial, sans-serif" font-size="19" font-weight="900" fill="#101828">Nomor: ${escapeXml(input.certificateNumber)}</text>
-  <text x="120" y="1064" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#475467">Diterbitkan: ${escapeXml(issuedDate)}</text>
-  <text x="120" y="1098" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#475467">Verifikasi: ${escapeXml(input.verifyUrl)}</text>
+  <text x="120" y="1030" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="19" font-weight="900" fill="#101828">Nomor: ${escapeXml(input.certificateNumber)}</text>
+  <text x="120" y="1064" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="19" font-weight="700" fill="#475467">Diterbitkan: ${escapeXml(issuedDate)}</text>
+  <text x="120" y="1098" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="16" font-weight="700" fill="#475467">Verifikasi: ${escapeXml(input.verifyUrl)}</text>
   <image href="${signatureUri}" x="1340" y="924" width="214" height="98" preserveAspectRatio="xMidYMid meet"/>
   <path d="M1284 1030h308" stroke="#101828" stroke-width="3"/>
-  <text x="1438" y="1068" text-anchor="middle" font-family="Arial, sans-serif" font-size="21" font-weight="900" fill="#101828">Dirga Halim Susilo</text>
-  <text x="1438" y="1100" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#475467">Founder &amp; CEO Siap Tempur</text>
+  <text x="1438" y="1068" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="21" font-weight="900" fill="#101828">Dirga Halim Susilo</text>
+  <text x="1438" y="1100" text-anchor="middle" font-family="${CERTIFICATE_FONT_FAMILY}, sans-serif" font-size="18" font-weight="700" fill="#475467">Founder &amp; CEO Siap Tempur</text>
 </svg>`
 }
 
@@ -185,6 +190,12 @@ export async function createEventCertificateImage(input: CertificateRenderInput)
     ])
     const svg = buildCertificateSvg(input, logoUri, signatureUri)
     return Buffer.from(new Resvg(svg, {
+        font: {
+            fontFiles: CERTIFICATE_FONT_FILES,
+            loadSystemFonts: false,
+            defaultFontFamily: CERTIFICATE_FONT_FAMILY,
+            sansSerifFamily: CERTIFICATE_FONT_FAMILY,
+        },
         fitTo: {
             mode: 'width',
             value: PAGE_WIDTH,
