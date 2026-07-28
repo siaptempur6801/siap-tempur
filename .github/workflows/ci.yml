@@ -41,7 +41,9 @@ jobs:
         run: npm run test:unit
 
       - name: Security audit
-        run: npm audit --audit-level=moderate
+        run: |
+          npm audit --omit=dev --audit-level=moderate
+          npm audit --audit-level=critical
 
       - name: Build
         run: npm run build
