@@ -5,6 +5,8 @@ import Image from 'next/image'
 import 'katex/dist/katex.min.css'
 import { InlineMath, BlockMath } from 'react-katex'
 import { sanitizeHtmlAllowlist } from '@/lib/article-sanitize'
+import { normalizeQuestionRichText } from '@/lib/question-rich-text'
+import { cn } from '@/lib/utils'
 
 interface MathRendererProps {
     text: string
@@ -35,7 +37,12 @@ export default function MathRenderer({ text, className }: MathRendererProps) {
     const parts = text.split(/(\[\[image:[^\]]+\]\]|\[\[spacer:(?:sm|md|lg)\]\]|\$\$[\s\S]*?\$\$|\$[\s\S]*?\$)/g)
 
     return (
-        <div className={className}>
+        <div
+            className={cn(
+                'whitespace-pre-line [&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:pl-1 [&_li>p]:mb-1',
+                className
+            )}
+        >
             {parts.map((part, index) => {
                 if (part.startsWith('[[image:') && part.endsWith(']]')) {
                     const imageUrl = part.slice('[[image:'.length, -2).trim()
@@ -64,12 +71,13 @@ export default function MathRenderer({ text, className }: MathRendererProps) {
                     const math = part.slice(1, -1)
                     return <InlineMath key={index} math={math} />
                 }
-                if (part.includes('<') && part.includes('>')) {
+                const normalizedPart = normalizeQuestionRichText(part)
+                if (normalizedPart.includes('<') && normalizedPart.includes('>')) {
                     return (
                         <div
                             key={index}
                             className="contents"
-                            dangerouslySetInnerHTML={{ __html: sanitizeRichText(part) }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeRichText(normalizedPart) }}
                         />
                     )
                 }
