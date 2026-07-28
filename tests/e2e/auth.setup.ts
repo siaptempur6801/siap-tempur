@@ -5,8 +5,14 @@ import { AuthPage } from './pages/AuthPage';
 const authFile = path.join(__dirname, '../../playwright/.auth/user.json');
 
 setup('authenticate as participant', async ({ page }) => {
-  const email = process.env.E2E_PARTICIPANT_EMAIL || 'e2e-participant@siaptempur.test';
-  const password = process.env.E2E_PARTICIPANT_PASSWORD || 'E2EParticipant123!';
+  const email = process.env.E2E_PARTICIPANT_EMAIL;
+  const password = process.env.E2E_PARTICIPANT_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error(
+      'E2E_PARTICIPANT_EMAIL dan E2E_PARTICIPANT_PASSWORD wajib diatur untuk tes dashboard.',
+    );
+  }
 
   const authPage = new AuthPage(page);
   
