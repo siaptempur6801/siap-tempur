@@ -64,7 +64,8 @@
     "vitest": "^4.1.7"
   },
   "overrides": {
-    "postcss": "8.5.10"
+    "postcss": "8.5.23",
+    "sharp": "$sharp"
   },
   "browserslist": [
     "last 2 Chrome versions",

@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const hasParticipantCredentials = Boolean(
+  process.env.E2E_PARTICIPANT_EMAIL && process.env.E2E_PARTICIPANT_PASSWORD,
+);
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
@@ -18,17 +22,33 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'setup',
-      testMatch: /.*\.setup\.ts/,
-    },
-    {
-      name: 'chromium',
-      use: { 
+      name: 'chromium-public',
+      testIgnore: [
+        /.*\.setup\.ts/,
+        /.*3-dashboard\.spec\.ts/,
+      ],
+      use: {
         ...devices['Desktop Chrome'],
-        storageState: 'playwright/.auth/user.json',
+        storageState: { cookies: [], origins: [] },
       },
-      dependencies: ['setup'],
     },
+    ...(hasParticipantCredentials
+      ? [
+          {
+            name: 'setup',
+            testMatch: /.*\.setup\.ts/,
+          },
+          {
+            name: 'chromium-authenticated',
+            testMatch: /.*3-dashboard\.spec\.ts/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: 'playwright/.auth/user.json',
+            },
+            dependencies: ['setup'],
+          },
+        ]
+      : []),
   ],
   webServer: {
     command: 'npm run start',
