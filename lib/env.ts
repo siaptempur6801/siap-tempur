@@ -62,6 +62,13 @@ function assertSupabaseEnvironment(url: string) {
     return url
 }
 
+function assertMidtransEnvironment(value: string, keyName: string) {
+    if (getAppEnvironment() === 'staging' && !value.includes('SB-')) {
+        throw new Error(`${keyName} must use a Midtrans Sandbox key on staging`)
+    }
+    return value
+}
+
 export const env = {
     appEnvironment: getAppEnvironment,
     supabaseProjectRef() {
@@ -83,10 +90,12 @@ export const env = {
         return requireEnv('SUPABASE_SERVICE_ROLE_KEY', process.env.SUPABASE_SERVICE_ROLE_KEY)
     },
     midtransServerKey() {
-        return requireEnv('MIDTRANS_SERVER_KEY', process.env.MIDTRANS_SERVER_KEY)
+        const value = requireEnv('MIDTRANS_SERVER_KEY', process.env.MIDTRANS_SERVER_KEY)
+        return assertMidtransEnvironment(value, 'MIDTRANS_SERVER_KEY')
     },
     midtransClientKey() {
-        return requireEnv('NEXT_PUBLIC_MIDTRANS_CLIENT_KEY', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY)
+        const value = requireEnv('NEXT_PUBLIC_MIDTRANS_CLIENT_KEY', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY)
+        return assertMidtransEnvironment(value, 'NEXT_PUBLIC_MIDTRANS_CLIENT_KEY')
     },
     siteUrl() {
         const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim()
