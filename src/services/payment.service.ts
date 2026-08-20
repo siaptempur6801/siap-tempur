@@ -11,6 +11,15 @@ function asJson(value: unknown): Json {
     return JSON.parse(JSON.stringify(value ?? {})) as Json
 }
 
+function asString(value: unknown) {
+    return typeof value === 'string' ? value : String(value ?? '')
+}
+
+function asNumber(value: unknown) {
+    const parsed = typeof value === 'number' ? value : Number(value)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
 function providerBaseUrl() {
     const serverKey = env.midtransServerKey()
     return {
@@ -87,12 +96,18 @@ export class PaymentService {
     async syncUserOrder(userId: string, orderId: string) {
         const order = await commerceService.getOrderForUser(orderId, userId)
         if (!order) throw new Error('ORDER_NOT_FOUND')
-        if (String(order.status).toLowerCase() === 'paid') {
+        const orderStatus = asString(order.status).toLowerCase()
+        const orderNumber = asString(order.order_number)
+        const canonicalOrderId = asString(order.id)
+        const totalAmount = asNumber(order.total_amount)
+        const createdAt = asString(order.created_at)
+
+        if (orderStatus === 'paid') {
             return { status: 'settlement', paid: true }
         }
 
         const { serverKey, baseUrl } = providerBaseUrl()
-        const response = await fetch(`${baseUrl}/${encodeURIComponent(order.order_number)}/status`, {
+        const response = await fetch(`${baseUrl}/${encodeURIComponent(orderNumber)}/status`, {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
@@ -103,13 +118,14 @@ export class PaymentService {
         })
 
         if (!response.ok) {
-            if (response.status === 404 && String(order.status).toLowerCase() === 'pending') {
-                const age = Date.now() - new Date(order.created_at).getTime()
+            if (response.status === 404 && orderStatus === 'pending') {
+                const createdAtMs = Date.parse(createdAt)
+                const age = Number.isFinite(createdAtMs) ? Date.now() - createdAtMs : 0
                 if (age > 15 * 60 * 1000) {
                     await commerceService.applyProviderStatus({
-                        orderId: order.id,
+                        orderId: canonicalOrderId,
                         status: 'expire',
-                        amount: Number(order.total_amount),
+                        amount: totalAmount,
                         rawResponse: asJson({ reason: 'provider_status_not_found_after_15m' }),
                     })
                     return { status: 'expire', paid: false }
@@ -123,12 +139,12 @@ export class PaymentService {
         if (!MIDTRANS_STATUSES.has(status)) throw new Error('UNSUPPORTED_PAYMENT_STATUS')
 
         const amount = Number(result.gross_amount)
-        if (!Number.isFinite(amount) || amount !== Number(order.total_amount)) {
+        if (!Number.isFinite(amount) || amount !== totalAmount) {
             throw new Error('PAYMENT_AMOUNT_MISMATCH')
         }
 
         await commerceService.applyProviderStatus({
-            orderId: order.id,
+            orderId: canonicalOrderId,
             status,
             providerTransactionId: typeof result.transaction_id === 'string' ? result.transaction_id : null,
             paymentMethod: typeof result.payment_type === 'string' ? result.payment_type : null,
@@ -152,7 +168,10 @@ export class PaymentService {
 
         const order = await commerceService.getOrderByNumber(input.orderNumber)
         if (!order) throw new Error('ORDER_NOT_FOUND')
-        if (!Number.isFinite(input.amount) || input.amount !== Number(order.total_amount)) {
+        const canonicalOrderId = asString(order.id)
+        const orderStatus = asString(order.status).toLowerCase()
+        const totalAmount = asNumber(order.total_amount)
+        if (!Number.isFinite(input.amount) || input.amount !== totalAmount) {
             throw new Error('PAYMENT_AMOUNT_MISMATCH')
         }
 
@@ -164,9 +183,9 @@ export class PaymentService {
             .eq('event_id', input.eventId)
             .maybeSingle()
         if (existingError) throw existingError
-        if (existing?.processed) return { alreadyProcessed: true, paid: String(order.status).toLowerCase() === 'paid' }
+        if (existing?.processed) return { alreadyProcessed: true, paid: orderStatus === 'paid' }
 
-        let webhookId = existing?.id as string | undefined
+        let webhookId = existing?.id ? String(existing.id) : undefined
         if (!webhookId) {
             const { data: webhook, error: webhookError } = await admin
                 .from('payment_webhook_events')
@@ -185,11 +204,11 @@ export class PaymentService {
                 }
                 throw webhookError
             }
-            webhookId = webhook.id
+            webhookId = String(webhook.id)
         }
 
         await commerceService.applyProviderStatus({
-            orderId: order.id,
+            orderId: canonicalOrderId,
             status: input.status,
             providerTransactionId: input.providerTransactionId ?? null,
             paymentMethod: input.paymentMethod ?? null,
