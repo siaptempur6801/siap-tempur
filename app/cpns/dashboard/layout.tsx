@@ -69,6 +69,7 @@ export default async function DashboardLayout({
     return (
         <>
             <Script
+                id="midtrans-snap-script"
                 src={env.midtransSnapScriptUrl()}
                 data-client-key={env.midtransClientKey()}
                 strategy="afterInteractive"
