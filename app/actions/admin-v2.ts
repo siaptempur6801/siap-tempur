@@ -136,6 +136,11 @@ export async function saveProductAction(form: FormData) {
     let failure: unknown = null
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
+    const submittedPrice = nullableNumber(form, 'price')
+    const currentPrice = nullableNumber(form, 'current_price')
+    const price = requestedId && submittedPrice !== null && currentPrice !== null && submittedPrice === currentPrice
+        ? null
+        : submittedPrice
     try {
         await actor(PERMISSIONS.PRODUCT_MANAGE)
         savedId = await adminV2Service.saveProduct({
@@ -146,7 +151,7 @@ export async function saveProductAction(form: FormData) {
             productType: text(form, 'product_type') || 'TOKEN_PACK',
             durationDays: nullableNumber(form, 'duration_days'),
             status: text(form, 'status') || 'draft',
-            price: nullableNumber(form, 'price'),
+            price,
             currency: text(form, 'currency') || 'IDR',
             tokenGrant: nullableNumber(form, 'token_grant'),
         })
