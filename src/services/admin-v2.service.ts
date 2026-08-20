@@ -205,7 +205,7 @@ export class AdminV2Service {
                 .select('id')
                 .single()
             if (error) throw error
-            productId = data.id
+            productId = String(data.id)
         }
 
         if (input.price !== null && input.price !== undefined) {
@@ -305,7 +305,7 @@ export class AdminV2Service {
 
         const { data, error } = await admin.from('events').insert(payload).select('id').single()
         if (error) throw error
-        return data.id
+        return String(data.id)
     }
 
     async archiveEvent(eventId: string) {
@@ -343,7 +343,7 @@ export class AdminV2Service {
         }
         const { data, error } = await admin.from('event_sessions').insert(payload).select('id').single()
         if (error) throw error
-        return data.id
+        return String(data.id)
     }
 
     async linkEventProduct(input: { eventId: string; sessionId: string; productId: string; status?: string }) {
@@ -420,7 +420,7 @@ export class AdminV2Service {
             .select('id')
             .single()
         if (error) throw error
-        return data.id
+        return String(data.id)
     }
 
     async archiveExam(examId: string) {
@@ -465,7 +465,7 @@ export class AdminV2Service {
         }
         const { data, error } = await admin.from('exam_sections').insert(payload).select('id').single()
         if (error) throw error
-        return data.id
+        return String(data.id)
     }
 
     async saveQuestion(input: {
@@ -510,10 +510,11 @@ export class AdminV2Service {
                 .select('id')
                 .single()
             if (questionError) throw questionError
+            const questionId = String(question.id)
 
             const { error: optionError } = await admin.from('question_options').insert(
                 options.map((option) => ({
-                    question_id: question.id,
+                    question_id: questionId,
                     option_key: option.key,
                     content: option.content,
                     is_correct: option.isCorrect,
@@ -522,10 +523,10 @@ export class AdminV2Service {
                 }))
             )
             if (optionError) {
-                await admin.from('questions').delete().eq('id', question.id)
+                await admin.from('questions').delete().eq('id', questionId)
                 throw optionError
             }
-            return question.id
+            return questionId
         }
 
         const { data: activeReferences, error: referenceError } = await admin
