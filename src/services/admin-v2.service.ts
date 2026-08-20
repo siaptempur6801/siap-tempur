@@ -99,7 +99,7 @@ export class AdminV2Service {
                 .limit(80),
             admin
                 .from('questions')
-                .select('id, question_code, subject_id, question_type, stem, difficulty, status, version, author_id, reviewer_id, published_at, updated_at')
+                .select('id, question_code, subject_id, question_type, stem, difficulty, source_reference, status, version, author_id, reviewer_id, published_at, updated_at')
                 .eq('program_id', catalog.program.id)
                 .eq('track_id', catalog.track.id)
                 .order('updated_at', { ascending: false })
@@ -601,17 +601,6 @@ export class AdminV2Service {
             return questionId
         }
 
-        const { data: activeReferences, error: referenceError } = await admin
-            .from('attempt_questions')
-            .select('id, attempt_id, exam_attempts!inner(status)')
-            .eq('question_id', input.id)
-            .in('exam_attempts.status', ['created', 'CREATED', 'in_progress', 'IN_PROGRESS'])
-            .limit(1)
-        if (referenceError) throw referenceError
-        if ((activeReferences ?? []).length > 0 && options.length > 0) {
-            throw new Error('QUESTION_LOCKED_BY_ACTIVE_ATTEMPT')
-        }
-
         const [{ data: currentQuestion, error: currentError }, { data: currentOptions, error: currentOptionError }] = await Promise.all([
             admin.from('questions').select('*').eq('id', input.id).maybeSingle(),
             admin.from('question_options').select('id, option_key, content, is_correct, score, sort_order').eq('question_id', input.id).order('sort_order'),
@@ -619,6 +608,43 @@ export class AdminV2Service {
         if (currentError) throw currentError
         if (currentOptionError) throw currentOptionError
         if (!currentQuestion) throw new Error('QUESTION_NOT_FOUND')
+
+        const normalizedSourceReference = input.sourceReference?.trim() || null
+        const questionChanged =
+            !sameId(currentQuestion.subject_id, subject.id) ||
+            String(currentQuestion.stem ?? '') !== input.stem.trim() ||
+            String(currentQuestion.difficulty ?? '') !== input.difficulty ||
+            String(currentQuestion.status ?? '') !== input.status ||
+            (currentQuestion.source_reference ?? null) !== normalizedSourceReference
+
+        const submittedOptions = options.map((option) => ({
+            key: option.key.trim().toUpperCase(),
+            content: option.content.trim(),
+            isCorrect: option.isCorrect,
+            score: option.score === null ? null : Number(option.score),
+            sortOrder: option.sortOrder,
+        }))
+        const persistedOptions = (currentOptions ?? []).map((option) => ({
+            key: String(option.option_key ?? '').trim().toUpperCase(),
+            content: String(option.content ?? '').trim(),
+            isCorrect: option.is_correct,
+            score: option.score === null ? null : Number(option.score),
+            sortOrder: Number(option.sort_order),
+        }))
+        const optionsChanged = options.length > 0 && JSON.stringify(submittedOptions) !== JSON.stringify(persistedOptions)
+
+        if (!questionChanged && !optionsChanged) return input.id
+
+        if (optionsChanged) {
+            const { data: activeReferences, error: referenceError } = await admin
+                .from('attempt_questions')
+                .select('id, attempt_id, exam_attempts!inner(status)')
+                .eq('question_id', input.id)
+                .in('exam_attempts.status', ['created', 'CREATED', 'in_progress', 'IN_PROGRESS'])
+                .limit(1)
+            if (referenceError) throw referenceError
+            if ((activeReferences ?? []).length > 0) throw new Error('QUESTION_LOCKED_BY_ACTIVE_ATTEMPT')
+        }
 
         const snapshot: Json = JSON.parse(JSON.stringify({
             question: currentQuestion,
@@ -640,7 +666,7 @@ export class AdminV2Service {
                 subject_id: subject.id,
                 stem: input.stem.trim(),
                 difficulty: input.difficulty,
-                source_reference: input.sourceReference?.trim() || null,
+                source_reference: normalizedSourceReference,
                 status: input.status,
                 version: nextVersion,
                 reviewer_id: input.status.toLowerCase() === 'published' ? input.actorId : currentQuestion.reviewer_id,
@@ -652,7 +678,7 @@ export class AdminV2Service {
             .eq('id', input.id)
         if (questionError) throw questionError
 
-        if (options.length > 0) {
+        if (optionsChanged) {
             const submittedKeys = new Set(options.map((option) => option.key.trim().toUpperCase()))
             const staleOptionIds = (currentOptions ?? [])
                 .filter((row) => !submittedKeys.has(String(row.option_key).toUpperCase()))
