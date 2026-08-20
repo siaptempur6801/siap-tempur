@@ -3,6 +3,7 @@ import { examRepository, type CanonicalExamType, type ResolvedExam } from '@/src
 import type { Json } from '@/types/database.types'
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { walletService, WalletDomainError } from '@/src/services/wallet.service'
+import { CPNS_SKD_CONTEXT, type ProgramTrackContext } from '@/src/services/catalog-context.service'
 
 export type PracticeErrorCode =
     | 'EXAM_NOT_CONFIGURED'
@@ -13,6 +14,10 @@ export type PracticeErrorCode =
     | 'ENTITLEMENT_REQUIRED'
     | 'EXPIRED_ATTEMPT'
     | 'EXAM_CONFIGURATION_ERROR'
+
+type ContextualPracticeInput = {
+    context?: ProgramTrackContext
+}
 
 export class PracticeDomainError extends Error {
     constructor(
@@ -27,6 +32,8 @@ export class PracticeDomainError extends Error {
 
 type StartInput = {
     userId: string
+    programCode: string
+    trackCode: string
     examTypeCode: CanonicalExamType
     subjectCode?: string
     questionCount?: number
@@ -47,10 +54,16 @@ type EntitlementRow = {
     usage_count: number
 }
 
+function resolveContext(context?: ProgramTrackContext): ProgramTrackContext {
+    return context ?? CPNS_SKD_CONTEXT
+}
+
 function metadataFor(input: StartInput, exam: ResolvedExam): Record<string, Json> {
     const metadata: Record<string, Json> = {
         schemaVersion: 2,
         practiceKind: input.kind,
+        programCode: input.programCode,
+        trackCode: input.trackCode,
         examTypeCode: exam.examTypeCode,
         durationSeconds: exam.durationSeconds,
     }
@@ -74,9 +87,12 @@ function isEntitlementUsable(entitlement: EntitlementRow) {
 }
 
 export class ExamAttemptService {
-    async startMiniTryout(input: { userId: string; subjectCode: string; questionCount: number }) {
+    async startMiniTryout(input: ContextualPracticeInput & { userId: string; subjectCode: string; questionCount: number }) {
+        const context = resolveContext(input.context)
         return this.start({
             userId: input.userId,
+            programCode: context.programCode,
+            trackCode: context.trackCode,
             examTypeCode: 'MINI_TRYOUT',
             subjectCode: input.subjectCode,
             questionCount: input.questionCount,
@@ -84,9 +100,12 @@ export class ExamAttemptService {
         })
     }
 
-    async startDrill(input: { userId: string; subjectCode: string; knowledgeNodeName: string; questionCount: number }) {
+    async startDrill(input: ContextualPracticeInput & { userId: string; subjectCode: string; knowledgeNodeName: string; questionCount: number }) {
+        const context = resolveContext(input.context)
         return this.start({
             userId: input.userId,
+            programCode: context.programCode,
+            trackCode: context.trackCode,
             examTypeCode: 'DRILL',
             subjectCode: input.subjectCode,
             knowledgeNodeName: input.knowledgeNodeName,
@@ -95,9 +114,12 @@ export class ExamAttemptService {
         })
     }
 
-    async startFullTryout(input: { userId: string }) {
+    async startFullTryout(input: ContextualPracticeInput & { userId: string }) {
+        const context = resolveContext(input.context)
         return this.start({
             userId: input.userId,
+            programCode: context.programCode,
+            trackCode: context.trackCode,
             examTypeCode: 'FULL_TRYOUT',
             kind: 'full_tryout',
         })
@@ -105,8 +127,8 @@ export class ExamAttemptService {
 
     private async start(input: StartInput): Promise<StartAttemptResult> {
         const exam = await examRepository.findExam({
-            programCode: 'CPNS',
-            trackCode: 'SKD',
+            programCode: input.programCode,
+            trackCode: input.trackCode,
             examTypeCode: input.examTypeCode,
             subjectCode: input.subjectCode,
         })
@@ -114,7 +136,7 @@ export class ExamAttemptService {
         if (!exam) {
             throw new PracticeDomainError(
                 'EXAM_NOT_CONFIGURED',
-                `${input.examTypeCode} exam is not configured for ${input.subjectCode ?? 'SKD'}`,
+                `${input.examTypeCode} exam is not configured for ${input.programCode}/${input.trackCode}${input.subjectCode ? `/${input.subjectCode}` : ''}`,
             )
         }
 
