@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Flag, LogOut, Map } from 'lucide-react'
+import { Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Flag, LogOut, Map as MapIcon } from 'lucide-react'
 import MathRenderer from '@/components/MathRenderer'
 import { cn } from '@/lib/utils'
 import { finishPractice, submitAnswer, submitAnswerOptions } from '@/app/actions/practice'
@@ -337,7 +337,7 @@ export default function UniversalPracticeSessionClient({
                 </section>
 
                 <aside className="h-fit border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0_0_#111] lg:sticky lg:top-6">
-                    <h2 className="flex items-center gap-2 font-black"><Map size={18}/> Navigasi Soal</h2>
+                    <h2 className="flex items-center gap-2 font-black"><MapIcon size={18}/> Navigasi Soal</h2>
                     <div className="mt-4 grid grid-cols-5 gap-2">
                         {questions.map((question, index) => (
                             <button
