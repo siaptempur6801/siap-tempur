@@ -55,7 +55,7 @@ export class LeaderboardService {
         const { data: exam, error: examError } = await admin
             .from('exams')
             .select('program_id, track_id, exam_type_id')
-            .eq('id', attempt.exam_id)
+            .eq('id', String(attempt.exam_id))
             .maybeSingle()
         if (examError) throw examError
         if (!exam) return []
@@ -63,7 +63,7 @@ export class LeaderboardService {
         const { data: examType, error: typeError } = await admin
             .from('exam_types')
             .select('code')
-            .eq('id', exam.exam_type_id)
+            .eq('id', String(exam.exam_type_id))
             .maybeSingle()
         if (typeError) throw typeError
         if (examType?.code !== 'FULL_TRYOUT') return []
@@ -77,11 +77,15 @@ export class LeaderboardService {
             .gte('ends_at', now)
         if (boardError) throw boardError
 
+        const examProgramId = String(exam.program_id ?? '')
+        const examTrackId = String(exam.track_id ?? '')
         const eligibleBoards = (boards ?? []).filter((board) => {
             const type = String(board.leaderboard_type).toLowerCase()
             if (type !== 'national' && type !== 'regular') return false
-            if (board.program_id && board.program_id !== exam.program_id) return false
-            if (board.track_id && board.track_id !== exam.track_id) return false
+            const boardProgramId = board.program_id ? String(board.program_id) : null
+            const boardTrackId = board.track_id ? String(board.track_id) : null
+            if (boardProgramId && boardProgramId !== examProgramId) return false
+            if (boardTrackId && boardTrackId !== examTrackId) return false
             return true
         })
         if (eligibleBoards.length === 0) return []
@@ -89,12 +93,12 @@ export class LeaderboardService {
         const rpcAdmin = await createAdminClient()
         await Promise.all(eligibleBoards.map(async (board) => {
             const { error } = await rpcAdmin.rpc('recalculate_leaderboard', {
-                p_leaderboard_id: board.id,
+                p_leaderboard_id: String(board.id),
             })
             if (error) throw error
         }))
 
-        return eligibleBoards.map((board) => board.id)
+        return eligibleBoards.map((board) => String(board.id))
     }
 
     async getNationalLeaderboard(userId: string, limit = 100) {
@@ -131,21 +135,22 @@ export class LeaderboardService {
 
         const board = (boards ?? []).find((row) => String(row.leaderboard_type).toLowerCase() === 'national') ?? null
         if (!board) return { board: null, rankings: [], currentUserRank: null }
+        const boardId = String(board.id)
 
         const { data: topRows, error: topError } = await admin
             .from('leaderboard_entries')
             .select('user_id, score, rank, metadata')
-            .eq('leaderboard_id', board.id)
+            .eq('leaderboard_id', boardId)
             .order('rank', { ascending: true })
             .limit(limit)
         if (topError) throw topError
 
-        let currentRow = (topRows ?? []).find((row) => row.user_id === userId) ?? null
+        let currentRow = (topRows ?? []).find((row) => String(row.user_id) === userId) ?? null
         if (!currentRow) {
             const { data, error } = await admin
                 .from('leaderboard_entries')
                 .select('user_id, score, rank, metadata')
-                .eq('leaderboard_id', board.id)
+                .eq('leaderboard_id', boardId)
                 .eq('user_id', userId)
                 .maybeSingle()
             if (error) throw error
@@ -153,9 +158,9 @@ export class LeaderboardService {
         }
 
         const userIds = Array.from(new Set([
-            ...(topRows ?? []).map((row) => row.user_id),
-            ...(currentRow ? [currentRow.user_id] : []),
-        ]))
+            ...(topRows ?? []).map((row) => String(row.user_id)),
+            ...(currentRow ? [String(currentRow.user_id)] : []),
+        ].filter(Boolean)))
 
         const profileById = new Map<string, { full_name: string | null; avatar_url: string | null }>()
         if (userIds.length > 0) {
@@ -165,9 +170,9 @@ export class LeaderboardService {
                 .in('id', userIds)
             if (profileError) throw profileError
             for (const profile of profiles ?? []) {
-                profileById.set(profile.id, {
-                    full_name: profile.full_name,
-                    avatar_url: profile.avatar_url,
+                profileById.set(String(profile.id), {
+                    full_name: typeof profile.full_name === 'string' ? profile.full_name : null,
+                    avatar_url: typeof profile.avatar_url === 'string' ? profile.avatar_url : null,
                 })
             }
         }
@@ -195,11 +200,11 @@ export class LeaderboardService {
 
         return {
             board: {
-                id: board.id,
-                code: board.code,
-                name: board.name,
-                startsAt: board.starts_at,
-                endsAt: board.ends_at,
+                id: boardId,
+                code: String(board.code ?? ''),
+                name: String(board.name ?? ''),
+                startsAt: String(board.starts_at ?? ''),
+                endsAt: String(board.ends_at ?? ''),
             },
             rankings,
             currentUserRank,
