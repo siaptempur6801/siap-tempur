@@ -1,6 +1,9 @@
 import PaperBackground from '@/components/PaperBackground'
 import CommercePackagesClient from '@/components/dashboard/CommercePackagesClient'
 import { commerceService } from '@/src/services/commerce.service'
+import { authorizationService } from '@/src/services/authorization.service'
+import { PERMISSIONS } from '@/src/auth/permissions'
+import { env } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,10 +21,13 @@ export default async function BeliPaketPage() {
             tokenGrant: offer.tokenGrant,
         }))
 
+    const qaQrisEnabled = env.appEnvironment() === 'staging'
+        && await authorizationService.hasPermission(PERMISSIONS.PAYMENT_MANAGE)
+
     return (
         <div className="font-body w-full flex flex-col relative">
             <PaperBackground />
-            <CommercePackagesClient packages={packages} />
+            <CommercePackagesClient packages={packages} qaQrisEnabled={qaQrisEnabled} />
         </div>
     )
 }
