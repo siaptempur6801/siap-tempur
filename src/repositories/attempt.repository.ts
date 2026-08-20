@@ -1,5 +1,5 @@
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
-import type { Json } from '@/types/database.types'
+import type { Json, TablesUpdate } from '@/types/database.types'
 import type { AttemptQuestionSeed } from '@/src/repositories/exam.repository'
 
 export type AttemptRow = {
@@ -203,7 +203,9 @@ export class AttemptRepository {
 
     async touchAttempt(attemptId: string, position?: number) {
         const admin = await createV2AdminClient()
-        const payload: Record<string, string | number> = { last_saved_at: new Date().toISOString() }
+        const payload: TablesUpdate<'exam_attempts'> = {
+            last_saved_at: new Date().toISOString(),
+        }
         if (position !== undefined) payload.last_question_position = position
         const { error } = await admin.from('exam_attempts').update(payload).eq('id', attemptId)
         if (error) throw error
