@@ -34,8 +34,22 @@ export default function CommercePackagesClient({ packages }: { packages: Commerc
         const loadingToast = toast.loading('Memproses pesanan...')
         try {
             const transaction = await createPackageTransaction(productCode)
-            if (!transaction.token) throw new Error('Gagal mendapatkan token pembayaran')
+            if (!transaction.success) {
+                toast.error('Checkout belum bisa dibuat', {
+                    id: loadingToast,
+                    description: transaction.message,
+                })
+                return
+            }
+
             toast.dismiss(loadingToast)
+
+            if (!window.snap?.pay) {
+                toast.error('Midtrans Snap belum siap', {
+                    description: 'Muat ulang halaman lalu coba lagi.',
+                })
+                return
+            }
 
             window.snap.pay(transaction.token, {
                 onSuccess: async () => {
