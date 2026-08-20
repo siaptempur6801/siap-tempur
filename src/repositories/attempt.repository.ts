@@ -1,4 +1,4 @@
-import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json, TablesUpdate } from '@/types/database.types'
 import type { AttemptQuestionSeed } from '@/src/repositories/exam.repository'
 
@@ -181,7 +181,7 @@ export class AttemptRepository {
     }
 
     async getOptionForQuestion(questionId: string, optionId: string): Promise<ScoringOptionRow | null> {
-        const admin = await createV2AdminClient()
+        const admin = await createAdminClient()
         const { data, error } = await admin
             .from('question_options')
             .select('id, question_id, is_correct, score, response_group, response_group_order')
@@ -194,7 +194,7 @@ export class AttemptRepository {
 
     async getOptionsForQuestion(questionId: string, optionIds: string[]): Promise<ScoringOptionRow[]> {
         if (optionIds.length === 0) return []
-        const admin = await createV2AdminClient()
+        const admin = await createAdminClient()
         const { data, error } = await admin
             .from('question_options')
             .select('id, question_id, is_correct, score, response_group, response_group_order')
@@ -328,7 +328,7 @@ export class AttemptRepository {
 
     async getScoringOptions(optionIds: string[]): Promise<ScoringOptionRow[]> {
         if (optionIds.length === 0) return []
-        const admin = await createV2AdminClient()
+        const admin = await createAdminClient()
         const { data, error } = await admin
             .from('question_options')
             .select('id, question_id, is_correct, score, response_group, response_group_order')
@@ -339,7 +339,7 @@ export class AttemptRepository {
 
     async getScoringOptionsForQuestions(questionIds: string[]): Promise<ScoringOptionRow[]> {
         if (questionIds.length === 0) return []
-        const admin = await createV2AdminClient()
+        const admin = await createAdminClient()
         const { data, error } = await admin
             .from('question_options')
             .select('id, question_id, is_correct, score, response_group, response_group_order')
