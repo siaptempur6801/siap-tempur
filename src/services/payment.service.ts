@@ -7,6 +7,11 @@ import type { Json } from '@/types/database.types'
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
 const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
 
+type WebhookProcessResult = {
+    alreadyProcessed: boolean
+    paid: boolean
+}
+
 function asJson(value: unknown): Json {
     return JSON.parse(JSON.stringify(value ?? {})) as Json
 }
@@ -163,7 +168,7 @@ export class PaymentService {
         paymentMethod?: string | null
         payload: unknown
         eventId: string
-    }) {
+    }): Promise<WebhookProcessResult> {
         if (!MIDTRANS_STATUSES.has(input.status)) throw new Error('UNSUPPORTED_PAYMENT_STATUS')
 
         const order = await commerceService.getOrderByNumber(input.orderNumber)
