@@ -1,4 +1,5 @@
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { calculateMaxScore, type ResponseScoringConfig } from '@/src/domain/question-response'
 import type { Json } from '@/types/database.types'
 
 export type CanonicalExamType = 'DRILL' | 'MINI_TRYOUT' | 'FULL_TRYOUT' | 'DIAGNOSTIC' | 'EVENT' | 'REMEDIAL'
@@ -78,6 +79,9 @@ type QuestionRow = {
     version: number
     difficulty: string
     status: string
+    stimulus_id: string | null
+    stimulus_order: number | null
+    response_config: Json
 }
 
 type OptionRow = {
@@ -88,6 +92,18 @@ type OptionRow = {
     is_correct: boolean | null
     score: number | null
     sort_order: number
+    image_url: string | null
+    response_group: string | null
+    response_group_order: number | null
+}
+
+type StimulusRow = {
+    id: string
+    stimulus_code: string
+    title: string | null
+    content: string
+    image_url: string | null
+    source_reference: string | null
 }
 
 type ExamItemRow = {
@@ -133,6 +149,15 @@ function readNumericConfig(config: Json, ...keys: string[]) {
 function sectionPassingScore(section: SectionRow | undefined) {
     if (!section) return null
     return readNumericConfig(section.config, 'passing_score', 'passingScore', 'passing_grade', 'passingGrade')
+}
+
+function responseScoringConfig(config: Json): ResponseScoringConfig | undefined {
+    if (!config || Array.isArray(config) || typeof config !== 'object') return undefined
+    const rawMode = config.scoringMode ?? config.scoring_mode
+    if (rawMode === 'single_option' || rawMode === 'exact_set' || rawMode === 'grouped_sum') {
+        return { scoringMode: rawMode }
+    }
+    return undefined
 }
 
 export class ExamRepository {
@@ -401,11 +426,11 @@ export class ExamRepository {
         const [{ data: rawQuestions, error: questionError }, { data: rawOptions, error: optionError }] = await Promise.all([
             admin
                 .from('questions')
-                .select('id, question_code, stem, question_type, subject_id, version, difficulty, status')
+                .select('id, question_code, stem, question_type, subject_id, version, difficulty, status, stimulus_id, stimulus_order, response_config')
                 .in('id', questionIds),
             admin
                 .from('question_options')
-                .select('id, question_id, option_key, content, is_correct, score, sort_order')
+                .select('id, question_id, option_key, content, is_correct, score, sort_order, image_url, response_group, response_group_order')
                 .in('question_id', questionIds)
                 .order('sort_order', { ascending: true }),
         ])
@@ -414,7 +439,19 @@ export class ExamRepository {
 
         const questions = (rawQuestions ?? []) as QuestionRow[]
         const options = (rawOptions ?? []) as OptionRow[]
+        const stimulusIds = Array.from(new Set(questions.map((row) => row.stimulus_id).filter((value): value is string => Boolean(value))))
+        let stimuli: StimulusRow[] = []
+        if (stimulusIds.length > 0) {
+            const { data, error } = await admin
+                .from('question_stimuli')
+                .select('id, stimulus_code, title, content, image_url, source_reference')
+                .in('id', stimulusIds)
+            if (error) throw error
+            stimuli = (data ?? []) as StimulusRow[]
+        }
+
         const questionMap = new Map(questions.map((row) => [row.id, row]))
+        const stimulusMap = new Map(stimuli.map((row) => [row.id, row]))
         const optionMap = new Map<string, OptionRow[]>()
         for (const option of options) {
             const rows = optionMap.get(option.question_id) ?? []
@@ -438,11 +475,20 @@ export class ExamRepository {
             const questionOptions = optionMap.get(questionId) ?? []
             if (questionOptions.length === 0) throw new Error(`QUESTION_OPTIONS_EMPTY:${questionId}`)
 
-            const maxScore = Math.max(
-                ...questionOptions.map((option) => option.score ?? (option.is_correct ? 5 : 0)),
-                0,
-            )
+            const responseConfig = responseScoringConfig(question.response_config)
+            const maxScore = calculateMaxScore({
+                questionType: question.question_type,
+                options: questionOptions.map((option) => ({
+                    id: option.id,
+                    isCorrect: option.is_correct,
+                    score: option.score,
+                    responseGroup: option.response_group,
+                    responseGroupOrder: option.response_group_order,
+                })),
+                config: responseConfig,
+            })
             const passingScore = input.passingScoreByQuestion?.get(questionId) ?? null
+            const stimulus = question.stimulus_id ? stimulusMap.get(question.stimulus_id) ?? null : null
 
             const snapshot: Json = {
                 questionId: question.id,
@@ -452,10 +498,23 @@ export class ExamRepository {
                 subjectId: question.subject_id,
                 difficulty: question.difficulty,
                 passingScore,
+                responseConfig: question.response_config ?? {},
+                stimulusOrder: question.stimulus_order,
+                stimulus: stimulus ? {
+                    id: stimulus.id,
+                    code: stimulus.stimulus_code,
+                    title: stimulus.title,
+                    content: stimulus.content,
+                    imageUrl: stimulus.image_url,
+                    sourceReference: stimulus.source_reference,
+                } : null,
                 options: questionOptions.map((option) => ({
                     id: option.id,
                     key: option.option_key,
                     content: option.content,
+                    imageUrl: option.image_url,
+                    responseGroup: option.response_group,
+                    responseGroupOrder: option.response_group_order,
                 })),
             }
 
