@@ -1,10 +1,13 @@
 'use server'
 
 import { createClient } from '@/lib/utils/supabase/server'
+import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { validateCsrf } from '@/lib/csrf'
 import { isServerActionRateLimited } from '@/lib/server-rate-limit'
 import { paymentService } from '@/src/services/payment.service'
+import { authorizationService } from '@/src/services/authorization.service'
+import { PERMISSIONS } from '@/src/auth/permissions'
 
 export type CreatePackageTransactionResult =
     | {
@@ -19,15 +22,34 @@ export type CreatePackageTransactionResult =
         message: string
     }
 
+export type CreateQrisQaTransactionResult =
+    | {
+        success: true
+        orderId: string
+        orderNumber: string
+        providerTransactionId: string
+        qrImageUrl: string
+        qrImageUrlV2: string | null
+        simulatorUrl: string
+        amount: number
+    }
+    | {
+        success: false
+        message: string
+    }
+
 function checkoutErrorMessage(error: unknown) {
     const message = error instanceof Error ? error.message : ''
 
     if (message === 'PRODUCT_NOT_AVAILABLE') return 'Paket tidak tersedia.'
-    if (message.includes('must use a Midtrans Sandbox key on staging')) {
-        return 'Midtrans Sandbox belum dikonfigurasi untuk Preview staging. Admin perlu memasang Sandbox Server Key dan Sandbox Client Key di environment Preview.'
-    }
     if (message === 'MIDTRANS_TOKEN_MISSING') {
         return 'Midtrans tidak mengembalikan token pembayaran. Silakan coba lagi.'
+    }
+    if (message.startsWith('MIDTRANS_QRIS_CHARGE_FAILED:')) {
+        return `Midtrans Sandbox menolak pembuatan QRIS: ${message.slice('MIDTRANS_QRIS_CHARGE_FAILED:'.length)}`
+    }
+    if (message === 'MIDTRANS_QRIS_IMAGE_URL_MISSING') {
+        return 'Midtrans tidak mengembalikan direct QR image URL.'
     }
 
     return 'Terjadi kesalahan sistem saat memproses pembayaran. Silakan coba lagi.'
@@ -67,6 +89,46 @@ export async function createPackageTransaction(productCode: string): Promise<Cre
         }
     } catch (error) {
         logger.error('Package checkout creation failed', error, { productCode, userId: user.id })
+        return { success: false, message: checkoutErrorMessage(error) }
+    }
+}
+
+export async function createQrisQaTransaction(productCode: string): Promise<CreateQrisQaTransactionResult> {
+    try {
+        await validateCsrf()
+    } catch {
+        return { success: false, message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.' }
+    }
+
+    if (env.appEnvironment() !== 'staging') {
+        return { success: false, message: 'QRIS Simulator hanya tersedia pada staging.' }
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
+
+    const canManagePayments = await authorizationService.hasPermission(PERMISSIONS.PAYMENT_MANAGE)
+    if (!canManagePayments) {
+        return { success: false, message: 'Akses QRIS QA hanya untuk admin dengan permission payment.manage.' }
+    }
+
+    if (await isServerActionRateLimited(user.id, 'create_qris_qa_transaction', 5, 60000)) {
+        return { success: false, message: 'Terlalu banyak QRIS QA dibuat. Coba lagi satu menit lagi.' }
+    }
+
+    try {
+        const checkout = await paymentService.createQrisQaCheckout({
+            userId: user.id,
+            email: user.email,
+            fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
+            productCode,
+            adminFee: 500,
+        })
+
+        return { success: true, ...checkout }
+    } catch (error) {
+        logger.error('QRIS QA checkout creation failed', error, { productCode, userId: user.id })
         return { success: false, message: checkoutErrorMessage(error) }
     }
 }
