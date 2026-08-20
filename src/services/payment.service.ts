@@ -26,12 +26,9 @@ function asNumber(value: unknown) {
 }
 
 function providerBaseUrl() {
-    const serverKey = env.midtransServerKey()
     return {
-        serverKey,
-        baseUrl: serverKey.includes('SB-')
-            ? 'https://api.sandbox.midtrans.com/v2'
-            : 'https://api.midtrans.com/v2',
+        serverKey: env.midtransServerKey(),
+        baseUrl: `${env.midtransApiBaseUrl()}/v2`,
     }
 }
 
