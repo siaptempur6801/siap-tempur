@@ -79,8 +79,18 @@ export class EventService {
         }
 
         const questionCountByExam = new Map<string, number>()
-        await Promise.all(Array.from(new Set(sessions.map((session) => session.exam_id))).map(async (examId) => {
-            questionCountByExam.set(examId, await eventRepository.getExamQuestionCount(examId))
+        const durationByExam = new Map<string, number | null>()
+        const representativeSessionByExam = new Map<string, CanonicalEventSessionRow>()
+        for (const session of sessions) {
+            if (!representativeSessionByExam.has(session.exam_id)) representativeSessionByExam.set(session.exam_id, session)
+        }
+        await Promise.all(Array.from(representativeSessionByExam.entries()).map(async ([examId, session]) => {
+            const [questionCount, exam] = await Promise.all([
+                eventRepository.getExamQuestionCount(examId),
+                eventRepository.resolveSessionExam(session),
+            ])
+            questionCountByExam.set(examId, questionCount)
+            durationByExam.set(examId, exam?.durationSeconds ?? null)
         }))
 
         const sessionRegistrationCounts = await eventRepository.countRegistrationsForSessions(sessions.map((row) => row.id))
@@ -92,9 +102,11 @@ export class EventService {
                 ? eventSessions.find((row) => row.id === registration.session_id) ?? eventSessions[0] ?? null
                 : eventSessions[0] ?? null
             const attempt = attemptByEvent.get(event.id) ?? null
-            const examDurationSeconds = selectedSession
-                ? Math.max(0, Math.floor((Date.parse(selectedSession.ends_at) - Date.parse(selectedSession.starts_at)) / 1000))
-                : Math.max(0, Math.floor((Date.parse(event.ends_at) - Date.parse(event.starts_at)) / 1000))
+            const sessionSeconds = selectedSession
+                ? Math.max(1, Math.floor((Date.parse(selectedSession.ends_at) - Date.parse(selectedSession.starts_at)) / 1000))
+                : Math.max(1, Math.floor((Date.parse(event.ends_at) - Date.parse(event.starts_at)) / 1000))
+            const configuredDuration = selectedSession ? durationByExam.get(selectedSession.exam_id) ?? null : null
+            const examDurationSeconds = Math.min(configuredDuration ?? sessionSeconds, sessionSeconds)
             const latestStart = selectedSession
                 ? sessionLatestStart(selectedSession, examDurationSeconds)
                 : Date.parse(event.starts_at)
