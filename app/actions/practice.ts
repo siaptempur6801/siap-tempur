@@ -9,7 +9,7 @@ import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
 import { examAttemptService, PracticeDomainError, type StartAttemptResult } from '@/src/services/exam-attempt.service'
 import { attemptAnswerService } from '@/src/services/attempt-answer.service'
-import { scoringService } from '@/src/services/scoring.service'
+import { examCompletionService } from '@/src/services/exam-completion.service'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -41,8 +41,8 @@ function practiceErrorMessage(error: PracticeDomainError) {
             return 'Batas percobaan untuk ujian ini sudah tercapai.'
         case 'ENTITLEMENT_REQUIRED':
             return 'Akun ini belum memiliki akses untuk ujian tersebut.'
-        case 'TOKEN_FLOW_PENDING':
-            return 'Debit token Schema V2 belum diaktifkan. Untuk QA staging, gunakan exam dengan token_cost = 0.'
+        case 'INSUFFICIENT_TOKEN_BALANCE':
+            return 'Token tryout kamu tidak mencukupi untuk ujian ini.'
         case 'EXAM_CONFIGURATION_ERROR':
             return 'Konfigurasi ujian Schema V2 belum lengkap.'
         default:
@@ -60,7 +60,7 @@ async function runStartWithExpiredAttemptRecovery(
         if (error instanceof PracticeDomainError && error.code === 'EXPIRED_ATTEMPT') {
             const attemptId = typeof error.details?.attemptId === 'string' ? error.details.attemptId : null
             if (attemptId) {
-                await scoringService.finishAttempt(userId, attemptId)
+                await examCompletionService.completeAttempt(userId, attemptId)
                 return start()
             }
         }
@@ -85,6 +85,7 @@ function revalidatePracticeFinish(attemptId: string) {
     revalidatePath('/cpns/dashboard/mini-tryout')
     revalidatePath('/cpns/dashboard/drilling-materi')
     revalidatePath('/cpns/dashboard/event')
+    revalidatePath('/cpns/dashboard/profile')
     revalidatePath('/cpns/dashboard/riwayat')
 }
 
@@ -208,7 +209,7 @@ export async function finishPractice(sessionId: string) {
 
     const userId = await getCurrentUserId()
     try {
-        await scoringService.finishAttempt(userId, sessionId)
+        await examCompletionService.completeAttempt(userId, sessionId)
         revalidatePracticeFinish(sessionId)
         return { success: true }
     } catch (error) {
