@@ -1,5 +1,6 @@
 import { attemptRepository, type AttemptAnswerRow, type ScoringOptionRow } from '@/src/repositories/attempt.repository'
 import { PracticeDomainError } from '@/src/services/exam-attempt.service'
+import { calculateResponseScore } from '@/src/domain/question-response'
 import type { Json } from '@/types/database.types'
 
 type SubjectAccumulator = {
@@ -26,19 +27,32 @@ function durationSeconds(startedAt: string | null) {
     return Math.max(0, Math.floor((Date.now() - started) / 1000))
 }
 
-export function calculateQuestionScore(input: {
-    maxScore: number
-    option: ScoringOptionRow | null
+function selectionMapForAnswers(input: {
+    answers: AttemptAnswerRow[]
+    joinedSelections: Array<{ attempt_answer_id: string; option_id: string }>
 }) {
-    if (!input.option) {
-        return { score: 0, isCorrect: null as boolean | null }
+    const map = new Map<string, string[]>()
+    for (const row of input.joinedSelections) {
+        const ids = map.get(row.attempt_answer_id) ?? []
+        ids.push(row.option_id)
+        map.set(row.attempt_answer_id, ids)
     }
+    for (const answer of input.answers) {
+        if (!map.has(answer.id) && answer.selected_option_id) {
+            map.set(answer.id, [answer.selected_option_id])
+        }
+    }
+    return map
+}
 
-    const score = input.option.score ?? (input.option.is_correct === true ? input.maxScore : 0)
-    return {
-        score: Math.max(0, score),
-        isCorrect: input.option.is_correct,
+function optionMapForQuestions(options: ScoringOptionRow[]) {
+    const map = new Map<string, ScoringOptionRow[]>()
+    for (const option of options) {
+        const rows = map.get(option.question_id) ?? []
+        rows.push(option)
+        map.set(option.question_id, rows)
     }
+    return map
 }
 
 export class ScoringService {
@@ -65,13 +79,12 @@ export class ScoringService {
         const answerByQuestion = new Map<string, AttemptAnswerRow>()
         for (const answer of bundle.answers) answerByQuestion.set(answer.attempt_question_id, answer)
 
-        const selectedOptionIds = Array.from(new Set(
-            bundle.answers
-                .map((answer) => answer.selected_option_id)
-                .filter((id): id is string => Boolean(id)),
-        ))
-        const options = await attemptRepository.getScoringOptions(selectedOptionIds)
-        const optionById = new Map(options.map((option) => [option.id, option]))
+        const [joinedSelections, scoringOptions] = await Promise.all([
+            attemptRepository.getAnswerOptionSelections(bundle.answers.map((answer) => answer.id)),
+            attemptRepository.getScoringOptionsForQuestions(bundle.questions.map((question) => question.question_id)),
+        ])
+        const selectionsByAnswer = selectionMapForAnswers({ answers: bundle.answers, joinedSelections })
+        const optionsByQuestion = optionMapForQuestions(scoringOptions)
 
         const subjects = new Map<string, SubjectAccumulator>()
         let totalScore = 0
@@ -79,11 +92,23 @@ export class ScoringService {
 
         for (const question of bundle.questions) {
             const answer = answerByQuestion.get(question.id)
-            const option = answer?.selected_option_id ? optionById.get(answer.selected_option_id) ?? null : null
-            const scored = calculateQuestionScore({ maxScore: question.max_score, option })
+            const selectedOptionIds = answer ? selectionsByAnswer.get(answer.id) ?? [] : []
+            const questionType = readSnapshotField<string>(question.question_snapshot, 'questionType') ?? 'single_choice'
+            const options = optionsByQuestion.get(question.question_id) ?? []
+            const scored = calculateResponseScore({
+                questionType,
+                selectedOptionIds,
+                options: options.map((option) => ({
+                    id: option.id,
+                    isCorrect: option.is_correct,
+                    score: option.score,
+                    responseGroup: option.response_group,
+                    responseGroupOrder: option.response_group_order,
+                })),
+            })
 
             totalScore += scored.score
-            totalMaxScore += question.max_score
+            totalMaxScore += scored.maxScore
 
             const subjectId = readSnapshotField<string>(question.question_snapshot, 'subjectId')
             if (subjectId) {
@@ -98,10 +123,10 @@ export class ScoringService {
                 }
 
                 current.rawScore += scored.score
-                current.maxScore += question.max_score
-                if (!answer?.selected_option_id) current.unansweredCount += 1
+                current.maxScore += scored.maxScore
+                if (!scored.answered) current.unansweredCount += 1
                 else if (scored.isCorrect === true) current.correctCount += 1
-                else if (scored.isCorrect === false) current.wrongCount += 1
+                else current.wrongCount += 1
                 subjects.set(subjectId, current)
             }
 
