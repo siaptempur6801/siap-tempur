@@ -1,10 +1,11 @@
 'use server'
 
-import { createV2Client } from '@/lib/utils/supabase/server'
+import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
 import { eventService, EventDomainError } from '@/src/services/event.service'
+import { commerceService } from '@/src/services/commerce.service'
 
 function isUuid(value: string) {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
@@ -24,6 +25,21 @@ export async function registerTryoutEvent(eventId: string, _eventCode?: string) 
     if (!user) redirect('/login?next=/cpns/dashboard/event')
 
     try {
+        const paidOffer = await commerceService.getEventOffer(eventId)
+        if (paidOffer && paidOffer.price > 0) {
+            const admin = await createV2AdminClient()
+            const { data: registration, error } = await admin
+                .from('event_registrations')
+                .select('id')
+                .eq('event_id', eventId)
+                .eq('user_id', user.id)
+                .maybeSingle()
+            if (error) throw error
+            if (!registration) {
+                return { success: false, message: 'Selesaikan pembayaran tiket event terlebih dahulu' }
+            }
+        }
+
         const result = await eventService.register(user.id, eventId)
         revalidatePath('/cpns/dashboard/event')
         revalidatePath('/cpns/dashboard')
