@@ -3,9 +3,10 @@
  * Source: Supabase project lpgrivowdcepcxradavu (Siap Tempur Staging).
  * Generated/verified on 2026-08-20.
  *
- * The legacy table surface is intentionally removed from this file. Run
- * `npm run db:types:staging` with an authenticated Supabase CLI to refresh the
- * full generated column/relationship metadata before each schema-v2 merge.
+ * Canonical tables already used by migrated runtime domains are strongly typed
+ * below. Tables not migrated yet intentionally remain GenericTable. Run
+ * `npm run db:types:staging` with an authenticated Supabase CLI to replace this
+ * snapshot with the complete generated relationship metadata before cutover.
  */
 
 export type Json =
@@ -238,6 +239,429 @@ type UserTrackPreferencesTable = {
     Relationships: []
 }
 
+type KnowledgeNodesTable = {
+    Row: {
+        id: string
+        subject_id: string
+        parent_id: string | null
+        code: string | null
+        name: string
+        slug: string
+        node_type: string
+        description: string | null
+        depth: number
+        sort_order: number
+        status: string
+        created_at: string
+        updated_at: string
+    }
+    Insert: {
+        id?: string
+        subject_id: string
+        parent_id?: string | null
+        code?: string | null
+        name: string
+        slug: string
+        node_type?: string
+        description?: string | null
+        depth?: number
+        sort_order?: number
+        status?: string
+        created_at?: string
+        updated_at?: string
+    }
+    Update: Partial<KnowledgeNodesTable['Insert']>
+    Relationships: []
+}
+
+type KnowledgeNodePathsTable = {
+    Row: { ancestor_id: string; descendant_id: string; depth: number }
+    Insert: { ancestor_id: string; descendant_id: string; depth: number }
+    Update: Partial<KnowledgeNodePathsTable['Insert']>
+    Relationships: []
+}
+
+type QuestionsTable = {
+    Row: {
+        id: string
+        question_code: string
+        program_id: string
+        track_id: string
+        subject_id: string
+        question_type: string
+        stem: string
+        difficulty: string
+        cognitive_level: string | null
+        source_type: string
+        source_reference: string | null
+        estimated_seconds: number | null
+        status: string
+        version: number
+        author_id: string
+        reviewer_id: string | null
+        published_at: string | null
+        created_at: string
+        updated_at: string
+    }
+    Insert: {
+        id?: string
+        question_code: string
+        program_id: string
+        track_id: string
+        subject_id: string
+        question_type?: string
+        stem: string
+        difficulty?: string
+        cognitive_level?: string | null
+        source_type?: string
+        source_reference?: string | null
+        estimated_seconds?: number | null
+        status?: string
+        version?: number
+        author_id: string
+        reviewer_id?: string | null
+        published_at?: string | null
+        created_at?: string
+        updated_at?: string
+    }
+    Update: Partial<QuestionsTable['Insert']>
+    Relationships: []
+}
+
+type QuestionKnowledgeNodesTable = {
+    Row: { question_id: string; knowledge_node_id: string; relation_type: string }
+    Insert: { question_id: string; knowledge_node_id: string; relation_type?: string }
+    Update: Partial<QuestionKnowledgeNodesTable['Insert']>
+    Relationships: []
+}
+
+type QuestionOptionsTable = {
+    Row: {
+        id: string
+        question_id: string
+        option_key: string
+        content: string
+        is_correct: boolean | null
+        score: number | null
+        sort_order: number
+        created_at: string
+    }
+    Insert: {
+        id?: string
+        question_id: string
+        option_key: string
+        content: string
+        is_correct?: boolean | null
+        score?: number | null
+        sort_order?: number
+        created_at?: string
+    }
+    Update: Partial<QuestionOptionsTable['Insert']>
+    Relationships: []
+}
+
+type QuestionExplanationsTable = {
+    Row: {
+        id: string
+        question_id: string
+        version: number
+        content: string
+        format: string
+        video_url: string | null
+        created_at: string
+        updated_at: string
+    }
+    Insert: {
+        id?: string
+        question_id: string
+        version?: number
+        content: string
+        format?: string
+        video_url?: string | null
+        created_at?: string
+        updated_at?: string
+    }
+    Update: Partial<QuestionExplanationsTable['Insert']>
+    Relationships: []
+}
+
+type ExamTypesTable = {
+    Row: { id: string; code: string; name: string; description: string | null }
+    Insert: { id?: string; code: string; name: string; description?: string | null }
+    Update: Partial<ExamTypesTable['Insert']>
+    Relationships: []
+}
+
+type ExamsTable = {
+    Row: {
+        id: string
+        program_id: string
+        track_id: string
+        period_id: string | null
+        exam_type_id: string
+        exam_rule_id: string | null
+        blueprint_id: string | null
+        title: string
+        slug: string
+        description: string | null
+        duration_seconds: number | null
+        attempt_limit: number | null
+        question_order: string
+        result_visibility: string
+        access_type: string
+        status: string
+        starts_at: string | null
+        ends_at: string | null
+        created_by: string
+        created_at: string
+        updated_at: string
+        required_feature_id: string | null
+        token_cost: number
+    }
+    Insert: {
+        id?: string
+        program_id: string
+        track_id: string
+        period_id?: string | null
+        exam_type_id: string
+        exam_rule_id?: string | null
+        blueprint_id?: string | null
+        title: string
+        slug: string
+        description?: string | null
+        duration_seconds?: number | null
+        attempt_limit?: number | null
+        question_order?: string
+        result_visibility?: string
+        access_type?: string
+        status?: string
+        starts_at?: string | null
+        ends_at?: string | null
+        created_by: string
+        created_at?: string
+        updated_at?: string
+        required_feature_id?: string | null
+        token_cost?: number
+    }
+    Update: Partial<ExamsTable['Insert']>
+    Relationships: []
+}
+
+type ExamSectionsTable = {
+    Row: {
+        id: string
+        exam_id: string
+        subject_id: string | null
+        title: string
+        sort_order: number
+        duration_seconds: number | null
+        question_count: number | null
+        config: Json
+    }
+    Insert: {
+        id?: string
+        exam_id: string
+        subject_id?: string | null
+        title: string
+        sort_order?: number
+        duration_seconds?: number | null
+        question_count?: number | null
+        config?: Json
+    }
+    Update: Partial<ExamSectionsTable['Insert']>
+    Relationships: []
+}
+
+type ExamQuestionItemsTable = {
+    Row: {
+        id: string
+        exam_id: string
+        section_id: string | null
+        question_id: string
+        question_version: number
+        position: number
+        score_weight: number | null
+        created_at: string
+    }
+    Insert: {
+        id?: string
+        exam_id: string
+        section_id?: string | null
+        question_id: string
+        question_version: number
+        position: number
+        score_weight?: number | null
+        created_at?: string
+    }
+    Update: Partial<ExamQuestionItemsTable['Insert']>
+    Relationships: []
+}
+
+type ExamAttemptsTable = {
+    Row: {
+        id: string
+        exam_id: string
+        user_id: string
+        attempt_number: number
+        status: string
+        started_at: string | null
+        submitted_at: string | null
+        duration_used_seconds: number | null
+        total_score: number | null
+        percentage: number | null
+        rank: number | null
+        passed: boolean | null
+        last_question_position: number | null
+        last_saved_at: string | null
+        metadata: Json
+        created_at: string
+        updated_at: string
+    }
+    Insert: {
+        id?: string
+        exam_id: string
+        user_id: string
+        attempt_number?: number
+        status?: string
+        started_at?: string | null
+        submitted_at?: string | null
+        duration_used_seconds?: number | null
+        total_score?: number | null
+        percentage?: number | null
+        rank?: number | null
+        passed?: boolean | null
+        last_question_position?: number | null
+        last_saved_at?: string | null
+        metadata?: Json
+        created_at?: string
+        updated_at?: string
+    }
+    Update: Partial<ExamAttemptsTable['Insert']>
+    Relationships: []
+}
+
+type AttemptQuestionsTable = {
+    Row: {
+        id: string
+        attempt_id: string
+        question_id: string
+        question_version: number
+        position: number
+        section_id: string | null
+        question_snapshot: Json
+        max_score: number
+        created_at: string
+    }
+    Insert: {
+        id?: string
+        attempt_id: string
+        question_id: string
+        question_version: number
+        position: number
+        section_id?: string | null
+        question_snapshot: Json
+        max_score?: number
+        created_at?: string
+    }
+    Update: Partial<AttemptQuestionsTable['Insert']>
+    Relationships: []
+}
+
+type AttemptAnswersTable = {
+    Row: {
+        id: string
+        attempt_question_id: string
+        selected_option_id: string | null
+        answer_value: string | null
+        is_correct: boolean | null
+        score_awarded: number
+        answered_at: string | null
+        time_spent_seconds: number
+        is_flagged: boolean
+        created_at: string
+        updated_at: string
+    }
+    Insert: {
+        id?: string
+        attempt_question_id: string
+        selected_option_id?: string | null
+        answer_value?: string | null
+        is_correct?: boolean | null
+        score_awarded?: number
+        answered_at?: string | null
+        time_spent_seconds?: number
+        is_flagged?: boolean
+        created_at?: string
+        updated_at?: string
+    }
+    Update: Partial<AttemptAnswersTable['Insert']>
+    Relationships: []
+}
+
+type AttemptScoresTable = {
+    Row: {
+        id: string
+        attempt_id: string
+        subject_id: string | null
+        raw_score: number
+        normalized_score: number | null
+        percentage: number | null
+        passing_score: number | null
+        passed: boolean | null
+        correct_count: number
+        wrong_count: number
+        unanswered_count: number
+        created_at: string
+    }
+    Insert: {
+        id?: string
+        attempt_id: string
+        subject_id?: string | null
+        raw_score: number
+        normalized_score?: number | null
+        percentage?: number | null
+        passing_score?: number | null
+        passed?: boolean | null
+        correct_count?: number
+        wrong_count?: number
+        unanswered_count?: number
+        created_at?: string
+    }
+    Update: Partial<AttemptScoresTable['Insert']>
+    Relationships: []
+}
+
+type EntitlementsTable = {
+    Row: {
+        id: string
+        user_id: string
+        feature_id: string
+        source_type: string
+        source_id: string | null
+        status: string
+        starts_at: string
+        expires_at: string | null
+        usage_limit: number | null
+        usage_count: number
+        created_at: string
+    }
+    Insert: {
+        id?: string
+        user_id: string
+        feature_id: string
+        source_type: string
+        source_id?: string | null
+        status?: string
+        starts_at?: string
+        expires_at?: string | null
+        usage_limit?: number | null
+        usage_count?: number
+        created_at?: string
+    }
+    Update: Partial<EntitlementsTable['Insert']>
+    Relationships: []
+}
+
 export type Database = {
     __InternalSupabase: { PostgrestVersion: '14.15' }
     public: {
@@ -255,30 +679,30 @@ export type Database = {
 
             periods: GenericTable
             track_periods: GenericTable
-            knowledge_nodes: GenericTable
-            knowledge_node_paths: GenericTable
+            knowledge_nodes: KnowledgeNodesTable
+            knowledge_node_paths: KnowledgeNodePathsTable
             materials: GenericTable
             material_knowledge_nodes: GenericTable
-            questions: GenericTable
-            question_knowledge_nodes: GenericTable
-            question_options: GenericTable
-            question_explanations: GenericTable
+            questions: QuestionsTable
+            question_knowledge_nodes: QuestionKnowledgeNodesTable
+            question_options: QuestionOptionsTable
+            question_explanations: QuestionExplanationsTable
             question_assets: GenericTable
             tags: GenericTable
             question_tags: GenericTable
             question_versions: GenericTable
-            exam_types: GenericTable
+            exam_types: ExamTypesTable
             exam_rules: GenericTable
             exam_blueprints: GenericTable
             exam_blueprint_rules: GenericTable
-            exams: GenericTable
-            exam_sections: GenericTable
-            exam_question_items: GenericTable
-            exam_attempts: GenericTable
-            attempt_questions: GenericTable
-            attempt_answers: GenericTable
+            exams: ExamsTable
+            exam_sections: ExamSectionsTable
+            exam_question_items: ExamQuestionItemsTable
+            exam_attempts: ExamAttemptsTable
+            attempt_questions: AttemptQuestionsTable
+            attempt_answers: AttemptAnswersTable
             attempt_answer_options: GenericTable
-            attempt_scores: GenericTable
+            attempt_scores: AttemptScoresTable
             user_knowledge_progress: GenericTable
             user_subject_progress: GenericTable
             user_readiness: GenericTable
@@ -294,7 +718,7 @@ export type Database = {
             product_prices: GenericTable
             features: GenericTable
             product_features: GenericTable
-            entitlements: GenericTable
+            entitlements: EntitlementsTable
             wallets: GenericTable
             wallet_transactions: GenericTable
             orders: GenericTable
