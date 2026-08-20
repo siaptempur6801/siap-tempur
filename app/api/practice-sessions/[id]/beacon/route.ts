@@ -1,34 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isMissingProgressColumnError } from '@/lib/practice-session'
-import { createClient } from '@/lib/utils/supabase/server'
+import { createV2Client, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { errorResponse, successResponse, isRateLimited, getIp } from '@/lib/api-utils'
 import { beaconPayloadSchema } from '@/lib/validations/api'
 import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
 
+type AttemptQuestionRow = {
+    id: string
+    question_id: string
+}
+
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const ip = getIp(request)
-    // 60 requests per minute per IP to prevent infinite loop bugs from flooding DB
     if (isRateLimited(`beacon_${ip}`, 60, 60000)) {
         return errorResponse('rate_limit_exceeded', 'Rate limit exceeded', 429)
     }
 
     const { id } = await params
-    const supabase = await createClient()
-
+    const supabase = await createV2Client()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-        // Beacon writes are best-effort, so stale tabs or expired sessions
-        // should fail silently instead of inflating observability noise.
         return new NextResponse(null, { status: 204 })
     }
 
-    let body;
-
+    let body: unknown
     try {
         const contentType = request.headers.get('content-type') ?? ''
         body = contentType.includes('application/json')
@@ -44,41 +43,62 @@ export async function POST(
     }
 
     const { currentQuestionIndex = 0, markedQuestions = {} } = parsed.data
+    const admin = await createV2AdminClient()
 
-    const { data, error } = await supabase
-        .from('test_sessions')
+    const { data: attempt, error: attemptError } = await admin
+        .from('exam_attempts')
+        .select('id')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .in('status', ['in_progress', 'IN_PROGRESS', 'created', 'CREATED'])
+        .maybeSingle()
+
+    if (attemptError) {
+        logger.warn('[practice-session-beacon:v2] Attempt lookup error', { error: attemptError, attemptId: id })
+        return errorResponse('internal_error', 'Failed to save progress', 500)
+    }
+    if (!attempt) return new NextResponse(null, { status: 204 })
+
+    const now = new Date().toISOString()
+    const { error: progressError } = await admin
+        .from('exam_attempts')
         .update({
-            current_question_index: currentQuestionIndex,
-            marked_questions: markedQuestions,
-            last_activity_at: new Date().toISOString()
+            last_question_position: currentQuestionIndex + 1,
+            last_saved_at: now,
+            updated_at: now,
         })
         .eq('id', id)
         .eq('user_id', user.id)
-        .eq('status', 'in_progress')
-        .select('id')
-        .maybeSingle()
 
-    if (error) {
-        if (isMissingProgressColumnError(error)) {
-            const { data: fallbackSession, error: fallbackError } = await supabase
-                .from('test_sessions')
-                .select('id')
-                .eq('id', id)
-                .eq('user_id', user.id)
-                .eq('status', 'in_progress')
-                .maybeSingle()
-
-            if (!fallbackError && fallbackSession) {
-                return successResponse({ success: true, degraded: true })
-            }
-        }
-
-        logger.warn('[practice-session-beacon] Update error:', { error })
+    if (progressError) {
+        logger.warn('[practice-session-beacon:v2] Attempt update error', { error: progressError, attemptId: id })
         return errorResponse('internal_error', 'Failed to save progress', 500)
     }
 
-    if (!data) {
-        return new NextResponse(null, { status: 204 })
+    const { data: rawQuestions, error: questionError } = await admin
+        .from('attempt_questions')
+        .select('id, question_id')
+        .eq('attempt_id', id)
+
+    if (questionError) {
+        logger.warn('[practice-session-beacon:v2] Question lookup error', { error: questionError, attemptId: id })
+        return errorResponse('internal_error', 'Failed to save marked questions', 500)
+    }
+
+    const questions = (rawQuestions ?? []) as AttemptQuestionRow[]
+    if (questions.length > 0) {
+        const { error: markError } = await admin
+            .from('attempt_answers')
+            .upsert(questions.map((question) => ({
+                attempt_question_id: question.id,
+                is_flagged: Boolean(markedQuestions[question.question_id]),
+                updated_at: now,
+            })), { onConflict: 'attempt_question_id' })
+
+        if (markError) {
+            logger.warn('[practice-session-beacon:v2] Flag update error', { error: markError, attemptId: id })
+            return errorResponse('internal_error', 'Failed to save marked questions', 500)
+        }
     }
 
     return successResponse({ success: true })
