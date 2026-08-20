@@ -25,7 +25,6 @@ const target = createClient(
   required('TKA_MIGRATION_TARGET_SERVICE_ROLE_KEY'),
   { auth: { persistSession: false, autoRefreshToken: false } },
 )
-const authorId = required('TKA_MIGRATION_AUTHOR_ID')
 
 function batches(rows, size = 100) {
   const result = []
@@ -65,7 +64,7 @@ async function loadSource() {
   for (const ids of batches(questionIds)) {
     const { data, error } = await source
       .from('options')
-      .select('id, question_id, content, is_correct, score_value, image_url, sort_order, response_group, response_group_order')
+      .select('id, question_id, content, is_correct, score_value, image_url, sort_order, response_group, response_group_order, created_at')
       .in('question_id', ids)
       .order('sort_order')
     if (error) throw error
@@ -100,15 +99,6 @@ async function loadTargetCatalog() {
     .select('id, code, name')
     .eq('track_id', track.id)
   if (error) throw error
-
-  const { data: author, error: authorError } = await target
-    .from('profiles')
-    .select('id')
-    .eq('id', authorId)
-    .maybeSingle()
-  if (authorError) throw authorError
-  if (!author) throw new Error('TKA_MIGRATION_AUTHOR_NOT_FOUND_IN_TARGET')
-
   return { program, track, subjects }
 }
 
@@ -144,6 +134,7 @@ function summary(sourceData) {
     questions: sourceData.questions.length,
     options: sourceData.options.length,
     stimuli: sourceData.stimuli.length,
+    explanations: sourceData.questions.filter((row) => typeof row.explanation === 'string' && row.explanation.trim()).length,
     published: sourceData.questions.filter((row) => String(row.status).toLowerCase() === 'published').length,
     byType,
     bySubject,
@@ -161,32 +152,27 @@ async function migrate(sourceData, targetCatalog) {
     return targetSubject
   }
 
-  const stimulusTargetId = new Map()
   for (const stimulus of sourceData.stimuli) {
     const targetSubject = targetSubjectForSource(stimulus.subject_id)
-    const stimulusCode = `LEGACY-TKA-SD-${stimulus.id}`
-    const payload = {
-      stimulus_code: stimulusCode,
-      program_id: targetCatalog.program.id,
-      track_id: targetCatalog.track.id,
-      subject_id: targetSubject.id,
-      title: stimulus.title,
-      content: stimulus.content,
-      image_url: stimulus.image_url,
-      source_reference: stimulus.source,
-      status: 'published',
-      metadata: { legacy_stimulus_id: stimulus.id, migrated_from: 'legacy_tka_sd' },
-      created_by: authorId,
-      created_at: stimulus.created_at,
-      updated_at: stimulus.updated_at,
-    }
-    const { data, error } = await target
+    const { error } = await target
       .from('question_stimuli')
-      .upsert(payload, { onConflict: 'program_id,track_id,subject_id,stimulus_code' })
-      .select('id')
-      .single()
+      .upsert({
+        id: stimulus.id,
+        stimulus_code: `LEGACY-TKA-SD-${stimulus.id}`,
+        program_id: targetCatalog.program.id,
+        track_id: targetCatalog.track.id,
+        subject_id: targetSubject.id,
+        title: stimulus.title,
+        content: stimulus.content,
+        image_url: stimulus.image_url,
+        source_reference: stimulus.source,
+        status: 'published',
+        metadata: { legacy_stimulus_id: stimulus.id, migrated_from: 'legacy_tka_sd' },
+        created_by: null,
+        created_at: stimulus.created_at,
+        updated_at: stimulus.updated_at || stimulus.created_at,
+      }, { onConflict: 'id' })
     if (error) throw error
-    stimulusTargetId.set(stimulus.id, data.id)
   }
 
   const optionsByQuestion = new Map()
@@ -200,90 +186,129 @@ async function migrate(sourceData, targetCatalog) {
     const targetSubject = targetSubjectForSource(question.subject_id)
     const published = String(question.status).toLowerCase() === 'published'
     const responseConfig = question.response_type === 'multiple_choice'
-      ? { scoringMode: 'exact_set', legacy_category: question.category, legacy_sub_category: question.sub_category, cognitive_level: question.cognitive_level }
+      ? { scoringMode: 'exact_set', legacyCategory: question.category, legacySubCategory: question.sub_category }
       : question.response_type === 'category'
-        ? { scoringMode: 'grouped_sum', legacy_category: question.category, legacy_sub_category: question.sub_category, cognitive_level: question.cognitive_level }
-        : { scoringMode: 'single_option', legacy_category: question.category, legacy_sub_category: question.sub_category, cognitive_level: question.cognitive_level }
+        ? { scoringMode: 'grouped_sum', legacyCategory: question.category, legacySubCategory: question.sub_category }
+        : { scoringMode: 'single_option', legacyCategory: question.category, legacySubCategory: question.sub_category }
 
-    const { data: targetQuestion, error: questionError } = await target
+    const { error: questionError } = await target
       .from('questions')
       .upsert({
-        question_code: question.question_code,
+        id: question.id,
+        question_code: question.question_code || `LEGACY-TKA-SD-${question.id}`,
         program_id: targetCatalog.program.id,
         track_id: targetCatalog.track.id,
         subject_id: targetSubject.id,
         question_type: question.response_type,
         stem: question.content,
-        explanation: question.explanation,
         difficulty: question.difficulty || 'medium',
+        cognitive_level: question.cognitive_level,
         source_type: 'legacy_migration',
         source_reference: question.source,
         status: published ? 'published' : String(question.status || 'draft').toLowerCase(),
         version: question.version || 1,
-        author_id: authorId,
-        reviewer_id: published ? authorId : null,
+        author_id: null,
+        reviewer_id: null,
         published_at: published ? (question.published_at || question.updated_at || question.created_at) : null,
-        stimulus_id: question.stimulus_id ? stimulusTargetId.get(question.stimulus_id) ?? null : null,
-        stimulus_order: question.stimulus_order || 1,
+        stimulus_id: question.stimulus_id || null,
+        stimulus_order: question.stimulus_order || null,
         response_config: responseConfig,
         created_at: question.created_at,
-        updated_at: question.updated_at,
-      }, { onConflict: 'question_code' })
-      .select('id')
-      .single()
+        updated_at: question.updated_at || question.created_at,
+      }, { onConflict: 'id' })
     if (questionError) throw questionError
 
     const legacyOptions = optionsByQuestion.get(question.id) ?? []
-    const { error: clearError } = await target.from('question_options').delete().eq('question_id', targetQuestion.id)
-    if (clearError) throw clearError
-    const { error: optionError } = await target.from('question_options').insert(legacyOptions.map((option, index) => ({
-      question_id: targetQuestion.id,
-      option_key: question.response_type === 'category' ? `G${option.response_group_order || 1}_${index + 1}` : String.fromCharCode(65 + index),
-      content: option.content,
-      image_url: option.image_url,
-      is_correct: option.is_correct,
-      score: option.score_value,
-      sort_order: option.sort_order ?? index + 1,
-      response_group: option.response_group,
-      response_group_order: option.response_group_order,
-      metadata: { legacy_option_id: option.id },
-    })))
-    if (optionError) throw optionError
+    for (const [index, option] of legacyOptions.entries()) {
+      const { error } = await target.from('question_options').upsert({
+        id: option.id,
+        question_id: question.id,
+        option_key: question.response_type === 'category'
+          ? `G${option.response_group_order || 1}_${index + 1}`
+          : String.fromCharCode(65 + index),
+        content: option.content,
+        image_url: option.image_url,
+        is_correct: option.is_correct,
+        score: option.score_value,
+        sort_order: option.sort_order ?? index + 1,
+        response_group: option.response_group,
+        response_group_order: option.response_group_order,
+        metadata: { legacy_option_id: option.id },
+        created_at: option.created_at,
+      }, { onConflict: 'id' })
+      if (error) throw error
+    }
+
+    if (typeof question.explanation === 'string' && question.explanation.trim()) {
+      const { error: deleteExplanationError } = await target
+        .from('question_explanations')
+        .delete()
+        .eq('question_id', question.id)
+      if (deleteExplanationError) throw deleteExplanationError
+
+      const { error: explanationError } = await target.from('question_explanations').insert({
+        question_id: question.id,
+        content: question.explanation.trim(),
+        format: 'markdown',
+        version: question.version || 1,
+        created_at: question.created_at,
+        updated_at: question.updated_at || question.created_at,
+      })
+      if (explanationError) throw explanationError
+    }
   }
 }
 
 async function reconcile(sourceData, targetCatalog) {
-  const sourceCodes = sourceData.questions.map((row) => row.question_code)
+  const sourceIds = sourceData.questions.map((row) => row.id)
   const targetRows = []
-  for (const codes of batches(sourceCodes)) {
+  for (const ids of batches(sourceIds)) {
     const { data, error } = await target
       .from('questions')
-      .select('id, question_code, question_type, status, stimulus_id')
+      .select('id, question_type, status, stimulus_id')
       .eq('program_id', targetCatalog.program.id)
       .eq('track_id', targetCatalog.track.id)
-      .in('question_code', codes)
+      .in('id', ids)
     if (error) throw error
     targetRows.push(...data)
   }
-  const targetQuestionIds = targetRows.map((row) => row.id)
+
   let targetOptionCount = 0
-  for (const ids of batches(targetQuestionIds)) {
-    const { count, error } = await target.from('question_options').select('id', { head: true, count: 'exact' }).in('question_id', ids)
+  for (const ids of batches(sourceIds)) {
+    const { count, error } = await target
+      .from('question_options')
+      .select('id', { head: true, count: 'exact' })
+      .in('question_id', ids)
     if (error) throw error
     targetOptionCount += count ?? 0
   }
-  const { count: targetStimulusCount, error: stimulusError } = await target
-    .from('question_stimuli')
-    .select('id', { head: true, count: 'exact' })
-    .eq('program_id', targetCatalog.program.id)
-    .eq('track_id', targetCatalog.track.id)
-    .like('stimulus_code', 'LEGACY-TKA-SD-%')
-  if (stimulusError) throw stimulusError
+
+  const sourceStimulusIds = sourceData.stimuli.map((row) => row.id)
+  let targetStimulusCount = 0
+  for (const ids of batches(sourceStimulusIds)) {
+    const { count, error } = await target
+      .from('question_stimuli')
+      .select('id', { head: true, count: 'exact' })
+      .in('id', ids)
+    if (error) throw error
+    targetStimulusCount += count ?? 0
+  }
+
+  let explanationCount = 0
+  for (const ids of batches(sourceIds)) {
+    const { count, error } = await target
+      .from('question_explanations')
+      .select('id', { head: true, count: 'exact' })
+      .in('question_id', ids)
+    if (error) throw error
+    explanationCount += count ?? 0
+  }
 
   return {
     questions: targetRows.length,
     options: targetOptionCount,
-    stimuli: targetStimulusCount ?? 0,
+    stimuli: targetStimulusCount,
+    explanations: explanationCount,
     byType: targetRows.reduce((acc, row) => ({ ...acc, [row.question_type]: (acc[row.question_type] ?? 0) + 1 }), {}),
     published: targetRows.filter((row) => String(row.status).toLowerCase() === 'published').length,
   }
@@ -307,6 +332,7 @@ async function main() {
   const mismatch = sourceSummary.questions !== targetSummary.questions ||
     sourceSummary.options !== targetSummary.options ||
     sourceSummary.stimuli !== targetSummary.stimuli ||
+    sourceSummary.explanations !== targetSummary.explanations ||
     sourceSummary.published !== targetSummary.published
   if (mismatch) throw new Error('TKA_SD_RECONCILIATION_FAILED')
   console.log('TKA SD migration reconciliation PASS.')
