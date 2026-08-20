@@ -1,137 +1,20 @@
-import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
+import { createV2Client } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import EventClient from '@/components/dashboard/EventClient'
-import { logger } from '@/lib/logger'
-import { getVisibleEventGroupLink } from '@/lib/event-access'
-import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
+import { eventService } from '@/src/services/event.service'
 
 export const dynamic = 'force-dynamic'
 
-function getSynchronizedCloseAt(event: {
-    starts_at: string
-    duration_minutes: number
-    start_grace_minutes: number
-}) {
-    return new Date(
-        new Date(event.starts_at).getTime() +
-        (event.duration_minutes + event.start_grace_minutes) * 60 * 1000
-    ).toISOString()
-}
-
 export default async function UserEventPage() {
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) redirect('/login?next=/cpns/dashboard/event')
 
-    const admin = await createAdminClient()
-    await autoCloseExpiredTryoutEvents(admin)
-    const { data: events, error } = await admin
-        .from('tryout_events')
-        .select('id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, group_link, flyer_image_url, is_paid, price, status, certificate_enabled, certificate_released_at, tryout_event_questions(id)')
-        .in('status', ['scheduled', 'live', 'closed'])
-        .order('starts_at', { ascending: true })
-
-    if (error) {
-        logger.warn('[user-event-page]', { error })
+    try {
+        const events = await eventService.getUserEventPageData(user.id)
+        return <EventClient events={events} />
+    } catch {
         return <div className="p-8 text-center font-bold text-gray-900">Gagal memuat event</div>
     }
-
-    const eventIds = (events || []).map((event) => event.id)
-
-    const [{ data: participants }, { data: eventSessions }, { data: eventPayments }, { data: certificates }] = await Promise.all([
-        eventIds.length > 0
-            ? admin
-                .from('tryout_event_participants')
-                .select('id, event_id, status')
-                .eq('user_id', user.id)
-                .in('event_id', eventIds)
-            : Promise.resolve({ data: [] }),
-        eventIds.length > 0
-            ? admin
-                .from('tryout_event_sessions')
-                .select('event_id, session_id, status, test_sessions(status)')
-                .eq('user_id', user.id)
-                .in('event_id', eventIds)
-            : Promise.resolve({ data: [] }),
-        // Fetch payment status per event for this user
-        eventIds.length > 0
-            ? admin
-                .from('event_payments')
-                .select('event_id, order_id, status, amount, snap_token')
-                .eq('user_id', user.id)
-                .in('event_id', eventIds)
-            : Promise.resolve({ data: [] }),
-        eventIds.length > 0
-            ? admin
-                .from('event_certificates')
-                .select('event_id, certificate_number, certificate_name, certificate_kind, name_locked_at')
-                .eq('user_id', user.id)
-                .in('event_id', eventIds)
-            : Promise.resolve({ data: [] }),
-    ])
-
-    const participantMap = new Map((participants || []).map((participant) => [participant.event_id, participant]))
-    const sessionMap = new Map((eventSessions || []).map((session) => [session.event_id, session]))
-    const certificateMap = new Map((certificates || []).map((certificate) => [certificate.event_id, certificate]))
-    const successStatuses = new Set(['capture', 'settlement'])
-    const paymentMap = new Map<string, NonNullable<typeof eventPayments>[number]>()
-    for (const payment of eventPayments || []) {
-        const current = paymentMap.get(payment.event_id)
-        if (!current) {
-            paymentMap.set(payment.event_id, payment)
-            continue
-        }
-
-        const paymentIsSuccess = successStatuses.has(payment.status)
-        const currentIsSuccess = successStatuses.has(current.status)
-        if (paymentIsSuccess && !currentIsSuccess) {
-            paymentMap.set(payment.event_id, payment)
-        }
-    }
-
-    const normalizedEvents = (events || []).map((event) => {
-        const participant = participantMap.get(event.id)
-        const eventSession = sessionMap.get(event.id)
-        const payment = paymentMap.get(event.id)
-        const certificate = certificateMap.get(event.id)
-        const testSession = Array.isArray(eventSession?.test_sessions)
-            ? eventSession.test_sessions[0]
-            : eventSession?.test_sessions
-
-        return {
-            id: event.id,
-            title: event.title,
-            description: event.description,
-            starts_at: event.starts_at,
-            ends_at: getSynchronizedCloseAt(event),
-            start_grace_minutes: event.start_grace_minutes,
-            duration_minutes: event.duration_minutes,
-            max_participants: event.max_participants,
-            requires_code: event.requires_code,
-            group_link: getVisibleEventGroupLink(event.group_link, participant?.id),
-            flyer_image_url: event.flyer_image_url || null,
-            is_paid: event.is_paid ?? false,
-            price: event.price ?? 0,
-            status: event.status,
-            certificate_enabled: event.certificate_enabled ?? false,
-            certificate_released_at: event.certificate_released_at || null,
-            certificate_number: certificate?.certificate_number || null,
-            certificate_name: certificate?.certificate_name || null,
-            certificate_kind: certificate?.certificate_kind || null,
-            certificate_name_locked_at: certificate?.name_locked_at || null,
-            participant_id: participant?.id || null,
-            participant_status: participant?.status || null,
-            session_id: eventSession?.session_id || null,
-            event_session_status: eventSession?.status || null,
-            test_session_status: testSession?.status || null,
-            question_count: event.tryout_event_questions?.length || 0,
-            // Payment info (null if gratis or belum bayar)
-            payment_status: payment?.status || null,
-            payment_order_id: payment?.order_id || null,
-            payment_snap_token: payment?.snap_token || null,
-        }
-    })
-
-    return <EventClient events={normalizedEvents} />
 }
