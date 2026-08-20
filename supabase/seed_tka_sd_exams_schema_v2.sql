@@ -18,11 +18,11 @@ ctx as (
 ),
 seed(slug,title,exam_type_code,duration_seconds,attempt_limit,question_order,result_visibility,access_type,status,token_cost) as (
     values
-        ('tka-sd-full','Tryout Lengkap TKA SD','FULL_TRYOUT',4500,null,'random','instant','FREE','draft',0),
-        ('tka-sd-full-bahasa-inggris','Tryout Lengkap TKA SD + Bahasa Inggris','FULL_TRYOUT',6300,null,'random','instant','FREE','draft',0),
-        ('tka-sd-mini-matematika','Mini Tryout Matematika','MINI_TRYOUT',2400,null,'random','instant','FREE','draft',0),
-        ('tka-sd-mini-bahasa-indonesia','Mini Tryout Bahasa Indonesia','MINI_TRYOUT',2100,null,'random','instant','FREE','draft',0),
-        ('tka-sd-mini-bahasa-inggris','Mini Tryout Bahasa Inggris','MINI_TRYOUT',2280,null,'random','instant','FREE','draft',0)
+        ('tka-sd-full','Tryout Lengkap TKA SD','FULL_TRYOUT',4500,null::integer,'random','instant','FREE','draft',0),
+        ('tka-sd-full-bahasa-inggris','Tryout Lengkap TKA SD + Bahasa Inggris','FULL_TRYOUT',6300,null::integer,'random','instant','FREE','draft',0),
+        ('tka-sd-mini-matematika','Mini Tryout Matematika','MINI_TRYOUT',2400,null::integer,'random','instant','FREE','draft',0),
+        ('tka-sd-mini-bahasa-indonesia','Mini Tryout Bahasa Indonesia','MINI_TRYOUT',2100,null::integer,'random','instant','FREE','draft',0),
+        ('tka-sd-mini-bahasa-inggris','Mini Tryout Bahasa Inggris','MINI_TRYOUT',2280,null::integer,'random','instant','FREE','draft',0)
 )
 insert into exams (
     program_id,
