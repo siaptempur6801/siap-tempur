@@ -1,7 +1,7 @@
 import { LEVEL_THRESHOLDS, MINI_TRYOUT_TYPES, PASSING_GRADES, type MiniTryoutType } from '@/lib/constants'
 import { getDrillingMaterialKey, type DashboardActiveSessionKind } from '@/lib/practice-session'
 import { practiceOverviewRepository, type ActiveAttemptOverview, type CompletedAttemptOverview } from '@/src/repositories/practice-overview.repository'
-import { scoringService } from '@/src/services/scoring.service'
+import { examCompletionService } from '@/src/services/exam-completion.service'
 import type { Json } from '@/types/database.types'
 
 function metadataObject(metadata: Json): Record<string, Json | undefined> {
@@ -76,7 +76,7 @@ export class PracticeOverviewService {
         const attempts = await practiceOverviewRepository.listActiveAttempts(userId)
         const expired = attempts.filter(isExpired)
         if (expired.length > 0) {
-            await Promise.all(expired.map((attempt) => scoringService.finishAttempt(userId, attempt.id).catch(() => undefined)))
+            await Promise.all(expired.map((attempt) => examCompletionService.completeAttempt(userId, attempt.id).catch(() => undefined)))
         }
         return attempts.filter((attempt) => !isExpired(attempt))
     }
