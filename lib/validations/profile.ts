@@ -31,7 +31,12 @@ export const profileInfoSchema = z.object({
     const date = new Date(`${value}T00:00:00.000Z`)
     return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(date.getTime()) && date.getTime() <= Date.now()
   }, 'Tanggal lahir tidak valid'),
-  gender: z.enum(['male', 'female', 'other', '']).optional().transform((value) => value || null),
+  gender: z.enum(['male', 'female', 'other', 'Laki-laki', 'Perempuan', '']).optional().transform((value) => {
+    if (!value) return null
+    if (value === 'Laki-laki') return 'male'
+    if (value === 'Perempuan') return 'female'
+    return value
+  }),
   education_level: nullableTrimmedString(80, 'Pendidikan maksimal 80 karakter'),
   target_instance: nullableTrimmedString(120, 'Target instansi maksimal 120 karakter'),
 })
