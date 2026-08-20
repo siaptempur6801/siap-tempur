@@ -32,7 +32,6 @@ export default async function PracticeSessionPage({ params }: { params: Promise<
                 sessionId={session.attemptId}
                 questions={session.questions}
                 initialAnswers={session.initialAnswers}
-                initialAnswerOptions={session.initialAnswerOptions}
                 initialCurrentIndex={session.initialCurrentIndex}
                 initialMarked={session.initialMarked}
                 endTime={session.endTime}
