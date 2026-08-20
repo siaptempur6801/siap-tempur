@@ -1,5 +1,6 @@
 import { attemptRepository } from '@/src/repositories/attempt.repository'
 import { examRepository, type CanonicalExamType, type ResolvedExam } from '@/src/repositories/exam.repository'
+import { configuredExamRepository } from '@/src/repositories/configured-exam.repository'
 import type { Json } from '@/types/database.types'
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { walletService, WalletDomainError } from '@/src/services/wallet.service'
@@ -65,6 +66,7 @@ function metadataFor(input: StartInput, exam: ResolvedExam): Record<string, Json
         programCode: input.programCode,
         trackCode: input.trackCode,
         examTypeCode: exam.examTypeCode,
+        examSlug: exam.slug,
         durationSeconds: exam.durationSeconds,
     }
     if (input.subjectCode) metadata.subjectCode = input.subjectCode
@@ -84,6 +86,15 @@ function isEntitlementUsable(entitlement: EntitlementRow) {
     const withinWindow = Number.isFinite(startsAt) && startsAt <= now && (expiresAt === null || expiresAt > now)
     const withinUsage = entitlement.usage_limit === null || entitlement.usage_count < entitlement.usage_limit
     return withinWindow && withinUsage
+}
+
+function practiceKindForConfiguredExam(examType: CanonicalExamType): StartInput['kind'] {
+    if (examType === 'MINI_TRYOUT') return 'mini_tryout'
+    if (examType === 'FULL_TRYOUT') return 'full_tryout'
+    throw new PracticeDomainError(
+        'EXAM_CONFIGURATION_ERROR',
+        `Configured exam type ${examType} is not supported by the generic practice starter`,
+    )
 }
 
 export class ExamAttemptService {
@@ -125,6 +136,29 @@ export class ExamAttemptService {
         })
     }
 
+    async startConfiguredExam(input: ContextualPracticeInput & { userId: string; examSlug: string }) {
+        const context = resolveContext(input.context)
+        const exam = await configuredExamRepository.findBySlug({
+            programCode: context.programCode,
+            trackCode: context.trackCode,
+            slug: input.examSlug,
+        })
+        if (!exam) {
+            throw new PracticeDomainError(
+                'EXAM_NOT_CONFIGURED',
+                `Exam ${input.examSlug} is not active for ${context.programCode}/${context.trackCode}`,
+            )
+        }
+
+        return this.startResolved({
+            userId: input.userId,
+            programCode: context.programCode,
+            trackCode: context.trackCode,
+            examTypeCode: exam.examTypeCode,
+            kind: practiceKindForConfiguredExam(exam.examTypeCode),
+        }, exam)
+    }
+
     private async start(input: StartInput): Promise<StartAttemptResult> {
         const exam = await examRepository.findExam({
             programCode: input.programCode,
@@ -140,6 +174,10 @@ export class ExamAttemptService {
             )
         }
 
+        return this.startResolved(input, exam)
+    }
+
+    private async startResolved(input: StartInput, exam: ResolvedExam): Promise<StartAttemptResult> {
         const metadata = metadataFor(input, exam)
         const existing = await attemptRepository.findActiveAttempt(input.userId, exam.id, {
             schemaVersion: 2,
