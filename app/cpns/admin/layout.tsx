@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import AdminShell from '@/components/admin/AdminShell'
-import { createClient } from '@/lib/utils/supabase/server'
-import { canAccessArticleAdmin, getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
+import { createV2Client } from '@/lib/utils/supabase/server'
+import { authorizationService } from '@/src/services/authorization.service'
+import { PERMISSIONS } from '@/src/auth/permissions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -14,7 +15,7 @@ export default async function AdminRootLayout({
 }: {
     children: React.ReactNode
 }) {
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const pathname = (await headers()).get('x-pathname') || '/cpns/admin'
     const {
         data: { user },
@@ -24,28 +25,39 @@ export default async function AdminRootLayout({
         redirect('/login?next=/cpns/admin')
     }
 
-    const actor = await getCurrentUserRole()
+    const authorization = await authorizationService.getAuthorizationForUser(user.id)
+    const permissions = new Set(authorization.permissions)
     const isArticleRoute = pathname.startsWith('/cpns/admin/articles')
-    const canAccessRoute = actor
-        ? isAdminRole(actor.role) || (isArticleRoute && canAccessArticleAdmin(actor.role))
-        : false
+    const canAccessArticles = [
+        PERMISSIONS.CONTENT_READ,
+        PERMISSIONS.CONTENT_CREATE,
+        PERMISSIONS.CONTENT_UPDATE,
+        PERMISSIONS.CONTENT_REVIEW,
+        PERMISSIONS.CONTENT_PUBLISH,
+    ].some((permission) => permissions.has(permission))
+    const canAccessAdmin = permissions.has(PERMISSIONS.ADMIN_ACCESS)
 
-    if (!canAccessRoute) {
+    if (!(canAccessAdmin || (isArticleRoute && canAccessArticles))) {
         redirect('/cpns/dashboard')
     }
 
-    if (actor && !isAdminRole(actor.role) && pathname === '/cpns/admin') {
+    if (!canAccessAdmin && pathname === '/cpns/admin') {
         redirect('/cpns/admin/articles')
     }
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('avatar_url, full_name, role')
+        .select('avatar_url, full_name')
         .eq('id', user.id)
         .maybeSingle()
 
     return (
-        <AdminShell user={user} profile={profile} role={actor?.role || profile?.role || 'user'} signoutAction={signout}>
+        <AdminShell
+            user={user}
+            profile={profile}
+            role={authorization.roles[0] || 'user'}
+            signoutAction={signout}
+        >
             {children}
         </AdminShell>
     )
