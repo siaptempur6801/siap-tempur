@@ -1,11 +1,12 @@
-import { createTransaction } from '@/lib/midtrans'
+import { createQrisCharge, createTransaction } from '@/lib/midtrans'
 import { env } from '@/lib/env'
-import { createAdminClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { commerceService } from '@/src/services/commerce.service'
 import type { Json } from '@/types/database.types'
 
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
 const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
+const QRIS_SIMULATOR_URL = 'https://simulator.sandbox.midtrans.com/openapi/qris/index'
 
 type WebhookProcessResult = {
     alreadyProcessed: boolean
@@ -88,6 +89,88 @@ export class PaymentService {
                 redirectUrl: transaction.redirect_url ?? null,
                 orderId: order.id,
                 orderNumber: order.orderNumber,
+            }
+        } catch (error) {
+            await commerceService.markOrderFailed(order.id).catch(() => undefined)
+            throw error
+        }
+    }
+
+    async createQrisQaCheckout(input: {
+        userId: string
+        email?: string | null
+        fullName?: string | null
+        productCode: string
+        adminFee?: number
+    }) {
+        if (env.appEnvironment() !== 'staging') throw new Error('QA_QRIS_STAGING_ONLY')
+
+        const adminFee = input.adminFee ?? 0
+        const order = await commerceService.createOrder(input.userId, input.productCode, adminFee)
+        const itemDetails = [
+            {
+                id: order.productCode,
+                price: order.unitPrice,
+                quantity: 1,
+                name: order.productName,
+            },
+            ...(adminFee > 0 ? [{
+                id: 'admin_fee',
+                price: adminFee,
+                quantity: 1,
+                name: 'Biaya Admin (QRIS)',
+            }] : []),
+        ]
+
+        try {
+            const charge = await createQrisCharge(
+                order.orderNumber,
+                order.totalAmount,
+                {
+                    first_name: input.fullName || input.email?.split('@')[0] || 'QA Admin',
+                    email: input.email || undefined,
+                },
+                itemDetails,
+            )
+
+            const providerTransactionId = charge.transaction_id || ''
+            const qrImageUrl = charge.actions?.find((action) => action.name === 'generate-qr-code')?.url || null
+            const qrImageUrlV2 = charge.actions?.find((action) => action.name === 'generate-qr-code-v2')?.url || null
+            if (!providerTransactionId) throw new Error('MIDTRANS_QRIS_TRANSACTION_ID_MISSING')
+            if (!qrImageUrl && !qrImageUrlV2) throw new Error('MIDTRANS_QRIS_IMAGE_URL_MISSING')
+
+            const safeCharge = { ...charge } as Record<string, unknown>
+            delete safeCharge.signature_key
+
+            const admin = await createV2AdminClient()
+            const { error: paymentError } = await admin
+                .from('payments')
+                .upsert({
+                    order_id: order.id,
+                    provider: 'midtrans',
+                    provider_transaction_id: providerTransactionId,
+                    payment_method: 'qris',
+                    amount: order.totalAmount,
+                    status: 'pending',
+                    raw_response: asJson({
+                        ...safeCharge,
+                        integration: 'core_api_qris_qa',
+                        qrImageUrl,
+                        qrImageUrlV2,
+                        simulatorUrl: QRIS_SIMULATOR_URL,
+                    }),
+                    updated_at: new Date().toISOString(),
+                }, { onConflict: 'order_id,provider' })
+            if (paymentError) throw paymentError
+
+            return {
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                providerTransactionId,
+                qrImageUrl: qrImageUrl || qrImageUrlV2!,
+                qrImageUrlV2,
+                simulatorUrl: QRIS_SIMULATOR_URL,
+                amount: order.totalAmount,
             }
         } catch (error) {
             await commerceService.markOrderFailed(order.id).catch(() => undefined)
