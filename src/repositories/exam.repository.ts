@@ -1,4 +1,4 @@
-import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { calculateMaxScore, type ResponseScoringConfig } from '@/src/domain/question-response'
 import type { Json } from '@/types/database.types'
 
@@ -421,7 +421,10 @@ export class ExamRepository {
         },
     ): Promise<AttemptQuestionSeed[]> {
         if (questionIds.length === 0) return []
-        const admin = await createV2AdminClient()
+        // TKA response/stimulus fields were added after the hand-maintained V2 type snapshot.
+        // Keep the extension read behind the server-side untyped admin boundary until the full
+        // generated type snapshot replaces it.
+        const admin = await createAdminClient()
 
         const [{ data: rawQuestions, error: questionError }, { data: rawOptions, error: optionError }] = await Promise.all([
             admin
