@@ -78,8 +78,13 @@ export const env = {
         const value = requireEnv('NEXT_PUBLIC_SUPABASE_URL', process.env.NEXT_PUBLIC_SUPABASE_URL)
         return assertSupabaseEnvironment(value)
     },
+    supabasePublishableKey() {
+        const value = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        return requireEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', value)
+    },
+    /** @deprecated New code should use supabasePublishableKey(). */
     supabaseAnonKey() {
-        return requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+        return env.supabasePublishableKey()
     },
     supabaseServiceRoleKey() {
         return requireEnv('SUPABASE_SERVICE_ROLE_KEY', process.env.SUPABASE_SERVICE_ROLE_KEY)
