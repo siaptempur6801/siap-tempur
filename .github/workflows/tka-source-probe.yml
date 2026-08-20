@@ -13,7 +13,7 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     env:
       SOURCE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       SOURCE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -22,61 +22,62 @@ jobs:
         with:
           ref: feat/schema-v2
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - run: npm ci
-
       - name: Probe legacy TKA SD source
+        id: probe
+        shell: bash
         run: |
           mkdir -p tmp
           node --input-type=module <<'NODE'
           import fs from 'node:fs'
-          import { createClient } from '@supabase/supabase-js'
 
+          const result = { source_ok: false, subjects: [], questions: 0, error: null }
           const url = process.env.SOURCE_URL?.trim()
           const key = process.env.SOURCE_SERVICE_ROLE_KEY?.trim()
-          if (!url || !key) throw new Error('SOURCE_CREDENTIALS_MISSING')
 
-          const db = createClient(url, key, {
-            auth: { persistSession: false, autoRefreshToken: false },
-          })
+          const write = () => fs.writeFileSync(
+            'tmp/tka-source-probe-result.json',
+            `${JSON.stringify(result, null, 2)}\n`,
+          )
 
-          const { data: program, error: programError } = await db
-            .from('programs')
-            .select('id')
-            .eq('slug', 'tka-sd')
-            .maybeSingle()
-          if (programError) throw programError
-          if (!program) throw new Error('TKA_SD_PROGRAM_NOT_FOUND')
+          try {
+            if (!url || !key) throw new Error('SOURCE_CREDENTIALS_MISSING')
+            const headers = { apikey: key, Authorization: `Bearer ${key}` }
+            const api = url.replace(/\/$/, '') + '/rest/v1'
 
-          const { data: subjects, error: subjectError } = await db
-            .from('subjects')
-            .select('id,code')
-            .eq('program_id', program.id)
-          if (subjectError) throw subjectError
+            const programResponse = await fetch(`${api}/programs?slug=eq.tka-sd&select=id&limit=2`, { headers })
+            if (!programResponse.ok) throw new Error(`PROGRAM_QUERY_FAILED_${programResponse.status}`)
+            const programs = await programResponse.json()
+            if (programs.length !== 1) throw new Error(`TKA_SD_PROGRAM_COUNT_${programs.length}`)
 
-          const subjectIds = subjects.map((row) => row.id)
-          const { count, error: questionError } = await db
-            .from('questions')
-            .select('id', { head: true, count: 'exact' })
-            .eq('program_id', program.id)
-            .in('subject_id', subjectIds)
-          if (questionError) throw questionError
+            const programId = programs[0].id
+            const subjectResponse = await fetch(`${api}/subjects?program_id=eq.${programId}&select=id,code`, { headers })
+            if (!subjectResponse.ok) throw new Error(`SUBJECT_QUERY_FAILED_${subjectResponse.status}`)
+            const subjects = await subjectResponse.json()
+            result.subjects = subjects.map((row) => row.code).sort()
 
-          const result = {
-            source_ok: true,
-            subjects: subjects.map((row) => row.code).sort(),
-            questions: count ?? 0,
+            const ids = subjects.map((row) => row.id).join(',')
+            const questionResponse = await fetch(
+              `${api}/questions?program_id=eq.${programId}&subject_id=in.(${ids})&select=id`,
+              { headers: { ...headers, Prefer: 'count=exact', Range: '0-0' } },
+            )
+            if (!questionResponse.ok) throw new Error(`QUESTION_QUERY_FAILED_${questionResponse.status}`)
+            const contentRange = questionResponse.headers.get('content-range') || ''
+            const count = Number(contentRange.split('/')[1])
+            if (!Number.isFinite(count)) throw new Error('QUESTION_COUNT_UNAVAILABLE')
+            result.questions = count
+            if (count !== 213) throw new Error(`SOURCE_COUNT_MISMATCH_${count}`)
+
+            result.source_ok = true
+          } catch (error) {
+            result.error = error instanceof Error ? error.message : 'UNKNOWN_ERROR'
           }
+
+          write()
           console.log(JSON.stringify(result))
-          if ((count ?? 0) !== 213) throw new Error(`SOURCE_COUNT_MISMATCH:${count ?? 0}`)
-          fs.writeFileSync('tmp/tka-source-probe-result.json', `${JSON.stringify(result, null, 2)}\n`)
           NODE
 
       - name: Commit probe result
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -84,3 +85,14 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "chore: record TKA source probe"
           git push origin HEAD:feat/schema-v2
+
+      - name: Require valid legacy source
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs'
+          const result = JSON.parse(fs.readFileSync('tmp/tka-source-probe-result.json', 'utf8'))
+          if (!result.source_ok || result.questions !== 213) {
+            throw new Error(`TKA_SOURCE_PROBE_FAILED:${result.error || result.questions}`)
+          }
+          NODE
