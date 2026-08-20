@@ -1,6 +1,6 @@
 'use server'
 
-import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
+import { createAdminClient, createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import { authorizationRepository } from '@/src/repositories/authorization.repository'
 import { eventRepository } from '@/src/repositories/event.repository'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -157,7 +157,10 @@ export async function getLiveLeaderboardAction(eventId: string) {
 
     let finalRankByUser = new Map<string, number>()
     if (finished) {
-        const { error: recalcError } = await admin.rpc('recalculate_event_rankings', { p_event_id: eventId })
+        // The generated type snapshot predates this staging RPC. Keep this
+        // invocation on the server-only admin client until types are regenerated.
+        const rpcAdmin = await createAdminClient()
+        const { error: recalcError } = await rpcAdmin.rpc('recalculate_event_rankings', { p_event_id: eventId })
         if (recalcError) throw recalcError
         const { data: rankingData, error: rankingError } = await admin
             .from('event_rankings')
