@@ -33,6 +33,14 @@ export type AttemptQuestionSeed = {
     snapshot: Json
 }
 
+type IdRow = { id: string }
+type ExamTypeRow = { id: string; code: string }
+type ExamIdRow = { exam_id: string }
+type KnowledgeNodeRow = { id: string; name: string; slug: string }
+type DescendantRow = { descendant_id: string }
+type QuestionIdRow = { id: string }
+type QuestionLinkRow = { question_id: string }
+
 type ExamRow = {
     id: string
     program_id: string
@@ -109,6 +117,24 @@ function shuffle<T>(items: T[]) {
     return result
 }
 
+function readNumericConfig(config: Json, ...keys: string[]) {
+    if (!config || Array.isArray(config) || typeof config !== 'object') return null
+    for (const key of keys) {
+        const value = config[key]
+        if (typeof value === 'number' && Number.isFinite(value)) return value
+        if (typeof value === 'string' && value.trim() !== '') {
+            const parsed = Number(value)
+            if (Number.isFinite(parsed)) return parsed
+        }
+    }
+    return null
+}
+
+function sectionPassingScore(section: SectionRow | undefined) {
+    if (!section) return null
+    return readNumericConfig(section.config, 'passing_score', 'passingScore', 'passing_grade', 'passingGrade')
+}
+
 export class ExamRepository {
     async findExam(input: {
         programCode: string
@@ -118,52 +144,57 @@ export class ExamRepository {
     }): Promise<ResolvedExam | null> {
         const admin = await createV2AdminClient()
 
-        const { data: program, error: programError } = await admin
+        const { data: rawProgram, error: programError } = await admin
             .from('programs')
             .select('id')
             .eq('code', input.programCode)
             .maybeSingle()
         if (programError) throw programError
+        const program = rawProgram as IdRow | null
         if (!program) return null
 
-        const { data: track, error: trackError } = await admin
+        const { data: rawTrack, error: trackError } = await admin
             .from('tracks')
             .select('id')
             .eq('program_id', program.id)
             .eq('code', input.trackCode)
             .maybeSingle()
         if (trackError) throw trackError
+        const track = rawTrack as IdRow | null
         if (!track) return null
 
-        const { data: examType, error: typeError } = await admin
+        const { data: rawExamType, error: typeError } = await admin
             .from('exam_types')
             .select('id, code')
             .eq('code', input.examTypeCode)
             .maybeSingle()
         if (typeError) throw typeError
+        const examType = rawExamType as ExamTypeRow | null
         if (!examType) return null
 
         let subjectId: string | null = null
         let candidateExamIds: string[] | null = null
 
         if (input.subjectCode) {
-            const { data: subject, error: subjectError } = await admin
+            const { data: rawSubject, error: subjectError } = await admin
                 .from('subjects')
-                .select('id, code')
+                .select('id')
                 .eq('track_id', track.id)
                 .eq('code', input.subjectCode)
                 .maybeSingle()
             if (subjectError) throw subjectError
+            const subject = rawSubject as IdRow | null
             if (!subject) return null
 
             subjectId = subject.id
-            const { data: sections, error: sectionError } = await admin
+            const { data: rawSections, error: sectionError } = await admin
                 .from('exam_sections')
                 .select('exam_id')
                 .eq('subject_id', subject.id)
             if (sectionError) throw sectionError
 
-            candidateExamIds = Array.from(new Set((sections ?? []).map((row) => row.exam_id)))
+            const sections = (rawSections ?? []) as ExamIdRow[]
+            candidateExamIds = Array.from(new Set(sections.map((row) => row.exam_id)))
             if (candidateExamIds.length === 0) return null
         }
 
@@ -178,10 +209,10 @@ export class ExamRepository {
 
         if (candidateExamIds) query = query.in('id', candidateExamIds)
 
-        const { data: exams, error: examError } = await query
+        const { data: rawExams, error: examError } = await query
         if (examError) throw examError
 
-        const exam = ((exams ?? []) as ExamRow[]).find(isAvailableNow)
+        const exam = ((rawExams ?? []) as ExamRow[]).find(isAvailableNow)
         if (!exam) return null
 
         return {
@@ -212,10 +243,12 @@ export class ExamRepository {
     }): Promise<AttemptQuestionSeed[]> {
         const admin = await createV2AdminClient()
         const sections = await this.listSections(input.exam.id)
+        const sectionById = new Map(sections.map((section) => [section.id, section]))
 
         if (input.knowledgeNodeName) {
             if (!input.exam.subjectId) throw new Error('Drill exam must resolve a subject')
-            const count = input.requestedQuestionCount ?? sections[0]?.question_count ?? 10
+            const section = sections.find((item) => item.subject_id === input.exam.subjectId) ?? sections[0]
+            const count = input.requestedQuestionCount ?? section?.question_count ?? 10
             const ids = await this.findQuestionIdsForKnowledgeNode(
                 input.exam.subjectId,
                 input.knowledgeNodeName,
@@ -224,36 +257,41 @@ export class ExamRepository {
             if (selected.length < count) {
                 throw new Error(`QUESTION_BANK_INCOMPLETE:${selected.length}:${count}`)
             }
+            const passingScore = sectionPassingScore(section)
             return this.hydrateQuestions(selected, {
                 questionOrder: input.exam.questionOrder,
-                sectionByQuestion: new Map(selected.map((id) => [id, sections[0]?.id ?? null])),
+                sectionByQuestion: new Map(selected.map((id) => [id, section?.id ?? null])),
+                passingScoreByQuestion: new Map(selected.map((id) => [id, passingScore])),
             })
         }
 
-        const { data: staticItems, error: itemError } = await admin
+        const { data: rawStaticItems, error: itemError } = await admin
             .from('exam_question_items')
             .select('question_id, question_version, position, section_id')
             .eq('exam_id', input.exam.id)
             .order('position', { ascending: true })
         if (itemError) throw itemError
 
-        if (staticItems?.length) {
-            const items = staticItems as ExamItemRow[]
-            const ids = items.map((item) => item.question_id)
+        const staticItems = (rawStaticItems ?? []) as ExamItemRow[]
+        if (staticItems.length > 0) {
+            const ids = staticItems.map((item) => item.question_id)
             const hydrated = await this.hydrateQuestions(ids, {
                 questionOrder: input.exam.questionOrder,
-                sectionByQuestion: new Map(items.map((item) => [item.question_id, item.section_id])),
-                expectedVersionByQuestion: new Map(items.map((item) => [item.question_id, item.question_version])),
+                sectionByQuestion: new Map(staticItems.map((item) => [item.question_id, item.section_id])),
+                passingScoreByQuestion: new Map(staticItems.map((item) => [
+                    item.question_id,
+                    item.section_id ? sectionPassingScore(sectionById.get(item.section_id)) : null,
+                ])),
+                expectedVersionByQuestion: new Map(staticItems.map((item) => [item.question_id, item.question_version])),
             })
             return input.requestedQuestionCount ? hydrated.slice(0, input.requestedQuestionCount) : hydrated
         }
 
-        if (sections.length === 0) {
-            throw new Error('EXAM_HAS_NO_SECTIONS')
-        }
+        if (sections.length === 0) throw new Error('EXAM_HAS_NO_SECTIONS')
 
         const selectedIds: string[] = []
         const sectionByQuestion = new Map<string, string | null>()
+        const passingScoreByQuestion = new Map<string, number | null>()
 
         for (const section of sections) {
             if (!section.subject_id) continue
@@ -267,9 +305,11 @@ export class ExamRepository {
             if (selected.length < count) {
                 throw new Error(`QUESTION_BANK_INCOMPLETE:${selected.length}:${count}`)
             }
+            const passingScore = sectionPassingScore(section)
             selected.forEach((id) => {
                 selectedIds.push(id)
                 sectionByQuestion.set(id, section.id)
+                passingScoreByQuestion.set(id, passingScore)
             })
         }
 
@@ -277,6 +317,7 @@ export class ExamRepository {
         return this.hydrateQuestions(selectedIds, {
             questionOrder: input.exam.questionOrder,
             sectionByQuestion,
+            passingScoreByQuestion,
         })
     }
 
@@ -300,46 +341,49 @@ export class ExamRepository {
             .in('status', ['PUBLISHED', 'published', 'ACTIVE', 'active'])
             .limit(1000)
         if (error) throw error
-        return (data ?? []).map((row) => row.id)
+        return ((data ?? []) as QuestionIdRow[]).map((row) => row.id)
     }
 
-    private async findQuestionIdsForKnowledgeNode(subjectId: string, name: string) {
+    private async findQuestionIdsForKnowledgeNode(subjectId: string, name: string): Promise<string[]> {
         const admin = await createV2AdminClient()
-        const { data: nodes, error: nodeError } = await admin
+        const { data: rawNodes, error: nodeError } = await admin
             .from('knowledge_nodes')
             .select('id, name, slug')
             .eq('subject_id', subjectId)
             .in('status', ['ACTIVE', 'active'])
         if (nodeError) throw nodeError
 
+        const nodes = (rawNodes ?? []) as KnowledgeNodeRow[]
         const needle = normalize(name)
-        const node = (nodes ?? []).find((row) => normalize(row.name) === needle || normalize(row.slug) === needle)
+        const node = nodes.find((row) => normalize(row.name) === needle || normalize(row.slug) === needle)
         if (!node) return []
 
-        const { data: paths, error: pathError } = await admin
+        const { data: rawPaths, error: pathError } = await admin
             .from('knowledge_node_paths')
             .select('descendant_id')
             .eq('ancestor_id', node.id)
         if (pathError) throw pathError
 
-        const nodeIds = Array.from(new Set([node.id, ...(paths ?? []).map((row) => row.descendant_id)]))
-        const { data: links, error: linkError } = await admin
+        const paths = (rawPaths ?? []) as DescendantRow[]
+        const nodeIds = Array.from(new Set([node.id, ...paths.map((row) => row.descendant_id)]))
+        const { data: rawLinks, error: linkError } = await admin
             .from('question_knowledge_nodes')
             .select('question_id')
             .in('knowledge_node_id', nodeIds)
         if (linkError) throw linkError
 
-        const linkedIds = Array.from(new Set((links ?? []).map((row) => row.question_id)))
+        const links = (rawLinks ?? []) as QuestionLinkRow[]
+        const linkedIds = Array.from(new Set(links.map((row) => row.question_id)))
         if (linkedIds.length === 0) return []
 
-        const { data: questions, error: questionError } = await admin
+        const { data: rawQuestions, error: questionError } = await admin
             .from('questions')
             .select('id')
             .eq('subject_id', subjectId)
             .in('id', linkedIds)
             .in('status', ['PUBLISHED', 'published', 'ACTIVE', 'active'])
         if (questionError) throw questionError
-        return (questions ?? []).map((row) => row.id)
+        return ((rawQuestions ?? []) as QuestionIdRow[]).map((row) => row.id)
     }
 
     private async hydrateQuestions(
@@ -347,13 +391,14 @@ export class ExamRepository {
         input: {
             questionOrder: string
             sectionByQuestion: Map<string, string | null>
+            passingScoreByQuestion?: Map<string, number | null>
             expectedVersionByQuestion?: Map<string, number>
         },
     ): Promise<AttemptQuestionSeed[]> {
         if (questionIds.length === 0) return []
         const admin = await createV2AdminClient()
 
-        const [{ data: questions, error: questionError }, { data: options, error: optionError }] = await Promise.all([
+        const [{ data: rawQuestions, error: questionError }, { data: rawOptions, error: optionError }] = await Promise.all([
             admin
                 .from('questions')
                 .select('id, question_code, stem, question_type, subject_id, version, difficulty, status')
@@ -367,9 +412,11 @@ export class ExamRepository {
         if (questionError) throw questionError
         if (optionError) throw optionError
 
-        const questionMap = new Map(((questions ?? []) as QuestionRow[]).map((row) => [row.id, row]))
+        const questions = (rawQuestions ?? []) as QuestionRow[]
+        const options = (rawOptions ?? []) as OptionRow[]
+        const questionMap = new Map(questions.map((row) => [row.id, row]))
         const optionMap = new Map<string, OptionRow[]>()
-        for (const option of (options ?? []) as OptionRow[]) {
+        for (const option of options) {
             const rows = optionMap.get(option.question_id) ?? []
             rows.push(option)
             optionMap.set(option.question_id, rows)
@@ -395,6 +442,7 @@ export class ExamRepository {
                 ...questionOptions.map((option) => option.score ?? (option.is_correct ? 5 : 0)),
                 0,
             )
+            const passingScore = input.passingScoreByQuestion?.get(questionId) ?? null
 
             const snapshot: Json = {
                 questionId: question.id,
@@ -403,6 +451,7 @@ export class ExamRepository {
                 questionType: question.question_type,
                 subjectId: question.subject_id,
                 difficulty: question.difficulty,
+                passingScore,
                 options: questionOptions.map((option) => ({
                     id: option.id,
                     key: option.option_key,
