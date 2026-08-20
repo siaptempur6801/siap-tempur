@@ -105,7 +105,8 @@ export class AttemptRepository {
             .maybeSingle()
         if (lastError) throw lastError
 
-        const attemptNumber = (last?.attempt_number ?? 0) + 1
+        const lastAttemptNumber = typeof last?.attempt_number === 'number' ? last.attempt_number : 0
+        const attemptNumber = lastAttemptNumber + 1
         const now = new Date().toISOString()
         const { data, error } = await admin
             .from('exam_attempts')
@@ -219,35 +220,31 @@ export class AttemptRepository {
         if (attemptError) throw attemptError
         if (!attempt) return null
 
-        const [{ data: questions, error: questionError }, { data: answers, error: answerError }] = await Promise.all([
-            admin
-                .from('attempt_questions')
-                .select('id, attempt_id, question_id, question_version, position, section_id, question_snapshot, max_score')
-                .eq('attempt_id', attemptId)
-                .order('position', { ascending: true }),
-            admin
+        const { data: questions, error: questionError } = await admin
+            .from('attempt_questions')
+            .select('id, attempt_id, question_id, question_version, position, section_id, question_snapshot, max_score')
+            .eq('attempt_id', attemptId)
+            .order('position', { ascending: true })
+        if (questionError) throw questionError
+
+        const questionRows = (questions ?? []) as AttemptQuestionRow[]
+        const questionIds = questionRows.map((row) => row.id)
+        let answerRows: AttemptAnswerRow[] = []
+
+        if (questionIds.length > 0) {
+            const { data: answers, error: answerError } = await admin
                 .from('attempt_answers')
                 .select('id, attempt_question_id, selected_option_id, is_correct, score_awarded, answered_at, is_flagged')
-                .in('attempt_question_id', await this.getAttemptQuestionIds(attemptId)),
-        ])
-        if (questionError) throw questionError
-        if (answerError) throw answerError
+                .in('attempt_question_id', questionIds)
+            if (answerError) throw answerError
+            answerRows = (answers ?? []) as AttemptAnswerRow[]
+        }
 
         return {
             attempt: attempt as AttemptRow,
-            questions: (questions ?? []) as AttemptQuestionRow[],
-            answers: (answers ?? []) as AttemptAnswerRow[],
+            questions: questionRows,
+            answers: answerRows,
         }
-    }
-
-    private async getAttemptQuestionIds(attemptId: string) {
-        const admin = await createV2AdminClient()
-        const { data, error } = await admin
-            .from('attempt_questions')
-            .select('id')
-            .eq('attempt_id', attemptId)
-        if (error) throw error
-        return (data ?? []).map((row) => row.id)
     }
 
     async getScoringOptions(optionIds: string[]): Promise<ScoringOptionRow[]> {
