@@ -133,6 +133,7 @@ export class ExamAttemptService {
                     { attemptId: existing.id },
                 )
             }
+            await this.chargeAttempt(input.userId, existing.id, exam.tokenCost)
             return { attemptId: existing.id, resumed: true }
         }
 
@@ -173,10 +174,18 @@ export class ExamAttemptService {
             metadata,
         })
 
+        let questionsAllocated = false
         try {
             await attemptRepository.addAttemptQuestions(attempt.id, questions)
+            questionsAllocated = true
+            await this.chargeAttempt(input.userId, attempt.id, exam.tokenCost)
         } catch (error) {
-            await attemptRepository.deleteAttempt(attempt.id).catch(() => undefined)
+            const confirmedNoCharge = !questionsAllocated || (
+                error instanceof PracticeDomainError && error.code === 'INSUFFICIENT_TOKEN_BALANCE'
+            )
+            if (confirmedNoCharge) {
+                await attemptRepository.deleteAttempt(attempt.id).catch(() => undefined)
+            }
             throw error
         }
 
@@ -213,6 +222,25 @@ export class ExamAttemptService {
                 }
                 throw error
             }
+        }
+    }
+
+    private async chargeAttempt(userId: string, attemptId: string, tokenCost: number) {
+        if (tokenCost <= 0) return
+        try {
+            await walletService.debitForAttempt(userId, attemptId)
+        } catch (error) {
+            if (error instanceof WalletDomainError) {
+                if (error.code === 'INSUFFICIENT_TOKEN_BALANCE' || error.code === 'WALLET_NOT_FOUND') {
+                    throw new PracticeDomainError(
+                        'INSUFFICIENT_TOKEN_BALANCE',
+                        error.message,
+                        { tokenCost },
+                    )
+                }
+                throw new PracticeDomainError('EXAM_CONFIGURATION_ERROR', error.message)
+            }
+            throw error
         }
     }
 }
