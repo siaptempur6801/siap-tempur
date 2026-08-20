@@ -46,10 +46,12 @@ type EntitlementRow = {
     usage_count: number
 }
 
-function metadataFor(input: StartInput): Record<string, Json> {
+function metadataFor(input: StartInput, exam: ResolvedExam): Record<string, Json> {
     const metadata: Record<string, Json> = {
         schemaVersion: 2,
         practiceKind: input.kind,
+        examTypeCode: exam.examTypeCode,
+        durationSeconds: exam.durationSeconds,
     }
     if (input.subjectCode) metadata.subjectCode = input.subjectCode
     if (input.knowledgeNodeName) metadata.knowledgeNode = input.knowledgeNodeName
@@ -115,8 +117,13 @@ export class ExamAttemptService {
             )
         }
 
-        const metadata = metadataFor(input)
-        const existing = await attemptRepository.findActiveAttempt(input.userId, exam.id, metadata)
+        const metadata = metadataFor(input, exam)
+        const existing = await attemptRepository.findActiveAttempt(input.userId, exam.id, {
+            schemaVersion: 2,
+            practiceKind: input.kind,
+            ...(input.subjectCode ? { subjectCode: input.subjectCode } : {}),
+            ...(input.knowledgeNodeName ? { knowledgeNode: input.knowledgeNodeName } : {}),
+        })
         if (existing) {
             if (isExpired(exam, existing.started_at)) {
                 throw new PracticeDomainError(
