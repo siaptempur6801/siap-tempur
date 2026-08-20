@@ -7,6 +7,14 @@ import { paymentService } from '@/src/services/payment.service'
 
 const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
 
+function signaturesMatch(expected: string, provided: string) {
+    if (!/^[a-f0-9]{128}$/i.test(provided)) return false
+    const expectedBuffer = Buffer.from(expected, 'utf8')
+    const providedBuffer = Buffer.from(provided, 'utf8')
+    if (expectedBuffer.length !== providedBuffer.length) return false
+    return crypto.timingSafeEqual(expectedBuffer, providedBuffer)
+}
+
 export async function POST(req: Request) {
     try {
         let body: unknown
@@ -40,7 +48,7 @@ export async function POST(req: Request) {
             .update(`${order_id}${status_code}${gross_amount}${serverKey}`)
             .digest('hex')
 
-        if (!crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(signature_key))) {
+        if (!signaturesMatch(expectedSignature, signature_key)) {
             logger.warn('Invalid Midtrans webhook signature', { orderId: order_id })
             return errorResponse('forbidden', 'Invalid signature key', 403)
         }
