@@ -6,19 +6,50 @@ import { validateCsrf } from '@/lib/csrf'
 import { isServerActionRateLimited } from '@/lib/server-rate-limit'
 import { paymentService } from '@/src/services/payment.service'
 
-export async function createPackageTransaction(productCode: string) {
-    try { await validateCsrf() } catch { throw new Error('Invalid request') }
+export type CreatePackageTransactionResult =
+    | {
+        success: true
+        token: string
+        orderId: string
+        orderNumber: string
+        redirectUrl: string | null
+    }
+    | {
+        success: false
+        message: string
+    }
+
+function checkoutErrorMessage(error: unknown) {
+    const message = error instanceof Error ? error.message : ''
+
+    if (message === 'PRODUCT_NOT_AVAILABLE') return 'Paket tidak tersedia.'
+    if (message.includes('must use a Midtrans Sandbox key on staging')) {
+        return 'Midtrans Sandbox belum dikonfigurasi untuk Preview staging. Admin perlu memasang Sandbox Server Key dan Sandbox Client Key di environment Preview.'
+    }
+    if (message === 'MIDTRANS_TOKEN_MISSING') {
+        return 'Midtrans tidak mengembalikan token pembayaran. Silakan coba lagi.'
+    }
+
+    return 'Terjadi kesalahan sistem saat memproses pembayaran. Silakan coba lagi.'
+}
+
+export async function createPackageTransaction(productCode: string): Promise<CreatePackageTransactionResult> {
+    try {
+        await validateCsrf()
+    } catch {
+        return { success: false, message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.' }
+    }
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
 
     if (await isServerActionRateLimited(user.id, 'create_transaction', 5, 60000)) {
-        throw new Error('Terlalu banyak permintaan. Silakan coba lagi nanti.')
+        return { success: false, message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.' }
     }
 
     try {
-        return await paymentService.createCheckout({
+        const checkout = await paymentService.createCheckout({
             userId: user.id,
             email: user.email,
             fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
@@ -26,11 +57,17 @@ export async function createPackageTransaction(productCode: string) {
             adminFee: 500,
             returnPath: '/cpns/dashboard/profile',
         })
+
+        return {
+            success: true,
+            token: checkout.token,
+            orderId: checkout.orderId,
+            orderNumber: checkout.orderNumber,
+            redirectUrl: checkout.redirectUrl,
+        }
     } catch (error) {
         logger.error('Package checkout creation failed', error, { productCode, userId: user.id })
-        const message = error instanceof Error ? error.message : 'Gagal membuat transaksi'
-        if (message === 'PRODUCT_NOT_AVAILABLE') throw new Error('Paket tidak tersedia')
-        throw new Error('Terjadi kesalahan sistem saat memproses pembayaran. Silakan coba lagi.')
+        return { success: false, message: checkoutErrorMessage(error) }
     }
 }
 
