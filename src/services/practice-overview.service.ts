@@ -1,6 +1,7 @@
-import { LEVEL_THRESHOLDS, MINI_TRYOUT_TYPES, PASSING_GRADES, type MiniTryoutType } from '@/lib/constants'
+import { LEVEL_THRESHOLDS, MINI_TRYOUT_TYPES, SUBJECTS, type MiniTryoutType } from '@/lib/constants'
 import { getDrillingMaterialKey, type DashboardActiveSessionKind } from '@/lib/practice-session'
 import { practiceOverviewRepository, type ActiveAttemptOverview, type CompletedAttemptOverview } from '@/src/repositories/practice-overview.repository'
+import { subjectProgressReadRepository, type SubjectProgressOverview } from '@/src/repositories/subject-progress-read.repository'
 import { examCompletionService } from '@/src/services/exam-completion.service'
 import type { Json } from '@/types/database.types'
 
@@ -69,6 +70,26 @@ function dashboardKind(attempt: ActiveAttemptOverview): { mode: 'practice' | 'tr
     if (kind === 'drill') return { mode: 'practice', kind: 'drilling-materi' }
     if (metadataString(attempt.metadata, 'examTypeCode') === 'EVENT') return { mode: 'tryout', kind: 'event' }
     return null
+}
+
+type CpnsSubjectCode = SubjectProgressOverview['subjectCode']
+
+function canonicalDashboardProgress(rows: SubjectProgressOverview[], code: CpnsSubjectCode) {
+    const row = rows.find((item) => item.subjectCode === code)
+    const subject = SUBJECTS[code]
+    const masteryScore = Math.min(100, Math.max(0, row?.masteryScore ?? 0))
+    const score = Math.round((masteryScore / 100) * subject.fullMark)
+
+    return {
+        score,
+        target: subject.passing,
+        passed: score >= subject.passing,
+        masteryScore: Number(masteryScore.toFixed(2)),
+        accuracy: Number((row?.accuracy ?? 0).toFixed(2)),
+        attempts: row?.attempts ?? 0,
+        questionsAnswered: row?.questionsAnswered ?? 0,
+        updatedAt: row?.updatedAt ?? null,
+    }
 }
 
 export class PracticeOverviewService {
@@ -208,21 +229,15 @@ export class PracticeOverviewService {
     }
 
     async getDashboardData(userId: string) {
-        const [profile, streak, quota, rank, attempts, activeAttempts] = await Promise.all([
+        const [profile, streak, quota, rank, attempts, activeAttempts, subjectProgress] = await Promise.all([
             practiceOverviewRepository.getProfile(userId),
             practiceOverviewRepository.getStreak(userId),
             practiceOverviewRepository.getWalletBalance(userId),
             practiceOverviewRepository.getCurrentRank(userId),
             practiceOverviewRepository.listCompletedAttempts(userId, 100),
             this.activeAttempts(userId),
+            subjectProgressReadRepository.listCpnsProgress(userId),
         ])
-
-        const recent = attempts.slice(0, 10)
-        const averages = { TWK: 0, TIU: 0, TKP: 0 }
-        for (const code of ['TWK', 'TIU', 'TKP'] as const) {
-            const values = recent.map((attempt) => subjectScore(attempt, code)).filter((score) => score > 0)
-            averages[code] = values.length ? Math.round(values.reduce((sum, score) => sum + score, 0) / values.length) : 0
-        }
 
         const xp = attempts.reduce((sum, attempt) => sum + attempt.totalScore, 0)
         const level = getLevel(xp)
@@ -253,9 +268,9 @@ export class PracticeOverviewService {
                 rank,
             },
             progress: {
-                twk: { score: averages.TWK, target: PASSING_GRADES.TWK, passed: averages.TWK >= PASSING_GRADES.TWK },
-                tiu: { score: averages.TIU, target: PASSING_GRADES.TIU, passed: averages.TIU >= PASSING_GRADES.TIU },
-                tkp: { score: averages.TKP, target: PASSING_GRADES.TKP, passed: averages.TKP >= PASSING_GRADES.TKP },
+                twk: canonicalDashboardProgress(subjectProgress, 'TWK'),
+                tiu: canonicalDashboardProgress(subjectProgress, 'TIU'),
+                tkp: canonicalDashboardProgress(subjectProgress, 'TKP'),
             },
             lastExam: toExam(last),
             bestExam: toExam(best),
