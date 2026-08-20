@@ -1,6 +1,6 @@
 import { attemptRepository, type AttemptAnswerRow, type ScoringOptionRow } from '@/src/repositories/attempt.repository'
 import { PracticeDomainError } from '@/src/services/exam-attempt.service'
-import { calculateResponseScore } from '@/src/domain/question-response'
+import { calculateResponseScore, type ResponseScoringConfig } from '@/src/domain/question-response'
 import type { Json } from '@/types/database.types'
 
 type SubjectAccumulator = {
@@ -18,6 +18,17 @@ function readSnapshotField<T extends string | number>(snapshot: Json, key: strin
     const value = snapshot[key]
     if (typeof value === 'string' || typeof value === 'number') return value as T
     return null
+}
+
+function readResponseConfig(snapshot: Json): ResponseScoringConfig | undefined {
+    if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== 'object') return undefined
+    const raw = snapshot.responseConfig
+    if (!raw || Array.isArray(raw) || typeof raw !== 'object') return undefined
+    const mode = raw.scoringMode ?? raw.scoring_mode
+    if (mode === 'single_option' || mode === 'exact_set' || mode === 'grouped_sum') {
+        return { scoringMode: mode }
+    }
+    return undefined
 }
 
 function durationSeconds(startedAt: string | null) {
@@ -94,6 +105,7 @@ export class ScoringService {
             const answer = answerByQuestion.get(question.id)
             const selectedOptionIds = answer ? selectionsByAnswer.get(answer.id) ?? [] : []
             const questionType = readSnapshotField<string>(question.question_snapshot, 'questionType') ?? 'single_choice'
+            const responseConfig = readResponseConfig(question.question_snapshot)
             const options = optionsByQuestion.get(question.question_id) ?? []
             const scored = calculateResponseScore({
                 questionType,
@@ -105,6 +117,7 @@ export class ScoringService {
                     responseGroup: option.response_group,
                     responseGroupOrder: option.response_group_order,
                 })),
+                config: responseConfig,
             })
 
             totalScore += scored.score
