@@ -5,15 +5,12 @@ import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import Script from 'next/script'
 import { logger } from '@/lib/logger'
-import { isAdminRole, isArticleWriterRole } from '@/lib/utils/roles'
+import { env } from '@/lib/env'
+import { authorizationService } from '@/src/services/authorization.service'
 
 type UserMetadata = {
     full_name?: string
     name?: string
-}
-
-type DashboardProfile = {
-    role?: string | null
 }
 
 export const dynamic = 'force-dynamic'
@@ -32,23 +29,21 @@ export default async function DashboardLayout({
         redirect('/login')
     }
 
-    // Fetch profile for status and details
-    // We use maybeSingle() to avoid errors if profile doesn't exist yet
     let { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .maybeSingle()
 
-    // If profile doesn't exist, create it (new user or first time in dashboard)
     if (!profile) {
         const userMetadata = user.user_metadata as UserMetadata | undefined
+        const displayName = userMetadata?.full_name || userMetadata?.name || null
         const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
             .insert({
                 id: user.id,
-                full_name: userMetadata?.full_name || userMetadata?.name || null,
-                tryout_quota: 0
+                full_name: displayName,
+                display_name: displayName,
             })
             .select()
             .single()
@@ -60,15 +55,22 @@ export default async function DashboardLayout({
         }
     }
 
-    const role = (profile as DashboardProfile | null)?.role
-    const isAdminUser = isAdminRole(role)
-    const canAccessArticles = isArticleWriterRole(role)
+    const authorization = await authorizationService.getAuthorizationForUser(user.id)
+    const permissions = authorization?.permissions ?? []
+    const isAdminUser = permissions.includes('admin.access')
+    const canAccessArticles = [
+        'content.read',
+        'content.create',
+        'content.update',
+        'content.review',
+        'content.publish',
+    ].some((permission) => permissions.includes(permission as never))
 
     return (
         <>
             <Script
-                src="https://app.midtrans.com/snap/snap.js"
-                data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
+                src={env.midtransSnapScriptUrl()}
+                data-client-key={env.midtransClientKey()}
                 strategy="afterInteractive"
                 nonce={nonce}
             />
@@ -84,4 +86,3 @@ export default async function DashboardLayout({
         </>
     )
 }
-
