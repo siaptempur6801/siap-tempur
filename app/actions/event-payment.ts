@@ -47,7 +47,11 @@ export async function createEventPaymentTransaction(
 
         const existingOrder = await commerceService.getLatestOrderForProduct(user.id, offer.id)
         if (existingOrder?.paymentStatus === 'pending' && existingOrder.snapToken && !options.refreshPending) {
-            return { success: true, token: existingOrder.snapToken, orderId: existingOrder.id }
+            return {
+                success: true,
+                token: String(existingOrder.snapToken),
+                orderId: String(existingOrder.id),
+            }
         }
         if (existingOrder && String(existingOrder.status).toLowerCase() === 'paid') {
             return { success: false, message: 'Tiket sudah dibayar. Muat ulang halaman event.' }
@@ -55,7 +59,7 @@ export async function createEventPaymentTransaction(
 
         if (existingOrder?.paymentStatus === 'pending' && options.refreshPending) {
             try {
-                await expireTransaction(existingOrder.order_number)
+                await expireTransaction(String(existingOrder.order_number))
             } catch (error) {
                 logger.warn('Failed to expire old canonical event payment', {
                     orderId: existingOrder.id,
@@ -64,7 +68,7 @@ export async function createEventPaymentTransaction(
                 return { success: false, message: 'Gagal membatalkan tagihan lama. Cek status pembayaran dulu.' }
             }
             await commerceService.applyProviderStatus({
-                orderId: existingOrder.id,
+                orderId: String(existingOrder.id),
                 status: 'expire',
                 amount: Number(existingOrder.total_amount),
                 rawResponse: { reason: 'replaced_by_new_checkout' },
