@@ -34,6 +34,7 @@ export type AttemptAnswerRow = {
     id: string
     attempt_question_id: string
     selected_option_id: string | null
+    answer_value: string | null
     is_correct: boolean | null
     score_awarded: number
     answered_at: string | null
@@ -45,6 +46,13 @@ export type ScoringOptionRow = {
     question_id: string
     is_correct: boolean | null
     score: number | null
+    response_group: string | null
+    response_group_order: number | null
+}
+
+export type AttemptAnswerOptionRow = {
+    attempt_answer_id: string
+    option_id: string
 }
 
 export type AttemptBundle = {
@@ -176,12 +184,24 @@ export class AttemptRepository {
         const admin = await createV2AdminClient()
         const { data, error } = await admin
             .from('question_options')
-            .select('id, question_id, is_correct, score')
+            .select('id, question_id, is_correct, score, response_group, response_group_order')
             .eq('id', optionId)
             .eq('question_id', questionId)
             .maybeSingle()
         if (error) throw error
         return data as ScoringOptionRow | null
+    }
+
+    async getOptionsForQuestion(questionId: string, optionIds: string[]): Promise<ScoringOptionRow[]> {
+        if (optionIds.length === 0) return []
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('question_options')
+            .select('id, question_id, is_correct, score, response_group, response_group_order')
+            .eq('question_id', questionId)
+            .in('id', optionIds)
+        if (error) throw error
+        return (data ?? []) as ScoringOptionRow[]
     }
 
     async upsertAnswer(input: {
@@ -190,15 +210,61 @@ export class AttemptRepository {
     }) {
         const admin = await createV2AdminClient()
         const now = new Date().toISOString()
-        const { error } = await admin
+        const { data, error } = await admin
             .from('attempt_answers')
             .upsert({
                 attempt_question_id: input.attemptQuestionId,
                 selected_option_id: input.optionId,
+                answer_value: null,
                 answered_at: now,
                 updated_at: now,
             }, { onConflict: 'attempt_question_id' })
+            .select('id')
+            .single()
         if (error) throw error
+
+        const { error: clearError } = await admin
+            .from('attempt_answer_options')
+            .delete()
+            .eq('attempt_answer_id', data.id)
+        if (clearError) throw clearError
+    }
+
+    async upsertAnswerOptions(input: {
+        attemptQuestionId: string
+        optionIds: string[]
+    }) {
+        const admin = await createV2AdminClient()
+        const now = new Date().toISOString()
+        const normalized = Array.from(new Set(input.optionIds))
+        const { data, error } = await admin
+            .from('attempt_answers')
+            .upsert({
+                attempt_question_id: input.attemptQuestionId,
+                selected_option_id: null,
+                answer_value: null,
+                answered_at: normalized.length > 0 ? now : null,
+                updated_at: now,
+            }, { onConflict: 'attempt_question_id' })
+            .select('id')
+            .single()
+        if (error) throw error
+
+        const { error: clearError } = await admin
+            .from('attempt_answer_options')
+            .delete()
+            .eq('attempt_answer_id', data.id)
+        if (clearError) throw clearError
+
+        if (normalized.length > 0) {
+            const { error: insertError } = await admin
+                .from('attempt_answer_options')
+                .insert(normalized.map((optionId) => ({
+                    attempt_answer_id: data.id,
+                    option_id: optionId,
+                })))
+            if (insertError) throw insertError
+        }
     }
 
     async touchAttempt(attemptId: string, position?: number) {
@@ -236,7 +302,7 @@ export class AttemptRepository {
         if (questionIds.length > 0) {
             const { data: answers, error: answerError } = await admin
                 .from('attempt_answers')
-                .select('id, attempt_question_id, selected_option_id, is_correct, score_awarded, answered_at, is_flagged')
+                .select('id, attempt_question_id, selected_option_id, answer_value, is_correct, score_awarded, answered_at, is_flagged')
                 .in('attempt_question_id', questionIds)
             if (answerError) throw answerError
             answerRows = (answers ?? []) as AttemptAnswerRow[]
@@ -249,13 +315,36 @@ export class AttemptRepository {
         }
     }
 
+    async getAnswerOptionSelections(answerIds: string[]): Promise<AttemptAnswerOptionRow[]> {
+        if (answerIds.length === 0) return []
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('attempt_answer_options')
+            .select('attempt_answer_id, option_id')
+            .in('attempt_answer_id', answerIds)
+        if (error) throw error
+        return (data ?? []) as AttemptAnswerOptionRow[]
+    }
+
     async getScoringOptions(optionIds: string[]): Promise<ScoringOptionRow[]> {
         if (optionIds.length === 0) return []
         const admin = await createV2AdminClient()
         const { data, error } = await admin
             .from('question_options')
-            .select('id, question_id, is_correct, score')
+            .select('id, question_id, is_correct, score, response_group, response_group_order')
             .in('id', optionIds)
+        if (error) throw error
+        return (data ?? []) as ScoringOptionRow[]
+    }
+
+    async getScoringOptionsForQuestions(questionIds: string[]): Promise<ScoringOptionRow[]> {
+        if (questionIds.length === 0) return []
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('question_options')
+            .select('id, question_id, is_correct, score, response_group, response_group_order')
+            .in('question_id', questionIds)
+            .order('sort_order', { ascending: true })
         if (error) throw error
         return (data ?? []) as ScoringOptionRow[]
     }
