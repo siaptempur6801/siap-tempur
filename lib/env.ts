@@ -40,13 +40,6 @@ function getAppEnvironment(): AppEnvironment {
     return 'development'
 }
 
-/**
- * Schema V2 safety rail.
- *
- * Preview/staging deployments must never silently connect to the production
- * Supabase project. Production continues to use the existing production
- * project until the explicit cutover phase.
- */
 function assertSupabaseEnvironment(url: string) {
     const appEnvironment = getAppEnvironment()
     const projectRef = getSupabaseProjectRef(url)
@@ -96,7 +89,14 @@ export const env = {
         return requireEnv('NEXT_PUBLIC_MIDTRANS_CLIENT_KEY', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY)
     },
     siteUrl() {
-        return process.env.NEXT_PUBLIC_SITE_URL || 'https://siaptempur.id'
+        const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim()
+        if (configured) return configured.replace(/\/$/, '')
+
+        const vercelUrl = process.env.VERCEL_URL?.trim()
+        if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\/\//, '').replace(/\/$/, '')}`
+
+        if (getAppEnvironment() === 'production') return 'https://siaptempur.id'
+        return 'http://localhost:3000'
     },
     upstashRedisRestUrl() {
         return process.env.UPSTASH_REDIS_REST_URL || ''
