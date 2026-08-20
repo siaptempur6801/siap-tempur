@@ -8,7 +8,7 @@ on:
       - '.github/workflows/tka-source-probe.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   probe:
@@ -19,27 +19,68 @@ jobs:
       SOURCE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/schema-v2
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - run: npm ci
+
       - name: Probe legacy TKA SD source
         run: |
+          mkdir -p tmp
           node --input-type=module <<'NODE'
+          import fs from 'node:fs'
           import { createClient } from '@supabase/supabase-js'
+
           const url = process.env.SOURCE_URL?.trim()
           const key = process.env.SOURCE_SERVICE_ROLE_KEY?.trim()
           if (!url || !key) throw new Error('SOURCE_CREDENTIALS_MISSING')
-          const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-          const { data: program, error: pe } = await db.from('programs').select('id').eq('slug', 'tka-sd').maybeSingle()
-          if (pe) throw pe
+
+          const db = createClient(url, key, {
+            auth: { persistSession: false, autoRefreshToken: false },
+          })
+
+          const { data: program, error: programError } = await db
+            .from('programs')
+            .select('id')
+            .eq('slug', 'tka-sd')
+            .maybeSingle()
+          if (programError) throw programError
           if (!program) throw new Error('TKA_SD_PROGRAM_NOT_FOUND')
-          const { data: subjects, error: se } = await db.from('subjects').select('id,code').eq('program_id', program.id)
-          if (se) throw se
+
+          const { data: subjects, error: subjectError } = await db
+            .from('subjects')
+            .select('id,code')
+            .eq('program_id', program.id)
+          if (subjectError) throw subjectError
+
           const subjectIds = subjects.map((row) => row.id)
-          const { count, error: qe } = await db.from('questions').select('id', { head: true, count: 'exact' }).eq('program_id', program.id).in('subject_id', subjectIds)
-          if (qe) throw qe
-          console.log(JSON.stringify({ source_ok: true, subjects: subjects.map((row) => row.code).sort(), questions: count ?? 0 }))
+          const { count, error: questionError } = await db
+            .from('questions')
+            .select('id', { head: true, count: 'exact' })
+            .eq('program_id', program.id)
+            .in('subject_id', subjectIds)
+          if (questionError) throw questionError
+
+          const result = {
+            source_ok: true,
+            subjects: subjects.map((row) => row.code).sort(),
+            questions: count ?? 0,
+          }
+          console.log(JSON.stringify(result))
           if ((count ?? 0) !== 213) throw new Error(`SOURCE_COUNT_MISMATCH:${count ?? 0}`)
+          fs.writeFileSync('tmp/tka-source-probe-result.json', `${JSON.stringify(result, null, 2)}\n`)
           NODE
+
+      - name: Commit probe result
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tmp/tka-source-probe-result.json
+          git diff --cached --quiet && exit 0
+          git commit -m "chore: record TKA source probe"
+          git push origin HEAD:feat/schema-v2
