@@ -33,6 +33,20 @@ function numberValue(value: unknown) {
     return typeof value === 'number' ? value : Number(value ?? 0) || 0
 }
 
+function stringValue(value: unknown) {
+    return typeof value === 'string' ? value : String(value ?? '')
+}
+
+function nullableString(value: unknown) {
+    return typeof value === 'string' ? value : null
+}
+
+function nullableNumber(value: unknown) {
+    if (value === null || value === undefined || value === '') return null
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+}
+
 export class CommerceService {
     async listActiveProductOffers(programCode = 'CPNS', trackCode = 'SKD'): Promise<ProductOffer[]> {
         const admin = await createV2AdminClient()
@@ -65,7 +79,7 @@ export class CommerceService {
         if (productError) throw productError
         if (!products?.length) return []
 
-        const productIds = products.map((product) => product.id)
+        const productIds = products.map((product) => stringValue(product.id)).filter(Boolean)
         const { data: prices, error: priceError } = await admin
             .from('product_prices')
             .select('id, product_id, currency, amount, starts_at, ends_at, status')
@@ -77,8 +91,10 @@ export class CommerceService {
 
         const activePriceByProduct = new Map<string, (typeof prices)[number]>()
         for (const price of prices ?? []) {
-            if (price.ends_at && price.ends_at < now) continue
-            if (!activePriceByProduct.has(price.product_id)) activePriceByProduct.set(price.product_id, price)
+            const endsAt = nullableString(price.ends_at)
+            if (endsAt && endsAt < now) continue
+            const productId = stringValue(price.product_id)
+            if (productId && !activePriceByProduct.has(productId)) activePriceByProduct.set(productId, price)
         }
 
         const untyped = await createAdminClient()
@@ -93,18 +109,19 @@ export class CommerceService {
         )
 
         return products.flatMap((product) => {
-            const price = activePriceByProduct.get(product.id)
+            const productId = stringValue(product.id)
+            const price = activePriceByProduct.get(productId)
             if (!price) return []
             return [{
-                id: product.id,
-                code: product.code,
-                name: product.name,
-                description: product.description,
-                productType: product.product_type,
-                durationDays: product.duration_days,
+                id: productId,
+                code: stringValue(product.code),
+                name: stringValue(product.name),
+                description: nullableString(product.description),
+                productType: stringValue(product.product_type),
+                durationDays: nullableNumber(product.duration_days),
                 price: numberValue(price.amount),
-                currency: price.currency,
-                tokenGrant: tokenGrantByProduct.get(product.id) ?? 0,
+                currency: stringValue(price.currency) || 'IDR',
+                tokenGrant: tokenGrantByProduct.get(productId) ?? 0,
             }]
         })
     }
@@ -121,36 +138,40 @@ export class CommerceService {
         if (productError) throw productError
         if (!product) return null
 
+        const productId = stringValue(product.id)
         const { data: prices, error: priceError } = await admin
             .from('product_prices')
             .select('currency, amount, starts_at, ends_at')
-            .eq('product_id', product.id)
+            .eq('product_id', productId)
             .in('status', ['active', 'ACTIVE'])
             .lte('starts_at', now)
             .order('starts_at', { ascending: false })
             .limit(20)
         if (priceError) throw priceError
-        const price = (prices ?? []).find((row) => !row.ends_at || row.ends_at >= now)
+        const price = (prices ?? []).find((row) => {
+            const endsAt = nullableString(row.ends_at)
+            return !endsAt || endsAt >= now
+        })
         if (!price) return null
 
         const untyped = await createAdminClient()
         const { data: grant, error: grantError } = await untyped
             .from('product_wallet_grants')
             .select('amount')
-            .eq('product_id', product.id)
+            .eq('product_id', productId)
             .eq('wallet_type', 'exam_token')
             .maybeSingle()
         if (grantError) throw grantError
 
         return {
-            id: product.id,
-            code: product.code,
-            name: product.name,
-            description: product.description,
-            productType: product.product_type,
-            durationDays: product.duration_days,
+            id: productId,
+            code: stringValue(product.code),
+            name: stringValue(product.name),
+            description: nullableString(product.description),
+            productType: stringValue(product.product_type),
+            durationDays: nullableNumber(product.duration_days),
             price: numberValue(price.amount),
-            currency: price.currency,
+            currency: stringValue(price.currency) || 'IDR',
             tokenGrant: numberValue(grant?.amount),
         }
     }
@@ -181,10 +202,11 @@ export class CommerceService {
             .single()
         if (orderError) throw orderError
 
+        const orderId = stringValue(order.id)
         const { error: itemError } = await admin
             .from('order_items')
             .insert({
-                order_id: order.id,
+                order_id: orderId,
                 product_id: offer.id,
                 quantity: 1,
                 unit_price: offer.price,
@@ -192,18 +214,18 @@ export class CommerceService {
                 total: offer.price,
             })
         if (itemError) {
-            await admin.from('orders').delete().eq('id', order.id)
+            await admin.from('orders').delete().eq('id', orderId)
             throw itemError
         }
 
         return {
-            id: order.id,
-            orderNumber: order.order_number,
-            userId: order.user_id,
-            status: order.status,
+            id: orderId,
+            orderNumber: stringValue(order.order_number),
+            userId: stringValue(order.user_id),
+            status: stringValue(order.status),
             subtotal: numberValue(order.subtotal),
             totalAmount: numberValue(order.total_amount),
-            currency: order.currency,
+            currency: stringValue(order.currency) || 'IDR',
             productId: offer.id,
             productCode: offer.code,
             productName: offer.name,
@@ -225,7 +247,7 @@ export class CommerceService {
         const { error } = await admin
             .from('payments')
             .upsert({
-                order_id: order.id,
+                order_id: stringValue(order.id),
                 provider: 'midtrans',
                 provider_transaction_id: null,
                 payment_method: null,
@@ -309,12 +331,12 @@ export class CommerceService {
         const { data: product, error: productError } = await admin
             .from('products')
             .select('code')
-            .eq('id', mapping.product_id)
+            .eq('id', String(mapping.product_id))
             .maybeSingle()
         if (productError) throw productError
         if (!product) return null
 
-        const offer = await this.getProductOfferByCode(product.code)
+        const offer = await this.getProductOfferByCode(stringValue(product.code))
         if (!offer) return null
         return { ...offer, eventId, sessionId: String(mapping.session_id || '') || null }
     }
@@ -328,7 +350,7 @@ export class CommerceService {
             .order('id', { ascending: false })
             .limit(100)
         if (itemError) throw itemError
-        const orderIds = Array.from(new Set((items ?? []).map((item) => item.order_id)))
+        const orderIds = Array.from(new Set((items ?? []).map((item) => stringValue(item.order_id)).filter(Boolean)))
         if (orderIds.length === 0) return null
 
         const { data: orders, error: orderError } = await admin
@@ -341,19 +363,24 @@ export class CommerceService {
         if (orderError) throw orderError
         const order = orders?.[0]
         if (!order) return null
+        const orderId = stringValue(order.id)
 
         const { data: payment, error: paymentError } = await admin
             .from('payments')
             .select('status, raw_response')
-            .eq('order_id', order.id)
+            .eq('order_id', orderId)
             .eq('provider', 'midtrans')
             .maybeSingle()
         if (paymentError) throw paymentError
 
         const raw = (payment?.raw_response ?? {}) as Json
         return {
-            ...order,
-            paymentStatus: payment?.status ?? null,
+            id: orderId,
+            order_number: stringValue(order.order_number),
+            status: stringValue(order.status),
+            total_amount: numberValue(order.total_amount),
+            created_at: nullableString(order.created_at),
+            paymentStatus: payment ? stringValue(payment.status) : null,
             snapToken: readSnapToken(raw),
         }
     }
