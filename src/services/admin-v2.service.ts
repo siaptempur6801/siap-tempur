@@ -22,6 +22,18 @@ function nowIso() {
     return new Date().toISOString()
 }
 
+function sameId(left: unknown, right: unknown) {
+    return String(left ?? '') === String(right ?? '')
+}
+
+function validPositive(value: number | null | undefined) {
+    return value === null || value === undefined || (Number.isFinite(value) && value > 0)
+}
+
+function validNonNegative(value: number | null | undefined) {
+    return value === null || value === undefined || (Number.isFinite(value) && value >= 0)
+}
+
 export class AdminV2Service {
     private async getCpnsCatalog() {
         const admin = await createV2AdminClient()
@@ -171,8 +183,9 @@ export class AdminV2Service {
         const catalog = await this.getCpnsCatalog()
         const code = input.code.trim().toUpperCase().replace(/[^A-Z0-9_]+/g, '_')
         if (!code || !input.name.trim()) throw new Error('PRODUCT_FIELDS_REQUIRED')
-        if (input.price !== null && input.price !== undefined && input.price < 0) throw new Error('PRODUCT_PRICE_INVALID')
-        if (input.tokenGrant !== null && input.tokenGrant !== undefined && input.tokenGrant < 0) throw new Error('TOKEN_GRANT_INVALID')
+        if (!validNonNegative(input.price)) throw new Error('PRODUCT_PRICE_INVALID')
+        if (!validNonNegative(input.tokenGrant)) throw new Error('TOKEN_GRANT_INVALID')
+        if (!validPositive(input.durationDays)) throw new Error('PRODUCT_DURATION_INVALID')
 
         let productId = input.id ?? null
         if (productId) {
@@ -209,12 +222,13 @@ export class AdminV2Service {
         }
 
         if (input.price !== null && input.price !== undefined) {
-            await admin
+            const { error: deactivateError } = await admin
                 .from('product_prices')
                 .update({ status: 'inactive', ends_at: nowIso() })
                 .eq('product_id', productId)
                 .in('status', ['active', 'ACTIVE'])
                 .is('ends_at', null)
+            if (deactivateError) throw deactivateError
 
             const { error: priceError } = await admin
                 .from('product_prices')
@@ -281,6 +295,12 @@ export class AdminV2Service {
         const slug = slugify(input.slug || input.title)
         if (!code || !input.title.trim() || !slug) throw new Error('EVENT_FIELDS_REQUIRED')
         if (Date.parse(input.startsAt) >= Date.parse(input.endsAt)) throw new Error('EVENT_TIME_INVALID')
+        if (input.registrationStart && input.registrationEnd && Date.parse(input.registrationStart) >= Date.parse(input.registrationEnd)) {
+            throw new Error('EVENT_REGISTRATION_TIME_INVALID')
+        }
+        if (input.registrationEnd && Date.parse(input.registrationEnd) > Date.parse(input.endsAt)) {
+            throw new Error('EVENT_REGISTRATION_TIME_INVALID')
+        }
 
         const payload = {
             code,
@@ -324,9 +344,30 @@ export class AdminV2Service {
         capacity?: number | null
         status: string
     }) {
+        if (!input.name.trim()) throw new Error('EVENT_SESSION_NAME_REQUIRED')
         if (Date.parse(input.startsAt) >= Date.parse(input.endsAt)) throw new Error('EVENT_SESSION_TIME_INVALID')
-        if (input.capacity !== null && input.capacity !== undefined && input.capacity <= 0) throw new Error('EVENT_SESSION_CAPACITY_INVALID')
+        if (!validPositive(input.capacity)) throw new Error('EVENT_SESSION_CAPACITY_INVALID')
+
         const admin = await createV2AdminClient()
+        const catalog = await this.getCpnsCatalog()
+        const eventType = catalog.examTypes.find((row) => row.code === 'EVENT')
+        if (!eventType) throw new Error('EXAM_TYPE_INVALID')
+
+        const [{ data: event, error: eventError }, { data: exam, error: examError }] = await Promise.all([
+            admin.from('events').select('id, program_id, track_id, starts_at, ends_at').eq('id', input.eventId).maybeSingle(),
+            admin.from('exams').select('id, program_id, track_id, exam_type_id').eq('id', input.examId).maybeSingle(),
+        ])
+        if (eventError) throw eventError
+        if (examError) throw examError
+        if (!event) throw new Error('EVENT_NOT_FOUND')
+        if (!exam) throw new Error('EXAM_NOT_FOUND')
+        if (!sameId(event.program_id, catalog.program.id) || !sameId(event.track_id, catalog.track.id)) throw new Error('EVENT_CATALOG_MISMATCH')
+        if (!sameId(exam.program_id, event.program_id) || !sameId(exam.track_id, event.track_id)) throw new Error('EVENT_EXAM_MISMATCH')
+        if (!sameId(exam.exam_type_id, eventType.id)) throw new Error('EVENT_EXAM_TYPE_REQUIRED')
+        if (Date.parse(input.startsAt) < Date.parse(String(event.starts_at)) || Date.parse(input.endsAt) > Date.parse(String(event.ends_at))) {
+            throw new Error('EVENT_SESSION_OUTSIDE_EVENT')
+        }
+
         const payload = {
             event_id: input.eventId,
             exam_id: input.examId,
@@ -347,14 +388,20 @@ export class AdminV2Service {
     }
 
     async linkEventProduct(input: { eventId: string; sessionId: string; productId: string; status?: string }) {
+        const admin = await createV2AdminClient()
         const untyped = await createAdminClient()
-        const { data: session, error: sessionError } = await createV2AdminClient().then((admin) => admin
-            .from('event_sessions')
-            .select('id, event_id')
-            .eq('id', input.sessionId)
-            .maybeSingle())
+        const [{ data: session, error: sessionError }, { data: event, error: eventError }, { data: product, error: productError }] = await Promise.all([
+            admin.from('event_sessions').select('id, event_id').eq('id', input.sessionId).maybeSingle(),
+            admin.from('events').select('id, program_id, track_id').eq('id', input.eventId).maybeSingle(),
+            admin.from('products').select('id, program_id, track_id, status').eq('id', input.productId).maybeSingle(),
+        ])
         if (sessionError) throw sessionError
-        if (!session || session.event_id !== input.eventId) throw new Error('EVENT_SESSION_MISMATCH')
+        if (eventError) throw eventError
+        if (productError) throw productError
+        if (!session || !sameId(session.event_id, input.eventId)) throw new Error('EVENT_SESSION_MISMATCH')
+        if (!event || !product) throw new Error('EVENT_PRODUCT_MISMATCH')
+        if (!sameId(product.program_id, event.program_id) || !sameId(product.track_id, event.track_id)) throw new Error('EVENT_PRODUCT_MISMATCH')
+        if (String(product.status).toLowerCase() === 'archived') throw new Error('EVENT_PRODUCT_ARCHIVED')
 
         const { error } = await untyped
             .from('event_products')
@@ -388,8 +435,12 @@ export class AdminV2Service {
         const examType = catalog.examTypes.find((row) => row.code === input.examTypeCode)
         if (!examType) throw new Error('EXAM_TYPE_INVALID')
         if (!input.title.trim()) throw new Error('EXAM_TITLE_REQUIRED')
-        if (input.tokenCost < 0) throw new Error('EXAM_TOKEN_COST_INVALID')
+        if (!validPositive(input.durationSeconds)) throw new Error('EXAM_DURATION_INVALID')
+        if (!validPositive(input.attemptLimit)) throw new Error('EXAM_ATTEMPT_LIMIT_INVALID')
+        if (!validNonNegative(input.tokenCost)) throw new Error('EXAM_TOKEN_COST_INVALID')
+        if (input.startsAt && input.endsAt && Date.parse(input.startsAt) >= Date.parse(input.endsAt)) throw new Error('EXAM_TIME_INVALID')
         const slug = slugify(input.slug || input.title)
+        if (!slug) throw new Error('EXAM_TITLE_REQUIRED')
 
         const payload = {
             program_id: catalog.program.id,
@@ -446,6 +497,18 @@ export class AdminV2Service {
             : null
         if (input.subjectCode && !subject) throw new Error('SUBJECT_INVALID')
         if (!input.title.trim()) throw new Error('SECTION_TITLE_REQUIRED')
+        if (!Number.isInteger(input.sortOrder) || input.sortOrder < 0) throw new Error('SECTION_SORT_ORDER_INVALID')
+        if (!validPositive(input.questionCount)) throw new Error('SECTION_QUESTION_COUNT_INVALID')
+        if (!validPositive(input.durationSeconds)) throw new Error('SECTION_DURATION_INVALID')
+        if (!validNonNegative(input.passingScore)) throw new Error('SECTION_PASSING_SCORE_INVALID')
+
+        const { data: exam, error: examError } = await admin
+            .from('exams')
+            .select('id, program_id, track_id')
+            .eq('id', input.examId)
+            .maybeSingle()
+        if (examError) throw examError
+        if (!exam || !sameId(exam.program_id, catalog.program.id) || !sameId(exam.track_id, catalog.track.id)) throw new Error('EXAM_NOT_FOUND')
 
         const payload = {
             exam_id: input.examId,
@@ -485,7 +548,16 @@ export class AdminV2Service {
         if (!subject) throw new Error('SUBJECT_INVALID')
         if (!input.stem.trim()) throw new Error('QUESTION_STEM_REQUIRED')
         const options = input.options ?? []
+
         if (!input.id && options.length < 2) throw new Error('QUESTION_OPTIONS_REQUIRED')
+        if (options.length > 0) {
+            if (options.length < 2) throw new Error('QUESTION_OPTIONS_REQUIRED')
+            const normalizedKeys = options.map((option) => option.key.trim().toUpperCase())
+            if (new Set(normalizedKeys).size !== normalizedKeys.length) throw new Error('QUESTION_OPTION_KEYS_DUPLICATE')
+            if (options.some((option) => !option.content.trim())) throw new Error('QUESTION_OPTION_CONTENT_REQUIRED')
+            if (options.some((option) => option.score !== null && (!Number.isFinite(option.score) || option.score < 0))) throw new Error('QUESTION_OPTION_SCORE_INVALID')
+            if (options.filter((option) => option.isCorrect === true).length !== 1) throw new Error('QUESTION_CORRECT_OPTION_REQUIRED')
+        }
 
         if (!input.id) {
             const questionCode = `ADM-${input.subjectCode}-${Date.now()}-${randomUUID().slice(0, 4).toUpperCase()}`
@@ -515,8 +587,8 @@ export class AdminV2Service {
             const { error: optionError } = await admin.from('question_options').insert(
                 options.map((option) => ({
                     question_id: questionId,
-                    option_key: option.key,
-                    content: option.content,
+                    option_key: option.key.trim().toUpperCase(),
+                    content: option.content.trim(),
                     is_correct: option.isCorrect,
                     score: option.score,
                     sort_order: option.sortOrder,
@@ -580,26 +652,38 @@ export class AdminV2Service {
             .eq('id', input.id)
         if (questionError) throw questionError
 
-        for (const option of options) {
-            const existing = (currentOptions ?? []).find((row) => row.option_key === option.key)
-            if (existing) {
-                const { error } = await admin.from('question_options').update({
-                    content: option.content,
-                    is_correct: option.isCorrect,
-                    score: option.score,
-                    sort_order: option.sortOrder,
-                }).eq('id', existing.id)
-                if (error) throw error
-            } else {
-                const { error } = await admin.from('question_options').insert({
-                    question_id: input.id,
-                    option_key: option.key,
-                    content: option.content,
-                    is_correct: option.isCorrect,
-                    score: option.score,
-                    sort_order: option.sortOrder,
-                })
-                if (error) throw error
+        if (options.length > 0) {
+            const submittedKeys = new Set(options.map((option) => option.key.trim().toUpperCase()))
+            const staleOptionIds = (currentOptions ?? [])
+                .filter((row) => !submittedKeys.has(String(row.option_key).toUpperCase()))
+                .map((row) => row.id)
+            if (staleOptionIds.length > 0) {
+                const { error: deleteError } = await admin.from('question_options').delete().in('id', staleOptionIds)
+                if (deleteError) throw deleteError
+            }
+
+            for (const option of options) {
+                const optionKey = option.key.trim().toUpperCase()
+                const existing = (currentOptions ?? []).find((row) => String(row.option_key).toUpperCase() === optionKey)
+                if (existing) {
+                    const { error } = await admin.from('question_options').update({
+                        content: option.content.trim(),
+                        is_correct: option.isCorrect,
+                        score: option.score,
+                        sort_order: option.sortOrder,
+                    }).eq('id', existing.id)
+                    if (error) throw error
+                } else {
+                    const { error } = await admin.from('question_options').insert({
+                        question_id: input.id,
+                        option_key: optionKey,
+                        content: option.content.trim(),
+                        is_correct: option.isCorrect,
+                        score: option.score,
+                        sort_order: option.sortOrder,
+                    })
+                    if (error) throw error
+                }
             }
         }
         return input.id
