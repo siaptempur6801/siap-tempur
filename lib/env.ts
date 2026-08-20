@@ -62,41 +62,20 @@ function assertSupabaseEnvironment(url: string) {
     return url
 }
 
-function assertMidtransEnvironment(value: string, keyName: string) {
-    const appEnvironment = getAppEnvironment()
-    const isSandboxKey = value.includes('SB-')
-
-    if (appEnvironment === 'staging' && !isSandboxKey) {
-        throw new Error(`${keyName} must use a Midtrans Sandbox key on staging`)
-    }
-
-    if (appEnvironment === 'production' && isSandboxKey) {
-        throw new Error(`${keyName} must not use a Midtrans Sandbox key in production`)
-    }
-
-    return value
-}
-
 function resolveMidtransServerKey() {
-    const appEnvironment = getAppEnvironment()
-
-    if (appEnvironment === 'production') {
-        return requireEnv('MIDTRANS_SERVER_KEY', process.env.MIDTRANS_SERVER_KEY)
+    if (getAppEnvironment() === 'production') {
+        return requireEnv('MIDTRANS_SERVER_KEY', process.env.MIDTRANS_SERVER_KEY).trim()
     }
 
-    const value = process.env.MIDTRANS_SERVER_KEY_SANDBOX || process.env.MIDTRANS_SERVER_KEY
-    return requireEnv('MIDTRANS_SERVER_KEY_SANDBOX', value)
+    return requireEnv('MIDTRANS_SERVER_KEY_SANDBOX', process.env.MIDTRANS_SERVER_KEY_SANDBOX).trim()
 }
 
 function resolveMidtransClientKey() {
-    const appEnvironment = getAppEnvironment()
-
-    if (appEnvironment === 'production') {
-        return requireEnv('NEXT_PUBLIC_MIDTRANS_CLIENT_KEY', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY)
+    if (getAppEnvironment() === 'production') {
+        return requireEnv('NEXT_PUBLIC_MIDTRANS_CLIENT_KEY', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY).trim()
     }
 
-    const value = process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX || process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
-    return requireEnv('NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX', value)
+    return requireEnv('NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX).trim()
 }
 
 export const env = {
@@ -119,15 +98,24 @@ export const env = {
     supabaseServiceRoleKey() {
         return requireEnv('SUPABASE_SERVICE_ROLE_KEY', process.env.SUPABASE_SERVICE_ROLE_KEY)
     },
+    midtransIsProduction() {
+        return getAppEnvironment() === 'production'
+    },
     midtransServerKey() {
-        const value = resolveMidtransServerKey()
-        const keyName = getAppEnvironment() === 'production' ? 'MIDTRANS_SERVER_KEY' : 'MIDTRANS_SERVER_KEY_SANDBOX'
-        return assertMidtransEnvironment(value, keyName)
+        return resolveMidtransServerKey()
     },
     midtransClientKey() {
-        const value = resolveMidtransClientKey()
-        const keyName = getAppEnvironment() === 'production' ? 'NEXT_PUBLIC_MIDTRANS_CLIENT_KEY' : 'NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX'
-        return assertMidtransEnvironment(value, keyName)
+        return resolveMidtransClientKey()
+    },
+    midtransApiBaseUrl() {
+        return env.midtransIsProduction()
+            ? 'https://api.midtrans.com'
+            : 'https://api.sandbox.midtrans.com'
+    },
+    midtransSnapScriptUrl() {
+        return env.midtransIsProduction()
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js'
     },
     siteUrl() {
         const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim()
