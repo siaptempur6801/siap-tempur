@@ -6,17 +6,32 @@ type JsonObject = { [key: string]: Json | undefined }
 
 type SafeOption = {
     id: string
+    key: string | null
     content: string
     image_url?: string | null
+    response_group: string | null
+    response_group_order: number | null
+}
+
+type SafeStimulus = {
+    id: string
+    code: string | null
+    title: string | null
+    content: string
+    image_url: string | null
+    source_reference: string | null
 }
 
 export type PracticeQuestionView = {
     id: string
     content: string
     type: string
+    response_type: string
     category: string
     sub_category: string
     image_url?: string | null
+    stimulus: SafeStimulus | null
+    response_config: Json
     options: SafeOption[]
     sort_order: number
 }
@@ -24,8 +39,11 @@ export type PracticeQuestionView = {
 export type PracticeSessionView = {
     attemptId: string
     status: string
+    programCode: string
+    trackCode: string
     questions: PracticeQuestionView[]
     initialAnswers: Record<string, string>
+    initialAnswerOptions: Record<string, string[]>
     initialCurrentIndex: number
     initialMarked: Record<string, boolean>
     endTime?: string
@@ -33,7 +51,7 @@ export type PracticeSessionView = {
     returnTo: 'tryout' | 'mini-tryout' | 'drilling-materi' | 'event'
 }
 
-function asObject(value: Json): JsonObject | null {
+function asObject(value: Json | undefined): JsonObject | null {
     if (!value || Array.isArray(value) || typeof value !== 'object') return null
     return value as JsonObject
 }
@@ -57,8 +75,36 @@ function readOptions(object: JsonObject | null): SafeOption[] {
         const id = readString(option, 'id')
         const content = readString(option, 'content')
         if (!id || content === null) return []
-        return [{ id, content, image_url: null }]
+        return [{
+            id,
+            key: readString(option, 'key'),
+            content,
+            image_url: readString(option, 'imageUrl'),
+            response_group: readString(option, 'responseGroup'),
+            response_group_order: readNumber(option, 'responseGroupOrder'),
+        }]
     })
+}
+
+function readStimulus(object: JsonObject | null): SafeStimulus | null {
+    const stimulus = asObject(object?.stimulus)
+    const id = readString(stimulus, 'id')
+    const content = readString(stimulus, 'content')
+    if (!id || content === null) return null
+
+    return {
+        id,
+        code: readString(stimulus, 'code'),
+        title: readString(stimulus, 'title'),
+        content,
+        image_url: readString(stimulus, 'imageUrl'),
+        source_reference: readString(stimulus, 'sourceReference'),
+    }
+}
+
+function readResponseConfig(object: JsonObject | null): Json {
+    const value = object?.responseConfig
+    return value ?? {}
 }
 
 function resolveReturnTo(kind: string | null): PracticeSessionView['returnTo'] {
@@ -78,6 +124,8 @@ export class PracticeSessionService {
         const knowledgeNode = readString(metadata, 'knowledgeNode') ?? ''
         const metadataSubjectCode = readString(metadata, 'subjectCode')
         const durationSeconds = readNumber(metadata, 'durationSeconds')
+        const programCode = readString(metadata, 'programCode') ?? 'CPNS'
+        const trackCode = readString(metadata, 'trackCode') ?? 'SKD'
 
         const subjectIds = Array.from(new Set(bundle.questions.flatMap((question) => {
             const snapshot = asObject(question.question_snapshot)
@@ -103,15 +151,18 @@ export class PracticeSessionService {
             const subjectId = readString(snapshot, 'subjectId')
             const type = (subjectId ? subjectCodes.get(subjectId) : null)
                 ?? metadataSubjectCode
-                ?? 'CPNS'
+                ?? programCode
 
             return {
                 id: question.question_id,
                 content: readString(snapshot, 'stem') ?? '',
                 type,
+                response_type: readString(snapshot, 'questionType') ?? 'single_choice',
                 category: knowledgeNode,
                 sub_category: knowledgeNode,
                 image_url: null,
+                stimulus: readStimulus(snapshot),
+                response_config: readResponseConfig(snapshot),
                 options: readOptions(snapshot),
                 sort_order: question.position,
             }
@@ -119,12 +170,23 @@ export class PracticeSessionService {
 
         const questionByAttemptQuestionId = new Map(bundle.questions.map((question) => [question.id, question]))
         const initialAnswers: Record<string, string> = {}
+        const initialAnswerOptions: Record<string, string[]> = {}
         const initialMarked: Record<string, boolean> = {}
+
+        const answerOptionRows = await attemptRepository.getAnswerOptionSelections(bundle.answers.map((answer) => answer.id))
+        const optionIdsByAnswerId = new Map<string, string[]>()
+        for (const row of answerOptionRows) {
+            const selected = optionIdsByAnswerId.get(row.attempt_answer_id) ?? []
+            selected.push(row.option_id)
+            optionIdsByAnswerId.set(row.attempt_answer_id, selected)
+        }
 
         for (const answer of bundle.answers) {
             const question = questionByAttemptQuestionId.get(answer.attempt_question_id)
             if (!question) continue
             if (answer.selected_option_id) initialAnswers[question.question_id] = answer.selected_option_id
+            const selectedOptionIds = optionIdsByAnswerId.get(answer.id) ?? []
+            if (selectedOptionIds.length > 0) initialAnswerOptions[question.question_id] = selectedOptionIds
             if (answer.is_flagged) initialMarked[question.question_id] = true
         }
 
@@ -143,8 +205,11 @@ export class PracticeSessionService {
         return {
             attemptId,
             status: bundle.attempt.status,
+            programCode,
+            trackCode,
             questions,
             initialAnswers,
+            initialAnswerOptions,
             initialCurrentIndex,
             initialMarked,
             endTime,
