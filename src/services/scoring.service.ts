@@ -1,4 +1,4 @@
-import { attemptRepository, type AttemptAnswerRow, type AttemptQuestionRow, type ScoringOptionRow } from '@/src/repositories/attempt.repository'
+import { attemptRepository, type AttemptAnswerRow, type ScoringOptionRow } from '@/src/repositories/attempt.repository'
 import { PracticeDomainError } from '@/src/services/exam-attempt.service'
 import type { Json } from '@/types/database.types'
 
@@ -56,6 +56,10 @@ export class ScoringService {
                 percentage: bundle.attempt.percentage,
                 passed: bundle.attempt.passed,
             }
+        }
+
+        if (bundle.questions.length === 0) {
+            throw new PracticeDomainError('EXAM_CONFIGURATION_ERROR', 'Attempt has no allocated questions')
         }
 
         const answerByQuestion = new Map<string, AttemptAnswerRow>()
