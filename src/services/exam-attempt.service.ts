@@ -2,13 +2,14 @@ import { attemptRepository } from '@/src/repositories/attempt.repository'
 import { examRepository, type CanonicalExamType, type ResolvedExam } from '@/src/repositories/exam.repository'
 import type { Json } from '@/types/database.types'
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { walletService, WalletDomainError } from '@/src/services/wallet.service'
 
 export type PracticeErrorCode =
     | 'EXAM_NOT_CONFIGURED'
     | 'QUESTION_BANK_INCOMPLETE'
     | 'QUESTION_BANK_EMPTY'
     | 'ATTEMPT_LIMIT_REACHED'
-    | 'TOKEN_FLOW_PENDING'
+    | 'INSUFFICIENT_TOKEN_BALANCE'
     | 'ENTITLEMENT_REQUIRED'
     | 'EXPIRED_ATTEMPT'
     | 'EXAM_CONFIGURATION_ERROR'
@@ -199,15 +200,19 @@ export class ExamAttemptService {
             }
         }
 
-        // Token debit will be migrated with WalletService/commerce. Blocking paid
-        // exams here is deliberate: Preview must never silently create free
-        // attempts for exams configured with a token cost.
         if (exam.tokenCost > 0) {
-            throw new PracticeDomainError(
-                'TOKEN_FLOW_PENDING',
-                'Schema V2 token debit is not enabled yet. Set token_cost=0 only on staging test exams.',
-                { tokenCost: exam.tokenCost },
-            )
+            try {
+                await walletService.assertCanAfford(userId, exam.tokenCost)
+            } catch (error) {
+                if (error instanceof WalletDomainError && error.code === 'INSUFFICIENT_TOKEN_BALANCE') {
+                    throw new PracticeDomainError(
+                        'INSUFFICIENT_TOKEN_BALANCE',
+                        error.message,
+                        { tokenCost: exam.tokenCost },
+                    )
+                }
+                throw error
+            }
         }
     }
 }
