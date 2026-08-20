@@ -38,6 +38,14 @@ export type StartAttemptResult = {
     resumed: boolean
 }
 
+type EntitlementRow = {
+    id: string
+    starts_at: string
+    expires_at: string | null
+    usage_limit: number | null
+    usage_count: number
+}
+
 function metadataFor(input: StartInput): Record<string, Json> {
     const metadata: Record<string, Json> = {
         schemaVersion: 2,
@@ -51,6 +59,15 @@ function metadataFor(input: StartInput): Record<string, Json> {
 function isExpired(exam: ResolvedExam, startedAt: string | null) {
     if (!exam.durationSeconds || !startedAt) return false
     return Date.now() >= Date.parse(startedAt) + exam.durationSeconds * 1000
+}
+
+function isEntitlementUsable(entitlement: EntitlementRow) {
+    const now = Date.now()
+    const startsAt = Date.parse(entitlement.starts_at)
+    const expiresAt = entitlement.expires_at ? Date.parse(entitlement.expires_at) : null
+    const withinWindow = Number.isFinite(startsAt) && startsAt <= now && (expiresAt === null || expiresAt > now)
+    const withinUsage = entitlement.usage_limit === null || entitlement.usage_count < entitlement.usage_limit
+    return withinWindow && withinUsage
 }
 
 export class ExamAttemptService {
@@ -161,19 +178,16 @@ export class ExamAttemptService {
     private async assertAccess(userId: string, exam: ResolvedExam) {
         if (exam.requiredFeatureId) {
             const admin = await createV2AdminClient()
-            const now = new Date().toISOString()
             const { data, error } = await admin
                 .from('entitlements')
-                .select('id')
+                .select('id, starts_at, expires_at, usage_limit, usage_count')
                 .eq('user_id', userId)
                 .eq('feature_id', exam.requiredFeatureId)
                 .in('status', ['ACTIVE', 'active'])
-                .lte('starts_at', now)
-                .or(`expires_at.is.null,expires_at.gt.${now}`)
-                .limit(1)
-                .maybeSingle()
             if (error) throw error
-            if (!data) {
+
+            const activeEntitlement = ((data ?? []) as EntitlementRow[]).find(isEntitlementUsable)
+            if (!activeEntitlement) {
                 throw new PracticeDomainError('ENTITLEMENT_REQUIRED', 'Active entitlement is required for this exam')
             }
         }
