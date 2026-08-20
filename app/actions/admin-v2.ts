@@ -6,6 +6,7 @@ import { validateCsrf } from '@/lib/csrf'
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminV2Service, type AdminQuestionOptionInput } from '@/src/services/admin-v2.service'
+import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
 function text(form: FormData, key: string) {
     const value = form.get(key)
@@ -33,6 +34,17 @@ function nullableNumber(form: FormData, key: string) {
     return value
 }
 
+function catalogContext(form: FormData): ProgramTrackContext {
+    return {
+        programCode: text(form, 'program_code') || 'CPNS',
+        trackCode: text(form, 'track_code') || 'SKD',
+    }
+}
+
+function contextQuery(context: ProgramTrackContext) {
+    return `program=${encodeURIComponent(context.programCode)}&track=${encodeURIComponent(context.trackCode)}`
+}
+
 function jakartaIso(form: FormData, key: string) {
     const value = text(form, key)
     if (!value) return null
@@ -55,7 +67,7 @@ function parseQuestionOptions(raw: string): AdminQuestionOptionInput[] {
         .filter(Boolean)
 
     return rows.map((line, index) => {
-        const [keyRaw, contentRaw, scoreRaw, correctRaw] = line.split('|').map((part) => part.trim())
+        const [keyRaw, contentRaw, scoreRaw, correctRaw, groupRaw, groupOrderRaw] = line.split('|').map((part) => part.trim())
         if (!keyRaw || !contentRaw) throw new Error(`OPTION_LINE_${index + 1}_INVALID`)
         const score = scoreRaw === '' || scoreRaw === undefined ? null : Number(scoreRaw)
         if (score !== null && !Number.isFinite(score)) throw new Error(`OPTION_SCORE_${index + 1}_INVALID`)
@@ -63,12 +75,18 @@ function parseQuestionOptions(raw: string): AdminQuestionOptionInput[] {
         const isCorrect = correct === undefined || correct === ''
             ? null
             : ['true', '1', 'yes', 'ya'].includes(correct)
+        const responseGroupOrder = groupOrderRaw === '' || groupOrderRaw === undefined ? null : Number(groupOrderRaw)
+        if (responseGroupOrder !== null && (!Number.isInteger(responseGroupOrder) || responseGroupOrder < 1)) {
+            throw new Error(`OPTION_GROUP_ORDER_${index + 1}_INVALID`)
+        }
         return {
             key: keyRaw.toUpperCase(),
             content: contentRaw,
             score,
             isCorrect,
             sortOrder: index + 1,
+            responseGroup: groupRaw || null,
+            responseGroupOrder,
         }
     })
 }
@@ -78,6 +96,7 @@ function errorMessage(error: unknown) {
     const friendly: Record<string, string> = {
         PRODUCT_FIELDS_REQUIRED: 'Kode dan nama produk wajib diisi.',
         PRODUCT_PRICE_INVALID: 'Harga produk tidak valid.',
+        PRODUCT_CATALOG_MISMATCH: 'Produk tidak berada pada program/track yang sedang aktif.',
         TOKEN_GRANT_INVALID: 'Jumlah token tidak valid.',
         PRODUCT_DURATION_INVALID: 'Durasi produk harus lebih dari 0 hari.',
         EVENT_FIELDS_REQUIRED: 'Data event belum lengkap.',
@@ -88,7 +107,7 @@ function errorMessage(error: unknown) {
         EVENT_SESSION_NAME_REQUIRED: 'Nama sesi event wajib diisi.',
         EVENT_SESSION_MISMATCH: 'Sesi tidak berasal dari event yang dipilih.',
         EVENT_NOT_FOUND: 'Event tidak ditemukan.',
-        EVENT_CATALOG_MISMATCH: 'Event tidak berada pada katalog CPNS/SKD.',
+        EVENT_CATALOG_MISMATCH: 'Event tidak berada pada program/track yang sedang aktif.',
         EVENT_EXAM_MISMATCH: 'Exam dan event harus berada pada program/track yang sama.',
         EVENT_EXAM_TYPE_REQUIRED: 'Sesi Tryout Akbar hanya boleh memakai exam bertipe EVENT.',
         EVENT_SESSION_OUTSIDE_EVENT: 'Waktu sesi harus berada di dalam rentang waktu event.',
@@ -100,8 +119,9 @@ function errorMessage(error: unknown) {
         EXAM_DURATION_INVALID: 'Durasi exam harus lebih dari 0 detik.',
         EXAM_ATTEMPT_LIMIT_INVALID: 'Attempt limit harus lebih dari 0.',
         EXAM_TIME_INVALID: 'Rentang waktu exam tidak valid.',
-        EXAM_NOT_FOUND: 'Exam tidak ditemukan pada katalog CPNS/SKD.',
-        SUBJECT_INVALID: 'Subtes tidak valid.',
+        EXAM_NOT_FOUND: 'Exam tidak ditemukan pada program/track aktif.',
+        EXAM_CATALOG_MISMATCH: 'Exam tidak berada pada program/track yang sedang aktif.',
+        SUBJECT_INVALID: 'Mapel/subtes tidak valid untuk track yang sedang aktif.',
         SECTION_TITLE_REQUIRED: 'Judul section wajib diisi.',
         SECTION_SORT_ORDER_INVALID: 'Urutan section tidak valid.',
         SECTION_QUESTION_COUNT_INVALID: 'Jumlah soal section harus lebih dari 0.',
@@ -109,10 +129,14 @@ function errorMessage(error: unknown) {
         SECTION_PASSING_SCORE_INVALID: 'Passing score section tidak valid.',
         QUESTION_STEM_REQUIRED: 'Isi pertanyaan wajib diisi.',
         QUESTION_OPTIONS_REQUIRED: 'Soal membutuhkan minimal dua opsi.',
-        QUESTION_OPTION_KEYS_DUPLICATE: 'Key opsi harus unik, misalnya A, B, C, D.',
+        QUESTION_OPTION_KEYS_DUPLICATE: 'Key opsi harus unik.',
         QUESTION_OPTION_CONTENT_REQUIRED: 'Semua opsi harus memiliki isi.',
         QUESTION_OPTION_SCORE_INVALID: 'Skor opsi tidak valid.',
-        QUESTION_CORRECT_OPTION_REQUIRED: 'Harus ada tepat satu opsi dengan penanda benar=true.',
+        QUESTION_CORRECT_OPTION_REQUIRED: 'Konfigurasi jawaban benar belum valid.',
+        QUESTION_TYPE_INVALID: 'Tipe respons soal tidak didukung.',
+        QUESTION_RESPONSE_GROUP_REQUIRED: 'Soal category membutuhkan response group pada setiap opsi.',
+        QUESTION_RESPONSE_GROUP_CORRECT_REQUIRED: 'Setiap response group harus memiliki tepat satu jawaban benar.',
+        QUESTION_CATALOG_MISMATCH: 'Soal tidak berada pada program/track yang sedang aktif.',
         QUESTION_LOCKED_BY_ACTIVE_ATTEMPT: 'Kunci jawaban tidak bisa diubah saat soal sedang dipakai attempt aktif.',
     }
     return friendly[message] || message
@@ -123,17 +147,19 @@ async function actor(permission: PermissionCode) {
     return authorizationService.requirePermission(permission)
 }
 
-async function finish(tab: string, success: string, error: unknown = null, editId?: string | null) {
+async function finish(tab: string, success: string, context: ProgramTrackContext, error: unknown = null, editId?: string | null) {
     revalidatePath('/cpns/admin')
     const edit = editId ? `&edit=${encodeURIComponent(editId)}` : ''
+    const base = `/cpns/admin?${contextQuery(context)}&tab=${encodeURIComponent(tab)}${edit}`
     if (error) {
-        redirect(`/cpns/admin?tab=${encodeURIComponent(tab)}${edit}&error=${encodeURIComponent(errorMessage(error))}`)
+        redirect(`${base}&error=${encodeURIComponent(errorMessage(error))}`)
     }
-    redirect(`/cpns/admin?tab=${encodeURIComponent(tab)}${edit}&ok=${encodeURIComponent(success)}`)
+    redirect(`${base}&ok=${encodeURIComponent(success)}`)
 }
 
 export async function saveProductAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
     const submittedPrice = nullableNumber(form, 'price')
@@ -154,22 +180,25 @@ export async function saveProductAction(form: FormData) {
             price,
             currency: text(form, 'currency') || 'IDR',
             tokenGrant: nullableNumber(form, 'token_grant'),
+            context,
         })
     } catch (error) { failure = error }
-    await finish('products', 'Produk tersimpan.', failure, savedId)
+    await finish('products', 'Produk tersimpan.', context, failure, savedId)
 }
 
 export async function archiveProductAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     try {
         await actor(PERMISSIONS.PRODUCT_MANAGE)
         await adminV2Service.archiveProduct(text(form, 'id'))
     } catch (error) { failure = error }
-    await finish('products', 'Produk diarsipkan.', failure)
+    await finish('products', 'Produk diarsipkan.', context, failure)
 }
 
 export async function saveEventAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
     try {
@@ -188,22 +217,25 @@ export async function saveEventAction(form: FormData) {
             startsAt,
             endsAt,
             status: text(form, 'status') || 'draft',
+            context,
         })
     } catch (error) { failure = error }
-    await finish('events', 'Event tersimpan.', failure, savedId)
+    await finish('events', 'Event tersimpan.', context, failure, savedId)
 }
 
 export async function archiveEventAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     try {
         await actor(PERMISSIONS.EVENT_MANAGE)
         await adminV2Service.archiveEvent(text(form, 'id'))
     } catch (error) { failure = error }
-    await finish('events', 'Event diarsipkan.', failure)
+    await finish('events', 'Event diarsipkan.', context, failure)
 }
 
 export async function saveEventSessionAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     const eventId = text(form, 'event_id')
     try {
         await actor(PERMISSIONS.EVENT_MANAGE)
@@ -219,13 +251,15 @@ export async function saveEventSessionAction(form: FormData) {
             endsAt,
             capacity: nullableNumber(form, 'capacity'),
             status: text(form, 'status') || 'scheduled',
+            context,
         })
     } catch (error) { failure = error }
-    await finish('events', 'Sesi event tersimpan.', failure, eventId || null)
+    await finish('events', 'Sesi event tersimpan.', context, failure, eventId || null)
 }
 
 export async function linkEventProductAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     const eventId = text(form, 'event_id')
     try {
         await actor(PERMISSIONS.EVENT_MANAGE)
@@ -236,11 +270,12 @@ export async function linkEventProductAction(form: FormData) {
             status: text(form, 'status') || 'active',
         })
     } catch (error) { failure = error }
-    await finish('events', 'Tiket produk terhubung ke event.', failure, eventId || null)
+    await finish('events', 'Tiket produk terhubung ke event.', context, failure, eventId || null)
 }
 
 export async function saveExamAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
     try {
@@ -260,22 +295,25 @@ export async function saveExamAction(form: FormData) {
             startsAt: jakartaIso(form, 'starts_at'),
             endsAt: jakartaIso(form, 'ends_at'),
             actorId: authorization.userId,
+            context,
         })
     } catch (error) { failure = error }
-    await finish('exams', 'Exam tersimpan.', failure, savedId)
+    await finish('exams', 'Exam tersimpan.', context, failure, savedId)
 }
 
 export async function archiveExamAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     try {
         await actor(PERMISSIONS.EXAM_MANAGE)
         await adminV2Service.archiveExam(text(form, 'id'))
     } catch (error) { failure = error }
-    await finish('exams', 'Exam diarsipkan.', failure)
+    await finish('exams', 'Exam diarsipkan.', context, failure)
 }
 
 export async function saveExamSectionAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     const examId = text(form, 'exam_id')
     try {
         await actor(PERMISSIONS.EXAM_MANAGE)
@@ -288,13 +326,15 @@ export async function saveExamSectionAction(form: FormData) {
             questionCount: nullableNumber(form, 'question_count'),
             durationSeconds: nullableNumber(form, 'duration_seconds'),
             passingScore: nullableNumber(form, 'passing_score'),
+            context,
         })
     } catch (error) { failure = error }
-    await finish('exams', 'Section exam tersimpan.', failure, examId || null)
+    await finish('exams', 'Section exam tersimpan.', context, failure, examId || null)
 }
 
 export async function saveQuestionAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
     try {
@@ -302,6 +342,7 @@ export async function saveQuestionAction(form: FormData) {
         savedId = await adminV2Service.saveQuestion({
             id: requestedId,
             subjectCode: text(form, 'subject_code'),
+            questionType: text(form, 'question_type') || 'single_choice',
             stem: text(form, 'stem'),
             difficulty: text(form, 'difficulty') || 'medium',
             status: text(form, 'status') || 'draft',
@@ -309,16 +350,18 @@ export async function saveQuestionAction(form: FormData) {
             options: parseQuestionOptions(text(form, 'options')),
             actorId: authorization.userId,
             changeReason: nullableText(form, 'change_reason'),
+            context,
         })
     } catch (error) { failure = error }
-    await finish('questions', 'Soal tersimpan dan version history diperbarui.', failure, savedId)
+    await finish('questions', 'Soal tersimpan dan version history diperbarui.', context, failure, savedId)
 }
 
 export async function archiveQuestionAction(form: FormData) {
     let failure: unknown = null
+    const context = catalogContext(form)
     try {
         await actor(PERMISSIONS.QUESTION_MANAGE)
         await adminV2Service.archiveQuestion(text(form, 'id'))
     } catch (error) { failure = error }
-    await finish('questions', 'Soal diarsipkan.', failure)
+    await finish('questions', 'Soal diarsipkan.', context, failure)
 }
