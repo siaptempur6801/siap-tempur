@@ -56,20 +56,15 @@ export interface MidtransTransactionStatus {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _snap: any = null;
 
-function getMidtransApiBaseUrl(serverKey: string) {
-    return serverKey.includes('SB-') ? 'https://api.sandbox.midtrans.com' : 'https://api.midtrans.com'
-}
-
 function getMidtransAuthHeader(serverKey: string) {
     return `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`
 }
 
 function getSnap() {
     if (!_snap) {
-        const serverKey = env.midtransServerKey()
         _snap = new midtransClient.Snap({
-            isProduction: !serverKey.includes('SB-'),
-            serverKey,
+            isProduction: env.midtransIsProduction(),
+            serverKey: env.midtransServerKey(),
             clientKey: env.midtransClientKey()
         });
     }
@@ -91,17 +86,17 @@ export async function createTransaction(
     finishRedirectPath = '/cpns/dashboard'
 ) {
     const parameter: MidtransTransactionParameter = {
-        "transaction_details": {
-            "order_id": orderId,
-            "gross_amount": amount
+        transaction_details: {
+            order_id: orderId,
+            gross_amount: amount
         },
-        "customer_details": customerDetails || {},
-        "custom_expiry": {
-            "expiry_duration": 15,
-            "unit": "minute"
+        customer_details: customerDetails || {},
+        custom_expiry: {
+            expiry_duration: 15,
+            unit: 'minute'
         },
-        "callbacks": {
-            "finish": buildFinishRedirectUrl(finishRedirectPath)
+        callbacks: {
+            finish: buildFinishRedirectUrl(finishRedirectPath)
         }
     };
 
@@ -117,14 +112,17 @@ export async function createTransaction(
         const transaction = await getSnap().createTransaction(parameter);
         return transaction;
     } catch (error) {
-        logger.error('Midtrans transaction error', error, { orderId });
+        logger.error('Midtrans transaction error', error, {
+            orderId,
+            environment: env.midtransIsProduction() ? 'production' : 'sandbox',
+        });
         throw error;
     }
 }
 
 export async function getTransactionStatus(orderId: string): Promise<MidtransTransactionStatus | null> {
     const serverKey = env.midtransServerKey()
-    const response = await fetch(`${getMidtransApiBaseUrl(serverKey)}/v2/${encodeURIComponent(orderId)}/status`, {
+    const response = await fetch(`${env.midtransApiBaseUrl()}/v2/${encodeURIComponent(orderId)}/status`, {
         method: 'GET',
         headers: {
             Accept: 'application/json',
@@ -147,7 +145,7 @@ export async function getTransactionStatus(orderId: string): Promise<MidtransTra
 
 export async function expireTransaction(orderId: string) {
     const serverKey = env.midtransServerKey()
-    const response = await fetch(`${getMidtransApiBaseUrl(serverKey)}/v2/${encodeURIComponent(orderId)}/expire`, {
+    const response = await fetch(`${env.midtransApiBaseUrl()}/v2/${encodeURIComponent(orderId)}/expire`, {
         method: 'POST',
         headers: {
             Accept: 'application/json',
