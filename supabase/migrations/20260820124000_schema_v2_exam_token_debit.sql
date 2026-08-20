@@ -1,5 +1,6 @@
--- Schema V2 completion wallet support.
--- Safe for the canonical schema: one debit ledger entry per exam attempt.
+-- Schema V2 wallet support.
+-- One debit ledger entry per exam attempt; charge is allowed once access has
+-- been granted (created/in_progress) and remains safe to retry on completion.
 
 create unique index if not exists wallet_transactions_exam_attempt_debit_uq
 on public.wallet_transactions (wallet_id, source_type, source_id, type)
@@ -32,10 +33,10 @@ begin
       join public.exams e on e.id = a.exam_id
      where a.id = p_attempt_id
        and a.user_id = p_user_id
-       and lower(a.status) = 'completed';
+       and lower(a.status) in ('created', 'in_progress', 'completed');
 
     if not found then
-        raise exception 'ATTEMPT_NOT_COMPLETED'
+        raise exception 'ATTEMPT_NOT_CHARGEABLE'
             using errcode = 'P0001';
     end if;
 
