@@ -202,6 +202,39 @@ export async function submitAnswer(sessionId: string, questionId: string, option
     }
 }
 
+export async function submitAnswerOptions(sessionId: string, questionId: string, optionIds: string[]) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    if (!isUuid(sessionId) || !isUuid(questionId) || !Array.isArray(optionIds)) {
+        return { error: 'Invalid answer payload' }
+    }
+    const normalizedOptionIds = Array.from(new Set(optionIds))
+    if (normalizedOptionIds.some((optionId) => !isUuid(optionId))) {
+        return { error: 'Invalid answer payload' }
+    }
+
+    const userId = await getCurrentUserId()
+    try {
+        await attemptAnswerService.saveAnswerOptions({
+            userId,
+            attemptId: sessionId,
+            questionId,
+            optionIds: normalizedOptionIds,
+        })
+        return { success: true }
+    } catch (error) {
+        logger.warn('[submitAnswerOptions:v2] Failed to save answer options', {
+            error: error instanceof Error ? error.message : String(error),
+            attemptId: sessionId,
+            questionId,
+            optionCount: normalizedOptionIds.length,
+            userId,
+        })
+        if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
+        return { error: 'Failed to save answers' }
+    }
+}
+
 export async function finishPractice(sessionId: string) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
 
