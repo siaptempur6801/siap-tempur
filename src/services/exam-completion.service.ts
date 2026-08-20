@@ -3,6 +3,7 @@ import { activityService } from '@/src/services/activity.service'
 import { streakService } from '@/src/services/streak.service'
 import { subjectProgressService } from '@/src/services/subject-progress.service'
 import { walletService, WalletDomainError } from '@/src/services/wallet.service'
+import { eventRankingService } from '@/src/services/event-ranking.service'
 import { PracticeDomainError } from '@/src/services/exam-attempt.service'
 
 export class ExamCompletionService {
@@ -25,9 +26,10 @@ export class ExamCompletionService {
             throw error
         }
 
-        const [activity, subjectProgress] = await Promise.all([
+        const [activity, subjectProgress, eventRanking] = await Promise.all([
             activityService.syncAttemptDay(userId, attemptId),
             subjectProgressService.sync(userId),
+            eventRankingService.syncForAttempt(userId, attemptId),
         ])
         const streak = await streakService.sync(userId)
 
@@ -37,6 +39,7 @@ export class ExamCompletionService {
             activity,
             streak,
             subjectProgress,
+            eventRanking,
         }
     }
 }
