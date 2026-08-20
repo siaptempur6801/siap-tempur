@@ -34,6 +34,7 @@ type SubjectRow = {
     slug: string
     subject_type: string
     sort_order: number
+    status: string
 }
 
 type TrackRow = {
@@ -103,6 +104,7 @@ export class CatalogRepository {
                 slug: track.slug,
                 description: track.description,
                 subjects: (track.subjects ?? [])
+                    .filter((subject) => subject.status === 'active')
                     .map((subject) => ({
                         id: subject.id,
                         code: subject.code,
