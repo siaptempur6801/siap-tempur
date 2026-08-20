@@ -1,7 +1,7 @@
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import EventClient from '@/components/dashboard/EventClient'
-import { eventService } from '@/src/services/event.service'
+import { eventCommerceService } from '@/src/services/event-commerce.service'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,7 @@ export default async function UserEventPage() {
     if (!user) redirect('/login?next=/cpns/dashboard/event')
 
     try {
-        const events = await eventService.getUserEventPageData(user.id)
+        const events = await eventCommerceService.getUserEventPageData(user.id)
         return <EventClient events={events} />
     } catch {
         return <div className="p-8 text-center font-bold text-gray-900">Gagal memuat event</div>
