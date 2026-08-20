@@ -1,4 +1,4 @@
-import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json } from '@/types/database.types'
 
 function metadataString(metadata: Json, key: string) {
@@ -34,7 +34,10 @@ export class EventRankingService {
             if (registrationError) throw registrationError
         }
 
-        const { error: rankingError } = await admin.rpc('recalculate_event_rankings', {
+        // Checked-in generated types predate this staging RPC. Keep the call
+        // server-only until the full Schema V2 type snapshot is regenerated.
+        const rpcAdmin = await createAdminClient()
+        const { error: rankingError } = await rpcAdmin.rpc('recalculate_event_rankings', {
             p_event_id: eventId,
         })
         if (rankingError) throw rankingError
