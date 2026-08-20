@@ -11,7 +11,8 @@
     "test": "npm run lint && npm run typecheck",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test:cpns-resume": "node scripts/test_cpns_resume_flow.mjs"
+    "test:cpns-resume": "node scripts/test_cpns_resume_flow.mjs",
+    "db:types:staging": "supabase gen types typescript --project-id lpgrivowdcepcxradavu --schema public > types/database.types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
