@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock3, LockKeyhole, School } from 'lucide-react'
 import { activateTkaTrackAction } from '@/app/actions/user-track'
+import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import { catalogContextService } from '@/src/services/catalog-context.service'
 import { userTrackService } from '@/src/services/user-track.service'
@@ -19,6 +20,15 @@ const LEVEL_LABEL: Record<TkaLevel, string> = {
 function minutes(seconds: unknown) {
     const value = Number(seconds ?? 0)
     return value > 0 ? Math.round(value / 60) : null
+}
+
+function examWindowDisabledReason(input: { starts_at: string | null; ends_at: string | null }) {
+    const now = Date.now()
+    const startsAt = input.starts_at ? Date.parse(input.starts_at) : null
+    const endsAt = input.ends_at ? Date.parse(input.ends_at) : null
+    if (startsAt !== null && Number.isFinite(startsAt) && startsAt > now) return 'Belum dimulai'
+    if (endsAt !== null && Number.isFinite(endsAt) && endsAt < now) return 'Sudah berakhir'
+    return null
 }
 
 export default async function TkaLevelPage({
@@ -48,7 +58,7 @@ export default async function TkaLevelPage({
     const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { data: questionRows, error: questionError }] = await Promise.all([
         admin
             .from('exams')
-            .select('id, exam_type_id, title, slug, duration_seconds, status, token_cost')
+            .select('id, exam_type_id, title, slug, duration_seconds, status, token_cost, starts_at, ends_at')
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
             .in('status', ['active', 'ACTIVE', 'scheduled', 'SCHEDULED'])
@@ -160,13 +170,15 @@ export default async function TkaLevelPage({
                 <section className="space-y-3">
                     <div>
                         <h2 className="text-2xl font-black">Tryout tersedia</h2>
-                        <p className="text-sm font-semibold text-gray-600">Hanya konfigurasi active/scheduled yang ditampilkan kepada user.</p>
+                        <p className="text-sm font-semibold text-gray-600">Hanya konfigurasi active/scheduled yang ditampilkan kepada user. Validasi final tetap dilakukan server saat tombol mulai ditekan.</p>
                     </div>
                     {(exams ?? []).length > 0 ? (
                         <div className="grid gap-3 md:grid-cols-2">
                             {(exams ?? []).map((exam) => {
                                 const type = examTypeById.get(String(exam.exam_type_id))
                                 const duration = minutes(exam.duration_seconds)
+                                const windowReason = examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at })
+                                const disabledReason = !activeTrack ? 'Aktifkan track terlebih dahulu' : windowReason
                                 return (
                                     <article key={exam.id} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0_0_#111]">
                                         <div className="flex items-start justify-between gap-3">
@@ -181,9 +193,7 @@ export default async function TkaLevelPage({
                                             <span>{Number(exam.token_cost ?? 0)} token</span>
                                             <span className="uppercase">{exam.status}</span>
                                         </div>
-                                        <p className="mt-4 border-t-2 border-dashed border-gray-300 pt-3 text-sm font-semibold text-gray-500">
-                                            Tombol mulai akan aktif setelah generic TKA practice action selesai disambungkan.
-                                        </p>
+                                        <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={disabledReason} />
                                     </article>
                                 )
                             })}
