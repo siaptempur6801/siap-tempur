@@ -1,4 +1,5 @@
-import { BarChart3, Gauge, ShieldCheck } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, BarChart3, Gauge, ShieldCheck } from 'lucide-react'
 import type { TkaReadinessView } from '@/src/services/tka-readiness.service'
 
 function levelLabel(level: TkaReadinessView['readinessLevel']) {
@@ -18,7 +19,13 @@ function percent(value: number) {
     return Math.max(0, Math.min(100, value))
 }
 
-export default function TkaReadinessCard({ readiness }: { readiness: TkaReadinessView }) {
+export default function TkaReadinessCard({
+    readiness,
+    showDashboardLink = true,
+}: {
+    readiness: TkaReadinessView
+    showDashboardLink?: boolean
+}) {
     const readinessPercent = percent(readiness.readinessPercent)
     const confidencePercent = percent(readiness.confidencePercent)
 
@@ -33,6 +40,14 @@ export default function TkaReadinessCard({ readiness }: { readiness: TkaReadines
                     <p className="mt-1 max-w-3xl text-sm font-semibold text-gray-600">
                         Skor ini merangkum mastery BIN dan MAT dengan bobot mapel setara, lalu memberi penalti pada mapel yang paling lemah. Confidence menunjukkan seberapa kuat evidence belajarmu.
                     </p>
+                    {showDashboardLink && (
+                        <Link
+                            href="/tka/smp/progress"
+                            className="mt-3 inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2 text-sm font-black text-white shadow-[3px_3px_0_0_#aaa] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                        >
+                            Lihat Progress Dashboard <ArrowRight size={16}/>
+                        </Link>
+                    )}
                 </div>
                 <div className="min-w-40 border-2 border-gray-900 bg-white px-4 py-3 text-center shadow-[3px_3px_0_0_#111]">
                     <div className="text-xs font-black uppercase tracking-wider text-gray-500">Readiness</div>
