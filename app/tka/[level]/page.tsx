@@ -82,7 +82,8 @@ export default async function TkaLevelPage({
     if (!user) redirect(`/login?returnTo=${encodeURIComponent(path)}`)
 
     const context = tkaContext(level)
-    const stagingSmpPilot = env.appEnvironment() !== 'production' && level === 'SMP'
+    const stagingEnvironment = env.appEnvironment() !== 'production'
+    const stagingSmpPilot = stagingEnvironment && level === 'SMP'
 
     const { data: program, error: programError } = await supabase
         .from('programs')
@@ -128,9 +129,10 @@ export default async function TkaLevelPage({
         })),
     }
 
-    // Payment/Tempur Pass is intentionally outside the SMP staging pilot. Skipping
-    // commerce here keeps the user-facing staging flow on authenticated RLS only.
-    const rawPassOffers = stagingSmpPilot
+    // Payment/Tempur Pass is intentionally outside TKA staging validation.
+    // Keep every learner-facing staging track on authenticated RLS only; commerce
+    // is re-enabled in production as part of the dedicated monetization milestone.
+    const rawPassOffers = stagingEnvironment
         ? []
         : await commerceService.listActiveProductOffers('TKA', level)
     const passOffers = rawPassOffers.filter((offer) => offer.code.startsWith(`TKA_${level}_PASS_`))
