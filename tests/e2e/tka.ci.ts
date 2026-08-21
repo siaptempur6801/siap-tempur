@@ -34,6 +34,16 @@ export type TkaLearningProjection = {
     }>
 }
 
+export type TkaWrongQuestionStateRow = {
+    id: string
+    question_id: string
+    status: 'open' | 'resolved'
+    latest_outcome: 'wrong' | 'unanswered' | 'correct'
+    failure_count: number
+    wrong_count: number
+    unanswered_count: number
+}
+
 function required(name: string) {
     const value = process.env[name]
     if (!value) throw new Error(`${name} wajib diatur untuk TKA staging E2E.`)
@@ -90,7 +100,7 @@ async function currentDisposableUserId() {
     }
 }
 
-export async function readOwnTkaLearningProjection(session: DisposableTkaSession): Promise<TkaLearningProjection> {
+async function authenticatedEphemeralClient(session: DisposableTkaSession) {
     const supabaseUrl = required('NEXT_PUBLIC_SUPABASE_URL')
     assertStagingUrl(supabaseUrl)
     const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || required('NEXT_PUBLIC_SUPABASE_ANON_KEY')
@@ -103,9 +113,13 @@ export async function readOwnTkaLearningProjection(session: DisposableTkaSession
         password: session.password,
     })
     if (authError || authData.user?.id !== session.userId) {
-        throw authError ?? new Error('Disposable TKA learner auth mismatch while reading learning projection.')
+        throw authError ?? new Error('Disposable TKA learner auth mismatch.')
     }
+    return supabase
+}
 
+export async function readOwnTkaLearningProjection(session: DisposableTkaSession): Promise<TkaLearningProjection> {
+    const supabase = await authenticatedEphemeralClient(session)
     const [knowledgeResult, subjectResult] = await Promise.all([
         supabase
             .from('user_knowledge_progress')
@@ -126,6 +140,17 @@ export async function readOwnTkaLearningProjection(session: DisposableTkaSession
         knowledge: (knowledgeResult.data ?? []) as TkaLearningProjection['knowledge'],
         subjects: (subjectResult.data ?? []) as TkaLearningProjection['subjects'],
     }
+}
+
+export async function readOwnTkaWrongQuestionState(session: DisposableTkaSession): Promise<TkaWrongQuestionStateRow[]> {
+    const supabase = await authenticatedEphemeralClient(session)
+    const { data, error } = await supabase
+        .from('user_wrong_questions')
+        .select('id, question_id, status, latest_outcome, failure_count, wrong_count, unanswered_count')
+        .eq('user_id', session.userId)
+        .order('updated_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []) as TkaWrongQuestionStateRow[]
 }
 
 export async function freshDisposableTkaSession(page: Page): Promise<DisposableTkaSession> {
