@@ -37,7 +37,7 @@ export type TkaLearningProjection = {
 export type TkaWrongQuestionStateRow = {
     id: string
     question_id: string
-    status: 'open' | 'resolved'
+    status: 'open'
     latest_outcome: 'wrong' | 'unanswered' | 'correct'
     failure_count: number
     wrong_count: number
@@ -134,8 +134,6 @@ export async function readOwnTkaLearningProjection(session: DisposableTkaSession
     if (knowledgeResult.error) throw knowledgeResult.error
     if (subjectResult.error) throw subjectResult.error
 
-    // This client is ephemeral (no persisted session), so do not call the default
-    // global signOut here: that would revoke the browser session used by Playwright.
     return {
         knowledge: (knowledgeResult.data ?? []) as TkaLearningProjection['knowledge'],
         subjects: (subjectResult.data ?? []) as TkaLearningProjection['subjects'],
@@ -144,13 +142,42 @@ export async function readOwnTkaLearningProjection(session: DisposableTkaSession
 
 export async function readOwnTkaWrongQuestionState(session: DisposableTkaSession): Promise<TkaWrongQuestionStateRow[]> {
     const supabase = await authenticatedEphemeralClient(session)
-    const { data, error } = await supabase
-        .from('user_wrong_questions')
-        .select('id, question_id, status, latest_outcome, failure_count, wrong_count, unanswered_count')
-        .eq('user_id', session.userId)
-        .order('updated_at', { ascending: false })
+    const { data, error } = await supabase.rpc('get_tka_smp_wrong_questions', { p_limit: 200 })
     if (error) throw error
-    return (data ?? []) as TkaWrongQuestionStateRow[]
+
+    const payload = (data && typeof data === 'object' && !Array.isArray(data))
+        ? data as Record<string, unknown>
+        : {}
+    const items = Array.isArray(payload.items) ? payload.items : []
+
+    return items.flatMap((value) => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return []
+        const row = value as Record<string, unknown>
+        const snapshot = row.question_snapshot && typeof row.question_snapshot === 'object' && !Array.isArray(row.question_snapshot)
+            ? row.question_snapshot as Record<string, unknown>
+            : {}
+        const options = Array.isArray(snapshot.options) ? snapshot.options : []
+        for (const optionValue of options) {
+            if (!optionValue || typeof optionValue !== 'object' || Array.isArray(optionValue)) continue
+            const option = optionValue as Record<string, unknown>
+            if ('is_correct' in option || 'score' in option) {
+                throw new Error('Sanitized wrong-question RPC leaked answer-key fields.')
+            }
+        }
+        if (Array.isArray(snapshot.explanations) && snapshot.explanations.length > 0) {
+            throw new Error('Sanitized wrong-question RPC leaked explanation before review.')
+        }
+
+        return [{
+            id: String(row.id ?? ''),
+            question_id: String(row.question_id ?? ''),
+            status: 'open' as const,
+            latest_outcome: String(row.latest_outcome ?? 'unanswered') as TkaWrongQuestionStateRow['latest_outcome'],
+            failure_count: Number(row.failure_count ?? 0),
+            wrong_count: Number(row.wrong_count ?? 0),
+            unanswered_count: Number(row.unanswered_count ?? 0),
+        }]
+    }).filter((row) => row.id && row.question_id)
 }
 
 export async function freshDisposableTkaSession(page: Page): Promise<DisposableTkaSession> {
