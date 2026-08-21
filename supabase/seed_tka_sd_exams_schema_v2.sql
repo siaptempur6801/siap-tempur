@@ -16,13 +16,13 @@ ctx as (
     join tracks t on t.program_id = p.id
     where p.code = 'TKA' and t.code = 'SD'
 ),
-seed(slug,title,exam_type_code,duration_seconds,attempt_limit,question_order,result_visibility,access_type,status,token_cost) as (
+seed(slug,title,exam_type_code,duration_seconds,attempt_limit,question_order,result_visibility,access_type,status,token_cost,required_feature_code) as (
     values
-        ('tka-sd-full','Tryout Lengkap TKA SD','FULL_TRYOUT',4500,null::integer,'section_random','instant','FREE','draft',0),
-        ('tka-sd-full-bahasa-inggris','Tryout Lengkap TKA SD + Bahasa Inggris','FULL_TRYOUT',6300,null::integer,'section_random','instant','FREE','draft',0),
-        ('tka-sd-mini-matematika','Mini Tryout Matematika','MINI_TRYOUT',2400,null::integer,'section_random','instant','FREE','draft',0),
-        ('tka-sd-mini-bahasa-indonesia','Mini Tryout Bahasa Indonesia','MINI_TRYOUT',2100,null::integer,'section_random','instant','FREE','draft',0),
-        ('tka-sd-mini-bahasa-inggris','Mini Tryout Bahasa Inggris','MINI_TRYOUT',2280,null::integer,'section_random','instant','FREE','draft',0)
+        ('tka-sd-full','Tryout Lengkap TKA SD','FULL_TRYOUT',4500,null::integer,'section_random','instant','PREMIUM','draft',0,'tka.sd.full_tryout.regular'),
+        ('tka-sd-full-bahasa-inggris','Tryout Lengkap TKA SD + Bahasa Inggris','FULL_TRYOUT',6300,null::integer,'section_random','instant','PREMIUM','draft',0,'tka.sd.full_tryout.regular'),
+        ('tka-sd-mini-matematika','Mini Tryout Matematika','MINI_TRYOUT',2400,1,'section_random','instant','FREEMIUM','draft',0,'tka.sd.mini_tryout.unlimited'),
+        ('tka-sd-mini-bahasa-indonesia','Mini Tryout Bahasa Indonesia','MINI_TRYOUT',2100,1,'section_random','instant','FREEMIUM','draft',0,'tka.sd.mini_tryout.unlimited'),
+        ('tka-sd-mini-bahasa-inggris','Mini Tryout Bahasa Inggris','MINI_TRYOUT',2280,1,'section_random','instant','FREEMIUM','draft',0,'tka.sd.mini_tryout.unlimited')
 )
 insert into exams (
     program_id,
@@ -37,6 +37,7 @@ insert into exams (
     access_type,
     status,
     token_cost,
+    required_feature_id,
     created_by,
     updated_at
 )
@@ -53,12 +54,14 @@ select
     seed.access_type,
     seed.status,
     seed.token_cost,
+    f.id,
     actor.id,
     now()
 from seed
 cross join ctx
 cross join actor
 join exam_types et on et.code = seed.exam_type_code
+join features f on f.code = seed.required_feature_code
 on conflict (slug) do update set
     program_id = excluded.program_id,
     track_id = excluded.track_id,
@@ -71,6 +74,7 @@ on conflict (slug) do update set
     access_type = excluded.access_type,
     status = excluded.status,
     token_cost = excluded.token_cost,
+    required_feature_id = excluded.required_feature_id,
     updated_at = now();
 
 delete from exam_sections
@@ -122,7 +126,8 @@ select
     jsonb_build_object(
         'scoring_strategy', 'standard',
         'legacy_source', 'production_tka_sd_published_config',
-        'seed_version', 1
+        'seed_version', 2,
+        'access_policy', case when e.access_type = 'FREEMIUM' then 'one_free_then_pass' else 'pass_required' end
     )
 from section_seed ss
 join exams e on e.slug = ss.exam_slug
