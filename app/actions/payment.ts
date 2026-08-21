@@ -8,6 +8,7 @@ import { isServerActionRateLimited } from '@/lib/server-rate-limit'
 import { paymentService } from '@/src/services/payment.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
+import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export type CreatePackageTransactionResult =
     | {
@@ -55,6 +56,12 @@ function checkoutErrorMessage(error: unknown) {
     return 'Terjadi kesalahan sistem saat memproses pembayaran. Silakan coba lagi.'
 }
 
+async function currentUser() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    return user
+}
+
 export async function createPackageTransaction(productCode: string): Promise<CreatePackageTransactionResult> {
     try {
         await validateCsrf()
@@ -62,8 +69,7 @@ export async function createPackageTransaction(productCode: string): Promise<Cre
         return { success: false, message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.' }
     }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await currentUser()
     if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
 
     if (await isServerActionRateLimited(user.id, 'create_transaction', 5, 60000)) {
@@ -93,6 +99,59 @@ export async function createPackageTransaction(productCode: string): Promise<Cre
     }
 }
 
+export async function createTkaPassTransaction(
+    productCodeValue: string,
+    levelValue: string,
+): Promise<CreatePackageTransactionResult> {
+    try {
+        await validateCsrf()
+    } catch {
+        return { success: false, message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.' }
+    }
+
+    const level = parseTkaLevel(levelValue)
+    if (!level) return { success: false, message: 'Jenjang TKA tidak valid.' }
+
+    const productCode = productCodeValue.trim().toUpperCase()
+    const allowedCodes = new Set([`TKA_${level}_PASS_30`, `TKA_${level}_PASS_90`])
+    if (!allowedCodes.has(productCode)) {
+        return { success: false, message: 'Paket tidak sesuai dengan jenjang TKA ini.' }
+    }
+
+    const user = await currentUser()
+    if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
+
+    if (await isServerActionRateLimited(user.id, `create_tka_${level.toLowerCase()}_pass`, 5, 60000)) {
+        return { success: false, message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.' }
+    }
+
+    try {
+        const checkout = await paymentService.createCheckout({
+            userId: user.id,
+            email: user.email,
+            fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
+            productCode,
+            adminFee: 500,
+            returnPath: tkaLevelPath(level),
+        })
+
+        return {
+            success: true,
+            token: checkout.token,
+            orderId: checkout.orderId,
+            orderNumber: checkout.orderNumber,
+            redirectUrl: checkout.redirectUrl,
+        }
+    } catch (error) {
+        logger.error('TKA Pass checkout creation failed', error, {
+            productCode,
+            userId: user.id,
+            level,
+        })
+        return { success: false, message: checkoutErrorMessage(error) }
+    }
+}
+
 export async function createQrisQaTransaction(productCode: string): Promise<CreateQrisQaTransactionResult> {
     try {
         await validateCsrf()
@@ -104,8 +163,7 @@ export async function createQrisQaTransaction(productCode: string): Promise<Crea
         return { success: false, message: 'QRIS Simulator hanya tersedia pada staging.' }
     }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await currentUser()
     if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
 
     const canManagePayments = await authorizationService.hasPermission(PERMISSIONS.PAYMENT_MANAGE)
@@ -136,8 +194,7 @@ export async function createQrisQaTransaction(productCode: string): Promise<Crea
 export async function syncPaymentStatus(orderId: string) {
     try { await validateCsrf() } catch { return false }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await currentUser()
     if (!user || typeof orderId !== 'string' || orderId.trim() === '') return false
 
     if (await isServerActionRateLimited(user.id, 'sync_payment', 10, 60000)) {
