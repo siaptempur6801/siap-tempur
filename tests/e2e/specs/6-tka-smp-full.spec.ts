@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { freshDisposableTkaSession } from '../tka.ci'
+import { freshDisposableTkaSession, readOwnTkaLearningProjection } from '../tka.ci'
 
 async function answerFirstVisibleOption(page: import('@playwright/test').Page) {
     const questionCard = page.locator('article').last()
@@ -14,8 +14,8 @@ async function goToLastQuestion(page: import('@playwright/test').Page) {
     await expect(page.getByText('Soal 30 / 30')).toBeVisible()
 }
 
-test('TKA SMP full tryout persists, changes section, submits, and opens review', async ({ page }) => {
-    await freshDisposableTkaSession(page)
+test('TKA SMP full tryout persists, changes section, submits, opens review, and projects learning progress', async ({ page }) => {
+    const session = await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
     await expect(page.getByRole('heading', { name: /TKA Sekolah Menengah Pertama/i })).toBeVisible()
@@ -64,4 +64,15 @@ test('TKA SMP full tryout persists, changes section, submits, and opens review',
     await expect(page.getByRole('heading', { name: 'Review & Pembahasan' })).toBeVisible()
     await expect(page.getByText('Full Tryout · TKA/SMP')).toBeVisible()
     await expect(page.getByText(/2\/60/)).toBeVisible()
+
+    const projection = await readOwnTkaLearningProjection(session)
+    expect(projection.knowledge.length).toBeGreaterThan(0)
+    expect(projection.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(60)
+    expect(projection.subjects).toHaveLength(2)
+    expect(projection.subjects.reduce((sum, row) => sum + row.questions_answered, 0)).toBe(2)
+    for (const row of projection.knowledge) {
+        expect(row.mastery_score).toBeGreaterThanOrEqual(0)
+        expect(row.mastery_score).toBeLessThanOrEqual(1)
+        expect(['needs_work', 'developing', 'proficient', 'mastered']).toContain(row.mastery_level)
+    }
 })
