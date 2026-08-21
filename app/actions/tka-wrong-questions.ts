@@ -42,6 +42,7 @@ export async function reviewTkaWrongQuestion(input: {
             isCorrect: result.isCorrect,
             scoreAwarded: result.scoreAwarded,
             remainingOpen: result.remainingOpen,
+            explanation: result.explanation,
         }
     } catch (error) {
         logger.warn('[tka-wrong-question] review failed', {
