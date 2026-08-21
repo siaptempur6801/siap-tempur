@@ -28,17 +28,21 @@ async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/t
     const optionCount = await optionButtons.count()
     expect(optionCount).toBeGreaterThan(1)
 
+    const correct = page.getByText('Benar! Soal ini sudah dituntaskan.', { exact: true })
+    const wrong = page.getByText('Belum tepat. Pilih jawaban lain lalu coba lagi.', { exact: true })
+    const feedback = page.getByText(/^(Benar! Soal ini sudah dituntaskan\.|Belum tepat\. Pilih jawaban lain lalu coba lagi\.)$/)
+
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
         await optionButtons.nth(index).click()
         await page.getByRole('button', { name: /Periksa jawaban|Periksa lagi/i }).click()
+        await expect(feedback).toBeVisible({ timeout: 15_000 })
 
-        const correct = page.getByText('Benar! Soal ini sudah dituntaskan.', { exact: true })
-        if (await correct.isVisible().catch(() => false)) {
+        if (await correct.isVisible()) {
             resolved = true
             break
         }
-        await expect(page.getByText('Belum tepat. Pilih jawaban lain lalu coba lagi.', { exact: true })).toBeVisible()
+        await expect(wrong).toBeVisible()
     }
     expect(resolved).toBe(true)
     await expect(page.getByRole('button', { name: /Lanjut/i })).toBeVisible()
