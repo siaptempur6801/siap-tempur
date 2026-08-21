@@ -77,19 +77,7 @@ on conflict (slug) do update set
     required_feature_id = excluded.required_feature_id,
     updated_at = now();
 
-delete from exam_sections
-where exam_id in (
-    select id
-    from exams
-    where slug in (
-        'tka-sd-full',
-        'tka-sd-full-bahasa-inggris',
-        'tka-sd-mini-matematika',
-        'tka-sd-mini-bahasa-indonesia',
-        'tka-sd-mini-bahasa-inggris'
-    )
-);
-
+-- Update existing section rows in place so attempt_questions.section_id remains valid.
 with section_seed(exam_slug,subject_code,title,sort_order,question_count,duration_seconds) as (
     values
         ('tka-sd-full','MAT','Matematika',1,25,2400),
@@ -106,6 +94,72 @@ ctx as (
     from programs p
     join tracks t on t.program_id = p.id
     where p.code = 'TKA' and t.code = 'SD'
+),
+resolved as (
+    select
+        e.id as exam_id,
+        s.id as subject_id,
+        ss.title,
+        ss.sort_order,
+        ss.question_count,
+        ss.duration_seconds,
+        jsonb_build_object(
+            'scoring_strategy', 'standard',
+            'legacy_source', 'production_tka_sd_published_config',
+            'seed_version', 4,
+            'access_policy', case when e.access_type = 'FREEMIUM' then 'one_free_then_pass' else 'pass_required' end
+        ) as config
+    from section_seed ss
+    join exams e on e.slug = ss.exam_slug
+    cross join ctx
+    join subjects s on s.track_id = ctx.track_id and s.code = ss.subject_code
+)
+update exam_sections es
+set title = r.title,
+    sort_order = r.sort_order,
+    question_count = r.question_count,
+    duration_seconds = r.duration_seconds,
+    config = r.config
+from resolved r
+where es.exam_id = r.exam_id
+  and es.subject_id = r.subject_id;
+
+-- Insert only section pairs that do not exist yet; never replace IDs used by attempt snapshots.
+with section_seed(exam_slug,subject_code,title,sort_order,question_count,duration_seconds) as (
+    values
+        ('tka-sd-full','MAT','Matematika',1,25,2400),
+        ('tka-sd-full','BIN','Bahasa Indonesia',2,25,2100),
+        ('tka-sd-full-bahasa-inggris','MAT','Matematika',1,25,2400),
+        ('tka-sd-full-bahasa-inggris','BIN','Bahasa Indonesia',2,25,2100),
+        ('tka-sd-full-bahasa-inggris','BIG','Bahasa Inggris',3,20,1800),
+        ('tka-sd-mini-matematika','MAT','Matematika',1,25,2400),
+        ('tka-sd-mini-bahasa-indonesia','BIN','Bahasa Indonesia',1,25,2100),
+        ('tka-sd-mini-bahasa-inggris','BIG','Bahasa Inggris',1,25,2280)
+),
+ctx as (
+    select t.id as track_id
+    from programs p
+    join tracks t on t.program_id = p.id
+    where p.code = 'TKA' and t.code = 'SD'
+),
+resolved as (
+    select
+        e.id as exam_id,
+        s.id as subject_id,
+        ss.title,
+        ss.sort_order,
+        ss.question_count,
+        ss.duration_seconds,
+        jsonb_build_object(
+            'scoring_strategy', 'standard',
+            'legacy_source', 'production_tka_sd_published_config',
+            'seed_version', 4,
+            'access_policy', case when e.access_type = 'FREEMIUM' then 'one_free_then_pass' else 'pass_required' end
+        ) as config
+    from section_seed ss
+    join exams e on e.slug = ss.exam_slug
+    cross join ctx
+    join subjects s on s.track_id = ctx.track_id and s.code = ss.subject_code
 )
 insert into exam_sections (
     exam_id,
@@ -117,22 +171,20 @@ insert into exam_sections (
     config
 )
 select
-    e.id,
-    s.id,
-    ss.title,
-    ss.sort_order,
-    ss.question_count,
-    ss.duration_seconds,
-    jsonb_build_object(
-        'scoring_strategy', 'standard',
-        'legacy_source', 'production_tka_sd_published_config',
-        'seed_version', 3,
-        'access_policy', case when e.access_type = 'FREEMIUM' then 'one_free_then_pass' else 'pass_required' end
-    )
-from section_seed ss
-join exams e on e.slug = ss.exam_slug
-cross join ctx
-join subjects s on s.track_id = ctx.track_id and s.code = ss.subject_code;
+    r.exam_id,
+    r.subject_id,
+    r.title,
+    r.sort_order,
+    r.question_count,
+    r.duration_seconds,
+    r.config
+from resolved r
+where not exists (
+    select 1
+    from exam_sections es
+    where es.exam_id = r.exam_id
+      and es.subject_id = r.subject_id
+);
 
 -- Launch catalog for TKA SD Tempur Pass. IDs are resolved dynamically from catalog codes.
 with ctx as (
