@@ -14,6 +14,7 @@ type Feedback = {
     isCorrect: boolean
     scoreAwarded: number
     remainingOpen: number
+    explanation: string
 } | null
 
 function responseInstruction(type: string) {
@@ -89,6 +90,7 @@ export default function TkaWrongQuestionModeClient({
                 isCorrect: result.isCorrect === true,
                 scoreAwarded: Number(result.scoreAwarded ?? 0),
                 remainingOpen: Number(result.remainingOpen ?? remainingOpen),
+                explanation: String(result.explanation ?? ''),
             }
             setFeedback(nextFeedback)
             setRemainingOpen(nextFeedback.remainingOpen)
@@ -233,10 +235,10 @@ export default function TkaWrongQuestionModeClient({
                                     {feedback.isCorrect ? <CheckCircle2 size={20}/> : <XCircle size={20}/>}
                                     {feedback.isCorrect ? 'Benar! Soal ini sudah dituntaskan.' : 'Belum tepat. Pilih jawaban lain lalu coba lagi.'}
                                 </div>
-                                {current.explanation && (
+                                {feedback.explanation && (
                                     <div className="mt-3 border-t border-gray-900/20 pt-3 text-sm font-semibold text-gray-700">
                                         <div className="mb-1 text-xs font-black uppercase text-gray-500">Pembahasan</div>
-                                        <MathRenderer text={current.explanation} />
+                                        <MathRenderer text={feedback.explanation} />
                                     </div>
                                 )}
                             </div>
