@@ -4,10 +4,12 @@ import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock3, RotateCcw, Target, Trop
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
+import TkaReadinessCard from '@/components/tka/TkaReadinessCard'
 import TkaResultReview from '@/components/tka/TkaResultReview'
 import { practiceResultService, type PracticeResultView } from '@/src/services/practice-result.service'
 import { tkaFullExamRpcService, type TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
 import { tkaLearningFocusService, type TkaLearningFocusView } from '@/src/services/tka-learning-focus.service'
+import { tkaReadinessService, type TkaReadinessView } from '@/src/services/tka-readiness.service'
 import { tkaRemedialService, type TkaRemedialView } from '@/src/services/tka-remedial.service'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 import { cn } from '@/lib/utils'
@@ -47,6 +49,7 @@ export default async function TkaResultPage({
     let fullExamState: TkaFullExamState | null = null
     let remedial: TkaRemedialView | null = null
     let learningFocus: TkaLearningFocusView | null = null
+    let readiness: TkaReadinessView | null = null
 
     if (level === 'SMP' && env.appEnvironment() !== 'production') {
         try {
@@ -78,6 +81,12 @@ export default async function TkaResultPage({
             } catch {
                 remedial = null
             }
+        }
+
+        try {
+            readiness = await tkaReadinessService.getReadiness()
+        } catch {
+            readiness = null
         }
 
         try {
@@ -162,6 +171,8 @@ export default async function TkaResultPage({
                         ))}
                     </section>
                 )}
+
+                {readiness && <TkaReadinessCard readiness={readiness}/>} 
 
                 <TkaLearningFocusPanel items={learningFocus?.items ?? []}/>
 
