@@ -4,10 +4,13 @@
 > **Working mode:** satu milestone harus **COMPLETE** sebelum milestone berikutnya dimulai.  
 > **Production status:** **NO-GO** sampai production cutover gates selesai dan ada approval eksplisit.  
 > **Companion tracker:** `docs/FEATURE_STATUS_CHECKLIST.md`
+> **Admin UX standard:** `docs/ADMIN_UI_UX_STANDARD.md`
 
 Prinsip kerja utama:
 
 > **Selama milestone aktif belum memenuhi Definition of Done, jangan mulai milestone berikutnya.**
+
+Untuk seluruh milestone yang menyentuh admin, Definition of Done juga wajib memenuhi UI/UX, responsive, feedback state, dan role-aware interaction sesuai `docs/ADMIN_UI_UX_STANDARD.md`.
 
 ---
 
@@ -15,6 +18,10 @@ Prinsip kerja utama:
 
 ```text
 1. REVIEWER / CONTENT WORKSPACE + UNIFIED ADMIN
+       ↓
+   COMPLETE ✅
+       ↓
+1.5 ADMIN UI/UX HARDENING
        ↓
    COMPLETE ✅
        ↓
@@ -132,7 +139,93 @@ CONTENT OPERATIONS ✅ COMPLETED
 UNIFIED ADMIN CPNS + TKA ✅ COMPLETED
 ```
 
-**Milestone 2 sekarang boleh dimulai setelah PR Milestone 1 selesai di-merge dan staging preview terverifikasi.**
+---
+
+# 1.5 Admin UI/UX Hardening
+
+**Status:** [x] **COMPLETE — 2026-08-21**
+
+## Goal
+
+Membuat Unified Admin nyaman untuk operasional harian dan menetapkan standar UI/UX permanen agar milestone berikutnya tidak dianggap selesai hanya karena backend bekerja.
+
+## Unified Admin Shell
+
+- [x] Professional responsive admin shell
+- [x] Persistent Program / Track selector di topbar
+- [x] Program / Track context dipertahankan saat pindah sidebar/bottom navigation
+- [x] Permission-aware navigation
+- [x] Collapsible desktop sidebar
+- [x] Mobile drawer navigation
+- [x] Mobile bottom navigation
+- [x] Canonical `/admin/*` tetap menjadi namespace utama
+- [x] Existing canonical Question/Exam/Event/Product/Commerce routing tetap berfungsi
+
+## Operational UX
+
+- [x] Actionable `/admin` dashboard dengan data operasional nyata
+- [x] Review Queue hierarchy diperjelas
+- [x] Search/filter toolbar konsisten
+- [x] Human-readable workflow statuses
+- [x] Queue + selected detail responsive layout
+- [x] Structured question-option editor; pipe-delimited storage format tidak lagi menjadi primary input admin
+- [x] Authoring/revision form hierarchy diperjelas
+- [x] Review/assign/publish action lebih dekat ke current task
+- [x] Empty/success/error states diperjelas
+- [x] Audit/history dipisahkan dari primary work surface
+- [x] Reviewer Workspace ditetapkan sebagai gold-standard admin surface
+- [x] `docs/ADMIN_UI_UX_STANDARD.md` menjadi standar permanen
+
+## Responsive / UX QA
+
+- [x] Desktop browser workflow verified
+- [x] Mobile `390×844` smoke verified
+- [x] Tablet `1024×768` smoke verified
+- [x] No unintended document-level horizontal overflow pada mobile
+- [x] No unintended document-level horizontal overflow pada tablet
+- [x] Mobile drawer open/close/navigation verified
+- [x] Program/Track visible pada responsive header
+- [x] Visual Playwright screenshot review dilakukan
+
+## Engineering QA
+
+- [x] Lint green
+- [x] Typecheck green
+- [x] Unit tests green
+- [x] Security audit green
+- [x] Build green
+- [x] Existing E2E green
+- [x] Reviewer lifecycle E2E green
+- [x] Responsive E2E green
+- [x] Staging cleanup: 0 disposable content users
+- [x] Staging cleanup: 0 recent CWS questions
+- [x] Staging cleanup: 0 associated CWS reviews
+- [x] Staging cleanup: 0 associated CWS audit logs
+- [x] Vercel preview READY
+- [x] Vercel build error check: 0 build errors
+- [x] Vercel runtime error/fatal check: 0
+
+## Evidence
+
+- Final code commit: `b0d7627b34447455249063a552ae21ac61f19518`
+- Standard CI: run `32466171315` — SUCCESS
+- Content Review + responsive staging E2E: run `32466171351` — SUCCESS
+- Vercel preview: `dpl_GjoRAFHXNKfVPTSUpc65FijDDqji` — READY
+- Staging cleanup verification: `0 users / 0 questions / 0 reviews / 0 audit logs`
+
+## Definition of Done Result
+
+> Admin dapat berpindah CPNS/TKA, menemukan pekerjaan, membuat/mereview soal, memahami status, dan menjalankan workflow penting pada desktop/tablet/mobile tanpa format input teknis, tanpa kehilangan context, dan tanpa dead-end operasional yang jelas.
+
+Completion marker:
+
+```text
+MILESTONE 1.5 ✅ COMPLETE
+ADMIN UX HARDENING ✅ COMPLETED
+ADMIN UI/UX DEFINITION OF DONE ✅ ACTIVE
+```
+
+**Milestone 2 boleh dimulai setelah PR #8 di-merge ke `feat/schema-v2` dan deployment hasil merge terverifikasi.**
 
 ---
 
@@ -158,6 +251,7 @@ Menutup seluruh gap user-facing TKA SMP setelah Full Tryout sehingga learner tid
 - [x] Answer-key protection
 - [x] Automated browser E2E
 - [x] Canonical content/review operations dari Milestone 1
+- [x] Admin UI/UX standard dari Milestone 1.5 aktif untuk seluruh admin work pada milestone ini
 
 ## Mini Tryout Bahasa Indonesia
 
@@ -420,13 +514,15 @@ Potential scope setelah core CPNS/TKA stabil:
 | Date | Milestone | Result |
 |---|---|---|
 | 2026-08-21 | Milestone 1 — Reviewer / Content Workspace + Unified Admin | ✅ COMPLETE; CI green, TKA regression green, Content Review E2E 3× green, staging cleanup 0/0 |
+| 2026-08-21 | Milestone 1.5 — Admin UI/UX Hardening | ✅ COMPLETE; CI `32466171315` green, Content Review + responsive E2E `32466171351` green, staging cleanup 0/0/0/0, Vercel preview READY |
 
 # Current Focus
 
 ```text
 Milestone 1 ✅ COMPLETE
+Milestone 1.5 ✅ COMPLETE
         ↓
-PR #7 merge + Vercel staging verification
+PR #8 merge + post-merge Vercel staging verification
         ↓
 Milestone 2 — TKA SMP Mini + Core Product
 ```

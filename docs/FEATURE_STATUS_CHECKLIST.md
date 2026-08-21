@@ -4,7 +4,8 @@
 > **Last audited:** 2026-08-21  
 > **Primary staging Supabase:** `lpgrivowdcepcxradavu`  
 > **Production Supabase:** `llnttutwhtvxtdktiizo`  
-> **Production status:** **NO-GO** sampai production cutover checklist selesai dan ada approval eksplisit.
+> **Production status:** **NO-GO** sampai production cutover checklist selesai dan ada approval eksplisit.  
+> **Admin UI/UX standard:** `docs/ADMIN_UI_UX_STANDARD.md`
 
 Dokumen ini adalah master tracker fitur Siap Tempur. Gunakan `[x]` untuk selesai dan `[ ]` untuk pekerjaan yang belum selesai.
 
@@ -87,6 +88,71 @@ Canonical admin sekarang menggunakan satu namespace global:
 - [x] CPNS dan TKA memakai admin shell yang sama
 
 **Status:** ✅ core unified admin selesai.
+
+---
+
+# 3.5. Admin UI/UX Hardening — MILESTONE 1.5
+
+## Shell & Navigation
+
+- [x] Professional responsive admin shell
+- [x] Persistent Program / Track topbar
+- [x] Context dipertahankan saat pindah modul melalui sidebar
+- [x] Context dipertahankan pada mobile bottom navigation
+- [x] Permission-aware navigation
+- [x] Collapsible desktop sidebar
+- [x] Mobile drawer
+- [x] Mobile bottom navigation
+- [x] Existing canonical CRUD routes tetap usable
+- [x] Legacy CRUD engine tidak diputus saat dashboard `/admin` dimodernisasi
+
+## Operational UX
+
+- [x] Actionable admin dashboard dengan data nyata
+- [x] Review Queue operational hierarchy
+- [x] Search/filter toolbar lebih mudah discan
+- [x] Human-readable workflow status
+- [x] Structured question option editor
+- [x] Pipe-delimited option storage format tidak lagi menjadi primary admin input
+- [x] Authoring/revision form hierarchy diperjelas
+- [x] Assign/review/publish actions role-aware
+- [x] Empty state
+- [x] Success state
+- [x] Error state
+- [x] Review/version/audit history dipisahkan dari primary work surface
+- [x] Reviewer Workspace menjadi gold-standard admin surface
+- [x] Permanent standard: `docs/ADMIN_UI_UX_STANDARD.md`
+
+## Responsive / Accessibility Smoke
+
+- [x] Desktop workflow
+- [x] Mobile `390×844`
+- [x] Tablet `1024×768`
+- [x] Mobile drawer open/close
+- [x] Program/Track visible pada responsive header
+- [x] No unintended document-level horizontal overflow pada mobile
+- [x] No unintended document-level horizontal overflow pada tablet
+- [x] Icon-only interactive controls memiliki accessible labels pada critical shell path
+
+## QA Evidence
+
+- [x] Lint — CI `32466171315`
+- [x] Typecheck — CI `32466171315`
+- [x] Unit tests — CI `32466171315`
+- [x] Security audit — CI `32466171315`
+- [x] Build — CI `32466171315`
+- [x] Existing E2E — CI `32466171315`
+- [x] Reviewer lifecycle E2E — run `32466171351`
+- [x] Responsive E2E — run `32466171351`
+- [x] Staging cleanup: 0 disposable content users
+- [x] Staging cleanup: 0 recent CWS questions
+- [x] Staging cleanup: 0 associated CWS reviews
+- [x] Staging cleanup: 0 associated CWS audit logs
+- [x] Vercel preview `dpl_GjoRAFHXNKfVPTSUpc65FijDDqji` READY
+- [x] Vercel build error check: 0 errors
+- [x] Vercel runtime error/fatal check: 0
+
+**Status:** **✅ ADMIN UX HARDENING COMPLETED — Milestone 1.5 COMPLETE.**
 
 ---
 
@@ -299,7 +365,7 @@ Canonical admin sekarang menggunakan satu namespace global:
 - [ ] Core TKA SMP navigation/history/empty/loading/error/mobile QA
 - [ ] Release to learners
 
-**Status:** 🟡 — **NEXT ACTIVE MILESTONE** setelah Milestone 1 merge.
+**Status:** 🟡 — **NEXT ACTIVE MILESTONE** setelah Milestone 1.5 / PR #8 merge.
 
 ---
 
@@ -545,6 +611,7 @@ Blocking gates:
 | Milestone | Status |
 |---|---|
 | 1. Reviewer / Content Workspace + Unified Admin | ✅ COMPLETE |
+| 1.5 Admin UI/UX Hardening | ✅ COMPLETE |
 | 2. TKA SMP Mini + Core Product | ⏭️ NEXT |
 | 3. TKA SMP Learning Loop V1 | ⏸️ LOCKED |
 | 4. TKA SMP Monetization | ⏸️ LOCKED |
@@ -559,9 +626,12 @@ Blocking gates:
 MILESTONE 1 ✅ COMPLETE
 CONTENT OPERATIONS ✅ COMPLETED
 UNIFIED ADMIN CPNS + TKA ✅ COMPLETED
+MILESTONE 1.5 ✅ COMPLETE
+ADMIN UX HARDENING ✅ COMPLETED
+ADMIN UI/UX DEFINITION OF DONE ✅ ACTIVE
 ```
 
-Next engineering focus setelah merge Milestone 1:
+Next engineering focus setelah PR #8 merge + post-merge staging verification:
 
 ```text
 MILESTONE 2 — TKA SMP MINI TRYOUT + CORE PRODUCT

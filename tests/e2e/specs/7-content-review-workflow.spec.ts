@@ -34,10 +34,6 @@ async function followServerAction(page: Page, trigger: Locator) {
     const target = actionRedirect!.split(';')[0]
     expect(target).toMatch(/^\/admin\/content\/review\?/)
 
-    // Next's client router normally follows x-action-redirect. In the headless
-    // production-build runner this transition is not deterministic, so follow
-    // the verified server redirect explicitly and continue testing the exact
-    // destination the browser was instructed to render.
     await page.goto(target)
     await expect(page).toHaveURL(/\/admin\/content\/review/)
 }
@@ -79,7 +75,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await editorPage.goto('/admin/content/review?program=TKA&track=SMP&new=1')
     await expect(editorPage).toHaveURL(/\/admin\/content\/review/)
     await expect(editorPage.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
-    await expect(editorPage.getByText('CONTENT_EDITOR', { exact: true })).toBeVisible()
+    await expect(editorPage.getByRole('banner').getByText('CONTENT_EDITOR', { exact: true })).toBeVisible()
 
     const createSection = editorPage.locator('section').filter({
         has: editorPage.getByRole('heading', { name: 'Buat draft soal' }),
@@ -94,12 +90,11 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await form.getByLabel('Cognitive level').fill('application')
     await form.getByLabel('Estimasi detik').fill('60')
     await form.getByLabel('Source reference').fill('CI reviewer workspace')
-    await form.getByLabel(/Options — key\|content\|score\|correct\|group\|groupOrder\|imageUrl/).fill([
-        'A|Jawaban benar||true|||',
-        'B|Distraktor satu||false|||',
-        'C|Distraktor dua||false|||',
-        'D|Distraktor tiga||false|||',
-    ].join('\n'))
+    await form.getByLabel('Isi opsi A').fill('Jawaban benar')
+    await form.getByLabel('Isi opsi B').fill('Distraktor satu')
+    await form.getByLabel('Isi opsi C').fill('Distraktor dua')
+    await form.getByLabel('Isi opsi D').fill('Distraktor tiga')
+    await expect(form.getByLabel('Jawaban benar A')).toBeChecked()
     await form.getByLabel('Pembahasan').fill('Pembahasan E2E: pilihan A adalah jawaban yang benar.')
     await followServerAction(editorPage, form.getByRole('button', { name: 'Simpan draft' }))
     await expect(editorPage.getByText('Draft soal tersimpan.')).toBeVisible()
@@ -120,27 +115,25 @@ test('author → reviewer → editorial → academic → technical QA → publis
     const reviewerPage = await reviewerContext.newPage()
     await login(reviewerPage, users.reviewer)
     await openQuestion(reviewerPage, questionId)
-    await expect(reviewerPage.getByText('CONTENT_REVIEWER', { exact: true })).toBeVisible()
+    await expect(reviewerPage.getByRole('banner').getByText('CONTENT_REVIEWER', { exact: true })).toBeVisible()
 
     await assignToReviewer(reviewerPage, users.reviewer.userId)
     await approveStage(reviewerPage, 'Editorial E2E approved')
-    await expect(reviewerPage.getByText('academic_review', { exact: true }).last()).toBeVisible()
+    await expect(reviewerPage.getByText('Academic Review', { exact: true }).last()).toBeVisible()
 
     await assignToReviewer(reviewerPage, users.reviewer.userId)
     await approveStage(reviewerPage, 'Academic E2E approved')
-    await expect(reviewerPage.getByText('technical_qa', { exact: true }).last()).toBeVisible()
+    await expect(reviewerPage.getByText('Technical QA', { exact: true }).last()).toBeVisible()
 
     await assignToReviewer(reviewerPage, users.reviewer.userId)
     await approveStage(reviewerPage, 'Technical QA E2E approved')
-    await expect(reviewerPage.getByText('approved', { exact: true }).last()).toBeVisible()
+    await expect(reviewerPage.getByText('Approved', { exact: true }).last()).toBeVisible()
 
     await followServerAction(reviewerPage, reviewerPage.getByRole('button', { name: 'Publish Question' }))
     await expect(reviewerPage.getByText('Soal berhasil dipublish.')).toBeVisible()
-    await expect(reviewerPage.getByText('published', { exact: true }).last()).toBeVisible()
+    await expect(reviewerPage.getByText('Published', { exact: true }).last()).toBeVisible()
 
-    const reviewRounds = reviewerPage.locator('section').filter({
-        has: reviewerPage.getByRole('heading', { name: 'Review Rounds' }),
-    })
+    const reviewRounds = reviewerPage.getByRole('heading', { name: 'Review Rounds' }).locator('xpath=ancestor::section[1]')
     await expect(reviewRounds).toContainText('Round 1 · Editorial Review')
     await expect(reviewRounds).toContainText('Editorial E2E approved')
     await expect(reviewRounds).toContainText('Round 1 · Academic Review')
@@ -148,11 +141,37 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await expect(reviewRounds).toContainText('Round 1 · Technical QA')
     await expect(reviewRounds).toContainText('Technical QA E2E approved')
 
-    const auditTrail = reviewerPage.locator('section').filter({
-        has: reviewerPage.getByRole('heading', { name: 'Audit Trail' }),
-    })
+    const auditTrail = reviewerPage.getByRole('heading', { name: 'Audit Trail' }).locator('xpath=ancestor::section[1]')
     await expect(auditTrail).toContainText('question.workflow.published')
     await expect(auditTrail).toContainText('content.review.approved')
 
     await reviewerContext.close()
+})
+
+test('review workspace stays usable on mobile and tablet widths', async ({ browser }) => {
+    const users = await metadata()
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
+    const page = await context.newPage()
+    await login(page, users.editor)
+
+    await expect(page.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
+    await expect(page.getByLabel('Buka menu')).toBeVisible()
+    await expect(page.getByRole('banner').locator('select').nth(0)).toHaveValue('TKA')
+    await expect(page.getByRole('banner').locator('select').nth(1)).toHaveValue('SMP')
+
+    const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
+    expect(mobileOverflow).toBe(false)
+
+    await page.getByLabel('Buka menu').click()
+    await expect(page.getByRole('link', { name: 'Review Queue', exact: true })).toBeVisible()
+    const closeMobileMenu = page.getByLabel('Tutup menu').last()
+    await expect(closeMobileMenu).toBeVisible()
+    await closeMobileMenu.click()
+
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await expect(page.getByRole('link', { name: 'Review Queue', exact: true })).toBeVisible()
+    const tabletOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
+    expect(tabletOverflow).toBe(false)
+
+    await context.close()
 })
