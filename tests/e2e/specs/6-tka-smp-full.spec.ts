@@ -10,6 +10,10 @@ import {
     readOwnStoredTkaRecommendations,
     readOwnTkaLearningFocus,
 } from '../tka-learning-focus.ci'
+import {
+    readOwnStoredTkaReadiness,
+    readOwnTkaReadiness,
+} from '../tka-readiness.ci'
 
 function expectedWeakestNodeIds(projection: TkaLearningProjection) {
     return [...projection.knowledge]
@@ -118,7 +122,7 @@ async function resolveSingleChoiceRemedialAtPosition(
 }
 
 test('TKA SMP full tryout creates automatic remedial and closes the learning loop', async ({ page }) => {
-    test.setTimeout(180_000)
+    test.setTimeout(240_000)
     const session = await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
@@ -185,6 +189,17 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
         expect(['needs_work', 'developing', 'proficient', 'mastered']).toContain(row.mastery_level)
     }
 
+    const storedReadinessBefore = await readOwnStoredTkaReadiness(session)
+    const readinessBefore = await readOwnTkaReadiness(session)
+    expect(storedReadinessBefore.calculation_version).toBe('tka_smp_readiness_v1')
+    expect(storedReadinessBefore.readiness_score).toBeCloseTo(readinessBefore.readiness_score, 6)
+    expect(storedReadinessBefore.confidence_score).toBeCloseTo(readinessBefore.confidence_score, 6)
+    expect(readinessBefore.subjects.map((row) => row.subject_code).sort()).toEqual(['BIN', 'MAT'])
+    expect(readinessBefore.subjects.every((row) => row.evidenced_nodes > 0)).toBe(true)
+    const readinessCard = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Kesiapan TKA SMP' }) })
+    await expect(readinessCard).toBeVisible()
+    await expect(readinessCard).toContainText(`${readinessBefore.readiness_percent.toFixed(1)}%`)
+
     const expectedBefore = expectedWeakestNodeIds(projectionBeforeRemedial)
     expect(expectedBefore).toHaveLength(3)
     const storedRecommendationsBefore = await readOwnStoredTkaRecommendations(session)
@@ -239,6 +254,14 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
         projectionBeforeRemedial.knowledge.reduce((sum, row) => sum + row.correct_questions, 0) + 1,
     )
 
+    const storedReadinessAfterRemedial = await readOwnStoredTkaReadiness(session)
+    expect(storedReadinessAfterRemedial.readiness_score).toBeGreaterThan(storedReadinessBefore.readiness_score)
+    expect(storedReadinessAfterRemedial.confidence_score).toBeGreaterThanOrEqual(storedReadinessBefore.confidence_score)
+    expect(storedReadinessAfterRemedial.calculated_at).not.toBe(storedReadinessBefore.calculated_at)
+    const readinessAfterRemedial = await readOwnTkaReadiness(session)
+    expect(readinessAfterRemedial.readiness_score).toBeCloseTo(storedReadinessAfterRemedial.readiness_score, 6)
+    expect(readinessAfterRemedial.confidence_score).toBeCloseTo(storedReadinessAfterRemedial.confidence_score, 6)
+
     // Read persisted rows before the defensive focus RPC: the progress trigger must already be current.
     const expectedAfterRemedial = expectedWeakestNodeIds(projectionAfterRemedial)
     const storedRecommendationsAfterRemedial = await readOwnStoredTkaRecommendations(session)
@@ -251,6 +274,7 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
 
     // Slice 3.2 remains usable alongside the focused remedial queue.
     await page.goto(resultUrl)
+    await expect(page.getByRole('heading', { name: 'Kesiapan TKA SMP' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya' })).toBeVisible()
     const repeatWrongLink = page.getByRole('link', { name: /Ulang Soal Salah \(\d+\)/i })
     await expect(repeatWrongLink).toBeVisible()
@@ -263,6 +287,12 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
 
     const projectionAfterRepeatWrong = await readOwnTkaLearningProjection(session)
     expect(projectionAfterRepeatWrong.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(62)
+
+    const storedReadinessAfterRepeatWrong = await readOwnStoredTkaReadiness(session)
+    expect(storedReadinessAfterRepeatWrong.readiness_score).toBeGreaterThan(storedReadinessAfterRemedial.readiness_score)
+    expect(storedReadinessAfterRepeatWrong.confidence_score).toBeGreaterThanOrEqual(storedReadinessAfterRemedial.confidence_score)
+    const readinessAfterRepeatWrong = await readOwnTkaReadiness(session)
+    expect(readinessAfterRepeatWrong.readiness_score).toBeCloseTo(storedReadinessAfterRepeatWrong.readiness_score, 6)
 
     const expectedAfterRepeatWrong = expectedWeakestNodeIds(projectionAfterRepeatWrong)
     const storedRecommendationsAfterRepeatWrong = await readOwnStoredTkaRecommendations(session)
