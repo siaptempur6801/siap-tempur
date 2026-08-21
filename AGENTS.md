@@ -20,7 +20,7 @@ Sebelum mengubah kode:
 3. Buat rencana singkat.
 4. Jangan langsung refactor besar.
 5. Jangan menghapus fitur tanpa izin.
-6. Jangan menjalankan migration database tanpa konfirmasi.
+6. Migration database boleh langsung dijalankan hanya ke project staging yang project ref-nya sudah diverifikasi. Migration ke production tetap wajib konfirmasi eksplisit.
 7. Jangan deploy tanpa konfirmasi.
 8. Jangan mengubah env production.
 9. Jangan commit otomatis tanpa diminta.
