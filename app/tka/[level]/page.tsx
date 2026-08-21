@@ -31,6 +31,20 @@ function examWindowDisabledReason(input: { starts_at: string | null; ends_at: st
     return null
 }
 
+function entitlementUsable(input: {
+    starts_at: string
+    expires_at: string | null
+    usage_limit: number | null
+    usage_count: number
+}) {
+    const now = Date.now()
+    const startsAt = Date.parse(input.starts_at)
+    const expiresAt = input.expires_at ? Date.parse(input.expires_at) : null
+    const withinWindow = Number.isFinite(startsAt) && startsAt <= now && (expiresAt === null || expiresAt > now)
+    const withinUsage = input.usage_limit === null || input.usage_count < input.usage_limit
+    return withinWindow && withinUsage
+}
+
 export default async function TkaLevelPage({
     params,
     searchParams,
@@ -58,7 +72,7 @@ export default async function TkaLevelPage({
     const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { data: questionRows, error: questionError }] = await Promise.all([
         admin
             .from('exams')
-            .select('id, exam_type_id, title, slug, duration_seconds, status, token_cost, starts_at, ends_at')
+            .select('id, exam_type_id, title, slug, duration_seconds, attempt_limit, access_type, required_feature_id, status, token_cost, starts_at, ends_at')
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
             .in('status', ['active', 'ACTIVE', 'scheduled', 'SCHEDULED'])
@@ -75,6 +89,49 @@ export default async function TkaLevelPage({
     if (examError) throw examError
     if (typeError) throw typeError
     if (questionError) throw questionError
+
+    const examIds = (exams ?? []).map((exam) => String(exam.id))
+    const featureIds = Array.from(new Set((exams ?? [])
+        .map((exam) => exam.required_feature_id ? String(exam.required_feature_id) : '')
+        .filter(Boolean)))
+
+    const [{ data: entitlementRows, error: entitlementError }, { data: attemptRows, error: attemptError }] = await Promise.all([
+        featureIds.length > 0
+            ? admin
+                .from('entitlements')
+                .select('feature_id, starts_at, expires_at, usage_limit, usage_count, status')
+                .eq('user_id', user.id)
+                .in('feature_id', featureIds)
+                .in('status', ['active', 'ACTIVE'])
+            : Promise.resolve({ data: [], error: null }),
+        examIds.length > 0
+            ? admin
+                .from('exam_attempts')
+                .select('exam_id')
+                .eq('user_id', user.id)
+                .in('exam_id', examIds)
+            : Promise.resolve({ data: [], error: null }),
+    ])
+    if (entitlementError) throw entitlementError
+    if (attemptError) throw attemptError
+
+    const entitledFeatures = new Set<string>()
+    for (const row of entitlementRows ?? []) {
+        if (entitlementUsable({
+            starts_at: String(row.starts_at),
+            expires_at: row.expires_at ? String(row.expires_at) : null,
+            usage_limit: row.usage_limit === null ? null : Number(row.usage_limit),
+            usage_count: Number(row.usage_count ?? 0),
+        })) {
+            entitledFeatures.add(String(row.feature_id))
+        }
+    }
+
+    const attemptCountByExam = new Map<string, number>()
+    for (const row of attemptRows ?? []) {
+        const id = String(row.exam_id)
+        attemptCountByExam.set(id, (attemptCountByExam.get(id) ?? 0) + 1)
+    }
 
     const examTypeById = new Map((examTypes ?? []).map((row) => [String(row.id), row]))
     const questionCountBySubject = new Map<string, number>()
@@ -99,7 +156,7 @@ export default async function TkaLevelPage({
                             </span>
                             <h1 className="mt-3 font-handwriting text-4xl font-black md:text-5xl">TKA {LEVEL_LABEL[level]}</h1>
                             <p className="mt-2 max-w-2xl font-semibold text-gray-600">
-                                Track ini memakai catalog, bank soal, progress, dan attempt yang terpisah dari CPNS/SKD.
+                                Track ini memakai catalog, bank soal, progress, attempt, dan entitlement yang terpisah dari CPNS/SKD.
                             </p>
                         </div>
                         <div className={`border-2 border-gray-900 px-4 py-3 font-black ${activeTrack ? 'bg-green-100 text-green-900' : 'bg-yellow-100 text-yellow-900'}`}>
@@ -170,7 +227,7 @@ export default async function TkaLevelPage({
                 <section className="space-y-3">
                     <div>
                         <h2 className="text-2xl font-black">Tryout tersedia</h2>
-                        <p className="text-sm font-semibold text-gray-600">Hanya konfigurasi active/scheduled yang ditampilkan kepada user. Validasi final tetap dilakukan server saat tombol mulai ditekan.</p>
+                        <p className="text-sm font-semibold text-gray-600">Mini Tryout memiliki satu percobaan gratis per mapel. Setelah kuota gratis habis, Mini unlimited dan Full Tryout membutuhkan Tempur Pass aktif.</p>
                     </div>
                     {(exams ?? []).length > 0 ? (
                         <div className="grid gap-3 md:grid-cols-2">
@@ -178,7 +235,28 @@ export default async function TkaLevelPage({
                                 const type = examTypeById.get(String(exam.exam_type_id))
                                 const duration = minutes(exam.duration_seconds)
                                 const windowReason = examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at })
-                                const disabledReason = !activeTrack ? 'Aktifkan track terlebih dahulu' : windowReason
+                                const featureId = exam.required_feature_id ? String(exam.required_feature_id) : null
+                                const hasEntitlement = featureId ? entitledFeatures.has(featureId) : false
+                                const usedAttempts = attemptCountByExam.get(String(exam.id)) ?? 0
+                                const access = String(exam.access_type ?? 'FREE').toUpperCase()
+                                const freeLimit = Number(exam.attempt_limit ?? 1)
+                                const freemiumLocked = access === 'FREEMIUM' && !hasEntitlement && usedAttempts >= freeLimit
+                                const premiumLocked = access === 'PREMIUM' && !hasEntitlement
+                                const accessLocked = freemiumLocked || premiumLocked
+                                const accessReason = premiumLocked
+                                    ? 'Butuh Tempur Pass'
+                                    : freemiumLocked
+                                        ? 'Kuota gratis habis · Butuh Tempur Pass'
+                                        : null
+                                const disabledReason = !activeTrack ? 'Aktifkan track terlebih dahulu' : windowReason || accessReason
+                                const accessLabel = hasEntitlement
+                                    ? 'Tempur Pass aktif'
+                                    : access === 'FREEMIUM'
+                                        ? `Gratis ${Math.max(0, freeLimit - usedAttempts)}x tersisa`
+                                        : access === 'PREMIUM'
+                                            ? 'Premium · Tempur Pass'
+                                            : 'Gratis'
+
                                 return (
                                     <article key={exam.id} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0_0_#111]">
                                         <div className="flex items-start justify-between gap-3">
@@ -188,10 +266,9 @@ export default async function TkaLevelPage({
                                             </div>
                                             <BookOpenCheck />
                                         </div>
-                                        <div className="mt-4 flex flex-wrap gap-3 text-sm font-bold text-gray-600">
-                                            {duration && <span className="inline-flex items-center gap-1"><Clock3 size={15}/>{duration} menit</span>}
-                                            <span>{Number(exam.token_cost ?? 0)} token</span>
-                                            <span className="uppercase">{exam.status}</span>
+                                        <div className="mt-4 flex flex-wrap gap-2 text-sm font-bold text-gray-600">
+                                            {duration && <span className="inline-flex items-center gap-1 border border-gray-300 bg-gray-50 px-2 py-1"><Clock3 size={15}/>{duration} menit</span>}
+                                            <span className={`border border-gray-900 px-2 py-1 ${hasEntitlement ? 'bg-green-100 text-green-900' : access === 'FREEMIUM' && !accessLocked ? 'bg-cyan-100 text-cyan-900' : accessLocked ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-100'}`}>{accessLabel}</span>
                                         </div>
                                         <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={disabledReason} />
                                     </article>
