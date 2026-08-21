@@ -22,6 +22,7 @@ async function assertNoDocumentOverflow(page: Page) {
 
 async function finishMini(page: Page, expectedSubject: string) {
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
+    await expect(page.getByText('TKA SMP · Mini Tryout')).toBeVisible()
     await expect(page.getByRole('heading', { name: expectedSubject, exact: true })).toBeVisible()
     await expect(page.getByText('Soal 1 / 15')).toBeVisible()
     await expect(page.getByText(/Terjawab total:/)).toContainText('0/15')
