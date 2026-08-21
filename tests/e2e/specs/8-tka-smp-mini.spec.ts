@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
-import { freshDisposableTkaSession } from '../tka.ci'
+import {
+    freshDisposableTkaSession,
+    readOwnTkaLearningProjection,
+    readOwnTkaWrongQuestionState,
+    type DisposableTkaSession,
+} from '../tka.ci'
+import { readOwnTkaReadiness } from '../tka-readiness.ci'
 
 async function examCard(page: Page, title: string) {
     const card = page.locator('article').filter({
@@ -51,6 +57,48 @@ async function assertHistoryOpensResult(page: Page, examTitle: string) {
     await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
     await page.getByRole('link', { name: 'Kembali ke TKA SMP', exact: true }).click()
     await page.waitForURL(/\/tka\/smp(?:\?.*)?$/)
+}
+
+async function assertMiniProjection(session: DisposableTkaSession) {
+    const projection = await readOwnTkaLearningProjection(session)
+    expect(projection.knowledge.length).toBeGreaterThan(0)
+    expect(projection.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(15)
+    expect(projection.subjects).toHaveLength(1)
+    expect(projection.subjects[0]?.attempts).toBe(1)
+    expect(projection.subjects[0]?.questions_answered).toBe(1)
+    for (const row of projection.knowledge) {
+        expect(row.mastery_score).toBeGreaterThanOrEqual(0)
+        expect(row.mastery_score).toBeLessThanOrEqual(1)
+        expect(['needs_work', 'developing', 'proficient', 'mastered']).toContain(row.mastery_level)
+    }
+}
+
+async function assertProgressDashboard(page: Page, session: DisposableTkaSession, examTitle: string) {
+    const readiness = await readOwnTkaReadiness(session)
+    const openWrong = await readOwnTkaWrongQuestionState(session)
+
+    const dashboardLink = page.getByRole('link', { name: 'Lihat Progress Dashboard', exact: true })
+    await expect(dashboardLink).toBeVisible()
+    await dashboardLink.click()
+    await page.waitForURL(/\/tka\/smp\/progress$/i)
+
+    await expect(page.getByRole('heading', { name: 'Progress Dashboard TKA SMP', exact: true })).toBeVisible()
+    const readinessCard = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Kesiapan TKA SMP', exact: true }) })
+    await expect(readinessCard).toBeVisible()
+    await expect(readinessCard).toContainText(`${readiness.readiness_percent.toFixed(1)}%`)
+
+    const completedCard = page.locator('article').filter({ hasText: 'Tryout selesai' }).first()
+    await expect(completedCard).toContainText('1')
+    const gapCard = page.locator('article').filter({ hasText: 'Gap terbuka' }).first()
+    await expect(gapCard).toContainText(String(openWrong.length))
+
+    await expect(page.getByRole('heading', { name: 'Progress per mapel', exact: true })).toBeVisible()
+    await expect(page.getByText('BIN', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('MAT', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya', exact: true })).toBeVisible()
+    await expect(page.getByText(examTitle, { exact: true })).toBeVisible()
+    await expect(page.getByText('Langkah berikutnya', { exact: true })).toBeVisible()
+    await assertNoDocumentOverflow(page)
 }
 
 async function finishMini(page: Page, expectedSubject: string) {
@@ -109,9 +157,9 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await assertNoDocumentOverflow(page)
     })
 
-    test('Bahasa Indonesia: mobile resume, result, history, error state, and one-free-attempt limit', async ({ page }) => {
-        test.setTimeout(120_000)
-        await freshDisposableTkaSession(page)
+    test('Bahasa Indonesia: mobile resume, result, history, projection, dashboard, error state, and one-free-attempt limit', async ({ page }) => {
+        test.setTimeout(150_000)
+        const session = await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/smp')
 
@@ -125,6 +173,8 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await expect(startButton).toBeEnabled()
         await startButton.click()
         await finishMini(page, 'Bahasa Indonesia')
+        await assertMiniProjection(session)
+        await assertProgressDashboard(page, session, 'Mini Tryout Bahasa Indonesia TKA SMP')
 
         await page.goto('/tka/smp')
         await assertHistoryOpensResult(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
@@ -137,9 +187,9 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await assertNoDocumentOverflow(page)
     })
 
-    test('Matematika: tablet resume, result, history, and one-free-attempt limit', async ({ page }) => {
+    test('Matematika: tablet resume, result, history, projection, and one-free-attempt limit', async ({ page }) => {
         test.setTimeout(120_000)
-        await freshDisposableTkaSession(page)
+        const session = await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 1024, height: 768 })
         await page.goto('/tka/smp')
 
@@ -153,6 +203,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await expect(startButton).toBeEnabled()
         await startButton.click()
         await finishMini(page, 'Matematika')
+        await assertMiniProjection(session)
 
         await page.goto('/tka/smp')
         await assertHistoryOpensResult(page, 'Mini Tryout Matematika TKA SMP')
