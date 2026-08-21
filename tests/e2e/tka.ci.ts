@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test'
+import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -7,6 +8,31 @@ const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
 const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
 const authFile = path.join(__dirname, '../../playwright/.auth/tka-user.json')
 const metadataFile = path.join(__dirname, '../../playwright/.auth/tka-user-meta.json')
+
+export type DisposableTkaSession = {
+    userId: string
+    email: string
+    password: string
+}
+
+export type TkaLearningProjection = {
+    knowledge: Array<{
+        knowledge_node_id: string
+        attempted_questions: number
+        correct_questions: number
+        accuracy: number
+        average_score: number
+        mastery_score: number
+        mastery_level: string
+    }>
+    subjects: Array<{
+        subject_id: string
+        attempts: number
+        questions_answered: number
+        accuracy: number
+        mastery_score: number
+    }>
+}
 
 function required(name: string) {
     const value = process.env[name]
@@ -64,7 +90,47 @@ async function currentDisposableUserId() {
     }
 }
 
-export async function freshDisposableTkaSession(page: Page) {
+export async function readOwnTkaLearningProjection(session: DisposableTkaSession): Promise<TkaLearningProjection> {
+    const supabaseUrl = required('NEXT_PUBLIC_SUPABASE_URL')
+    assertStagingUrl(supabaseUrl)
+    const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || required('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+    const supabase = createClient(supabaseUrl, publishableKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+    })
+
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: session.email,
+        password: session.password,
+    })
+    if (authError || authData.user?.id !== session.userId) {
+        throw authError ?? new Error('Disposable TKA learner auth mismatch while reading learning projection.')
+    }
+
+    try {
+        const [knowledgeResult, subjectResult] = await Promise.all([
+            supabase
+                .from('user_knowledge_progress')
+                .select('knowledge_node_id, attempted_questions, correct_questions, accuracy, average_score, mastery_score, mastery_level')
+                .eq('user_id', session.userId),
+            supabase
+                .from('user_subject_progress')
+                .select('subject_id, attempts, questions_answered, accuracy, mastery_score')
+                .eq('user_id', session.userId),
+        ])
+
+        if (knowledgeResult.error) throw knowledgeResult.error
+        if (subjectResult.error) throw subjectResult.error
+
+        return {
+            knowledge: (knowledgeResult.data ?? []) as TkaLearningProjection['knowledge'],
+            subjects: (subjectResult.data ?? []) as TkaLearningProjection['subjects'],
+        }
+    } finally {
+        await supabase.auth.signOut().catch(() => undefined)
+    }
+}
+
+export async function freshDisposableTkaSession(page: Page): Promise<DisposableTkaSession> {
     const supabaseUrl = required('NEXT_PUBLIC_SUPABASE_URL')
     assertStagingUrl(supabaseUrl)
 
@@ -103,6 +169,7 @@ export async function freshDisposableTkaSession(page: Page) {
         await page.waitForURL(/\/tka\/smp(?:\?.*)?$/)
         await expect(page.getByText('Track aktif')).toBeVisible()
         await page.context().storageState({ path: authFile })
+        return { userId, email, password }
     } catch (error) {
         await callCiUserHelper(supabaseUrl, { action: 'cleanup', userId }).catch(() => undefined)
         throw error
