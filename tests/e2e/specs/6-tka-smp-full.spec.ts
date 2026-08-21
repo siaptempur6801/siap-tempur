@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { freshDisposableTkaSession, readOwnTkaLearningProjection } from '../tka.ci'
+import {
+    freshDisposableTkaSession,
+    readOwnTkaLearningProjection,
+    readOwnTkaWrongQuestionState,
+} from '../tka.ci'
 
 async function answerFirstVisibleOption(page: import('@playwright/test').Page) {
     const questionCard = page.locator('article').last()
@@ -14,7 +18,33 @@ async function goToLastQuestion(page: import('@playwright/test').Page) {
     await expect(page.getByText('Soal 30 / 30')).toBeVisible()
 }
 
-test('TKA SMP full tryout persists, changes section, submits, opens review, and projects learning progress', async ({ page }) => {
+async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/test').Page) {
+    await expect(page.getByText('TKA SMP · Mode Ulang Soal Salah')).toBeVisible()
+    await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
+
+    const optionButtons = page.locator('article button').filter({
+        hasNotText: /Periksa jawaban|Periksa lagi|Lanjut/i,
+    })
+    const optionCount = await optionButtons.count()
+    expect(optionCount).toBeGreaterThan(1)
+
+    let resolved = false
+    for (let index = 0; index < optionCount; index += 1) {
+        await optionButtons.nth(index).click()
+        await page.getByRole('button', { name: /Periksa jawaban|Periksa lagi/i }).click()
+
+        const correct = page.getByText('Benar! Soal ini sudah dituntaskan.', { exact: true })
+        if (await correct.isVisible().catch(() => false)) {
+            resolved = true
+            break
+        }
+        await expect(page.getByText('Belum tepat. Pilih jawaban lain lalu coba lagi.', { exact: true })).toBeVisible()
+    }
+    expect(resolved).toBe(true)
+    await expect(page.getByRole('button', { name: /Lanjut/i })).toBeVisible()
+}
+
+test('TKA SMP full tryout persists, submits, projects learning, and resolves repeat-wrong state', async ({ page }) => {
     const session = await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
@@ -39,7 +69,7 @@ test('TKA SMP full tryout persists, changes section, submits, opens review, and 
     await expect(page.getByText(/Terjawab section:/)).toContainText('1/30')
     await page.waitForTimeout(800)
 
-    // Reload is the browser-level proof that the answer/flag came back from persisted attempt state.
+    // Reload proves answer + flag are persisted independently of local browser state.
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Bahasa Indonesia' })).toBeVisible()
     await expect(page.getByText(/Terjawab section:/)).toContainText('1/30')
@@ -75,4 +105,22 @@ test('TKA SMP full tryout persists, changes section, submits, opens review, and 
         expect(row.mastery_score).toBeLessThanOrEqual(1)
         expect(['needs_work', 'developing', 'proficient', 'mastered']).toContain(row.mastery_level)
     }
+
+    const wrongBefore = await readOwnTkaWrongQuestionState(session)
+    const openBefore = wrongBefore.filter((row) => row.status === 'open')
+    expect(openBefore.length).toBeGreaterThanOrEqual(58)
+    expect(openBefore.reduce((sum, row) => sum + row.unanswered_count, 0)).toBeGreaterThanOrEqual(58)
+
+    const repeatWrongLink = page.getByRole('link', { name: /Ulang Soal Salah \(\d+\)/i })
+    await expect(repeatWrongLink).toBeVisible()
+    await repeatWrongLink.click()
+    await page.waitForURL(/\/tka\/smp\/wrong-questions$/i)
+
+    await resolveFirstSingleChoiceWrongQuestion(page)
+
+    const wrongAfter = await readOwnTkaWrongQuestionState(session)
+    const openAfter = wrongAfter.filter((row) => row.status === 'open')
+    const resolvedAfter = wrongAfter.filter((row) => row.status === 'resolved')
+    expect(openAfter.length).toBe(openBefore.length - 1)
+    expect(resolvedAfter.length).toBeGreaterThanOrEqual(1)
 })
