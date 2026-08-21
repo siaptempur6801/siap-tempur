@@ -38,16 +38,18 @@ export default function TkaStartExamButton({
         }
     }
 
+    const label = loading ? 'Menyiapkan...' : disabledReason || 'Mulai Tryout'
+
     return (
         <button
             type="button"
             onClick={() => void start()}
             disabled={Boolean(disabledReason) || loading}
             title={disabledReason || 'Mulai tryout'}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-blue-700 px-4 py-2.5 font-black text-white shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none"
+            className="mt-4 inline-flex w-full min-w-0 items-center justify-center gap-2 overflow-hidden border-2 border-gray-900 bg-blue-700 px-4 py-2.5 text-center font-black leading-tight text-white shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none"
         >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Play size={18} />}
-            {loading ? 'Menyiapkan...' : disabledReason || 'Mulai Tryout'}
+            {loading ? <Loader2 size={18} className="shrink-0 animate-spin" /> : <Play size={18} className="shrink-0" />}
+            <span className="min-w-0 whitespace-normal break-words">{label}</span>
         </button>
     )
 }
