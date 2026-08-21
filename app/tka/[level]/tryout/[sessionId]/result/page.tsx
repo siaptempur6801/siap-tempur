@@ -3,9 +3,11 @@ import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock3, RotateCcw, Target, Trophy, XCircle } from 'lucide-react'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
+import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
 import TkaResultReview from '@/components/tka/TkaResultReview'
 import { practiceResultService, type PracticeResultView } from '@/src/services/practice-result.service'
 import { tkaFullExamRpcService, type TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
+import { tkaLearningFocusService, type TkaLearningFocusView } from '@/src/services/tka-learning-focus.service'
 import { tkaRemedialService, type TkaRemedialView } from '@/src/services/tka-remedial.service'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 import { cn } from '@/lib/utils'
@@ -44,6 +46,7 @@ export default async function TkaResultPage({
     let result: PracticeResultView | null = null
     let fullExamState: TkaFullExamState | null = null
     let remedial: TkaRemedialView | null = null
+    let learningFocus: TkaLearningFocusView | null = null
 
     if (level === 'SMP' && env.appEnvironment() !== 'production') {
         try {
@@ -68,11 +71,19 @@ export default async function TkaResultPage({
         redirect(`${base}/tryout/${sessionId}`)
     }
 
-    if (level === 'SMP' && env.appEnvironment() !== 'production' && fullExamState) {
+    if (level === 'SMP' && env.appEnvironment() !== 'production') {
+        if (fullExamState) {
+            try {
+                remedial = await tkaRemedialService.findBySourceAttempt(sessionId)
+            } catch {
+                remedial = null
+            }
+        }
+
         try {
-            remedial = await tkaRemedialService.findBySourceAttempt(sessionId)
+            learningFocus = await tkaLearningFocusService.getFocus()
         } catch {
-            remedial = null
+            learningFocus = null
         }
     }
 
@@ -151,6 +162,8 @@ export default async function TkaResultPage({
                         ))}
                     </section>
                 )}
+
+                <TkaLearningFocusPanel items={learningFocus?.items ?? []}/>
 
                 {automaticRemedialEnabled && remedial?.session && (
                     <section className="flex flex-col gap-4 border-2 border-gray-900 bg-orange-50 p-5 shadow-[4px_4px_0_0_#111] md:flex-row md:items-center md:justify-between">
