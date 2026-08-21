@@ -24,6 +24,6 @@ export default async function TkaWrongQuestionsPage({
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/wrong-questions`)}`)
 
-    const items = await tkaWrongQuestionService.listOpen(user.id, 200)
+    const items = await tkaWrongQuestionService.listOpen(200)
     return <TkaWrongQuestionModeClient initialItems={items} />
 }
