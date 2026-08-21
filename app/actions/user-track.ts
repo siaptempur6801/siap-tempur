@@ -3,9 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
-import { createV2Client } from '@/lib/utils/supabase/server'
-import { userTrackService } from '@/src/services/user-track.service'
-import { parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
+import { createClient } from '@/lib/utils/supabase/server'
+import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 function text(form: FormData, key: string) {
     const value = form.get(key)
@@ -19,7 +18,7 @@ export async function activateTkaTrackAction(form: FormData) {
     if (!level) redirect('/tka?error=Jenjang+TKA+tidak+valid')
 
     const path = tkaLevelPath(level)
-    const supabase = await createV2Client()
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect(`/login?returnTo=${encodeURIComponent(path)}`)
 
@@ -32,16 +31,16 @@ export async function activateTkaTrackAction(form: FormData) {
     const schoolName = text(form, 'school_name') || null
     const schoolGrade = text(form, 'school_grade') || null
 
-    await userTrackService.activateTrack({
-        userId: user.id,
-        context: tkaContext(level),
-        targetYear,
-        preference: {
-            schoolName,
-            schoolGrade,
-            preferences: { source: 'tka_entry' },
-        },
+    const { error } = await supabase.rpc('activate_user_track', {
+        p_program_code: 'TKA',
+        p_track_code: level,
+        p_target_year: targetYear,
+        p_school_name: schoolName,
+        p_school_grade: schoolGrade,
     })
+    if (error) {
+        redirect(`${path}?error=${encodeURIComponent('Gagal mengaktifkan jalur TKA. Coba lagi.')}`)
+    }
 
     revalidatePath('/tka')
     revalidatePath(path)
