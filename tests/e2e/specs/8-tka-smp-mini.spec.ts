@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { freshDisposableTkaSession } from '../tka.ci'
 
 async function examCard(page: Page, title: string) {
     const card = page.locator('article').filter({
@@ -88,6 +89,7 @@ async function finishMini(page: Page, expectedSubject: string) {
 test.describe.serial('TKA SMP Mini Tryout core', () => {
     test('learner can activate another TKA track through authenticated self-service RPC', async ({ page }) => {
         test.setTimeout(60_000)
+        await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/sd')
 
@@ -109,6 +111,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
 
     test('Bahasa Indonesia: mobile resume, result, history, error state, and one-free-attempt limit', async ({ page }) => {
         test.setTimeout(120_000)
+        await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/smp')
 
@@ -136,6 +139,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
 
     test('Matematika: tablet resume, result, history, and one-free-attempt limit', async ({ page }) => {
         test.setTimeout(120_000)
+        await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 1024, height: 768 })
         await page.goto('/tka/smp')
 
