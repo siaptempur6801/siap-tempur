@@ -4,7 +4,25 @@ import {
     readOwnTkaLearningProjection,
     readOwnTkaRemedial,
     readOwnTkaWrongQuestionState,
+    type TkaLearningProjection,
 } from '../tka.ci'
+import {
+    readOwnStoredTkaRecommendations,
+    readOwnTkaLearningFocus,
+} from '../tka-learning-focus.ci'
+
+function expectedWeakestNodeIds(projection: TkaLearningProjection) {
+    return [...projection.knowledge]
+        .filter((row) => row.attempted_questions > 0 && row.mastery_score < 0.85)
+        .sort((left, right) => (
+            left.mastery_score - right.mastery_score ||
+            right.attempted_questions - left.attempted_questions ||
+            left.accuracy - right.accuracy ||
+            left.knowledge_node_id.localeCompare(right.knowledge_node_id)
+        ))
+        .slice(0, 3)
+        .map((row) => row.knowledge_node_id)
+}
 
 async function answerFirstVisibleOption(page: import('@playwright/test').Page) {
     const questionCard = page.locator('article').last()
@@ -100,7 +118,7 @@ async function resolveSingleChoiceRemedialAtPosition(
 }
 
 test('TKA SMP full tryout creates automatic remedial and closes the learning loop', async ({ page }) => {
-    test.setTimeout(150_000)
+    test.setTimeout(180_000)
     const session = await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
@@ -167,6 +185,22 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
         expect(['needs_work', 'developing', 'proficient', 'mastered']).toContain(row.mastery_level)
     }
 
+    const expectedBefore = expectedWeakestNodeIds(projectionBeforeRemedial)
+    expect(expectedBefore).toHaveLength(3)
+    const storedRecommendationsBefore = await readOwnStoredTkaRecommendations(session)
+    expect(storedRecommendationsBefore.map((row) => row.knowledge_node_id)).toEqual(expectedBefore)
+    expect(storedRecommendationsBefore.map((row) => row.priority)).toEqual([1, 2, 3])
+    expect(storedRecommendationsBefore.every((row) => row.reason_code === 'weakest_mastery_v1')).toBe(true)
+
+    const focusBefore = await readOwnTkaLearningFocus(session)
+    expect(focusBefore.map((row) => row.knowledge_node_id)).toEqual(expectedBefore)
+    focusBefore.forEach((row) => {
+        expect(row.score).toBeCloseTo(1 - row.mastery_score, 5)
+        expect(row.attempted_questions).toBeGreaterThan(0)
+    })
+    await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya' })).toBeVisible()
+    await expect(page.getByText(focusBefore[0].topic_name, { exact: true })).toBeVisible()
+
     const openBeforeRemedial = await readOwnTkaWrongQuestionState(session)
     expect(openBeforeRemedial.length).toBeGreaterThanOrEqual(58)
     expect(openBeforeRemedial.reduce((sum, row) => sum + row.unanswered_count, 0)).toBeGreaterThanOrEqual(58)
@@ -205,11 +239,19 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
         projectionBeforeRemedial.knowledge.reduce((sum, row) => sum + row.correct_questions, 0) + 1,
     )
 
+    // Read persisted rows before the defensive focus RPC: the progress trigger must already be current.
+    const expectedAfterRemedial = expectedWeakestNodeIds(projectionAfterRemedial)
+    const storedRecommendationsAfterRemedial = await readOwnStoredTkaRecommendations(session)
+    expect(storedRecommendationsAfterRemedial.map((row) => row.knowledge_node_id)).toEqual(expectedAfterRemedial)
+    const focusAfterRemedial = await readOwnTkaLearningFocus(session)
+    expect(focusAfterRemedial.map((row) => row.knowledge_node_id)).toEqual(expectedAfterRemedial)
+
     const openAfterRemedial = await readOwnTkaWrongQuestionState(session)
     expect(openAfterRemedial.length).toBe(openBeforeRemedial.length - 1)
 
     // Slice 3.2 remains usable alongside the focused remedial queue.
     await page.goto(resultUrl)
+    await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya' })).toBeVisible()
     const repeatWrongLink = page.getByRole('link', { name: /Ulang Soal Salah \(\d+\)/i })
     await expect(repeatWrongLink).toBeVisible()
     await repeatWrongLink.click()
@@ -221,4 +263,8 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
 
     const projectionAfterRepeatWrong = await readOwnTkaLearningProjection(session)
     expect(projectionAfterRepeatWrong.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(62)
+
+    const expectedAfterRepeatWrong = expectedWeakestNodeIds(projectionAfterRepeatWrong)
+    const storedRecommendationsAfterRepeatWrong = await readOwnStoredTkaRecommendations(session)
+    expect(storedRecommendationsAfterRepeatWrong.map((row) => row.knowledge_node_id)).toEqual(expectedAfterRepeatWrong)
 })
