@@ -16,8 +16,26 @@ async function answerFirstVisibleOption(page: Page) {
 }
 
 async function assertNoDocumentOverflow(page: Page) {
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
-    expect(overflow).toBe(false)
+    const report = await page.evaluate(() => {
+        const viewportWidth = window.innerWidth
+        const documentWidth = document.documentElement.scrollWidth
+        const offenders = Array.from(document.querySelectorAll<HTMLElement>('body *'))
+            .map((element) => {
+                const rect = element.getBoundingClientRect()
+                return {
+                    tag: element.tagName.toLowerCase(),
+                    className: typeof element.className === 'string' ? element.className.slice(0, 180) : '',
+                    text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120),
+                    left: Math.round(rect.left * 10) / 10,
+                    right: Math.round(rect.right * 10) / 10,
+                    width: Math.round(rect.width * 10) / 10,
+                }
+            })
+            .filter((item) => item.width > 0 && (item.right > viewportWidth + 1 || item.left < -1))
+            .slice(0, 12)
+        return { viewportWidth, documentWidth, offenders }
+    })
+    expect(report.documentWidth, JSON.stringify(report, null, 2)).toBeLessThanOrEqual(report.viewportWidth + 1)
 }
 
 async function assertHistoryOpensResult(page: Page, examTitle: string) {
