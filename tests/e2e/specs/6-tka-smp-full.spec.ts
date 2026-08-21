@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { freshDisposableTkaSession } from '../tka.ci'
 
 async function answerFirstVisibleOption(page: import('@playwright/test').Page) {
     const questionCard = page.locator('article').last()
@@ -14,6 +15,7 @@ async function goToLastQuestion(page: import('@playwright/test').Page) {
 }
 
 test('TKA SMP full tryout persists, changes section, submits, and opens review', async ({ page }) => {
+    await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
     await expect(page.getByRole('heading', { name: /TKA Sekolah Menengah Pertama/i })).toBeVisible()
