@@ -68,6 +68,24 @@ async function finishMini(page: Page, expectedSubject: string) {
 }
 
 test.describe.serial('TKA SMP Mini Tryout core', () => {
+    test('learner can activate another TKA track through authenticated self-service RPC', async ({ page }) => {
+        test.setTimeout(60_000)
+        await page.setViewportSize({ width: 390, height: 844 })
+        await page.goto('/tka/sd')
+
+        await expect(page.getByText('Belum diaktifkan')).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Aktifkan jalur TKA SD', exact: true })).toBeVisible()
+        await page.getByLabel('Nama sekolah').fill('CI School')
+        await page.getByLabel('Kelas').fill('6')
+        await page.getByLabel('Tahun target').fill('2026')
+        await page.getByRole('button', { name: 'Aktifkan TKA SD', exact: true }).click()
+
+        await page.waitForURL(/\/tka\/sd\?activated=1$/i)
+        await expect(page.getByText('Jalur TKA SD berhasil diaktifkan untuk akun ini.')).toBeVisible()
+        await expect(page.getByText('Track aktif')).toBeVisible()
+        await assertNoDocumentOverflow(page)
+    })
+
     test('Bahasa Indonesia: empty state, mobile resume, result, history, and one-free-attempt limit', async ({ page }) => {
         test.setTimeout(120_000)
         await page.setViewportSize({ width: 390, height: 844 })
