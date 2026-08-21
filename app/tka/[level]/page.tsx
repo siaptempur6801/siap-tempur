@@ -2,9 +2,11 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock3, LockKeyhole, School } from 'lucide-react'
 import { activateTkaTrackAction } from '@/app/actions/user-track'
+import TkaPassPackagesClient from '@/components/tka/TkaPassPackagesClient'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import { catalogContextService } from '@/src/services/catalog-context.service'
+import { commerceService } from '@/src/services/commerce.service'
 import { userTrackService } from '@/src/services/user-track.service'
 import { parseTkaLevel, tkaContext, tkaLevelPath, type TkaLevel } from '@/src/tka/context'
 
@@ -63,10 +65,12 @@ export default async function TkaLevelPage({
     if (!user) redirect(`/login?returnTo=${encodeURIComponent(path)}`)
 
     const context = tkaContext(level)
-    const [catalog, userTrack] = await Promise.all([
+    const [catalog, userTrack, rawPassOffers] = await Promise.all([
         catalogContextService.resolve(context),
         userTrackService.getForUser({ userId: user.id, context }),
+        commerceService.listActiveProductOffers('TKA', level),
     ])
+    const passOffers = rawPassOffers.filter((offer) => offer.code.startsWith(`TKA_${level}_PASS_`))
 
     const admin = await createV2AdminClient()
     const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { data: questionRows, error: questionError }] = await Promise.all([
@@ -143,7 +147,7 @@ export default async function TkaLevelPage({
 
     return (
         <main className="min-h-screen bg-[#fdfbf7] px-4 py-8 text-gray-900 md:px-8 md:py-12">
-            <div className="mx-auto max-w-6xl space-y-6">
+            <div className="mx-auto max-w-6xl space-y-8">
                 <Link href="/tka" className="inline-flex items-center gap-2 font-black text-gray-700 hover:text-blue-700">
                     <ArrowLeft size={18} /> Semua jenjang TKA
                 </Link>
@@ -283,6 +287,18 @@ export default async function TkaLevelPage({
                         </div>
                     )}
                 </section>
+
+                <TkaPassPackagesClient
+                    level={level}
+                    packages={passOffers.map((offer) => ({
+                        code: offer.code,
+                        name: offer.name,
+                        description: offer.description,
+                        price: offer.price,
+                        currency: offer.currency,
+                        durationDays: offer.durationDays,
+                    }))}
+                />
             </div>
         </main>
     )
