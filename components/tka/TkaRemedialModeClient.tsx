@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
 import { ArrowLeft, CheckCircle2, ChevronRight, RotateCcw, Sparkles } from 'lucide-react'
-import MarkdownRenderer from '@/components/MarkdownRenderer'
+import MathRenderer from '@/components/MathRenderer'
 import { reviewTkaRemedialItem } from '@/app/actions/tka-remedial'
 import type { TkaRemedialItem, TkaRemedialSession } from '@/src/services/tka-remedial.service'
 import { cn } from '@/lib/utils'
@@ -186,11 +186,11 @@ export default function TkaRemedialModeClient({
                             {current.stimulus && (
                                 <div className="mt-5 border-2 border-gray-900 bg-[#fff9c4] p-4">
                                     {current.stimulus.title && <div className="mb-2 font-black">{current.stimulus.title}</div>}
-                                    <MarkdownRenderer content={current.stimulus.content}/>
+                                    <MathRenderer text={current.stimulus.content}/>
                                 </div>
                             )}
 
-                            <div className="mt-5 text-lg font-bold"><MarkdownRenderer content={current.stem}/></div>
+                            <div className="mt-5 text-lg font-bold"><MathRenderer text={current.stem}/></div>
                             <p className="mt-3 text-sm font-black text-gray-500">{instruction}</p>
 
                             <div className="mt-4 grid gap-3">
@@ -208,7 +208,7 @@ export default function TkaRemedialModeClient({
                                             )}
                                         >
                                             <span className="flex h-7 min-w-7 items-center justify-center border-2 border-gray-900 bg-white text-xs font-black">{option.key || '•'}</span>
-                                            <span className="min-w-0 flex-1"><MarkdownRenderer content={option.content}/></span>
+                                            <span className="min-w-0 flex-1"><MathRenderer text={option.content}/></span>
                                         </button>
                                     )
                                 })}
@@ -221,7 +221,7 @@ export default function TkaRemedialModeClient({
                                     ) : feedback.isCorrect ? (
                                         <>
                                             <div className="font-black text-green-800">Benar! Evidence mastery sudah diperbarui.</div>
-                                            {feedback.explanation && <div className="mt-3 border-t border-green-900/20 pt-3"><MarkdownRenderer content={feedback.explanation}/></div>}
+                                            {feedback.explanation && <div className="mt-3 border-t border-green-900/20 pt-3"><MathRenderer text={feedback.explanation}/></div>}
                                         </>
                                     ) : (
                                         <div className="font-black text-yellow-800">Belum tepat. Pelajari lagi pilihannya lalu coba ulang.</div>
