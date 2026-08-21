@@ -8,7 +8,7 @@ export type ProgramTrackContext = {
 export type ResolvedCatalogContext = ProgramTrackContext & {
     program: { id: string; code: string; name: string }
     track: { id: string; code: string; name: string }
-    subjects: Array<{ id: string; code: string; name: string }>
+    subjects: Array<{ id: string; code: string; name: string; subjectType: string }>
     examTypes: Array<{ id: string; code: string; name: string }>
 }
 
@@ -64,7 +64,7 @@ export class CatalogContextService {
         const [{ data: subjects, error: subjectError }, { data: examTypes, error: typeError }] = await Promise.all([
             admin
                 .from('subjects')
-                .select('id, code, name')
+                .select('id, code, name, subject_type')
                 .eq('track_id', track.id)
                 .order('sort_order', { ascending: true }),
             admin
@@ -92,6 +92,7 @@ export class CatalogContextService {
                 id: String(row.id),
                 code: String(row.code),
                 name: String(row.name),
+                subjectType: String(row.subject_type ?? 'mandatory'),
             })),
             examTypes: (examTypes ?? []).map((row) => ({
                 id: String(row.id),
