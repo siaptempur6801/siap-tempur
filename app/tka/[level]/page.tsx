@@ -160,7 +160,9 @@ export default async function TkaLevelPage({
                             </span>
                             <h1 className="mt-3 font-handwriting text-4xl font-black md:text-5xl">TKA {LEVEL_LABEL[level]}</h1>
                             <p className="mt-2 max-w-2xl font-semibold text-gray-600">
-                                Track ini memakai catalog, bank soal, progress, attempt, dan entitlement yang terpisah dari CPNS/SKD.
+                                {level === 'SMP'
+                                    ? 'Blueprint TKA SMP 2026 memakai Matematika dan Bahasa Indonesia sebagai mata uji resmi. Bahasa Inggris dan IPA tetap tersedia sebagai pengayaan di SiapTempur.'
+                                    : 'Track ini memakai catalog, bank soal, progress, attempt, dan entitlement yang terpisah dari CPNS/SKD.'}
                             </p>
                         </div>
                         <div className={`border-2 border-gray-900 px-4 py-3 font-black ${activeTrack ? 'bg-green-100 text-green-900' : 'bg-yellow-100 text-yellow-900'}`}>
@@ -192,7 +194,7 @@ export default async function TkaLevelPage({
                             </label>
                             <label className="space-y-1">
                                 <span className="block text-xs font-black uppercase text-gray-500">Kelas</span>
-                                <input name="school_grade" className="w-full border-2 border-gray-900 bg-white px-3 py-2 font-semibold" placeholder="Contoh: 6" />
+                                <input name="school_grade" className="w-full border-2 border-gray-900 bg-white px-3 py-2 font-semibold" placeholder="Contoh: 9" />
                             </label>
                             <label className="space-y-1">
                                 <span className="block text-xs font-black uppercase text-gray-500">Tahun target</span>
@@ -211,20 +213,28 @@ export default async function TkaLevelPage({
                         <p className="text-sm font-semibold text-gray-600">Bank soal dan progress dihitung per subject di track {level}.</p>
                     </div>
                     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                        {catalog.subjects.map((subject) => (
-                            <article key={subject.id} className="border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0_0_#bbb]">
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <div className="text-xs font-black uppercase text-blue-700">{subject.code}</div>
-                                        <h3 className="mt-1 text-lg font-black">{subject.name}</h3>
+                        {catalog.subjects.map((subject) => {
+                            const enrichment = subject.subjectType.toLowerCase() === 'enrichment'
+                            return (
+                                <article key={subject.id} className={`border-2 border-gray-900 p-4 shadow-[3px_3px_0_0_#bbb] ${enrichment ? 'bg-amber-50' : 'bg-white'}`}>
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <div className="text-xs font-black uppercase text-blue-700">{subject.code}</div>
+                                                <span className={`border border-gray-900 px-2 py-0.5 text-[10px] font-black uppercase ${enrichment ? 'bg-amber-200 text-amber-950' : 'bg-green-100 text-green-900'}`}>
+                                                    {enrichment ? 'Pengayaan' : 'Wajib TKA'}
+                                                </span>
+                                            </div>
+                                            <h3 className="mt-1 text-lg font-black">{subject.name}</h3>
+                                        </div>
+                                        <School size={20} />
                                     </div>
-                                    <School size={20} />
-                                </div>
-                                <p className="mt-3 text-sm font-semibold text-gray-600">
-                                    {questionCountBySubject.get(subject.id) ?? 0} soal published tersedia.
-                                </p>
-                            </article>
-                        ))}
+                                    <p className="mt-3 text-sm font-semibold text-gray-600">
+                                        {questionCountBySubject.get(subject.id) ?? 0} soal published tersedia.
+                                    </p>
+                                </article>
+                            )
+                        })}
                     </div>
                 </section>
 
