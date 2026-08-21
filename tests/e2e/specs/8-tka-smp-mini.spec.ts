@@ -20,6 +20,20 @@ async function assertNoDocumentOverflow(page: Page) {
     expect(overflow).toBe(false)
 }
 
+async function assertHistoryOpensResult(page: Page, examTitle: string) {
+    const history = page.locator('section').filter({
+        has: page.getByRole('heading', { name: 'Riwayat terbaru', exact: true }),
+    })
+    await expect(history).toBeVisible()
+    const entry = history.getByRole('link').filter({ hasText: examTitle }).first()
+    await expect(entry).toBeVisible()
+    await entry.click()
+    await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i)
+    await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
+    await page.getByRole('link', { name: 'Kembali ke TKA SMP', exact: true }).click()
+    await page.waitForURL(/\/tka\/smp(?:\?.*)?$/)
+}
+
 async function finishMini(page: Page, expectedSubject: string) {
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
     await expect(page.getByText('TKA SMP · Mini Tryout')).toBeVisible()
@@ -54,12 +68,13 @@ async function finishMini(page: Page, expectedSubject: string) {
 }
 
 test.describe.serial('TKA SMP Mini Tryout core', () => {
-    test('Bahasa Indonesia: 15 questions, mobile resume, result, and one-free-attempt limit', async ({ page }) => {
+    test('Bahasa Indonesia: empty state, mobile resume, result, history, and one-free-attempt limit', async ({ page }) => {
         test.setTimeout(120_000)
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/smp')
 
         await expect(page.getByText('Track aktif')).toBeVisible()
+        await expect(page.getByText('Belum ada riwayat tryout')).toBeVisible()
         const card = await examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
         await expect(card.getByText('35 menit')).toBeVisible()
         await expect(card.getByText(/Gratis 1x tersisa/)).toBeVisible()
@@ -71,12 +86,17 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await finishMini(page, 'Bahasa Indonesia')
 
         await page.goto('/tka/smp')
+        await assertHistoryOpensResult(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
         const usedCard = await examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
         const locked = usedCard.getByRole('button', { name: 'Kuota gratis habis · Butuh Tempur Pass', exact: true })
         await expect(locked).toBeDisabled()
+
+        await page.goto('/tka/smp?error=Tahun+target+tidak+valid.')
+        await expect(page.getByText('Tahun target tidak valid.')).toBeVisible()
+        await assertNoDocumentOverflow(page)
     })
 
-    test('Matematika: 15 questions, tablet resume, result, and one-free-attempt limit', async ({ page }) => {
+    test('Matematika: tablet resume, result, history, and one-free-attempt limit', async ({ page }) => {
         test.setTimeout(120_000)
         await page.setViewportSize({ width: 1024, height: 768 })
         await page.goto('/tka/smp')
@@ -93,8 +113,19 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await finishMini(page, 'Matematika')
 
         await page.goto('/tka/smp')
+        await assertHistoryOpensResult(page, 'Mini Tryout Matematika TKA SMP')
         const usedCard = await examCard(page, 'Mini Tryout Matematika TKA SMP')
         const locked = usedCard.getByRole('button', { name: 'Kuota gratis habis · Butuh Tempur Pass', exact: true })
         await expect(locked).toBeDisabled()
+        await assertNoDocumentOverflow(page)
+    })
+
+    test('unauthenticated learner is redirected to login', async ({ browser }) => {
+        const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+        const page = await context.newPage()
+        await page.goto('/tka/smp')
+        await page.waitForURL(/\/login\?returnTo=%2Ftka%2Fsmp/i)
+        await expect(page.locator('input[type="email"]')).toBeVisible()
+        await context.close()
     })
 })
