@@ -28,6 +28,7 @@ test('TKA SMP full tryout persists, changes section, submits, and opens review',
     await startButton.click()
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
+    await expect(page.getByText('TKA SMP · Full Tryout')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Bahasa Indonesia' })).toBeVisible()
     await expect(page.getByText('Soal 1 / 30')).toBeVisible()
 
