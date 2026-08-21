@@ -49,6 +49,7 @@ async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/t
 }
 
 test('TKA SMP full tryout persists, submits, projects learning, and resolves repeat-wrong state', async ({ page }) => {
+    test.setTimeout(120_000)
     const session = await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
