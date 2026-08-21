@@ -106,8 +106,7 @@ test('TKA SMP full tryout persists, submits, projects learning, and resolves rep
         expect(['needs_work', 'developing', 'proficient', 'mastered']).toContain(row.mastery_level)
     }
 
-    const wrongBefore = await readOwnTkaWrongQuestionState(session)
-    const openBefore = wrongBefore.filter((row) => row.status === 'open')
+    const openBefore = await readOwnTkaWrongQuestionState(session)
     expect(openBefore.length).toBeGreaterThanOrEqual(58)
     expect(openBefore.reduce((sum, row) => sum + row.unanswered_count, 0)).toBeGreaterThanOrEqual(58)
 
@@ -118,9 +117,8 @@ test('TKA SMP full tryout persists, submits, projects learning, and resolves rep
 
     await resolveFirstSingleChoiceWrongQuestion(page)
 
-    const wrongAfter = await readOwnTkaWrongQuestionState(session)
-    const openAfter = wrongAfter.filter((row) => row.status === 'open')
-    const resolvedAfter = wrongAfter.filter((row) => row.status === 'resolved')
+    // The sanitized learner queue contains open rows only. A correct repeat answer
+    // must therefore remove exactly one item from the next authenticated read.
+    const openAfter = await readOwnTkaWrongQuestionState(session)
     expect(openAfter.length).toBe(openBefore.length - 1)
-    expect(resolvedAfter.length).toBeGreaterThanOrEqual(1)
 })
