@@ -77,7 +77,9 @@ export default function TkaPassPackagesClient({
                     await syncPaymentStatus(transaction.orderId)
                     toast.info('Pembayaran masih tertunda', { id })
                 },
-                onError: () => toast.error('Pembayaran gagal.'),
+                onError: () => {
+                    toast.error('Pembayaran gagal.')
+                },
                 onClose: async () => {
                     const id = toast.loading('Memeriksa status terakhir...')
                     await syncPaymentStatus(transaction.orderId)
