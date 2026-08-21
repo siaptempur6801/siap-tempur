@@ -1,5 +1,11 @@
 import { expect, test, type Page } from '@playwright/test'
-import { freshDisposableTkaSession, readOwnTkaLearningProjection, type DisposableTkaSession } from '../tka.ci'
+import {
+    freshDisposableTkaSession,
+    readOwnTkaLearningProjection,
+    readOwnTkaWrongQuestionState,
+    type DisposableTkaSession,
+} from '../tka.ci'
+import { readOwnTkaReadiness } from '../tka-readiness.ci'
 
 async function examCard(page: Page, title: string) {
     const card = page.locator('article').filter({
@@ -67,6 +73,34 @@ async function assertMiniProjection(session: DisposableTkaSession) {
     }
 }
 
+async function assertProgressDashboard(page: Page, session: DisposableTkaSession, examTitle: string) {
+    const readiness = await readOwnTkaReadiness(session)
+    const openWrong = await readOwnTkaWrongQuestionState(session)
+
+    const dashboardLink = page.getByRole('link', { name: 'Lihat Progress Dashboard', exact: true })
+    await expect(dashboardLink).toBeVisible()
+    await dashboardLink.click()
+    await page.waitForURL(/\/tka\/smp\/progress$/i)
+
+    await expect(page.getByRole('heading', { name: 'Progress Dashboard TKA SMP', exact: true })).toBeVisible()
+    const readinessCard = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Kesiapan TKA SMP', exact: true }) })
+    await expect(readinessCard).toBeVisible()
+    await expect(readinessCard).toContainText(`${readiness.readiness_percent.toFixed(1)}%`)
+
+    const completedCard = page.locator('article').filter({ hasText: 'Tryout selesai' }).first()
+    await expect(completedCard).toContainText('1')
+    const gapCard = page.locator('article').filter({ hasText: 'Gap terbuka' }).first()
+    await expect(gapCard).toContainText(String(openWrong.length))
+
+    await expect(page.getByRole('heading', { name: 'Progress per mapel', exact: true })).toBeVisible()
+    await expect(page.getByText('BIN', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('MAT', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya', exact: true })).toBeVisible()
+    await expect(page.getByText(examTitle, { exact: true })).toBeVisible()
+    await expect(page.getByText('Langkah berikutnya', { exact: true })).toBeVisible()
+    await assertNoDocumentOverflow(page)
+}
+
 async function finishMini(page: Page, expectedSubject: string) {
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
     await expect(page.getByText('TKA SMP · Mini Tryout')).toBeVisible()
@@ -123,8 +157,8 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await assertNoDocumentOverflow(page)
     })
 
-    test('Bahasa Indonesia: mobile resume, result, history, projection, error state, and one-free-attempt limit', async ({ page }) => {
-        test.setTimeout(120_000)
+    test('Bahasa Indonesia: mobile resume, result, history, projection, dashboard, error state, and one-free-attempt limit', async ({ page }) => {
+        test.setTimeout(150_000)
         const session = await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/smp')
@@ -140,6 +174,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await startButton.click()
         await finishMini(page, 'Bahasa Indonesia')
         await assertMiniProjection(session)
+        await assertProgressDashboard(page, session, 'Mini Tryout Bahasa Indonesia TKA SMP')
 
         await page.goto('/tka/smp')
         await assertHistoryOpensResult(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
