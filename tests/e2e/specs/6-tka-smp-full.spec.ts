@@ -297,4 +297,35 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     const expectedAfterRepeatWrong = expectedWeakestNodeIds(projectionAfterRepeatWrong)
     const storedRecommendationsAfterRepeatWrong = await readOwnStoredTkaRecommendations(session)
     expect(storedRecommendationsAfterRepeatWrong.map((row) => row.knowledge_node_id)).toEqual(expectedAfterRepeatWrong)
+
+    const focusAfterRepeatWrong = await readOwnTkaLearningFocus(session)
+    expect(focusAfterRepeatWrong.map((row) => row.knowledge_node_id)).toEqual(expectedAfterRepeatWrong)
+    const remedialAfterRepeatWrong = await readOwnTkaRemedial(session, attemptId)
+
+    // Final Milestone 3 closure: the consolidated dashboard must reflect the same
+    // persisted state after exam -> remedial -> Repeat Wrong, not a stale snapshot.
+    await page.goto(resultUrl)
+    const dashboardLink = page.getByRole('link', { name: 'Lihat Progress Dashboard', exact: true })
+    await expect(dashboardLink).toBeVisible()
+    await dashboardLink.click()
+    await page.waitForURL(/\/tka\/smp\/progress$/i)
+
+    await expect(page.getByRole('heading', { name: 'Progress Dashboard TKA SMP', exact: true })).toBeVisible()
+    const finalReadinessCard = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Kesiapan TKA SMP' }) })
+    await expect(finalReadinessCard).toContainText(`${readinessAfterRepeatWrong.readiness_percent.toFixed(1)}%`)
+
+    const completedCard = page.locator('article').filter({ hasText: 'Tryout selesai' }).first()
+    await expect(completedCard).toContainText('1')
+    const gapCard = page.locator('article').filter({ hasText: 'Gap terbuka' }).first()
+    await expect(gapCard).toContainText(String(openAfterRepeatWrong.length))
+    const remedialCard = page.locator('article').filter({ hasText: 'Remedial pending' }).first()
+    await expect(remedialCard).toContainText(String(remedialAfterRepeatWrong.session?.pending_items ?? 0))
+
+    await expect(page.getByRole('heading', { name: 'Progress per mapel', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya', exact: true })).toBeVisible()
+    if (focusAfterRepeatWrong[0]) {
+        await expect(page.getByText(focusAfterRepeatWrong[0].topic_name, { exact: true }).first()).toBeVisible()
+    }
+    await expect(page.getByText('Tryout Lengkap TKA SMP', { exact: true })).toBeVisible()
+    await expect(page.getByText('Langkah berikutnya', { exact: true })).toBeVisible()
 })
