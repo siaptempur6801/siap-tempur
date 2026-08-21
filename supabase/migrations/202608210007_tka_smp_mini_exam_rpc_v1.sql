@@ -355,9 +355,9 @@ set question_count=15,
       )
       else '{}'::jsonb
     end
-from public.exams e
-join public.subjects s on s.id=es.subject_id
+from public.exams e, public.subjects s
 where es.exam_id=e.id
+  and s.id=es.subject_id
   and e.slug in ('tka-smp-mini-bahasa-indonesia','tka-smp-mini-matematika');
 
 delete from public.exam_question_items eqi
