@@ -316,7 +316,7 @@ set duration_seconds=2100,
     question_order='randomized',
     result_visibility='instant',
     status='active',
-    blueprint_id=(select full.blueprint_id from public.exams full where full.slug='tka-smp-full'),
+    blueprint_id=(select full_exam.blueprint_id from public.exams full_exam where full_exam.slug='tka-smp-full'),
     description=case e.slug
       when 'tka-smp-mini-bahasa-indonesia' then 'Mini Tryout TKA SMP Bahasa Indonesia: 15 soal / 35 menit, blueprint internal 5 Tekstual + 5 Inferensial + 5 Evaluasi/Apresiasi. Satu percobaan gratis pada Core Product; Tempur Pass diaktifkan pada Milestone 4.'
       when 'tka-smp-mini-matematika' then 'Mini Tryout TKA SMP Matematika: 15 soal / 35 menit, blueprint internal 5 Pengetahuan/Pemahaman + 5 Aplikasi + 5 Penalaran. Satu percobaan gratis pada Core Product; Tempur Pass diaktifkan pada Milestone 4.'
