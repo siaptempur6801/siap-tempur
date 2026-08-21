@@ -208,7 +208,17 @@ export default function UniversalPracticeSessionClient({
             setFinishing(false)
             toast.error('Gagal menyelesaikan tryout.')
         }
-    }, [finishPractice, finishing, flushAnswers, resultPath, router, sessionId])
+    }, [finishing, flushAnswers, resultPath, router, sessionId])
+
+    const confirmAndFinish = useCallback(() => {
+        if (finishedRef.current || finishing) return
+        const unansweredCount = Math.max(0, questions.length - answeredQuestionIds.size)
+        const message = unansweredCount > 0
+            ? `Masih ada ${unansweredCount} soal belum dijawab. Yakin ingin mengakhiri tryout? Setelah dikirim, jawaban tidak dapat diubah.`
+            : 'Semua soal sudah dijawab. Yakin ingin mengakhiri tryout? Setelah dikirim, jawaban tidak dapat diubah.'
+        if (!window.confirm(message)) return
+        void finish(false)
+    }, [answeredQuestionIds.size, finish, finishing, questions.length])
 
     useEffect(() => {
         if (!endTime || finishing) {
@@ -325,7 +335,7 @@ export default function UniversalPracticeSessionClient({
                             <ChevronLeft size={18}/> Sebelumnya
                         </button>
                         {currentIndex === questions.length - 1 ? (
-                            <button type="button" disabled={finishing} onClick={() => void finish(false)} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-blue-700 px-5 py-2 font-black text-white disabled:opacity-50">
+                            <button type="button" disabled={finishing} onClick={confirmAndFinish} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-blue-700 px-5 py-2 font-black text-white disabled:opacity-50">
                                 <CheckCircle2 size={18}/>{finishing ? 'Menghitung...' : 'Selesai'}
                             </button>
                         ) : (
