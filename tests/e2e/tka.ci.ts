@@ -44,6 +44,24 @@ export type TkaWrongQuestionStateRow = {
     unanswered_count: number
 }
 
+export type TkaRemedialState = {
+    session: {
+        id: string
+        status: 'active' | 'completed'
+        total_items: number
+        completed_items: number
+        pending_items: number
+    } | null
+    items: Array<{
+        id: string
+        position: number
+        status: 'pending' | 'completed'
+        subject_id: string
+        question_id: string
+        response_type: string
+    }>
+}
+
 function required(name: string) {
     const value = process.env[name]
     if (!value) throw new Error(`${name} wajib diatur untuk TKA staging E2E.`)
@@ -178,6 +196,66 @@ export async function readOwnTkaWrongQuestionState(session: DisposableTkaSession
             unanswered_count: Number(row.unanswered_count ?? 0),
         }]
     }).filter((row) => row.id && row.question_id)
+}
+
+export async function readOwnTkaRemedial(
+    session: DisposableTkaSession,
+    sourceAttemptId: string,
+): Promise<TkaRemedialState> {
+    const supabase = await authenticatedEphemeralClient(session)
+    const { data, error } = await supabase.rpc('get_tka_smp_remedial_for_attempt', {
+        p_source_attempt_id: sourceAttemptId,
+    })
+    if (error) throw error
+
+    const payload = (data && typeof data === 'object' && !Array.isArray(data))
+        ? data as Record<string, unknown>
+        : {}
+    const rawSession = payload.session && typeof payload.session === 'object' && !Array.isArray(payload.session)
+        ? payload.session as Record<string, unknown>
+        : null
+    const rawItems = Array.isArray(payload.items) ? payload.items : []
+
+    const parsedSession = rawSession ? {
+        id: String(rawSession.id ?? ''),
+        status: String(rawSession.status ?? 'active') as 'active' | 'completed',
+        total_items: Number(rawSession.total_items ?? 0),
+        completed_items: Number(rawSession.completed_items ?? 0),
+        pending_items: Number(rawSession.pending_items ?? 0),
+    } : null
+
+    const items = rawItems.flatMap((value) => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return []
+        const row = value as Record<string, unknown>
+        const snapshot = row.question_snapshot && typeof row.question_snapshot === 'object' && !Array.isArray(row.question_snapshot)
+            ? row.question_snapshot as Record<string, unknown>
+            : {}
+        const question = snapshot.question && typeof snapshot.question === 'object' && !Array.isArray(snapshot.question)
+            ? snapshot.question as Record<string, unknown>
+            : {}
+        const options = Array.isArray(snapshot.options) ? snapshot.options : []
+        for (const optionValue of options) {
+            if (!optionValue || typeof optionValue !== 'object' || Array.isArray(optionValue)) continue
+            const option = optionValue as Record<string, unknown>
+            if ('is_correct' in option || 'score' in option) {
+                throw new Error('Sanitized remedial RPC leaked answer-key fields.')
+            }
+        }
+        if (Array.isArray(snapshot.explanations) && snapshot.explanations.length > 0) {
+            throw new Error('Sanitized remedial RPC leaked explanation before review.')
+        }
+
+        return [{
+            id: String(row.id ?? ''),
+            position: Number(row.position ?? 0),
+            status: String(row.status ?? 'pending') as 'pending' | 'completed',
+            subject_id: String(row.subject_id ?? ''),
+            question_id: String(row.question_id ?? ''),
+            response_type: String(question.question_type ?? 'single_choice'),
+        }]
+    }).filter((row) => row.id && row.question_id && row.subject_id && row.position > 0)
+
+    return { session: parsedSession?.id ? parsedSession : null, items }
 }
 
 export async function freshDisposableTkaSession(page: Page): Promise<DisposableTkaSession> {
