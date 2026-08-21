@@ -106,27 +106,25 @@ export async function readOwnTkaLearningProjection(session: DisposableTkaSession
         throw authError ?? new Error('Disposable TKA learner auth mismatch while reading learning projection.')
     }
 
-    try {
-        const [knowledgeResult, subjectResult] = await Promise.all([
-            supabase
-                .from('user_knowledge_progress')
-                .select('knowledge_node_id, attempted_questions, correct_questions, accuracy, average_score, mastery_score, mastery_level')
-                .eq('user_id', session.userId),
-            supabase
-                .from('user_subject_progress')
-                .select('subject_id, attempts, questions_answered, accuracy, mastery_score')
-                .eq('user_id', session.userId),
-        ])
+    const [knowledgeResult, subjectResult] = await Promise.all([
+        supabase
+            .from('user_knowledge_progress')
+            .select('knowledge_node_id, attempted_questions, correct_questions, accuracy, average_score, mastery_score, mastery_level')
+            .eq('user_id', session.userId),
+        supabase
+            .from('user_subject_progress')
+            .select('subject_id, attempts, questions_answered, accuracy, mastery_score')
+            .eq('user_id', session.userId),
+    ])
 
-        if (knowledgeResult.error) throw knowledgeResult.error
-        if (subjectResult.error) throw subjectResult.error
+    if (knowledgeResult.error) throw knowledgeResult.error
+    if (subjectResult.error) throw subjectResult.error
 
-        return {
-            knowledge: (knowledgeResult.data ?? []) as TkaLearningProjection['knowledge'],
-            subjects: (subjectResult.data ?? []) as TkaLearningProjection['subjects'],
-        }
-    } finally {
-        await supabase.auth.signOut().catch(() => undefined)
+    // This client is ephemeral (no persisted session), so do not call the default
+    // global signOut here: that would revoke the browser session used by Playwright.
+    return {
+        knowledge: (knowledgeResult.data ?? []) as TkaLearningProjection['knowledge'],
+        subjects: (subjectResult.data ?? []) as TkaLearningProjection['subjects'],
     }
 }
 
