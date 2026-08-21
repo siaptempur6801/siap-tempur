@@ -19,6 +19,31 @@ async function goToLastQuestion(page: import('@playwright/test').Page) {
     await expect(page.getByText('Soal 30 / 30')).toBeVisible()
 }
 
+async function submitReviewAndWait(
+    page: import('@playwright/test').Page,
+    correct: import('@playwright/test').Locator,
+    wrong: import('@playwright/test').Locator,
+) {
+    const reviewButton = page.getByRole('button', { name: /Periksa jawaban|Periksa lagi/i })
+    await expect(reviewButton).toBeEnabled()
+
+    const actionResponse = page.waitForResponse((response) => (
+        response.request().method() === 'POST' &&
+        Boolean(response.request().headers()['next-action'])
+    ), { timeout: 15_000 })
+
+    await reviewButton.click()
+    await actionResponse
+
+    await expect.poll(async () => {
+        if (await correct.isVisible()) return 'correct'
+        if (await wrong.isVisible() && await reviewButton.isVisible() && await reviewButton.isEnabled()) return 'wrong-ready'
+        return 'pending'
+    }, { timeout: 15_000 }).not.toBe('pending')
+
+    return correct.isVisible()
+}
+
 async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/test').Page) {
     await expect(page.getByText('TKA SMP · Mode Ulang Soal Salah')).toBeVisible()
     await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
@@ -31,15 +56,11 @@ async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/t
 
     const correct = page.getByText('Benar! Soal ini sudah dituntaskan.', { exact: true })
     const wrong = page.getByText('Belum tepat. Pilih jawaban lain lalu coba lagi.', { exact: true })
-    const feedback = page.getByText(/^(Benar! Soal ini sudah dituntaskan\.|Belum tepat\. Pilih jawaban lain lalu coba lagi\.)$/)
 
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
         await optionButtons.nth(index).click()
-        await page.getByRole('button', { name: /Periksa jawaban|Periksa lagi/i }).click()
-        await expect(feedback).toBeVisible({ timeout: 15_000 })
-
-        if (await correct.isVisible()) {
+        if (await submitReviewAndWait(page, correct, wrong)) {
             resolved = true
             break
         }
@@ -65,14 +86,11 @@ async function resolveSingleChoiceRemedialAtPosition(
 
     const correct = page.getByText('Benar! Evidence mastery sudah diperbarui.', { exact: true })
     const wrong = page.getByText('Belum tepat. Pelajari lagi pilihannya lalu coba ulang.', { exact: true })
-    const feedback = page.getByText(/^(Benar! Evidence mastery sudah diperbarui\.|Belum tepat\. Pelajari lagi pilihannya lalu coba ulang\.)$/)
 
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
         await optionButtons.nth(index).click()
-        await page.getByRole('button', { name: /Periksa jawaban|Periksa lagi/i }).click()
-        await expect(feedback).toBeVisible({ timeout: 15_000 })
-        if (await correct.isVisible()) {
+        if (await submitReviewAndWait(page, correct, wrong)) {
             resolved = true
             break
         }
