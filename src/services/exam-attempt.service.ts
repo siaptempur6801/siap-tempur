@@ -97,6 +97,10 @@ function practiceKindForConfiguredExam(examType: CanonicalExamType): StartInput[
     )
 }
 
+function accessType(exam: ResolvedExam) {
+    return exam.accessType.trim().toUpperCase()
+}
+
 export class ExamAttemptService {
     async startMiniTryout(input: ContextualPracticeInput & { userId: string; subjectCode: string; questionCount: number }) {
         const context = resolveContext(input.context)
@@ -197,14 +201,17 @@ export class ExamAttemptService {
             return { attemptId: existing.id, resumed: true }
         }
 
-        if (exam.attemptLimit !== null) {
-            const used = await attemptRepository.countAttempts(input.userId, exam.id)
-            if (used >= exam.attemptLimit) {
-                throw new PracticeDomainError('ATTEMPT_LIMIT_REACHED', 'Exam attempt limit reached')
-            }
+        const freemium = accessType(exam) === 'FREEMIUM'
+        let usedAttempts: number | null = null
+        if (freemium || exam.attemptLimit !== null) {
+            usedAttempts = await attemptRepository.countAttempts(input.userId, exam.id)
         }
 
-        await this.assertAccess(input.userId, exam)
+        if (!freemium && exam.attemptLimit !== null && (usedAttempts ?? 0) >= exam.attemptLimit) {
+            throw new PracticeDomainError('ATTEMPT_LIMIT_REACHED', 'Exam attempt limit reached')
+        }
+
+        await this.assertAccess(input.userId, exam, usedAttempts)
 
         let questions
         try {
@@ -252,18 +259,41 @@ export class ExamAttemptService {
         return { attemptId: attempt.id, resumed: false }
     }
 
-    private async assertAccess(userId: string, exam: ResolvedExam) {
-        if (exam.requiredFeatureId) {
-            const admin = await createV2AdminClient()
-            const { data, error } = await admin
-                .from('entitlements')
-                .select('id, starts_at, expires_at, usage_limit, usage_count')
-                .eq('user_id', userId)
-                .eq('feature_id', exam.requiredFeatureId)
-                .in('status', ['ACTIVE', 'active'])
-            if (error) throw error
+    private async findUsableEntitlement(userId: string, featureId: string) {
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('entitlements')
+            .select('id, starts_at, expires_at, usage_limit, usage_count')
+            .eq('user_id', userId)
+            .eq('feature_id', featureId)
+            .in('status', ['ACTIVE', 'active'])
+        if (error) throw error
+        return ((data ?? []) as EntitlementRow[]).find(isEntitlementUsable) ?? null
+    }
 
-            const activeEntitlement = ((data ?? []) as EntitlementRow[]).find(isEntitlementUsable)
+    private async assertAccess(userId: string, exam: ResolvedExam, usedAttempts: number | null = null) {
+        if (accessType(exam) === 'FREEMIUM') {
+            if (!exam.requiredFeatureId) {
+                throw new PracticeDomainError(
+                    'EXAM_CONFIGURATION_ERROR',
+                    'Freemium exam must define required_feature_id',
+                )
+            }
+
+            const activeEntitlement = await this.findUsableEntitlement(userId, exam.requiredFeatureId)
+            if (!activeEntitlement) {
+                const freeAttemptLimit = exam.attemptLimit ?? 1
+                const used = usedAttempts ?? await attemptRepository.countAttempts(userId, exam.id)
+                if (used >= freeAttemptLimit) {
+                    throw new PracticeDomainError(
+                        'ENTITLEMENT_REQUIRED',
+                        'Tempur Pass is required after the free attempt quota is used',
+                        { freeAttemptLimit, usedAttempts: used },
+                    )
+                }
+            }
+        } else if (exam.requiredFeatureId) {
+            const activeEntitlement = await this.findUsableEntitlement(userId, exam.requiredFeatureId)
             if (!activeEntitlement) {
                 throw new PracticeDomainError('ENTITLEMENT_REQUIRED', 'Active entitlement is required for this exam')
             }
