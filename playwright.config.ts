@@ -4,6 +4,7 @@ const hasParticipantCredentials = Boolean(
   process.env.E2E_PARTICIPANT_EMAIL && process.env.E2E_PARTICIPANT_PASSWORD,
 );
 const tkaStagingE2EEnabled = process.env.E2E_TKA_STAGING === '1';
+const contentReviewStagingE2EEnabled = process.env.E2E_CONTENT_REVIEW_STAGING === '1';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -29,6 +30,7 @@ export default defineConfig({
         /.*\.cleanup\.ts/,
         /.*3-dashboard\.spec\.ts/,
         /.*6-tka-smp-full\.spec\.ts/,
+        /.*7-content-review-workflow\.spec\.ts/,
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -71,6 +73,28 @@ export default defineConfig({
           {
             name: 'tka-cleanup',
             testMatch: /.*tka\.cleanup\.ts/,
+          },
+        ]
+      : []),
+    ...(contentReviewStagingE2EEnabled
+      ? [
+          {
+            name: 'content-review-setup',
+            testMatch: /.*content-review\.setup\.ts/,
+            teardown: 'content-review-cleanup',
+          },
+          {
+            name: 'chromium-content-review-staging',
+            testMatch: /.*7-content-review-workflow\.spec\.ts/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: { cookies: [], origins: [] },
+            },
+            dependencies: ['content-review-setup'],
+          },
+          {
+            name: 'content-review-cleanup',
+            testMatch: /.*content-review\.cleanup\.ts/,
           },
         ]
       : []),

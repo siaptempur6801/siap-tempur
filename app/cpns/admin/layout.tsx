@@ -28,21 +28,27 @@ export default async function AdminRootLayout({
     const authorization = await authorizationService.getAuthorizationForUser(user.id)
     const permissions = new Set(authorization.permissions)
     const isArticleRoute = pathname.startsWith('/cpns/admin/articles')
-    const canAccessArticles = [
+    const isReviewRoute = pathname.startsWith('/cpns/admin/review')
+    const contentPermissions = [
         PERMISSIONS.CONTENT_READ,
         PERMISSIONS.CONTENT_CREATE,
         PERMISSIONS.CONTENT_UPDATE,
         PERMISSIONS.CONTENT_REVIEW,
         PERMISSIONS.CONTENT_PUBLISH,
+    ]
+    const canAccessArticles = contentPermissions.some((permission) => permissions.has(permission))
+    const canAccessReview = [
+        ...contentPermissions,
+        PERMISSIONS.QUESTION_MANAGE,
     ].some((permission) => permissions.has(permission))
     const canAccessAdmin = permissions.has(PERMISSIONS.ADMIN_ACCESS)
 
-    if (!(canAccessAdmin || (isArticleRoute && canAccessArticles))) {
+    if (!(canAccessAdmin || (isArticleRoute && canAccessArticles) || (isReviewRoute && canAccessReview))) {
         redirect('/cpns/dashboard')
     }
 
     if (!canAccessAdmin && pathname === '/cpns/admin') {
-        redirect('/cpns/admin/articles')
+        redirect(canAccessReview ? '/cpns/admin/review' : '/cpns/admin/articles')
     }
 
     const { data: profile } = await supabase
@@ -56,6 +62,7 @@ export default async function AdminRootLayout({
             user={user}
             profile={profile}
             role={authorization.roles[0] || 'user'}
+            permissions={authorization.permissions}
             signoutAction={signout}
         >
             {children}

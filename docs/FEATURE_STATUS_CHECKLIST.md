@@ -1,20 +1,20 @@
 # Siap Tempur — Feature Status Checklist
 
-> **Branch:** `feat/schema-v2`  
+> **Branch target:** `feat/schema-v2`  
 > **Last audited:** 2026-08-21  
 > **Primary staging Supabase:** `lpgrivowdcepcxradavu`  
 > **Production Supabase:** `llnttutwhtvxtdktiizo`  
-> **Production status:** **NO-GO** sampai checklist cutover production selesai dan ada approval eksplisit.
+> **Production status:** **NO-GO** sampai production cutover checklist selesai dan ada approval eksplisit.
 
-Dokumen ini dipakai sebagai checklist kerja fitur Siap Tempur. Update checkbox dan catatan ketika implementasi berubah.
+Dokumen ini adalah master tracker fitur Siap Tempur. Gunakan `[x]` untuk selesai dan `[ ]` untuk pekerjaan yang belum selesai.
 
 ## Legend
 
-- [x] Selesai / sudah usable
+- [x] Selesai / usable
 - [ ] Belum selesai
-- 🟡 Parsial — fondasi/engine sudah ada, tetapi belum lengkap atau belum production-ready
-- 🔴 Belum dibangun sebagai fitur user-facing
-- 🚧 Ditahan sampai gate tertentu selesai
+- 🟡 Parsial / belum release-ready
+- 🔴 Belum dibangun sebagai produk lengkap
+- 🚧 Ditahan oleh gate lain
 
 ---
 
@@ -22,22 +22,16 @@ Dokumen ini dipakai sebagai checklist kerja fitur Siap Tempur. Update checkbox d
 
 - [x] Register email/password
 - [x] Login email/password
-- [x] Login Google OAuth
-- [x] Email verification
-- [x] Resend verification email
-- [x] Forgot password
-- [x] Reset password
-- [x] Change password
+- [x] Google OAuth
+- [x] Email verification + resend
+- [x] Forgot/reset/change password
 - [x] Sign out
 - [x] Profile user
-- [x] Track selection / activation CPNS-TKA
-- [x] User dapat memiliki track aktif
+- [x] Track selection / activation
 - [ ] Device management UI
-- [ ] Anti account-sharing / device limit
+- [ ] Anti account-sharing / device-limit enforcement
 
-## Catatan
-
-Auth utama sudah berjalan pada Schema V2. Device/session tables sudah tersedia, tetapi enforcement anti-sharing belum menjadi fitur lengkap.
+**Status:** ✅ core auth selesai.
 
 ---
 
@@ -50,513 +44,420 @@ Auth utama sudah berjalan pada Schema V2. Device/session tables sudah tersedia, 
 - [x] Track `TKA / SMP`
 - [x] Track `TKA / SMA`
 - [x] Subject per track
-- [x] `user_tracks`
-- [x] `user_track_preferences`
 - [x] Period / tahun ujian
 - [x] Exam types
 - [x] Exam blueprint engine
-- [x] Knowledge node taxonomy
-- [x] Knowledge node closure/path
-- [x] Dynamic catalog context untuk admin
+- [x] Knowledge taxonomy/path
+- [x] Dynamic Program → Track context
+- [x] Unified admin context untuk CPNS + TKA
+
+**Status:** ✅.
 
 ---
 
-# 3. CPNS / SKD Core
+# 3. Unified Admin Workspace
 
-## Question Bank
+Canonical admin sekarang menggunakan satu namespace global:
 
-- [x] TWK question bank
-- [x] TIU question bank
-- [x] TKP question bank
-- [x] Published CPNS bank tersedia di staging
+```text
+/admin
+├── content
+│   ├── questions
+│   ├── review
+│   └── articles
+├── assessment
+│   ├── exams
+│   └── events
+└── commerce
+    ├── products
+    └── orders/payments
+```
 
-## Drill
+- [x] `/admin`
+- [x] `/admin/content/questions`
+- [x] `/admin/content/review`
+- [x] `/admin/content/articles`
+- [x] `/admin/assessment/exams`
+- [x] `/admin/assessment/events`
+- [x] `/admin/commerce/products`
+- [x] `/admin/commerce`
+- [x] Program/track context switch
+- [x] Legacy `/cpns/admin/*` compatibility redirect
+- [x] Permission-aware navigation
+- [x] CPNS dan TKA memakai admin shell yang sama
 
-- [x] Drill TWK
-- [x] Drill TIU
-- [x] Drill TKP
+**Status:** ✅ core unified admin selesai.
 
-## Mini Tryout
+---
 
-- [x] Mini Tryout TWK
-- [x] Mini Tryout TIU
-- [x] Mini Tryout TKP
+# 4. Reviewer / Content Workspace — MILESTONE 1
 
-## Full Tryout
+## Queue & Filters
 
+- [x] Review Queue
+- [x] Filter program
+- [x] Filter track
+- [x] Filter subject
+- [x] Filter workflow status
+- [x] Filter review stage
+- [x] Filter reviewer
+- [x] Search soal
+
+## Authoring
+
+- [x] Create draft question
+- [x] Edit draft / revision
+- [x] `single_choice`
+- [x] `multiple_choice`
+- [x] `category`
+- [x] Options management
+- [x] Explanation
+- [x] Stimulus selection/preview
+- [x] Primary knowledge-node mapping
+- [x] Cognitive level
+- [x] Difficulty
+- [x] Estimated time
+- [x] Source reference
+- [x] Transactional `save_question_draft`
+- [x] Question version snapshot/history
+
+## Review Workflow
+
+- [x] Submit to Editorial Review
+- [x] Assign reviewer
+- [x] Editorial Review
+- [x] Academic Review
+- [x] Technical QA
+- [x] Approve
+- [x] Request Revision
+- [x] Reject
+- [x] Publish
+- [x] Reviewer notes
+- [x] Review rounds/history
+- [x] Self-review blocked
+- [x] Direct workflow bypass guarded
+- [x] Audit trail
+- [ ] Batch review management — future enhancement, bukan blocker Milestone 1
+
+## RBAC
+
+- [x] `CONTENT_EDITOR` least privilege
+- [x] `CONTENT_REVIEWER` least privilege
+- [x] Authenticated authorization RPC
+- [x] Reviewer/editor tidak membutuhkan full-admin access
+- [x] Normal workspace tidak bergantung pada browser service-role key
+
+## QA Gate
+
+- [x] Lint
+- [x] Typecheck
+- [x] Unit tests
+- [x] Security audit
+- [x] Build
+- [x] Existing E2E
+- [x] TKA SMP regression E2E
+- [x] Browser E2E author → reviewer → Editorial → Academic → Technical QA → Published
+- [x] Dedicated Content Review E2E sukses 3× berturut-turut pada commit identik
+- [x] Disposable CI users cleanup
+- [x] Disposable CI questions cleanup
+- [x] Staging cleanup verified: 0 CI content users / 0 CI content questions
+
+**Status:** **✅ CONTENT OPERATIONS COMPLETED — Milestone 1 COMPLETE.**
+
+---
+
+# 5. CPNS / SKD Core
+
+- [x] TWK/TIU/TKP question bank
+- [x] Drill TWK/TIU/TKP
+- [x] Mini Tryout TWK/TIU/TKP
 - [x] Full Tryout SKD
-- [x] TWK/TIU/TKP scoring
-- [x] Autosave jawaban
-- [x] Resume attempt
-- [x] Submit
-- [x] Result
-- [x] Pembahasan
-- [x] Riwayat tryout
+- [x] Autosave/resume/submit
+- [x] Scoring TWK/TIU/TKP
+- [x] Result + pembahasan
+- [x] Riwayat
 - [x] Ranking / leaderboard
 
-## Learning CPNS
+**Status:** ✅ exam core.
+
+---
+
+# 6. CPNS Learning
 
 - [x] Basic result/review
-- [x] Basic activity tracking
+- [x] Basic subject progress
+- [x] Basic daily activity
 - [x] Basic streak
-- [ ] Canonical V2 materials populated — 🟡
+- [ ] Canonical Schema V2 materials populated
 - [ ] Knowledge mastery engine
 - [ ] Readiness score
 - [ ] Recommendation engine
 - [ ] Automatic remedial
 - [ ] Structured wrong-question mastery
 
+**Status:** 🟡.
+
 ---
 
-# 4. CPNS Monetization
+# 7. CPNS Monetization
 
-## Token
-
-- [x] 1 Token Full Tryout
-- [x] 5 Token Full Tryout
-- [x] 10 Token Full Tryout
-- [x] Wallet
-- [x] Wallet transaction
+- [x] Token 1
+- [x] Token 5
+- [x] Token 10
+- [x] Wallet + wallet transaction
 - [x] Product wallet grant
+- [ ] `CPNS_PASS_30` activate
+- [ ] `CPNS_PASS_90` activate
 
-## Tempur Pass CPNS
-
-- [ ] Tempur Pass 30 hari activated — 🟡 product masih draft
-- [ ] Tempur Pass 90 hari activated — 🟡 product masih draft
+**Status:** token ✅, Tempur Pass CPNS 🟡.
 
 ---
 
-# 5. TKA Base Experience
+# 8. TKA Base Experience
 
 - [x] `/tka`
 - [x] `/tka/sd`
 - [x] `/tka/smp`
 - [x] `/tka/sma`
-- [x] Dynamic track context
 - [x] Track activation
-- [x] Generic TKA practice/exam renderer
+- [x] Generic TKA exam renderer
 - [x] `single_choice`
 - [x] `multiple_choice`
 - [x] `category`
 - [x] Stimulus support
 - [x] Math rendering
 
+**Status:** ✅ foundation.
+
 ---
 
-# 6. TKA SMP — Content & Blueprint
+# 9. TKA SMP Content & Blueprint
 
-## Official Structure
-
-- [x] TKA SMP 2026 period
+- [x] Period TKA SMP 2026
 - [x] Bahasa Indonesia mandatory
 - [x] Matematika mandatory
 - [x] Bahasa Inggris enrichment catalog
 - [x] IPA enrichment catalog
 - [x] Official blueprint record
-- [x] Bahasa Indonesia knowledge taxonomy
-- [x] Matematika knowledge taxonomy
-
-## Question Bank
-
-- [x] 150 Bahasa Indonesia approved
-- [x] 150 Matematika approved
-- [x] 300 approved total
-- [x] 300 current question version snapshots
-- [x] 0 pending review pada bank approved
+- [x] Knowledge taxonomy BIN + MAT
+- [x] 150 BIN approved
+- [x] 150 MAT approved
+- [x] 300 approved questions
+- [x] 300 current question-version snapshots
+- [x] 900 approved review-stage rows
 - [x] Exam eligibility guard
 
-## Bahasa Indonesia Balance
-
-- [x] Pemahaman Tekstual — 50
-- [x] Pemahaman Inferensial — 50
-- [x] Evaluasi & Apresiasi — 50
-
-## Matematika Balance
-
-- [x] Bilangan — 38
-- [x] Aljabar — 38
-- [x] Geometri & Pengukuran — 37
-- [x] Data & Peluang — 37
-- [x] Pengetahuan & Pemahaman — 50
-- [x] Aplikasi — 50
-- [x] Penalaran — 50
+**Status:** ✅.
 
 ---
 
-# 7. Content Review Workflow
-
-## Backend Workflow
-
-- [x] Draft
-- [x] Submitted
-- [x] Editorial Review
-- [x] Academic Review
-- [x] Technical QA
-- [x] Revision Required
-- [x] Reject
-- [x] Approve
-- [x] Publish
-- [x] Reviewer assignment
-- [x] Review rounds
-- [x] Version snapshot
-- [x] Self-review protection
-- [x] Direct workflow bypass guard
-- [x] Exam generator only accepts approved/published version
-
-## Current TKA SMP Review Audit
-
-- [x] Editorial approved — 300
-- [x] Academic approved — 300
-- [x] Technical QA approved — 300
-- [x] Total approved review rows — 900
-
-## Reviewer/Admin UI
-
-- [ ] Review Queue UI
-- [ ] Assign Reviewer UI
-- [ ] Editorial Review workspace
-- [ ] Academic Review workspace
-- [ ] Technical QA workspace
-- [ ] Revision request workflow UI
-- [ ] Reviewer history/timeline UI
-- [ ] Batch review management UI
-
-**Status:** backend ✅, reviewer workspace UI 🔴.
-
----
-
-# 8. TKA SMP Full Tryout
-
-## Exam Definition
+# 10. TKA SMP Full Tryout
 
 - [x] `tka-smp-full`
-- [x] 60 questions total
-- [x] 30 Bahasa Indonesia
-- [x] 30 Matematika
-- [x] 75 minutes Bahasa Indonesia
-- [x] 75 minutes Matematika
+- [x] 60 questions
+- [x] BIN 30 / 75 minutes
+- [x] MAT 30 / 75 minutes
 - [x] 150 minutes total
 - [x] Frozen/current question version
-- [x] No duplicate selected questions
-- [x] Blueprint-balanced generator
-- [x] Deterministic selection support
-
-## User-facing RPC
-
-- [x] `start_exam_attempt`
-- [x] `get_exam_attempt_state`
-- [x] `save_exam_answer`
-- [x] `complete_exam_section`
-- [x] `submit_exam_attempt`
-- [x] `get_exam_attempt_result`
-- [x] `get_exam_attempt_review`
-
-## Exam Player
-
-- [x] Pre-exam
-- [x] Start
-- [x] Single choice answer
-- [x] Multiple choice answer
-- [x] Category answer
-- [x] Mark/flag question
-- [x] Autosave
-- [x] Refresh/resume
-- [x] Question navigator
-- [x] Database-backed timer
-- [x] BIN → MAT sequential section transition
-- [x] Previous section lock
-- [x] Submit after section completion
-- [x] Early-submit backend guard
-- [x] Inactive-track backend guard
-
-## Result & Review
-
-- [x] Total score
-- [x] Score per subject
-- [x] Correct / wrong / unanswered
-- [x] Cognitive breakdown
-- [x] Knowledge breakdown
+- [x] Blueprint-balanced selection
+- [x] Start attempt
+- [x] Autosave answer
+- [x] Resume
+- [x] Section completion
+- [x] BIN → MAT transition
+- [x] Previous-section lock
+- [x] Submit guards
+- [x] Result
+- [x] Subject/cognitive/knowledge breakdown
 - [x] Weakest areas
-- [x] 60-question review
-- [x] User answer
-- [x] Correct answer
-- [x] Explanation
-- [x] Answer key hidden during active attempt
-- [x] Result/review denied before completion
+- [x] 60-question review + explanation
+- [x] Answer-key protection during active attempt
+- [x] Authenticated browser smoke
+- [x] Dedicated staging E2E
+- [x] TKA E2E regression green after Unified Admin work
 
-## QA
-
-- [x] Manual authenticated browser smoke
-- [x] Automated disposable-user browser E2E
-- [x] GitHub OIDC → staging Supabase E2E provisioning
-- [x] Disposable user cleanup
-- [x] Dedicated E2E success 3 consecutive runs
+**Status:** ✅.
 
 ---
 
-# 9. TKA SMP Mini Tryout
+# 11. TKA SMP Mini Tryout — MILESTONE 2
 
-- [x] Mini Bahasa Indonesia exam record exists
-- [x] Mini Matematika exam record exists
-- [ ] Activate Mini Bahasa Indonesia — currently draft
-- [ ] Activate Mini Matematika — currently draft
-- [ ] Final question distribution
-- [ ] Dedicated E2E Mini Bahasa Indonesia
-- [ ] Dedicated E2E Mini Matematika
+- [x] Mini Bahasa Indonesia exam record
+- [x] Mini Matematika exam record
+- [ ] Final blueprint Mini BIN
+- [ ] Final blueprint Mini MAT
+- [ ] Final question count/duration
+- [ ] Randomization + version lock verification
+- [ ] Activate Mini BIN
+- [ ] Activate Mini MAT
+- [ ] Autosave/resume verification
+- [ ] Result/pembahasan verification
+- [ ] Attempt-limit verification
+- [ ] Negative tests
+- [ ] Dedicated E2E BIN
+- [ ] Dedicated E2E MAT
+- [ ] Core TKA SMP navigation/history/empty/loading/error/mobile QA
 - [ ] Release to learners
 
-**Status:** 🟡.
+**Status:** 🟡 — **NEXT ACTIVE MILESTONE** setelah Milestone 1 merge.
 
 ---
 
-# 10. TKA SMP Tempur Pass
+# 12. TKA SMP Learning Loop — MILESTONE 3
 
-## Engine/UI
+- [ ] Knowledge mastery per node
+- [ ] Wrong-question state
+- [ ] Mode ulang soal salah
+- [ ] Automatic remedial
+- [ ] Weakest-topic learning flow
+- [ ] Readiness score V1
+- [ ] Rule-based recommendation V1
+- [ ] Progress dashboard
+- [ ] E2E exam → remedial → mastery update
+
+**Status:** 🔴/🟡 foundation only.
+
+---
+
+# 13. TKA SMP Monetization — MILESTONE 4
 
 - [x] TKA Pass package UI
 - [x] Midtrans Snap integration
-- [x] TKA pass checkout server action
+- [x] Checkout action
 - [x] Payment status sync
 - [x] Entitlement architecture
-
-## Product Activation
-
-- [x] `TKA_SMP_PASS_30` product record exists
-- [x] `TKA_SMP_PASS_90` product record exists
-- [ ] Set active price for 30-day pass
-- [ ] Set active price for 90-day pass
+- [x] `TKA_SMP_PASS_30` record
+- [x] `TKA_SMP_PASS_90` record
+- [ ] Final prices
 - [ ] Activate products
-- [ ] TKA SMP paid checkout E2E
-- [ ] TKA SMP entitlement expiry E2E
-- [ ] General production rollout
+- [ ] Paid checkout E2E
+- [ ] Expiry/access E2E
+- [ ] Renewal UX
 
-**Status:** 🟡 — intentionally separated from first free/full-exam rollout.
+**Status:** 🟡; intentionally deferred until learning/core product selesai.
 
 ---
 
-# 11. TKA SD
+# 14. TKA SD
 
-## Catalog
-
-- [x] SD track
-- [x] Subject catalog
-- [x] Question bank populated
-- [x] Published bank available
-
-## Exams
-
-- [x] Mini Bahasa Indonesia config
-- [x] Mini Matematika config
-- [x] Mini Bahasa Inggris config
-- [x] Full TKA SD config
-- [x] Full + Bahasa Inggris config
-
-## Monetization
-
-- [x] TKA SD Pass 30-day product active
-- [x] TKA SD Pass 90-day product active
-- [x] Prices configured
-
-## Remaining QA/Hardening
-
-- [ ] Revalidate official SD subject taxonomy/mandatory status
-- [ ] Apply formal blueprint quality audit equivalent to SMP
-- [ ] Move complete bank through canonical version/review workflow
+- [x] Track + subject catalog
+- [x] Question bank populated/published
+- [x] Mini BIN/MAT/BIG configs
+- [x] Full config
+- [x] Pass 30/90 products + prices
+- [ ] Revalidate official subject/mandatory structure
+- [ ] Blueprint-quality audit equivalent to SMP
+- [ ] Canonical version/review hardening
 - [ ] Dedicated TKA SD E2E
-- [ ] Answer-key/security audit equivalent to SMP
-
-**Status:** 🟡 — feature-rich, tetapi belum QA-complete seperti SMP.
-
----
-
-# 12. TKA SMA
-
-## Catalog
-
-- [x] SMA track
-- [x] Core subjects catalog
-- [x] Optional/elective subjects catalog
-
-## Product
-
-- [x] SMA pass product placeholders
-- [ ] Final official blueprint
-- [ ] Knowledge taxonomy
-- [ ] Question bank
-- [ ] Review workflow content
-- [ ] Mini Tryout
-- [ ] Full Tryout
-- [ ] Result QA
-- [ ] Tempur Pass price/activation
-- [ ] Dedicated E2E
-
-**Status:** 🔴 user-facing product belum dibangun; baru catalog/foundation.
-
----
-
-# 13. Result, Review & Learning Intelligence
-
-## Result Core
-
-- [x] Attempt scoring
-- [x] Subject score
-- [x] Review answer
-- [x] Explanation
-- [x] Result history
-
-## Progress/Intelligence
-
-- [x] Basic user subject progress
-- [x] Basic activity daily
-- [x] Basic streak
-- [ ] `user_knowledge_progress` engine
-- [ ] `user_readiness` engine
-- [ ] `user_question_state` behavior
-- [ ] `learning_recommendations` engine
-- [ ] Automatic remedial generation
-- [ ] `remedial_sessions` flow
-- [ ] `remedial_session_items` flow
-- [ ] Wrong-question mastery mode
-- [ ] Bookmark question UI
-- [ ] Personal question notes UI
-- [ ] Question statistics pipeline
-- [ ] Exam statistics pipeline
-
-**Status:** core result ✅, learning intelligence 🔴/🟡.
-
----
-
-# 14. Event / Tryout Akbar
-
-- [x] Event data model
-- [x] Event CRUD
-- [x] Event sessions
-- [x] Event exam relationship
-- [x] Event product/ticket linking
-- [x] Registration
-- [x] Payment
-- [x] Access control
-- [x] Attempt
-- [x] Scoring
-- [x] Live leaderboard
-- [x] Final event ranking
-- [x] Admin management
-- [x] Staging E2E purchase → registration → attempt → ranking
-
----
-
-# 15. Certificates
-
-- [x] Certificate action/code exists
-- [x] Certificate preview/download path exists
-- [x] Certificate verification capability exists
-- [ ] Canonical certificate templates populated
-- [ ] Canonical certificates populated
-- [ ] Full certificate generation E2E on Schema V2
+- [ ] Security/answer-key audit equivalent to SMP
 
 **Status:** 🟡.
 
 ---
 
-# 16. Payment & Commerce
+# 15. TKA SMA
 
-- [x] Products
-- [x] Product prices
-- [x] Orders
-- [x] Order items
+- [x] Track
+- [x] Core/optional subject catalog
+- [x] Pass product placeholders
+- [ ] Final official blueprint
+- [ ] Knowledge taxonomy
+- [ ] Question bank
+- [ ] Canonical review content
+- [ ] Mini Tryout
+- [ ] Full Tryout
+- [ ] Result QA
+- [ ] Monetization activation
+- [ ] Dedicated E2E
+
+**Status:** 🔴 user-facing product belum lengkap.
+
+---
+
+# 16. Event / Tryout Akbar
+
+- [x] Event CRUD
+- [x] Sessions
+- [x] Event-product linkage
+- [x] Registration
+- [x] Payment
+- [x] Access control
+- [x] Attempt + scoring
+- [x] Live/final ranking
+- [x] Admin management
+- [x] Staging E2E purchase → registration → attempt → ranking
+
+**Status:** ✅ core.
+
+---
+
+# 17. Payment & Commerce
+
+- [x] Products/prices
+- [x] Orders/items
 - [x] Payments
-- [x] Midtrans checkout
-- [x] Midtrans Snap
-- [x] Staging QRIS QA path
+- [x] Midtrans checkout/Snap
 - [x] Payment status sync
 - [x] Webhook architecture
 - [x] Idempotent fulfillment
 - [x] Entitlements
 - [x] Wallets
-- [x] Wallet transactions
-- [x] Product wallet grants
 - [x] Payment reconciliation cron
 - [ ] Refund user/admin workflow
 
+**Status:** ✅ core, refund pending.
+
 ---
 
-# 17. Voucher / Promotion V2
+# 18. Certificates
 
-## Schema
+- [x] Certificate code/action
+- [x] Preview/download route
+- [x] Verification capability
+- [ ] Canonical template data
+- [ ] Canonical generated certificate data
+- [ ] Full Schema V2 certificate E2E
 
-- [x] `promotions`
-- [x] `promotion_products`
-- [x] `promotion_redemptions`
+**Status:** 🟡.
 
-## Product Feature
+---
 
+# 19. Voucher / Promotion V2
+
+- [x] Promotions schema
+- [x] Promotion-products schema
+- [x] Promotion-redemptions schema
 - [ ] Promotion admin UI
-- [ ] Promotion validation engine
-- [ ] Voucher code redemption V2
-- [ ] Discount application to checkout
-- [ ] Redemption limit rules
-- [ ] Historical voucher migration strategy
-- [ ] Legacy voucher parity decision
+- [ ] Validation engine
+- [ ] Voucher redemption V2
+- [ ] Discount checkout application
+- [ ] Redemption-limit rules
+- [ ] Legacy migration/parity decision
 
-**Status:** 🔴 blocker production cutover unless explicitly retired.
-
----
-
-# 18. Operational Export V2
-
-- [ ] User export V2
-- [ ] Attempt/result export V2
-- [ ] Payment/order export V2
-- [ ] Event registration/ranking export V2
-- [ ] Question/content export V2
-- [ ] Replace legacy export dependencies
-
-**Status:** 🔴 production cutover blocker unless explicitly accepted as unavailable for first release.
+**Status:** 🔴 product incomplete; production cutover dependency unless explicitly retired.
 
 ---
 
-# 19. Admin Workspace V2
+# 20. Operational Export V2
 
-## Existing Core
+- [ ] User export
+- [ ] Attempt/result export
+- [ ] Payment/order export
+- [ ] Event export
+- [ ] Question/content export
+- [ ] Remove legacy export dependency
 
-- [x] Program/track context switch
-- [x] Product CRUD
-- [x] Price management
-- [x] Token grant management
-- [x] Event CRUD
-- [x] Event session management
-- [x] Event-product linkage
-- [x] Exam CRUD
-- [x] Exam section CRUD
-- [x] Question CRUD
-- [x] Question option management
-- [x] Orders view
-- [x] Payments view
-- [x] Permission enforcement
-
-## Missing Workspace Modules
-
-- [ ] Reviewer Workspace
-- [ ] RBAC user/role assignment UI
-- [ ] Promotion/Voucher manager
-- [ ] Organization/School manager
-- [ ] Notification manager
-- [ ] Feature flag manager
-- [ ] System settings UI
-- [ ] Advanced analytics dashboard
-- [ ] Operational export UI
+**Status:** 🔴 production cutover dependency unless explicitly deferred.
 
 ---
 
-# 20. RBAC
+# 21. RBAC
 
-## Backend
-
-- [x] Roles table
-- [x] Permissions table
+- [x] Roles
+- [x] Permissions
 - [x] Role-permission mapping
 - [x] User-role mapping
-- [x] Permission checks server-side
+- [x] Server-side permission checks
 - [x] `SUPER_ADMIN`
 - [x] `ADMIN`
 - [x] `CONTENT_EDITOR`
@@ -564,314 +465,104 @@ Auth utama sudah berjalan pada Schema V2. Device/session tables sudah tersedia, 
 - [x] `FINANCE`
 - [x] `SUPPORT`
 - [x] `SCHOOL_ADMIN`
+- [x] Content roles hardened to least privilege
+- [ ] User/role assignment management UI
+- [ ] Program/track scope management UI
 
-## Management UI
-
-- [ ] Role management UI
-- [ ] Permission matrix UI
-- [ ] User role assignment UI
-- [ ] User role audit/history UI
+**Status:** backend ✅, management UI 🟡.
 
 ---
 
-# 21. School / Organization / B2B
+# 22. Organizations / School / B2B
 
-## Schema Foundation
+- [x] Organizations/classes/licenses/assignment schema foundation
+- [ ] Organization manager UI
+- [ ] Member/class management UI
+- [ ] School licensing flow
+- [ ] Exam assignment flow
+- [ ] School reporting
+- [ ] B2B E2E
 
-- [x] `organizations`
-- [x] `organization_members`
-- [x] `classes`
-- [x] `class_members`
-- [x] `organization_licenses`
-- [x] `organization_exam_assignments`
-
-## Product Flow
-
-- [ ] School admin onboarding
-- [ ] Organization CRUD UI
-- [ ] Class CRUD UI
-- [ ] Student/member import
-- [ ] Assign exam to organization/class
-- [ ] Organization license management
-- [ ] School leaderboard
-- [ ] Class report
-- [ ] Organization analytics
-
-**Status:** 🔴 schema-only foundation.
+**Status:** 🔴 foundation only.
 
 ---
 
-# 22. Notifications
+# 23. Notifications
 
-## Schema
-
-- [x] `notifications`
-- [x] `notification_campaigns`
-- [x] `notification_deliveries`
-
-## Product
-
-- [ ] Notification inbox UI
+- [x] Notification schema foundation
+- [ ] Notification center
 - [ ] Campaign manager
-- [ ] Scheduled campaign delivery
-- [ ] Exam reminder
-- [ ] Payment notification
-- [ ] Learning/remedial notification
+- [ ] Delivery worker/integration
+- [ ] Preferences
+- [ ] E2E
 
 **Status:** 🔴.
 
 ---
 
-# 23. Reporting & Analytics
+# 24. Advanced Analytics & Learning Intelligence
 
-- [x] Basic dashboard metrics
-- [x] Basic ranking
-- [x] Attempt score breakdown
-- [ ] `generated_reports` pipeline
+- [x] Basic subject progress/activity/streak
+- [ ] Knowledge mastery pipeline
+- [ ] User readiness
+- [ ] Learning recommendation engine
+- [ ] Remedial sessions
+- [ ] Bookmark/note UX
 - [ ] Question statistics pipeline
 - [ ] Exam statistics pipeline
-- [ ] Admin analytics dashboard
-- [ ] User mastery trend
-- [ ] School/organization reporting
-- [ ] Scheduled reports
+- [ ] Generated reports
 
-**Status:** 🟡 basic analytics, 🔴 advanced reporting.
+**Status:** 🔴/🟡.
 
 ---
 
-# 24. Blog / Content Marketing
+# 25. Production Schema V2 Cutover — MILESTONE 5
 
-- [x] Blog routes
-- [x] Article detail
-- [x] Article admin
-- [x] Create article
-- [x] Edit article
+**Current status: 🚧 NO-GO.**
 
----
+Blocking gates:
 
-# 25. Security, CI & QA
-
-- [x] RLS on canonical public tables
-- [x] Server-side authorization pattern
-- [x] Answer-key protection for TKA SMP active exam
-- [x] Early-submit guard
-- [x] Inactive-track guard
-- [x] Security-definer hardening pattern
-- [x] Staging/production environment separation
-- [x] GitHub OIDC for staging E2E provisioning
-- [x] Disposable E2E user cleanup
-- [x] ESLint green
-- [x] TypeScript green
-- [x] Unit tests green
-- [x] Security dependency audit green
-- [x] Production build green
-- [x] Existing Playwright suite green
-- [x] TKA SMP dedicated E2E x3 green
-- [x] Latest `feat/schema-v2` Vercel deployment READY
-- [ ] Normalize `package-lock.json` drift
-- [ ] Remove/replace unrelated legacy server warnings in CI
-
----
-
-# 26. Production Schema V2 Cutover
-
-> **CURRENT STATUS: 🔴 NO-GO**
-
-Refer to:
-
-- `docs/schema-v2-cutover-runbook.md`
-- `docs/TKA_SMP_PRODUCTION_ROLLOUT.md`
-
-## Blocker B1 — Transition Migration
-
-- [ ] Generate production collision manifest
-- [ ] Design deterministic legacy table isolation/rename
-- [ ] Build versioned transition migration
-- [ ] Preserve production `auth.users.id`
-- [ ] Rehearse against production clone
-
-## Blocker B2 — Data Transformation
-
-- [ ] Profiles/users mapping
-- [ ] Questions/options mapping
-- [ ] Legacy sessions → exam attempts
-- [ ] Legacy answers → attempt answers
-- [ ] Subject scores → attempt scores
-- [ ] Transactions/payments mapping
-- [ ] Legacy token/quota → wallets
-- [ ] Event migration
-- [ ] Voucher migration/retirement decision
-- [ ] Leaderboard recalculation strategy
-- [ ] Learning/material mapping
-
-## Blocker B3 — Voucher / Promotion Parity
-
-- [ ] Implement V2 promotion flow **or** formally retire voucher redemption
-- [ ] Preserve voucher history
-
-## Blocker B4 — Operational Export
-
-- [ ] Implement V2 operational export **or** formally accept temporary unavailability
-
-## Blocker B5 — Production Environment Verification
-
-- [ ] Verify production Supabase ref
-- [ ] Verify production publishable key belongs to production project
-- [ ] Verify production service-role belongs to production project
-- [ ] Verify Midtrans production keys/endpoints
-- [ ] Verify OAuth callback allow-list
-- [ ] Verify production site URL
-- [ ] Verify Preview/Staging isolation
-
-## Blocker B6 — Backup & Rollback Rehearsal
-
-- [ ] Verify backup/PITR capability
-- [ ] Record current production deployment ID
-- [ ] Migration rehearsal on production clone
-- [ ] Reconciliation rehearsal
-- [ ] Simulate failed smoke test
-- [ ] Application rollback rehearsal
-- [ ] Database rollback/forward-fix rehearsal
-- [ ] Measure rollback time
-
-## Final Production Gates
-
-- [ ] All P0 blockers closed
-- [ ] Migration diff reviewed
-- [ ] No unexplained monetary mismatch
-- [ ] No identity mismatch
-- [ ] No score migration mismatch
-- [ ] Production smoke plan approved
-- [ ] Rollback owner assigned
-- [ ] Release owner assigned
-- [ ] Monitoring owner assigned
-- [ ] Explicit GO approval from project owner
-
----
-
-# 27. Priority Roadmap
-
-## P0 — Current Product Completion
-
-- [ ] Reviewer Workspace UI
-- [ ] TKA SMP Mini Tryout BIN
-- [ ] TKA SMP Mini Tryout MAT
-- [ ] TKA SMP Mini Tryout E2E
-- [ ] Final staging release-candidate smoke
-
-## P1 — Learning Platform V1
-
-- [ ] Knowledge mastery
-- [ ] Wrong-question mode
-- [ ] Automatic remedial
-- [ ] Learning recommendations
-- [ ] Readiness score
-- [ ] User bookmarks/notes
-
-## P1 — TKA SD Hardening
-
-- [ ] Official blueprint revalidation
-- [ ] Canonical review/version migration
-- [ ] Dedicated E2E
-
-## P1/P2 — TKA SMA
-
-- [ ] Official blueprint
-- [ ] Knowledge taxonomy
-- [ ] Question bank
-- [ ] Review workflow
-- [ ] Mini/Full Tryout
-- [ ] Dedicated E2E
-
-## P1 — Production Parity
-
-- [ ] Voucher/Promotion V2
-- [ ] Operational Export V2
 - [ ] Production transition migration
-- [ ] Production clone rehearsal
+- [ ] Legacy → Schema V2 data transformation mapping
+- [ ] Preserve user UUID/auth relationships
+- [ ] Question/attempt/score migration rehearsal
+- [ ] Payment/wallet/event migration rehearsal
+- [ ] Voucher/promotion parity or explicit retirement
+- [ ] Operational export parity or explicit accepted deferral
+- [ ] Production environment verification
+- [ ] Backup/PITR verification
+- [ ] Rollback rehearsal
+- [ ] Production-clone rehearsal
+- [ ] Financial/data reconciliation
+- [ ] Explicit final GO approval
 
-## P2 — Growth / B2B
-
-- [ ] School/organization workspace
-- [ ] Notification campaigns
-- [ ] Advanced reporting
-- [ ] Certificate canonical data flow
-- [ ] Device/account-sharing controls
-
----
-
-# 28. Quick Launch Checklist — TKA SMP Only
-
-Jika targetnya meluncurkan **TKA SMP saja**, tidak perlu menunggu TKA SMA, School/B2B, Notifications, atau Advanced Reporting.
-
-## Product
-
-- [x] 300 approved bank
-- [x] Official TKA SMP full blueprint
-- [x] 60-question Full Tryout
-- [x] 30 BIN + 30 MAT
-- [x] 75 + 75 minute sections
-- [x] Attempt / autosave / resume
-- [x] Scoring
-- [x] Result
-- [x] Pembahasan
-- [x] Browser E2E
-- [x] Automated E2E x3
-- [ ] Optional: Mini Tryout before launch
-- [ ] Optional: Reviewer Workspace before team scales content
-
-## Production Safety
-
-- [ ] Production transition migration ready
-- [ ] Production clone rehearsal green
-- [ ] Production env verified
-- [ ] Backup/rollback verified
-- [ ] Internal production QA plan ready
-- [ ] Controlled cohort plan ready
-- [ ] Explicit production GO
+**Rule:** production Supabase dan `main` tidak boleh disentuh sebelum gate ini selesai dan ada approval eksplisit.
 
 ---
 
-# 29. Current High-Level Status
+# Milestone Summary
 
-| Area | Status |
-| --- | --- |
-| Authentication | ✅ |
-| Multi-program architecture | ✅ |
-| CPNS exam core | ✅ |
-| CPNS event | ✅ |
-| CPNS payment/token | ✅ |
-| CPNS learning intelligence | 🟡 |
-| TKA SD | 🟡 |
-| TKA SMP Full Tryout | ✅ |
-| TKA SMP Mini Tryout | 🟡 |
-| TKA SMP Tempur Pass | 🟡 |
-| TKA SMA | 🔴 |
-| Result & review | ✅ |
-| Content review backend | ✅ |
-| Reviewer Workspace UI | 🔴 |
-| Admin core V2 | ✅ |
-| Payment/Midtrans | ✅ |
-| RBAC backend | ✅ |
-| Voucher/Promotion V2 | 🔴 |
-| Certificates | 🟡 |
-| Learning recommendation/remedial | 🔴 |
-| Organizations/Schools | 🔴 |
-| Notifications | 🔴 |
-| Advanced reporting | 🔴 |
-| Operational Export V2 | 🔴 |
-| CI / E2E / Vercel Preview | ✅ |
-| Production Schema V2 Cutover | 🔴 NO-GO |
+| Milestone | Status |
+|---|---|
+| 1. Reviewer / Content Workspace + Unified Admin | ✅ COMPLETE |
+| 2. TKA SMP Mini + Core Product | ⏭️ NEXT |
+| 3. TKA SMP Learning Loop V1 | ⏸️ LOCKED |
+| 4. TKA SMP Monetization | ⏸️ LOCKED |
+| 5. Schema V2 Production Cutover | 🚧 NO-GO / LOCKED |
+| 6. TKA SD Hardening | ⏸️ LOCKED |
+| 7. TKA SMA | ⏸️ LOCKED |
+| 8. Platform Expansion | ⏸️ LOCKED |
 
----
+## Current completion marker
 
-# 30. Update Rules
+```text
+MILESTONE 1 ✅ COMPLETE
+CONTENT OPERATIONS ✅ COMPLETED
+UNIFIED ADMIN CPNS + TKA ✅ COMPLETED
+```
 
-Saat mengubah checklist ini:
+Next engineering focus setelah merge Milestone 1:
 
-1. Centang `[x]` hanya setelah implementasi dan minimal smoke test lolos.
-2. Jangan menandai production-ready hanya karena tabel/schema sudah ada.
-3. Untuk fitur parsial, pecah menjadi subtask dan centang per komponen.
-4. Catat E2E/QA yang menjadi bukti untuk fitur kritikal.
-5. Jangan mengubah status production `NO-GO` sebelum seluruh blocker cutover direview.
-6. Production database tidak boleh dimodifikasi hanya untuk membuat checklist menjadi hijau.
+```text
+MILESTONE 2 — TKA SMP MINI TRYOUT + CORE PRODUCT
+```

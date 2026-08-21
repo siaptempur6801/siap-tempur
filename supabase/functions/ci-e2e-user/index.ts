@@ -3,9 +3,12 @@ import { createClient } from 'npm:@supabase/supabase-js@2.103.2'
 const EXPECTED_ISSUER = 'https://token.actions.githubusercontent.com'
 const EXPECTED_AUDIENCE = 'siap-tempur-staging-e2e'
 const EXPECTED_REPOSITORY = '8shagrid/siap-tempur'
-const EXPECTED_WORKFLOW_PREFIX = '8shagrid/siap-tempur/.github/workflows/tka-staging-e2e.yml@'
+const EXPECTED_WORKFLOW_PREFIXES = [
+  '8shagrid/siap-tempur/.github/workflows/tka-staging-e2e.yml@',
+  '8shagrid/siap-tempur/.github/workflows/content-review-staging-e2e.yml@',
+]
 const GITHUB_JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks'
-const CI_EMAIL = /^ci-tka-[a-zA-Z0-9-]{1,96}@example\.invalid$/
+const CI_EMAIL = /^ci-(?:tka|content-editor|content-reviewer)-[a-zA-Z0-9-]{1,96}@example\.invalid$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 type Claims = Record<string, unknown> & {
@@ -19,8 +22,11 @@ type Claims = Record<string, unknown> & {
   workflow_ref?: string
 }
 
+type UserKind = 'tka' | 'content_editor' | 'content_reviewer'
+
 type Body = {
   action?: 'provision' | 'cleanup'
+  kind?: UserKind
   email?: string
   password?: string
   runId?: string
@@ -83,7 +89,7 @@ async function verifyGithubOidc(token: string): Promise<Claims> {
   if (claims.repository !== EXPECTED_REPOSITORY) throw new Error('OIDC_REPOSITORY_INVALID')
   if (!claims.sub?.startsWith(`repo:${EXPECTED_REPOSITORY}:`)) throw new Error('OIDC_SUBJECT_INVALID')
   if (!['pull_request', 'workflow_dispatch'].includes(String(claims.event_name ?? ''))) throw new Error('OIDC_EVENT_INVALID')
-  if (!claims.workflow_ref?.startsWith(EXPECTED_WORKFLOW_PREFIX)) throw new Error('OIDC_WORKFLOW_INVALID')
+  if (!EXPECTED_WORKFLOW_PREFIXES.some((prefix) => claims.workflow_ref?.startsWith(prefix))) throw new Error('OIDC_WORKFLOW_INVALID')
   return claims
 }
 
@@ -110,22 +116,47 @@ function adminClient() {
   })
 }
 
+function expectedEmailPrefix(kind: UserKind) {
+  if (kind === 'content_editor') return 'ci-content-editor-'
+  if (kind === 'content_reviewer') return 'ci-content-reviewer-'
+  return 'ci-tka-'
+}
+
+async function assignContentRole(admin: ReturnType<typeof adminClient>, userId: string, roleCode: 'CONTENT_EDITOR' | 'CONTENT_REVIEWER') {
+  const { data: role, error: roleError } = await admin
+    .from('roles')
+    .select('id')
+    .eq('code', roleCode)
+    .maybeSingle()
+  if (roleError || !role) throw roleError ?? new Error(`${roleCode}_ROLE_NOT_FOUND`)
+
+  const { error: assignmentError } = await admin
+    .from('user_roles')
+    .insert({ user_id: userId, role_id: role.id, scope_type: null, scope_id: null })
+  if (assignmentError) throw assignmentError
+}
+
 async function provision(body: Body) {
+  const kind = body.kind ?? 'tka'
+  if (!['tka', 'content_editor', 'content_reviewer'].includes(kind)) return json({ error: 'CI_USER_KIND_INVALID' }, 400)
+
   const email = body.email?.trim().toLowerCase() ?? ''
   const password = body.password ?? ''
   const runId = body.runId?.trim() ?? ''
-  if (!CI_EMAIL.test(email)) return json({ error: 'CI_EMAIL_INVALID' }, 400)
+  if (!CI_EMAIL.test(email) || !email.startsWith(expectedEmailPrefix(kind))) return json({ error: 'CI_EMAIL_INVALID' }, 400)
   if (password.length < 20 || password.length > 160) return json({ error: 'CI_PASSWORD_INVALID' }, 400)
   if (!/^[a-zA-Z0-9._-]{1,128}$/.test(runId)) return json({ error: 'CI_RUN_ID_INVALID' }, 400)
 
   const admin = adminClient()
+  const fullName = kind === 'content_editor' ? 'CI Content Editor' : kind === 'content_reviewer' ? 'CI Content Reviewer' : 'CI TKA SMP'
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
     user_metadata: {
-      full_name: 'CI TKA SMP',
+      full_name: fullName,
       ci_e2e: true,
+      ci_kind: kind,
       github_run_id: runId,
     },
   })
@@ -133,37 +164,72 @@ async function provision(body: Body) {
 
   const userId = created.user.id
   try {
-    const { data: program, error: programError } = await admin
-      .from('programs')
-      .select('id')
-      .eq('code', 'TKA')
-      .maybeSingle()
-    if (programError || !program) throw programError ?? new Error('TKA_PROGRAM_NOT_FOUND')
+    if (kind === 'tka') {
+      const { data: program, error: programError } = await admin
+        .from('programs')
+        .select('id')
+        .eq('code', 'TKA')
+        .maybeSingle()
+      if (programError || !program) throw programError ?? new Error('TKA_PROGRAM_NOT_FOUND')
 
-    const { data: track, error: trackError } = await admin
-      .from('tracks')
-      .select('id')
-      .eq('program_id', program.id)
-      .eq('code', 'SMP')
-      .maybeSingle()
-    if (trackError || !track) throw trackError ?? new Error('TKA_SMP_TRACK_NOT_FOUND')
+      const { data: track, error: trackError } = await admin
+        .from('tracks')
+        .select('id')
+        .eq('program_id', program.id)
+        .eq('code', 'SMP')
+        .maybeSingle()
+      if (trackError || !track) throw trackError ?? new Error('TKA_SMP_TRACK_NOT_FOUND')
 
-    const { error: userTrackError } = await admin
-      .from('user_tracks')
-      .upsert({
-        user_id: userId,
-        track_id: track.id,
-        status: 'active',
-        target_year: 2026,
-        started_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,track_id' })
-    if (userTrackError) throw userTrackError
+      const { error: userTrackError } = await admin
+        .from('user_tracks')
+        .upsert({
+          user_id: userId,
+          track_id: track.id,
+          status: 'active',
+          target_year: 2026,
+          started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,track_id' })
+      if (userTrackError) throw userTrackError
+    } else if (kind === 'content_editor') {
+      await assignContentRole(admin, userId, 'CONTENT_EDITOR')
+    } else {
+      await assignContentRole(admin, userId, 'CONTENT_REVIEWER')
+    }
 
-    return json({ userId })
+    return json({ userId, kind })
   } catch (error) {
     await admin.auth.admin.deleteUser(userId).catch(() => undefined)
     throw error
+  }
+}
+
+async function cleanupContentEditorArtifacts(admin: ReturnType<typeof adminClient>, userId: string) {
+  const { data: questions, error: questionError } = await admin
+    .from('questions')
+    .select('id, question_code')
+    .eq('author_id', userId)
+    .like('question_code', 'CWS-%')
+  if (questionError) throw questionError
+  const questionIds = (questions ?? []).map((row) => String(row.id))
+  if (questionIds.length === 0) return
+
+  const [{ count: examRefs, error: examRefError }, { count: attemptRefs, error: attemptRefError }] = await Promise.all([
+    admin.from('exam_question_items').select('id', { count: 'exact', head: true }).in('question_id', questionIds),
+    admin.from('attempt_questions').select('id', { count: 'exact', head: true }).in('question_id', questionIds),
+  ])
+  if (examRefError) throw examRefError
+  if (attemptRefError) throw attemptRefError
+  if ((examRefs ?? 0) > 0 || (attemptRefs ?? 0) > 0) throw new Error('CI_CONTENT_CLEANUP_OPERATIONAL_REFERENCE')
+
+  const cleanupSteps = [
+    () => admin.from('content_reviews').delete().eq('entity_type', 'question').in('entity_id', questionIds),
+    () => admin.from('audit_logs').delete().eq('entity_type', 'question').in('entity_id', questionIds),
+    () => admin.from('questions').delete().in('id', questionIds),
+  ]
+  for (const step of cleanupSteps) {
+    const { error } = await step()
+    if (error) throw error
   }
 }
 
@@ -182,6 +248,13 @@ async function cleanup(body: Body) {
   const marked = user?.user_metadata?.ci_e2e === true
   const email = user?.email ?? ''
   if (!marked || !CI_EMAIL.test(email)) return json({ error: 'CI_USER_DELETE_FORBIDDEN' }, 403)
+
+  if (user?.user_metadata?.ci_kind === 'content_editor') {
+    await cleanupContentEditorArtifacts(admin, userId)
+  }
+
+  const { error: auditActorError } = await admin.from('audit_logs').delete().eq('actor_user_id', userId)
+  if (auditActorError) throw auditActorError
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId)
   if (deleteError) throw deleteError

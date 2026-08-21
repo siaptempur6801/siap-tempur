@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { ArrowLeft, BookOpen, Database, Shield } from 'lucide-react'
+import { ArrowLeft, BookOpen, ClipboardCheck, Database, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
 import { isAdminRole } from '@/lib/utils/roles'
@@ -24,14 +24,13 @@ interface AdminShellProps {
         role?: string | null
     } | null
     role: string
+    permissions: string[]
     signoutAction: () => Promise<{ success: boolean }>
 }
 
-const navItems = [
-    { href: '/cpns/admin', label: 'Schema V2 Workspace', mobileLabel: 'Workspace', icon: Database },
-    { href: '/cpns/admin/articles', label: 'Artikel', icon: BookOpen },
-]
-
+const workspaceItem = { href: '/cpns/admin', label: 'Schema V2 Workspace', mobileLabel: 'Workspace', icon: Database }
+const reviewItem = { href: '/cpns/admin/review', label: 'Review Soal', mobileLabel: 'Review', icon: ClipboardCheck }
+const articleItem = { href: '/cpns/admin/articles', label: 'Artikel', icon: BookOpen }
 const userDashboardItem = { href: '/cpns/dashboard', label: 'Dashboard User', icon: ArrowLeft }
 
 function AdminNavLink({ href, label, icon: Icon }: { href: string; label: string; icon: typeof Shield }) {
@@ -66,11 +65,18 @@ function AdminMobileNavLink({ href, label, mobileLabel, icon: Icon }: { href: st
     )
 }
 
-export default function AdminShell({ children, user, profile, role, signoutAction }: AdminShellProps) {
+export default function AdminShell({ children, user, profile, role, permissions, signoutAction }: AdminShellProps) {
     const displayName = profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email || 'Admin'
     const isFullAdmin = isAdminRole(role)
-    const visibleNavItems = isFullAdmin ? navItems : navItems.filter((item) => item.href === '/cpns/admin/articles')
-    const roleLabel = isFullAdmin ? 'Admin' : 'Writer'
+    const permissionSet = new Set(permissions)
+    const canReviewWorkspace = ['content.read', 'content.create', 'content.update', 'content.review', 'content.publish', 'question.manage'].some((permission) => permissionSet.has(permission))
+    const canArticles = ['content.read', 'content.create', 'content.update', 'content.review', 'content.publish'].some((permission) => permissionSet.has(permission))
+    const visibleNavItems = [
+        ...(isFullAdmin ? [workspaceItem] : []),
+        ...(canReviewWorkspace ? [reviewItem] : []),
+        ...(canArticles ? [articleItem] : []),
+    ]
+    const roleLabel = isFullAdmin ? 'Admin' : permissionSet.has('content.review') ? 'Reviewer' : 'Writer'
 
     return (
         <div className="flex h-screen overflow-hidden bg-[#f8f8f6] font-body text-gray-950">
@@ -78,7 +84,7 @@ export default function AdminShell({ children, user, profile, role, signoutActio
                 <aside className="relative z-20 hidden h-full w-64 shrink-0 flex-col border-r-2 border-gray-900 bg-[#f8f8f6] shadow-[4px_0px_0px_0px_rgba(0,0,0,0.08)] md:flex">
                     <div className="pointer-events-none absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
                     <div className="relative z-10 shrink-0 p-6">
-                        <Link href="/cpns/admin" className="group flex flex-col items-start">
+                        <Link href={isFullAdmin ? '/cpns/admin' : canReviewWorkspace ? '/cpns/admin/review' : '/cpns/admin/articles'} className="group flex flex-col items-start">
                             <span className="text-xl font-handwriting font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span>
                             <span className="ml-1 -mt-1 text-xs font-handwriting font-bold text-gray-500">Schema V2 · SiapTempur</span>
                         </Link>
@@ -103,14 +109,14 @@ export default function AdminShell({ children, user, profile, role, signoutActio
 
                 <main className="relative min-h-0 flex-1 overflow-y-auto pb-24 md:pb-0">
                     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b-2 border-gray-900 bg-[#f8f8f6]/90 px-6 shadow-sm backdrop-blur-md md:hidden">
-                        <Link href="/cpns/admin" className="group flex flex-col items-start"><span className="text-lg font-handwriting font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span><span className="text-[10px] font-bold text-gray-500">Schema V2</span></Link>
+                        <Link href={isFullAdmin ? '/cpns/admin' : canReviewWorkspace ? '/cpns/admin/review' : '/cpns/admin/articles'} className="group flex flex-col items-start"><span className="text-lg font-handwriting font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span><span className="text-[10px] font-bold text-gray-500">Schema V2</span></Link>
                         <div className="flex items-center gap-2"><Link href="/cpns/dashboard" className="rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-xs font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">User</Link><SidebarSignoutButton signoutAction={signoutAction} /></div>
                     </header>
                     <div className="mx-auto max-w-7xl p-6 md:p-8">{children}</div>
                 </main>
 
                 <nav className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-gray-900 bg-[#f8f8f6]/90 backdrop-blur-xl md:hidden">
-                    <div className="grid grid-cols-3 gap-1 px-2 py-2">
+                    <div className={cn('grid gap-1 px-2 py-2', visibleNavItems.length >= 3 ? 'grid-cols-4' : visibleNavItems.length === 2 ? 'grid-cols-3' : 'grid-cols-2')}>
                         {visibleNavItems.map((item) => <AdminMobileNavLink key={item.href} {...item} />)}
                         <AdminMobileNavLink {...userDashboardItem} />
                     </div>

@@ -1,143 +1,171 @@
 # Siap Tempur — Execution Roadmap
 
-> **Branch:** `feat/schema-v2`  
-> **Working mode:** milestone-by-milestone, one area must be **COMPLETE** before starting the next.  
-> **Production status:** **NO-GO** until production cutover gates are explicitly approved.  
+> **Branch target:** `feat/schema-v2`  
+> **Working mode:** satu milestone harus **COMPLETE** sebelum milestone berikutnya dimulai.  
+> **Production status:** **NO-GO** sampai production cutover gates selesai dan ada approval eksplisit.  
 > **Companion tracker:** `docs/FEATURE_STATUS_CHECKLIST.md`
 
-Dokumen ini mengatur **urutan pengerjaan**, bukan sekadar daftar fitur. Prinsip utamanya:
+Prinsip kerja utama:
 
 > **Selama milestone aktif belum memenuhi Definition of Done, jangan mulai milestone berikutnya.**
-
-Tujuannya agar pengerjaan Siap Tempur tidak berpindah-pindah antara payment, TKA SD, TKA SMA, remedial, admin, dan fitur lain sebelum satu area benar-benar selesai.
 
 ---
 
 # Milestone Order
 
 ```text
-1. REVIEWER / CONTENT WORKSPACE
+1. REVIEWER / CONTENT WORKSPACE + UNIFIED ADMIN
        ↓
    COMPLETE ✅
        ↓
 2. TKA SMP MINI + CORE PRODUCT
        ↓
-   COMPLETE ✅
+   COMPLETE
        ↓
 3. TKA SMP LEARNING LOOP V1
        ↓
-   COMPLETE ✅
+   COMPLETE
        ↓
 4. TKA SMP MONETIZATION
        ↓
-   COMPLETE ✅
+   COMPLETE
        ↓
 5. SCHEMA V2 PRODUCTION CUTOVER
        ↓
-   COMPLETE ✅
+   COMPLETE
        ↓
 6. TKA SD HARDENING
        ↓
-   COMPLETE ✅
+   COMPLETE
        ↓
 7. TKA SMA
        ↓
-   COMPLETE ✅
+   COMPLETE
        ↓
 8. PLATFORM EXPANSION
 ```
 
 ---
 
-# 1. Reviewer / Content Workspace
+# 1. Reviewer / Content Workspace + Unified Admin
 
-**Status:** [ ] COMPLETE
+**Status:** [x] **COMPLETE — 2026-08-21**
 
 ## Goal
 
-Membuat workflow authoring dan review soal dapat dipakai tim sepenuhnya dari UI tanpa SQL, Supabase Dashboard, atau intervensi developer.
+Membuat workflow authoring dan review soal dapat dipakai tim sepenuhnya dari UI tanpa SQL, Supabase Dashboard, atau intervensi developer, sekaligus menjadikan admin CPNS dan TKA satu workspace global dengan context Program → Track.
 
-## Checklist
+## Unified Admin
 
-- [ ] Review Queue
-- [ ] Filter program
-- [ ] Filter track
-- [ ] Filter subject
-- [ ] Filter workflow status
-- [ ] Filter review stage
-- [ ] Assign reviewer
-- [ ] Editorial Review UI
-- [ ] Academic Review UI
-- [ ] Technical QA UI
-- [ ] Approve
-- [ ] Request Revision
-- [ ] Reject
-- [ ] Publish
-- [ ] Reviewer notes
-- [ ] Question version history
-- [ ] Review round/history
-- [ ] Display stimulus
-- [ ] Display question options
-- [ ] Display explanation
-- [ ] Display knowledge node mapping
-- [ ] Permission `CONTENT_EDITOR`
-- [ ] Permission `CONTENT_REVIEWER`
-- [ ] Self-review blocked
-- [ ] Audit action/history
-- [ ] Browser E2E: author → reviewer → approved → published
-- [ ] Lint green
-- [ ] Typecheck green
-- [ ] Unit tests green
-- [ ] Build green
-- [ ] E2E green
+- [x] Canonical `/admin`
+- [x] `/admin/content/questions`
+- [x] `/admin/content/review`
+- [x] `/admin/content/articles`
+- [x] `/admin/assessment/exams`
+- [x] `/admin/assessment/events`
+- [x] `/admin/commerce/products`
+- [x] `/admin/commerce`
+- [x] Program → Track context
+- [x] CPNS dan TKA menggunakan admin shell yang sama
+- [x] Legacy `/cpns/admin/*` compatibility redirect
 
-## Definition of Done
+## Reviewer Workspace
 
-Milestone ini hanya boleh dianggap selesai jika:
+- [x] Review Queue
+- [x] Filter program
+- [x] Filter track
+- [x] Filter subject
+- [x] Filter workflow status
+- [x] Filter review stage
+- [x] Filter reviewer
+- [x] Search soal
+- [x] Create/edit draft
+- [x] Stimulus
+- [x] Question options
+- [x] Explanation
+- [x] Knowledge-node mapping
+- [x] Question version history
+- [x] Assign reviewer
+- [x] Editorial Review
+- [x] Academic Review
+- [x] Technical QA
+- [x] Approve
+- [x] Request Revision
+- [x] Reject
+- [x] Publish
+- [x] Reviewer notes
+- [x] Review round/history
+- [x] Self-review blocked
+- [x] Audit action/history
 
-> Tim dapat membuat soal dari draft sampai published **tanpa SQL, tanpa Supabase Dashboard, dan tanpa bantuan developer/tool eksternal**.
+## Security / RBAC
+
+- [x] `CONTENT_EDITOR` least privilege
+- [x] `CONTENT_REVIEWER` least privilege
+- [x] Authenticated authorization RPC
+- [x] Normal content workspace tidak membutuhkan browser service-role key
+- [x] Workflow write memakai validated RPC/actions
+
+## QA Gate
+
+- [x] Lint green
+- [x] Typecheck green
+- [x] Unit tests green
+- [x] Security audit green
+- [x] Build green
+- [x] Existing E2E green
+- [x] TKA SMP regression green
+- [x] Browser E2E: author → reviewer → Editorial → Academic → Technical QA → published
+- [x] Dedicated Content Review E2E success 3 consecutive executions on identical code
+- [x] Cleanup staging verified: 0 disposable content users
+- [x] Cleanup staging verified: 0 disposable content questions
+
+## Definition of Done Result
+
+> Tim dapat membuat soal dari draft sampai published melalui UI canonical tanpa SQL, tanpa Supabase Dashboard, dan tanpa bantuan developer/tool eksternal.
 
 Completion marker:
 
 ```text
+MILESTONE 1 ✅ COMPLETE
 CONTENT OPERATIONS ✅ COMPLETED
+UNIFIED ADMIN CPNS + TKA ✅ COMPLETED
 ```
 
-**Do not start Milestone 2 until this is complete.**
+**Milestone 2 sekarang boleh dimulai setelah PR Milestone 1 selesai di-merge dan staging preview terverifikasi.**
 
 ---
 
 # 2. TKA SMP Mini Tryout + Core Product
 
-**Status:** [ ] COMPLETE
+**Status:** [ ] COMPLETE — **NEXT ACTIVE MILESTONE**
 
 ## Goal
 
-Menutup seluruh gap user-facing TKA SMP setelah Full Tryout sehingga learner tidak menemukan dead-end dalam flow belajar/ujian dasar.
+Menutup seluruh gap user-facing TKA SMP setelah Full Tryout sehingga learner tidak menemukan dead-end dalam flow ujian dasar.
 
 ## Existing completed foundation
 
 - [x] TKA SMP Full Tryout
 - [x] 60 questions
-- [x] 30 Bahasa Indonesia
-- [x] 30 Matematika
-- [x] 75-minute BIN section
-- [x] 75-minute MAT section
+- [x] BIN 30 / 75 minutes
+- [x] MAT 30 / 75 minutes
 - [x] Attempt/resume
-- [x] Section transition
+- [x] Sequential sections
 - [x] Scoring
 - [x] Result
 - [x] Review/pembahasan
 - [x] Answer-key protection
 - [x] Automated browser E2E
+- [x] Canonical content/review operations dari Milestone 1
 
 ## Mini Tryout Bahasa Indonesia
 
-- [ ] Blueprint internal
+- [ ] Blueprint internal finalized
 - [ ] Question count finalized
 - [ ] Duration finalized
-- [ ] Randomization
-- [ ] Question-version lock
+- [ ] Randomization verified
+- [ ] Question-version lock verified
 - [ ] Attempt creation
 - [ ] Autosave
 - [ ] Refresh/resume
@@ -147,14 +175,15 @@ Menutup seluruh gap user-facing TKA SMP setelah Full Tryout sehingga learner tid
 - [ ] Attempt limit
 - [ ] Negative tests
 - [ ] Browser E2E
+- [ ] Activate/release
 
 ## Mini Tryout Matematika
 
-- [ ] Blueprint internal
+- [ ] Blueprint internal finalized
 - [ ] Question count finalized
 - [ ] Duration finalized
-- [ ] Randomization
-- [ ] Question-version lock
+- [ ] Randomization verified
+- [ ] Question-version lock verified
 - [ ] Attempt creation
 - [ ] Autosave
 - [ ] Refresh/resume
@@ -164,6 +193,7 @@ Menutup seluruh gap user-facing TKA SMP setelah Full Tryout sehingga learner tid
 - [ ] Attempt limit
 - [ ] Negative tests
 - [ ] Browser E2E
+- [ ] Activate/release
 
 ## Core learner UX
 
@@ -177,7 +207,7 @@ Menutup seluruh gap user-facing TKA SMP setelah Full Tryout sehingga learner tid
 
 ## Definition of Done
 
-> User dapat masuk ke TKA SMP, memilih Mini Tryout atau Full Tryout, menyelesaikan ujian, melihat hasil/pembahasan, kembali ke dashboard/history, dan mengulang flow tanpa dead-end atau intervensi admin.
+> User dapat masuk TKA SMP, memilih Mini Tryout atau Full Tryout, menyelesaikan ujian, melihat hasil/pembahasan, kembali ke history/dashboard, dan mengulang flow tanpa dead-end atau intervensi admin.
 
 Completion marker:
 
@@ -191,13 +221,11 @@ TKA SMP CORE PRODUCT ✅ COMPLETED
 
 # 3. TKA SMP Learning Loop V1
 
-**Status:** [ ] COMPLETE
+**Status:** [ ] COMPLETE — LOCKED
 
 ## Goal
 
-Mengubah Siap Tempur dari sekadar aplikasi tryout menjadi platform belajar adaptif sederhana.
-
-Target flow:
+Mengubah Siap Tempur dari sekadar tryout menjadi learning loop sederhana dan deterministic.
 
 ```text
 Selesai ujian
@@ -215,43 +243,20 @@ Rekomendasi latihan berikutnya
 
 ## Checklist
 
-- [ ] Knowledge mastery per knowledge node
-- [ ] Subject progress
+- [ ] Knowledge mastery per node
+- [ ] Subject progress hardening
 - [ ] Wrong-question state
 - [ ] Mode ulang soal salah
-- [ ] Automatic remedial session
+- [ ] Automatic remedial
 - [ ] Weakest topics
 - [ ] Readiness score V1
 - [ ] Rule-based recommendation V1
 - [ ] Progress dashboard
-- [ ] Remedial result
-- [ ] Mastery recalculation
-- [ ] Unanswered-question handling
-- [ ] Attempt-to-learning-event pipeline
-- [ ] Browser E2E: exam → weakness → remedial → mastery update
-- [ ] Negative tests
-- [ ] Lint/typecheck/test/build green
-
-## Scope guard
-
-Jangan implementasikan AI recommendation kompleks pada V1.
-
-V1 harus deterministic / rule-based agar:
-
-- mudah diuji,
-- mudah dijelaskan,
-- mudah direproduksi,
-- tidak membutuhkan banyak historical user data.
+- [ ] E2E exam → remedial → mastery update
 
 ## Definition of Done
 
-> Setiap hasil ujian menghasilkan tindakan belajar berikutnya secara otomatis dan perubahan progress/mastery dapat dilihat user.
-
-Completion marker:
-
-```text
-TKA SMP LEARNING LOOP V1 ✅ COMPLETED
-```
+> Setiap hasil ujian menghasilkan tindakan belajar berikutnya secara otomatis dan dapat dilacak.
 
 **Do not start Milestone 4 until this is complete.**
 
@@ -259,61 +264,32 @@ TKA SMP LEARNING LOOP V1 ✅ COMPLETED
 
 # 4. TKA SMP Monetization
 
-**Status:** [ ] COMPLETE
+**Status:** [ ] COMPLETE — LOCKED
 
 ## Goal
 
-Mengaktifkan monetisasi TKA SMP hanya setelah core product + learning loop stabil.
-
-Suggested access model:
-
-```text
-Free
-├── sample / diagnostic
-└── selected Mini Tryout
-
-Premium / Tempur Pass
-├── Mini Tryout unlimited
-├── Full Tryout
-├── Learning analysis
-├── Remedial
-└── History / progress
-```
+Mengaktifkan Tempur Pass hanya setelah Core Product dan Learning Loop siap.
 
 ## Checklist
 
-- [ ] Finalize TKA SMP Pass 30-day price
-- [ ] Finalize TKA SMP Pass 90-day price
-- [ ] Activate products
-- [ ] Product features mapping
-- [ ] Entitlement rules
-- [ ] Midtrans checkout
-- [ ] Payment pending handling
-- [ ] Payment paid handling
-- [ ] Payment failed handling
-- [ ] Payment expired handling
-- [ ] Idempotent webhook
-- [ ] Automatic entitlement fulfillment
-- [ ] Pass expiration
+- [ ] Final price 30-day
+- [ ] Final price 90-day
+- [ ] Product activation
+- [ ] Product-feature mapping
+- [ ] Entitlement issuance
+- [ ] Midtrans checkout QA
+- [ ] Pending/paid/failed/expired states
+- [ ] Idempotent webhook verification
+- [ ] Pass expiry enforcement
 - [ ] Access denied after expiry
-- [ ] Renewal flow
-- [ ] Admin orders view verified
-- [ ] Admin payments view verified
-- [ ] E2E: buy → pay → entitlement → access
-- [ ] E2E: no entitlement → denied
-- [ ] E2E: expired entitlement → denied
-- [ ] Refund policy decision
-- [ ] Operational monitoring
+- [ ] Renewal UX
+- [ ] Admin payment/order verification
+- [ ] Paid E2E
+- [ ] Expiry/no-entitlement E2E
 
 ## Definition of Done
 
-> User dapat membeli Tempur Pass sendiri, memperoleh akses otomatis setelah pembayaran valid, kehilangan akses ketika entitlement berakhir, dan seluruh lifecycle dapat dilacak admin tanpa intervensi database manual.
-
-Completion marker:
-
-```text
-TKA SMP MONETIZATION ✅ COMPLETED
-```
+> User dapat membeli pass sendiri dan akses premium berubah otomatis sesuai payment + entitlement lifecycle.
 
 **Do not start Milestone 5 until this is complete.**
 
@@ -321,26 +297,16 @@ TKA SMP MONETIZATION ✅ COMPLETED
 
 # 5. Schema V2 Production Cutover
 
-**Status:** [ ] COMPLETE
+**Status:** [ ] COMPLETE — **NO-GO / LOCKED**
 
-## Goal
+## Rule
 
-Migrasi production lama ke Schema V2 secara terkontrol tanpa kehilangan identity, attempt, score, payment, event, token/wallet, dan data historis penting.
-
-## Feature freeze rule
-
-Pada milestone ini:
-
-> **Jangan menambah fitur baru.**
-
-Fokus hanya pada migration, rehearsal, reconciliation, rollback, dan cutover.
-
-## Sequence
+Milestone ini merupakan proyek cutover tersendiri. Saat aktif, lakukan feature freeze; jangan mencampur penambahan fitur baru.
 
 ```text
 Feature Freeze
       ↓
-Clone Production
+Production Clone / Rehearsal
       ↓
 Transition Migration
       ↓
@@ -348,7 +314,7 @@ Transform Legacy Data
       ↓
 Reconciliation
       ↓
-Schema V2 App Smoke
+Schema V2 Smoke
       ↓
 Rollback Rehearsal
       ↓
@@ -357,309 +323,110 @@ GO / NO-GO
 Production Cutover
 ```
 
-## Checklist
+## Blocking Checklist
 
-- [ ] Production collision manifest
-- [ ] Transition migration package
-- [ ] Legacy → V2 mapping document
-- [ ] Preserve all required `auth.users.id`
-- [ ] Profiles migration
-- [ ] Roles migration
-- [ ] Questions/options migration
-- [ ] Attempts migration
-- [ ] Answer migration
-- [ ] Subject score migration
-- [ ] Payments/orders migration
-- [ ] Wallet/token migration
-- [ ] Event migration
-- [ ] Event registration migration
-- [ ] Voucher/promotion migration or retirement decision
-- [ ] Leaderboard recalculation
-- [ ] Material/learning data decision
-- [ ] Monetary reconciliation
-- [ ] User identity reconciliation
-- [ ] Attempt count reconciliation
-- [ ] Score reconciliation
-- [ ] Production env verification
-- [ ] OAuth redirect verification
-- [ ] Midtrans production env verification
+- [ ] Collision manifest
+- [ ] Legacy → V2 mapping
+- [ ] User UUID preservation
+- [ ] Questions migration rehearsal
+- [ ] Attempts migration rehearsal
+- [ ] Scores migration rehearsal
+- [ ] Payments migration rehearsal
+- [ ] Wallet/token migration rehearsal
+- [ ] Event migration rehearsal
+- [ ] Voucher/promotion parity decision
+- [ ] Operational export parity/deferral decision
+- [ ] Leaderboard reconciliation
+- [ ] Financial reconciliation
+- [ ] Production environment verification
 - [ ] Backup/PITR verification
-- [ ] Clone rehearsal
 - [ ] Rollback rehearsal
-- [ ] Measure rollback time
-- [ ] Internal production smoke plan
-- [ ] Monitoring owner
-- [ ] Release owner
-- [ ] Explicit final GO approval
+- [ ] Production-clone rehearsal
+- [ ] Final smoke test
+- [ ] Explicit GO approval
 
-## Definition of Done
-
-> Schema V2 berjalan di production, data legacy yang dipertahankan telah direkonsiliasi, rollback path telah direhearsal, CPNS existing tidak rusak, dan release dinyatakan GO secara eksplisit.
-
-Completion marker:
-
-```text
-SCHEMA V2 PRODUCTION CUTOVER ✅ COMPLETED
-```
-
-**Do not start Milestone 6 until production is stable after cutover.**
+**Production Supabase dan `main` tetap tidak boleh disentuh tanpa explicit GO.**
 
 ---
 
 # 6. TKA SD Hardening
 
-**Status:** [ ] COMPLETE
+**Status:** [ ] COMPLETE — LOCKED
 
-## Goal
-
-Menjadikan TKA SMP sebagai **gold standard** lalu membawa TKA SD ke kualitas arsitektur, content governance, QA, dan E2E yang sama.
-
-## Sequence
-
-```text
-TKA SMP = GOLD STANDARD
-            ↓
-Audit TKA SD
-            ↓
-Official Blueprint
-            ↓
-Taxonomy
-            ↓
-Content Review
-            ↓
-Exam Hardening
-            ↓
-Learning Loop
-            ↓
-Monetization
-            ↓
-E2E
-```
-
-## Checklist
-
-- [ ] Verify official TKA SD framework
-- [ ] Fix mandatory/enrichment subject taxonomy if needed
-- [ ] Official/internal blueprint separation
-- [ ] Knowledge taxonomy audit
-- [ ] Audit existing SD question bank
-- [ ] Question version snapshots
-- [ ] Review workflow for bank
-- [ ] Editorial review
-- [ ] Academic review
-- [ ] Technical QA
-- [ ] Mini Bahasa Indonesia
-- [ ] Mini Matematika
-- [ ] Other officially required SD subjects
-- [ ] Full Tryout
-- [ ] Result/review
-- [ ] Learning Loop V1
-- [ ] Tempur Pass validation
-- [ ] Payment E2E
-- [ ] Dedicated TKA SD browser E2E x3
-- [ ] Production smoke
+- [ ] Revalidate official SD structure
+- [ ] Final blueprint
+- [ ] Taxonomy audit
+- [ ] Existing bank audit
+- [ ] Canonical version/review workflow
+- [ ] Mini exam QA
+- [ ] Full exam QA
+- [ ] Learning loop adaptation
+- [ ] Monetization QA
+- [ ] Dedicated E2E
+- [ ] Security/answer-key audit
 
 ## Definition of Done
 
-> TKA SD memenuhi standar kualitas yang sama dengan TKA SMP dan bukan sekadar memakai exam generic yang kebetulan berjalan.
-
-Completion marker:
-
-```text
-TKA SD ✅ COMPLETED
-```
-
-**Do not start Milestone 7 until this is complete.**
+> TKA SD mencapai standar engineering/QA yang sama dengan TKA SMP.
 
 ---
 
 # 7. TKA SMA
 
-**Status:** [ ] COMPLETE
+**Status:** [ ] COMPLETE — LOCKED
 
-## Goal
-
-Membangun TKA SMA dari framework resmi sampai platform user-facing lengkap.
-
-## Sequence
-
-```text
-Official Framework
-      ↓
-Subject Architecture
-      ↓
-Student Elective Selection
-      ↓
-Blueprint
-      ↓
-Knowledge Taxonomy
-      ↓
-Content Bank
-      ↓
-Review
-      ↓
-Mini / Full Exam
-      ↓
-Result
-      ↓
-Learning
-      ↓
-Monetization
-      ↓
-E2E
-```
-
-## Checklist
-
-- [ ] Verify official framework
-- [ ] Mandatory subject architecture
-- [ ] Elective subject architecture
-- [ ] User elective selection UX
-- [ ] Track preference storage
-- [ ] Blueprint mandatory subjects
-- [ ] Blueprint elective subjects
-- [ ] Knowledge taxonomy per subject
-- [ ] Question authoring plan
-- [ ] Question bank targets per subject
-- [ ] Content review workflow
-- [ ] Version locking
-- [ ] Mini Tryout
-- [ ] Full Tryout
-- [ ] Elective composition rules
-- [ ] Scoring
+- [ ] Official framework
+- [ ] Core/elective architecture final
+- [ ] Student elective selection
+- [ ] Blueprint
+- [ ] Knowledge taxonomy
+- [ ] Content bank
+- [ ] Canonical review
+- [ ] Mini exams
+- [ ] Full exams
 - [ ] Result/review
-- [ ] Learning Loop V1
+- [ ] Learning loop
 - [ ] Monetization
-- [ ] Browser E2E
-- [ ] Production smoke
-
-## Scope guard
-
-Jangan langsung generate bank soal besar sebelum official blueprint, taxonomy, dan elective selection rules selesai.
+- [ ] Dedicated E2E
 
 ## Definition of Done
 
-> User SMA dapat memilih kombinasi mata pelajaran yang valid, mengerjakan ujian sesuai blueprint, melihat result/pembahasan/learning progress, dan menggunakan produk secara end-to-end.
-
-Completion marker:
-
-```text
-TKA SMA ✅ COMPLETED
-```
-
-**Do not start Milestone 8 until this is complete.**
+> TKA SMA usable end-to-end untuk subject wajib dan pilihan yang disepakati.
 
 ---
 
 # 8. Platform Expansion
 
-**Status:** [ ] COMPLETE
+**Status:** [ ] COMPLETE — LOCKED
 
-Fitur horizontal ini **ditunda** sampai CPNS + TKA core sudah stabil.
+Potential scope setelah core CPNS/TKA stabil:
 
-## Organization / School
-
-- [ ] Organization workspace
-- [ ] School admin
-- [ ] Organization member management
+- [ ] Organization / School
 - [ ] Class management
-- [ ] Student membership
-- [ ] Exam assignment
 - [ ] School leaderboard
-- [ ] Class report
-- [ ] Organization licensing
-
-## Notification
-
-- [ ] Notification center
-- [ ] Campaign management
-- [ ] Delivery tracking
-- [ ] Email/push strategy
-- [ ] User preferences
-
-## Reporting & Analytics
-
-- [ ] Advanced learner analytics
-- [ ] Question statistics
-- [ ] Exam statistics
+- [ ] Exam assignment
+- [ ] Notification center/campaigns
+- [ ] Advanced analytics
 - [ ] Generated reports
-- [ ] Admin reporting dashboard
-- [ ] Operational exports
-
-## Security / Device
-
-- [ ] Device management UI
-- [ ] Session management
-- [ ] Account-sharing detection
-- [ ] Concurrent-session policy
-- [ ] Abuse monitoring
-
-## Promotion / Voucher
-
-- [ ] Canonical promotion manager
-- [ ] Promo code redemption
-- [ ] Product eligibility
-- [ ] Usage limit
-- [ ] Redemption history
-
-## Certificate
-
-- [ ] Certificate template manager
-- [ ] Certificate issuance automation
-- [ ] Certificate verification
-- [ ] Certificate history
-
-## Platform Operations
-
-- [ ] Feature flag admin UI
-- [ ] System settings UI
-- [ ] Audit log viewer
-- [ ] Notification admin
-- [ ] Support tooling
-
----
-
-# Active Milestone
-
-Current recommended milestone:
-
-```text
-MILESTONE 1
-REVIEWER / CONTENT WORKSPACE
-```
-
-Rule:
-
-- [ ] Do not start TKA SMP Mini implementation before Reviewer Workspace reaches Definition of Done.
-- [ ] Update `docs/FEATURE_STATUS_CHECKLIST.md` after every completed milestone.
-- [ ] Update this file when scope/Definition of Done changes.
-- [ ] A milestone can only move to COMPLETE after lint, typecheck, tests, build, and relevant E2E are green.
+- [ ] Device management / anti-sharing
+- [ ] Voucher/promotion advanced features
+- [ ] Certificate platform hardening
+- [ ] Feature flag/settings dashboard
 
 ---
 
 # Completion Log
 
-Gunakan bagian ini untuk mencatat milestone ketika sudah selesai.
+| Date | Milestone | Result |
+|---|---|---|
+| 2026-08-21 | Milestone 1 — Reviewer / Content Workspace + Unified Admin | ✅ COMPLETE; CI green, TKA regression green, Content Review E2E 3× green, staging cleanup 0/0 |
 
-| Milestone | Status | Completed At | Release/PR/Commit | Notes |
-| --- | --- | --- | --- | --- |
-| 1. Reviewer / Content Workspace | ⏳ ACTIVE | - | - | Current focus |
-| 2. TKA SMP Core | ⏸️ BLOCKED | - | - | Wait for Milestone 1 |
-| 3. TKA SMP Learning Loop V1 | ⏸️ BLOCKED | - | - | Wait for Milestone 2 |
-| 4. TKA SMP Monetization | ⏸️ BLOCKED | - | - | Wait for Milestone 3 |
-| 5. Schema V2 Production Cutover | ⏸️ BLOCKED | - | - | Wait for Milestone 4 |
-| 6. TKA SD Hardening | ⏸️ BLOCKED | - | - | Wait for production stability |
-| 7. TKA SMA | ⏸️ BLOCKED | - | - | Wait for TKA SD |
-| 8. Platform Expansion | ⏸️ BLOCKED | - | - | Long-term |
+# Current Focus
 
----
-
-# Working Agreement
-
-1. Fokus satu milestone.
-2. Tidak membuka milestone baru sebelum DoD milestone aktif terpenuhi.
-3. Bug/regression yang ditemukan di milestone aktif dianggap bagian milestone tersebut.
-4. Jangan menandai complete hanya karena UI sudah ada; backend, authorization, error state, QA, dan E2E harus ikut selesai.
-5. Jangan menganggap tabel database kosong sebagai fitur selesai.
-6. Production changes selalu membutuhkan approval eksplisit terpisah.
-7. Jika scope milestone perlu berubah, ubah dokumen ini terlebih dahulu agar Definition of Done tetap jelas.
+```text
+Milestone 1 ✅ COMPLETE
+        ↓
+PR #7 merge + Vercel staging verification
+        ↓
+Milestone 2 — TKA SMP Mini + Core Product
+```

@@ -1,11 +1,41 @@
-import { type NextRequest } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/utils/supabase/middleware'
 import { CSRF_COOKIE } from '@/lib/csrf'
 
+function legacyAdminRedirect(request: NextRequest) {
+    const pathname = request.nextUrl.pathname
+    if (!pathname.startsWith('/cpns/admin')) return null
+
+    const target = request.nextUrl.clone()
+    if (pathname === '/cpns/admin') {
+        target.pathname = '/admin'
+        if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
+        if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
+        return NextResponse.redirect(target)
+    }
+
+    if (pathname === '/cpns/admin/review') {
+        target.pathname = '/admin/content/review'
+        if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
+        if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
+        return NextResponse.redirect(target)
+    }
+
+    if (pathname === '/cpns/admin/articles' || pathname.startsWith('/cpns/admin/articles/')) {
+        target.pathname = pathname.replace('/cpns/admin/articles', '/admin/content/articles')
+        return NextResponse.redirect(target)
+    }
+
+    return null
+}
+
 export async function proxy(request: NextRequest) {
+    const legacyRedirect = legacyAdminRedirect(request)
+    if (legacyRedirect) return legacyRedirect
+
     const nonce = crypto.randomUUID().replace(/-/g, '')
     const csrfToken = crypto.randomUUID()
-    
+
     const cspHeader = `
         default-src 'self';
         script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"} https://app.midtrans.com https://app.sandbox.midtrans.com;
@@ -22,40 +52,26 @@ export async function proxy(request: NextRequest) {
         ${process.env.CSP_REPORT_URI ? `report-uri ${process.env.CSP_REPORT_URI};` : ''}
     `.replace(/\s{2,}/g, ' ').trim()
 
-    // Pass the modified headers to the downstream components
     const requestHeaders = new Headers(request.headers)
     requestHeaders.set('x-nonce', nonce)
     requestHeaders.set('x-pathname', request.nextUrl.pathname)
     requestHeaders.set('Content-Security-Policy', cspHeader)
 
-    // Call updateSession but we need to ensure the request headers are passed.
-    // updateSession uses NextResponse.next({ request }). We can override the request headers 
-    // by creating a new request object or passing the headers to updateSession.
     const response = await updateSession(request, requestHeaders)
-
-    // Set the CSP header on the outgoing response
     response.headers.set('Content-Security-Policy', cspHeader)
 
-    // Set CSRF token cookie (double-submit pattern)
-    // httpOnly: false so client JS can read it for the custom header
     response.cookies.set(CSRF_COOKIE, csrfToken, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
         path: '/',
     })
-    
+
     return response
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         */
         '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 }

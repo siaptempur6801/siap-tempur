@@ -1,0 +1,86 @@
+name: Content Review Staging E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - feat/schema-v2
+    paths:
+      - 'app/actions/content-review.ts'
+      - 'app/admin/**'
+      - 'app/cpns/admin/review/**'
+      - 'app/cpns/admin/layout.tsx'
+      - 'components/admin/AdminShell.tsx'
+      - 'components/admin/UnifiedAdminShell.tsx'
+      - 'proxy.ts'
+      - 'src/repositories/authorization.repository.ts'
+      - 'src/services/authorization.service.ts'
+      - 'src/services/content-review.service.ts'
+      - 'tests/e2e/content-review.*.ts'
+      - 'tests/e2e/specs/7-content-review-workflow.spec.ts'
+      - 'playwright.config.ts'
+      - '.github/workflows/content-review-staging-e2e.yml'
+      - 'supabase/functions/ci-e2e-user/**'
+      - 'supabase/migrations/202608210003_content_review_workspace_audit_v1.sql'
+      - 'supabase/migrations/202608210004_content_review_workspace_access_v1.sql'
+      - 'supabase/migrations/202608210005_content_roles_least_privilege_v1.sql'
+      - 'supabase/migrations/202608210006_authenticated_authorization_rpc_v1.sql'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CI: 'true'
+  APP_ENV: staging
+  NEXT_PUBLIC_APP_ENV: staging
+  E2E_CONTENT_REVIEW_STAGING: '1'
+  NEXT_PUBLIC_SUPABASE_URL: https://lpgrivowdcepcxradavu.supabase.co
+  NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  # User-facing Content Operations is authenticated RPC/RLS based. A real
+  # Supabase admin key is intentionally absent from GitHub Actions.
+  SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
+  NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+  MIDTRANS_SERVER_KEY_SANDBOX: e2e-not-used
+  NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: e2e-not-used
+
+jobs:
+  reviewer-workflow:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build staging app
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Content Review workflow E2E
+        run: npx playwright test --project=chromium-content-review-staging
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: content-review-playwright-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
