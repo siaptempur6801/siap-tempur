@@ -12,6 +12,11 @@ import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
 import { parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
 const EXAM_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const SMP_SECTION_EXAM_SLUGS = new Set([
+    'tka-smp-full',
+    'tka-smp-mini-bahasa-indonesia',
+    'tka-smp-mini-matematika',
+])
 
 async function getCurrentUserContext(returnTo: string) {
     const supabase = await createV2Client()
@@ -70,6 +75,17 @@ function friendlyError(error: PracticeDomainError) {
     }
 }
 
+function friendlySmpRpcError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('Attempt limit reached')) return 'Batas percobaan tryout sudah tercapai.'
+    if (message.includes('Active user track required')) return 'Aktifkan jalur TKA SMP terlebih dahulu.'
+    if (message.includes('Exam is not active') || message.includes('belum aktif')) return 'Tryout TKA SMP ini belum dibuka.'
+    if (message.includes('item count') || message.includes('question count') || message.includes('question version')) {
+        return 'Konfigurasi soal tryout belum siap.'
+    }
+    return 'Tryout TKA SMP staging belum dapat dimulai.'
+}
+
 async function startWithExpiredRecovery(userId: string, start: () => Promise<StartAttemptResult>) {
     try {
         return await start()
@@ -100,13 +116,13 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
         return { error: `Aktifkan jalur TKA ${level} terlebih dahulu.` }
     }
 
-    const useSmpFullExamRpc = level === 'SMP'
-        && examSlug === 'tka-smp-full'
+    const useSmpSectionRpc = level === 'SMP'
+        && SMP_SECTION_EXAM_SLUGS.has(examSlug)
         && env.appEnvironment() !== 'production'
 
-    if (useSmpFullExamRpc) {
+    if (useSmpSectionRpc) {
         try {
-            const result = await tkaFullExamRpcService.startSmpFullExam({ userId, examSlug })
+            const result = await tkaFullExamRpcService.startSmpExam({ userId, examSlug })
             revalidatePath(path)
             return {
                 success: true as const,
@@ -115,15 +131,13 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
                 level,
             }
         } catch (error) {
-            logger.warn('[startTkaExam:rpc] Failed to start staging TKA SMP full exam', {
+            logger.warn('[startTkaExam:rpc] Failed to start staging TKA SMP exam', {
                 error: error instanceof Error ? error.message : String(error),
                 userId,
                 level,
                 examSlug,
             })
-            const message = error instanceof Error ? error.message : ''
-            if (message.includes('Attempt limit reached')) return { error: 'Batas percobaan tryout sudah tercapai.' }
-            return { error: 'Full Tryout TKA SMP staging belum dapat dimulai.' }
+            return { error: friendlySmpRpcError(error) }
         }
     }
 
