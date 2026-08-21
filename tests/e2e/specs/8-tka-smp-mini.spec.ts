@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { freshDisposableTkaSession } from '../tka.ci'
+import { freshDisposableTkaSession, readOwnTkaLearningProjection, type DisposableTkaSession } from '../tka.ci'
 
 async function examCard(page: Page, title: string) {
     const card = page.locator('article').filter({
@@ -51,6 +51,20 @@ async function assertHistoryOpensResult(page: Page, examTitle: string) {
     await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
     await page.getByRole('link', { name: 'Kembali ke TKA SMP', exact: true }).click()
     await page.waitForURL(/\/tka\/smp(?:\?.*)?$/)
+}
+
+async function assertMiniProjection(session: DisposableTkaSession) {
+    const projection = await readOwnTkaLearningProjection(session)
+    expect(projection.knowledge.length).toBeGreaterThan(0)
+    expect(projection.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(15)
+    expect(projection.subjects).toHaveLength(1)
+    expect(projection.subjects[0]?.attempts).toBe(1)
+    expect(projection.subjects[0]?.questions_answered).toBe(1)
+    for (const row of projection.knowledge) {
+        expect(row.mastery_score).toBeGreaterThanOrEqual(0)
+        expect(row.mastery_score).toBeLessThanOrEqual(1)
+        expect(['needs_work', 'developing', 'proficient', 'mastered']).toContain(row.mastery_level)
+    }
 }
 
 async function finishMini(page: Page, expectedSubject: string) {
@@ -109,9 +123,9 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await assertNoDocumentOverflow(page)
     })
 
-    test('Bahasa Indonesia: mobile resume, result, history, error state, and one-free-attempt limit', async ({ page }) => {
+    test('Bahasa Indonesia: mobile resume, result, history, projection, error state, and one-free-attempt limit', async ({ page }) => {
         test.setTimeout(120_000)
-        await freshDisposableTkaSession(page)
+        const session = await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/smp')
 
@@ -125,6 +139,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await expect(startButton).toBeEnabled()
         await startButton.click()
         await finishMini(page, 'Bahasa Indonesia')
+        await assertMiniProjection(session)
 
         await page.goto('/tka/smp')
         await assertHistoryOpensResult(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
@@ -137,9 +152,9 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await assertNoDocumentOverflow(page)
     })
 
-    test('Matematika: tablet resume, result, history, and one-free-attempt limit', async ({ page }) => {
+    test('Matematika: tablet resume, result, history, projection, and one-free-attempt limit', async ({ page }) => {
         test.setTimeout(120_000)
-        await freshDisposableTkaSession(page)
+        const session = await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 1024, height: 768 })
         await page.goto('/tka/smp')
 
@@ -153,6 +168,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await expect(startButton).toBeEnabled()
         await startButton.click()
         await finishMini(page, 'Matematika')
+        await assertMiniProjection(session)
 
         await page.goto('/tka/smp')
         await assertHistoryOpensResult(page, 'Mini Tryout Matematika TKA SMP')
