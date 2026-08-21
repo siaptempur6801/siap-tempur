@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, CheckCircle2, Clock3, Target, Trophy, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Clock3, RotateCcw, Target, Trophy, XCircle } from 'lucide-react'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaResultReview from '@/components/tka/TkaResultReview'
@@ -67,6 +67,8 @@ export default async function TkaResultPage({
     }
 
     const label = practiceLabel(result.practiceKind)
+    const wrongGapCount = result.reviewItems.filter((item) => item.isCorrect !== true).length
+    const repeatWrongEnabled = level === 'SMP' && env.appEnvironment() !== 'production' && wrongGapCount > 0
 
     return (
         <main className="min-h-screen bg-[#fdfbf7] px-4 py-6 text-gray-900 md:px-8 md:py-10">
@@ -136,6 +138,23 @@ export default async function TkaResultPage({
                                 </div>
                             </article>
                         ))}
+                    </section>
+                )}
+
+                {repeatWrongEnabled && (
+                    <section className="flex flex-col gap-4 border-2 border-gray-900 bg-red-50 p-5 shadow-[4px_4px_0_0_#111] md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-700">
+                                <RotateCcw size={16}/> Mode Ulang Soal Salah
+                            </div>
+                            <h2 className="mt-1 text-2xl font-black">Ada {wrongGapCount} soal yang perlu dibereskan.</h2>
+                            <p className="mt-1 max-w-2xl text-sm font-semibold text-gray-600">
+                                Queue mencakup jawaban salah dan soal yang belum dijawab. Setiap soal keluar dari queue setelah kamu menjawabnya dengan benar.
+                            </p>
+                        </div>
+                        <Link href={`${base}/wrong-questions`} className="inline-flex shrink-0 items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-5 py-3 font-black text-white shadow-[3px_3px_0_0_#aaa] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
+                            <RotateCcw size={18}/> Ulang Soal Salah ({wrongGapCount})
+                        </Link>
                     </section>
                 )}
 
