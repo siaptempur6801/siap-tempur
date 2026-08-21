@@ -25,7 +25,6 @@ export type TkaWrongQuestionItem = {
         imageUrl: string | null
     } | null
     options: TkaWrongQuestionOption[]
-    explanation: string
     failureCount: number
     wrongCount: number
     unansweredCount: number
@@ -37,6 +36,7 @@ export type TkaWrongQuestionReviewResult = {
     isCorrect: boolean
     scoreAwarded: number
     remainingOpen: number
+    explanation: string
 }
 
 function asRecord(value: unknown): RecordValue | null {
@@ -78,15 +78,6 @@ function parseOption(value: unknown): TkaWrongQuestionOption | null {
     }
 }
 
-function parseExplanation(snapshot: RecordValue | null) {
-    for (const value of asArray(snapshot?.explanations)) {
-        const explanation = asRecord(value)
-        const content = readString(explanation, 'content')
-        if (content) return content
-    }
-    return ''
-}
-
 function parseStimulus(snapshot: RecordValue | null) {
     const stimulus = asRecord(snapshot?.stimulus)
     const content = readString(stimulus, 'content')
@@ -123,7 +114,6 @@ function parseItem(row: RecordValue, subjectCodeById: Map<string, string>): TkaW
             const parsed = parseOption(value)
             return parsed ? [parsed] : []
         }),
-        explanation: parseExplanation(snapshot),
         failureCount: readNumber(row, 'failure_count') ?? 1,
         wrongCount: readNumber(row, 'wrong_count') ?? 0,
         unansweredCount: readNumber(row, 'unanswered_count') ?? 0,
@@ -133,18 +123,19 @@ function parseItem(row: RecordValue, subjectCodeById: Map<string, string>): TkaW
 }
 
 export class TkaWrongQuestionService {
-    async listOpen(userId: string, limit = 100): Promise<TkaWrongQuestionItem[]> {
+    async listOpen(limit = 100): Promise<TkaWrongQuestionItem[]> {
         const supabase = await createClient()
-        const { data: rows, error } = await supabase
-            .from('user_wrong_questions')
-            .select('id, question_id, subject_id, question_snapshot, failure_count, wrong_count, unanswered_count, latest_outcome, last_failed_at')
-            .eq('user_id', userId)
-            .eq('status', 'open')
-            .order('last_failed_at', { ascending: false })
-            .limit(Math.max(1, Math.min(limit, 200)))
+        const { data, error } = await supabase.rpc('get_tka_smp_wrong_questions', {
+            p_limit: Math.max(1, Math.min(limit, 200)),
+        })
         if (error) throw error
+        const payload = asRecord(data)
+        const rows = asArray(payload?.items).flatMap((value) => {
+            const row = asRecord(value)
+            return row ? [row] : []
+        })
 
-        const subjectIds = Array.from(new Set((rows ?? []).map((row) => String(row.subject_id))))
+        const subjectIds = Array.from(new Set(rows.map((row) => readString(row, 'subject_id')).filter((id): id is string => Boolean(id))))
         const subjectCodeById = new Map<string, string>()
         if (subjectIds.length > 0) {
             const { data: subjects, error: subjectError } = await supabase
@@ -155,8 +146,8 @@ export class TkaWrongQuestionService {
             for (const subject of subjects ?? []) subjectCodeById.set(String(subject.id), String(subject.code ?? ''))
         }
 
-        const parsed = (rows ?? []).flatMap((row) => {
-            const item = parseItem(row as RecordValue, subjectCodeById)
+        const parsed = rows.flatMap((row) => {
+            const item = parseItem(row, subjectCodeById)
             return item ? [item] : []
         })
 
@@ -183,6 +174,7 @@ export class TkaWrongQuestionService {
             isCorrect: payload.is_correct === true,
             scoreAwarded: readNumber(payload, 'score_awarded') ?? 0,
             remainingOpen: readNumber(payload, 'remaining_open') ?? 0,
+            explanation: readString(payload, 'explanation') ?? '',
         }
     }
 }
