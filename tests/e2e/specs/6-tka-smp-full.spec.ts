@@ -18,9 +18,12 @@ test('TKA SMP full tryout persists, changes section, submits, and opens review',
 
     await expect(page.getByRole('heading', { name: /TKA Sekolah Menengah Pertama/i })).toBeVisible()
     await expect(page.getByText('Track aktif')).toBeVisible()
-    await expect(page.getByText('Tryout Lengkap TKA SMP')).toBeVisible()
 
-    const startButton = page.getByRole('button', { name: 'Mulai Tryout', exact: true })
+    const fullCard = page.locator('article').filter({
+        has: page.getByRole('heading', { name: 'Tryout Lengkap TKA SMP', exact: true }),
+    })
+    await expect(fullCard).toBeVisible()
+    const startButton = fullCard.getByRole('button', { name: 'Mulai Tryout', exact: true })
     await expect(startButton).toBeEnabled()
     await startButton.click()
 
