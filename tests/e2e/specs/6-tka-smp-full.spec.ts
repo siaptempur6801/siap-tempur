@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import {
     freshDisposableTkaSession,
     readOwnTkaLearningProjection,
+    readOwnTkaRemedial,
     readOwnTkaWrongQuestionState,
 } from '../tka.ci'
 
@@ -48,8 +49,40 @@ async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/t
     await expect(page.getByRole('button', { name: /Lanjut/i })).toBeVisible()
 }
 
-test('TKA SMP full tryout persists, submits, projects learning, and resolves repeat-wrong state', async ({ page }) => {
-    test.setTimeout(120_000)
+async function resolveSingleChoiceRemedialAtPosition(
+    page: import('@playwright/test').Page,
+    position: number,
+) {
+    await expect(page.getByText('TKA SMP · Remedial Otomatis')).toBeVisible()
+    await page.getByRole('button', { name: `Remedial ${position}`, exact: true }).click()
+    await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
+
+    const optionButtons = page.locator('article button').filter({
+        hasNotText: /Periksa jawaban|Periksa lagi|Lanjut Remedial/i,
+    })
+    const optionCount = await optionButtons.count()
+    expect(optionCount).toBeGreaterThan(1)
+
+    const correct = page.getByText('Benar! Evidence mastery sudah diperbarui.', { exact: true })
+    const wrong = page.getByText('Belum tepat. Pelajari lagi pilihannya lalu coba ulang.', { exact: true })
+    const feedback = page.getByText(/^(Benar! Evidence mastery sudah diperbarui\.|Belum tepat\. Pelajari lagi pilihannya lalu coba ulang\.)$/)
+
+    let resolved = false
+    for (let index = 0; index < optionCount; index += 1) {
+        await optionButtons.nth(index).click()
+        await page.getByRole('button', { name: /Periksa jawaban|Periksa lagi/i }).click()
+        await expect(feedback).toBeVisible({ timeout: 15_000 })
+        if (await correct.isVisible()) {
+            resolved = true
+            break
+        }
+        await expect(wrong).toBeVisible()
+    }
+    expect(resolved).toBe(true)
+}
+
+test('TKA SMP full tryout creates automatic remedial and closes the learning loop', async ({ page }) => {
+    test.setTimeout(150_000)
     const session = await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
@@ -95,35 +128,79 @@ test('TKA SMP full tryout persists, submits, projects learning, and resolves rep
     await page.getByRole('button', { name: 'Kirim Tryout', exact: true }).click()
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
+    const resultUrl = page.url()
+    const attemptMatch = resultUrl.match(/\/tryout\/([0-9a-f-]+)\/result$/i)
+    expect(attemptMatch).not.toBeNull()
+    const attemptId = attemptMatch?.[1] ?? ''
+
     await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Review & Pembahasan' })).toBeVisible()
     await expect(page.getByText('Full Tryout · TKA/SMP')).toBeVisible()
     await expect(page.getByText(/2\/60/)).toBeVisible()
 
-    const projection = await readOwnTkaLearningProjection(session)
-    expect(projection.knowledge.length).toBeGreaterThan(0)
-    expect(projection.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(60)
-    expect(projection.subjects).toHaveLength(2)
-    expect(projection.subjects.reduce((sum, row) => sum + row.questions_answered, 0)).toBe(2)
-    for (const row of projection.knowledge) {
+    const projectionBeforeRemedial = await readOwnTkaLearningProjection(session)
+    expect(projectionBeforeRemedial.knowledge.length).toBeGreaterThan(0)
+    expect(projectionBeforeRemedial.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(60)
+    expect(projectionBeforeRemedial.subjects).toHaveLength(2)
+    expect(projectionBeforeRemedial.subjects.reduce((sum, row) => sum + row.questions_answered, 0)).toBe(2)
+    for (const row of projectionBeforeRemedial.knowledge) {
         expect(row.mastery_score).toBeGreaterThanOrEqual(0)
         expect(row.mastery_score).toBeLessThanOrEqual(1)
         expect(['needs_work', 'developing', 'proficient', 'mastered']).toContain(row.mastery_level)
     }
 
-    const openBefore = await readOwnTkaWrongQuestionState(session)
-    expect(openBefore.length).toBeGreaterThanOrEqual(58)
-    expect(openBefore.reduce((sum, row) => sum + row.unanswered_count, 0)).toBeGreaterThanOrEqual(58)
+    const openBeforeRemedial = await readOwnTkaWrongQuestionState(session)
+    expect(openBeforeRemedial.length).toBeGreaterThanOrEqual(58)
+    expect(openBeforeRemedial.reduce((sum, row) => sum + row.unanswered_count, 0)).toBeGreaterThanOrEqual(58)
 
+    const remedialBefore = await readOwnTkaRemedial(session, attemptId)
+    expect(remedialBefore.session).not.toBeNull()
+    expect(remedialBefore.session?.status).toBe('active')
+    expect(remedialBefore.session?.total_items).toBe(10)
+    expect(remedialBefore.session?.completed_items).toBe(0)
+    expect(remedialBefore.session?.pending_items).toBe(10)
+    expect(remedialBefore.items).toHaveLength(10)
+
+    const countsBySubject = new Map<string, number>()
+    for (const item of remedialBefore.items) {
+        countsBySubject.set(item.subject_id, (countsBySubject.get(item.subject_id) ?? 0) + 1)
+    }
+    expect(Array.from(countsBySubject.values()).sort((a, b) => a - b)).toEqual([5, 5])
+
+    const singleChoiceRemedial = remedialBefore.items.find((item) => item.status === 'pending' && item.response_type === 'single_choice')
+    expect(singleChoiceRemedial).toBeDefined()
+
+    const remedialLink = page.getByRole('link', { name: 'Mulai Remedial (10)', exact: true })
+    await expect(remedialLink).toBeVisible()
+    await remedialLink.click()
+    await page.waitForURL(/\/tka\/smp\/remedial\/[0-9a-f-]+$/i)
+
+    await resolveSingleChoiceRemedialAtPosition(page, singleChoiceRemedial?.position ?? 1)
+
+    const remedialAfter = await readOwnTkaRemedial(session, attemptId)
+    expect(remedialAfter.session?.completed_items).toBe(1)
+    expect(remedialAfter.session?.pending_items).toBe(9)
+
+    const projectionAfterRemedial = await readOwnTkaLearningProjection(session)
+    expect(projectionAfterRemedial.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(61)
+    expect(projectionAfterRemedial.knowledge.reduce((sum, row) => sum + row.correct_questions, 0)).toBe(
+        projectionBeforeRemedial.knowledge.reduce((sum, row) => sum + row.correct_questions, 0) + 1,
+    )
+
+    const openAfterRemedial = await readOwnTkaWrongQuestionState(session)
+    expect(openAfterRemedial.length).toBe(openBeforeRemedial.length - 1)
+
+    // Slice 3.2 remains usable alongside the focused remedial queue.
+    await page.goto(resultUrl)
     const repeatWrongLink = page.getByRole('link', { name: /Ulang Soal Salah \(\d+\)/i })
     await expect(repeatWrongLink).toBeVisible()
     await repeatWrongLink.click()
     await page.waitForURL(/\/tka\/smp\/wrong-questions$/i)
-
     await resolveFirstSingleChoiceWrongQuestion(page)
 
-    // The sanitized learner queue contains open rows only. A correct repeat answer
-    // must therefore remove exactly one item from the next authenticated read.
-    const openAfter = await readOwnTkaWrongQuestionState(session)
-    expect(openAfter.length).toBe(openBefore.length - 1)
+    const openAfterRepeatWrong = await readOwnTkaWrongQuestionState(session)
+    expect(openAfterRepeatWrong.length).toBe(openAfterRemedial.length - 1)
+
+    const projectionAfterRepeatWrong = await readOwnTkaLearningProjection(session)
+    expect(projectionAfterRepeatWrong.knowledge.reduce((sum, row) => sum + row.attempted_questions, 0)).toBe(62)
 })
