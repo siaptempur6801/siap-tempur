@@ -56,6 +56,6 @@ test('TKA SMP full tryout persists, changes section, submits, and opens review',
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Review & Pembahasan' })).toBeVisible()
-    await expect(page.getByText('RPC E2E · TKA/SMP')).toBeVisible()
+    await expect(page.getByText('Full Tryout · TKA/SMP')).toBeVisible()
     await expect(page.getByText(/2\/60/)).toBeVisible()
 })
