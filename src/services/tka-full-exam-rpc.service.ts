@@ -13,6 +13,7 @@ type StartRpcPayload = {
     attempt_number?: number
     status?: string
     active_section_id?: string | null
+    resumed?: boolean
 }
 
 export type TkaFullExamOptionView = {
@@ -189,7 +190,16 @@ function parseState(value: unknown): TkaFullExamState {
     const state = asRecord(value)
     const attemptId = readString(state, 'attemptId')
     const examId = readString(state, 'examId')
-    if (!attemptId || !examId) throw new Error('Invalid TKA full exam state payload')
+    if (!attemptId || !examId) throw new Error('Invalid TKA exam state payload')
+
+    const sections = asArray(state?.sections).flatMap((section) => {
+        const parsed = parseSection(section)
+        return parsed ? [parsed] : []
+    })
+    const questions = asArray(state?.questions).flatMap((question) => {
+        const parsed = parseQuestion(question)
+        return parsed ? [parsed] : []
+    })
 
     return {
         attemptId,
@@ -199,15 +209,9 @@ function parseState(value: unknown): TkaFullExamState {
         startedAt: readString(state, 'startedAt'),
         activeSectionId: readString(state, 'activeSectionId'),
         answeredCount: readNumber(state, 'answeredCount') ?? 0,
-        totalQuestions: readNumber(state, 'totalQuestions') ?? 60,
-        sections: asArray(state?.sections).flatMap((section) => {
-            const parsed = parseSection(section)
-            return parsed ? [parsed] : []
-        }),
-        questions: asArray(state?.questions).flatMap((question) => {
-            const parsed = parseQuestion(question)
-            return parsed ? [parsed] : []
-        }),
+        totalQuestions: readNumber(state, 'totalQuestions') ?? sections.reduce((total, section) => total + section.questionCount, 0),
+        sections,
+        questions,
     }
 }
 
@@ -289,14 +293,16 @@ export class TkaFullExamRpcService {
         return data as T
     }
 
-    async startSmpFullExam(input: { userId: string; examSlug: string }): Promise<TkaFullExamStartResult> {
+    async startSmpExam(input: { userId: string; examSlug: string }): Promise<TkaFullExamStartResult> {
         const supabase = await createV2Client()
         const exam = await configuredExamRepository.findBySlug({
             programCode: 'TKA',
             trackCode: 'SMP',
             slug: input.examSlug,
         }, supabase)
-        if (!exam || exam.examTypeCode !== 'FULL_TRYOUT') throw new Error('Tryout TKA SMP belum aktif.')
+        if (!exam || !['FULL_TRYOUT', 'MINI_TRYOUT'].includes(exam.examTypeCode)) {
+            throw new Error('Tryout TKA SMP belum aktif.')
+        }
 
         const { data: activeAttempt, error: activeError } = await supabase
             .from('exam_attempts')
@@ -312,7 +318,11 @@ export class TkaFullExamRpcService {
 
         const payload = await this.rpc<StartRpcPayload>('start_exam_attempt', { p_exam_id: exam.id })
         if (!payload?.attempt_id) throw new Error('RPC start_exam_attempt tidak mengembalikan attempt id.')
-        return { attemptId: payload.attempt_id, resumed: false }
+        return { attemptId: payload.attempt_id, resumed: payload.resumed === true }
+    }
+
+    async startSmpFullExam(input: { userId: string; examSlug: string }): Promise<TkaFullExamStartResult> {
+        return this.startSmpExam(input)
     }
 
     async getState(attemptId: string) {
@@ -384,6 +394,7 @@ export class TkaFullExamRpcService {
         const submittedAt = state.startedAt
             ? new Date(Date.parse(state.startedAt) + durationUsedSeconds * 1000).toISOString()
             : null
+        const isMiniTryout = state.sections.length === 1 && state.totalQuestions <= 15
 
         return {
             attemptId,
@@ -393,7 +404,7 @@ export class TkaFullExamRpcService {
             passed: null,
             startedAt: state.startedAt,
             submittedAt,
-            practiceKind: 'full_tryout',
+            practiceKind: isMiniTryout ? 'mini_tryout' : 'full_tryout',
             knowledgeNode: null,
             programCode: 'TKA',
             trackCode: 'SMP',

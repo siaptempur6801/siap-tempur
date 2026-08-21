@@ -13,6 +13,7 @@ on:
       - 'src/services/tka-full-exam-rpc.service.ts'
       - 'tests/e2e/tka.*.ts'
       - 'tests/e2e/specs/6-tka-smp-full.spec.ts'
+      - 'tests/e2e/specs/8-tka-smp-mini.spec.ts'
       - 'playwright.config.ts'
       - '.github/workflows/tka-staging-e2e.yml'
       - 'supabase/functions/ci-e2e-user/**'
@@ -31,7 +32,7 @@ env:
   NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
   NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
-  # The user-facing TKA path is RLS/RPC based. A real admin key is intentionally
+  # User-facing TKA paths are RLS/RPC based. A real admin key is intentionally
   # absent from GitHub; CI provisioning uses GitHub OIDC -> staging Edge Function.
   SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
   NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
@@ -39,7 +40,7 @@ env:
   NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: e2e-not-used
 
 jobs:
-  full-exam:
+  smp-core-exams:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -63,7 +64,7 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Run TKA SMP full-exam E2E
+      - name: Run TKA SMP core exam E2E
         run: npx playwright test --project=chromium-tka-staging
 
       - name: Upload Playwright report on failure

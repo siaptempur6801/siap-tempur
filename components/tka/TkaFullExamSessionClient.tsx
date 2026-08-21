@@ -68,6 +68,7 @@ export default function TkaFullExamSessionClient({
     const activeSection = state.sections.find((section) => section.sectionId === state.activeSectionId) ?? null
     const returnPath = `/tka/${level.toLowerCase()}`
     const resultPath = `${returnPath}/tryout/${state.attemptId}/result`
+    const examModeLabel = state.sections.length === 1 ? 'Mini Tryout' : 'Full Tryout'
 
     const initialSelections = useMemo(() => Object.fromEntries(
         state.questions.map((question) => [question.attemptQuestionId, question.selectedOptionIds]),
@@ -370,7 +371,7 @@ export default function TkaFullExamSessionClient({
                 <header className="border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0_0_#111]">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <div className="text-xs font-black uppercase tracking-widest text-blue-700">TKA SMP · Full Tryout</div>
+                            <div className="text-xs font-black uppercase tracking-widest text-blue-700">TKA SMP · {examModeLabel}</div>
                             <h1 className="mt-1 text-xl font-black">{activeSection.title}</h1>
                         </div>
                         <div className="flex items-center gap-2">

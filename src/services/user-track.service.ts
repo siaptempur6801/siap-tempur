@@ -1,4 +1,4 @@
-import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { createClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { catalogContextService, type ProgramTrackContext } from '@/src/services/catalog-context.service'
 import type { Json } from '@/types/database.types'
 
@@ -46,33 +46,27 @@ export class UserTrackService {
         targetYear?: number | null
         preference?: UserTrackPreferenceInput
     }) {
-        const catalog = await catalogContextService.resolve(input.context)
-        const admin = await createV2AdminClient()
-        const now = nowIso()
+        const programCode = input.context.programCode.trim().toUpperCase()
+        const trackCode = input.context.trackCode.trim().toUpperCase()
+        if (!programCode || !trackCode) throw new Error('PROGRAM_TRACK_CONTEXT_REQUIRED')
 
-        const { data: userTrack, error } = await admin
-            .from('user_tracks')
-            .upsert({
-                user_id: input.userId,
-                track_id: catalog.track.id,
-                status: 'active',
-                target_year: input.targetYear ?? null,
-                completed_at: null,
-                updated_at: now,
-            }, { onConflict: 'user_id,track_id' })
-            .select('id, user_id, track_id, status, target_year, started_at, completed_at')
-            .single()
+        const supabase = await createClient()
+        const { data, error } = await supabase.rpc('activate_user_track', {
+            p_program_code: programCode,
+            p_track_code: trackCode,
+            p_target_year: input.targetYear ?? null,
+            p_school_name: input.preference?.schoolName ?? null,
+            p_school_grade: input.preference?.schoolGrade ?? null,
+        })
         if (error) throw error
 
-        if (input.preference) {
-            await this.updatePreference(String(userTrack.id), input.preference)
-        }
+        const payload = data && typeof data === 'object' && !Array.isArray(data)
+            ? data as Record<string, unknown>
+            : null
+        const id = typeof payload?.userTrackId === 'string' ? payload.userTrackId : null
+        if (!id) throw new Error('USER_TRACK_ACTIVATION_INVALID_RESPONSE')
 
-        return {
-            id: String(userTrack.id),
-            programCode: catalog.program.code,
-            trackCode: catalog.track.code,
-        }
+        return { id, programCode, trackCode }
     }
 
     async pauseTrack(input: { userId: string; context: ProgramTrackContext }) {
@@ -162,7 +156,7 @@ export class UserTrackService {
             const track = trackById.get(String(row.track_id))
             if (!track) throw new Error(`TRACK_NOT_FOUND:${String(row.track_id)}`)
             const program = programById.get(String(track.program_id))
-            if (!program) throw new Error(`PROGRAM_NOT_FOUND:${String(track.program_id)}`)
+            if (!program) throw new Error(`PROGRAM_NOT_FOUND_FOR_TRACK:${String(track.program_id)}`)
             const preference = preferenceByUserTrack.get(String(row.id))
 
             return {

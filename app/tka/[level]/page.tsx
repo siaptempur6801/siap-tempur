@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock3, LockKeyhole, School } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpenCheck, CheckCircle2, Clock3, History, LockKeyhole, School } from 'lucide-react'
 import { activateTkaTrackAction } from '@/app/actions/user-track'
 import TkaPassPackagesClient from '@/components/tka/TkaPassPackagesClient'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
@@ -46,6 +46,24 @@ function entitlementUsable(input: {
     return withinWindow && withinUsage
 }
 
+function attemptStatus(status: unknown) {
+    const value = String(status ?? '').toLowerCase()
+    if (value === 'completed' || value === 'submitted') return { label: 'Selesai', className: 'bg-green-100 text-green-900' }
+    if (value === 'in_progress') return { label: 'Sedang dikerjakan', className: 'bg-cyan-100 text-cyan-900' }
+    if (value === 'expired') return { label: 'Kedaluwarsa', className: 'bg-yellow-100 text-yellow-900' }
+    return { label: value || 'Unknown', className: 'bg-gray-100 text-gray-700' }
+}
+
+function formatAttemptDate(value: unknown) {
+    if (!value) return 'Waktu tidak tersedia'
+    const date = new Date(String(value))
+    if (Number.isNaN(date.getTime())) return 'Waktu tidak tersedia'
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
+    }).format(date)
+}
+
 export default async function TkaLevelPage({
     params,
     searchParams,
@@ -64,7 +82,8 @@ export default async function TkaLevelPage({
     if (!user) redirect(`/login?returnTo=${encodeURIComponent(path)}`)
 
     const context = tkaContext(level)
-    const stagingSmpPilot = env.appEnvironment() !== 'production' && level === 'SMP'
+    const stagingEnvironment = env.appEnvironment() !== 'production'
+    const stagingSmpPilot = stagingEnvironment && level === 'SMP'
 
     const { data: program, error: programError } = await supabase
         .from('programs')
@@ -110,9 +129,10 @@ export default async function TkaLevelPage({
         })),
     }
 
-    // Payment/Tempur Pass is intentionally outside the SMP staging pilot. Skipping
-    // commerce here keeps the user-facing staging flow on authenticated RLS only.
-    const rawPassOffers = stagingSmpPilot
+    // Payment/Tempur Pass is intentionally outside TKA staging validation.
+    // Keep every learner-facing staging track on authenticated RLS only; commerce
+    // is re-enabled in production as part of the dedicated monetization milestone.
+    const rawPassOffers = stagingEnvironment
         ? []
         : await commerceService.listActiveProductOffers('TKA', level)
     const passOffers = rawPassOffers.filter((offer) => offer.code.startsWith(`TKA_${level}_PASS_`))
@@ -158,9 +178,11 @@ export default async function TkaLevelPage({
         examIds.length > 0
             ? supabase
                 .from('exam_attempts')
-                .select('exam_id')
+                .select('id, exam_id, attempt_number, status, started_at, submitted_at, total_score, percentage, updated_at')
                 .eq('user_id', user.id)
                 .in('exam_id', examIds)
+                .order('updated_at', { ascending: false })
+                .limit(20)
             : Promise.resolve({ data: [], error: null }),
     ])
     if (entitlementError) throw entitlementError
@@ -185,12 +207,14 @@ export default async function TkaLevelPage({
     }
 
     const examTypeById = new Map((examTypes ?? []).map((row) => [String(row.id), row]))
+    const examById = new Map((exams ?? []).map((exam) => [String(exam.id), exam]))
     const questionCountBySubject = new Map<string, number>()
     for (const row of questionRows ?? []) {
         const id = String(row.subject_id)
         questionCountBySubject.set(id, (questionCountBySubject.get(id) ?? 0) + 1)
     }
     const activeTrack = userTrack?.status.toLowerCase() === 'active'
+    const recentAttempts = (attemptRows ?? []).slice(0, 6)
 
     return (
         <main className="min-h-screen bg-[#fdfbf7] px-4 py-8 text-gray-900 md:px-8 md:py-12">
@@ -290,7 +314,7 @@ export default async function TkaLevelPage({
                         <h2 className="text-2xl font-black">Tryout tersedia</h2>
                         <p className="text-sm font-semibold text-gray-600">
                             {stagingSmpPilot
-                                ? 'Full Tryout TKA SMP dibuka gratis pada staging untuk validasi end-to-end. Payment dan Tempur Pass belum diterapkan pada pilot ini.'
+                                ? 'Full Tryout dan Mini Tryout TKA SMP dibuka di staging untuk validasi end-to-end. Mini memiliki satu percobaan gratis; payment dan Tempur Pass tetap menjadi tahap monetisasi terpisah.'
                                 : 'Mini Tryout memiliki satu percobaan gratis per mapel. Setelah kuota gratis habis, Mini unlimited dan Full Tryout membutuhkan Tempur Pass aktif.'}
                         </p>
                     </div>
@@ -306,6 +330,7 @@ export default async function TkaLevelPage({
                                 const access = String(exam.access_type ?? 'FREE').toUpperCase()
                                 const freeLimit = Number(exam.attempt_limit ?? 1)
                                 const stagingFullExam = stagingSmpPilot && exam.slug === 'tka-smp-full'
+                                const stagingMiniExam = stagingSmpPilot && exam.slug.startsWith('tka-smp-mini-')
                                 const freemiumLocked = access === 'FREEMIUM' && !hasEntitlement && usedAttempts >= freeLimit
                                 const premiumLocked = !stagingFullExam && access === 'PREMIUM' && !hasEntitlement
                                 const accessLocked = freemiumLocked || premiumLocked
@@ -338,6 +363,7 @@ export default async function TkaLevelPage({
                                             {duration && <span className="inline-flex items-center gap-1 border border-gray-300 bg-gray-50 px-2 py-1"><Clock3 size={15}/>{duration} menit</span>}
                                             {stagingFullExam && <span className="border border-gray-900 bg-blue-50 px-2 py-1">60 soal · 30 + 30</span>}
                                             {stagingFullExam && <span className="border border-gray-900 bg-cyan-50 px-2 py-1">75 menit / section</span>}
+                                            {stagingMiniExam && <span className="border border-gray-900 bg-blue-50 px-2 py-1">15 soal · 1 mapel</span>}
                                             <span className={`border border-gray-900 px-2 py-1 ${stagingFullExam ? 'bg-cyan-100 text-cyan-900' : hasEntitlement ? 'bg-green-100 text-green-900' : access === 'FREEMIUM' && !accessLocked ? 'bg-cyan-100 text-cyan-900' : accessLocked ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-100'}`}>{accessLabel}</span>
                                         </div>
                                         <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={disabledReason} />
@@ -350,6 +376,52 @@ export default async function TkaLevelPage({
                             <BookOpenCheck className="mx-auto" />
                             <h3 className="mt-3 font-black">Tryout belum dibuka</h3>
                             <p className="mt-1 text-sm font-semibold text-gray-600">Konfigurasi draft tidak ditampilkan sampai bank soal dan QA selesai.</p>
+                        </div>
+                    )}
+                </section>
+
+                <section className="space-y-3">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                        <div>
+                            <h2 className="inline-flex items-center gap-2 text-2xl font-black"><History size={22}/> Riwayat terbaru</h2>
+                            <p className="mt-1 text-sm font-semibold text-gray-600">Lanjutkan attempt yang belum selesai atau buka kembali hasil dan pembahasan.</p>
+                        </div>
+                    </div>
+                    {recentAttempts.length > 0 ? (
+                        <div className="grid gap-3 md:grid-cols-2">
+                            {recentAttempts.map((attempt) => {
+                                const exam = examById.get(String(attempt.exam_id))
+                                if (!exam) return null
+                                const status = attemptStatus(attempt.status)
+                                const completed = ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase())
+                                const href = completed
+                                    ? `${path}/tryout/${attempt.id}/result`
+                                    : `${path}/tryout/${attempt.id}`
+                                return (
+                                    <Link key={attempt.id} href={href} className="group border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <div className="text-xs font-black uppercase text-blue-700">Percobaan #{attempt.attempt_number}</div>
+                                                <h3 className="mt-1 truncate font-black">{exam.title}</h3>
+                                                <p className="mt-1 text-xs font-semibold text-gray-500">{formatAttemptDate(attempt.updated_at || attempt.submitted_at || attempt.started_at)}</p>
+                                            </div>
+                                            <span className={`shrink-0 border border-gray-900 px-2 py-1 text-[10px] font-black uppercase ${status.className}`}>{status.label}</span>
+                                        </div>
+                                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-dashed border-gray-300 pt-3 text-sm font-bold">
+                                            <span className="text-gray-600">
+                                                {completed && attempt.percentage !== null ? `Skor ${Number(attempt.percentage).toFixed(0)}%` : completed ? 'Lihat hasil' : 'Lanjutkan tryout'}
+                                            </span>
+                                            <span className="inline-flex items-center gap-1 text-blue-700">Buka <ArrowRight size={15}/></span>
+                                        </div>
+                                    </Link>
+                                )
+                            })}
+                        </div>
+                    ) : (
+                        <div className="border-2 border-dashed border-gray-400 bg-white/70 p-6 text-center">
+                            <History className="mx-auto" />
+                            <h3 className="mt-3 font-black">Belum ada riwayat tryout</h3>
+                            <p className="mt-1 text-sm font-semibold text-gray-600">Mulai Mini Tryout atau Full Tryout pertama untuk membangun riwayat belajarmu.</p>
                         </div>
                     )}
                 </section>

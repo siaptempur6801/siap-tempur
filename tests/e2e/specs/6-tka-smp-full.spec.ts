@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { freshDisposableTkaSession } from '../tka.ci'
 
 async function answerFirstVisibleOption(page: import('@playwright/test').Page) {
     const questionCard = page.locator('article').last()
@@ -14,17 +15,22 @@ async function goToLastQuestion(page: import('@playwright/test').Page) {
 }
 
 test('TKA SMP full tryout persists, changes section, submits, and opens review', async ({ page }) => {
+    await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
     await expect(page.getByRole('heading', { name: /TKA Sekolah Menengah Pertama/i })).toBeVisible()
     await expect(page.getByText('Track aktif')).toBeVisible()
-    await expect(page.getByText('Tryout Lengkap TKA SMP')).toBeVisible()
 
-    const startButton = page.getByRole('button', { name: 'Mulai Tryout', exact: true })
+    const fullCard = page.locator('article').filter({
+        has: page.getByRole('heading', { name: 'Tryout Lengkap TKA SMP', exact: true }),
+    })
+    await expect(fullCard).toBeVisible()
+    const startButton = fullCard.getByRole('button', { name: 'Mulai Tryout', exact: true })
     await expect(startButton).toBeEnabled()
     await startButton.click()
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
+    await expect(page.getByText('TKA SMP · Full Tryout')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Bahasa Indonesia' })).toBeVisible()
     await expect(page.getByText('Soal 1 / 30')).toBeVisible()
 
@@ -56,6 +62,6 @@ test('TKA SMP full tryout persists, changes section, submits, and opens review',
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Review & Pembahasan' })).toBeVisible()
-    await expect(page.getByText('RPC E2E · TKA/SMP')).toBeVisible()
+    await expect(page.getByText('Full Tryout · TKA/SMP')).toBeVisible()
     await expect(page.getByText(/2\/60/)).toBeVisible()
 })
