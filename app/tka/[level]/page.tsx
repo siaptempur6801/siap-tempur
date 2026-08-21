@@ -4,6 +4,7 @@ import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock3, LockKeyhole, School } f
 import { activateTkaTrackAction } from '@/app/actions/user-track'
 import TkaPassPackagesClient from '@/components/tka/TkaPassPackagesClient'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
+import { env } from '@/lib/env'
 import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import { catalogContextService } from '@/src/services/catalog-context.service'
 import { commerceService } from '@/src/services/commerce.service'
@@ -65,6 +66,7 @@ export default async function TkaLevelPage({
     if (!user) redirect(`/login?returnTo=${encodeURIComponent(path)}`)
 
     const context = tkaContext(level)
+    const stagingSmpPilot = env.appEnvironment() !== 'production' && level === 'SMP'
     const [catalog, userTrack, rawPassOffers] = await Promise.all([
         catalogContextService.resolve(context),
         userTrackService.getForUser({ userId: user.id, context }),
@@ -73,6 +75,9 @@ export default async function TkaLevelPage({
     const passOffers = rawPassOffers.filter((offer) => offer.code.startsWith(`TKA_${level}_PASS_`))
 
     const admin = await createV2AdminClient()
+    const questionStatuses = stagingSmpPilot
+        ? ['approved', 'APPROVED', 'published', 'PUBLISHED', 'active', 'ACTIVE']
+        : ['published', 'PUBLISHED', 'active', 'ACTIVE']
     const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { data: questionRows, error: questionError }] = await Promise.all([
         admin
             .from('exams')
@@ -87,7 +92,7 @@ export default async function TkaLevelPage({
             .select('subject_id')
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
-            .in('status', ['published', 'PUBLISHED', 'active', 'ACTIVE'])
+            .in('status', questionStatuses)
             .limit(5000),
     ])
     if (examError) throw examError
@@ -230,7 +235,7 @@ export default async function TkaLevelPage({
                                         <School size={20} />
                                     </div>
                                     <p className="mt-3 text-sm font-semibold text-gray-600">
-                                        {questionCountBySubject.get(subject.id) ?? 0} soal published tersedia.
+                                        {questionCountBySubject.get(subject.id) ?? 0} soal {stagingSmpPilot ? 'approved' : 'published'} tersedia.
                                     </p>
                                 </article>
                             )
@@ -241,7 +246,11 @@ export default async function TkaLevelPage({
                 <section className="space-y-3">
                     <div>
                         <h2 className="text-2xl font-black">Tryout tersedia</h2>
-                        <p className="text-sm font-semibold text-gray-600">Mini Tryout memiliki satu percobaan gratis per mapel. Setelah kuota gratis habis, Mini unlimited dan Full Tryout membutuhkan Tempur Pass aktif.</p>
+                        <p className="text-sm font-semibold text-gray-600">
+                            {stagingSmpPilot
+                                ? 'Full Tryout TKA SMP dibuka gratis pada staging untuk validasi end-to-end. Payment dan Tempur Pass belum diterapkan pada pilot ini.'
+                                : 'Mini Tryout memiliki satu percobaan gratis per mapel. Setelah kuota gratis habis, Mini unlimited dan Full Tryout membutuhkan Tempur Pass aktif.'}
+                        </p>
                     </div>
                     {(exams ?? []).length > 0 ? (
                         <div className="grid gap-3 md:grid-cols-2">
@@ -254,8 +263,9 @@ export default async function TkaLevelPage({
                                 const usedAttempts = attemptCountByExam.get(String(exam.id)) ?? 0
                                 const access = String(exam.access_type ?? 'FREE').toUpperCase()
                                 const freeLimit = Number(exam.attempt_limit ?? 1)
+                                const stagingFullExam = stagingSmpPilot && exam.slug === 'tka-smp-full'
                                 const freemiumLocked = access === 'FREEMIUM' && !hasEntitlement && usedAttempts >= freeLimit
-                                const premiumLocked = access === 'PREMIUM' && !hasEntitlement
+                                const premiumLocked = !stagingFullExam && access === 'PREMIUM' && !hasEntitlement
                                 const accessLocked = freemiumLocked || premiumLocked
                                 const accessReason = premiumLocked
                                     ? 'Butuh Tempur Pass'
@@ -263,13 +273,15 @@ export default async function TkaLevelPage({
                                         ? 'Kuota gratis habis · Butuh Tempur Pass'
                                         : null
                                 const disabledReason = !activeTrack ? 'Aktifkan track terlebih dahulu' : windowReason || accessReason
-                                const accessLabel = hasEntitlement
-                                    ? 'Tempur Pass aktif'
-                                    : access === 'FREEMIUM'
-                                        ? `Gratis ${Math.max(0, freeLimit - usedAttempts)}x tersisa`
-                                        : access === 'PREMIUM'
-                                            ? 'Premium · Tempur Pass'
-                                            : 'Gratis'
+                                const accessLabel = stagingFullExam
+                                    ? 'Staging pilot · Gratis'
+                                    : hasEntitlement
+                                        ? 'Tempur Pass aktif'
+                                        : access === 'FREEMIUM'
+                                            ? `Gratis ${Math.max(0, freeLimit - usedAttempts)}x tersisa`
+                                            : access === 'PREMIUM'
+                                                ? 'Premium · Tempur Pass'
+                                                : 'Gratis'
 
                                 return (
                                     <article key={exam.id} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0_0_#111]">
@@ -282,7 +294,9 @@ export default async function TkaLevelPage({
                                         </div>
                                         <div className="mt-4 flex flex-wrap gap-2 text-sm font-bold text-gray-600">
                                             {duration && <span className="inline-flex items-center gap-1 border border-gray-300 bg-gray-50 px-2 py-1"><Clock3 size={15}/>{duration} menit</span>}
-                                            <span className={`border border-gray-900 px-2 py-1 ${hasEntitlement ? 'bg-green-100 text-green-900' : access === 'FREEMIUM' && !accessLocked ? 'bg-cyan-100 text-cyan-900' : accessLocked ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-100'}`}>{accessLabel}</span>
+                                            {stagingFullExam && <span className="border border-gray-900 bg-blue-50 px-2 py-1">60 soal · 30 + 30</span>}
+                                            {stagingFullExam && <span className="border border-gray-900 bg-cyan-50 px-2 py-1">75 menit / section</span>}
+                                            <span className={`border border-gray-900 px-2 py-1 ${stagingFullExam ? 'bg-cyan-100 text-cyan-900' : hasEntitlement ? 'bg-green-100 text-green-900' : access === 'FREEMIUM' && !accessLocked ? 'bg-cyan-100 text-cyan-900' : accessLocked ? 'bg-yellow-100 text-yellow-900' : 'bg-gray-100'}`}>{accessLabel}</span>
                                         </div>
                                         <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={disabledReason} />
                                     </article>

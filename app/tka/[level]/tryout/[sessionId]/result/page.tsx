@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, CheckCircle2, Clock3, Target, Trophy, XCircle } from 'lucide-react'
+import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaResultReview from '@/components/tka/TkaResultReview'
-import { practiceResultService } from '@/src/services/practice-result.service'
+import { practiceResultService, type PracticeResultView } from '@/src/services/practice-result.service'
+import { tkaFullExamRpcService, type TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 import { cn } from '@/lib/utils'
 
@@ -32,7 +34,26 @@ export default async function TkaResultPage({
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/tryout/${sessionId}/result`)}`)
 
-    const result = await practiceResultService.getResult(user.id, sessionId)
+    let result: PracticeResultView | null = null
+    let fullExamState: TkaFullExamState | null = null
+
+    if (level === 'SMP' && env.appEnvironment() !== 'production') {
+        try {
+            const candidate = await tkaFullExamRpcService.getState(sessionId)
+            if (candidate.sections.length > 0) fullExamState = candidate
+        } catch {
+            // Legacy TKA mini/drill result continues through practiceResultService.
+        }
+    }
+
+    if (fullExamState) {
+        if (fullExamState.status !== 'completed') {
+            redirect(`${base}/tryout/${sessionId}`)
+        }
+        result = await tkaFullExamRpcService.getResultView(sessionId)
+    }
+
+    if (!result) result = await practiceResultService.getResult(user.id, sessionId)
     if (!result) redirect(base)
     if (result.programCode.toUpperCase() !== 'TKA' || result.trackCode.toUpperCase() !== level) redirect(base)
     if (!['completed', 'COMPLETED', 'submitted', 'SUBMITTED'].includes(result.status)) {
@@ -46,7 +67,9 @@ export default async function TkaResultPage({
                     <Link href={base} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 font-black shadow-[3px_3px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
                         <ArrowLeft size={18}/> Kembali ke TKA {level}
                     </Link>
-                    <span className="border-2 border-gray-900 bg-cyan-100 px-3 py-1 text-xs font-black uppercase">Schema V2 · TKA/{level}</span>
+                    <span className="border-2 border-gray-900 bg-cyan-100 px-3 py-1 text-xs font-black uppercase">
+                        {fullExamState ? 'RPC E2E · ' : 'Schema V2 · '}TKA/{level}
+                    </span>
                 </div>
 
                 <section className="grid gap-5 border-2 border-gray-900 bg-white p-6 shadow-[6px_6px_0_0_#111] lg:grid-cols-[1.4fr_0.6fr] lg:items-center md:p-8">
@@ -56,7 +79,7 @@ export default async function TkaResultPage({
                         </div>
                         <h1 className="mt-3 font-handwriting text-4xl font-black">Tryout selesai.</h1>
                         <p className="mt-2 max-w-2xl font-semibold text-gray-600">
-                            Penilaian dihitung server-side dari response snapshot attempt. Answer key baru ditampilkan pada halaman ini setelah attempt selesai.
+                            Penilaian dihitung server-side dari frozen response snapshot. Answer key dan pembahasan baru dibuka setelah attempt selesai.
                         </p>
                     </div>
                     <div className="border-2 border-gray-900 bg-[#fff9c4] p-5 text-center shadow-[4px_4px_0_0_#111]">
@@ -88,13 +111,13 @@ export default async function TkaResultPage({
                 </section>
 
                 {result.subjectResults.length > 0 && (
-                    <section className="grid gap-3 md:grid-cols-3">
+                    <section className="grid gap-3 md:grid-cols-2">
                         {result.subjectResults.map((subject) => (
                             <article key={subject.subjectId} className="border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0_0_#111]">
                                 <div className="flex items-center justify-between gap-2">
                                     <h2 className="text-lg font-black">{subject.code}</h2>
-                                    <span className={cn('border border-gray-900 px-2 py-0.5 text-[10px] font-black uppercase', subject.passed === false ? 'bg-red-100' : subject.passed === true ? 'bg-green-100' : 'bg-gray-100')}>
-                                        {subject.passed === null ? 'N/A' : subject.passed ? 'Lulus' : 'Belum'}
+                                    <span className="border border-gray-900 bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase">
+                                        {subject.totalQuestions} soal
                                     </span>
                                 </div>
                                 <div className="mt-2 text-3xl font-black">{subject.score}<span className="text-base text-gray-400"> / {subject.maxScore}</span></div>
@@ -111,7 +134,7 @@ export default async function TkaResultPage({
                 <section className="space-y-3">
                     <div>
                         <h2 className="text-2xl font-black">Review & Pembahasan</h2>
-                        <p className="text-sm font-semibold text-gray-600">Mendukung single choice, multiple choice, category, dan shared stimulus.</p>
+                        <p className="text-sm font-semibold text-gray-600">Mendukung single choice, multiple choice, category, dan shared stimulus dari snapshot attempt.</p>
                     </div>
                     <TkaResultReview items={result.reviewItems} />
                 </section>

@@ -3,10 +3,12 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
+import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { examAttemptService, PracticeDomainError, type StartAttemptResult } from '@/src/services/exam-attempt.service'
 import { examCompletionService } from '@/src/services/exam-completion.service'
+import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
 import { userTrackService } from '@/src/services/user-track.service'
 import { parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
@@ -66,6 +68,33 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
     const userTrack = await userTrackService.getForUser({ userId, context })
     if (!userTrack || userTrack.status.toLowerCase() !== 'active') {
         return { error: `Aktifkan jalur TKA ${level} terlebih dahulu.` }
+    }
+
+    const useSmpFullExamRpc = level === 'SMP'
+        && examSlug === 'tka-smp-full'
+        && env.appEnvironment() !== 'production'
+
+    if (useSmpFullExamRpc) {
+        try {
+            const result = await tkaFullExamRpcService.startSmpFullExam({ userId, examSlug })
+            revalidatePath(path)
+            return {
+                success: true as const,
+                sessionId: result.attemptId,
+                resumed: result.resumed,
+                level,
+            }
+        } catch (error) {
+            logger.warn('[startTkaExam:rpc] Failed to start staging TKA SMP full exam', {
+                error: error instanceof Error ? error.message : String(error),
+                userId,
+                level,
+                examSlug,
+            })
+            const message = error instanceof Error ? error.message : ''
+            if (message.includes('Attempt limit reached')) return { error: 'Batas percobaan tryout sudah tercapai.' }
+            return { error: 'Full Tryout TKA SMP staging belum dapat dimulai.' }
+        }
     }
 
     try {

@@ -1,7 +1,10 @@
 import { redirect, notFound } from 'next/navigation'
+import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
+import TkaFullExamSessionClient from '@/components/tka/TkaFullExamSessionClient'
 import TkaPracticeSessionClient from '@/components/tka/TkaPracticeSessionClient'
 import { practiceSessionService } from '@/src/services/practice-session.service'
+import { tkaFullExamRpcService, type TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
@@ -20,6 +23,27 @@ export default async function TkaPracticeSessionPage({
     const supabase = await createV2Client()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/tryout/${sessionId}`)}`)
+
+    let fullExamState: TkaFullExamState | null = null
+    if (level === 'SMP' && env.appEnvironment() !== 'production') {
+        try {
+            const candidate = await tkaFullExamRpcService.getState(sessionId)
+            if (candidate.sections.length > 0) fullExamState = candidate
+        } catch {
+            // Mini tryout/drill attempts do not use the full-exam section engine.
+            // They continue through the existing Schema V2 practice service below.
+        }
+    }
+
+    if (fullExamState) {
+        if (fullExamState.status === 'completed') {
+            redirect(`${base}/tryout/${sessionId}/result`)
+        }
+        if (!fullExamState.activeSectionId || fullExamState.questions.length === 0) {
+            redirect(base)
+        }
+        return <TkaFullExamSessionClient level={level} state={fullExamState} />
+    }
 
     const session = await practiceSessionService.getSessionView(user.id, sessionId)
     if (!session) redirect(base)
