@@ -1,5 +1,7 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { CanonicalExamType, ResolvedExam } from '@/src/repositories/exam.repository'
+import type { Database } from '@/types/database.types'
 
 type ExamRow = {
     id: string
@@ -31,14 +33,14 @@ export class ConfiguredExamRepository {
         programCode: string
         trackCode: string
         slug: string
-    }): Promise<ResolvedExam | null> {
-        const admin = await createV2AdminClient()
+    }, client?: SupabaseClient<Database>): Promise<ResolvedExam | null> {
+        const db = client ?? await createV2AdminClient()
         const programCode = input.programCode.trim().toUpperCase()
         const trackCode = input.trackCode.trim().toUpperCase()
         const slug = input.slug.trim().toLowerCase()
         if (!programCode || !trackCode || !slug) return null
 
-        const { data: program, error: programError } = await admin
+        const { data: program, error: programError } = await db
             .from('programs')
             .select('id')
             .eq('code', programCode)
@@ -46,7 +48,7 @@ export class ConfiguredExamRepository {
         if (programError) throw programError
         if (!program) return null
 
-        const { data: track, error: trackError } = await admin
+        const { data: track, error: trackError } = await db
             .from('tracks')
             .select('id')
             .eq('program_id', program.id)
@@ -55,7 +57,7 @@ export class ConfiguredExamRepository {
         if (trackError) throw trackError
         if (!track) return null
 
-        const { data: rawExam, error: examError } = await admin
+        const { data: rawExam, error: examError } = await db
             .from('exams')
             .select('id, program_id, track_id, exam_type_id, title, slug, duration_seconds, attempt_limit, question_order, access_type, required_feature_id, token_cost, starts_at, ends_at, status')
             .eq('program_id', program.id)
@@ -67,7 +69,7 @@ export class ConfiguredExamRepository {
         const exam = rawExam as ExamRow | null
         if (!exam || !availableNow(exam)) return null
 
-        const { data: examType, error: typeError } = await admin
+        const { data: examType, error: typeError } = await db
             .from('exam_types')
             .select('code')
             .eq('id', exam.exam_type_id)

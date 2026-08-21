@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Archive, CalendarDays, Database, FileQuestion, Package, Save, Settings2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getServerNowMs } from '@/lib/server/time'
 import { adminV2Service } from '@/src/services/admin-v2.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -106,6 +107,7 @@ export default async function AdminDashboard({ searchParams }: {
     const track = data.catalog.track.code
     const authorization = await authorizationService.getCurrentAuthorization()
     const permissions = new Set(authorization?.permissions ?? [])
+    const nowMs = getServerNowMs()
 
     const canProducts = permissions.has(PERMISSIONS.PRODUCT_MANAGE)
     const canEvents = permissions.has(PERMISSIONS.EVENT_MANAGE)
@@ -117,7 +119,7 @@ export default async function AdminDashboard({ searchParams }: {
     for (const row of data.productPrices) {
         if (s(row.status).toLowerCase() !== 'active') continue
         const endsAt = nullable(row.ends_at)
-        if (endsAt && new Date(endsAt).getTime() < Date.now()) continue
+        if (endsAt && new Date(endsAt).getTime() < nowMs) continue
         const id = s(row.product_id)
         if (!priceByProduct.has(id)) priceByProduct.set(id, row)
     }

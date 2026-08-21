@@ -1,42 +1,35 @@
 import crypto from 'crypto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const supabaseRpc = vi.fn()
-const transactionSingle = vi.fn()
-const fromMock = vi.fn()
+const processWebhook = vi.hoisted(() => vi.fn())
 
-vi.mock('@supabase/supabase-js', () => ({
-    createClient: vi.fn(() => ({
-        from: fromMock,
-        rpc: supabaseRpc,
-    })),
+vi.mock('@/src/services/payment.service', () => ({
+    paymentService: { processWebhook },
 }))
 
 vi.mock('@/lib/env', () => ({
     env: {
-        supabaseUrl: () => 'https://example.supabase.co',
-        supabaseServiceRoleKey: () => 'service-role',
         midtransServerKey: () => 'midtrans-server-key',
     },
 }))
 
-import {
-    getTokenIncrementForPackage,
-    POST,
-    shouldProcessTransactionWithRpc,
-} from '@/app/api/payments/webhook/route'
+import { POST } from '@/app/api/payments/webhook/route'
 
 function signedMidtransPayload(overrides: Partial<{
     order_id: string
     transaction_status: string
     status_code: string
     gross_amount: string
+    transaction_id: string
+    payment_type: string
 }> = {}) {
     const payload = {
-        order_id: 'SKD-SKD-PAKET-5-userid-1234567890',
+        order_id: 'TKA-SMP-E2E-ORDER-001',
         transaction_status: 'settlement',
         status_code: '200',
         gross_amount: '40500.00',
+        transaction_id: 'midtrans-tx-001',
+        payment_type: 'qris',
         ...overrides,
     }
 
@@ -49,77 +42,75 @@ function signedMidtransPayload(overrides: Partial<{
     }
 }
 
-function mockTransactionLookup(transaction: { amount: number; package_name: string } | null) {
-    transactionSingle.mockResolvedValueOnce(
-        transaction
-            ? { data: { order_id: 'SKD-SKD-PAKET-5-userid-1234567890', ...transaction }, error: null }
-            : { data: null, error: { message: 'not found' } }
-    )
-
-    const eqOrderId = vi.fn(() => ({ single: transactionSingle }))
-    const select = vi.fn(() => ({ eq: vi.fn(() => ({ eq: eqOrderId, single: transactionSingle })) }))
-
-    fromMock.mockReturnValueOnce({ select })
+function requestFor(payload: unknown) {
+    return new Request('http://localhost/api/payments/webhook', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    })
 }
 
-describe('payments webhook helpers', () => {
+describe('payments webhook route', () => {
     beforeEach(() => {
-        fromMock.mockReset()
-        supabaseRpc.mockReset()
-        transactionSingle.mockReset()
+        processWebhook.mockReset()
     })
 
-    it('uses the idempotent transaction RPC for every SKD status update', () => {
-        expect(shouldProcessTransactionWithRpc('pending')).toBe(true)
-        expect(shouldProcessTransactionWithRpc('capture')).toBe(true)
-        expect(shouldProcessTransactionWithRpc('settlement')).toBe(true)
-        expect(shouldProcessTransactionWithRpc('expire')).toBe(true)
-    })
+    it('passes a valid signed Midtrans status to the payment service', async () => {
+        processWebhook.mockResolvedValueOnce({ alreadyProcessed: false, paid: true })
+        const payload = signedMidtransPayload()
 
-    it('grants the configured token quota for all main SKD packages on successful statuses', () => {
-        expect(getTokenIncrementForPackage('Paket Perintis', 'capture')).toBe(1)
-        expect(getTokenIncrementForPackage('Paket Perintis', 'settlement')).toBe(1)
-
-        expect(getTokenIncrementForPackage('Paket Pejuang', 'capture')).toBe(5)
-        expect(getTokenIncrementForPackage('Paket Pejuang', 'settlement')).toBe(5)
-
-        expect(getTokenIncrementForPackage('Paket Pasukan', 'capture')).toBe(10)
-        expect(getTokenIncrementForPackage('Paket Pasukan', 'settlement')).toBe(10)
-    })
-
-    it('does not grant token quota for non-successful or unknown SKD payments', () => {
-        expect(getTokenIncrementForPackage('Paket Perintis', 'pending')).toBe(0)
-        expect(getTokenIncrementForPackage('Paket Pejuang', 'expire')).toBe(0)
-        expect(getTokenIncrementForPackage('Paket Pasukan', 'cancel')).toBe(0)
-        expect(getTokenIncrementForPackage('Unknown Package', 'settlement')).toBe(0)
-    })
-
-    it('processes a settled Paket Pejuang webhook and grants the configured quota through the RPC', async () => {
-        mockTransactionLookup({ amount: 40500, package_name: 'Paket Pejuang' })
-        supabaseRpc.mockResolvedValueOnce({ data: [{ status: 'settlement', quota_granted: true }], error: null })
-
-        const response = await POST(new Request('http://localhost/api/payments/webhook', {
-            method: 'POST',
-            body: JSON.stringify(signedMidtransPayload()),
-        }))
+        const response = await POST(requestFor(payload))
 
         expect(response.status).toBe(200)
-        expect(supabaseRpc).toHaveBeenCalledWith('process_paid_transaction', {
-            p_order_id: 'SKD-SKD-PAKET-5-userid-1234567890',
-            p_transaction_status: 'settlement',
-            p_increment_by: 5,
-        })
+        expect(processWebhook).toHaveBeenCalledWith(expect.objectContaining({
+            orderNumber: payload.order_id,
+            status: 'settlement',
+            amount: 40500,
+            providerTransactionId: 'midtrans-tx-001',
+            paymentMethod: 'qris',
+            eventId: 'midtrans-tx-001:settlement',
+        }))
     })
 
-    it('rejects a settled package webhook when the Midtrans amount does not match the stored transaction', async () => {
-        mockTransactionLookup({ amount: 40500, package_name: 'Paket Pejuang' })
+    it('rejects an invalid Midtrans signature before the payment service is called', async () => {
+        const payload = { ...signedMidtransPayload(), signature_key: '0'.repeat(128) }
 
-        const response = await POST(new Request('http://localhost/api/payments/webhook', {
-            method: 'POST',
-            body: JSON.stringify(signedMidtransPayload({ gross_amount: '40000.00' })),
-        }))
+        const response = await POST(requestFor(payload))
+
+        expect(response.status).toBe(403)
+        expect(processWebhook).not.toHaveBeenCalled()
+    })
+
+    it('rejects unsupported transaction statuses', async () => {
+        const payload = signedMidtransPayload({ transaction_status: 'refund' })
+
+        const response = await POST(requestFor(payload))
 
         expect(response.status).toBe(400)
-        expect(supabaseRpc).not.toHaveBeenCalled()
+        expect(processWebhook).not.toHaveBeenCalled()
+    })
+
+    it('maps an amount mismatch from the payment service to 400', async () => {
+        processWebhook.mockRejectedValueOnce(new Error('PAYMENT_AMOUNT_MISMATCH'))
+
+        const response = await POST(requestFor(signedMidtransPayload()))
+
+        expect(response.status).toBe(400)
+    })
+
+    it('maps a missing order from the payment service to 404', async () => {
+        processWebhook.mockRejectedValueOnce(new Error('ORDER_NOT_FOUND'))
+
+        const response = await POST(requestFor(signedMidtransPayload()))
+
+        expect(response.status).toBe(404)
+    })
+
+    it('returns success for an already processed idempotent webhook event', async () => {
+        processWebhook.mockResolvedValueOnce({ alreadyProcessed: true, paid: true })
+
+        const response = await POST(requestFor(signedMidtransPayload()))
+
+        expect(response.status).toBe(200)
+        expect(processWebhook).toHaveBeenCalledTimes(1)
     })
 })

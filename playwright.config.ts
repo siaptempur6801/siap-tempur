@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 const hasParticipantCredentials = Boolean(
   process.env.E2E_PARTICIPANT_EMAIL && process.env.E2E_PARTICIPANT_PASSWORD,
 );
+const tkaStagingE2EEnabled = process.env.E2E_TKA_STAGING === '1';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -25,7 +26,9 @@ export default defineConfig({
       name: 'chromium-public',
       testIgnore: [
         /.*\.setup\.ts/,
+        /.*\.cleanup\.ts/,
         /.*3-dashboard\.spec\.ts/,
+        /.*6-tka-smp-full\.spec\.ts/,
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -36,7 +39,7 @@ export default defineConfig({
       ? [
           {
             name: 'setup',
-            testMatch: /.*\.setup\.ts/,
+            testMatch: /.*auth\.setup\.ts/,
           },
           {
             name: 'chromium-authenticated',
@@ -46,6 +49,28 @@ export default defineConfig({
               storageState: 'playwright/.auth/user.json',
             },
             dependencies: ['setup'],
+          },
+        ]
+      : []),
+    ...(tkaStagingE2EEnabled
+      ? [
+          {
+            name: 'tka-setup',
+            testMatch: /.*tka\.setup\.ts/,
+            teardown: 'tka-cleanup',
+          },
+          {
+            name: 'chromium-tka-staging',
+            testMatch: /.*6-tka-smp-full\.spec\.ts/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: 'playwright/.auth/tka-user.json',
+            },
+            dependencies: ['tka-setup'],
+          },
+          {
+            name: 'tka-cleanup',
+            testMatch: /.*tka\.cleanup\.ts/,
           },
         ]
       : []),

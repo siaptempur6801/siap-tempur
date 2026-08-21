@@ -23,7 +23,6 @@ type Props = {
 }
 
 type SyncState = {
-    inFlight: boolean
     latestIds: string[]
     inflightPromise: Promise<void> | null
 }
@@ -88,44 +87,54 @@ export default function UniversalPracticeSessionClient({
         return answered
     }, [questions, selectedIdsFor])
 
-    const syncSelection = useCallback(async (question: PracticeQuestionView): Promise<void> => {
-        const state = syncStateRef.current[question.id]
-        if (!state) return
-        if (state.inFlight) return state.inflightPromise ?? Promise.resolve()
+    const syncSelection = useCallback((question: PracticeQuestionView): Promise<void> => {
+        const questionId = question.id
+        const existing = syncStateRef.current[questionId]
+        if (!existing) return Promise.resolve()
+        if (existing.inflightPromise) return existing.inflightPromise
 
-        const selection = [...state.latestIds]
-        state.inFlight = true
-        const request = (question.response_type === 'single_choice'
-            ? selection[0]
-                ? submitAnswer(sessionId, question.id, selection[0])
-                : Promise.resolve({ error: 'Jawaban kosong.' })
-            : submitAnswerOptions(sessionId, question.id, selection))
-            .then((result) => {
-                if (result?.error && sameSelection(state.latestIds, selection)) {
-                    toast.error(result.error)
+        const worker = (async () => {
+            while (true) {
+                const current = syncStateRef.current[questionId]
+                if (!current) return
+                const selection = [...current.latestIds]
+
+                try {
+                    const result = question.response_type === 'single_choice'
+                        ? selection[0]
+                            ? await submitAnswer(sessionId, questionId, selection[0])
+                            : { error: 'Jawaban kosong.' }
+                        : await submitAnswerOptions(sessionId, questionId, selection)
+                    const latest = syncStateRef.current[questionId]?.latestIds ?? selection
+                    if (result?.error && sameSelection(latest, selection)) toast.error(result.error)
+                } catch {
+                    const latest = syncStateRef.current[questionId]?.latestIds ?? selection
+                    if (sameSelection(latest, selection)) toast.error('Gagal menyimpan jawaban.')
                 }
-            })
-            .catch(() => {
-                if (sameSelection(state.latestIds, selection)) toast.error('Gagal menyimpan jawaban.')
-            })
-            .then(async () => {
-                state.inFlight = false
-                if (!sameSelection(state.latestIds, selection)) await syncSelection(question)
-            })
 
-        state.inflightPromise = request
-        return request
+                const latest = syncStateRef.current[questionId]?.latestIds ?? selection
+                if (sameSelection(latest, selection)) {
+                    syncStateRef.current[questionId] = { latestIds: latest, inflightPromise: null }
+                    return
+                }
+            }
+        })()
+
+        syncStateRef.current[questionId] = {
+            latestIds: [...existing.latestIds],
+            inflightPromise: worker,
+        }
+        return worker
     }, [sessionId])
 
     const queueSelection = useCallback((question: PracticeQuestionView, nextIds: string[]) => {
-        const state = syncStateRef.current[question.id] ?? {
-            inFlight: false,
-            latestIds: [],
-            inflightPromise: null,
+        const existing = syncStateRef.current[question.id]
+        const inflightPromise = existing?.inflightPromise ?? null
+        syncStateRef.current[question.id] = {
+            latestIds: [...nextIds],
+            inflightPromise,
         }
-        state.latestIds = [...nextIds]
-        syncStateRef.current[question.id] = state
-        void syncSelection(question)
+        if (!inflightPromise) void syncSelection(question)
     }, [syncSelection])
 
     const handleSelect = useCallback((question: PracticeQuestionView, optionId: string) => {
@@ -221,10 +230,7 @@ export default function UniversalPracticeSessionClient({
     }, [answeredQuestionIds.size, finish, finishing, questions.length])
 
     useEffect(() => {
-        if (!endTime || finishing) {
-            if (!endTime) setRemainingMs(null)
-            return
-        }
+        if (!endTime || finishing) return
         const tick = () => {
             const remaining = Date.parse(endTime) - Date.now()
             setRemainingMs(Math.max(0, remaining))
@@ -288,7 +294,7 @@ export default function UniversalPracticeSessionClient({
                             <button type="button" onClick={toggleMarked} className={cn('border-2 border-gray-900 px-3 py-2 font-black', marked[currentQuestion.id] ? 'bg-yellow-300' : 'bg-white')}>
                                 <Flag size={16}/>
                             </button>
-                            {remainingMs !== null && (
+                            {endTime && remainingMs !== null && (
                                 <div className={cn('inline-flex items-center gap-2 border-2 border-gray-900 px-3 py-2 font-mono font-black', remainingMs <= 300000 ? 'bg-red-100 text-red-700' : 'bg-cyan-100')}>
                                     <Clock3 size={16}/>{formatRemaining(remainingMs)}
                                 </div>

@@ -11,14 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      MIDTRANS_SERVER_KEY: ${{ secrets.MIDTRANS_SERVER_KEY }}
-      NEXT_PUBLIC_MIDTRANS_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY }}
-      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
-      E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
-      E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
+      CI: 'true'
+      APP_ENV: staging
+      NEXT_PUBLIC_APP_ENV: staging
+      NEXT_PUBLIC_SUPABASE_URL: https://lpgrivowdcepcxradavu.supabase.co
+      NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+      # Standard CI must not have an admin-capable database credential. Dedicated
+      # staging E2E uses STAGING_SUPABASE_SERVICE_ROLE_KEY in its separate workflow.
+      SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
+      MIDTRANS_SERVER_KEY_SANDBOX: ci-not-used
+      NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: ci-not-used
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      E2E_PARTICIPANT_EMAIL: ''
+      E2E_PARTICIPANT_PASSWORD: ''
 
     steps:
       - name: Checkout
@@ -31,6 +38,8 @@ jobs:
           cache: npm
 
       - name: Install dependencies
+        # package-lock normalization is tracked separately; current repository
+        # installs successfully with npm install and CI must not rewrite the lockfile.
         run: npm install
 
       - name: Lint

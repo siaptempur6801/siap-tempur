@@ -27,7 +27,6 @@ import type {
 } from '@/src/services/tka-full-exam-rpc.service'
 
 type SyncState = {
-    inFlight: boolean
     latestIds: string[]
     latestFlag: boolean
     inflightPromise: Promise<void> | null
@@ -83,7 +82,7 @@ export default function TkaFullExamSessionClient({
     const [remainingMs, setRemainingMs] = useState<number | null>(null)
     const [processing, setProcessing] = useState(false)
     const syncStateRef = useRef<Record<string, SyncState>>({})
-    const questionEnteredAtRef = useRef(Date.now())
+    const questionEnteredAtRef = useRef<number | null>(null)
     const expiredHandledRef = useRef(false)
 
     const questions = state.questions
@@ -137,52 +136,79 @@ export default function TkaFullExamSessionClient({
     ), [questions, selectedIdsFor])
 
     const currentTimeSpent = useCallback((question: TkaFullExamQuestionView) => {
-        const extra = currentQuestion?.attemptQuestionId === question.attemptQuestionId
-            ? Math.max(0, Math.floor((Date.now() - questionEnteredAtRef.current) / 1000))
+        const enteredAt = questionEnteredAtRef.current
+        const extra = currentQuestion?.attemptQuestionId === question.attemptQuestionId && enteredAt !== null
+            ? Math.max(0, Math.floor((Date.now() - enteredAt) / 1000))
             : 0
         return Math.max(0, question.timeSpentSeconds + extra)
     }, [currentQuestion?.attemptQuestionId])
 
-    const syncSelection = useCallback(async (question: TkaFullExamQuestionView): Promise<void> => {
-        const stateForQuestion = syncStateRef.current[question.attemptQuestionId]
-        if (!stateForQuestion) return
-        if (stateForQuestion.inFlight) return stateForQuestion.inflightPromise ?? Promise.resolve()
+    const syncSelection = useCallback((question: TkaFullExamQuestionView): Promise<void> => {
+        const questionId = question.attemptQuestionId
+        const existing = syncStateRef.current[questionId]
+        if (!existing) return Promise.resolve()
+        if (existing.inflightPromise) return existing.inflightPromise
 
-        const selection = [...stateForQuestion.latestIds]
-        const flagValue = stateForQuestion.latestFlag
-        stateForQuestion.inFlight = true
-        const request = saveTkaFullExamAnswer({
-            attemptQuestionId: question.attemptQuestionId,
-            optionIds: selection,
-            timeSpentSeconds: currentTimeSpent(question),
-            isFlagged: flagValue,
-        }).then((result) => {
-            if (result?.error && sameSelection(stateForQuestion.latestIds, selection) && stateForQuestion.latestFlag === flagValue) {
-                toast.error(result.error)
+        const worker = (async () => {
+            while (true) {
+                const current = syncStateRef.current[questionId]
+                if (!current) return
+                const selection = [...current.latestIds]
+                const flagValue = current.latestFlag
+
+                try {
+                    const result = await saveTkaFullExamAnswer({
+                        attemptQuestionId: questionId,
+                        optionIds: selection,
+                        timeSpentSeconds: currentTimeSpent(question),
+                        isFlagged: flagValue,
+                    })
+                    const latest = syncStateRef.current[questionId]
+                    if (
+                        result?.error
+                        && latest
+                        && sameSelection(latest.latestIds, selection)
+                        && latest.latestFlag === flagValue
+                    ) {
+                        toast.error(result.error)
+                    }
+                } catch {
+                    const latest = syncStateRef.current[questionId]
+                    if (latest && sameSelection(latest.latestIds, selection) && latest.latestFlag === flagValue) {
+                        toast.error('Gagal menyimpan jawaban.')
+                    }
+                }
+
+                const latest = syncStateRef.current[questionId]
+                if (!latest) return
+                if (sameSelection(latest.latestIds, selection) && latest.latestFlag === flagValue) {
+                    syncStateRef.current[questionId] = {
+                        latestIds: [...latest.latestIds],
+                        latestFlag: latest.latestFlag,
+                        inflightPromise: null,
+                    }
+                    return
+                }
             }
-        }).catch(() => {
-            if (sameSelection(stateForQuestion.latestIds, selection)) toast.error('Gagal menyimpan jawaban.')
-        }).then(async () => {
-            stateForQuestion.inFlight = false
-            if (!sameSelection(stateForQuestion.latestIds, selection) || stateForQuestion.latestFlag !== flagValue) {
-                await syncSelection(question)
-            }
-        })
-        stateForQuestion.inflightPromise = request
-        return request
+        })()
+
+        syncStateRef.current[questionId] = {
+            latestIds: [...existing.latestIds],
+            latestFlag: existing.latestFlag,
+            inflightPromise: worker,
+        }
+        return worker
     }, [currentTimeSpent])
 
     const queueSelection = useCallback((question: TkaFullExamQuestionView, nextIds: string[], flagValue: boolean) => {
-        const current = syncStateRef.current[question.attemptQuestionId] ?? {
-            inFlight: false,
-            latestIds: [],
-            latestFlag: false,
-            inflightPromise: null,
+        const existing = syncStateRef.current[question.attemptQuestionId]
+        const inflightPromise = existing?.inflightPromise ?? null
+        syncStateRef.current[question.attemptQuestionId] = {
+            latestIds: [...nextIds],
+            latestFlag: flagValue,
+            inflightPromise,
         }
-        current.latestIds = [...nextIds]
-        current.latestFlag = flagValue
-        syncStateRef.current[question.attemptQuestionId] = current
-        void syncSelection(question)
+        if (!inflightPromise) void syncSelection(question)
     }, [syncSelection])
 
     const handleSelect = useCallback((question: TkaFullExamQuestionView, optionId: string) => {

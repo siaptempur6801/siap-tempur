@@ -5,10 +5,8 @@ import { activateTkaTrackAction } from '@/app/actions/user-track'
 import TkaPassPackagesClient from '@/components/tka/TkaPassPackagesClient'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { env } from '@/lib/env'
-import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
-import { catalogContextService } from '@/src/services/catalog-context.service'
+import { createV2Client } from '@/lib/utils/supabase/server'
 import { commerceService } from '@/src/services/commerce.service'
-import { userTrackService } from '@/src/services/user-track.service'
 import { parseTkaLevel, tkaContext, tkaLevelPath, type TkaLevel } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
@@ -67,27 +65,71 @@ export default async function TkaLevelPage({
 
     const context = tkaContext(level)
     const stagingSmpPilot = env.appEnvironment() !== 'production' && level === 'SMP'
-    const [catalog, userTrack, rawPassOffers] = await Promise.all([
-        catalogContextService.resolve(context),
-        userTrackService.getForUser({ userId: user.id, context }),
-        commerceService.listActiveProductOffers('TKA', level),
+
+    const { data: program, error: programError } = await supabase
+        .from('programs')
+        .select('id, code, name')
+        .eq('code', context.programCode)
+        .maybeSingle()
+    if (programError) throw programError
+    if (!program) notFound()
+
+    const { data: track, error: trackError } = await supabase
+        .from('tracks')
+        .select('id, code, name')
+        .eq('program_id', program.id)
+        .eq('code', context.trackCode)
+        .maybeSingle()
+    if (trackError) throw trackError
+    if (!track) notFound()
+
+    const [{ data: subjectRows, error: subjectError }, { data: userTrack, error: userTrackError }] = await Promise.all([
+        supabase
+            .from('subjects')
+            .select('id, code, name, subject_type')
+            .eq('track_id', track.id)
+            .order('sort_order', { ascending: true }),
+        supabase
+            .from('user_tracks')
+            .select('status')
+            .eq('user_id', user.id)
+            .eq('track_id', track.id)
+            .maybeSingle(),
     ])
+    if (subjectError) throw subjectError
+    if (userTrackError) throw userTrackError
+
+    const catalog = {
+        program: { id: String(program.id), code: String(program.code), name: String(program.name) },
+        track: { id: String(track.id), code: String(track.code), name: String(track.name) },
+        subjects: (subjectRows ?? []).map((subject) => ({
+            id: String(subject.id),
+            code: String(subject.code),
+            name: String(subject.name),
+            subjectType: String(subject.subject_type ?? 'mandatory'),
+        })),
+    }
+
+    // Payment/Tempur Pass is intentionally outside the SMP staging pilot. Skipping
+    // commerce here keeps the user-facing staging flow on authenticated RLS only.
+    const rawPassOffers = stagingSmpPilot
+        ? []
+        : await commerceService.listActiveProductOffers('TKA', level)
     const passOffers = rawPassOffers.filter((offer) => offer.code.startsWith(`TKA_${level}_PASS_`))
 
-    const admin = await createV2AdminClient()
     const questionStatuses = stagingSmpPilot
-        ? ['approved', 'APPROVED', 'published', 'PUBLISHED', 'active', 'ACTIVE']
-        : ['published', 'PUBLISHED', 'active', 'ACTIVE']
+        ? ['approved', 'published']
+        : ['published']
     const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { data: questionRows, error: questionError }] = await Promise.all([
-        admin
+        supabase
             .from('exams')
             .select('id, exam_type_id, title, slug, duration_seconds, attempt_limit, access_type, required_feature_id, status, token_cost, starts_at, ends_at')
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
             .in('status', ['active', 'ACTIVE', 'scheduled', 'SCHEDULED'])
             .order('created_at', { ascending: true }),
-        admin.from('exam_types').select('id, code, name'),
-        admin
+        supabase.from('exam_types').select('id, code, name'),
+        supabase
             .from('questions')
             .select('subject_id')
             .eq('program_id', catalog.program.id)
@@ -106,7 +148,7 @@ export default async function TkaLevelPage({
 
     const [{ data: entitlementRows, error: entitlementError }, { data: attemptRows, error: attemptError }] = await Promise.all([
         featureIds.length > 0
-            ? admin
+            ? supabase
                 .from('entitlements')
                 .select('feature_id, starts_at, expires_at, usage_limit, usage_count, status')
                 .eq('user_id', user.id)
@@ -114,7 +156,7 @@ export default async function TkaLevelPage({
                 .in('status', ['active', 'ACTIVE'])
             : Promise.resolve({ data: [], error: null }),
         examIds.length > 0
-            ? admin
+            ? supabase
                 .from('exam_attempts')
                 .select('exam_id')
                 .eq('user_id', user.id)

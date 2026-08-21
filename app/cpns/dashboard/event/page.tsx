@@ -11,10 +11,10 @@ export default async function UserEventPage() {
 
     if (!user) redirect('/login?next=/cpns/dashboard/event')
 
-    try {
-        const events = await eventCommerceService.getUserEventPageData(user.id)
-        return <EventClient events={events} />
-    } catch {
+    const events = await eventCommerceService.getUserEventPageData(user.id).catch(() => null)
+    if (!events) {
         return <div className="p-8 text-center font-bold text-gray-900">Gagal memuat event</div>
     }
+
+    return <EventClient events={events} />
 }

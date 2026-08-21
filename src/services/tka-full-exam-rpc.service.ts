@@ -1,4 +1,4 @@
-import { createClient, createV2AdminClient } from '@/lib/utils/supabase/server'
+import { createClient, createV2Client } from '@/lib/utils/supabase/server'
 import { configuredExamRepository } from '@/src/repositories/configured-exam.repository'
 import type {
     PracticeResultView,
@@ -290,15 +290,15 @@ export class TkaFullExamRpcService {
     }
 
     async startSmpFullExam(input: { userId: string; examSlug: string }): Promise<TkaFullExamStartResult> {
+        const supabase = await createV2Client()
         const exam = await configuredExamRepository.findBySlug({
             programCode: 'TKA',
             trackCode: 'SMP',
             slug: input.examSlug,
-        })
+        }, supabase)
         if (!exam || exam.examTypeCode !== 'FULL_TRYOUT') throw new Error('Tryout TKA SMP belum aktif.')
 
-        const admin = await createV2AdminClient()
-        const { data: activeAttempt, error: activeError } = await admin
+        const { data: activeAttempt, error: activeError } = await supabase
             .from('exam_attempts')
             .select('id')
             .eq('exam_id', exam.id)

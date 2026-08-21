@@ -9,16 +9,47 @@ import { createV2Client } from '@/lib/utils/supabase/server'
 import { examAttemptService, PracticeDomainError, type StartAttemptResult } from '@/src/services/exam-attempt.service'
 import { examCompletionService } from '@/src/services/exam-completion.service'
 import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
-import { userTrackService } from '@/src/services/user-track.service'
 import { parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
 const EXAM_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-async function getCurrentUserId(returnTo: string) {
+async function getCurrentUserContext(returnTo: string) {
     const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`)
-    return user.id
+    return { supabase, userId: user.id }
+}
+
+async function hasActiveTrack(
+    supabase: Awaited<ReturnType<typeof createV2Client>>,
+    userId: string,
+    context: ReturnType<typeof tkaContext>,
+) {
+    const { data: program, error: programError } = await supabase
+        .from('programs')
+        .select('id')
+        .eq('code', context.programCode)
+        .maybeSingle()
+    if (programError) throw programError
+    if (!program) return false
+
+    const { data: track, error: trackError } = await supabase
+        .from('tracks')
+        .select('id')
+        .eq('program_id', program.id)
+        .eq('code', context.trackCode)
+        .maybeSingle()
+    if (trackError) throw trackError
+    if (!track) return false
+
+    const { data: userTrack, error: userTrackError } = await supabase
+        .from('user_tracks')
+        .select('status')
+        .eq('user_id', userId)
+        .eq('track_id', track.id)
+        .maybeSingle()
+    if (userTrackError) throw userTrackError
+    return userTrack?.status.toLowerCase() === 'active'
 }
 
 function friendlyError(error: PracticeDomainError) {
@@ -62,11 +93,10 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
     if (!level || !EXAM_SLUG_PATTERN.test(examSlug)) return { error: 'Konfigurasi tryout tidak valid.' }
 
     const path = tkaLevelPath(level)
-    const userId = await getCurrentUserId(path)
+    const { supabase, userId } = await getCurrentUserContext(path)
     const context = tkaContext(level)
 
-    const userTrack = await userTrackService.getForUser({ userId, context })
-    if (!userTrack || userTrack.status.toLowerCase() !== 'active') {
+    if (!await hasActiveTrack(supabase, userId, context)) {
         return { error: `Aktifkan jalur TKA ${level} terlebih dahulu.` }
     }
 

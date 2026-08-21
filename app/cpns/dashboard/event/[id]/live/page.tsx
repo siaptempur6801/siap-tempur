@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createV2Client } from '@/lib/utils/supabase/server'
+import { getServerNowMs } from '@/lib/server/time'
 import LiveLeaderboardClient from '@/components/admin/LiveLeaderboardClient'
 import { authorizationRepository } from '@/src/repositories/authorization.repository'
 import { eventRepository } from '@/src/repositories/event.repository'
@@ -27,7 +28,7 @@ export default async function LiveLeaderboardPage({
         return <LiveLeaderboardClient eventId={id} />
     }
 
-    const finished = String(event.status).toLowerCase() === 'closed' || Date.now() > Date.parse(event.ends_at)
+    const finished = String(event.status).toLowerCase() === 'closed' || getServerNowMs() > Date.parse(event.ends_at)
     if (!finished) redirect('/cpns/dashboard/event')
 
     const registration = await eventRepository.getRegistration(user.id, id)
