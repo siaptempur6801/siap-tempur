@@ -60,6 +60,28 @@ async function approveStage(page: Page, note: string) {
     await expect(page.getByText('Keputusan review tersimpan.')).toBeVisible()
 }
 
+test('article workspace loads with schema-v2 content permissions', async ({ browser }) => {
+    const users = await metadata()
+
+    const editorContext = await browser.newContext()
+    const editorPage = await editorContext.newPage()
+    await login(editorPage, users.editor)
+    await editorPage.goto('/admin/content/articles')
+    await expect(editorPage.getByRole('heading', { name: 'Articles', exact: true })).toBeVisible()
+    await expect(editorPage.getByText(/Gagal memuat artikel/i)).toHaveCount(0)
+    await expect(editorPage.getByRole('link', { name: 'Artikel baru', exact: true })).toBeVisible()
+    await editorContext.close()
+
+    const reviewerContext = await browser.newContext()
+    const reviewerPage = await reviewerContext.newPage()
+    await login(reviewerPage, users.reviewer)
+    await reviewerPage.goto('/admin/content/articles')
+    await expect(reviewerPage.getByRole('heading', { name: 'Articles', exact: true })).toBeVisible()
+    await expect(reviewerPage.getByText(/Gagal memuat artikel/i)).toHaveCount(0)
+    await expect(reviewerPage.getByRole('link', { name: 'Artikel baru', exact: true })).toHaveCount(0)
+    await reviewerContext.close()
+})
+
 test('author → reviewer → editorial → academic → technical QA → published', async ({ browser }) => {
     test.setTimeout(120_000)
     const users = await metadata()
