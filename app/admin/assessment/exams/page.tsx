@@ -1,11 +1,9 @@
-import AdminOperationsWorkspace from '@/app/admin/AdminOperationsWorkspace'
+import AdminExamsWorkspace, { type AdminExamsSearchParams } from '@/app/admin/assessment/exams/AdminExamsWorkspace'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-type SearchParams = { program?: string; track?: string; edit?: string; ok?: string; error?: string }
-
-export default async function ExamsRoute({ searchParams }: { searchParams: Promise<SearchParams> }) {
-    const params = await searchParams
-    return <AdminOperationsWorkspace mode="exams" searchParams={Promise.resolve({ ...params, program: params.program || 'CPNS', track: params.track || 'SKD' })}/>
+export default async function ExamsRoute({ searchParams }: { searchParams: Promise<AdminExamsSearchParams> }) {
+  const params = await searchParams
+  return <AdminExamsWorkspace searchParams={Promise.resolve({ ...params, program: params.program || 'CPNS', track: params.track || 'SKD' })}/>
 }
