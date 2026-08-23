@@ -31,6 +31,7 @@ export default defineConfig({
         /.*3-dashboard\.spec\.ts/,
         /.*6-tka-smp-full\.spec\.ts/,
         /.*8-tka-smp-mini\.spec\.ts/,
+        /.*9-tka-smp-monetization\.spec\.ts/,
         /.*7-content-review-workflow\.spec\.ts/,
       ],
       use: {
@@ -64,7 +65,7 @@ export default defineConfig({
           },
           {
             name: 'chromium-tka-staging',
-            testMatch: /.*(?:6-tka-smp-full|8-tka-smp-mini)\.spec\.ts/,
+            testMatch: /.*(?:6-tka-smp-full|8-tka-smp-mini|9-tka-smp-monetization)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
               storageState: 'playwright/.auth/tka-user.json',
