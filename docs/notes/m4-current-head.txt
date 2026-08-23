@@ -1,0 +1,6 @@
+Milestone 4 bootstrap branch: feat/tka-smp-monetization-v1
+Roadmap sync: 8dbe616e06cc3cfa9893e36568b2524924f7ed17
+Catalog migration commit: adf001fffa47f5f9a651b0a6cd06f91296a8d7be
+Audit doc commit: c73c091ec704030d2f997b6ab9cfc59048d620fb
+Tracker delta commit: 0fcfc9e08587893e87a8bd3bec35ccf55264ab44
+Staging migration: 20260823065718_tka_smp_pass_catalog_v1
