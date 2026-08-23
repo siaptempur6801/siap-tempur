@@ -5,13 +5,20 @@ import { revalidatePath } from 'next/cache'
 import { ArticleFormSchema } from '@/lib/validations/admin'
 import { validateCsrf } from '@/lib/csrf'
 import { createAdminClient } from '@/lib/utils/supabase/server'
-import { canAccessArticleAdmin, canPublishArticle, getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
+import { getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
+import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import { logAuditEvent } from '@/lib/audit-log'
 import { logger } from '@/lib/logger'
 
 export type ArticleActionState = {
     success: boolean
     message: string
+}
+
+type ArticleActor = {
+    userId: string
+    role: string
+    permissions: string[]
 }
 
 type ArticleRow = {
@@ -36,9 +43,13 @@ function readArticleForm(formData: FormData) {
     }
 }
 
-async function requireArticleActor() {
+function actorHasPermission(actor: ArticleActor, permission: PermissionCode) {
+    return actor.permissions.includes(permission)
+}
+
+async function requireArticleActor(permission: PermissionCode) {
     const actor = await getCurrentUserRole()
-    if (!actor || !canAccessArticleAdmin(actor.role)) return null
+    if (!actor || !actorHasPermission(actor, permission)) return null
     return actor
 }
 
@@ -58,7 +69,7 @@ async function readArticle(id: string): Promise<ArticleRow | null> {
     return data as ArticleRow | null
 }
 
-function canModifyArticle(actor: { userId: string; role: string }, article: ArticleRow) {
+function canModifyArticle(actor: ArticleActor, article: ArticleRow) {
     if (isAdminRole(actor.role)) return true
     return article.author_id === actor.userId && article.status !== 'published'
 }
@@ -66,7 +77,7 @@ function canModifyArticle(actor: { userId: string; role: string }, article: Arti
 export async function createArticle(_prevState: ArticleActionState, formData: FormData): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await requireArticleActor()
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_CREATE)
     if (!actor) return { success: false, message: 'Unauthorized' }
 
     const parsed = ArticleFormSchema.safeParse(readArticleForm(formData))
@@ -93,7 +104,7 @@ export async function createArticle(_prevState: ArticleActionState, formData: Fo
 export async function updateArticle(id: string, _prevState: ArticleActionState, formData: FormData): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await requireArticleActor()
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_UPDATE)
     if (!actor) return { success: false, message: 'Unauthorized' }
 
     const article = await readArticle(id)
@@ -121,8 +132,8 @@ export async function updateArticle(id: string, _prevState: ArticleActionState, 
 export async function publishArticle(id: string): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await getCurrentUserRole()
-    if (!actor || !canPublishArticle(actor.role)) return { success: false, message: 'Unauthorized' }
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_PUBLISH)
+    if (!actor) return { success: false, message: 'Unauthorized' }
 
     const supabase = await createAdminClient()
     const { data, error } = await supabase
@@ -147,8 +158,8 @@ export async function publishArticle(id: string): Promise<ArticleActionState> {
 export async function unpublishArticle(id: string): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await getCurrentUserRole()
-    if (!actor || !canPublishArticle(actor.role)) return { success: false, message: 'Unauthorized' }
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_PUBLISH)
+    if (!actor) return { success: false, message: 'Unauthorized' }
 
     const supabase = await createAdminClient()
     const { data, error } = await supabase
@@ -173,7 +184,7 @@ export async function unpublishArticle(id: string): Promise<ArticleActionState> 
 export async function archiveArticle(id: string): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await requireArticleActor()
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_UPDATE)
     if (!actor) return { success: false, message: 'Unauthorized' }
 
     const article = await readArticle(id)
