@@ -1,209 +1,122 @@
-# Admin Workspace UI System V1
+# Admin Workspace UI System
 
-Status: **canonical UI/UX contract** for `/admin/**`.
+## Purpose
 
-## Goals
+Admin Workspace is one operational application. Canonical admin routes must use the same shell, spacing, hierarchy, feedback, form, list/table, status, empty-state, and responsive patterns.
 
-Admin Workspace harus terasa sebagai satu aplikasi, bukan kumpulan halaman feature yang memiliki layout dan navigasi sendiri-sendiri.
+## Canonical navigation
 
-Prinsip utama:
+- Dashboard: `/admin`
+- Question Bank: `/admin/content/questions`
+- Review Queue: `/admin/content/review`
+- Articles: `/admin/content/articles`
+- Exams: `/admin/assessment/exams`
+- Events: `/admin/assessment/events`
+- Products: `/admin/commerce/products`
+- Orders & Payments: `/admin/commerce`
 
-1. `UnifiedAdminShell` memiliki navigation dan Program/Track context.
-2. Feature page tidak membuat sidebar, tab modul, atau Program/Track selector kedua.
-3. Setiap halaman memakai hierarchy yang sama: page header → feedback/notice → primary action → list/table → empty state.
-4. Semua create/edit flow tetap berada di canonical `/admin/**` route.
-5. Legacy `/cpns/admin/**` hanya compatibility entrypoint dan harus diarahkan ke canonical route.
-6. Business logic, authorization, dan server validation tetap menjadi sumber kebenaran; UI tidak boleh menjadi access-control boundary.
+The sidebar is the primary module navigation. Program/Track context belongs to the shared shell and must not be duplicated inside feature pages.
 
-## Canonical routes
+## Standard page hierarchy
 
-| Module | Route |
-|---|---|
-| Dashboard | `/admin` |
-| Question Bank | `/admin/content/questions` |
-| Review Queue | `/admin/content/review` |
-| Articles | `/admin/content/articles` |
-| Exams | `/admin/assessment/exams` |
-| Events | `/admin/assessment/events` |
-| Products | `/admin/commerce/products` |
-| Orders & Payments | `/admin/commerce` |
+1. Page header
+2. Feedback / contextual notice
+3. Primary operational content
+4. List, table, or cards
+5. Status and actions
+6. Empty/error states
 
-Route legacy tidak boleh menjadi destination setelah mutation/save.
+Pages should optimize for scanning existing data first. Creation forms must not consume permanent space on list pages.
 
-## Layout ownership
+## CRUD interaction contract
 
-### Shell owns
+Default simple/medium CRUD flow:
 
-- desktop sidebar
-- mobile drawer/navigation
-- current active module
-- Program selector
-- Track selector
-- role/profile/sign-out area
-- global content width/background
-
-### Page owns
-
-- title + one-sentence purpose
-- primary CTA
-- page-specific notice/error/success
-- modal/editor untuk task utama
-- module-specific filters
-- records/table/cards
-- empty state
-
-Page **tidak boleh** membuat Program/Track selector atau cross-module tabs sendiri.
-
-## Visual primitives
-
-Gunakan `components/admin/AdminUi.tsx` sebagai default:
-
-- `AdminPageHeader`
-- `AdminCard`
-- `AdminSectionHeading`
-- `AdminBadge`
-- `AdminMetric`
-- `AdminEmptyState`
-- `adminInputClass`
-- `adminPrimaryButtonClass`
-- `adminSecondaryButtonClass`
-- `adminDangerButtonClass`
-
-Gunakan `components/admin/AdminModal.tsx` untuk CRUD sederhana/menengah.
-
-Jangan memperkenalkan kembali visual legacy di `/admin/**` seperti:
-
-- `border-2 border-gray-900` sebagai treatment utama card/form
-- chunky black offset shadow
-- handwriting font untuk page/form hierarchy
-- hard-coded notebook background
-- module tabs yang menduplikasi sidebar
-
-## Page hierarchy
-
-```text
-AdminPageHeader
-├─ title
-├─ short description
-└─ primary create action (optional)
-
-feedback / notice (optional)
-
-records
-└─ AdminCard / responsive card list
-   ├─ status badge
-   ├─ primary information
-   └─ edit/archive/action
-
-AdminEmptyState (when no records)
-
-AdminModal (only while create/edit is active)
-└─ form / focused task
-```
-
-## CRUD forms
-
-Default simple/medium CRUD interaction:
-
-```text
-list → Tambah/Edit → modal → submit/close → list
-```
+`list → Tambah/Edit → modal → submit/close → list`
 
 Rules:
 
-- form CRUD tidak boleh mengambil ruang permanen di list page;
-- primary create CTA berada di page header;
-- Edit membuka modal dengan nilai terakhir dari database;
-- modal harus menyediakan close button dan mendukung Escape/backdrop close;
-- modal panjang memakai internal scroll, bukan memperpanjang document;
-- close Edit harus menghapus state `?edit=` dan kembali ke canonical list URL;
-- labels memakai small uppercase semantic labels;
-- inputs memakai `adminInputClass`;
-- create/edit memakai field order yang sama bila memungkinkan;
-- primary submit berada di sisi akhir form;
-- destructive action tidak menjadi primary CTA;
-- validation/error harus muncul dekat task context dan menggunakan bahasa yang bisa ditindaklanjuti.
+- Primary create action lives in the page header.
+- Create and edit use modal/dialog behavior for simple and medium forms.
+- Modal supports close button, Escape, backdrop close, and viewport scrolling.
+- Edit may be addressable through a canonical query such as `?edit=<id>`, but closing returns to the canonical list URL.
+- Nested operations such as adding an exam section or event session use a modal rather than an inline expanding form.
+- Long-form editors such as Article rich-text may use a dedicated page when the task genuinely needs a larger canvas.
+- Server Actions, validation, authorization, and persistence remain server-side.
 
-Exception: workflow long-form/editor yang membutuhkan canvas besar boleh memakai dedicated page. Article rich-text editor adalah contoh exception canonical.
+## Assessment domain contract
+
+Exam type is not the same thing as curriculum depth. The Admin UI must represent the learning hierarchy rather than treating every exam type as a generic collection of sections.
+
+### Drill
+
+`Program → Track → Subject/Subtes → Knowledge Node/Submateri → DRILL`
+
+For CPNS/SKD this means, for example:
+
+`CPNS → SKD → TWK → Pilar Negara → Drill`
+
+Drill rules:
+
+- A Drill targets exactly one `subject` and one `knowledge_node`.
+- The selected knowledge node must belong to the selected subject and active Program/Track context.
+- Eligible questions are approved/published questions mapped as `primary` to the selected knowledge node or its descendants.
+- Current frozen `question_versions` are required before questions can enter the exam.
+- Requested question count cannot exceed the eligible pool.
+- Admin does not manually add sections to Drill exams.
+- Drill owns one auto-managed blueprint rule and one internal exam section.
+- Editing a Drill preserves the existing blueprint and section identity when possible so attempt/history foreign keys remain stable.
+- The materialized `exam_question_items` are rebuilt from the selected knowledge-node pool when Drill configuration changes.
+- Existing in-progress attempts block Drill restructuring.
+
+### Mini Tryout
+
+Mini Tryout is scoped at subject/subtes level. Example: Mini TWK, Mini TIU, or Mini TKP. It is not a Drill per submateri.
+
+### Full Tryout
+
+Full Tryout is scoped to the Track and can contain multiple manually managed sections. Example SKD:
+
+- Section TWK
+- Section TIU
+- Section TKP
+
+### Other exam types
+
+Diagnostic, Remedial, and Event retain their own business semantics and must not inherit Drill's knowledge-node contract automatically.
+
+## Forms
+
+- Use shared `AdminUi` inputs/buttons/cards/badges.
+- Labels are concise and describe business meaning rather than raw database terminology where possible.
+- Destructive actions are visually distinct from primary and secondary actions.
+- Avoid duplicate context selectors inside forms; use hidden Program/Track values from the active shell context.
+- Domain-specific forms may reveal conditional fields. Example: selecting `DRILL` reveals Subtes, Submateri/Knowledge Node, and question-pool count.
 
 ## Lists and tables
 
-Gunakan card rows bila record membutuhkan summary + banyak actions.
-Gunakan table bila user membandingkan atribut tabular seperti order/payment.
+- Use tables when columns are materially comparative, such as commerce/order data.
+- Use compact card rows for operational entities with nested status/actions.
+- Do not display forms permanently between list rows.
+- Empty states should tell the operator what action to take next.
 
-Rules:
+## Feedback
 
-- status selalu memakai `AdminBadge`;
-- mobile tidak boleh mengandalkan table sempit tanpa horizontal container;
-- row hover subtle saja;
-- identifier sekunder memakai smaller/muted text;
-- empty collection harus memakai `AdminEmptyState`, bukan blank panel.
+- Success and error feedback appears directly below the page header.
+- Server-side validation errors should be translated into useful operator-facing messages.
+- Do not rely on browser-only checks for authorization or domain invariants.
 
-## Navigation and context
+## Responsive behavior
 
-Default canonical admin context untuk direct routes adalah:
+- Controls wrap cleanly on small screens.
+- Tables may scroll horizontally when comparison columns cannot reasonably collapse.
+- Modals scroll internally and remain usable on mobile viewport heights.
+- Avoid page-level horizontal overflow.
 
-```text
-Program: CPNS
-Track:   SKD
-```
+## Articles exception
 
-Saat query `program` / `track` diberikan oleh shell, feature page wajib menghormatinya.
+Article list follows the same Admin Workspace primitives. Create/Edit remains a dedicated long-form page because rich-text authoring needs a larger editing canvas. Article reads use authenticated session + RLS; privileged writes remain behind explicit permission checks.
 
-Context tidak boleh berubah diam-diam antara shell dan page.
+## Routing compatibility
 
-Switch Program/Track harus mempertahankan current canonical module route bila module tersebut tersedia pada context baru.
-
-## Articles and content permissions
-
-Articles memakai schema-v2 RBAC, bukan role field legacy di `profiles`.
-
-- `content.create`: membuat draft sendiri dan upload cover.
-- `content.read`: membaca artikel yang diizinkan RLS.
-- `content.update`: mengubah draft/non-published milik sendiri; Admin dapat melakukan action lintas owner melalui server-authorized mutation.
-- `content.review` / `content.publish`: reviewer/publisher dapat membaca seluruh draft untuk workflow publikasi.
-- public/anon hanya membaca artikel `published`.
-- list/edit read wajib menggunakan authenticated user session + RLS, bukan privileged service-role read.
-- Article cover menggunakan bucket khusus `article-images`; jangan berbagi konfigurasi bucket dengan Question Bank.
-
-## Legacy routing
-
-Compatibility mapping:
-
-```text
-/cpns/admin?tab=products  -> /admin/commerce/products
-/cpns/admin?tab=events    -> /admin/assessment/events
-/cpns/admin?tab=exams     -> /admin/assessment/exams
-/cpns/admin?tab=questions -> /admin/content/questions
-/cpns/admin?tab=commerce  -> /admin/commerce
-/cpns/admin/review        -> /admin/content/review
-/cpns/admin/articles/**   -> /admin/content/articles/**
-```
-
-Feature-specific legacy shortcuts seperti `tryout-config`, `tryout-akbar`, `event`, `keuangan`, create/edit question juga harus resolve ke canonical module.
-
-## Responsive acceptance
-
-Minimum acceptance:
-
-- 390×844: no document horizontal overflow; navigation accessible.
-- 768–1024px: content hierarchy tidak pecah dan actions wrap dengan benar.
-- desktop: content tidak melebar tanpa batas; primary action mudah ditemukan.
-- fixed/mobile navigation tidak menutupi actionable content.
-- modal tidak melebihi viewport dan body form dapat discroll secara internal.
-
-## UX acceptance checklist for new admin pages
-
-- [ ] canonical `/admin/**` route
-- [ ] sidebar active state sesuai halaman
-- [ ] hanya satu Program/Track selector
-- [ ] `AdminPageHeader` digunakan
-- [ ] primary action jelas
-- [ ] CRUD simple/medium memakai modal, bukan inline form permanen
-- [ ] create/edit state jelas
-- [ ] status menggunakan `AdminBadge`
-- [ ] empty/error/success state tersedia
-- [ ] mobile tidak overflow
-- [ ] mutation kembali ke canonical module, bukan legacy route
-- [ ] authorization tetap server-side
-- [ ] reads mengikuti user-session RLS bila data memang user-facing/admin-readable tanpa service-role
+Legacy `/cpns/admin/**` destinations may redirect to canonical `/admin/**` routes for compatibility, but new UI/actions should prefer canonical routes directly.
