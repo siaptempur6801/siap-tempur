@@ -23,6 +23,7 @@ type ArticleRow = {
 }
 
 const initialErrorState = { success: false, message: 'Invalid request' }
+const ARTICLE_ADMIN_PATH = '/admin/content/articles'
 
 function readArticleForm(formData: FormData) {
     return {
@@ -74,11 +75,7 @@ export async function createArticle(_prevState: ArticleActionState, formData: Fo
     const supabase = await createAdminClient()
     const { data, error } = await supabase
         .from('articles')
-        .insert({
-            ...parsed.data,
-            status: 'draft',
-            author_id: actor.userId,
-        })
+        .insert({ ...parsed.data, status: 'draft', author_id: actor.userId })
         .select('id')
         .single()
 
@@ -88,15 +85,9 @@ export async function createArticle(_prevState: ArticleActionState, formData: Fo
         return { success: false, message: 'Artikel gagal dibuat' }
     }
 
-    await logAuditEvent({
-        action: 'CREATE_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: data.id,
-    })
-
-    revalidatePath('/cpns/admin/articles')
-    redirect('/cpns/admin/articles')
+    await logAuditEvent({ action: 'CREATE_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: data.id })
+    revalidatePath(ARTICLE_ADMIN_PATH)
+    redirect(ARTICLE_ADMIN_PATH)
 }
 
 export async function updateArticle(id: string, _prevState: ArticleActionState, formData: FormData): Promise<ArticleActionState> {
@@ -113,10 +104,7 @@ export async function updateArticle(id: string, _prevState: ArticleActionState, 
     if (!parsed.success) return { success: false, message: parsed.error.issues[0].message }
 
     const supabase = await createAdminClient()
-    const { error } = await supabase
-        .from('articles')
-        .update(parsed.data)
-        .eq('id', id)
+    const { error } = await supabase.from('articles').update(parsed.data).eq('id', id)
 
     if (error) {
         if (error.code === '23505') return { success: false, message: 'Slug artikel sudah dipakai' }
@@ -124,16 +112,10 @@ export async function updateArticle(id: string, _prevState: ArticleActionState, 
         return { success: false, message: 'Artikel gagal diupdate' }
     }
 
-    await logAuditEvent({
-        action: 'UPDATE_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: id,
-    })
-
-    revalidatePath('/cpns/admin/articles')
+    await logAuditEvent({ action: 'UPDATE_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
+    revalidatePath(ARTICLE_ADMIN_PATH)
     revalidatePath(`/blog/${parsed.data.slug}`)
-    redirect('/cpns/admin/articles')
+    redirect(ARTICLE_ADMIN_PATH)
 }
 
 export async function publishArticle(id: string): Promise<ArticleActionState> {
@@ -155,16 +137,10 @@ export async function publishArticle(id: string): Promise<ArticleActionState> {
         return { success: false, message: 'Artikel gagal dipublish' }
     }
 
-    await logAuditEvent({
-        action: 'PUBLISH_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: id,
-    })
-
+    await logAuditEvent({ action: 'PUBLISH_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
     revalidatePath('/blog')
     revalidatePath(`/blog/${data.slug}`)
-    revalidatePath('/cpns/admin/articles')
+    revalidatePath(ARTICLE_ADMIN_PATH)
     return { success: true, message: 'Artikel dipublish' }
 }
 
@@ -187,16 +163,10 @@ export async function unpublishArticle(id: string): Promise<ArticleActionState> 
         return { success: false, message: 'Artikel gagal ditarik dari publik' }
     }
 
-    await logAuditEvent({
-        action: 'UNPUBLISH_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: id,
-    })
-
+    await logAuditEvent({ action: 'UNPUBLISH_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
     revalidatePath('/blog')
     revalidatePath(`/blog/${data.slug}`)
-    revalidatePath('/cpns/admin/articles')
+    revalidatePath(ARTICLE_ADMIN_PATH)
     return { success: true, message: 'Artikel menjadi draft' }
 }
 
@@ -221,15 +191,9 @@ export async function archiveArticle(id: string): Promise<ArticleActionState> {
         return { success: false, message: 'Artikel gagal diarsipkan' }
     }
 
-    await logAuditEvent({
-        action: 'ARCHIVE_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: id,
-    })
-
+    await logAuditEvent({ action: 'ARCHIVE_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
     revalidatePath('/blog')
-    revalidatePath('/cpns/admin/articles')
+    revalidatePath(ARTICLE_ADMIN_PATH)
     return { success: true, message: 'Artikel diarsipkan' }
 }
 
@@ -241,15 +205,10 @@ export async function deleteArticle(id: string): Promise<ArticleActionState> {
 
     const article = await readArticle(id)
     if (!article) return { success: false, message: 'Artikel tidak ditemukan' }
-    if (article.status === 'published') {
-        return { success: false, message: 'Artikel published harus di-unpublish sebelum dihapus permanen' }
-    }
+    if (article.status === 'published') return { success: false, message: 'Artikel published harus di-unpublish sebelum dihapus permanen' }
 
     const supabase = await createAdminClient()
-    const { error } = await supabase
-        .from('articles')
-        .delete()
-        .eq('id', id)
+    const { error } = await supabase.from('articles').delete().eq('id', id)
 
     if (error) {
         logger.warn('[article-delete]', { error, id })
@@ -266,6 +225,6 @@ export async function deleteArticle(id: string): Promise<ArticleActionState> {
 
     revalidatePath('/blog')
     revalidatePath(`/blog/${article.slug}`)
-    revalidatePath('/cpns/admin/articles')
+    revalidatePath(ARTICLE_ADMIN_PATH)
     return { success: true, message: 'Artikel dihapus permanen' }
 }
