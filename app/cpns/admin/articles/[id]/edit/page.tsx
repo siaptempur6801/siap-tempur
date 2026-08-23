@@ -18,15 +18,10 @@ type Article = {
     author_id: string | null
 }
 
-export default async function EditArticlePage({
-    params,
-}: {
-    params: Promise<{ id: string }>
-}) {
+export default async function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
     const actor = await getCurrentUserRole()
     const supabase = await createAdminClient()
-
     const { data: article, error } = await supabase
         .from('articles')
         .select('id, title, slug, excerpt, content, category, cover_image_url, status, author_id')
@@ -37,13 +32,7 @@ export default async function EditArticlePage({
 
     const row = article as Article
     const canEdit = isAdminRole(actor?.role) || (row.author_id === actor?.userId && row.status !== 'published')
-    if (!canEdit) redirect('/cpns/admin/articles')
+    if (!canEdit) redirect('/admin/content/articles')
 
-    return (
-        <ArticleForm
-            title="Edit Artikel"
-            action={updateArticle.bind(null, row.id)}
-            defaultValues={row}
-        />
-    )
+    return <ArticleForm title="Edit Artikel" action={updateArticle.bind(null, row.id)} defaultValues={row}/>
 }
