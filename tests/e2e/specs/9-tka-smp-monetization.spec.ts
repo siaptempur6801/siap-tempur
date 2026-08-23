@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { freshDisposableTkaSession } from '../tka.ci'
 
-async function assertNoDocumentOverflow(page: import('@playwright/test').Page) {
+async function assertNoDocumentOverflow(page: Page) {
     const report = await page.evaluate(() => ({
         viewportWidth: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
@@ -10,11 +10,16 @@ async function assertNoDocumentOverflow(page: import('@playwright/test').Page) {
 }
 
 test.describe.serial('TKA SMP Monetization staging surface', () => {
-    test('authenticated learner sees active SMP pass catalog and sandbox Snap loader', async ({ page }) => {
+    test('authenticated learner can discover active SMP pass catalog with sandbox Snap loader', async ({ page }) => {
         test.setTimeout(60_000)
         await freshDisposableTkaSession(page)
         await page.setViewportSize({ width: 390, height: 844 })
-        await page.goto('/tka/smp/pass')
+
+        await page.goto('/tka/smp/progress')
+        const passLink = page.getByRole('link', { name: 'Tempur Pass', exact: true })
+        await expect(passLink).toBeVisible()
+        await passLink.click()
+        await page.waitForURL(/\/tka\/smp\/pass$/i)
 
         await expect(page.getByRole('heading', { name: 'Pilih Tempur Pass', exact: true })).toBeVisible()
         await expect(page.getByRole('heading', { name: 'Buka akses premium TKA SMP', exact: true })).toBeVisible()
