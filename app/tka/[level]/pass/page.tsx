@@ -12,6 +12,25 @@ export const revalidate = 0
 
 type AuthenticatedV2Client = Awaited<ReturnType<typeof createV2Client>>
 
+function stringValue(value: unknown) {
+    return typeof value === 'string' ? value : String(value ?? '')
+}
+
+function nullableString(value: unknown) {
+    return typeof value === 'string' ? value : null
+}
+
+function nullableNumber(value: unknown) {
+    if (value === null || value === undefined || value === '') return null
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+}
+
+function numberValue(value: unknown) {
+    const parsed = Number(value ?? 0)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
 async function listActivePassPackages(
     supabase: AuthenticatedV2Client,
     trackCode: 'SMP'
@@ -26,26 +45,32 @@ async function listActivePassPackages(
     if (programError) throw programError
     if (!program) return []
 
+    const programId = stringValue(program.id)
     const { data: track, error: trackError } = await supabase
         .from('tracks')
         .select('id')
-        .eq('program_id', program.id)
+        .eq('program_id', programId)
         .eq('code', trackCode)
         .maybeSingle()
     if (trackError) throw trackError
     if (!track) return []
 
+    const trackId = stringValue(track.id)
     const { data: products, error: productError } = await supabase
         .from('products')
         .select('id, code, name, description, duration_days')
-        .eq('program_id', program.id)
-        .eq('track_id', track.id)
+        .eq('program_id', programId)
+        .eq('track_id', trackId)
         .in('status', ['active', 'ACTIVE'])
         .order('duration_days', { ascending: true })
     if (productError) throw productError
     if (!products?.length) return []
 
-    const productIds = products.map((product) => product.id)
+    const productIds = products
+        .map((product) => stringValue(product.id))
+        .filter(Boolean)
+    if (productIds.length === 0) return []
+
     const { data: prices, error: priceError } = await supabase
         .from('product_prices')
         .select('product_id, currency, amount, starts_at, ends_at')
@@ -57,22 +82,25 @@ async function listActivePassPackages(
 
     const activePriceByProduct = new Map<string, NonNullable<typeof prices>[number]>()
     for (const price of prices ?? []) {
-        if (price.ends_at && price.ends_at < now) continue
-        if (!activePriceByProduct.has(price.product_id)) {
-            activePriceByProduct.set(price.product_id, price)
+        const productId = stringValue(price.product_id)
+        const endsAt = nullableString(price.ends_at)
+        if (!productId || (endsAt && endsAt < now)) continue
+        if (!activePriceByProduct.has(productId)) {
+            activePriceByProduct.set(productId, price)
         }
     }
 
     return products.flatMap((product) => {
-        const price = activePriceByProduct.get(product.id)
+        const productId = stringValue(product.id)
+        const price = activePriceByProduct.get(productId)
         if (!price) return []
         return [{
-            code: product.code,
-            name: product.name,
-            description: product.description,
-            durationDays: product.duration_days,
-            price: Number(price.amount),
-            currency: price.currency || 'IDR',
+            code: stringValue(product.code),
+            name: stringValue(product.name),
+            description: nullableString(product.description),
+            durationDays: nullableNumber(product.duration_days),
+            price: numberValue(price.amount),
+            currency: stringValue(price.currency) || 'IDR',
         }]
     })
 }
