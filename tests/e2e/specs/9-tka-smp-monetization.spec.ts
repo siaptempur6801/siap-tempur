@@ -22,6 +22,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await page.waitForURL(/\/tka\/smp\/pass$/i)
 
         await expect(page.getByRole('heading', { name: 'Pilih Tempur Pass', exact: true })).toBeVisible()
+        await expect(page.getByTestId('tka-pass-status-inactive')).toContainText('Belum ada Tempur Pass aktif.')
         await expect(page.getByRole('heading', { name: 'Buka akses premium TKA SMP', exact: true })).toBeVisible()
         await expect(page.getByRole('button', { name: 'Pilih 30 Hari', exact: true })).toBeVisible()
         await expect(page.getByRole('button', { name: 'Pilih 90 Hari', exact: true })).toBeVisible()
