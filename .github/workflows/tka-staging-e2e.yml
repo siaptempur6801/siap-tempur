@@ -7,13 +7,18 @@ on:
       - feat/schema-v2
     paths:
       - 'app/actions/tka-**'
+      - 'app/actions/payment.ts'
+      - 'app/api/payments/**'
       - 'app/tka/**'
       - 'components/tka/**'
       - 'src/repositories/configured-exam.repository.ts'
       - 'src/services/tka-full-exam-rpc.service.ts'
+      - 'src/services/payment.service.ts'
+      - 'src/services/commerce.service.ts'
       - 'tests/e2e/tka.*.ts'
       - 'tests/e2e/specs/6-tka-smp-full.spec.ts'
       - 'tests/e2e/specs/8-tka-smp-mini.spec.ts'
+      - 'tests/e2e/specs/9-tka-smp-monetization.spec.ts'
       - 'playwright.config.ts'
       - '.github/workflows/tka-staging-e2e.yml'
       - 'supabase/functions/ci-e2e-user/**'
@@ -36,6 +41,8 @@ env:
   # absent from GitHub; CI provisioning uses GitHub OIDC -> staging Edge Function.
   SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
   NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+  # Core TKA CI intentionally does not hold real payment credentials.
+  # Paid Midtrans sandbox E2E is a separate M4 gate once dedicated CI secrets exist.
   MIDTRANS_SERVER_KEY_SANDBOX: e2e-not-used
   NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: e2e-not-used
 
