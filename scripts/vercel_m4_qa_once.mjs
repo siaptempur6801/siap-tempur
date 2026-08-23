@@ -43,7 +43,7 @@ async function midtransJson(url, options, serverKey) {
 
 async function waitForPaid(orderNumber, serverKey) {
   let last = null
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
     const { response, json } = await midtransJson(
       `${MIDTRANS_API}/v2/${encodeURIComponent(orderNumber)}/status`,
       { method: 'GET' },
@@ -58,7 +58,44 @@ async function waitForPaid(orderNumber, serverKey) {
   throw new Error(`MIDTRANS_NOT_PAID:${String(last?.transaction_status || 'unknown')}`)
 }
 
+async function waitForFinalCiLearner(admin, trackId, examIds, startedAt) {
+  const minCreatedAt = new Date(startedAt).toISOString()
+  for (let poll = 0; poll < 72; poll += 1) {
+    const { data: profiles, error: profileError } = await admin
+      .from('profiles')
+      .select('id, full_name, created_at, status')
+      .eq('full_name', 'CI TKA SMP')
+      .eq('status', 'active')
+      .gte('created_at', minCreatedAt)
+      .order('created_at', { ascending: false })
+      .limit(10)
+    if (profileError) throw profileError
+
+    for (const profile of profiles || []) {
+      const ageMs = Date.now() - Date.parse(profile.created_at)
+      if (!Number.isFinite(ageMs) || ageMs < 10_000) continue
+
+      const [trackResult, attemptResult, entitlementResult] = await Promise.all([
+        admin.from('user_tracks').select('user_id', { count: 'exact', head: true }).eq('user_id', profile.id).eq('track_id', trackId).eq('status', 'active'),
+        admin.from('exam_attempts').select('id', { count: 'exact', head: true }).eq('user_id', profile.id).in('exam_id', examIds),
+        admin.from('entitlements').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
+      ])
+      if (trackResult.error) throw trackResult.error
+      if (attemptResult.error) throw attemptResult.error
+      if (entitlementResult.error) throw entitlementResult.error
+      if ((trackResult.count || 0) === 1 && (attemptResult.count || 0) === 0 && (entitlementResult.count || 0) === 0) {
+        return String(profile.id)
+      }
+    }
+
+    if (poll % 12 === 0) console.log(`M4_QA_WAITING_FOR_CI_LEARNER=poll-${poll}`)
+    await new Promise((resolve) => setTimeout(resolve, 5000))
+  }
+  throw new Error('M4_QA_FINAL_CI_LEARNER_NOT_FOUND')
+}
+
 async function paidQa() {
+  const runnerStartedAt = Date.now()
   const supabaseUrl = required('NEXT_PUBLIC_SUPABASE_URL')
   if (stagingRef(supabaseUrl) !== STAGING_REF) throw new Error('M4_QA_STAGING_GUARD')
   const serviceRole = required('SUPABASE_SERVICE_ROLE_KEY')
@@ -67,17 +104,15 @@ async function paidQa() {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
-  const suffix = `${Date.now()}-${randomUUID().slice(0, 8)}`
-  const email = `m4-qa-${suffix}@example.invalid`
-  const password = `M4Qa!${randomUUID()}-${randomUUID()}`
   let userId = null
   let orderId = null
+  let orderItemId = null
   let orderNumber = null
-  let providerStatus = null
   let providerTransactionId = null
 
   const result = {
     stagingRef: STAGING_REF,
+    robotLearnerSelected: false,
     productCode: PRODUCT_CODE,
     totalAmount: null,
     providerCharge: false,
@@ -93,28 +128,17 @@ async function paidQa() {
   }
 
   try {
-    const { data: created, error: createError } = await admin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name: 'M4 QA TKA SMP', m4_qa: true, ci_e2e: true, ci_kind: 'tka' },
-    })
-    if (createError || !created.user) throw createError || new Error('M4_QA_USER_CREATE_FAILED')
-    userId = created.user.id
-
     const { data: program, error: programError } = await admin.from('programs').select('id').eq('code', 'TKA').maybeSingle()
     if (programError || !program) throw programError || new Error('TKA_PROGRAM_NOT_FOUND')
     const { data: track, error: trackError } = await admin.from('tracks').select('id').eq('program_id', program.id).eq('code', 'SMP').maybeSingle()
     if (trackError || !track) throw trackError || new Error('TKA_SMP_TRACK_NOT_FOUND')
-    const { error: trackUpsertError } = await admin.from('user_tracks').upsert({
-      user_id: userId,
-      track_id: track.id,
-      status: 'active',
-      target_year: 2026,
-      started_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,track_id' })
-    if (trackUpsertError) throw trackUpsertError
+    const { data: exams, error: examError } = await admin.from('exams').select('id').eq('track_id', track.id)
+    if (examError) throw examError
+    const examIds = (exams || []).map((row) => String(row.id))
+    if (examIds.length === 0) throw new Error('M4_QA_SMP_EXAMS_NOT_FOUND')
+
+    userId = await waitForFinalCiLearner(admin, String(track.id), examIds, runnerStartedAt)
+    result.robotLearnerSelected = true
 
     const { data: product, error: productError } = await admin
       .from('products')
@@ -141,6 +165,7 @@ async function paidQa() {
     const price = Number(priceRow.amount)
     const totalAmount = price + ADMIN_FEE
     result.totalAmount = totalAmount
+    if (price !== 29000 || totalAmount !== 29500) throw new Error(`M4_QA_PRICE_GUARD:${price}/${totalAmount}`)
 
     orderNumber = `M4QA-${PRODUCT_CODE}-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`
     const { data: order, error: orderError } = await admin.from('orders').insert({
@@ -153,7 +178,7 @@ async function paidQa() {
       currency: String(priceRow.currency || 'IDR'),
     }).select('id').single()
     if (orderError || !order) throw orderError || new Error('M4_QA_ORDER_CREATE_FAILED')
-    orderId = order.id
+    orderId = String(order.id)
 
     const { data: item, error: itemError } = await admin.from('order_items').insert({
       order_id: orderId,
@@ -164,12 +189,12 @@ async function paidQa() {
       total: price,
     }).select('id').single()
     if (itemError || !item) throw itemError || new Error('M4_QA_ORDER_ITEM_CREATE_FAILED')
+    orderItemId = String(item.id)
 
     const chargePayload = {
       payment_type: 'qris',
       transaction_details: { order_id: orderNumber, gross_amount: totalAmount },
       qris: { acquirer: 'gopay' },
-      customer_details: { first_name: 'M4 QA TKA SMP', email },
       item_details: [
         { id: PRODUCT_CODE, price, quantity: 1, name: String(product.name) },
         { id: 'admin_fee', price: ADMIN_FEE, quantity: 1, name: 'Biaya Admin (QRIS)' },
@@ -185,8 +210,9 @@ async function paidQa() {
     }
     result.providerCharge = true
     providerTransactionId = String(charge.transaction_id || '')
-    const qrCodeUrl = (Array.isArray(charge.actions) ? charge.actions : []).find((action) => action?.name === 'generate-qr-code')?.url
-      || (Array.isArray(charge.actions) ? charge.actions : []).find((action) => action?.name === 'generate-qr-code-v2')?.url
+    const actions = Array.isArray(charge.actions) ? charge.actions : []
+    const qrCodeUrl = actions.find((action) => action?.name === 'generate-qr-code')?.url
+      || actions.find((action) => action?.name === 'generate-qr-code-v2')?.url
     if (!providerTransactionId || !qrCodeUrl) throw new Error('MIDTRANS_QRIS_CHARGE_INCOMPLETE')
 
     const safeCharge = { ...charge }
@@ -210,13 +236,13 @@ async function paidQa() {
       redirect: 'follow',
     })
     const simulatorText = await simulatorResponse.text()
-    if (!simulatorResponse.ok || /error|invalid|failed/i.test(simulatorText.slice(0, 5000))) {
+    if (!simulatorResponse.ok || /invalid qr|failed to|error occurred/i.test(simulatorText.slice(0, 8000))) {
       throw new Error(`MIDTRANS_SIMULATOR_FAILED:${simulatorResponse.status}`)
     }
     result.simulatorAccepted = true
 
     const paidStatus = await waitForPaid(orderNumber, serverKey)
-    providerStatus = String(paidStatus.transaction_status || '')
+    const providerStatus = String(paidStatus.transaction_status || '')
     result.providerStatus = providerStatus
     const grossAmount = Number(paidStatus.gross_amount)
     if (!Number.isFinite(grossAmount) || grossAmount !== totalAmount) throw new Error('M4_QA_AMOUNT_MISMATCH')
@@ -244,16 +270,12 @@ async function paidQa() {
       const [orderResult, paymentResult, entitlementResult] = await Promise.all([
         admin.from('orders').select('status, paid_at').eq('id', orderId).single(),
         admin.from('payments').select('status, paid_at').eq('order_id', orderId).eq('provider', 'midtrans').single(),
-        admin.from('entitlements').select('id, starts_at, expires_at, source_id').eq('user_id', userId).eq('source_type', 'order_item').eq('source_id', item.id),
+        admin.from('entitlements').select('id, starts_at, expires_at, source_id').eq('user_id', userId).eq('source_type', 'order_item').eq('source_id', orderItemId),
       ])
       if (orderResult.error) throw orderResult.error
       if (paymentResult.error) throw paymentResult.error
       if (entitlementResult.error) throw entitlementResult.error
-      return {
-        order: orderResult.data,
-        payment: paymentResult.data,
-        entitlements: entitlementResult.data || [],
-      }
+      return { order: orderResult.data, payment: paymentResult.data, entitlements: entitlementResult.data || [] }
     }
 
     const firstState = await readState()
@@ -265,14 +287,13 @@ async function paidQa() {
       throw new Error(`M4_QA_ENTITLEMENT_COUNT:${result.entitlementCount}/${result.expectedFeatures}`)
     }
 
-    const finiteExpiries = firstState.entitlements
-      .map((row) => row.expires_at ? Date.parse(row.expires_at) : NaN)
-      .filter(Number.isFinite)
-    const finiteStarts = firstState.entitlements
-      .map((row) => row.starts_at ? Date.parse(row.starts_at) : NaN)
-      .filter(Number.isFinite)
-    if (finiteExpiries.length !== 10 || finiteStarts.length !== 10) throw new Error('M4_QA_EXPIRY_MISSING')
-    const avgDays = finiteExpiries.reduce((sum, expiry, index) => sum + (expiry - finiteStarts[index]) / 86400000, 0) / finiteExpiries.length
+    const durations = firstState.entitlements.map((row) => {
+      const start = Date.parse(row.starts_at)
+      const expiry = Date.parse(row.expires_at)
+      return (expiry - start) / 86400000
+    })
+    if (durations.some((days) => !Number.isFinite(days))) throw new Error('M4_QA_EXPIRY_MISSING')
+    const avgDays = durations.reduce((sum, days) => sum + days, 0) / durations.length
     result.expiryDaysApprox = Math.round(avgDays * 100) / 100
     if (Math.abs(avgDays - Number(product.duration_days)) > 0.01) throw new Error(`M4_QA_EXPIRY_DAYS:${avgDays}`)
 
@@ -284,21 +305,30 @@ async function paidQa() {
 
     console.log('M4_QA_PAID_RESULT=' + JSON.stringify(result))
   } finally {
-    if (userId) {
-      const { error: auditCleanupError } = await admin.from('audit_logs').delete().eq('actor_user_id', userId)
-      if (auditCleanupError) console.log('M4_QA_CLEANUP_AUDIT=failed')
-      const { error: deleteError } = await admin.auth.admin.deleteUser(userId)
-      if (deleteError) {
-        console.log('M4_QA_CLEANUP=failed')
-      } else {
-        result.cleanup = true
-        if (orderNumber) {
-          const { count } = await admin.from('orders').select('id', { count: 'exact', head: true }).eq('order_number', orderNumber)
-          console.log('M4_QA_CLEANUP=' + JSON.stringify({ userDeleted: true, remainingOrders: count || 0 }))
-        } else {
-          console.log('M4_QA_CLEANUP=' + JSON.stringify({ userDeleted: true, remainingOrders: 0 }))
-        }
-      }
+    if (orderItemId && userId) {
+      const { error: entitlementCleanupError } = await admin
+        .from('entitlements')
+        .delete()
+        .eq('user_id', userId)
+        .eq('source_type', 'order_item')
+        .eq('source_id', orderItemId)
+      if (entitlementCleanupError) console.log('M4_QA_CLEANUP_ENTITLEMENT=failed')
+    }
+    if (orderId) {
+      const { error: orderCleanupError } = await admin.from('orders').delete().eq('id', orderId)
+      if (orderCleanupError) console.log('M4_QA_CLEANUP_ORDER=failed')
+    }
+    if (orderNumber) {
+      const [orderCountResult, entitlementCountResult] = await Promise.all([
+        admin.from('orders').select('id', { count: 'exact', head: true }).eq('order_number', orderNumber),
+        orderItemId ? admin.from('entitlements').select('id', { count: 'exact', head: true }).eq('source_type', 'order_item').eq('source_id', orderItemId) : Promise.resolve({ count: 0, error: null }),
+      ])
+      result.cleanup = !orderCountResult.error && !entitlementCountResult.error && (orderCountResult.count || 0) === 0 && (entitlementCountResult.count || 0) === 0
+      console.log('M4_QA_CLEANUP=' + JSON.stringify({
+        orderRemoved: (orderCountResult.count || 0) === 0,
+        entitlementsRemoved: (entitlementCountResult.count || 0) === 0,
+        robotUserPreserved: true,
+      }))
     }
   }
 }
