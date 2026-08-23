@@ -89,9 +89,12 @@ export default function AdminModal({
                 onClick={(event) => {
                     if (event.target === dialogRef.current) closeModal()
                 }}
-                className="m-auto w-[calc(100%-1.5rem)] max-h-[calc(100dvh-1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-950 shadow-2xl backdrop:bg-slate-950/45 backdrop:backdrop-blur-[2px]"
+                className={cn(
+                    'm-auto w-[calc(100%-1.5rem)] max-h-[calc(100dvh-1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-950 shadow-2xl backdrop:bg-slate-950/45 backdrop:backdrop-blur-[2px]',
+                    sizes[size],
+                )}
             >
-                <div className={cn('flex max-h-[calc(100dvh-1.5rem)] w-full flex-col', sizes[size])}>
+                <div className="flex max-h-[calc(100dvh-1.5rem)] w-full flex-col">
                     <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
                         <div className="min-w-0">
                             <h2 id={titleId} className="text-lg font-black tracking-tight text-slate-950">{title}</h2>
