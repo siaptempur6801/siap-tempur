@@ -29,52 +29,59 @@ function collectPaths(source) {
   return [...paths].slice(0, 160)
 }
 
-function scriptUrls(html) {
-  const urls = new Set()
-  const pattern = /<script[^>]+src=["']([^"']+)["'][^>]*>/gi
-  let match
-  while ((match = pattern.exec(html))) {
-    try {
-      const url = new URL(match[1], SIMULATOR_ORIGIN)
-      if (url.hostname === 'simulator.sandbox.midtrans.com') urls.add(url.toString())
-    } catch {}
-  }
-  return [...urls].slice(0, 30)
+function attr(tag, name) {
+  const match = tag.match(new RegExp(`${name}=["']([^"']*)["']`, 'i'))
+  return match?.[1] ?? null
 }
 
-function snippets(source) {
-  const values = []
-  const lower = source.toLowerCase()
-  for (const needle of ['qris', 'scan', 'payment', 'transaction', 'fetch(', 'axios', 'qr-code']) {
-    let from = 0
-    while (values.length < 40) {
-      const index = lower.indexOf(needle, from)
-      if (index < 0) break
-      values.push(source.slice(Math.max(0, index - 100), Math.min(source.length, index + 260)).replace(/\s+/g, ' '))
-      from = index + needle.length
+function inspectForms(html) {
+  const forms = []
+  const pattern = /<form\b[^>]*>[\s\S]*?<\/form>/gi
+  let match
+  while ((match = pattern.exec(html))) {
+    const block = match[0]
+    const openTag = block.match(/^<form\b[^>]*>/i)?.[0] || ''
+    const fields = []
+    const inputPattern = /<(?:input|textarea|select)\b[^>]*>/gi
+    let inputMatch
+    while ((inputMatch = inputPattern.exec(block))) {
+      const tag = inputMatch[0]
+      fields.push({
+        tag: tag.match(/^<(\w+)/)?.[1]?.toLowerCase() || '',
+        name: attr(tag, 'name'),
+        type: attr(tag, 'type'),
+        id: attr(tag, 'id'),
+      })
     }
+    forms.push({
+      method: (attr(openTag, 'method') || 'get').toLowerCase(),
+      action: attr(openTag, 'action'),
+      fields,
+    })
   }
-  return values
+  return forms.slice(0, 20)
+}
+
+function inlineScriptSnippets(html) {
+  const scripts = []
+  const pattern = /<script(?![^>]+src=)[^>]*>([\s\S]*?)<\/script>/gi
+  let match
+  while ((match = pattern.exec(html))) {
+    const source = match[1]
+    if (!/(payment|qris|scan|submit|fetch|axios)/i.test(source)) continue
+    scripts.push(source.replace(/\s+/g, ' ').slice(0, 2500))
+  }
+  return scripts.slice(0, 10)
 }
 
 async function inspectSimulator() {
   const response = await fetch(`${SIMULATOR_ORIGIN}/v2/qris/index`, { redirect: 'follow' })
   const html = await response.text()
-  const reports = []
-  for (const url of scriptUrls(html)) {
-    const scriptResponse = await fetch(url, { redirect: 'follow' })
-    const source = await scriptResponse.text()
-    reports.push({
-      path: new URL(url).pathname,
-      status: scriptResponse.status,
-      paths: collectPaths(source),
-      snippets: snippets(source),
-    })
-  }
   console.log('M4_QA_SIMULATOR_INSPECT=' + JSON.stringify({
     status: response.status,
     htmlPaths: collectPaths(html),
-    scripts: reports,
+    forms: inspectForms(html),
+    inlineScripts: inlineScriptSnippets(html),
   }))
 }
 
