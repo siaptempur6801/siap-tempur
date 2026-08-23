@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, BarChart3 } from 'lucide-react'
+import { ArrowLeft, BarChart3, Crown } from 'lucide-react'
 import TkaProgressDashboard from '@/components/tka/TkaProgressDashboard'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
@@ -35,9 +35,17 @@ export default async function TkaProgressPage({
                     <Link href={base} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 font-black shadow-[3px_3px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
                         <ArrowLeft size={18}/> Kembali ke TKA SMP
                     </Link>
-                    <span className="inline-flex items-center gap-2 border-2 border-gray-900 bg-cyan-100 px-3 py-1 text-xs font-black uppercase">
-                        <BarChart3 size={16}/> Learning Loop V1
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                            href={`${base}/pass`}
+                            className="inline-flex items-center gap-2 border-2 border-gray-900 bg-yellow-100 px-3 py-1 text-xs font-black uppercase shadow-[2px_2px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                        >
+                            <Crown size={16}/> Tempur Pass
+                        </Link>
+                        <span className="inline-flex items-center gap-2 border-2 border-gray-900 bg-cyan-100 px-3 py-1 text-xs font-black uppercase">
+                            <BarChart3 size={16}/> Learning Loop V1
+                        </span>
+                    </div>
                 </div>
 
                 <header className="border-2 border-gray-900 bg-white p-6 shadow-[6px_6px_0_0_#111] md:p-8">
