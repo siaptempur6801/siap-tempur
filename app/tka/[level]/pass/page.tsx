@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Script from 'next/script'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react'
 import TkaPassPackagesClient, { type TkaPassPackage } from '@/components/tka/TkaPassPackagesClient'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
@@ -11,6 +11,12 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 type AuthenticatedV2Client = Awaited<ReturnType<typeof createV2Client>>
+
+type LearnerPassAccess = {
+    hasActivePass: boolean
+    accessThrough: string | null
+    scheduledExtensions: number
+}
 
 function stringValue(value: unknown) {
     return typeof value === 'string' ? value : String(value ?? '')
@@ -29,6 +35,22 @@ function nullableNumber(value: unknown) {
 function numberValue(value: unknown) {
     const parsed = Number(value ?? 0)
     return Number.isFinite(parsed) ? parsed : 0
+}
+
+function timestampValue(value: unknown) {
+    const raw = nullableString(value)
+    if (!raw) return null
+    const timestamp = Date.parse(raw)
+    return Number.isFinite(timestamp) ? timestamp : null
+}
+
+function formatAccessDate(value: string) {
+    return new Intl.DateTimeFormat('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'Asia/Jakarta',
+    }).format(new Date(value))
 }
 
 async function listActivePassPackages(
@@ -105,6 +127,73 @@ async function listActivePassPackages(
     })
 }
 
+async function getLearnerPassAccess(
+    supabase: AuthenticatedV2Client,
+    userId: string
+): Promise<LearnerPassAccess> {
+    const { data: feature, error: featureError } = await supabase
+        .from('features')
+        .select('id')
+        .eq('code', 'tka.smp.full_tryout.regular')
+        .maybeSingle()
+    if (featureError) throw featureError
+    if (!feature) return { hasActivePass: false, accessThrough: null, scheduledExtensions: 0 }
+
+    const featureId = stringValue(feature.id)
+    const { data: entitlements, error: entitlementError } = await supabase
+        .from('entitlements')
+        .select('starts_at, expires_at, usage_limit, usage_count, status')
+        .eq('user_id', userId)
+        .eq('feature_id', featureId)
+        .in('status', ['active', 'ACTIVE'])
+        .order('starts_at', { ascending: true })
+    if (entitlementError) throw entitlementError
+
+    const now = Date.now()
+    const rows = (entitlements ?? []).map((entitlement) => ({
+        startsAt: timestampValue(entitlement.starts_at),
+        expiresAt: timestampValue(entitlement.expires_at),
+        expiresAtRaw: nullableString(entitlement.expires_at),
+        usageLimit: nullableNumber(entitlement.usage_limit),
+        usageCount: numberValue(entitlement.usage_count),
+    })).filter((entitlement) => (
+        entitlement.startsAt !== null
+        && (entitlement.usageLimit === null || entitlement.usageCount < entitlement.usageLimit)
+    ))
+
+    const activeNow = rows.filter((entitlement) => (
+        entitlement.startsAt !== null
+        && entitlement.startsAt <= now
+        && (entitlement.expiresAt === null || entitlement.expiresAt > now)
+    ))
+
+    if (activeNow.length === 0) {
+        return { hasActivePass: false, accessThrough: null, scheduledExtensions: 0 }
+    }
+
+    if (activeNow.some((entitlement) => entitlement.expiresAt === null)) {
+        return { hasActivePass: true, accessThrough: null, scheduledExtensions: 0 }
+    }
+
+    let accessThroughMs = Math.max(...activeNow.map((entitlement) => entitlement.expiresAt ?? now))
+    let scheduledExtensions = 0
+
+    for (const entitlement of rows) {
+        if (entitlement.startsAt === null || entitlement.expiresAt === null) continue
+        if (entitlement.startsAt <= now) continue
+        if (entitlement.startsAt <= accessThroughMs + 1000 && entitlement.expiresAt > accessThroughMs) {
+            accessThroughMs = entitlement.expiresAt
+            scheduledExtensions += 1
+        }
+    }
+
+    return {
+        hasActivePass: true,
+        accessThrough: new Date(accessThroughMs).toISOString(),
+        scheduledExtensions,
+    }
+}
+
 export default async function TkaPassPage({
     params,
 }: {
@@ -121,7 +210,10 @@ export default async function TkaPassPage({
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/pass`)}`)
 
-    const packages = await listActivePassPackages(supabase, level)
+    const [packages, passAccess] = await Promise.all([
+        listActivePassPackages(supabase, level),
+        getLearnerPassAccess(supabase, user.id),
+    ])
     const snapClientKey = env.midtransClientKey()
 
     return (
@@ -156,8 +248,53 @@ export default async function TkaPassPage({
                     </p>
                 </header>
 
+                {passAccess.hasActivePass ? (
+                    <section
+                        data-testid="tka-pass-status-active"
+                        className="border-2 border-gray-900 bg-green-100 p-5 shadow-[4px_4px_0_0_#111]"
+                    >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-green-800">
+                                    <CheckCircle2 size={17}/> Tempur Pass aktif
+                                </div>
+                                <h2 className="mt-2 text-2xl font-black">Akses premium TKA SMP sedang aktif</h2>
+                                <p className="mt-1 font-semibold text-gray-700">
+                                    {passAccess.accessThrough
+                                        ? `Akses kamu sudah aman sampai ${formatAccessDate(passAccess.accessThrough)}.`
+                                        : 'Akses kamu aktif tanpa tanggal berakhir.'}
+                                </p>
+                                {passAccess.scheduledExtensions > 0 && (
+                                    <p className="mt-1 text-sm font-bold text-green-800">
+                                        Termasuk {passAccess.scheduledExtensions} perpanjangan yang sudah terjadwal tanpa membuang sisa masa aktif.
+                                    </p>
+                                )}
+                            </div>
+                            {passAccess.accessThrough && (
+                                <div className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-3 py-2 text-sm font-black">
+                                    <CalendarDays size={17}/> Sampai {formatAccessDate(passAccess.accessThrough)}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                ) : (
+                    <section
+                        data-testid="tka-pass-status-inactive"
+                        className="border-2 border-dashed border-gray-400 bg-white p-4"
+                    >
+                        <p className="font-black">Belum ada Tempur Pass aktif.</p>
+                        <p className="mt-1 text-sm font-semibold text-gray-600">
+                            Pilih paket di bawah untuk membuka akses premium TKA SMP.
+                        </p>
+                    </section>
+                )}
+
                 {packages.length > 0 ? (
-                    <TkaPassPackagesClient packages={packages} level={level}/>
+                    <TkaPassPackagesClient
+                        packages={packages}
+                        level={level}
+                        hasActivePass={passAccess.hasActivePass}
+                    />
                 ) : (
                     <section className="border-2 border-dashed border-gray-400 bg-white p-8 text-center">
                         <p className="font-black">Paket Tempur Pass belum tersedia.</p>
