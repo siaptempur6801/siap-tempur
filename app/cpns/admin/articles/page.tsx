@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { Eye, Plus } from 'lucide-react'
 import { createAdminClient } from '@/lib/utils/supabase/server'
-import { canPublishArticle, getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
+import { getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
 import { formatArticleDate } from '@/lib/articles'
+import { PERMISSIONS } from '@/src/auth/permissions'
 import ArticleStatusActions from '@/components/admin/ArticleStatusActions'
 import {
     AdminBadge,
@@ -44,14 +45,20 @@ function getAuthorName(article: Article) {
 export default async function AdminArticlesPage() {
     const actor = await getCurrentUserRole()
     const supabase = await createAdminClient()
-    const canManageAll = isAdminRole(actor?.role)
+    const permissions = new Set(actor?.permissions ?? [])
+    const isAdmin = isAdminRole(actor?.role)
+    const canCreate = permissions.has(PERMISSIONS.CONTENT_CREATE)
+    const canUpdate = permissions.has(PERMISSIONS.CONTENT_UPDATE)
+    const canPublish = permissions.has(PERMISSIONS.CONTENT_PUBLISH)
+    const canReviewAll = permissions.has(PERMISSIONS.CONTENT_REVIEW) || canPublish
+    const canReadAll = isAdmin || canReviewAll
 
     let query = supabase
         .from('articles')
         .select('id, title, slug, excerpt, status, author_id, published_at, updated_at, profiles(full_name)')
         .order('updated_at', { ascending: false })
 
-    if (!canManageAll && actor?.userId) query = query.eq('author_id', actor.userId)
+    if (!canReadAll && actor?.userId) query = query.eq('author_id', actor.userId)
 
     const { data: articles, error } = await query
     const rows = (articles as Article[] | null) ?? []
@@ -60,8 +67,8 @@ export default async function AdminArticlesPage() {
         <div className="space-y-6 pb-10">
             <AdminPageHeader
                 title="Articles"
-                description="Kelola draft, publikasi, dan arsip artikel. Writer hanya mengelola artikelnya sendiri; publish tetap dibatasi sesuai role."
-                action={<Link href="/admin/content/articles/create" className={adminPrimaryButtonClass}><Plus size={16}/>Artikel baru</Link>}
+                description="Kelola draft, publikasi, dan arsip artikel sesuai permission konten. Editor fokus pada artikelnya sendiri; reviewer dapat membaca draft yang perlu dipublikasikan."
+                action={canCreate ? <Link href="/admin/content/articles/create" className={adminPrimaryButtonClass}><Plus size={16}/>Artikel baru</Link> : undefined}
             />
 
             {error ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">Gagal memuat artikel: {error.message}</div> : null}
@@ -74,8 +81,9 @@ export default async function AdminArticlesPage() {
                 {rows.length ? (
                     <div className="divide-y divide-slate-100">
                         {rows.map((article) => {
-                            const canEdit = canManageAll || (article.author_id === actor?.userId && article.status !== 'published')
-                            const canArchive = canManageAll || (article.author_id === actor?.userId && article.status !== 'published')
+                            const ownsEditableDraft = article.author_id === actor?.userId && article.status !== 'published'
+                            const canEdit = canUpdate && (isAdmin || ownsEditableDraft)
+                            const canArchive = canUpdate && (isAdmin || ownsEditableDraft)
                             return (
                                 <article key={article.id} className="p-5 transition hover:bg-slate-50/70 sm:p-6">
                                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -93,14 +101,14 @@ export default async function AdminArticlesPage() {
                                         <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-sm xl:justify-end">
                                             {article.status === 'published' ? <Link href={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer" className={adminSecondaryButtonClass}><Eye size={16}/>Lihat</Link> : null}
                                             {canEdit ? <Link href={`/admin/content/articles/${article.id}/edit`} className={adminSecondaryButtonClass}>Edit</Link> : null}
-                                            <ArticleStatusActions articleId={article.id} status={article.status} canPublish={canPublishArticle(actor?.role)} canArchive={canArchive} canDelete={canManageAll && article.status !== 'published'}/>
+                                            <ArticleStatusActions articleId={article.id} status={article.status} canPublish={canPublish} canArchive={canArchive} canDelete={isAdmin && article.status !== 'published'}/>
                                         </div>
                                     </div>
                                 </article>
                             )
                         })}
                     </div>
-                ) : !error ? <AdminEmptyState title="Belum ada artikel" description="Buat draft pertama untuk mulai mengisi blog Siap Tempur." action={<Link href="/admin/content/articles/create" className={adminPrimaryButtonClass}><Plus size={16}/>Buat artikel</Link>}/> : null}
+                ) : !error ? <AdminEmptyState title="Belum ada artikel" description={canCreate ? 'Buat draft pertama untuk mulai mengisi blog Siap Tempur.' : 'Belum ada artikel yang dapat diakses oleh akun ini.'} action={canCreate ? <Link href="/admin/content/articles/create" className={adminPrimaryButtonClass}><Plus size={16}/>Buat artikel</Link> : undefined}/> : null}
             </AdminCard>
         </div>
     )
