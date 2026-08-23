@@ -27,7 +27,10 @@ Milestone 4 tidak mengubah production atau `main`. Semua payment/entitlement QA 
 
 ### Learner UI / checkout
 
-- `TkaPassPackagesClient` sudah tersedia.
+- `TkaPassPackagesClient` tersedia untuk Tempur Pass SMP.
+- `/tka/smp/pass` memakai authenticated learner Supabase server client untuk membaca catalog melalui RLS; learner page tidak bergantung pada service-role.
+- Learner tanpa pass melihat state `Belum ada Tempur Pass aktif` dan catalog 30/90 hari.
+- Learner dengan pass memiliki UI status pass, effective expiry, dan renewal CTA.
 - `createTkaPassTransaction` membatasi product code ke pass sesuai jenjang.
 - Checkout memakai server-side authenticated user.
 - CSRF dan rate limit sudah ada.
@@ -49,12 +52,14 @@ Milestone 4 tidak mengubah production atau `main`. Semua payment/entitlement QA 
 - Product features menjadi entitlement dengan source `order_item`.
 - Unique entitlement source membuat duplicate paid fulfillment pada order yang sama idempotent.
 - Entitlement memiliki `starts_at`, `expires_at`, `usage_limit`, `usage_count`, `status`.
+- Renewal pass menumpuk durasi dari later of `paid_at` / current active entitlement expiry dan diserialisasi per learner untuk mencegah concurrent renewal kehilangan durasi.
 
 ### RLS
 
 - learner hanya dapat membaca order miliknya.
 - learner hanya dapat membaca payment melalui order miliknya.
 - learner hanya dapat membaca entitlement miliknya.
+- catalog learner memakai tabel public yang memang readable untuk role `authenticated`; tidak ada grant baru yang dibuka untuk monetization page.
 
 ## Product catalog decision V1
 
@@ -95,7 +100,7 @@ Kedua pass memberikan feature yang sama:
 - `tka.smp.remedial.auto`
 - `tka.smp.wrong_questions`
 
-## Exam access contract audit
+## Exam access contract
 
 Current catalog:
 
@@ -104,7 +109,7 @@ Current catalog:
 - slug: `tka-smp-full`
 - access: `PREMIUM`
 - required feature: `tka.smp.full_tryout.regular`
-- current attempt limit: 5
+- stored attempt limit: 5
 
 ### Mini Bahasa Indonesia / Matematika
 
@@ -112,54 +117,42 @@ Current catalog:
 - free attempt limit: 1
 - required feature: `tka.smp.mini_tryout.unlimited`
 
-Intended V1 contract:
+V1 contract implemented in `20260823070444_tka_smp_monetization_access_contract_v1.sql` behind feature flag `tka.smp.monetization_enforcement`:
 
 - Mini: 1 free attempt per exam; usable Tempur Pass bypasses free quota.
-- Full: usable Tempur Pass required.
+- Full: usable Tempur Pass required when enforcement is enabled.
+- Usable pass bypasses the static Full Tryout attempt cap, providing unlimited regular Full Tryout semantics while entitlement remains usable.
 - Existing in-progress attempt remains resumable; entitlement is checked before creating a new attempt.
 - Expired/inactive/not-yet-started entitlement is unusable.
-- Access decisions must be enforced server/database-side, never UI-only.
+- Access decision is enforced database-side in the private starter, not UI-only.
 
-## Blocking finding — M4 access enforcement
+The flag remains **OFF** during dark launch so M2/M3 behavior is unchanged until paid lifecycle + negative-access browser QA are ready.
 
-The current staging section engine intentionally used during Milestone 2/3 calls:
+## Renewal stacking
 
-`public.start_exam_attempt()` → `app_private.start_exam_attempt_for_user()`.
+Implemented in `20260823071419_tka_pass_renewal_stacking_v1.sql`.
 
-The private starter currently validates active profile, active track, exam state, section/item/version integrity, and raw attempt limit, but **does not yet enforce `access_type` / `required_feature_id` / entitlement**.
-
-Consequences before M4 access hardening:
-
-- staging Full Tryout can still start without Tempur Pass;
-- second Mini attempt remains blocked by raw `attempt_limit=1` even when an unlimited-Mini entitlement exists.
-
-This is the primary M4 functional blocker.
-
-## Full Tryout unlimited semantics
-
-Product UI promises regular Full Tryout + Mini Tryout unlimited during pass validity. Current Full exam still has `attempt_limit=5`.
-
-For M4 V1, access behavior should be normalized so an active pass is not unexpectedly blocked by a static five-attempt cap. This must be implemented and regression-tested before closure.
-
-## Renewal finding
-
-Current fulfillment creates every purchase entitlement with:
-
-```text
-starts_at  = paid_at
-expires_at = paid_at + duration_days
-```
-
-A second purchase before current pass expiry therefore overlaps the previous entitlement and can waste remaining paid days.
-
-M4 renewal should stack duration from the later of:
+For a pass renewal, each feature entitlement starts from the later of:
 
 ```text
 paid_at
-current usable entitlement expiry
+latest active entitlement expiry
 ```
 
-while preserving source-per-order idempotency.
+This prevents early renewal from wasting already-paid remaining days. Successful fulfillment remains source-per-order idempotent, and fulfillment is serialized per learner with an advisory transaction lock.
+
+The learner pass page reads own entitlements through RLS. If a current entitlement is usable, it shows the effective expiry and follows contiguous scheduled renewal entitlements so the learner can see how far access has already been extended.
+
+## Current exact-head evidence
+
+Implementation head `6b9403d376f702fc5666c0569e0bd283076058a4` passed before documentation-only synchronization:
+
+- CI #320: **SUCCESS**
+- Content Review Staging E2E #114: **SUCCESS**
+- TKA SMP Staging E2E #181: **SUCCESS**
+- TKA browser suite: 9 tests passed, including the existing M2/M3 core flows plus authenticated learner catalog, inactive-pass state, mobile no-overflow, expected Rp29.000/Rp69.000 pricing, sandbox Snap loader, and unauthenticated return-to-login behavior.
+
+These results validate the current learner catalog/status slice. They do **not** replace the later closure requirement for paid sandbox, negative entitlement access, expiry, renewal-paid-state, and payment-integrity E2E.
 
 ## Milestone 4 slices
 
@@ -171,10 +164,10 @@ while preserving source-per-order idempotency.
 - [x] Activate SMP pass products on staging
 - [x] Verify exactly one open price per product
 - [x] Verify 10 feature mappings per product
-- [ ] Expose SMP pass catalog in learner staging UI
-- [ ] Harden section starter to enforce entitlement contract
-- [ ] Normalize Full unlimited semantics
-- [ ] Negative access tests
+- [x] Expose SMP pass catalog in learner staging UI through learner RLS
+- [x] Harden section starter to enforce entitlement contract behind dark-launch flag
+- [x] Normalize Full unlimited semantics for usable pass entitlement
+- [ ] Browser negative access tests with enforcement enabled
 
 ### 4.2 Payment + Fulfillment
 
@@ -190,11 +183,12 @@ while preserving source-per-order idempotency.
 
 ### 4.3 Expiry + Renewal UX
 
-- [ ] Stack renewal duration safely
-- [ ] Show active pass / expiry to learner
-- [ ] Renewal CTA
-- [ ] Expired entitlement access denial
-- [ ] No-entitlement access denial
+- [x] Stack renewal duration safely
+- [x] Show active pass / effective expiry to learner
+- [x] Renewal CTA
+- [ ] Paid-state browser proof for active + scheduled renewal UX
+- [ ] Expired entitlement access denial E2E
+- [ ] No-entitlement access denial E2E with enforcement enabled
 
 ### 4.4 Closure
 
@@ -202,8 +196,8 @@ while preserving source-per-order idempotency.
 - [ ] Paid E2E green
 - [ ] Expiry/no-entitlement E2E green
 - [ ] Security/payment-integrity audit green
-- [ ] TKA SMP M2/M3 regression green
-- [ ] CI exact-head green
+- [ ] Final TKA SMP M2/M3 regression green
+- [ ] Final CI exact-head green
 - [ ] 0 leaked disposable users/orders/QA artifacts
 
 ## Production boundary
