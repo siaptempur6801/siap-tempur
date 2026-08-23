@@ -10,11 +10,10 @@ Prinsip utama:
 
 1. `UnifiedAdminShell` memiliki navigation dan Program/Track context.
 2. Feature page tidak membuat sidebar, tab modul, atau Program/Track selector kedua.
-3. Setiap halaman memakai hierarchy yang sama: page header → feedback/notice → records/list/table → empty state.
-4. Form CRUD sederhana/menengah **tidak dirender permanen di halaman**; create/edit dibuka dalam `AdminModal`.
-5. Semua create/edit flow tetap berada di canonical `/admin/**` route.
-6. Legacy `/cpns/admin/**` hanya compatibility entrypoint dan harus diarahkan ke canonical route.
-7. Business logic, authorization, dan server validation tetap menjadi sumber kebenaran; UI tidak boleh menjadi access-control boundary.
+3. Setiap halaman memakai hierarchy yang sama: page header → feedback/notice → primary action → list/table → empty state.
+4. Semua create/edit flow tetap berada di canonical `/admin/**` route.
+5. Legacy `/cpns/admin/**` hanya compatibility entrypoint dan harus diarahkan ke canonical route.
+6. Business logic, authorization, dan server validation tetap menjadi sumber kebenaran; UI tidak boleh menjadi access-control boundary.
 
 ## Canonical routes
 
@@ -48,10 +47,10 @@ Route legacy tidak boleh menjadi destination setelah mutation/save.
 - title + one-sentence purpose
 - primary CTA
 - page-specific notice/error/success
+- modal/editor untuk task utama
 - module-specific filters
 - records/table/cards
 - empty state
-- modal CRUD trigger
 
 Page **tidak boleh** membuat Program/Track selector atau cross-module tabs sendiri.
 
@@ -70,9 +69,7 @@ Gunakan `components/admin/AdminUi.tsx` sebagai default:
 - `adminSecondaryButtonClass`
 - `adminDangerButtonClass`
 
-Untuk CRUD dialog gunakan:
-
-- `components/admin/AdminModal.tsx`
+Gunakan `components/admin/AdminModal.tsx` untuk CRUD sederhana/menengah.
 
 Jangan memperkenalkan kembali visual legacy di `/admin/**` seperti:
 
@@ -81,7 +78,6 @@ Jangan memperkenalkan kembali visual legacy di `/admin/**` seperti:
 - handwriting font untuk page/form hierarchy
 - hard-coded notebook background
 - module tabs yang menduplikasi sidebar
-- create/edit form yang selalu terbuka di atas daftar data
 
 ## Page hierarchy
 
@@ -89,7 +85,7 @@ Jangan memperkenalkan kembali visual legacy di `/admin/**` seperti:
 AdminPageHeader
 ├─ title
 ├─ short description
-└─ primary CTA → AdminModal
+└─ primary create action (optional)
 
 feedback / notice (optional)
 
@@ -100,47 +96,35 @@ records
    └─ edit/archive/action
 
 AdminEmptyState (when no records)
+
+AdminModal (only while create/edit is active)
+└─ form / focused task
 ```
 
-## CRUD interaction
+## CRUD forms
 
-Default behavior untuk data operasional:
+Default simple/medium CRUD interaction:
 
 ```text
-List page
-  ↓ klik Tambah
-Modal create
-  ↓ submit / close
-List page
-
-List row
-  ↓ klik Edit
-Modal edit
-  ↓ submit / close
-List page
+list → Tambah/Edit → modal → submit/close → list
 ```
 
 Rules:
 
-- form create/edit tidak mengambil ruang permanen di list page;
-- modal harus memiliki title, description singkat, tombol close, Escape-to-close, dan backdrop close;
-- modal harus scroll secara internal pada viewport kecil;
-- edit yang dibuka lewat query URL harus kembali ke canonical list URL ketika ditutup;
-- server action, validation, authorization, dan persistence **tidak dipindah ke client**;
-- nested create flow seperti Event Session dan Exam Section juga memakai modal, bukan expandable inline form;
-- destructive confirmation dapat memakai dialog tersendiri bila dibutuhkan.
+- form CRUD tidak boleh mengambil ruang permanen di list page;
+- primary create CTA berada di page header;
+- Edit membuka modal dengan nilai terakhir dari database;
+- modal harus menyediakan close button dan mendukung Escape/backdrop close;
+- modal panjang memakai internal scroll, bukan memperpanjang document;
+- close Edit harus menghapus state `?edit=` dan kembali ke canonical list URL;
+- labels memakai small uppercase semantic labels;
+- inputs memakai `adminInputClass`;
+- create/edit memakai field order yang sama bila memungkinkan;
+- primary submit berada di sisi akhir form;
+- destructive action tidak menjadi primary CTA;
+- validation/error harus muncul dekat task context dan menggunakan bahasa yang bisa ditindaklanjuti.
 
-Exception: workflow yang memang berupa **long-form editor** (contoh Article rich-text editor) boleh memakai dedicated page karena membutuhkan canvas kerja besar, autosave/media, dan navigasi editor yang tidak cocok dipadatkan ke modal.
-
-## Forms
-
-- Labels: small uppercase semantic labels.
-- Inputs: `adminInputClass`.
-- Create/edit form memakai field order yang sama bila memungkinkan.
-- Edit state harus terlihat dari modal title.
-- Primary submit berada di sisi akhir form.
-- Destructive action tidak menjadi primary CTA.
-- Validation/error harus muncul dekat task context dan memakai bahasa yang bisa ditindaklanjuti.
+Exception: workflow long-form/editor yang membutuhkan canvas besar boleh memakai dedicated page. Article rich-text editor adalah contoh exception canonical.
 
 ## Lists and tables
 
@@ -170,6 +154,18 @@ Context tidak boleh berubah diam-diam antara shell dan page.
 
 Switch Program/Track harus mempertahankan current canonical module route bila module tersebut tersedia pada context baru.
 
+## Articles and content permissions
+
+Articles memakai schema-v2 RBAC, bukan role field legacy di `profiles`.
+
+- `content.create`: membuat draft sendiri dan upload cover.
+- `content.read`: membaca artikel yang diizinkan RLS.
+- `content.update`: mengubah draft/non-published milik sendiri; Admin dapat melakukan action lintas owner melalui server-authorized mutation.
+- `content.review` / `content.publish`: reviewer/publisher dapat membaca seluruh draft untuk workflow publikasi.
+- public/anon hanya membaca artikel `published`.
+- list/edit read wajib menggunakan authenticated user session + RLS, bukan privileged service-role read.
+- Article cover menggunakan bucket khusus `article-images`; jangan berbagi konfigurasi bucket dengan Question Bank.
+
 ## Legacy routing
 
 Compatibility mapping:
@@ -191,10 +187,10 @@ Feature-specific legacy shortcuts seperti `tryout-config`, `tryout-akbar`, `even
 Minimum acceptance:
 
 - 390×844: no document horizontal overflow; navigation accessible.
-- modal tidak boleh melebihi viewport dan body modal harus scroll internal;
 - 768–1024px: content hierarchy tidak pecah dan actions wrap dengan benar.
 - desktop: content tidak melebar tanpa batas; primary action mudah ditemukan.
 - fixed/mobile navigation tidak menutupi actionable content.
+- modal tidak melebihi viewport dan body form dapat discroll secara internal.
 
 ## UX acceptance checklist for new admin pages
 
@@ -203,10 +199,11 @@ Minimum acceptance:
 - [ ] hanya satu Program/Track selector
 - [ ] `AdminPageHeader` digunakan
 - [ ] primary action jelas
-- [ ] CRUD sederhana/menengah memakai modal, bukan inline form permanen
-- [ ] edit modal memiliki close/cancel path yang jelas
+- [ ] CRUD simple/medium memakai modal, bukan inline form permanen
+- [ ] create/edit state jelas
 - [ ] status menggunakan `AdminBadge`
 - [ ] empty/error/success state tersedia
 - [ ] mobile tidak overflow
 - [ ] mutation kembali ke canonical module, bukan legacy route
 - [ ] authorization tetap server-side
+- [ ] reads mengikuti user-session RLS bila data memang user-facing/admin-readable tanpa service-role
