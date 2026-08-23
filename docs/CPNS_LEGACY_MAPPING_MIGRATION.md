@@ -13,19 +13,22 @@ Out of scope:
 
 1. Production is a read-only source for this workflow.
 2. Raw question payload is staged separately from mapping decisions.
-3. `legacy_category` and `legacy_sub_category` are preserved only as source metadata.
-4. A question becomes import-ready only when `cpns_legacy_mapping_reviews.review_status = 'reviewed'`.
-5. Reviewed primary/secondary nodes must exist and belong to the same canonical CPNS/SKD subject.
-6. `pending`, `needs_revision`, and `blocked` rows are forbidden from carrying node decisions.
-7. Question images must be copied to staging `question-images` before a question can become import-ready.
-8. Canonical import defaults to `draft`. Publishing requires an explicit command-line confirmation and is staging-only.
-9. The importer is service-role-only; `anon` and `authenticated` cannot execute staging/import RPCs.
+3. Mapping decisions are source-controlled in `data/cpns_legacy_mapping_review_v1.json` as **explicit question-code lists**.
+4. Grouping inside that artifact is compression only. The runner expands exact codes and must never extrapolate a mapping to another question.
+5. `legacy_category` and `legacy_sub_category` are preserved only as source metadata.
+6. A question becomes import-ready only when `cpns_legacy_mapping_reviews.review_status = 'reviewed'`.
+7. Reviewed primary/secondary nodes must exist and belong to the same canonical CPNS/SKD subject.
+8. `pending`, `needs_revision`, and `blocked` rows are forbidden from carrying node decisions.
+9. Question images must be copied to staging `question-images` before a question can become import-ready.
+10. Canonical import defaults to `draft`. Publishing requires an explicit command-line confirmation and is staging-only.
+11. Registry sync, staging, summary, and import RPCs are service-role-only; `anon` and `authenticated` cannot execute them.
+12. The runner reconciles source count, review-artifact count, registry count, review status, raw stage count, and import-ready count before continuing.
 
 ## Current reviewed inventory
 
-Registry total: **439** legacy CPNS questions.
+Source-controlled review inventory: **439** legacy CPNS questions.
 
-Current review result after semantic re-review:
+Current result after semantic review and re-review:
 - **433 reviewed**
 - **6 needs revision**
 - **0 pending**
@@ -41,6 +44,27 @@ Questions intentionally withheld:
 
 These rows must be fixed by content/taxonomy review. Do not force-map them in a migration.
 
+## Source-controlled review artifact
+
+`data/cpns_legacy_mapping_review_v1.json` is the durable review decision artifact.
+
+It contains:
+- exact question codes
+- reviewed / needs-revision status
+- exact primary node code
+- optional exact secondary node code
+- specific notes for unresolved questions
+
+The artifact deliberately does **not** contain production question UUIDs or a hard-coded reviewer UUID. Source question IDs are resolved from the read-only source database at runtime. Reviewer identity is supplied separately through environment configuration.
+
+Before any raw question is staged, the runner:
+1. expands the exact code lists from the artifact,
+2. rejects duplicate codes,
+3. verifies the expanded count is exactly 439,
+4. verifies source and artifact contain the same question-code set,
+5. verifies each artifact subject matches the source question subject,
+6. syncs those explicit decisions into the private staging registry.
+
 ## Required environment variables
 
 The migration runner intentionally uses separate names so production and staging credentials cannot be confused accidentally:
@@ -50,27 +74,38 @@ CPNS_LEGACY_SOURCE_SUPABASE_URL
 CPNS_LEGACY_SOURCE_SERVICE_ROLE_KEY
 CPNS_SCHEMA_V2_STAGING_SUPABASE_URL
 CPNS_SCHEMA_V2_STAGING_SERVICE_ROLE_KEY
+CPNS_MAPPING_REVIEWER_USER_ID
 ```
 
-Never commit these values.
+`CPNS_MAPPING_REVIEWER_USER_ID` must be an existing staging profile that owns the explicit review decision for audit purposes. It is intentionally not hard-coded in a migration or data file.
+
+Never commit any of these values.
 
 ## Commands
 
-### 1. Stage source payload only
+### 1. Sync review registry + stage source payload only
 
 ```bash
 npm run cpns:legacy:stage
 ```
 
-This reads the CPNS source bank, copies required question images to the staging `question-images` bucket, and calls the guarded staging RPC. It does **not** create canonical questions.
+This:
+- reads the source-controlled review artifact,
+- reads the CPNS source bank,
+- reconciles source ↔ artifact,
+- syncs the private mapping registry,
+- copies required question images to staging,
+- stages raw source payload through the guarded RPC.
 
-### 2. Stage + import reviewed rows as draft
+It does **not** create canonical questions.
+
+### 2. Sync + stage + import reviewed rows as draft
 
 ```bash
 npm run cpns:legacy:import:staging
 ```
 
-Only rows exposed through `app_private.cpns_legacy_import_ready` are imported.
+Only rows exposed through `app_private.cpns_legacy_import_ready` are imported. The six unresolved questions remain excluded.
 
 ### 3. Publish on staging only
 
@@ -113,6 +148,7 @@ Private:
 - `app_private.validate_cpns_legacy_mapping_review()`
 
 Service-role-only public RPCs:
+- `upsert_cpns_legacy_mapping_review(...)`
 - `stage_cpns_legacy_question(...)`
 - `import_reviewed_cpns_legacy_question(...)`
 - `import_reviewed_cpns_legacy_batch(...)`
@@ -120,6 +156,8 @@ Service-role-only public RPCs:
 
 ## Definition of done before production migration
 
+- source-controlled review artifact expands to exactly 439 unique codes
+- source and artifact question-code sets reconcile exactly
 - registry/source count reconciles
 - every imported question has exactly 5 options
 - every imported question has exactly one `is_correct` option
