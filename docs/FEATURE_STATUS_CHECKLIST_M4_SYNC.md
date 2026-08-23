@@ -20,10 +20,10 @@ Milestone 4 — TKA SMP Monetization: **ACTIVE**.
 - [x] Products activated on staging
 - [x] Exactly one open ACTIVE price per product verified
 - [x] 10 feature mappings per product verified
-- [ ] learner catalog exposure
-- [ ] server-side entitlement enforcement for SMP section starter
-- [ ] Full Tryout unlimited semantics
-- [ ] negative access tests
+- [x] learner catalog exposure through authenticated learner RLS; no service-role dependency on the pass page
+- [x] server-side entitlement enforcement for SMP section starter behind dark-launch flag
+- [x] Full Tryout unlimited semantics while usable pass entitlement exists
+- [ ] browser negative access tests with monetization enforcement enabled
 
 ### 4.2 Payment + Fulfillment
 
@@ -39,17 +39,29 @@ Milestone 4 — TKA SMP Monetization: **ACTIVE**.
 
 ### 4.3 Expiry + Renewal
 
-- [ ] renewal stacking
-- [ ] active pass/expiry UX
-- [ ] renewal CTA
-- [ ] expired/no-entitlement E2E
+- [x] renewal stacking implemented from later of paid-at / current usable entitlement expiry
+- [x] learner pass status + effective expiry UX implemented through own-entitlement RLS
+- [x] renewal CTA changes package actions to perpanjangan for learners with an active pass
+- [ ] paid-state browser proof for active/scheduled renewal UX
+- [ ] expired/no-entitlement access-denial E2E
+
+### Current exact-head evidence
+
+At implementation head `6b9403d376f702fc5666c0569e0bd283076058a4` before this documentation-only sync:
+
+- CI #320: **SUCCESS**
+- Content Review Staging E2E #114: **SUCCESS**
+- TKA SMP Staging E2E #181: **SUCCESS**
+- TKA suite preserved the existing M2/M3 core browser flows and verified the unauthenticated redirect, learner pass catalog, inactive-pass learner state, mobile layout, prices, and sandbox Snap loader.
+
+These are current-slice gates, not Milestone 4 closure gates; closure exact-head must be rerun after paid/negative-access work.
 
 ### 4.4 Closure
 
 - [ ] admin order/payment verification
 - [ ] payment-integrity audit
-- [ ] M2/M3 regression
-- [ ] exact-head CI/E2E
+- [ ] final M2/M3 regression
+- [ ] final exact-head CI/E2E
 - [ ] QA artifact cleanup
 
 See `docs/TKA_SMP_MONETIZATION_AUDIT.md` for the full audit.
