@@ -1,11 +1,8 @@
-import { redirect } from 'next/navigation'
+import AdminOperationsWorkspace from '@/app/admin/AdminOperationsWorkspace'
 
-export default async function ProductsRoute({ searchParams }: { searchParams: Promise<{ program?: string; track?: string }> }) {
-    const params = await searchParams
-    const query = new URLSearchParams({
-        program: (params.program || 'TKA').toUpperCase(),
-        track: (params.track || 'SMP').toUpperCase(),
-        tab: 'products',
-    })
-    redirect(`/admin?${query.toString()}`)
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+export default function ProductsRoute({ searchParams }: { searchParams: Promise<{ program?: string; track?: string; edit?: string; ok?: string; error?: string }> }) {
+    return <AdminOperationsWorkspace mode="products" searchParams={searchParams}/>
 }
