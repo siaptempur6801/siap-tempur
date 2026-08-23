@@ -32,6 +32,7 @@ interface ArticleFormProps {
 }
 
 const initialState: ArticleActionState = { success: false, message: '' }
+const ARTICLE_IMAGE_BUCKET = 'article-images'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
@@ -68,9 +69,9 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
             if (userError || !user) throw new Error('Sesi login tidak valid')
             const fileExt = file.name.split('.').pop() || 'png'
             const fileName = `articles/${user.id}/cover-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
-            const { error: uploadError } = await supabase.storage.from('question-images').upload(fileName, file)
+            const { error: uploadError } = await supabase.storage.from(ARTICLE_IMAGE_BUCKET).upload(fileName, file)
             if (uploadError) throw new Error(uploadError.message)
-            const { data } = supabase.storage.from('question-images').getPublicUrl(fileName)
+            const { data } = supabase.storage.from(ARTICLE_IMAGE_BUCKET).getPublicUrl(fileName)
             setCoverImageUrl(data.publicUrl)
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Gagal mengupload cover')
