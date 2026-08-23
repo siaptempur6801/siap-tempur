@@ -2,14 +2,80 @@ import Link from 'next/link'
 import Script from 'next/script'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react'
-import TkaPassPackagesClient from '@/components/tka/TkaPassPackagesClient'
+import TkaPassPackagesClient, { type TkaPassPackage } from '@/components/tka/TkaPassPackagesClient'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { commerceService } from '@/src/services/commerce.service'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+type AuthenticatedV2Client = Awaited<ReturnType<typeof createV2Client>>
+
+async function listActivePassPackages(
+    supabase: AuthenticatedV2Client,
+    trackCode: 'SMP'
+): Promise<TkaPassPackage[]> {
+    const now = new Date().toISOString()
+
+    const { data: program, error: programError } = await supabase
+        .from('programs')
+        .select('id')
+        .eq('code', 'TKA')
+        .maybeSingle()
+    if (programError) throw programError
+    if (!program) return []
+
+    const { data: track, error: trackError } = await supabase
+        .from('tracks')
+        .select('id')
+        .eq('program_id', program.id)
+        .eq('code', trackCode)
+        .maybeSingle()
+    if (trackError) throw trackError
+    if (!track) return []
+
+    const { data: products, error: productError } = await supabase
+        .from('products')
+        .select('id, code, name, description, duration_days')
+        .eq('program_id', program.id)
+        .eq('track_id', track.id)
+        .in('status', ['active', 'ACTIVE'])
+        .order('duration_days', { ascending: true })
+    if (productError) throw productError
+    if (!products?.length) return []
+
+    const productIds = products.map((product) => product.id)
+    const { data: prices, error: priceError } = await supabase
+        .from('product_prices')
+        .select('product_id, currency, amount, starts_at, ends_at')
+        .in('product_id', productIds)
+        .in('status', ['active', 'ACTIVE'])
+        .lte('starts_at', now)
+        .order('starts_at', { ascending: false })
+    if (priceError) throw priceError
+
+    const activePriceByProduct = new Map<string, NonNullable<typeof prices>[number]>()
+    for (const price of prices ?? []) {
+        if (price.ends_at && price.ends_at < now) continue
+        if (!activePriceByProduct.has(price.product_id)) {
+            activePriceByProduct.set(price.product_id, price)
+        }
+    }
+
+    return products.flatMap((product) => {
+        const price = activePriceByProduct.get(product.id)
+        if (!price) return []
+        return [{
+            code: product.code,
+            name: product.name,
+            description: product.description,
+            durationDays: product.duration_days,
+            price: Number(price.amount),
+            currency: price.currency || 'IDR',
+        }]
+    })
+}
 
 export default async function TkaPassPage({
     params,
@@ -27,7 +93,7 @@ export default async function TkaPassPage({
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/pass`)}`)
 
-    const packages = await commerceService.listActiveProductOffers('TKA', level)
+    const packages = await listActivePassPackages(supabase, level)
     const snapClientKey = env.midtransClientKey()
 
     return (
