@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Eye, Plus } from 'lucide-react'
-import { createAdminClient } from '@/lib/utils/supabase/server'
+import { createClient } from '@/lib/utils/supabase/server'
 import { getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
 import { formatArticleDate } from '@/lib/articles'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -44,7 +44,7 @@ function getAuthorName(article: Article) {
 
 export default async function AdminArticlesPage() {
     const actor = await getCurrentUserRole()
-    const supabase = await createAdminClient()
+    const supabase = await createClient()
     const permissions = new Set(actor?.permissions ?? [])
     const isAdmin = isAdminRole(actor?.role)
     const canCreate = permissions.has(PERMISSIONS.CONTENT_CREATE)
