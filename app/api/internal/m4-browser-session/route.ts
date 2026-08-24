@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({})) as { email?: string; password?: string }
     if (!body.email || !body.password) return NextResponse.json({ error: 'INVALID_CREDENTIAL_PAYLOAD' }, { status: 400 })
 
-    let response = NextResponse.json({ ok: true })
+    const response = NextResponse.json({ ok: true })
     const supabase = createServerClient(env.supabaseUrl(), env.supabasePublishableKey(), {
         cookies: {
             getAll() {
@@ -40,10 +40,7 @@ export async function POST(request: NextRequest) {
         email: body.email,
         password: body.password,
     })
-    if (error || !data.user) {
-        response = NextResponse.json({ error: 'AUTH_FAILED' }, { status: 401 })
-        return response
-    }
+    if (error || !data.user) return NextResponse.json({ error: 'AUTH_FAILED' }, { status: 401 })
 
     return response
 }
