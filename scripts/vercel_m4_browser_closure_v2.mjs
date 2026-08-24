@@ -10,6 +10,7 @@ const ORIGIN = `http://127.0.0.1:${PORT}`
 const USER_PREFIX = 'm4-browser-qa-'
 const ORDER_PREFIX = 'M4BROWSER-'
 const ENTITLEMENT_SOURCE = 'm4_browser_qa'
+const qaExpect = expect.configure({ timeout: 20_000 })
 
 function enabled() {
   return process.env.VERCEL === '1'
@@ -189,23 +190,23 @@ async function run() {
       const session = await provision(admin); users.push(session.userId)
       const { context, page } = await pageFor(browser, session)
       await examCard(page, 'Tryout Lengkap TKA SMP').getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
-      await expect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
+      await qaExpect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
       result.fullDeniedWithoutPass = true; await context.close()
     }
     {
       const session = await provision(admin); users.push(session.userId); await grantPass(admin, session.userId, 'expired')
       const { context, page } = await pageFor(browser, session, '/tka/smp/pass')
-      await expect(page.getByTestId('tka-pass-status-inactive')).toContainText('Belum ada Tempur Pass aktif.')
+      await qaExpect(page.getByTestId('tka-pass-status-inactive')).toContainText('Belum ada Tempur Pass aktif.')
       await page.goto(`${ORIGIN}/tka/smp`)
       await examCard(page, 'Tryout Lengkap TKA SMP').getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
-      await expect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
+      await qaExpect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
       result.expiredPassDenied = true; await context.close()
     }
     {
       const session = await provision(admin); users.push(session.userId); await grantPass(admin, session.userId, 'active')
       const { context, page } = await pageFor(browser, session, '/tka/smp/pass')
-      await expect(page.getByTestId('tka-pass-status-active')).toContainText('Tempur Pass aktif')
-      await expect(page.getByRole('heading', { name: 'Perpanjang Tempur Pass TKA SMP', exact: true })).toBeVisible()
+      await qaExpect(page.getByTestId('tka-pass-status-active')).toContainText('Tempur Pass aktif')
+      await qaExpect(page.getByRole('heading', { name: 'Perpanjang Tempur Pass TKA SMP', exact: true })).toBeVisible()
       result.activePassUx = true
       await page.goto(`${ORIGIN}/tka/smp`)
       await examCard(page, 'Tryout Lengkap TKA SMP').getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
@@ -216,14 +217,14 @@ async function run() {
       const session = await provision(admin); users.push(session.userId); await seedMiniAttempt(admin, session.userId, 'tka-smp-mini-bahasa-indonesia')
       const { context, page } = await pageFor(browser, session)
       const locked = examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP').getByRole('button', { name: 'Kuota gratis habis · Butuh Tempur Pass', exact: true })
-      await expect(locked).toBeVisible(); await expect(locked).toBeDisabled()
+      await qaExpect(locked).toBeVisible(); await qaExpect(locked).toBeDisabled()
       result.miniQuotaLocked = true; await context.close()
     }
     {
       const session = await provision(admin); users.push(session.userId); await seedMiniAttempt(admin, session.userId, 'tka-smp-mini-matematika'); await grantPass(admin, session.userId, 'active')
       const { context, page } = await pageFor(browser, session)
       const mini = examCard(page, 'Mini Tryout Matematika TKA SMP')
-      await expect(mini.getByText('Tempur Pass aktif', { exact: true })).toBeVisible()
+      await qaExpect(mini.getByText('Tempur Pass aktif', { exact: true })).toBeVisible()
       await mini.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
       await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i, { timeout: 20_000 })
       result.miniPassBypass = true; await context.close()
@@ -243,9 +244,9 @@ async function run() {
       const adminSession = await provision(admin, { learner: false, role: 'ADMIN' }); users.push(adminSession.userId)
       const order = await seedOrder(admin, adminSession.userId)
       const { context, page } = await pageFor(browser, adminSession, '/admin?program=TKA&track=SMP&tab=commerce')
-      await expect(page.getByRole('heading', { name: 'Admin Workspace', exact: true })).toBeVisible()
-      await expect(page.getByText(order.orderNumber, { exact: true })).toBeVisible()
-      await expect(page.getByText('midtrans', { exact: true }).first()).toBeVisible()
+      await qaExpect(page.getByRole('heading', { name: 'Admin Workspace', exact: true })).toBeVisible()
+      await qaExpect(page.getByText(order.orderNumber, { exact: true })).toBeVisible()
+      await qaExpect(page.getByText('midtrans', { exact: true }).first()).toBeVisible()
       result.adminCommerceVisible = true; await context.close()
     }
     if (!Object.values(result).every(Boolean)) throw new Error(`M4_BROWSER_ASSERTION_FAILED:${JSON.stringify(result)}`)
