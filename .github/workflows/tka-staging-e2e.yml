@@ -22,6 +22,7 @@ on:
       - 'playwright.config.ts'
       - '.github/workflows/tka-staging-e2e.yml'
       - 'supabase/functions/ci-e2e-user/**'
+      - 'supabase/functions/ci-e2e-m4/**'
       - 'supabase/migrations/**'
 
 permissions:
@@ -42,7 +43,7 @@ env:
   SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
   NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
   # Core TKA CI intentionally does not hold real payment credentials.
-  # Paid Midtrans sandbox E2E is a separate M4 gate once dedicated CI secrets exist.
+  # Provider-paid Midtrans sandbox lifecycle is verified separately on Vercel Preview.
   MIDTRANS_SERVER_KEY_SANDBOX: e2e-not-used
   NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: e2e-not-used
 
@@ -73,6 +74,29 @@ jobs:
 
       - name: Run TKA SMP core exam E2E
         run: npx playwright test --project=chromium-tka-staging
+
+      - name: Reset TKA SMP monetization enforcement
+        if: always()
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL
+          const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
+          if (!requestUrl || !requestToken) throw new Error('GitHub OIDC environment unavailable for M4 cleanup')
+          const separator = requestUrl.includes('?') ? '&' : '?'
+          const tokenResponse = await fetch(`${requestUrl}${separator}audience=${encodeURIComponent('siap-tempur-staging-e2e')}`, {
+            headers: { Authorization: `bearer ${requestToken}` },
+          })
+          if (!tokenResponse.ok) throw new Error(`OIDC cleanup token failed: ${tokenResponse.status}`)
+          const { value } = await tokenResponse.json()
+          if (!value) throw new Error('OIDC cleanup token empty')
+          const response = await fetch('https://lpgrivowdcepcxradavu.supabase.co/functions/v1/ci-e2e-m4', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${value}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'set_enforcement', enabled: false }),
+          })
+          if (!response.ok) throw new Error(`M4 enforcement reset failed: ${response.status} ${await response.text()}`)
+          NODE
 
       - name: Upload Playwright report on failure
         if: failure()
