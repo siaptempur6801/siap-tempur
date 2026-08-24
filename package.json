@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && npx playwright install --with-deps chromium && node scripts/vercel_m4_browser_once.mjs",
+    "build": "next build && npm install --no-save --package-lock=false @sparticuz/chromium@148.0.0 && node scripts/vercel_m4_browser_sparticuz_once.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
