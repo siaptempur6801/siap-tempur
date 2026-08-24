@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { chromium as playwrightChromium } from '@playwright/test'
 import serverlessChromium from '@sparticuz/chromium'
 
+// One-shot Vercel Preview browser harness. Removed after M4 closure proof.
 process.env.NEXT_PUBLIC_SITE_URL = 'http://127.0.0.1:3012'
 process.env.M4_BROWSER_QA_LOCAL = '1'
 process.env.M4_BROWSER_QA_TOKEN = randomUUID()
