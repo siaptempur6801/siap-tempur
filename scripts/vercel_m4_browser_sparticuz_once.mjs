@@ -1,6 +1,8 @@
 import { chromium as playwrightChromium } from '@playwright/test'
 import serverlessChromium from '@sparticuz/chromium'
 
+process.env.NEXT_PUBLIC_SITE_URL = 'http://127.0.0.1:3012'
+
 const executablePath = await serverlessChromium.executablePath()
 const originalLaunch = playwrightChromium.launch.bind(playwrightChromium)
 
