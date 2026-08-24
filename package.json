@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "M4_BROWSER_QA_LOCAL=1 NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3012 next build && node scripts/vercel_m4_browser_sparticuz_once.mjs",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -51,7 +51,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "@sparticuz/chromium": "148.0.0",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/canvas-confetti": "^1.9.0",
     "@types/katex": "^0.16.8",
