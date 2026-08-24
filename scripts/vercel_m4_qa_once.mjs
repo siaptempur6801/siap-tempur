@@ -28,6 +28,33 @@ function authHeader(serverKey) {
   return `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`
 }
 
+function htmlDecode(value) {
+  return String(value || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&#x27;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+}
+
+function hiddenValue(html, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const patterns = [
+    new RegExp(`<input\\b[^>]*name=["']${escaped}["'][^>]*value=["']([^"']*)["'][^>]*>`, 'i'),
+    new RegExp(`<input\\b[^>]*value=["']([^"']*)["'][^>]*name=["']${escaped}["'][^>]*>`, 'i'),
+  ]
+  for (const pattern of patterns) {
+    const match = html.match(pattern)
+    if (match) return htmlDecode(match[1])
+  }
+  return null
+}
+
+function formAction(html) {
+  const match = html.match(/<form\b[^>]*action=["']([^"']+)["'][^>]*>/i)
+  return match ? htmlDecode(match[1]) : null
+}
+
 async function midtransJson(url, options, serverKey) {
   const response = await fetch(url, {
     ...options,
@@ -96,6 +123,38 @@ async function cleanDedicatedRobot(admin, userId, serverKey) {
   }
 }
 
+async function completeSimulatorPayment(scanHtml) {
+  const referenceId = hiddenValue(scanHtml, 'referenceId')
+  const exploreData = hiddenValue(scanHtml, 'exploreData')
+  const action = formAction(scanHtml)
+  if (!referenceId || !exploreData || !action) throw new Error('MIDTRANS_SIMULATOR_COMPLETION_FIELDS_MISSING')
+
+  const completionUrl = new URL(action, SIMULATOR_PAYMENT).toString()
+  const completionResponse = await fetch(completionUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ referenceId, exploreData, issuer: 'gopay' }).toString(),
+    redirect: 'manual',
+    signal: AbortSignal.timeout(12_000),
+  })
+  const completionText = completionResponse.status >= 300 && completionResponse.status < 400
+    ? ''
+    : await completionResponse.text()
+
+  console.log('M4_QA_SIMULATOR_COMPLETE=' + JSON.stringify({
+    status: completionResponse.status,
+    redirected: completionResponse.status >= 300 && completionResponse.status < 400,
+    hasLocation: Boolean(completionResponse.headers.get('location')),
+  }))
+
+  if (completionResponse.status < 200 || completionResponse.status >= 400) {
+    throw new Error(`MIDTRANS_SIMULATOR_COMPLETE_FAILED:${completionResponse.status}`)
+  }
+  if (/invalid|failed|error occurred|not found/i.test(completionText.slice(0, 16000))) {
+    throw new Error('MIDTRANS_SIMULATOR_COMPLETE_REJECTED')
+  }
+}
+
 async function paidQa() {
   const supabaseUrl = required('NEXT_PUBLIC_SUPABASE_URL')
   if (stagingRef(supabaseUrl) !== STAGING_REF) throw new Error('M4_QA_STAGING_GUARD')
@@ -124,6 +183,7 @@ async function paidQa() {
     totalAmount: null,
     providerCharge: false,
     simulatorAccepted: false,
+    simulatorCompleted: false,
     simulatorStatus: null,
     providerStatus: null,
     orderPaid: false,
@@ -268,12 +328,10 @@ async function paidQa() {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ qrCodeUrl }).toString(),
       redirect: 'manual',
-      signal: AbortSignal.timeout(10_000),
+      signal: AbortSignal.timeout(12_000),
     })
     result.simulatorStatus = simulatorResponse.status
-    const simulatorText = simulatorResponse.status >= 300 && simulatorResponse.status < 400
-      ? ''
-      : await simulatorResponse.text()
+    const simulatorText = await simulatorResponse.text()
     console.log('M4_QA_SIMULATOR_RESPONSE=' + JSON.stringify({
       status: simulatorResponse.status,
       redirected: simulatorResponse.status >= 300 && simulatorResponse.status < 400,
@@ -283,6 +341,9 @@ async function paidQa() {
       throw new Error(`MIDTRANS_SIMULATOR_FAILED:${simulatorResponse.status}`)
     }
     result.simulatorAccepted = true
+
+    await completeSimulatorPayment(simulatorText)
+    result.simulatorCompleted = true
 
     const paidStatus = await waitForPaid(orderNumber, serverKey)
     const providerStatus = String(paidStatus.transaction_status || '').toLowerCase()
@@ -367,6 +428,7 @@ async function paidQa() {
     console.log('M4_QA_PAID_FAILURE=' + JSON.stringify({
       providerCharge: result.providerCharge,
       simulatorAccepted: result.simulatorAccepted,
+      simulatorCompleted: result.simulatorCompleted,
       simulatorStatus: result.simulatorStatus,
       providerStatus: result.providerStatus,
       commerceCleanup: result.commerceCleanup,
