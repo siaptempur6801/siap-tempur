@@ -20,9 +20,9 @@ Object.defineProperty(playwrightChromium, 'launch', {
       headless: true,
     })
 
-    // Sparticuz runs Chromium in single-process mode. Closing an individual
-    // BrowserContext can terminate that shared process, so defer context
-    // disposal until the harness performs its final browser.close().
+    // Sparticuz runs Chromium in single-process mode. Closing a BrowserContext
+    // can terminate the shared Chromium process. Close each page to stop prior
+    // test activity, but defer actual context disposal until browser.close().
     const originalNewContext = browser.newContext.bind(browser)
     Object.defineProperty(browser, 'newContext', {
       configurable: true,
@@ -30,7 +30,11 @@ Object.defineProperty(playwrightChromium, 'launch', {
         const context = await originalNewContext(...args)
         Object.defineProperty(context, 'close', {
           configurable: true,
-          value: async () => undefined,
+          value: async () => {
+            for (const page of context.pages()) {
+              await page.close().catch(() => undefined)
+            }
+          },
         })
         return context
       },
