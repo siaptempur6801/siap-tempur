@@ -107,15 +107,23 @@ function getAllowedOrigins(headersList: HeaderReader): Set<string> {
   return origins
 }
 
+function logLoopbackQaFailure(reason: string, headersList: HeaderReader, hasCookie: boolean, hasHeader: boolean, allowedOrigins?: Set<string>) {
+  if (process.env.M4_BROWSER_QA_LOCAL !== '1') return
+  console.warn('M4_CSRF_QA_DIAGNOSTIC', {
+    reason,
+    host: headersList.get('host'),
+    forwardedHost: headersList.get('x-forwarded-host'),
+    forwardedProto: headersList.get('x-forwarded-proto'),
+    origin: headersList.get('origin'),
+    requestOrigin: getRequestOrigin(headersList),
+    hasCookie,
+    hasHeader,
+    allowedOrigins: allowedOrigins ? [...allowedOrigins] : undefined,
+  })
+}
+
 /**
- * Validates CSRF token for server actions.
- *
- * Two modes:
- * 1. If X-CSRF-Token header is present → validate against cookie (double-submit).
- * 2. If header is absent but cookie exists → verify same-origin via Origin header,
- *    relying on SameSite: Strict to block cross-origin cookie delivery.
- *
- * Throws if CSRF validation fails — catch in the action to return user-friendly error.
+ * Validates CSRF token for Server Actions.
  */
 export async function validateCsrf(): Promise<void> {
   const cookieStore = await cookies()
@@ -124,28 +132,24 @@ export async function validateCsrf(): Promise<void> {
   const cookieToken = cookieStore.get(CSRF_COOKIE)?.value
   const headerToken = headersList.get(CSRF_HEADER)
 
-  // No cookie at all — request is suspicious
   if (!cookieToken) {
+    logLoopbackQaFailure('missing_cookie', headersList, false, Boolean(headerToken))
     throw new CsrfError('Missing CSRF token')
   }
 
-  // Layer 1: Double-submit cookie via custom header
   if (headerToken) {
     if (!constantTimeEqual(cookieToken, headerToken)) {
+      logLoopbackQaFailure('header_cookie_mismatch', headersList, true, true)
       throw new CsrfError('Invalid CSRF token')
     }
     return
   }
 
-  // Layer 2: SameSite Strict + Origin check for imperative server action calls.
-  // The CSRF cookie is SameSite: Strict, so it won't be sent cross-origin.
-  // We additionally verify Origin against the actual request host and known
-  // deployment origins. This supports Vercel branch aliases without allowing
-  // arbitrary sibling origins.
   const origin = normalizeOrigin(headersList.get('origin'))
   const allowedOrigins = getAllowedOrigins(headersList)
 
   if (!origin || !allowedOrigins.has(origin)) {
+    logLoopbackQaFailure('invalid_origin', headersList, true, false, allowedOrigins)
     throw new CsrfError('Invalid origin')
   }
 }
