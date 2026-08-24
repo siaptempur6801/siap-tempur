@@ -28,10 +28,22 @@ function attrs(tag) {
   const result = {}
   const re = /([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*["']([^"']*)["']/g
   let match
-  while ((match = re.exec(tag))) {
-    result[match[1].toLowerCase()] = match[2]
-  }
+  while ((match = re.exec(tag))) result[match[1].toLowerCase()] = match[2]
   return result
+}
+
+function selectOptions(body, selectName) {
+  const options = []
+  const selectRe = new RegExp(`<select\\b[^>]*name=["']${selectName}["'][^>]*>([\\s\\S]*?)<\\/select>`, 'i')
+  const select = body.match(selectRe)
+  if (!select) return options
+  const optionRe = /<option\b([^>]*)>([\s\S]*?)<\/option>/gi
+  let match
+  while ((match = optionRe.exec(select[1])) && options.length < 30) {
+    const a = attrs(`<option ${match[1]}>`)
+    options.push({ value: a.value || null, text: cleanText(match[2]), selected: /\bselected\b/i.test(match[1]) })
+  }
+  return options
 }
 
 function inspectControls(html) {
@@ -47,12 +59,14 @@ function inspectControls(html) {
     while ((fieldMatch = fieldRe.exec(body)) && fields.length < 30) {
       const tagText = fieldMatch[0]
       const a = attrs(tagText)
+      const tagName = fieldMatch[1].toLowerCase()
       fields.push({
-        tag: fieldMatch[1].toLowerCase(),
+        tag: tagName,
         type: a.type || null,
         name: a.name || null,
         id: a.id || null,
-        text: fieldMatch[1].toLowerCase() === 'button' ? cleanText(fieldMatch[2]) : null,
+        text: tagName === 'button' ? cleanText(fieldMatch[2]) : null,
+        options: tagName === 'select' && a.name ? selectOptions(body, a.name) : undefined,
       })
     }
     forms.push({
@@ -71,14 +85,7 @@ function inspectControls(html) {
     const text = cleanText(buttonMatch[3])
     if (!text) continue
     if (/pay|payment|complete|confirm|success|settle|qris|gopay|continue|lanjut|bayar|selesai/i.test(text)) {
-      buttons.push({
-        tag: buttonMatch[1].toLowerCase(),
-        text,
-        href: a.href || null,
-        type: a.type || null,
-        name: a.name || null,
-        id: a.id || null,
-      })
+      buttons.push({ tag: buttonMatch[1].toLowerCase(), text, href: a.href || null, type: a.type || null, name: a.name || null, id: a.id || null })
     }
   }
 
@@ -92,45 +99,25 @@ function inspectControls(html) {
     } catch {}
   }
 
-  const keywords = []
-  for (const needle of ['complete payment', 'payment success', 'confirm', 'settlement', 'success', 'pay now', 'bayar']) {
-    const index = html.toLowerCase().indexOf(needle)
-    if (index >= 0) {
-      keywords.push(cleanText(html.slice(Math.max(0, index - 180), Math.min(html.length, index + 320))))
-    }
-  }
-
-  return { forms, buttons, paths: [...sameOriginPaths], keywords }
+  return { forms, buttons, paths: [...sameOriginPaths] }
 }
 
 async function run() {
   const serverKey = required('MIDTRANS_SERVER_KEY_SANDBOX')
   if (serverKey === 'e2e-not-used') throw new Error('REAL_SANDBOX_KEY_REQUIRED')
   const orderId = `M4CTRL-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`
-  const amount = 29500
 
   const chargeResponse = await fetch(`${MIDTRANS_API}/v2/charge`, {
     method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Authorization: authHeader(serverKey),
-    },
-    body: JSON.stringify({
-      payment_type: 'qris',
-      transaction_details: { order_id: orderId, gross_amount: amount },
-      qris: { acquirer: 'gopay' },
-    }),
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: authHeader(serverKey) },
+    body: JSON.stringify({ payment_type: 'qris', transaction_details: { order_id: orderId, gross_amount: 29500 }, qris: { acquirer: 'gopay' } }),
   })
   const charge = await chargeResponse.json().catch(() => ({}))
-  if (!chargeResponse.ok || String(charge.status_code) !== '201') {
-    throw new Error(`CHARGE_FAILED:${chargeResponse.status}:${String(charge.status_message || '')}`)
-  }
+  if (!chargeResponse.ok || String(charge.status_code) !== '201') throw new Error(`CHARGE_FAILED:${chargeResponse.status}:${String(charge.status_message || '')}`)
 
   try {
     const actions = Array.isArray(charge.actions) ? charge.actions : []
-    const qrCodeUrl = actions.find((action) => action?.name === 'generate-qr-code')?.url
-      || actions.find((action) => action?.name === 'generate-qr-code-v2')?.url
+    const qrCodeUrl = actions.find((action) => action?.name === 'generate-qr-code')?.url || actions.find((action) => action?.name === 'generate-qr-code-v2')?.url
     if (!qrCodeUrl) throw new Error('QR_URL_MISSING')
 
     const scanResponse = await fetch(SIMULATOR_PAYMENT, {
@@ -141,26 +128,15 @@ async function run() {
       signal: AbortSignal.timeout(12_000),
     })
     const html = await scanResponse.text()
-    console.log('M4_QRIS_CONTROLS=' + JSON.stringify({
-      scanStatus: scanResponse.status,
-      contentType: scanResponse.headers.get('content-type'),
-      ...inspectControls(html),
-    }))
+    console.log('M4_QRIS_CONTROLS=' + JSON.stringify({ scanStatus: scanResponse.status, contentType: scanResponse.headers.get('content-type'), ...inspectControls(html) }))
   } finally {
     const expireResponse = await fetch(`${MIDTRANS_API}/v2/${encodeURIComponent(orderId)}/expire`, {
       method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: authHeader(serverKey),
-      },
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: authHeader(serverKey) },
     }).catch(() => null)
     console.log('M4_QRIS_CONTROLS_EXPIRE=' + String(expireResponse?.status || 'network-error'))
   }
 }
 
-if (enabled()) {
-  await run()
-} else {
-  console.log('M4_QRIS_CONTROLS=skipped')
-}
+if (enabled()) await run()
+else console.log('M4_QRIS_CONTROLS=skipped')
