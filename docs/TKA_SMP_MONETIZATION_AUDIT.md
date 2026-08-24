@@ -1,6 +1,6 @@
 # TKA SMP Monetization — Milestone 4 Audit
 
-Status: **ACTIVE / STAGING ONLY — PAID SANDBOX GATE PASSED**  
+Status: **CLOSURE READY / STAGING ONLY — EXTERNAL CI EXECUTION BLOCKER**  
 Branch: `feat/tka-smp-monetization-v1`  
 Base: `feat/schema-v2`  
 Production: **NO-GO**
@@ -23,255 +23,244 @@ package visible
 
 Milestone 4 tidak mengubah production atau `main`. Semua payment/entitlement QA dilakukan terhadap staging `lpgrivowdcepcxradavu`.
 
-## Existing foundation verified
+## Catalog + access contract
 
-### Learner UI / checkout
-
-- `TkaPassPackagesClient` tersedia untuk Tempur Pass SMP.
-- `/tka/smp/pass` memakai authenticated learner Supabase server client untuk membaca catalog melalui RLS; learner page tidak bergantung pada service-role.
-- Learner tanpa pass melihat state `Belum ada Tempur Pass aktif` dan catalog 30/90 hari.
-- Learner dengan pass memiliki UI status pass, effective expiry, dan renewal CTA.
-- `createTkaPassTransaction` membatasi product code ke pass sesuai jenjang.
-- Checkout memakai server-side authenticated user.
-- CSRF dan rate limit sudah ada.
-- Midtrans Snap callback melakukan status sync.
-
-### Payment integrity
-
-- Order dibentuk server-side dari active product + active price.
-- Amount checkout berasal dari catalog server-side, bukan input client.
-- `syncUserOrder` memverifikasi order milik learner.
-- Provider amount harus sama persis dengan `orders.total_amount`.
-- Webhook Midtrans diverifikasi dengan SHA-512 signature dan timing-safe comparison.
-- Webhook event memiliki idempotency state melalui `payment_webhook_events`.
-
-### Fulfillment / entitlement
-
-- `fulfill_paid_order` hanya executable oleh `postgres` / `service_role`; learner/anon tidak memiliki EXECUTE.
-- Successful `capture` / `settlement` menandai order paid.
-- Product features menjadi entitlement dengan source `order_item`.
-- Unique entitlement source membuat duplicate paid fulfillment pada order yang sama idempotent.
-- Entitlement memiliki `starts_at`, `expires_at`, `usage_limit`, `usage_count`, `status`.
-- Renewal pass menumpuk durasi dari later of `paid_at` / current active entitlement expiry dan diserialisasi per learner untuk mencegah concurrent renewal kehilangan durasi.
-
-### RLS
-
-- learner hanya dapat membaca order miliknya.
-- learner hanya dapat membaca payment melalui order miliknya.
-- learner hanya dapat membaca entitlement miliknya.
-- catalog learner memakai tabel public yang memang readable untuk role `authenticated`; tidak ada grant baru yang dibuka untuk monetization page.
-
-## Product catalog decision V1
-
-Pricing staging dipilih konsisten dengan existing TKA SD pass catalog:
+Staging catalog:
 
 | Product | Duration | Price |
 |---|---:|---:|
 | `TKA_SMP_PASS_30` | 30 hari | Rp29.000 |
 | `TKA_SMP_PASS_90` | 90 hari | Rp69.000 |
 
-Admin fee checkout existing tetap Rp500.
+Admin fee checkout existing: Rp500.
 
-Migration staging:
+Verified:
+- kedua product ACTIVE
+- tepat satu open ACTIVE price per product
+- 10 product-feature mappings per product
+- learner catalog dibaca melalui authenticated RLS, tanpa service-role browser path
 
-`20260823065718_tka_smp_pass_catalog_v1`
+Migrations:
+- `20260823065718_tka_smp_pass_catalog_v1.sql`
+- `20260823070444_tka_smp_monetization_access_contract_v1.sql`
+- `20260823071419_tka_pass_renewal_stacking_v1.sql`
+- `20260824050000_tka_smp_monetization_browser_contract_v1.sql`
 
-Verification:
+Access contract saat enforcement ON:
+- Full Tryout PREMIUM tanpa usable pass → `ENTITLEMENT_REQUIRED`
+- expired/not-yet-started/inactive entitlement → unusable
+- active pass membuka Full Tryout dan bypass static attempt cap
+- Mini memiliki 1 free attempt per exam
+- Mini setelah free quota membutuhkan usable pass
+- usable pass bypass free Mini quota
+- existing in-progress attempt tetap resumable sebelum entitlement gate untuk attempt baru
 
-- kedua product `ACTIVE`
-- tepat 1 open ACTIVE price per product
-- currency `IDR`
-- 30-day = `29000`
-- 90-day = `69000`
-- product-feature mapping tetap 10 feature per product
+Database contract proof telah lulus di staging menggunakan transaksi yang dibatalkan, sehingga tidak meninggalkan state QA.
 
-## Product → feature mapping verified
+## Renewal
 
-Kedua pass memberikan feature yang sama:
-
-- `tka.smp.analytics.full`
-- `tka.smp.drill.unlimited`
-- `tka.smp.explanation.full`
-- `tka.smp.full_tryout.regular`
-- `tka.smp.material.premium`
-- `tka.smp.mini_tryout.unlimited`
-- `tka.smp.progress.history`
-- `tka.smp.recommendation`
-- `tka.smp.remedial.auto`
-- `tka.smp.wrong_questions`
-
-## Exam access contract
-
-Current catalog:
-
-### Full Tryout
-
-- slug: `tka-smp-full`
-- access: `PREMIUM`
-- required feature: `tka.smp.full_tryout.regular`
-- stored attempt limit: 5
-
-### Mini Bahasa Indonesia / Matematika
-
-- access: `FREEMIUM`
-- free attempt limit: 1
-- required feature: `tka.smp.mini_tryout.unlimited`
-
-V1 contract implemented in `20260823070444_tka_smp_monetization_access_contract_v1.sql` behind feature flag `tka.smp.monetization_enforcement`:
-
-- Mini: 1 free attempt per exam; usable Tempur Pass bypasses free quota.
-- Full: usable Tempur Pass required when enforcement is enabled.
-- Usable pass bypasses the static Full Tryout attempt cap, providing unlimited regular Full Tryout semantics while entitlement remains usable.
-- Existing in-progress attempt remains resumable; entitlement is checked before creating a new attempt.
-- Expired/inactive/not-yet-started entitlement is unusable.
-- Access decision is enforced database-side in the private starter, not UI-only.
-
-The flag remains **OFF** during dark launch so M2/M3 behavior is unchanged until the separate rollout decision is approved.
-
-### Negative access contract proof
-
-Staging contract QA was executed with monetization enforcement temporarily enabled inside an intentionally aborted transaction. Verified behavior:
-
-- no entitlement → Full Tryout denied
-- expired entitlement → Full Tryout denied
-- first Mini attempt without pass → allowed
-- second Mini attempt without pass → denied
-- active pass → Mini unlimited path allowed
-- active pass → Full Tryout attempt beyond static attempt cap allowed
-- existing in-progress Full attempt remains resumable after entitlement is removed
-
-The transaction was deliberately rolled back. Post-test verification confirmed enforcement returned to OFF and no QA entitlement/attempt artifacts were committed.
-
-This proves the database access contract. It does not replace a future browser-negative test with enforcement enabled.
-
-## Renewal stacking
-
-Implemented in `20260823071419_tka_pass_renewal_stacking_v1.sql`.
-
-For a pass renewal, each feature entitlement starts from the later of:
+Fulfillment renewal menumpuk durasi dari later of:
 
 ```text
 paid_at
 latest active entitlement expiry
 ```
 
-This prevents early renewal from wasting already-paid remaining days. Successful fulfillment remains source-per-order idempotent, and fulfillment is serialized per learner with an advisory transaction lock.
-
-The learner pass page reads own entitlements through RLS. If a current entitlement is usable, it shows the effective expiry and follows contiguous scheduled renewal entitlements so the learner can see how far access has already been extended.
+Per-learner advisory transaction lock mencegah concurrent renewal kehilangan durasi. Learner pass page menampilkan active pass, effective access-through expiry, dan renewal CTA.
 
 ## Paid sandbox lifecycle proof — 24 Aug 2026
 
-A real Midtrans **sandbox** QRIS transaction was executed from Vercel Preview against the real staging catalog and staging Supabase service-role boundary. No production credential/database was used.
-
-Verified end-to-end provider + backend sequence:
+Real Midtrans sandbox QRIS lifecycle telah diuji terhadap staging:
 
 ```text
-TKA_SMP_PASS_30 staging product
-→ price Rp29.000
-→ existing QRIS admin fee Rp500
-→ order total Rp29.500
-→ Midtrans sandbox QRIS charge accepted
-→ QRIS simulator scan accepted
-→ QRIS simulator GoPay completion accepted
-→ Midtrans transaction_status = settlement
-→ fulfill_paid_order
-→ order = paid
-→ payment = paid/settlement
-→ 10 product-feature entitlements created
-→ each entitlement duration = 30 days
-→ fulfill_paid_order invoked again
-→ entitlement count remains exactly 10
-→ QA commerce artifacts deleted
+TKA_SMP_PASS_30
+→ product Rp29.000
+→ admin fee Rp500
+→ total Rp29.500
+→ provider charge accepted
+→ QRIS simulator completion
+→ provider settlement
+→ order paid
+→ payment settlement
+→ exactly 10 entitlements
+→ duplicate fulfillment
+→ still exactly 10 entitlements
+→ cleanup
 ```
 
-Exact successful runner evidence:
+Verified payment/security matrix:
+- invalid webhook signature → rejected
+- amount mismatch → rejected
+- pending → accepted
+- duplicate pending webhook → idempotent
+- expire → terminal expired state
+- cancel → terminal cancelled state
+- deny → terminal failed state
+- settlement → paid + fulfillment
+- duplicate settlement → no duplicate entitlement
+- cancel after paid → paid state tidak diregresikan dan entitlement tetap ada
 
-```json
-{
-  "stagingRef": "lpgrivowdcepcxradavu",
-  "dedicatedRobotVerified": true,
-  "staleQaCleaned": true,
-  "productCode": "TKA_SMP_PASS_30",
-  "totalAmount": 29500,
-  "providerCharge": true,
-  "simulatorAccepted": true,
-  "simulatorCompleted": true,
-  "simulatorStatus": 200,
-  "providerStatus": "settlement",
-  "orderPaid": true,
-  "paymentPaid": true,
-  "expectedFeatures": 10,
-  "entitlementCount": 10,
-  "duplicateEntitlementCount": 10,
-  "expiryDaysApprox": 30,
-  "commerceCleanup": true
-}
+## Security closure
+
+Final staging audit on 24 Aug 2026:
+
+### Feature flag / cleanup
+
+```text
+tka.smp.monetization_enforcement.enabled = false
+rollout_percentage = 0
+mode = dark_launch
+QA auth users = 0
+M4BROWSER/M4SEC/M4QA orders = 0
+m4_browser_qa / ci_e2e_m4 entitlements = 0
+M4 browser attempts = 0
+CI TKA attempts = 0
+M4SEC webhook artifacts = 0
 ```
 
-The temporary QA robot was subsequently deleted from `auth.users`. Cascade verification after deletion returned:
+### RLS
 
-- auth user: `0`
-- profile: `0`
-- user track: `0`
-- `M4QA-*` order: `0`
-- QA entitlements: `0`
+RLS enabled on:
+- `orders`
+- `payments`
+- `entitlements`
+- `products`
+- `product_prices`
+- `product_features`
 
-Temporary Vercel QA route/scripts were removed and the package build command was restored to normal `next build`. Temporary staging Edge Functions used during investigation were made inert with HTTP `410 Gone` behavior.
+`anon` does not have SELECT on those learner monetization tables/catalog tables. Authenticated catalog reads use explicit policies.
 
-## Milestone 4 slices
+Ownership policies verified:
+- `orders_select_own`: `user_id = auth.uid()` or admin permission
+- `payments_select_own`: payment's order must belong to `auth.uid()` or admin permission
+- `entitlements_select_own`: `user_id = auth.uid()` or admin permission
+
+### Function privileges
+
+`fulfill_paid_order`:
+- anon EXECUTE: **false**
+- authenticated EXECUTE: **false**
+- service_role EXECUTE: **true**
+
+`is_tka_smp_monetization_enforced`:
+- anon EXECUTE: **false**
+- authenticated EXECUTE: **true**
+- fixed `search_path = ''`
+- no parameters; reads only the fixed monetization flag key
+
+Supabase advisor still reports general schema baseline notices, including intentionally authenticated learner SECURITY DEFINER wrappers and pre-existing RLS/performance notices. No new M4 privilege leak was found. Reference: https://supabase.com/docs/guides/database/database-linter
+
+Auth leaked-password protection is a project-level recommendation and remains outside M4. Reference: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
+
+## Browser / permanent E2E contract
+
+Permanent suite is source-controlled in:
+- `tests/e2e/specs/9-tka-smp-monetization.spec.ts`
+- `tests/e2e/tka.m4.ts`
+- `.github/workflows/tka-staging-e2e.yml`
+- `supabase/functions/ci-e2e-m4/index.ts`
+
+Permanent matrix covers:
+- learner pass catalog + Midtrans sandbox loader
+- Full no-pass denial
+- expired-pass denial
+- active-pass expiry/renewal UX + Full unlock
+- exhausted Mini quota lock
+- active-pass Mini quota bypass
+- order/payment owner-only BOLA test across two learners
+- unauthenticated pass-page redirect
+
+The workflow has an `if: always()` cleanup that resets monetization enforcement to OFF.
+
+The permanent CI helper uses GitHub OIDC and validates:
+- GitHub issuer/signature
+- audience `siap-tempur-staging-e2e`
+- repository `8shagrid/siap-tempur`
+- exact TKA workflow ref
+- allowed events only
+- target users must match disposable `ci-tka-*` users with CI metadata
+
+Temporary M4 one-shot Edge Functions remain deployed only as inert HTTP `410 Gone` stubs. Permanent `ci-e2e-m4` remains active for the source-controlled staging E2E workflow.
+
+## Clean exact head verification
+
+Clean pre-doc closure head:
+
+`8e5f407067575fb82e5b6388421b3f9d55e47ec2`
+
+Verified on Vercel Preview:
+- `npm run build` = normal `next build`
+- Next.js compile success
+- TypeScript success
+- route generation success
+- temporary `/api/internal/m4-browser-session` absent
+- temporary Vercel/Sparticuz browser harness removed
+- deployment `dpl_2eWL4DAkwK3KzoySRDpGtmx1zxj1` = **READY**
+
+## GitHub Actions external blocker
+
+Exact-head pull-request workflows were retried on 24 Aug 2026:
+
+- CI run `32738409660`, attempt 2
+- TKA SMP Staging E2E run `32738409631`, attempt 2
+- Content Review Staging E2E run `32738409593`, attempt 2
+
+All three fail before runner steps start:
+
+```text
+job conclusion = failure
+steps = null
+job logs artifact = unavailable
+```
+
+This is not an application/test assertion failure: checkout, install, build, Playwright, and cleanup steps never execute. Therefore permanent exact-head CI/E2E cannot honestly be marked green until GitHub Actions can allocate/start the jobs.
+
+## Milestone 4 closure checklist
 
 ### 4.1 Catalog + Access Contract
-
-- [x] Audit product catalog
-- [x] Lock staging price 30-day = Rp29.000
-- [x] Lock staging price 90-day = Rp69.000
-- [x] Activate SMP pass products on staging
-- [x] Verify exactly one open price per product
-- [x] Verify 10 feature mappings per product
-- [x] Expose SMP pass catalog in learner staging UI through learner RLS
-- [x] Harden section starter to enforce entitlement contract behind dark-launch flag
-- [x] Normalize Full unlimited semantics for usable pass entitlement
-- [x] Database negative access contract with enforcement enabled + rollback proof
-- [ ] Browser negative access tests with enforcement enabled
+- [x] Catalog + prices locked
+- [x] 10 feature mappings per product
+- [x] Learner RLS catalog
+- [x] Database entitlement contract
+- [x] Full no-pass browser denial observed during closure investigation
+- [x] Expired-pass browser denial observed during closure investigation
+- [x] Permanent browser negative/access tests committed
 
 ### 4.2 Payment + Fulfillment
-
-- [x] Existing Snap checkout present
-- [x] Existing signature validation present
-- [x] Existing amount verification present
-- [x] Existing webhook idempotency present
-- [x] Existing entitlement fulfillment present
-- [x] Paid sandbox lifecycle E2E through provider settlement
-- [x] Duplicate fulfillment idempotency proof
-- [ ] Duplicate webhook E2E
-- [ ] pending/failed/cancel/expire verification
-- [ ] cross-user sync/BOLA verification
+- [x] Real paid sandbox settlement lifecycle
+- [x] Signature rejection
+- [x] Amount mismatch rejection
+- [x] Duplicate webhook/idempotency
+- [x] pending / expire / cancel / deny state verification
+- [x] Duplicate fulfillment remains exactly 10 entitlements
+- [x] Paid terminal-state preservation after later cancel
 
 ### 4.3 Expiry + Renewal UX
-
-- [x] Stack renewal duration safely
-- [x] Show active pass / effective expiry to learner
+- [x] Renewal stacking contract
+- [x] Active pass / expiry learner UX
 - [x] Renewal CTA
-- [x] Database expired/no-entitlement denial proof
-- [ ] Paid-state browser proof for active + scheduled renewal UX
-- [ ] Browser expired entitlement access denial E2E
-- [ ] Browser no-entitlement access denial E2E with enforcement enabled
+- [x] Database expired/no-entitlement denial
+- [x] Active pass status + renewal UI observed in browser closure investigation
+- [x] Permanent active/expired/no-entitlement browser tests committed
 
-### 4.4 Closure
+### 4.4 Security + Closure
+- [x] Payment integrity matrix green
+- [x] RLS own-row policies verified
+- [x] Fulfillment privilege verified
+- [x] Feature flag OFF / rollout 0
+- [x] Final staging QA residue = 0
+- [x] Clean exact-head Vercel build/deploy READY
+- [x] Temporary branch/browser QA harness removed
+- [ ] Permanent TKA SMP E2E exact-head execution green — **blocked before runner starts**
+- [ ] Final CI exact-head execution green — **blocked before runner starts**
+- [ ] Content Review regression exact-head green — **blocked before runner starts**
 
-- [x] Paid sandbox E2E green
-- [x] Backend expiry/no-entitlement contract green
-- [x] Paid fulfillment idempotency green
-- [x] 0 leaked disposable users/orders/QA artifacts after paid gate
-- [ ] Admin order/payment browser verification
-- [ ] Browser negative-access E2E green
-- [ ] Duplicate webhook/payment failure-path E2E green
-- [ ] Security/payment-integrity closure green
-- [ ] Final TKA SMP M2/M3 regression green on closure head
-- [ ] Final CI exact-head green on closure head
+## Closure decision
+
+**Do not mark Milestone 4 COMPLETE yet.** Product, payment, access-control, staging cleanup, and clean-head deployment gates are closure-ready. The remaining blocker is external GitHub Actions job execution: exact-head jobs terminate with `steps=null` before any workflow step starts.
+
+Once GitHub Actions executes normally and the three exact-head workflows are green, Milestone 4 can be marked **COMPLETE** without reopening product/payment implementation unless those workflows expose a real regression.
 
 ## Production boundary
 
-Passing the paid sandbox gate means **staging payment lifecycle has been proven**. It is not automatic approval to enable monetization enforcement or deploy to production.
-
-Production remains untouched. `tka.smp.monetization_enforcement` remains OFF until the remaining M4 browser/security closure checks are explicitly completed and a separate rollout decision is made.
+Production remains untouched and **NO-GO**. Passing M4 does not automatically enable production payments or production monetization enforcement. Production cutover remains Milestone 5 and requires a separate explicit GO/NO-GO decision.
