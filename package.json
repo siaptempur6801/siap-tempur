@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/vercel_m4_qa_once.mjs && next build",
+    "build": "node scripts/vercel_m4_qris_controls_once.mjs && node scripts/vercel_m4_qa_once.mjs && next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
