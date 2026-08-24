@@ -227,10 +227,18 @@ export async function GET() {
         }, { status: 500 })
     } finally {
         if (eventIds.length > 0) {
-            await admin.from('payment_webhook_events').delete().in('event_id', eventIds).catch(() => undefined)
+            try {
+                await admin.from('payment_webhook_events').delete().in('event_id', eventIds)
+            } catch {
+                // Best-effort cleanup; the disposable user cleanup below removes commerce rows.
+            }
         }
         if (userId) {
-            await admin.auth.admin.deleteUser(userId).catch(() => undefined)
+            try {
+                await admin.auth.admin.deleteUser(userId)
+            } catch {
+                // Best-effort cleanup is verified by the final staging audit.
+            }
         }
     }
 }
