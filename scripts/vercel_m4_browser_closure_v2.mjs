@@ -54,6 +54,11 @@ async function getTrackId(admin) {
   if (te || !track) throw te ?? new Error('SMP_TRACK_NOT_FOUND')
   return track.id
 }
+async function getExamId(admin, slug) {
+  const { data: exam, error } = await admin.from('exams').select('id').eq('slug', slug).maybeSingle()
+  if (error || !exam) throw error ?? new Error(`EXAM_NOT_FOUND:${slug}`)
+  return exam.id
+}
 async function provision(admin, { learner = true, role = null } = {}) {
   const email = `${USER_PREFIX}${Date.now()}-${randomUUID().slice(0, 8)}@example.invalid`
   const password = `M4Browser!${randomUUID()}-${randomUUID().slice(0, 8)}`
@@ -92,14 +97,31 @@ async function grantPass(admin, userId, mode) {
   if (error) throw error
 }
 async function seedMiniAttempt(admin, userId, slug) {
-  const { data: exam, error: ee } = await admin.from('exams').select('id').eq('slug', slug).maybeSingle()
-  if (ee || !exam) throw ee ?? new Error(`EXAM_NOT_FOUND:${slug}`)
+  const examId = await getExamId(admin, slug)
   const now = new Date().toISOString()
   const { error } = await admin.from('exam_attempts').insert({
-    exam_id: exam.id, user_id: userId, attempt_number: 1, status: 'completed', started_at: now, submitted_at: now,
+    exam_id: examId, user_id: userId, attempt_number: 1, status: 'completed', started_at: now, submitted_at: now,
     metadata: { m4_browser_qa: true, quota_seed: true },
   })
   if (error) throw error
+}
+async function waitForAttempt(admin, userId, slug, minAttemptNumber = 1) {
+  const examId = await getExamId(admin, slug)
+  const deadline = Date.now() + 60_000
+  while (Date.now() < deadline) {
+    const { data, error } = await admin.from('exam_attempts')
+      .select('id,attempt_number,status')
+      .eq('user_id', userId)
+      .eq('exam_id', examId)
+      .gte('attempt_number', minAttemptNumber)
+      .order('attempt_number', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (error) throw error
+    if (data?.id) return data
+    await new Promise((resolve) => setTimeout(resolve, 750))
+  }
+  throw new Error(`ATTEMPT_NOT_CREATED:${slug}:${userId}`)
 }
 async function seedOrder(admin, userId) {
   const { data: product, error: pe } = await admin.from('products').select('id').eq('code', 'TKA_SMP_PASS_30').maybeSingle()
@@ -177,9 +199,16 @@ async function run() {
   let serverStderr = ''
   server.stderr.on('data', (chunk) => { serverStderr += String(chunk) })
   const result = {
-    fullDeniedWithoutPass: false, expiredPassDenied: false, activePassUx: false,
-    activePassFullUnlocked: false, miniQuotaLocked: false, miniPassBypass: false,
-    bolaOwnerRead: false, bolaCrossUserBlocked: false, adminCommerceVisible: false,
+    fullDeniedWithoutPass: false,
+    expiredPassDenied: false,
+    activePassUx: false,
+    activePassFullUnlocked: false,
+    miniFirstFreeAllowed: false,
+    miniQuotaLocked: false,
+    miniPassBypass: false,
+    bolaOwnerRead: false,
+    bolaCrossUserBlocked: false,
+    adminCommerceVisible: false,
   }
   try {
     await waitForServer(server)
@@ -191,7 +220,8 @@ async function run() {
       const { context, page } = await pageFor(browser, session)
       await examCard(page, 'Tryout Lengkap TKA SMP').getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
       await qaExpect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
-      result.fullDeniedWithoutPass = true; await context.close()
+      result.fullDeniedWithoutPass = true
+      await context.close()
     }
     {
       const session = await provision(admin); users.push(session.userId); await grantPass(admin, session.userId, 'expired')
@@ -200,7 +230,8 @@ async function run() {
       await page.goto(`${ORIGIN}/tka/smp`)
       await examCard(page, 'Tryout Lengkap TKA SMP').getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
       await qaExpect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
-      result.expiredPassDenied = true; await context.close()
+      result.expiredPassDenied = true
+      await context.close()
     }
     {
       const session = await provision(admin); users.push(session.userId); await grantPass(admin, session.userId, 'active')
@@ -210,15 +241,27 @@ async function run() {
       result.activePassUx = true
       await page.goto(`${ORIGIN}/tka/smp`)
       await examCard(page, 'Tryout Lengkap TKA SMP').getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
-      await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i, { timeout: 60_000 })
-      result.activePassFullUnlocked = true; await context.close()
+      await waitForAttempt(admin, session.userId, 'tka-smp-full', 1)
+      result.activePassFullUnlocked = true
+      await context.close()
+    }
+    {
+      const session = await provision(admin); users.push(session.userId)
+      const { context, page } = await pageFor(browser, session)
+      const mini = examCard(page, 'Mini Tryout Matematika TKA SMP')
+      await qaExpect(mini.getByText('Gratis 1x tersisa', { exact: true })).toBeVisible()
+      await mini.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
+      await waitForAttempt(admin, session.userId, 'tka-smp-mini-matematika', 1)
+      result.miniFirstFreeAllowed = true
+      await context.close()
     }
     {
       const session = await provision(admin); users.push(session.userId); await seedMiniAttempt(admin, session.userId, 'tka-smp-mini-bahasa-indonesia')
       const { context, page } = await pageFor(browser, session)
       const locked = examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP').getByRole('button', { name: 'Kuota gratis habis · Butuh Tempur Pass', exact: true })
       await qaExpect(locked).toBeVisible(); await qaExpect(locked).toBeDisabled()
-      result.miniQuotaLocked = true; await context.close()
+      result.miniQuotaLocked = true
+      await context.close()
     }
     {
       const session = await provision(admin); users.push(session.userId); await seedMiniAttempt(admin, session.userId, 'tka-smp-mini-matematika'); await grantPass(admin, session.userId, 'active')
@@ -226,8 +269,9 @@ async function run() {
       const mini = examCard(page, 'Mini Tryout Matematika TKA SMP')
       await qaExpect(mini.getByText('Tempur Pass aktif', { exact: true })).toBeVisible()
       await mini.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
-      await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i, { timeout: 60_000 })
-      result.miniPassBypass = true; await context.close()
+      await waitForAttempt(admin, session.userId, 'tka-smp-mini-matematika', 2)
+      result.miniPassBypass = true
+      await context.close()
     }
     {
       const owner = await provision(admin), attacker = await provision(admin); users.push(owner.userId, attacker.userId)
@@ -238,7 +282,8 @@ async function run() {
       const attackerPayment = await authenticatedRead(attacker, 'payments', order.orderId)
       if (ownerOrder?.id !== order.orderId || ownerPayment?.order_id !== order.orderId) throw new Error('BOLA_OWNER_READ_FAILED')
       if (attackerOrder !== null || attackerPayment !== null) throw new Error('BOLA_CROSS_USER_LEAK')
-      result.bolaOwnerRead = true; result.bolaCrossUserBlocked = true
+      result.bolaOwnerRead = true
+      result.bolaCrossUserBlocked = true
     }
     {
       const adminSession = await provision(admin, { learner: false, role: 'ADMIN' }); users.push(adminSession.userId)
@@ -247,16 +292,24 @@ async function run() {
       await qaExpect(page.getByRole('heading', { name: 'Admin Workspace', exact: true })).toBeVisible()
       await qaExpect(page.getByText(order.orderNumber, { exact: true })).toBeVisible()
       await qaExpect(page.getByText('midtrans', { exact: true }).first()).toBeVisible()
-      result.adminCommerceVisible = true; await context.close()
+      result.adminCommerceVisible = true
+      await context.close()
     }
+
     if (!Object.values(result).every(Boolean)) throw new Error(`M4_BROWSER_ASSERTION_FAILED:${JSON.stringify(result)}`)
     console.log('M4_BROWSER_QA_RESULT=' + JSON.stringify(result))
   } finally {
     try { await setEnforcement(admin, false) } catch {}
     if (browser) await browser.close().catch(() => undefined)
-    for (const userId of [...new Set(users)].reverse()) { try { await admin.auth.admin.deleteUser(userId) } catch {} }
+    for (const userId of [...new Set(users)].reverse()) {
+      try { await admin.auth.admin.deleteUser(userId) } catch {}
+    }
     server.kill('SIGTERM')
-    await new Promise((resolve) => { if (server.exitCode !== null) return resolve(); server.once('exit', resolve); setTimeout(() => { if (server.exitCode === null) server.kill('SIGKILL'); resolve() }, 3_000).unref() })
+    await new Promise((resolve) => {
+      if (server.exitCode !== null) return resolve()
+      server.once('exit', resolve)
+      setTimeout(() => { if (server.exitCode === null) server.kill('SIGKILL'); resolve() }, 3_000).unref()
+    })
     const [{ count: profiles }, { count: orders }, { count: entitlements }, { count: attempts }] = await Promise.all([
       admin.from('profiles').select('id', { count: 'exact', head: true }).ilike('full_name', 'M4 Browser QA%'),
       admin.from('orders').select('id', { count: 'exact', head: true }).like('order_number', `${ORDER_PREFIX}%`),
