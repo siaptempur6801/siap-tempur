@@ -60,9 +60,10 @@ export async function proxy(request: NextRequest) {
     const response = await updateSession(request, requestHeaders)
     response.headers.set('Content-Security-Policy', cspHeader)
 
+    const localBrowserQa = process.env.M4_BROWSER_QA_LOCAL === '1'
     response.cookies.set(CSRF_COOKIE, csrfToken, {
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production' && !localBrowserQa,
         sameSite: 'strict',
         path: '/',
     })
