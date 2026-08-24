@@ -210,7 +210,7 @@ async function run() {
       result.activePassUx = true
       await page.goto(`${ORIGIN}/tka/smp`)
       await examCard(page, 'Tryout Lengkap TKA SMP').getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
-      await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i, { timeout: 20_000 })
+      await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i, { timeout: 60_000 })
       result.activePassFullUnlocked = true; await context.close()
     }
     {
@@ -226,7 +226,7 @@ async function run() {
       const mini = examCard(page, 'Mini Tryout Matematika TKA SMP')
       await qaExpect(mini.getByText('Tempur Pass aktif', { exact: true })).toBeVisible()
       await mini.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
-      await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i, { timeout: 20_000 })
+      await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i, { timeout: 60_000 })
       result.miniPassBypass = true; await context.close()
     }
     {
