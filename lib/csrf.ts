@@ -4,13 +4,11 @@
  * Layer 1 — Double-submit cookie (header mode):
  *   Client reads the CSRF cookie (httpOnly: false) and sends it back in
  *   an X-CSRF-Token header. Server compares header to cookie value.
- *   Best for: API routes and forms with JS interceptor.
  *
  * Layer 2 — SameSite + Origin check (fallback mode):
  *   For imperative server-action calls where custom headers cannot be
- *   injected, the CSRF cookie (SameSite: Strict) itself blocks cross-origin
- *   cookie delivery. An additional Origin header check confirms same-origin.
- *   Best for: server actions called directly from client components.
+ *   injected, the CSRF cookie (SameSite: Strict) blocks cross-site cookie
+ *   delivery and the Origin header must match an allowed first-party origin.
  */
 
 import { cookies, headers } from 'next/headers'
@@ -53,7 +51,6 @@ function addOriginWithWwwVariant(origins: Set<string>, origin: string | null) {
     return
   }
 
-  // Do not invent www variants for provider preview domains.
   if (url.hostname.endsWith('.vercel.app')) return
 
   url.hostname = `www.${url.hostname}`
@@ -69,9 +66,14 @@ function isLoopbackHost(host: string) {
   }
 }
 
+function getRequestHost(headersList: HeaderReader) {
+  return headersList.get('x-forwarded-host')?.split(',')[0]?.trim()
+    || headersList.get('host')?.split(',')[0]?.trim()
+    || null
+}
+
 function getRequestOrigin(headersList: HeaderReader): string | null {
-  const forwardedHost = headersList.get('x-forwarded-host')?.split(',')[0]?.trim()
-  const host = forwardedHost || headersList.get('host')?.split(',')[0]?.trim()
+  const host = getRequestHost(headersList)
   if (!host) return null
 
   const forwardedProto = headersList.get('x-forwarded-proto')?.split(',')[0]?.trim()
@@ -88,11 +90,7 @@ function addVercelOrigin(origins: Set<string>, value: string | undefined) {
 function getAllowedOrigins(headersList: HeaderReader): Set<string> {
   const origins = new Set<string>()
 
-  // The strongest and most useful source for Preview deployments is the host
-  // that actually served the request. Vercel branch aliases are stable but
-  // VERCEL_URL can point at a deployment-specific hostname.
   addOriginWithWwwVariant(origins, getRequestOrigin(headersList))
-
   addOriginWithWwwVariant(origins, normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL))
   addVercelOrigin(origins, process.env.VERCEL_URL)
   addVercelOrigin(origins, process.env.VERCEL_BRANCH_URL)
@@ -107,21 +105,6 @@ function getAllowedOrigins(headersList: HeaderReader): Set<string> {
   return origins
 }
 
-function logLoopbackQaFailure(reason: string, headersList: HeaderReader, hasCookie: boolean, hasHeader: boolean, allowedOrigins?: Set<string>) {
-  if (process.env.M4_BROWSER_QA_LOCAL !== '1') return
-  console.warn('M4_CSRF_QA_DIAGNOSTIC', {
-    reason,
-    host: headersList.get('host'),
-    forwardedHost: headersList.get('x-forwarded-host'),
-    forwardedProto: headersList.get('x-forwarded-proto'),
-    origin: headersList.get('origin'),
-    requestOrigin: getRequestOrigin(headersList),
-    hasCookie,
-    hasHeader,
-    allowedOrigins: allowedOrigins ? [...allowedOrigins] : undefined,
-  })
-}
-
 /**
  * Validates CSRF token for Server Actions.
  */
@@ -133,13 +116,11 @@ export async function validateCsrf(): Promise<void> {
   const headerToken = headersList.get(CSRF_HEADER)
 
   if (!cookieToken) {
-    logLoopbackQaFailure('missing_cookie', headersList, false, Boolean(headerToken))
     throw new CsrfError('Missing CSRF token')
   }
 
   if (headerToken) {
     if (!constantTimeEqual(cookieToken, headerToken)) {
-      logLoopbackQaFailure('header_cookie_mismatch', headersList, true, true)
       throw new CsrfError('Invalid CSRF token')
     }
     return
@@ -148,10 +129,16 @@ export async function validateCsrf(): Promise<void> {
   const origin = normalizeOrigin(headersList.get('origin'))
   const allowedOrigins = getAllowedOrigins(headersList)
 
-  if (!origin || !allowedOrigins.has(origin)) {
-    logLoopbackQaFailure('invalid_origin', headersList, true, false, allowedOrigins)
-    throw new CsrfError('Invalid origin')
-  }
+  if (origin && allowedOrigins.has(origin)) return
+
+  // Some local Chromium/Next Server Action requests omit Origin entirely.
+  // Allow that only on loopback where the SameSite=Strict CSRF cookie proves
+  // the request came from the local first-party browser context. Public
+  // Preview and production hosts still require a valid Origin or header token.
+  const requestHost = getRequestHost(headersList)
+  if (!origin && requestHost && isLoopbackHost(requestHost)) return
+
+  throw new CsrfError('Invalid origin')
 }
 
 export class CsrfError extends Error {
