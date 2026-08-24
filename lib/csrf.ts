@@ -60,13 +60,22 @@ function addOriginWithWwwVariant(origins: Set<string>, origin: string | null) {
   origins.add(url.origin)
 }
 
+function isLoopbackHost(host: string) {
+  try {
+    const hostname = new URL(`http://${host}`).hostname
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1'
+  } catch {
+    return false
+  }
+}
+
 function getRequestOrigin(headersList: HeaderReader): string | null {
   const forwardedHost = headersList.get('x-forwarded-host')?.split(',')[0]?.trim()
   const host = forwardedHost || headersList.get('host')?.split(',')[0]?.trim()
   if (!host) return null
 
   const forwardedProto = headersList.get('x-forwarded-proto')?.split(',')[0]?.trim()
-  const protocol = forwardedProto || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
+  const protocol = forwardedProto || (isLoopbackHost(host) ? 'http' : process.env.NODE_ENV === 'production' ? 'https' : 'http')
 
   return normalizeOrigin(`${protocol}://${host}`)
 }
