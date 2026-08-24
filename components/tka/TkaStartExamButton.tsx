@@ -27,7 +27,6 @@ export default function TkaStartExamButton({
             const result = await startTkaExam(level, examSlug)
             if (result?.error) {
                 setErrorMessage(result.error)
-                toast.error(result.error)
                 return
             }
             if (result?.success && result.sessionId) {
@@ -35,9 +34,7 @@ export default function TkaStartExamButton({
                 router.push(`/tka/${level.toLowerCase()}/tryout/${result.sessionId}`)
             }
         } catch {
-            const message = 'Gagal memulai tryout TKA.'
-            setErrorMessage(message)
-            toast.error(message)
+            setErrorMessage('Gagal memulai tryout TKA.')
         } finally {
             setLoading(false)
         }
