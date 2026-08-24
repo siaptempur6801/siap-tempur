@@ -184,7 +184,7 @@ async function seedOrder(admin: ReturnType<typeof adminClient>, userId: string) 
   const { data: product, error: productError } = await admin.from('products').select('id, code').eq('code', 'TKA_SMP_PASS_30').maybeSingle()
   if (productError || !product) throw productError ?? new Error('PASS_PRODUCT_NOT_FOUND')
   const now = new Date().toISOString()
-  const { data: price, error: priceError } = await admin.from('product_prices').select('amount, currency').eq('product_id', product.id).eq('status', 'active').lte('starts_at', now).or(`ends_at.is.null,ends_at.gte.${now}`).order('starts_at', { ascending: false }).limit(1).maybeSingle()
+  const { data: price, error: priceError } = await admin.from('product_prices').select('amount, currency').eq('product_id', product.id).ilike('status', 'active').lte('starts_at', now).or(`ends_at.is.null,ends_at.gte.${now}`).order('starts_at', { ascending: false }).limit(1).maybeSingle()
   if (priceError || !price) throw priceError ?? new Error('PASS_PRICE_NOT_FOUND')
   const subtotal = Number(price.amount)
   const total = subtotal + 500
