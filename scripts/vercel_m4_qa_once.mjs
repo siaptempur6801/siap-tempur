@@ -6,8 +6,7 @@ const MIDTRANS_API = 'https://api.sandbox.midtrans.com'
 const SIMULATOR_PAYMENT = 'https://simulator.sandbox.midtrans.com/v2/qris/payment'
 const PRODUCT_CODE = 'TKA_SMP_PASS_30'
 const ADMIN_FEE = 500
-const QA_USER_FUNCTION = 'm4-qa-user-once'
-const QA_USER_TOKEN = 'wBIlH2eEOK52m6kzAfz_D3eac85Vlu51ENFlNAL-KP4'
+const QA_USER_ID = '03c04ac2-66be-402b-bb55-414cb491b04f'
 
 function enabled(tag) {
   return process.env.VERCEL === '1'
@@ -43,19 +42,6 @@ async function midtransJson(url, options, serverKey) {
   return { response, json }
 }
 
-async function callQaUserFunction(supabaseUrl, body) {
-  const response = await fetch(`${supabaseUrl}/functions/v1/${QA_USER_FUNCTION}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: QA_USER_TOKEN, ...body }),
-  })
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(`M4_QA_USER_FUNCTION:${response.status}:${String(payload.error || 'unknown')}`)
-  }
-  return payload
-}
-
 async function waitForPaid(orderNumber, serverKey) {
   let last = null
   for (let attempt = 0; attempt < 24; attempt += 1) {
@@ -85,7 +71,7 @@ async function paidQa() {
     auth: { persistSession: false, autoRefreshToken: false },
   })
 
-  let userId = null
+  const userId = QA_USER_ID
   let orderId = null
   let orderItemId = null
   let orderNumber = null
@@ -95,7 +81,7 @@ async function paidQa() {
 
   const result = {
     stagingRef: STAGING_REF,
-    isolatedRobotProvisioned: false,
+    dedicatedRobotVerified: false,
     productCode: PRODUCT_CODE,
     totalAmount: null,
     providerCharge: false,
@@ -107,16 +93,26 @@ async function paidQa() {
     entitlementCount: 0,
     duplicateEntitlementCount: 0,
     expiryDaysApprox: null,
-    cleanup: false,
+    commerceCleanup: false,
   }
 
   try {
-    const email = `m4-qa-${Date.now()}-${randomUUID().slice(0, 8)}@example.invalid`
-    const password = `M4PaidQa!${randomUUID()}-${randomUUID()}`
-    const provisioned = await callQaUserFunction(supabaseUrl, { action: 'provision', email, password })
-    userId = String(provisioned.userId || '')
-    if (!userId) throw new Error('M4_QA_USER_ID_MISSING')
-    result.isolatedRobotProvisioned = true
+    const { data: robot, error: robotError } = await admin
+      .from('profiles')
+      .select('id, full_name, status')
+      .eq('id', userId)
+      .maybeSingle()
+    if (robotError || !robot) throw robotError || new Error('M4_QA_ROBOT_NOT_FOUND')
+    if (robot.full_name !== 'M4 Paid QA Robot' || robot.status !== 'active') throw new Error('M4_QA_ROBOT_MARKER_INVALID')
+
+    const [{ count: existingEntitlements, error: existingEntitlementError }, { count: existingOrders, error: existingOrderError }] = await Promise.all([
+      admin.from('entitlements').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+      admin.from('orders').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    ])
+    if (existingEntitlementError) throw existingEntitlementError
+    if (existingOrderError) throw existingOrderError
+    if ((existingEntitlements || 0) !== 0 || (existingOrders || 0) !== 0) throw new Error('M4_QA_ROBOT_NOT_CLEAN')
+    result.dedicatedRobotVerified = true
 
     const { data: program, error: programError } = await admin.from('programs').select('id').eq('code', 'TKA').maybeSingle()
     if (programError || !program) throw programError || new Error('TKA_PROGRAM_NOT_FOUND')
@@ -303,7 +299,7 @@ async function paidQa() {
   }
 
   try {
-    if (orderItemId && userId) {
+    if (orderItemId) {
       const { error } = await admin.from('entitlements').delete().eq('user_id', userId).eq('source_type', 'order_item').eq('source_id', orderItemId)
       if (error) throw error
     }
@@ -311,26 +307,17 @@ async function paidQa() {
       const { error } = await admin.from('orders').delete().eq('id', orderId)
       if (error) throw error
     }
-    if (userId) {
-      await callQaUserFunction(supabaseUrl, { action: 'cleanup', userId })
-    }
 
-    const [orderCheck, profileCheck, entitlementCheck] = await Promise.all([
+    const [orderCheck, entitlementCheck] = await Promise.all([
       orderNumber
         ? admin.from('orders').select('id', { count: 'exact', head: true }).eq('order_number', orderNumber)
         : Promise.resolve({ count: 0, error: null }),
-      userId
-        ? admin.from('profiles').select('id', { count: 'exact', head: true }).eq('id', userId)
-        : Promise.resolve({ count: 0, error: null }),
-      userId
-        ? admin.from('entitlements').select('id', { count: 'exact', head: true }).eq('user_id', userId)
-        : Promise.resolve({ count: 0, error: null }),
+      admin.from('entitlements').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     ])
     if (orderCheck.error) throw orderCheck.error
-    if (profileCheck.error) throw profileCheck.error
     if (entitlementCheck.error) throw entitlementCheck.error
-    result.cleanup = (orderCheck.count || 0) === 0 && (profileCheck.count || 0) === 0 && (entitlementCheck.count || 0) === 0
-    if (!result.cleanup) throw new Error(`M4_QA_CLEANUP_COUNTS:${orderCheck.count}/${profileCheck.count}/${entitlementCheck.count}`)
+    result.commerceCleanup = (orderCheck.count || 0) === 0 && (entitlementCheck.count || 0) === 0
+    if (!result.commerceCleanup) throw new Error(`M4_QA_COMMERCE_CLEANUP_COUNTS:${orderCheck.count}/${entitlementCheck.count}`)
   } catch (error) {
     cleanupError = error
   }
@@ -340,13 +327,13 @@ async function paidQa() {
       providerCharge: result.providerCharge,
       simulatorAccepted: result.simulatorAccepted,
       providerStatus: result.providerStatus,
-      cleanup: result.cleanup,
+      commerceCleanup: result.commerceCleanup,
       error: mainError instanceof Error ? mainError.message : String(mainError),
       cleanupError: cleanupError instanceof Error ? cleanupError.message : cleanupError ? String(cleanupError) : null,
     }))
     throw mainError
   }
-  if (cleanupError || !result.cleanup) throw cleanupError || new Error('M4_QA_CLEANUP_FAILED')
+  if (cleanupError || !result.commerceCleanup) throw cleanupError || new Error('M4_QA_COMMERCE_CLEANUP_FAILED')
 
   console.log('M4_QA_PAID_RESULT=' + JSON.stringify(result))
 }
