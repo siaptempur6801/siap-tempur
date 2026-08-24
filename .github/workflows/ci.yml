@@ -8,7 +8,10 @@ on:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    # Self-hosted runners must never execute code from forks. For pull requests,
+    # only run when the head repository is this repository itself.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 20
     env:
       CI: 'true'
@@ -19,7 +22,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
       NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
       # Standard CI must not have an admin-capable database credential. Dedicated
-      # staging E2E uses STAGING_SUPABASE_SERVICE_ROLE_KEY in its separate workflow.
+      # staging E2E uses GitHub OIDC in its separate workflow.
       SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
       MIDTRANS_SERVER_KEY_SANDBOX: ci-not-used
       NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: ci-not-used
@@ -30,6 +33,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -59,8 +64,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Install Playwright
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
 
       - name: E2E tests
         run: npm run test:e2e
