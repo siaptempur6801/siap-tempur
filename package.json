@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/vercel_m4_browser_sparticuz_once.mjs",
+    "build": "M4_BROWSER_QA_LOCAL=1 NEXT_PUBLIC_SITE_URL=http://127.0.0.1:3012 next build && node scripts/vercel_m4_browser_sparticuz_once.mjs",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
