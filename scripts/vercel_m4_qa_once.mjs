@@ -44,7 +44,7 @@ async function midtransJson(url, options, serverKey) {
 
 async function waitForPaid(orderNumber, serverKey) {
   let last = null
-  for (let attempt = 0; attempt < 24; attempt += 1) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
     const { response, json } = await midtransJson(
       `${MIDTRANS_API}/v2/${encodeURIComponent(orderNumber)}/status`,
       { method: 'GET' },
@@ -52,11 +52,48 @@ async function waitForPaid(orderNumber, serverKey) {
     )
     if (response.ok) {
       last = json
-      if (['capture', 'settlement'].includes(String(json.transaction_status || '').toLowerCase())) return json
+      const status = String(json.transaction_status || '').toLowerCase()
+      if (['capture', 'settlement'].includes(status)) return json
     }
     await new Promise((resolve) => setTimeout(resolve, 1000))
   }
   throw new Error(`MIDTRANS_NOT_PAID:${String(last?.transaction_status || 'unknown')}`)
+}
+
+async function cleanDedicatedRobot(admin, userId, serverKey) {
+  const { data: staleOrders, error: staleOrderError } = await admin
+    .from('orders')
+    .select('id, order_number')
+    .eq('user_id', userId)
+    .like('order_number', 'M4QA-%')
+  if (staleOrderError) throw staleOrderError
+
+  for (const stale of staleOrders || []) {
+    try {
+      await midtransJson(
+        `${MIDTRANS_API}/v2/${encodeURIComponent(stale.order_number)}/expire`,
+        { method: 'POST' },
+        serverKey,
+      )
+    } catch {
+      // Provider cleanup is best-effort; local QA artifacts are authoritative here.
+    }
+    const { error: staleDeleteError } = await admin.from('orders').delete().eq('id', stale.id)
+    if (staleDeleteError) throw staleDeleteError
+  }
+
+  const { error: entitlementDeleteError } = await admin.from('entitlements').delete().eq('user_id', userId)
+  if (entitlementDeleteError) throw entitlementDeleteError
+
+  const [{ count: orderCount, error: orderCountError }, { count: entitlementCount, error: entitlementCountError }] = await Promise.all([
+    admin.from('orders').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+    admin.from('entitlements').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+  ])
+  if (orderCountError) throw orderCountError
+  if (entitlementCountError) throw entitlementCountError
+  if ((orderCount || 0) !== 0 || (entitlementCount || 0) !== 0) {
+    throw new Error(`M4_QA_ROBOT_NOT_CLEAN:${orderCount}/${entitlementCount}`)
+  }
 }
 
 async function paidQa() {
@@ -82,10 +119,12 @@ async function paidQa() {
   const result = {
     stagingRef: STAGING_REF,
     dedicatedRobotVerified: false,
+    staleQaCleaned: false,
     productCode: PRODUCT_CODE,
     totalAmount: null,
     providerCharge: false,
     simulatorAccepted: false,
+    simulatorStatus: null,
     providerStatus: null,
     orderPaid: false,
     paymentPaid: false,
@@ -104,15 +143,10 @@ async function paidQa() {
       .maybeSingle()
     if (robotError || !robot) throw robotError || new Error('M4_QA_ROBOT_NOT_FOUND')
     if (robot.full_name !== 'M4 Paid QA Robot' || robot.status !== 'active') throw new Error('M4_QA_ROBOT_MARKER_INVALID')
-
-    const [{ count: existingEntitlements, error: existingEntitlementError }, { count: existingOrders, error: existingOrderError }] = await Promise.all([
-      admin.from('entitlements').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-      admin.from('orders').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-    ])
-    if (existingEntitlementError) throw existingEntitlementError
-    if (existingOrderError) throw existingOrderError
-    if ((existingEntitlements || 0) !== 0 || (existingOrders || 0) !== 0) throw new Error('M4_QA_ROBOT_NOT_CLEAN')
     result.dedicatedRobotVerified = true
+
+    await cleanDedicatedRobot(admin, userId, serverKey)
+    result.staleQaCleaned = true
 
     const { data: program, error: programError } = await admin.from('programs').select('id').eq('code', 'TKA').maybeSingle()
     if (programError || !program) throw programError || new Error('TKA_PROGRAM_NOT_FOUND')
@@ -233,10 +267,19 @@ async function paidQa() {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ qrCodeUrl }).toString(),
-      redirect: 'follow',
+      redirect: 'manual',
+      signal: AbortSignal.timeout(10_000),
     })
-    const simulatorText = await simulatorResponse.text()
-    if (!simulatorResponse.ok || /invalid qr|failed to|error occurred/i.test(simulatorText.slice(0, 12000))) {
+    result.simulatorStatus = simulatorResponse.status
+    const simulatorText = simulatorResponse.status >= 300 && simulatorResponse.status < 400
+      ? ''
+      : await simulatorResponse.text()
+    console.log('M4_QA_SIMULATOR_RESPONSE=' + JSON.stringify({
+      status: simulatorResponse.status,
+      redirected: simulatorResponse.status >= 300 && simulatorResponse.status < 400,
+      hasLocation: Boolean(simulatorResponse.headers.get('location')),
+    }))
+    if (simulatorResponse.status < 200 || simulatorResponse.status >= 400 || /invalid qr|failed to|error occurred/i.test(simulatorText.slice(0, 12000))) {
       throw new Error(`MIDTRANS_SIMULATOR_FAILED:${simulatorResponse.status}`)
     }
     result.simulatorAccepted = true
@@ -309,9 +352,7 @@ async function paidQa() {
     }
 
     const [orderCheck, entitlementCheck] = await Promise.all([
-      orderNumber
-        ? admin.from('orders').select('id', { count: 'exact', head: true }).eq('order_number', orderNumber)
-        : Promise.resolve({ count: 0, error: null }),
+      admin.from('orders').select('id', { count: 'exact', head: true }).eq('user_id', userId),
       admin.from('entitlements').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     ])
     if (orderCheck.error) throw orderCheck.error
@@ -326,6 +367,7 @@ async function paidQa() {
     console.log('M4_QA_PAID_FAILURE=' + JSON.stringify({
       providerCharge: result.providerCharge,
       simulatorAccepted: result.simulatorAccepted,
+      simulatorStatus: result.simulatorStatus,
       providerStatus: result.providerStatus,
       commerceCleanup: result.commerceCleanup,
       error: mainError instanceof Error ? mainError.message : String(mainError),
