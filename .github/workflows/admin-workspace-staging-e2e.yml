@@ -1,16 +1,22 @@
 name: Admin Workspace Staging E2E
 
 on:
+  pull_request:
+    branches:
+      - feat/schema-v2
+    paths:
+      - 'app/admin/**'
+      - 'app/cpns/admin/**'
+      - 'components/admin/**'
+      - 'src/repositories/authorization.repository.ts'
+      - 'src/services/authorization.service.ts'
+      - 'tests/e2e/admin.*.ts'
+      - 'tests/e2e/specs/10-admin-workspace-authenticated.spec.ts'
+      - 'playwright.config.ts'
+      - 'app/api/health/route.ts'
+      - '.github/workflows/admin-workspace-staging-e2e.yml'
+      - 'supabase/functions/ci-e2e-admin/**'
   workflow_dispatch:
-    inputs:
-      preview_url:
-        description: Exact Vercel Preview URL for the selected branch head
-        required: true
-        type: string
-      preview_share_url:
-        description: Temporary Vercel share URL; leave empty when automation bypass secret is configured
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -22,9 +28,7 @@ env:
   NEXT_PUBLIC_APP_ENV: staging
   E2E_ADMIN_STAGING: '1'
   E2E_REMOTE_BASE_URL: '1'
-  BASE_URL: ${{ inputs.preview_url }}
-  VERCEL_SHARE_URL: ${{ inputs.preview_share_url }}
-  VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+  PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
   NEXT_PUBLIC_SUPABASE_URL: https://lpgrivowdcepcxradavu.supabase.co
   NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
@@ -32,14 +36,58 @@ env:
 
 jobs:
   workspace-authenticated:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, macOS, ARM64]
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout exact branch head
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+      - name: Resolve exact protected Vercel Preview
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { appendFile } from 'node:fs/promises'
+
+          const expectedSha = process.env.PR_HEAD_SHA || process.env.GITHUB_SHA
+          const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL
+          const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
+          const githubEnv = process.env.GITHUB_ENV
+          if (!expectedSha || !requestUrl || !requestToken || !githubEnv) {
+            throw new Error('Admin preview resolver environment incomplete')
+          }
+
+          const separator = requestUrl.includes('?') ? '&' : '?'
+          const tokenResponse = await fetch(`${requestUrl}${separator}audience=${encodeURIComponent('siap-tempur-staging-e2e')}`, {
+            headers: { Authorization: `bearer ${requestToken}` },
+          })
+          if (!tokenResponse.ok) throw new Error(`OIDC preview token failed: ${tokenResponse.status}`)
+          const { value } = await tokenResponse.json()
+          if (!value) throw new Error('OIDC preview token empty')
+
+          const endpoint = 'https://lpgrivowdcepcxradavu.supabase.co/functions/v1/ci-e2e-admin-preview-access-once'
+          const deadline = Date.now() + 10 * 60_000
+          while (Date.now() < deadline) {
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${value}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'resolve', commitSha: expectedSha }),
+            })
+            if (response.ok) {
+              const payload = await response.json()
+              if (payload.commitSha === expectedSha && payload.previewUrl && payload.shareUrl) {
+                await appendFile(githubEnv, `BASE_URL=${payload.previewUrl}\nVERCEL_SHARE_URL=${payload.shareUrl}\n`)
+                console.log('Exact protected Vercel Preview resolved for Admin QA.')
+                process.exit(0)
+              }
+            }
+            await new Promise((resolve) => setTimeout(resolve, 5000))
+          }
+          throw new Error(`Exact protected Vercel Preview not resolved for ${expectedSha}`)
+          NODE
 
       - name: Setup Node
         uses: actions/setup-node@v4
