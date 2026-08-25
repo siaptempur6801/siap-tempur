@@ -20,15 +20,17 @@ function rupiah(value: number) {
         style: 'currency',
         currency: 'IDR',
         maximumFractionDigits: 0,
-    }).format(value)
+    }).format(value).replace(/\s+/g, '')
 }
 
 export default function TkaPassPackagesClient({
     level,
     packages,
+    hasActivePass = false,
 }: {
     level: string
     packages: TkaPassPackage[]
+    hasActivePass?: boolean
 }) {
     const router = useRouter()
     const [buying, setBuying] = useState<string | null>(null)
@@ -36,7 +38,7 @@ export default function TkaPassPackagesClient({
     const buy = async (productCode: string) => {
         if (buying) return
         setBuying(productCode)
-        const loadingToast = toast.loading('Menyiapkan Tempur Pass...')
+        const loadingToast = toast.loading(hasActivePass ? 'Menyiapkan perpanjangan...' : 'Menyiapkan Tempur Pass...')
         try {
             const transaction = await createTkaPassTransaction(productCode, level)
             if (!transaction.success) {
@@ -57,12 +59,14 @@ export default function TkaPassPackagesClient({
 
             window.snap.pay(transaction.token, {
                 onSuccess: async () => {
-                    const id = toast.loading('Mengaktifkan Tempur Pass...')
+                    const id = toast.loading(hasActivePass ? 'Memperpanjang Tempur Pass...' : 'Mengaktifkan Tempur Pass...')
                     const ok = await syncPaymentStatus(transaction.orderId)
                     if (ok) {
-                        toast.success('Tempur Pass aktif!', {
+                        toast.success(hasActivePass ? 'Tempur Pass diperpanjang!' : 'Tempur Pass aktif!', {
                             id,
-                            description: 'Akses premium TKA sudah diperbarui.',
+                            description: hasActivePass
+                                ? 'Masa aktif baru ditambahkan setelah masa aktif yang sudah kamu punya.'
+                                : 'Akses premium TKA sudah diperbarui.',
                         })
                         router.refresh()
                     } else {
@@ -105,9 +109,13 @@ export default function TkaPassPackagesClient({
                 <div className="inline-flex items-center gap-2 border-2 border-gray-900 bg-yellow-100 px-3 py-1 text-xs font-black uppercase">
                     <Crown size={15}/> Tempur Pass
                 </div>
-                <h2 className="mt-2 text-2xl font-black">Buka akses premium TKA {level}</h2>
+                <h2 className="mt-2 text-2xl font-black">
+                    {hasActivePass ? `Perpanjang Tempur Pass TKA ${level}` : `Buka akses premium TKA ${level}`}
+                </h2>
                 <p className="mt-1 text-sm font-semibold text-gray-600">
-                    Tempur Pass membuka Full Tryout dan Mini Tryout unlimited selama masa aktif paket.
+                    {hasActivePass
+                        ? 'Pilih durasi tambahan. Masa aktif baru akan ditumpuk setelah masa aktif yang sudah kamu punya.'
+                        : 'Tempur Pass membuka Full Tryout dan Mini Tryout unlimited selama masa aktif paket.'}
                 </p>
             </div>
 
@@ -146,7 +154,11 @@ export default function TkaPassPackagesClient({
                                 className="inline-flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-blue-700 px-4 py-3 font-black text-white shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {buying === pkg.code ? <Loader2 size={18} className="animate-spin"/> : <Zap size={18}/>} 
-                                {buying === pkg.code ? 'Menyiapkan...' : `Pilih ${days} Hari`}
+                                {buying === pkg.code
+                                    ? 'Menyiapkan...'
+                                    : hasActivePass
+                                        ? `Perpanjang ${days} Hari`
+                                        : `Pilih ${days} Hari`}
                             </button>
                         </article>
                     )

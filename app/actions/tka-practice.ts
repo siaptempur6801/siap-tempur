@@ -77,6 +77,7 @@ function friendlyError(error: PracticeDomainError) {
 
 function friendlySmpRpcError(error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('ENTITLEMENT_REQUIRED')) return 'Paket aktif diperlukan untuk membuka tryout ini.'
     if (message.includes('Attempt limit reached')) return 'Batas percobaan tryout sudah tercapai.'
     if (message.includes('Active user track required')) return 'Aktifkan jalur TKA SMP terlebih dahulu.'
     if (message.includes('Exam is not active') || message.includes('belum aktif')) return 'Tryout TKA SMP ini belum dibuka.'
