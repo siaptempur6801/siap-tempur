@@ -24,7 +24,13 @@ async function githubOidcToken() {
     return payload.value || null
 }
 
-async function callHelper(supabaseUrl: string, oidcToken: string, functionName: 'ci-e2e-user' | 'ci-e2e-m4', body: Record<string, unknown>) {
+async function callHelper(
+    supabaseUrl: string,
+    oidcToken: string,
+    functionName: 'ci-e2e-user' | 'ci-e2e-m4',
+    body: Record<string, unknown>,
+    options: { allowMissingUser?: boolean } = {},
+) {
     const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
         method: 'POST',
         headers: {
@@ -35,6 +41,7 @@ async function callHelper(supabaseUrl: string, oidcToken: string, functionName: 
     })
     if (!response.ok) {
         const payload = await response.text()
+        if (options.allowMissingUser && /user not found/i.test(payload)) return
         throw new Error(`${functionName} ${String(body.action)} gagal (${response.status}): ${payload}`)
     }
 }
@@ -61,8 +68,16 @@ teardown('remove disposable TKA SMP staging user', async () => {
         const oidcToken = await githubOidcToken()
         if (!oidcToken) throw new Error('GitHub OIDC token tidak tersedia untuk cleanup staging user.')
 
-        // Remove temporary ADMIN role plus any M4 QA state before deleting the user.
-        await callHelper(supabaseUrl, oidcToken, 'ci-e2e-m4', { action: 'clear_m4', userId })
+        // M4 specs may already delete the disposable user. In that case foreign-key
+        // cleanup has already removed user-owned QA state, so clear_m4 must be
+        // treated as idempotent rather than turning a successful suite red.
+        await callHelper(
+            supabaseUrl,
+            oidcToken,
+            'ci-e2e-m4',
+            { action: 'clear_m4', userId },
+            { allowMissingUser: true },
+        )
         await callHelper(supabaseUrl, oidcToken, 'ci-e2e-user', { action: 'cleanup', userId })
     }
 
