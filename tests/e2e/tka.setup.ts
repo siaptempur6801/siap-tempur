@@ -1,7 +1,7 @@
 import { expect, test as setup } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
@@ -78,11 +78,9 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
     await writeFile(metadataFile, JSON.stringify({ userId, email }, null, 2), 'utf8')
 
     try {
-        // The same disposable staging learner is temporarily promoted to ADMIN so
-        // this workflow can close authenticated Admin Workspace QA. The role is
-        // removed by ci-e2e-m4 clear_m4 during teardown before the user is deleted.
-        await callHelper(supabaseUrl, 'ci-e2e-m4', { action: 'assign_admin', userId })
-
+        // First prove the disposable learner can complete the normal TKA login flow.
+        // Admin promotion happens only after storageState is captured so role-aware
+        // login redirects cannot disturb the learner setup contract.
         await page.goto('/login?returnTo=%2Ftka%2Fsmp')
         await page.locator('input[type="email"]').fill(email)
         await page.locator('input[type="password"]').fill(password)
@@ -99,9 +97,17 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
         if (loginCheckError || loginCheck.user?.id !== userId) {
             throw loginCheckError || new Error('Disposable TKA user tidak dapat login ke staging Auth.')
         }
+
+        // Promote only after learner authentication is proven. Admin authorization is
+        // resolved from user_roles on the server, so the captured session remains valid.
+        await callHelper(supabaseUrl, 'ci-e2e-m4', { action: 'assign_admin', userId })
     } catch (error) {
         await callHelper(supabaseUrl, 'ci-e2e-m4', { action: 'clear_m4', userId }).catch(() => undefined)
         await callHelper(supabaseUrl, 'ci-e2e-user', { action: 'cleanup', userId }).catch(() => undefined)
+        await Promise.all([
+            rm(metadataFile, { force: true }),
+            rm(authFile, { force: true }),
+        ])
         throw error
     }
 })
