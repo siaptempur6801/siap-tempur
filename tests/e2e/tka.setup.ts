@@ -38,9 +38,9 @@ async function githubOidcToken() {
     return payload.value
 }
 
-async function callCiUserHelper(supabaseUrl: string, body: Record<string, unknown>) {
+async function callHelper(supabaseUrl: string, functionName: 'ci-e2e-user' | 'ci-e2e-m4', body: Record<string, unknown>) {
     const oidcToken = await githubOidcToken()
-    const response = await fetch(`${supabaseUrl}/functions/v1/ci-e2e-user`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${oidcToken}`,
@@ -50,7 +50,7 @@ async function callCiUserHelper(supabaseUrl: string, body: Record<string, unknow
     })
     const payload = await response.json().catch(() => ({})) as { userId?: string; error?: string }
     if (!response.ok) {
-        throw new Error(`ci-e2e-user ${String(body.action)} gagal (${response.status}): ${payload.error || 'unknown'}`)
+        throw new Error(`${functionName} ${String(body.action)} gagal (${response.status}): ${payload.error || 'unknown'}`)
     }
     return payload
 }
@@ -65,7 +65,7 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
     const email = `ci-tka-${suffix}@example.invalid`
     const password = `TkaE2E!${randomUUID()}-${randomUUID().slice(0, 8)}`
 
-    const provisioned = await callCiUserHelper(supabaseUrl, {
+    const provisioned = await callHelper(supabaseUrl, 'ci-e2e-user', {
         action: 'provision',
         email,
         password,
@@ -78,6 +78,11 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
     await writeFile(metadataFile, JSON.stringify({ userId, email }, null, 2), 'utf8')
 
     try {
+        // The same disposable staging learner is temporarily promoted to ADMIN so
+        // this workflow can close authenticated Admin Workspace QA. The role is
+        // removed by ci-e2e-m4 clear_m4 during teardown before the user is deleted.
+        await callHelper(supabaseUrl, 'ci-e2e-m4', { action: 'assign_admin', userId })
+
         await page.goto('/login?returnTo=%2Ftka%2Fsmp')
         await page.locator('input[type="email"]').fill(email)
         await page.locator('input[type="password"]').fill(password)
@@ -95,7 +100,8 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
             throw loginCheckError || new Error('Disposable TKA user tidak dapat login ke staging Auth.')
         }
     } catch (error) {
-        await callCiUserHelper(supabaseUrl, { action: 'cleanup', userId }).catch(() => undefined)
+        await callHelper(supabaseUrl, 'ci-e2e-m4', { action: 'clear_m4', userId }).catch(() => undefined)
+        await callHelper(supabaseUrl, 'ci-e2e-user', { action: 'cleanup', userId }).catch(() => undefined)
         throw error
     }
 })
