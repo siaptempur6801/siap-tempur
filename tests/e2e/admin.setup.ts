@@ -73,12 +73,19 @@ setup('provision disposable ADMIN staging user', async ({ page }) => {
         throw new Error('Admin Preview dilindungi Vercel Authentication: VERCEL_SHARE_URL atau VERCEL_AUTOMATION_BYPASS_SECRET wajib tersedia.')
     }
 
-    if (shareUrl) {
+    if (bypassSecret) {
+        await page.setExtraHTTPHeaders({
+            'x-vercel-protection-bypass': bypassSecret,
+            'x-vercel-set-bypass-cookie': 'true',
+        })
+    } else if (shareUrl) {
         await page.goto(shareUrl, { waitUntil: 'domcontentloaded' })
     }
 
-    const healthResponse = await page.request.get(`${baseUrl}/api/health`)
-    expect(healthResponse.ok()).toBe(true)
+    const healthResponse = await page.goto(`${baseUrl}/api/health`, { waitUntil: 'domcontentloaded' })
+    if (!healthResponse || !healthResponse.ok()) {
+        throw new Error(`Admin Preview health check gagal (${healthResponse?.status() ?? 'no-response'}).`)
+    }
     const health = await healthResponse.json() as { deploymentCommitSha?: string | null }
     const expectedSha = process.env.GITHUB_SHA
     if (!expectedSha || health.deploymentCommitSha !== expectedSha) {
