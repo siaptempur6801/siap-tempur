@@ -87,7 +87,7 @@ setup('provision disposable ADMIN staging user', async ({ page }) => {
         throw new Error(`Admin Preview health check gagal (${healthResponse?.status() ?? 'no-response'}).`)
     }
     const health = await healthResponse.json() as { deploymentCommitSha?: string | null }
-    const expectedSha = process.env.GITHUB_SHA
+    const expectedSha = process.env.E2E_EXPECTED_HEAD_SHA || process.env.PR_HEAD_SHA || process.env.GITHUB_SHA
     if (!expectedSha || health.deploymentCommitSha !== expectedSha) {
         throw new Error(`Admin E2E exact-head mismatch: expected ${expectedSha || 'missing'}, received ${health.deploymentCommitSha || 'missing'}.`)
     }
