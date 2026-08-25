@@ -7,16 +7,22 @@ on:
       - feat/schema-v2
     paths:
       - 'app/actions/tka-**'
+      - 'app/actions/payment.ts'
+      - 'app/api/payments/**'
       - 'app/tka/**'
       - 'components/tka/**'
       - 'src/repositories/configured-exam.repository.ts'
       - 'src/services/tka-full-exam-rpc.service.ts'
+      - 'src/services/payment.service.ts'
+      - 'src/services/commerce.service.ts'
       - 'tests/e2e/tka.*.ts'
       - 'tests/e2e/specs/6-tka-smp-full.spec.ts'
       - 'tests/e2e/specs/8-tka-smp-mini.spec.ts'
+      - 'tests/e2e/specs/9-tka-smp-monetization.spec.ts'
       - 'playwright.config.ts'
       - '.github/workflows/tka-staging-e2e.yml'
       - 'supabase/functions/ci-e2e-user/**'
+      - 'supabase/functions/ci-e2e-m4/**'
       - 'supabase/migrations/**'
 
 permissions:
@@ -36,24 +42,27 @@ env:
   # absent from GitHub; CI provisioning uses GitHub OIDC -> staging Edge Function.
   SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
   NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+  # Core TKA CI intentionally does not hold real payment credentials.
+  # Provider-paid Midtrans sandbox lifecycle is verified separately on Vercel Preview.
   MIDTRANS_SERVER_KEY_SANDBOX: e2e-not-used
   NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: e2e-not-used
 
 jobs:
   smp-core-exams:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
 
       - name: Install dependencies
         run: npm install
@@ -62,10 +71,33 @@ jobs:
         run: npm run build
 
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Run TKA SMP core exam E2E
         run: npx playwright test --project=chromium-tka-staging
+
+      - name: Reset TKA SMP monetization enforcement
+        if: always()
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL
+          const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
+          if (!requestUrl || !requestToken) throw new Error('GitHub OIDC environment unavailable for M4 cleanup')
+          const separator = requestUrl.includes('?') ? '&' : '?'
+          const tokenResponse = await fetch(`${requestUrl}${separator}audience=${encodeURIComponent('siap-tempur-staging-e2e')}`, {
+            headers: { Authorization: `bearer ${requestToken}` },
+          })
+          if (!tokenResponse.ok) throw new Error(`OIDC cleanup token failed: ${tokenResponse.status}`)
+          const { value } = await tokenResponse.json()
+          if (!value) throw new Error('OIDC cleanup token empty')
+          const response = await fetch('https://lpgrivowdcepcxradavu.supabase.co/functions/v1/ci-e2e-m4', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${value}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'set_enforcement', enabled: false }),
+          })
+          if (!response.ok) throw new Error(`M4 enforcement reset failed: ${response.status} ${await response.text()}`)
+          NODE
 
       - name: Upload Playwright report on failure
         if: failure()

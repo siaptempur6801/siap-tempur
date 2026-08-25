@@ -82,6 +82,10 @@ function legacyAdminRedirect(request: NextRequest) {
     return null
 }
 
+function isLoopbackHostname(hostname: string) {
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+}
+
 export async function proxy(request: NextRequest) {
     const legacyRedirect = legacyAdminRedirect(request)
     if (legacyRedirect) return legacyRedirect
@@ -115,7 +119,7 @@ export async function proxy(request: NextRequest) {
 
     response.cookies.set(CSRF_COOKIE, csrfToken, {
         httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.NODE_ENV === 'production' && !isLoopbackHostname(request.nextUrl.hostname),
         sameSite: 'strict',
         path: '/',
     })
