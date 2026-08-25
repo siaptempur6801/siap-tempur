@@ -38,9 +38,9 @@ async function githubOidcToken() {
     return payload.value
 }
 
-async function callHelper(supabaseUrl: string, functionName: 'ci-e2e-user' | 'ci-e2e-m4', body: Record<string, unknown>) {
+async function callCiUserHelper(supabaseUrl: string, body: Record<string, unknown>) {
     const oidcToken = await githubOidcToken()
-    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/ci-e2e-user`, {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${oidcToken}`,
@@ -50,7 +50,7 @@ async function callHelper(supabaseUrl: string, functionName: 'ci-e2e-user' | 'ci
     })
     const payload = await response.json().catch(() => ({})) as { userId?: string; error?: string }
     if (!response.ok) {
-        throw new Error(`${functionName} ${String(body.action)} gagal (${response.status}): ${payload.error || 'unknown'}`)
+        throw new Error(`ci-e2e-user ${String(body.action)} gagal (${response.status}): ${payload.error || 'unknown'}`)
     }
     return payload
 }
@@ -65,7 +65,7 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
     const email = `ci-tka-${suffix}@example.invalid`
     const password = `TkaE2E!${randomUUID()}-${randomUUID().slice(0, 8)}`
 
-    const provisioned = await callHelper(supabaseUrl, 'ci-e2e-user', {
+    const provisioned = await callCiUserHelper(supabaseUrl, {
         action: 'provision',
         email,
         password,
@@ -78,9 +78,6 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
     await writeFile(metadataFile, JSON.stringify({ userId, email }, null, 2), 'utf8')
 
     try {
-        // First prove the disposable learner can complete the normal TKA login flow.
-        // Admin promotion happens only after storageState is captured so role-aware
-        // login redirects cannot disturb the learner setup contract.
         await page.goto('/login?returnTo=%2Ftka%2Fsmp')
         await page.locator('input[type="email"]').fill(email)
         await page.locator('input[type="password"]').fill(password)
@@ -89,7 +86,6 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
         await expect(page.getByText('Track aktif')).toBeVisible()
         await page.context().storageState({ path: authFile })
 
-        // Verify the browser credentials are backed by staging Auth itself.
         const browserClient = createClient(supabaseUrl, publishableKey, {
             auth: { persistSession: false, autoRefreshToken: false },
         })
@@ -97,13 +93,8 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
         if (loginCheckError || loginCheck.user?.id !== userId) {
             throw loginCheckError || new Error('Disposable TKA user tidak dapat login ke staging Auth.')
         }
-
-        // Promote only after learner authentication is proven. Admin authorization is
-        // resolved from user_roles on the server, so the captured session remains valid.
-        await callHelper(supabaseUrl, 'ci-e2e-m4', { action: 'assign_admin', userId })
     } catch (error) {
-        await callHelper(supabaseUrl, 'ci-e2e-m4', { action: 'clear_m4', userId }).catch(() => undefined)
-        await callHelper(supabaseUrl, 'ci-e2e-user', { action: 'cleanup', userId }).catch(() => undefined)
+        await callCiUserHelper(supabaseUrl, { action: 'cleanup', userId }).catch(() => undefined)
         await Promise.all([
             rm(metadataFile, { force: true }),
             rm(authFile, { force: true }),

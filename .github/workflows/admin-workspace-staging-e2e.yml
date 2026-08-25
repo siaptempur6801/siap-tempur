@@ -1,0 +1,67 @@
+name: Admin Workspace Staging E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: Exact Vercel Preview URL for the selected branch head
+        required: true
+        type: string
+      preview_share_url:
+        description: Temporary Vercel share URL; leave empty when automation bypass secret is configured
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CI: 'true'
+  APP_ENV: staging
+  NEXT_PUBLIC_APP_ENV: staging
+  E2E_ADMIN_STAGING: '1'
+  E2E_REMOTE_BASE_URL: '1'
+  BASE_URL: ${{ inputs.preview_url }}
+  VERCEL_SHARE_URL: ${{ inputs.preview_share_url }}
+  VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+  NEXT_PUBLIC_SUPABASE_URL: https://lpgrivowdcepcxradavu.supabase.co
+  NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+
+jobs:
+  workspace-authenticated:
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Run authenticated Admin Workspace E2E on Vercel Preview
+        run: npx playwright test --project=chromium-admin-staging
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-workspace-playwright-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
