@@ -21,17 +21,19 @@ jobs:
         shell: bash
         env:
           FUNCTION_URL: https://lpgrivowdcepcxradavu.supabase.co/functions/v1/cpns-legacy-migration-once
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           oidc_json="$(curl -fsS \
             -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=siap-tempur-staging-e2e")"
           oidc_token="$(OIDC_JSON="$oidc_json" node -e "const p=JSON.parse(process.env.OIDC_JSON); if(!p.value) process.exit(1); process.stdout.write(p.value)")"
+          payload="$(node -e "process.stdout.write(JSON.stringify({action:'migrate',headSha:process.env.PR_HEAD_SHA}))")"
           result="$(curl -fsS -X POST \
             -H "Authorization: Bearer ${oidc_token}" \
             -H "content-type: application/json" \
             "$FUNCTION_URL" \
-            --data '{"action":"migrate"}')"
+            --data "$payload")"
           RESULT_JSON="$result" node - <<'NODE'
           const p = JSON.parse(process.env.RESULT_JSON)
           if (p.ok !== true || p.sourceQuestions !== 439 || p.staged !== 439) {
