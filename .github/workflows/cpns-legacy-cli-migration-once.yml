@@ -1,0 +1,87 @@
+name: CPNS Legacy CLI Migration Once
+
+on:
+  pull_request:
+    branches:
+      - feat/schema-v2
+    paths:
+      - .github/workflows/cpns-legacy-cli-migration-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
+    env:
+      SOURCE_REF: llnttutwhtvxtdktiizo
+      STAGING_REF: lpgrivowdcepcxradavu
+      CPNS_MAPPING_REVIEWER_USER_ID: 93b4d35b-a1fb-4a16-9304-fef1116002cf
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve ephemeral project API keys from existing CLI session
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v supabase >/dev/null 2>&1
+          source_file="$(mktemp)"
+          staging_file="$(mktemp)"
+          trap 'rm -f "$source_file" "$staging_file"' EXIT
+
+          supabase projects api-keys --project-ref "$SOURCE_REF" --output json >"$source_file"
+          supabase projects api-keys --project-ref "$STAGING_REF" --output json >"$staging_file"
+
+          extract_admin_key() {
+            node - "$1" <<'NODE'
+          const fs = require('fs')
+          const parsed = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'))
+          const rows = Array.isArray(parsed) ? parsed : (parsed.api_keys || parsed.keys || parsed.data || [])
+          const getValue = (row) => row.api_key || row.key || row.value || row.secret
+          const admin = rows.find((row) =>
+            row.name === 'service_role' ||
+            row.role === 'service_role' ||
+            row.type === 'service_role' ||
+            row.name === 'secret' ||
+            row.type === 'secret'
+          )
+          const value = admin && getValue(admin)
+          if (!value) process.exit(2)
+          process.stdout.write(value)
+          NODE
+          }
+
+          SOURCE_KEY="$(extract_admin_key "$source_file")"
+          STAGING_KEY="$(extract_admin_key "$staging_file")"
+          test -n "$SOURCE_KEY"
+          test -n "$STAGING_KEY"
+          echo "::add-mask::$SOURCE_KEY"
+          echo "::add-mask::$STAGING_KEY"
+          {
+            echo "CPNS_LEGACY_SOURCE_URL=https://${SOURCE_REF}.supabase.co"
+            echo "CPNS_LEGACY_SOURCE_SERVICE_ROLE_KEY=$SOURCE_KEY"
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://${STAGING_REF}.supabase.co"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$STAGING_KEY"
+          } >> "$GITHUB_ENV"
+          echo "Ephemeral source/staging credentials resolved and masked"
+
+      - name: Stage 439 and import 433 reviewed questions as draft
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run cpns:legacy:import:staging
