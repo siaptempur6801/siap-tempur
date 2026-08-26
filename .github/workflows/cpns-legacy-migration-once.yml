@@ -1,0 +1,47 @@
+name: CPNS Legacy Migration Once
+
+on:
+  pull_request:
+    branches:
+      - feat/schema-v2
+    paths:
+      - .github/workflows/cpns-legacy-migration-once.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  migrate-staging:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 15
+    steps:
+      - name: Stage 439 and import 433 reviewed CPNS questions as draft
+        shell: bash
+        env:
+          FUNCTION_URL: https://lpgrivowdcepcxradavu.supabase.co/functions/v1/cpns-legacy-migration-once
+        run: |
+          set -euo pipefail
+          oidc_json="$(curl -fsS \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=siap-tempur-staging-e2e")"
+          oidc_token="$(OIDC_JSON="$oidc_json" node -e "const p=JSON.parse(process.env.OIDC_JSON); if(!p.value) process.exit(1); process.stdout.write(p.value)")"
+          result="$(curl -fsS -X POST \
+            -H "Authorization: Bearer ${oidc_token}" \
+            -H "content-type: application/json" \
+            "$FUNCTION_URL" \
+            --data '{"action":"migrate"}')"
+          RESULT_JSON="$result" node - <<'NODE'
+          const p = JSON.parse(process.env.RESULT_JSON)
+          if (p.ok !== true || p.sourceQuestions !== 439 || p.staged !== 439) {
+            console.error(p)
+            process.exit(1)
+          }
+          const s = p.summary || {}
+          if (Number(s.raw_staged) !== 439 || Number(s.import_ready) !== 433 || Number(s.imported_canonical) !== 433 || Number(s.imported_published) !== 0) {
+            console.error(p)
+            process.exit(1)
+          }
+          console.log('CPNS staging migration reconciled:', JSON.stringify(s))
+          NODE
