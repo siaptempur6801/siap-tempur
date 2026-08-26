@@ -93,7 +93,7 @@ export default async function TkaLandingPage({
 
                         if (!copy.available) {
                             return (
-                                <article key={level} className={`${cardClass} opacity-70`} aria-disabled="true">
+                                <article key={level} className={`${cardClass} opacity-70`}>
                                     <div className="flex items-start justify-between gap-3">
                                         <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-gray-100">
                                             <Icon size={25} />
