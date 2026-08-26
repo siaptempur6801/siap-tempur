@@ -1,0 +1,35 @@
+name: CPNS Legacy Asset Copy Once
+
+on:
+  pull_request:
+    branches:
+      - feat/schema-v2
+    paths:
+      - .github/workflows/cpns-legacy-asset-copy-once.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  copy-staging-assets:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 10
+    steps:
+      - name: Copy audited CPNS legacy assets to staging
+        shell: bash
+        env:
+          FUNCTION_URL: https://lpgrivowdcepcxradavu.supabase.co/functions/v1/cpns-legacy-inline-assets-once
+        run: |
+          set -euo pipefail
+          oidc_json="$(curl -fsS \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=siap-tempur-staging-e2e")"
+          oidc_token="$(OIDC_JSON="$oidc_json" node -e "const p=JSON.parse(process.env.OIDC_JSON); if(!p.value) process.exit(1); process.stdout.write(p.value)")"
+          result="$(curl -fsS -X POST \
+            -H "Authorization: Bearer ${oidc_token}" \
+            -H "content-type: application/json" \
+            "$FUNCTION_URL" \
+            --data '{"action":"copy"}')"
+          RESULT_JSON="$result" node -e "const p=JSON.parse(process.env.RESULT_JSON); if(p.ok!==true || p.copiedCount!==18){console.error(p);process.exit(1)}; console.log('Copied CPNS legacy assets:', p.copiedCount)"
