@@ -113,7 +113,6 @@ jobs:
                 healthUrl: new URL('/api/health', url.origin),
                 headers: {
                   'x-vercel-protection-bypass': bypassSecret,
-                  'x-vercel-set-bypass-cookie': 'true',
                 },
               },
               {
@@ -123,9 +122,7 @@ jobs:
                   health.searchParams.set('x-vercel-protection-bypass', bypassSecret)
                   return health
                 })(),
-                headers: {
-                  'x-vercel-set-bypass-cookie': 'true',
-                },
+                headers: {},
               },
             ]
 
