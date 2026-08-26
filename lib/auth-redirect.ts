@@ -1,4 +1,4 @@
-const DEFAULT_AUTH_RETURN_TO = '/cpns'
+const DEFAULT_AUTH_RETURN_TO = '/'
 
 export function sanitizeAuthReturnTo(returnTo?: string | null) {
     if (!returnTo) return DEFAULT_AUTH_RETURN_TO

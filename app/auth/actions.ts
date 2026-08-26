@@ -1,13 +1,38 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { createV2Client, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
 import { env } from '@/lib/env'
+import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 
 function callbackUrl(path = '/auth/callback') {
     return `${env.siteUrl()}${path}`
+}
+
+async function resolveAuthReturnTo(explicitReturnTo?: string | null) {
+    if (explicitReturnTo) return sanitizeAuthReturnTo(explicitReturnTo)
+
+    try {
+        const requestHeaders = await headers()
+        const referer = requestHeaders.get('referer')
+        if (referer) {
+            const url = new URL(referer)
+            return sanitizeAuthReturnTo(url.searchParams.get('returnTo'))
+        }
+    } catch {
+        // Fall back to the generic public entry below.
+    }
+
+    return sanitizeAuthReturnTo(null)
+}
+
+async function callbackUrlForReturnTo(returnTo?: string | null) {
+    const url = new URL(callbackUrl())
+    url.searchParams.set('next', await resolveAuthReturnTo(returnTo))
+    return url.toString()
 }
 
 export async function login(formData: FormData) {
@@ -33,13 +58,14 @@ export async function signup(formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const fullName = formData.get('fullName') as string
+    const returnTo = await resolveAuthReturnTo(formData.get('returnTo') as string | null)
 
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: { full_name: fullName },
-            emailRedirectTo: callbackUrl(),
+            emailRedirectTo: await callbackUrlForReturnTo(returnTo),
         },
     })
 
@@ -85,7 +111,7 @@ export async function updatePassword(formData: FormData) {
     return { success: true }
 }
 
-export async function loginWithGoogle() {
+export async function loginWithGoogle(returnTo?: string | null) {
     try {
         await validateCsrf()
     } catch (error) {
@@ -99,7 +125,7 @@ export async function loginWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: callbackUrl(),
+            redirectTo: await callbackUrlForReturnTo(returnTo),
             queryParams: { access_type: 'offline', prompt: 'consent' },
         },
     })
@@ -109,13 +135,13 @@ export async function loginWithGoogle() {
     return { error: 'No URL returned' }
 }
 
-export async function resendVerificationEmail(email: string) {
+export async function resendVerificationEmail(email: string, returnTo?: string | null) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
     const supabase = await createV2Client()
     const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
-        options: { emailRedirectTo: callbackUrl() },
+        options: { emailRedirectTo: await callbackUrlForReturnTo(returnTo) },
     })
     if (error) return { error: error.message }
     return { success: true }
