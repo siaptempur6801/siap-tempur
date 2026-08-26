@@ -66,6 +66,7 @@ export class CatalogContextService {
                 .from('subjects')
                 .select('id, code, name, subject_type')
                 .eq('track_id', track.id)
+                .in('status', ['active', 'ACTIVE'])
                 .order('sort_order', { ascending: true }),
             admin
                 .from('exam_types')

@@ -223,9 +223,26 @@ async function assignAdmin(admin: ReturnType<typeof adminClient>, userId: string
   await assertCiTkaUser(admin, userId)
   const { data: role, error: roleError } = await admin.from('roles').select('id').eq('code', 'ADMIN').maybeSingle()
   if (roleError || !role) throw roleError ?? new Error('ADMIN_ROLE_NOT_FOUND')
-  const { error } = await admin.from('user_roles').upsert({ user_id: userId, role_id: role.id, scope_type: null, scope_id: null }, { onConflict: 'user_id,role_id' })
+
+  const { data: existing, error: existingError } = await admin
+    .from('user_roles')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('role_id', role.id)
+    .is('scope_type', null)
+    .is('scope_id', null)
+    .maybeSingle()
+  if (existingError) throw existingError
+  if (existing) return { ok: true, alreadyAssigned: true }
+
+  const { error } = await admin.from('user_roles').insert({
+    user_id: userId,
+    role_id: role.id,
+    scope_type: null,
+    scope_id: null,
+  })
   if (error) throw error
-  return { ok: true }
+  return { ok: true, alreadyAssigned: false }
 }
 
 async function clearM4(admin: ReturnType<typeof adminClient>, userId: string) {
@@ -250,7 +267,13 @@ async function clearM4(admin: ReturnType<typeof adminClient>, userId: string) {
   if (attemptError) throw attemptError
   const { data: adminRole } = await admin.from('roles').select('id').eq('code', 'ADMIN').maybeSingle()
   if (adminRole?.id) {
-    const { error: roleDeleteError } = await admin.from('user_roles').delete().eq('user_id', userId).eq('role_id', adminRole.id)
+    const { error: roleDeleteError } = await admin
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId)
+      .eq('role_id', adminRole.id)
+      .is('scope_type', null)
+      .is('scope_id', null)
     if (roleDeleteError) throw roleDeleteError
   }
   return { ordersDeleted: orderIds.length }

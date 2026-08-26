@@ -1,11 +1,9 @@
-import { redirect } from 'next/navigation'
+import AdminExamsWorkspace, { type AdminExamsSearchParams } from '@/app/admin/assessment/exams/AdminExamsWorkspace'
 
-export default async function ExamsRoute({ searchParams }: { searchParams: Promise<{ program?: string; track?: string }> }) {
-    const params = await searchParams
-    const query = new URLSearchParams({
-        program: (params.program || 'TKA').toUpperCase(),
-        track: (params.track || 'SMP').toUpperCase(),
-        tab: 'exams',
-    })
-    redirect(`/admin?${query.toString()}`)
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+export default async function ExamsRoute({ searchParams }: { searchParams: Promise<AdminExamsSearchParams> }) {
+  const params = await searchParams
+  return <AdminExamsWorkspace searchParams={Promise.resolve({ ...params, program: params.program || 'CPNS', track: params.track || 'SKD' })}/>
 }

@@ -5,6 +5,9 @@ const hasParticipantCredentials = Boolean(
 );
 const tkaStagingE2EEnabled = process.env.E2E_TKA_STAGING === '1';
 const contentReviewStagingE2EEnabled = process.env.E2E_CONTENT_REVIEW_STAGING === '1';
+const adminStagingE2EEnabled = process.env.E2E_ADMIN_STAGING === '1';
+const remoteE2EEnabled = process.env.E2E_REMOTE_BASE_URL === '1';
+const vercelAutomationBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -32,6 +35,7 @@ export default defineConfig({
         /.*6-tka-smp-full\.spec\.ts/,
         /.*8-tka-smp-mini\.spec\.ts/,
         /.*9-tka-smp-monetization\.spec\.ts/,
+        /.*10-admin-workspace-authenticated\.spec\.ts/,
         /.*7-content-review-workflow\.spec\.ts/,
       ],
       use: {
@@ -100,11 +104,45 @@ export default defineConfig({
           },
         ]
       : []),
+    ...(adminStagingE2EEnabled
+      ? [
+          {
+            name: 'admin-setup',
+            testMatch: /.*admin\.setup\.ts/,
+            teardown: 'admin-cleanup',
+          },
+          {
+            name: 'chromium-admin-staging',
+            testMatch: /.*10-admin-workspace-authenticated\.spec\.ts/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: 'playwright/.auth/admin-user.json',
+              ...(vercelAutomationBypass
+                ? {
+                    extraHTTPHeaders: {
+                      'x-vercel-protection-bypass': vercelAutomationBypass,
+                      'x-vercel-set-bypass-cookie': 'true',
+                    },
+                  }
+                : {}),
+            },
+            dependencies: ['admin-setup'],
+          },
+          {
+            name: 'admin-cleanup',
+            testMatch: /.*admin\.cleanup\.ts/,
+          },
+        ]
+      : []),
   ],
-  webServer: {
-    command: 'npm run start',
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  ...(remoteE2EEnabled
+    ? {}
+    : {
+        webServer: {
+          command: 'npm run start',
+          url: 'http://127.0.0.1:3000',
+          reuseExistingServer: !process.env.CI,
+          timeout: 120000,
+        },
+      }),
 });

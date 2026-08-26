@@ -1,11 +1,11 @@
-import { redirect } from 'next/navigation'
+import AdminOperationsWorkspace from '@/app/admin/AdminOperationsWorkspace'
 
-export default async function QuestionBankRoute({ searchParams }: { searchParams: Promise<{ program?: string; track?: string }> }) {
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+type SearchParams = { program?: string; track?: string; edit?: string; ok?: string; error?: string }
+
+export default async function QuestionBankRoute({ searchParams }: { searchParams: Promise<SearchParams> }) {
     const params = await searchParams
-    const query = new URLSearchParams({
-        program: (params.program || 'TKA').toUpperCase(),
-        track: (params.track || 'SMP').toUpperCase(),
-        tab: 'questions',
-    })
-    redirect(`/admin?${query.toString()}`)
+    return <AdminOperationsWorkspace mode="questions" searchParams={Promise.resolve({ ...params, program: params.program || 'CPNS', track: params.track || 'SKD' })}/>
 }

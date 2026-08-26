@@ -2,27 +2,80 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/utils/supabase/middleware'
 import { CSRF_COOKIE } from '@/lib/csrf'
 
+const LEGACY_ADMIN_TAB_ROUTES: Record<string, string> = {
+    products: '/admin/commerce/products',
+    events: '/admin/assessment/events',
+    exams: '/admin/assessment/exams',
+    questions: '/admin/content/questions',
+    commerce: '/admin/commerce',
+}
+
+function applyDefaultAdminContext(target: URL) {
+    if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
+    if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
+}
+
 function legacyAdminRedirect(request: NextRequest) {
     const pathname = request.nextUrl.pathname
     if (!pathname.startsWith('/cpns/admin')) return null
 
     const target = request.nextUrl.clone()
+
     if (pathname === '/cpns/admin') {
-        target.pathname = '/admin'
-        if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
-        if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
+        const tab = target.searchParams.get('tab') || ''
+        target.pathname = LEGACY_ADMIN_TAB_ROUTES[tab] || '/admin'
+        target.searchParams.delete('tab')
+        applyDefaultAdminContext(target)
         return NextResponse.redirect(target)
     }
 
     if (pathname === '/cpns/admin/review') {
         target.pathname = '/admin/content/review'
-        if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
-        if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
+        applyDefaultAdminContext(target)
         return NextResponse.redirect(target)
     }
 
     if (pathname === '/cpns/admin/articles' || pathname.startsWith('/cpns/admin/articles/')) {
         target.pathname = pathname.replace('/cpns/admin/articles', '/admin/content/articles')
+        return NextResponse.redirect(target)
+    }
+
+    if (pathname === '/cpns/admin/event' || pathname === '/cpns/admin/tryout-akbar') {
+        target.pathname = '/admin/assessment/events'
+        applyDefaultAdminContext(target)
+        return NextResponse.redirect(target)
+    }
+
+    if (pathname === '/cpns/admin/tryout-config') {
+        target.pathname = '/admin/assessment/exams'
+        applyDefaultAdminContext(target)
+        return NextResponse.redirect(target)
+    }
+
+    if (pathname === '/cpns/admin/keuangan') {
+        target.pathname = '/admin/commerce'
+        applyDefaultAdminContext(target)
+        return NextResponse.redirect(target)
+    }
+
+    if (pathname === '/cpns/admin/create') {
+        target.pathname = '/admin/content/questions'
+        applyDefaultAdminContext(target)
+        return NextResponse.redirect(target)
+    }
+
+    const editMatch = pathname.match(/^\/cpns\/admin\/edit\/([^/]+)$/)
+    if (editMatch) {
+        target.pathname = '/admin/content/questions'
+        target.searchParams.set('edit', editMatch[1])
+        applyDefaultAdminContext(target)
+        return NextResponse.redirect(target)
+    }
+
+    if (pathname === '/cpns/admin/voucher') {
+        target.pathname = '/admin/commerce/products'
+        target.searchParams.set('error', 'Voucher/promosi Schema V2 belum tersedia. Gunakan fitur ini setelah migrasi promosi selesai.')
+        applyDefaultAdminContext(target)
         return NextResponse.redirect(target)
     }
 

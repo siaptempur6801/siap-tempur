@@ -1,7 +1,7 @@
 import { expect, test as setup } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'node:crypto'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
@@ -86,7 +86,6 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
         await expect(page.getByText('Track aktif')).toBeVisible()
         await page.context().storageState({ path: authFile })
 
-        // Verify the browser credentials are backed by staging Auth itself.
         const browserClient = createClient(supabaseUrl, publishableKey, {
             auth: { persistSession: false, autoRefreshToken: false },
         })
@@ -96,6 +95,10 @@ setup('provision disposable TKA SMP staging user', async ({ page }) => {
         }
     } catch (error) {
         await callCiUserHelper(supabaseUrl, { action: 'cleanup', userId }).catch(() => undefined)
+        await Promise.all([
+            rm(metadataFile, { force: true }),
+            rm(authFile, { force: true }),
+        ])
         throw error
     }
 })
