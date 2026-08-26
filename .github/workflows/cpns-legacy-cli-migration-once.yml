@@ -73,10 +73,10 @@ jobs:
           echo "::add-mask::$SOURCE_KEY"
           echo "::add-mask::$STAGING_KEY"
           {
-            echo "CPNS_LEGACY_SOURCE_URL=https://${SOURCE_REF}.supabase.co"
+            echo "CPNS_LEGACY_SOURCE_SUPABASE_URL=https://${SOURCE_REF}.supabase.co"
             echo "CPNS_LEGACY_SOURCE_SERVICE_ROLE_KEY=$SOURCE_KEY"
-            echo "NEXT_PUBLIC_SUPABASE_URL=https://${STAGING_REF}.supabase.co"
-            echo "SUPABASE_SERVICE_ROLE_KEY=$STAGING_KEY"
+            echo "CPNS_SCHEMA_V2_STAGING_SUPABASE_URL=https://${STAGING_REF}.supabase.co"
+            echo "CPNS_SCHEMA_V2_STAGING_SERVICE_ROLE_KEY=$STAGING_KEY"
           } >> "$GITHUB_ENV"
           echo "Ephemeral source/staging credentials resolved and masked"
 
