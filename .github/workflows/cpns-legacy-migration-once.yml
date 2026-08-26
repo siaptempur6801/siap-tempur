@@ -14,7 +14,7 @@ permissions:
 jobs:
   migrate-staging:
     if: github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64]
     timeout-minutes: 15
     steps:
       - name: Stage 439 and import 433 reviewed CPNS questions as draft
@@ -39,7 +39,7 @@ jobs:
             process.exit(1)
           }
           const s = p.summary || {}
-          if (Number(s.raw_staged) !== 439 || Number(s.import_ready) !== 433 || Number(s.imported_canonical) !== 433 || Number(s.imported_published) !== 0) {
+          if (Number(s.raw_staged) !== 439 || Number(s.import_ready) !== 433 || Number(s.canonical_imported) !== 433 || Number(p.publishedCount) !== 0) {
             console.error(p)
             process.exit(1)
           }
