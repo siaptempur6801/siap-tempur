@@ -14,7 +14,7 @@ permissions:
 jobs:
   migrate-staging:
     if: github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - name: Stage 439 and import 433 reviewed CPNS questions as draft
