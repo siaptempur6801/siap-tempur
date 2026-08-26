@@ -1,0 +1,48 @@
+name: CPNS Supabase CLI Access Once
+
+on:
+  pull_request:
+    branches:
+      - feat/schema-v2
+    paths:
+      - .github/workflows/cpns-supabase-cli-access-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 5
+    steps:
+      - name: Check existing Supabase CLI session only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v supabase >/dev/null 2>&1; then
+            echo "Supabase CLI is not installed on this runner"
+            exit 2
+          fi
+          supabase --version >/dev/null
+          projects_file="$(mktemp)"
+          errors_file="$(mktemp)"
+          trap 'rm -f "$projects_file" "$errors_file"' EXIT
+          if ! supabase projects list --output json >"$projects_file" 2>"$errors_file"; then
+            echo "Existing Supabase CLI session is unavailable"
+            exit 3
+          fi
+          node - "$projects_file" <<'NODE'
+          const fs = require('fs')
+          const file = process.argv[2]
+          const raw = fs.readFileSync(file, 'utf8')
+          const projects = JSON.parse(raw)
+          const refs = new Set(projects.map((p) => p.id || p.ref || p.project_ref).filter(Boolean))
+          const required = ['llnttutwhtvxtdktiizo', 'lpgrivowdcepcxradavu']
+          const missing = required.filter((ref) => !refs.has(ref))
+          if (missing.length) {
+            console.log(`Existing CLI session cannot see ${missing.length} required project(s)`)
+            process.exit(4)
+          }
+          console.log('Existing Supabase CLI session can see production and staging projects')
+          NODE
