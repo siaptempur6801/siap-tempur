@@ -33,7 +33,7 @@ test.describe('Public Pages Flow', () => {
 
     const smpEntry = page.getByRole('link', { name: /TKA SMP.*Masuk & mulai/i });
     await expect(smpEntry).toHaveAttribute('href', '/login?returnTo=%2Ftka%2Fsmp');
-    await expect(page.getByText('Belum dibuka')).toHaveCount(2);
+    await expect(page.getByText('Belum dibuka', { exact: true })).toHaveCount(2);
   });
 
   test('menampilkan halaman 404 jika URL tidak valid', async ({ page }) => {
