@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { createV2Client, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
@@ -11,9 +12,26 @@ function callbackUrl(path = '/auth/callback') {
     return `${env.siteUrl()}${path}`
 }
 
-function callbackUrlForReturnTo(returnTo?: string | null) {
+async function resolveAuthReturnTo(explicitReturnTo?: string | null) {
+    if (explicitReturnTo) return sanitizeAuthReturnTo(explicitReturnTo)
+
+    try {
+        const requestHeaders = await headers()
+        const referer = requestHeaders.get('referer')
+        if (referer) {
+            const url = new URL(referer)
+            return sanitizeAuthReturnTo(url.searchParams.get('returnTo'))
+        }
+    } catch {
+        // Fall back to the generic public entry below.
+    }
+
+    return sanitizeAuthReturnTo(null)
+}
+
+async function callbackUrlForReturnTo(returnTo?: string | null) {
     const url = new URL(callbackUrl())
-    url.searchParams.set('next', sanitizeAuthReturnTo(returnTo))
+    url.searchParams.set('next', await resolveAuthReturnTo(returnTo))
     return url.toString()
 }
 
@@ -40,14 +58,14 @@ export async function signup(formData: FormData) {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const fullName = formData.get('fullName') as string
-    const returnTo = sanitizeAuthReturnTo(formData.get('returnTo') as string | null)
+    const returnTo = await resolveAuthReturnTo(formData.get('returnTo') as string | null)
 
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: { full_name: fullName },
-            emailRedirectTo: callbackUrlForReturnTo(returnTo),
+            emailRedirectTo: await callbackUrlForReturnTo(returnTo),
         },
     })
 
@@ -107,7 +125,7 @@ export async function loginWithGoogle(returnTo?: string | null) {
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: callbackUrlForReturnTo(returnTo),
+            redirectTo: await callbackUrlForReturnTo(returnTo),
             queryParams: { access_type: 'offline', prompt: 'consent' },
         },
     })
@@ -123,7 +141,7 @@ export async function resendVerificationEmail(email: string, returnTo?: string |
     const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
-        options: { emailRedirectTo: callbackUrlForReturnTo(returnTo) },
+        options: { emailRedirectTo: await callbackUrlForReturnTo(returnTo) },
     })
     if (error) return { error: error.message }
     return { success: true }
