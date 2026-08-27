@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const SESSION_URL = /\/cpns\/dashboard\/tryout\/[0-9a-f-]{36}(?:\?.*)?$/i
 const NAVIGATION_OPTIONS = { waitUntil: 'domcontentloaded' as const, timeout: 45_000 }
 
-async function waitForInteractivePreview(page: Parameters<Parameters<typeof test>[1]>[0]['page']) {
+async function waitForInteractivePreview(page: Page) {
   // Vercel Preview may finish DOMContentLoaded before the client bundle has
   // hydrated the server-rendered button. Network idle gives React/Next enough
   // time to attach event handlers without making navigation depend on `load`.
