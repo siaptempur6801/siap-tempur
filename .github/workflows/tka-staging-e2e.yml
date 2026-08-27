@@ -1,5 +1,6 @@
 name: TKA SMP Staging E2E
 
+# Milestone ⑥ final release-candidate gate. Logic intentionally unchanged.
 on:
   workflow_dispatch:
   pull_request:
