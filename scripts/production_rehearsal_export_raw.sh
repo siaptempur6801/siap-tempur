@@ -48,52 +48,74 @@ mkdir -p "$PUBLIC_DIR"
 chmod 700 "$OUT_DIR" "$PUBLIC_DIR"
 umask 077
 
-# Enforce read-only at the PostgreSQL session level for every psql invocation.
-export PGOPTIONS="${PGOPTIONS:-} -c default_transaction_read_only=on -c statement_timeout=120000"
-
+# Do not rely on PGOPTIONS/default_transaction_read_only for hosted poolers.
+# Every production read is executed inside an explicit READ ONLY transaction.
 PSQL=(psql "$PROD_DB_URL" -X -v ON_ERROR_STOP=1)
 
-READ_ONLY="$("${PSQL[@]}" -Atc 'show transaction_read_only')"
+ro_scalar() {
+  local sql="$1"
+  "${PSQL[@]}" -qAt \
+    -c 'BEGIN TRANSACTION READ ONLY;' \
+    -c "SET LOCAL statement_timeout = '120s';" \
+    -c "$sql" \
+    -c 'ROLLBACK;'
+}
+
+ro_copy_query() {
+  local sql="$1"
+  local outfile="$2"
+  "${PSQL[@]}" -q \
+    -c 'BEGIN TRANSACTION READ ONLY;' \
+    -c "SET LOCAL statement_timeout = '120s';" \
+    -c "\\copy (${sql}) TO '${outfile}' WITH (FORMAT csv, HEADER true)" \
+    -c 'ROLLBACK;'
+}
+
+ro_copy_table() {
+  local table="$1"
+  local outfile="$2"
+  "${PSQL[@]}" -q \
+    -c 'BEGIN TRANSACTION READ ONLY;' \
+    -c "SET LOCAL statement_timeout = '120s';" \
+    -c "\\copy public.\"${table}\" TO '${outfile}' WITH (FORMAT csv, HEADER true)" \
+    -c 'ROLLBACK;'
+}
+
+READ_ONLY="$(ro_scalar 'show transaction_read_only')"
 if [[ "$READ_ONLY" != "on" ]]; then
-  echo "ERROR: production session is not read-only. Refusing to export."
+  echo "ERROR: explicit production transaction is not read-only. Refusing to export."
   exit 1
 fi
 
 echo "Production snapshot export"
 echo "- output: $OUT_DIR"
 echo "- transaction_read_only: $READ_ONLY"
-echo "- production writes: disabled by PGOPTIONS"
+echo "- production writes: blocked by explicit BEGIN TRANSACTION READ ONLY"
 
 # Preserve only the auth identity keys required for UUID reconciliation.
 # Credentials, email addresses, provider tokens, and auth metadata are deliberately NOT exported.
-"${PSQL[@]}" -c "\\copy (select id, created_at from auth.users order by id) to '${OUT_DIR}/auth_users_identity.csv' with (format csv, header true)"
+ro_copy_query \
+  "select id, created_at from auth.users order by id" \
+  "${OUT_DIR}/auth_users_identity.csv"
 
 # Capture public-table column metadata so the local raw loader can create a faithful staging shape.
-"${PSQL[@]}" -c "\\copy (
-  select table_schema, table_name, ordinal_position, column_name, data_type, udt_schema, udt_name, is_nullable
-  from information_schema.columns
-  where table_schema='public'
-  order by table_name, ordinal_position
-) to '${OUT_DIR}/public_columns.csv' with (format csv, header true)"
+ro_copy_query \
+  "select table_schema, table_name, ordinal_position, column_name, data_type, udt_schema, udt_name, is_nullable from information_schema.columns where table_schema='public' order by table_name, ordinal_position" \
+  "${OUT_DIR}/public_columns.csv"
 
 printf 'table_name,row_count\n' > "${OUT_DIR}/public_row_counts.csv"
-TABLE_COUNT=0
 
 # Export every production public BASE TABLE. This intentionally favors completeness over a hand-maintained table allowlist.
-"${PSQL[@]}" -Atc "
-  select tablename
-  from pg_catalog.pg_tables
-  where schemaname='public'
-  order by tablename
-" | while IFS= read -r table; do
+ro_scalar "select tablename from pg_catalog.pg_tables where schemaname='public' order by tablename" |
+while IFS= read -r table; do
   if [[ ! "$table" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
     echo "ERROR: unexpected table name: $table"
     exit 1
   fi
 
   echo "Exporting public.${table} ..."
-  "${PSQL[@]}" -c "\\copy public.\"${table}\" to '${PUBLIC_DIR}/${table}.csv' with (format csv, header true)"
-  count="$("${PSQL[@]}" -Atc "select count(*) from public.\"${table}\"")"
+  ro_copy_table "$table" "${PUBLIC_DIR}/${table}.csv"
+  count="$(ro_scalar "select count(*) from public.\"${table}\"")"
   printf '%s,%s\n' "$table" "$count" >> "${OUT_DIR}/public_row_counts.csv"
 done
 
@@ -101,17 +123,23 @@ done
 TABLE_COUNT="$(tail -n +2 "${OUT_DIR}/public_row_counts.csv" | wc -l | tr -d ' ')"
 
 # Re-run the committed non-PII baseline checks against the exact same source after export.
+# The whole baseline file is also forced into an explicit READ ONLY transaction.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASELINE_SQL="${SCRIPT_DIR}/production_rehearsal_source_baseline.sql"
 if [[ -f "$BASELINE_SQL" ]]; then
-  "${PSQL[@]}" -f "$BASELINE_SQL" > "${OUT_DIR}/source_baseline.txt"
+  "${PSQL[@]}" -q \
+    -c 'BEGIN TRANSACTION READ ONLY;' \
+    -c "SET LOCAL statement_timeout = '120s';" \
+    -f "$BASELINE_SQL" \
+    -c 'ROLLBACK;' \
+    > "${OUT_DIR}/source_baseline.txt"
 fi
 
 cat > "${OUT_DIR}/README.txt" <<EOF
 Siap Tempur production rehearsal raw snapshot
 Created: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 Expected source project: ${EXPECTED_PROJECT_REF}
-Read-only source session: ${READ_ONLY}
+Read-only source transaction: ${READ_ONLY}
 
 IMPORTANT:
 - This directory can contain production user/business data from public tables.
