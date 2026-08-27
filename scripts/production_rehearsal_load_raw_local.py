@@ -8,6 +8,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+from shutil import which
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost"}
 SAFE_IDENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -52,8 +53,8 @@ def parse_local_url(db_url: str) -> None:
     port = m.group(2)
     if host not in LOCAL_HOSTS:
         die(f"refusing non-local database host: {host}")
-    if port and port != "54322":
-        die(f"expected Supabase Local port 54322, got {port}")
+    if port != "54322":
+        die(f"expected Supabase Local port 54322, got {port or 'default'}")
 
 
 def load_columns(path: Path):
@@ -117,9 +118,9 @@ def write_loader_sql(snapshot: Path, columns, manifest, out_path: Path):
             f"\\copy legacy_prod.{qident(table)} ({col_list}) FROM {shlex.quote(str(csv_path.resolve()))} WITH (FORMAT csv, HEADER true)"
         )
 
-    lines += [
-        "CREATE TABLE legacy_prod.snapshot_expected_counts (table_name text primary key, expected_count bigint not null);",
-    ]
+    lines.append(
+        "CREATE TABLE legacy_prod.snapshot_expected_counts (table_name text primary key, expected_count bigint not null);"
+    )
     for table, count in sorted(manifest.items()):
         safe_table = table.replace("'", "''")
         lines.append(
@@ -139,7 +140,7 @@ def main():
     )
     args = parser.parse_args()
 
-    if not shutil_which("psql"):
+    if not which("psql"):
         die("psql is required")
 
     parse_local_url(args.db_url)
@@ -157,14 +158,14 @@ def main():
         if not path.exists():
             die(f"missing required snapshot component: {path}")
 
+    # URI parsing above is the authoritative target guard. PostgreSQL inside Docker
+    # reports its container-internal port (usually 5432), not the host-mapped 54322.
     target = run_psql(
         args.db_url,
-        "select inet_server_addr()::text || ':' || inet_server_port()::text || '|' || current_database();",
+        "select current_database() || '|' || current_user || '|' || version();",
         capture=True,
     )
-    print(f"Local rehearsal target: {target}")
-    if "54322" not in target:
-        die("connected database is not Supabase Local port 54322")
+    print(f"Local rehearsal target: {target.split('|')[0]}|{target.split('|')[1]}")
 
     columns = load_columns(snapshot / "public_columns.csv")
     manifest = load_manifest(snapshot / "public_row_counts.csv")
@@ -202,11 +203,6 @@ def main():
 
     print("PASS: every legacy_prod table matches the production snapshot manifest.")
     print("Production was not written; all loaded rows are in Supabase Local only.")
-
-
-def shutil_which(command: str):
-    from shutil import which
-    return which(command)
 
 
 if __name__ == "__main__":
