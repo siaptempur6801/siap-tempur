@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Final RC retrigger after repairing Vercel ↔ GitHub author authentication.
 const hasParticipantCredentials = Boolean(
   process.env.E2E_PARTICIPANT_EMAIL && process.env.E2E_PARTICIPANT_PASSWORD,
 );
@@ -36,6 +37,7 @@ export default defineConfig({
         /.*8-tka-smp-mini\.spec\.ts/,
         /.*9-tka-smp-monetization\.spec\.ts/,
         /.*10-admin-workspace-authenticated\.spec\.ts/,
+        /.*11-cpns-rc\.spec\.ts/,
         /.*7-content-review-workflow\.spec\.ts/,
       ],
       use: {
