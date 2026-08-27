@@ -5,7 +5,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost"}
@@ -40,35 +39,6 @@ def query(db_url: str, sql: str) -> str:
             print(proc.stderr, file=sys.stderr, end="")
         raise SystemExit(proc.returncode)
     return proc.stdout.strip()
-
-
-def materialize_sql(script_path: Path) -> Path:
-    """Normalize PostgreSQL uuid[] snapshot fields to JSON safely before execution."""
-    sql = script_path.read_text(encoding="utf-8")
-    replacements = {
-        "coalesce(nullif(oa.option_order,'')::jsonb,'null'::jsonb)":
-            "coalesce(to_jsonb(nullif(oa.option_order,'')::uuid[]),'[]'::jsonb)",
-        "coalesce(nullif(ta.selected_option_ids,'')::jsonb,'[]'::jsonb)":
-            "coalesce(to_jsonb(nullif(ta.selected_option_ids,'')::uuid[]),'[]'::jsonb)",
-    }
-    for old, new in replacements.items():
-        if old not in sql:
-            die(f"expected Phase 2 SQL fragment not found: {old}")
-        sql = sql.replace(old, new)
-
-    handle = tempfile.NamedTemporaryFile(
-        mode="w",
-        encoding="utf-8",
-        prefix="siap-tempur-phase2-",
-        suffix=".sql",
-        delete=False,
-    )
-    try:
-        handle.write(sql)
-        handle.flush()
-    finally:
-        handle.close()
-    return Path(handle.name)
 
 
 def main() -> None:
@@ -122,17 +92,9 @@ def main() -> None:
     print("Phase 2: 476 sessions + 16,889 answers + 1,273 subject scores")
     print("Withheld needs_revision questions remain outside the canonical bank; snapshots preserve their history.")
 
-    resolved_sql = materialize_sql(script_path)
-    try:
-        proc = subprocess.run(
-            ["psql", args.db_url, "-X", "-v", "ON_ERROR_STOP=1", "-f", str(resolved_sql)]
-        )
-    finally:
-        try:
-            resolved_sql.unlink()
-        except FileNotFoundError:
-            pass
-
+    proc = subprocess.run(
+        ["psql", args.db_url, "-X", "-v", "ON_ERROR_STOP=1", "-f", str(script_path)]
+    )
     if proc.returncode != 0:
         raise SystemExit(proc.returncode)
 
