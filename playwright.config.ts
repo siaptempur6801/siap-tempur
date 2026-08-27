@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Final RC retrigger after repairing Vercel ↔ GitHub author authentication.
 const hasParticipantCredentials = Boolean(
   process.env.E2E_PARTICIPANT_EMAIL && process.env.E2E_PARTICIPANT_PASSWORD,
 );
