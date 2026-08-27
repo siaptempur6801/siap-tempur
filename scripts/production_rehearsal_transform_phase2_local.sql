@@ -131,22 +131,22 @@ SELECT DISTINCT
   t.program_id,
   t.id,
   cs.id,
-  'single_choice',
-  '[Legacy history placeholder] Exact question content is preserved in attempt question_snapshot.',
-  'medium',
-  NULL,
-  'legacy_history_placeholder',
-  'production-legacy-history:' || t.slug || ':' || cs.slug,
-  NULL,
-  'draft',
-  1,
+  'single_choice'::text,
+  '[Legacy history placeholder] Exact question content is preserved in attempt question_snapshot.'::text,
+  'medium'::text,
+  NULL::text,
+  'legacy_history_placeholder'::text,
+  ('production-legacy-history:' || t.slug || ':' || cs.slug)::text,
+  NULL::integer,
+  'draft'::text,
+  1::integer,
   '4cf7114c-7613-4676-9aa9-64793f855f04'::uuid,
-  NULL,
-  NULL,
+  NULL::uuid,
+  NULL::timestamptz,
   now(),
   now(),
-  NULL,
-  1,
+  NULL::uuid,
+  1::integer,
   '{}'::jsonb
 FROM legacy_prod.test_answers a
 JOIN legacy_prod.questions lq ON lq.id=a.question_id
@@ -318,25 +318,25 @@ WITH classes AS (
     md5('legacy-history-exam:' || m.canonical_track_id::text || ':' || m.history_class)::uuid,
     m.canonical_program_id,
     m.canonical_track_id,
-    NULL,
+    NULL::uuid,
     et.id,
-    NULL,
-    NULL,
+    NULL::uuid,
+    NULL::uuid,
     '[Legacy History] ' || m.track_name || ' ' || initcap(m.history_class),
     'legacy-history-' || m.track_slug || '-' || m.history_class,
     'Migration-only archive exam for preserving legacy attempt history. Not user-facing.',
-    NULL,
-    NULL,
+    NULL::integer,
+    NULL::integer,
     'fixed',
     'instant',
     'free',
     'draft',
-    NULL,
-    NULL,
+    NULL::timestamptz,
+    NULL::timestamptz,
     '4cf7114c-7613-4676-9aa9-64793f855f04'::uuid,
     now(),
     now(),
-    NULL,
+    NULL::uuid,
     0
   FROM mapped m
   JOIN public.exam_types et ON et.code=m.exam_type_code
@@ -420,8 +420,8 @@ SELECT
     ))::integer
   ),
   nullif(n.total_score,'')::numeric,
-  NULL,
-  NULL,
+  NULL::numeric,
+  NULL::integer,
   nullif(n.is_passed,'')::boolean,
   nullif(n.current_question_index,'')::integer,
   nullif(n.last_activity_at,'')::timestamptz,
@@ -471,10 +471,13 @@ SELECT
   qm.canonical_question_id,
   coalesce(cq.version,1),
   oa.position_calc,
-  NULL,
+  NULL::uuid,
   qs.snapshot || jsonb_build_object(
     'legacy_question_order',nullif(oa.question_order,'')::integer,
-    'legacy_option_order',coalesce(nullif(oa.option_order,'')::jsonb,'null'::jsonb)
+    'legacy_option_order',CASE
+      WHEN nullif(oa.option_order,'') IS NULL THEN 'null'::jsonb
+      ELSE to_jsonb(oa.option_order::uuid[])
+    END
   ),
   qs.max_score,
   coalesce(nullif(oa.created_at,'')::timestamptz, now())
@@ -509,13 +512,16 @@ SELECT
   ta.id::uuid,
   CASE
     WHEN agg.selected_count=1 AND agg.mapped_count=1 THEN agg.single_canonical_option_id
-    ELSE NULL
+    ELSE NULL::uuid
   END,
   jsonb_build_object(
     'migration_source','production_legacy_rehearsal',
     'legacy_answer_id',ta.id,
     'legacy_option_id',nullif(ta.option_id,''),
-    'legacy_selected_option_ids',coalesce(nullif(ta.selected_option_ids,'')::jsonb,'[]'::jsonb),
+    'legacy_selected_option_ids',CASE
+      WHEN nullif(ta.selected_option_ids,'') IS NULL THEN '[]'::jsonb
+      ELSE to_jsonb(ta.selected_option_ids::uuid[])
+    END,
     'selected_options',coalesce(agg.selected_options,'[]'::jsonb)
   )::text,
   agg.is_correct,
@@ -570,13 +576,13 @@ SELECT
   ss.session_id::uuid,
   sm.canonical_subject_id,
   ss.score::numeric,
-  NULL,
+  NULL::numeric,
   CASE WHEN nullif(ls.max_score,'') IS NOT NULL AND ls.max_score::numeric > 0
     THEN round((ss.score::numeric / ls.max_score::numeric) * 100, 4)
-    ELSE NULL
+    ELSE NULL::numeric
   END,
   nullif(ls.passing_grade,'')::numeric,
-  CASE WHEN nullif(ls.passing_grade,'') IS NULL THEN NULL
+  CASE WHEN nullif(ls.passing_grade,'') IS NULL THEN NULL::boolean
     ELSE ss.score::numeric >= ls.passing_grade::numeric
   END,
   0,
