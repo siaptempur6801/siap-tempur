@@ -1,0 +1,79 @@
+name: CPNS Staging E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - feat/schema-v2
+    paths:
+      - 'app/actions/practice.ts'
+      - 'app/api/practice-sessions/**'
+      - 'app/cpns/**'
+      - 'components/dashboard/**'
+      - 'components/practice/**'
+      - 'src/repositories/practice-**'
+      - 'src/services/practice-**'
+      - 'src/services/exam-**'
+      - 'tests/e2e/cpns.*.ts'
+      - 'tests/e2e/specs/11-cpns-rc.spec.ts'
+      - 'playwright.cpns-rc.config.ts'
+      - '.github/workflows/cpns-staging-e2e.yml'
+      - 'supabase/functions/ci-e2e-cpns/**'
+      - 'supabase/migrations/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CI: 'true'
+  APP_ENV: staging
+  NEXT_PUBLIC_APP_ENV: staging
+  NEXT_PUBLIC_SUPABASE_URL: https://lpgrivowdcepcxradavu.supabase.co
+  NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
+  NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+  MIDTRANS_SERVER_KEY_SANDBOX: e2e-not-used
+  NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX: e2e-not-used
+
+jobs:
+  cpns-rc:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build staging app
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Run CPNS release-candidate E2E
+        run: npx playwright test --config=playwright.cpns-rc.config.ts --project=chromium-cpns-rc
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpns-playwright-report
+          path: |
+            playwright-report-cpns
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
