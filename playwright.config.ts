@@ -36,6 +36,7 @@ export default defineConfig({
         /.*8-tka-smp-mini\.spec\.ts/,
         /.*9-tka-smp-monetization\.spec\.ts/,
         /.*10-admin-workspace-authenticated\.spec\.ts/,
+        /.*11-cpns-rc\.spec\.ts/,
         /.*7-content-review-workflow\.spec\.ts/,
       ],
       use: {
