@@ -5,9 +5,21 @@ EXPECTED_PROJECT_REF="llnttutwhtvxtdktiizo"
 
 if [[ -z "${PROD_DB_URL:-}" ]]; then
   echo "ERROR: PROD_DB_URL is required."
-  echo "Set it to the production Postgres connection string, then rerun."
+  echo "Set it to the full production Postgres connection string, then rerun."
   exit 1
 fi
+
+# Require an actual PostgreSQL URI. A bare project ref/database name would make psql
+# silently fall back to a local Unix socket, which is unsafe/confusing for rehearsal.
+case "$PROD_DB_URL" in
+  postgresql://*|postgres://*) ;;
+  *)
+    echo "ERROR: PROD_DB_URL is not a PostgreSQL connection URI."
+    echo "Expected it to begin with postgresql:// or postgres://."
+    echo "Copy the full connection string from Supabase Production > Connect."
+    exit 1
+    ;;
+esac
 
 # Guard against accidentally exporting from the wrong remote project.
 if [[ "$PROD_DB_URL" != *"${EXPECTED_PROJECT_REF}"* ]]; then
@@ -15,6 +27,14 @@ if [[ "$PROD_DB_URL" != *"${EXPECTED_PROJECT_REF}"* ]]; then
   echo "Refusing to continue."
   exit 1
 fi
+
+# Explicitly refuse localhost targets for the production exporter.
+case "$PROD_DB_URL" in
+  *"127.0.0.1"*|*"localhost"*)
+    echo "ERROR: PROD_DB_URL points to localhost. Refusing production export."
+    exit 1
+    ;;
+esac
 
 if ! command -v psql >/dev/null 2>&1; then
   echo "ERROR: psql is required."
