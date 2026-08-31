@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Canonical local cutover rehearsal wrapper.
 
-Extends the dependency-safe local rehearsal executor with two local-reconstruction fixes:
+Extends the dependency-safe local rehearsal executor with faithful canonical reconstruction:
 
 1. The canonical/production `public` schema is owned by `pg_database_owner`, not `postgres`.
-   This matters for the frozen schema ACL fingerprint and for faithful rollback rehearsal.
-2. `production_cutover_runtime_schema_verify.sql` now emits 12 rows (8 runtime object rows,
-   3 ACL rows, and 1 RLS/auth row), while the older runner expected 8. This wrapper validates
-   all 12 rows. For runtime function DDL only, an exact pg_get_functiondef() hash mismatch on
-   Supabase Local may fall back to a frozen semantic pg_proc fingerprint. Production cutover
-   remains strict and must still pass the exact canonical pg_get_functiondef() hash.
+2. `production_cutover_runtime_schema_verify.sql` emits 12 rows and all are validated.
+3. The rehearsal requires `canonical_runtime_functions.sql` in the artifact directory. That file
+   is exported read-only from canonical staging only after the strict 80-function
+   pg_get_functiondef() fingerprint matches the frozen release target. The ordered executor
+   overlays those exact definitions before RLS/policies/triggers, so local rehearsal must pass
+   the same strict runtime function hash as staging rather than accepting stale source bodies.
 
 All original localhost:54322 guards, source-data gates, transforms, rollback checks, and evidence
 writing remain in force.
@@ -18,6 +18,8 @@ writing remain in force.
 from __future__ import annotations
 
 import importlib.util
+import os
+import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -33,7 +35,6 @@ mod = ordered.mod
 EXPECTED_LOCAL_FUNCTION_SEMANTIC_COUNT = "80"
 EXPECTED_LOCAL_FUNCTION_SEMANTIC_HASH = "0d3b1ab0aa86b631e90d38770fbf0e62"
 
-# Preserve the implementations already patched by the dependency-safe wrapper.
 _original_restore_legacy_source = mod.restore_legacy_source
 _original_archive_legacy_public = mod.archive_legacy_public
 _original_verify_manifest_sql = mod.verify_manifest_sql
@@ -41,17 +42,12 @@ _original_verify_manifest_sql = mod.verify_manifest_sql
 
 def restore_legacy_source_with_canonical_owner(db_url: str, schema_dump: Path, raw_dir: Path):
     manifest = _original_restore_legacy_source(db_url, schema_dump, raw_dir)
-    # Production public is owned by pg_database_owner. Match that before archiving it so rollback
-    # restores the same ownership boundary rather than a postgres-owned approximation.
     mod.exec_sql(db_url, "ALTER SCHEMA public OWNER TO pg_database_owner;")
     return manifest
 
 
 def archive_legacy_public_with_canonical_owner(db_url: str, raw_dir: Path, manifest):
     _original_archive_legacy_public(db_url, raw_dir, manifest)
-    # The original helper creates the fresh canonical public schema AUTHORIZATION postgres.
-    # Canonical staging and production both use pg_database_owner; normalize immediately before
-    # any Schema V2 bootstrap fragment is applied.
     mod.exec_sql(db_url, "ALTER SCHEMA public OWNER TO pg_database_owner;")
 
 
@@ -126,6 +122,11 @@ def verify_runtime_schema_local(db_url: str, path: Path) -> None:
         mod.die(f"runtime RLS/auth verifier failed: {rows[-1]}")
 
     if function_exact_mismatch:
+        if os.environ.get(ordered.RUNTIME_FUNCTION_OVERRIDE_ENV):
+            mod.die(
+                "strict runtime function fingerprint still differs after applying the frozen "
+                "canonical_runtime_functions.sql artifact"
+            )
         count, sem_hash = semantic_function_gate(db_url)
         local_version = mod.query(db_url, "show server_version;")
         if count != EXPECTED_LOCAL_FUNCTION_SEMANTIC_COUNT or sem_hash != EXPECTED_LOCAL_FUNCTION_SEMANTIC_HASH:
@@ -134,12 +135,8 @@ def verify_runtime_schema_local(db_url: str, path: Path) -> None:
                 f"server={local_version} count={count} hash={sem_hash}"
             )
         print(
-            "    NOTE: local pg_get_functiondef() fingerprint differs, but frozen semantic "
-            f"function fingerprint PASS (server {local_version}, {count}/{sem_hash})."
-        )
-        print(
-            "    Production cutover must still pass the strict canonical runtime_functions hash "
-            "e147d38d3801ac4c02ad41e21c02fe2a."
+            "    NOTE: local pg_get_functiondef() differs but semantic function fingerprint PASS; "
+            "this compatibility path is not used by canonical artifact rehearsal."
         )
 
 
@@ -154,5 +151,26 @@ mod.restore_legacy_source = restore_legacy_source_with_canonical_owner
 mod.archive_legacy_public = archive_legacy_public_with_canonical_owner
 mod.verify_manifest_sql = verify_manifest_sql_canonical
 
+
+def configure_function_artifact_from_args() -> None:
+    if len(sys.argv) < 2 or sys.argv[1].startswith("-"):
+        mod.die("artifact_dir positional argument is required")
+    artifact = Path(sys.argv[1]).expanduser().resolve()
+    runtime_functions = artifact / "canonical_runtime_functions.sql"
+    gate_file = artifact / "canonical_runtime_functions_gate.txt"
+    if not runtime_functions.is_file():
+        mod.die(
+            f"missing {runtime_functions}; run scripts/cutover/export_canonical_runtime_functions.sh "
+            "with STAGING_DB_URL and ARTIFACT_DIR first"
+        )
+    if not gate_file.is_file():
+        mod.die(f"missing runtime function gate file: {gate_file}")
+    gate_text = gate_file.read_text(encoding="utf-8")
+    if "80|e147d38d3801ac4c02ad41e21c02fe2a" not in gate_text:
+        mod.die("canonical runtime function gate file does not contain the frozen strict fingerprint")
+    os.environ[ordered.RUNTIME_FUNCTION_OVERRIDE_ENV] = str(runtime_functions)
+
+
 if __name__ == "__main__":
+    configure_function_artifact_from_args()
     mod.main()
