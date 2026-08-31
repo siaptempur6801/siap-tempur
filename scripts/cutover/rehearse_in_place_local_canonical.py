@@ -10,6 +10,9 @@ Extends the dependency-safe local rehearsal executor with faithful canonical rec
    pg_get_functiondef() fingerprint matches the frozen release target. The ordered executor
    overlays those exact definitions before RLS/policies/triggers, so local rehearsal must pass
    the same strict runtime function hash as staging rather than accepting stale source bodies.
+4. The final semantic gate compares numeric score values independent of PostgreSQL display scale,
+   so an exact value such as 88239.00 is compared as 88239 without coercing real fractional scores
+   to integers.
 
 All original localhost:54322 guards, source-data gates, transforms, rollback checks, and evidence
 writing remain in force.
@@ -20,6 +23,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import sys
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -38,6 +42,7 @@ EXPECTED_LOCAL_FUNCTION_SEMANTIC_HASH = "0d3b1ab0aa86b631e90d38770fbf0e62"
 _original_restore_legacy_source = mod.restore_legacy_source
 _original_archive_legacy_public = mod.archive_legacy_public
 _original_verify_manifest_sql = mod.verify_manifest_sql
+_original_final_gate = mod.final_gate
 
 
 def restore_legacy_source_with_canonical_owner(db_url: str, schema_dump: Path, raw_dir: Path):
@@ -147,9 +152,28 @@ def verify_manifest_sql_canonical(db_url: str, path: Path, expected_rows: int) -
     _original_verify_manifest_sql(db_url, path, expected_rows)
 
 
+def final_gate_scale_normalized(db_url: str) -> str:
+    """Normalize only score display scale while preserving exact numeric value semantics."""
+    raw = _original_final_gate(db_url)
+    parts = raw.split("|")
+    if len(parts) != 25:
+        mod.die(f"final migration gate expected 25 fields, got {len(parts)}: {raw}")
+
+    # Fields 10-13 are total/TWK/TIU/TKP numeric score aggregates.
+    for idx in (10, 11, 12, 13):
+        try:
+            value = Decimal(parts[idx])
+        except InvalidOperation:
+            mod.die(f"final migration gate score field {idx} is not numeric: {parts[idx]!r}")
+        parts[idx] = format(value.normalize(), "f")
+
+    return "|".join(parts)
+
+
 mod.restore_legacy_source = restore_legacy_source_with_canonical_owner
 mod.archive_legacy_public = archive_legacy_public_with_canonical_owner
 mod.verify_manifest_sql = verify_manifest_sql_canonical
+mod.final_gate = final_gate_scale_normalized
 
 
 def configure_function_artifact_from_args() -> None:
