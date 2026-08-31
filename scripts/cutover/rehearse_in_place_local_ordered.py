@@ -10,7 +10,9 @@ normalizes only those execution details:
 1) all non-FK constraints from both frozen fragments are applied first;
 2) all FOREIGN KEY constraints are applied second;
 3) function fragments are executed from temporary normalized copies with a semicolon appended
-   after every complete CREATE OR REPLACE FUNCTION/PROCEDURE definition when missing.
+   after every complete CREATE OR REPLACE FUNCTION/PROCEDURE definition when missing;
+4) when CUTOVER_CANONICAL_RUNTIME_FUNCTIONS_SQL is set, the strict staging-frozen runtime
+   function artifact is overlaid after the source fragments and before RLS/policies/triggers.
 
 The canonical runtime/schema/ACL fingerprints are still verified unchanged after bootstrap.
 """
@@ -18,6 +20,7 @@ The canonical runtime/schema/ACL fingerprints are still verified unchanged after
 from __future__ import annotations
 
 import importlib.util
+import os
 import re
 import sys
 import tempfile
@@ -40,6 +43,7 @@ FUNCTION_FRAGMENTS = {
     "12_functions_public_commerce_admin.sql",
     "13_functions_public_learning_rankings.sql",
 }
+RUNTIME_FUNCTION_OVERRIDE_ENV = "CUTOVER_CANONICAL_RUNTIME_FUNCTIONS_SQL"
 
 
 def constraint_statements(path: Path) -> list[str]:
@@ -84,13 +88,7 @@ def apply_constraints_dependency_safe(db_url: str, bootstrap: Path) -> None:
 
 
 def normalize_function_fragment(path: Path) -> tuple[str, int]:
-    """Add psql statement terminators to complete pg_get_functiondef() blocks only.
-
-    pg_get_functiondef() returns valid function DDL text but does not include the client-side
-    semicolon that separates consecutive CREATE statements. The frozen fragments intentionally
-    preserve that text. We identify each top-level CREATE at column 1, require the block to end
-    in a dollar-quote delimiter, and append exactly one semicolon when missing.
-    """
+    """Add psql statement terminators to complete pg_get_functiondef() blocks only."""
     text = path.read_text(encoding="utf-8")
     starts = list(
         re.finditer(
@@ -115,8 +113,6 @@ def normalize_function_fragment(path: Path) -> tuple[str, int]:
             normalized_parts.append(stripped + trailing)
             continue
 
-        # A complete pg_get_functiondef() block must end in a dollar-quote delimiter.
-        # Canonical dumps currently use $function$, but support arbitrary $tag$ and $$.
         if not re.search(r"(?:\$[A-Za-z_][A-Za-z0-9_]*\$|\$\$)$", stripped):
             tail = stripped[-160:].replace("\n", "\\n")
             mod.die(f"function block in {path.name} is not complete; tail={tail!r}")
@@ -152,6 +148,21 @@ def exec_function_fragment(db_url: str, path: Path) -> None:
             tmp_path.unlink()
         except FileNotFoundError:
             pass
+
+
+def apply_runtime_function_override(db_url: str) -> None:
+    raw = os.environ.get(RUNTIME_FUNCTION_OVERRIDE_ENV, "").strip()
+    if not raw:
+        return
+    path = Path(raw).expanduser().resolve()
+    if not path.is_file():
+        mod.die(f"canonical runtime function override does not exist: {path}")
+    text = path.read_text(encoding="utf-8")
+    count = len(re.findall(r"(?m)^CREATE OR REPLACE (?:FUNCTION|PROCEDURE)\b", text))
+    if count != 80:
+        mod.die(f"canonical runtime function override must contain exactly 80 definitions, got {count}")
+    print(f"    canonical runtime function overlay: {count} definitions from {path}")
+    exec_function_fragment(db_url, path)
 
 
 def bootstrap_canonical_ordered(db_url: str, repo_root: Path) -> None:
@@ -190,7 +201,11 @@ def bootstrap_canonical_ordered(db_url: str, repo_root: Path) -> None:
 
     apply_constraints_dependency_safe(db_url, bootstrap)
 
+    overlay_applied = False
     for name in after_constraints:
+        if name == "14_rls_enable.sql" and not overlay_applied:
+            apply_runtime_function_override(db_url)
+            overlay_applied = True
         path = bootstrap / name
         if not path.is_file():
             mod.die(f"missing bootstrap fragment: {path}")
@@ -221,8 +236,6 @@ select ((select md5(pg_get_triggerdef(t.oid,true)) from pg_trigger t join pg_cla
         mod.die(f"canonical auth trigger/handler fingerprint failed: {auth_gate}")
 
 
-# Patch only the bootstrap function; retain all original local-host guards, source gates,
-# transforms, final semantic gates, rollback, and evidence generation.
 mod.bootstrap_canonical = bootstrap_canonical_ordered
 
 if __name__ == "__main__":
