@@ -24,6 +24,13 @@ For aliases bound specifically to that table, equality comparisons against anoth
 normalized to cast only the auth identity side to uuid. Existing explicit `::uuid` casts are left
 untouched. No other identifiers or comparisons are rewritten.
 
+Two additional exact-clone compatibility cases are intentionally narrow:
+
+* Phase 2's historical option join contains a stale `legacy_option_id::text` cast even though both
+  sides are UUID in the exact production schema. Only that exact comparison is normalized.
+* Legacy scripts call `replace(alias.id,'-','')` on identifiers that are native UUIDs in the exact
+  clone. Only simple `.id` arguments to this specific string function are cast to text.
+
 The source SQL files remain immutable/auditable and temporary normalized copies are LOCAL only.
 """
 
@@ -39,6 +46,12 @@ _SIMPLE_NULLIF_EMPTY = re.compile(
 )
 _AUTH_IDENTITY_ALIAS = re.compile(
     r"(?i)\blegacy_prod\.auth_users_identity\s+(?:AS\s+)?([A-Za-z_][A-Za-z0-9_]*)\b"
+)
+_STALE_OPTION_UUID_TEXT_JOIN = re.compile(
+    r"(?i)\blo\.id\s*=\s*sel\.legacy_option_id\s*::\s*text\b"
+)
+_REPLACE_SIMPLE_ID = re.compile(
+    r"(?i)\breplace\(\s*([A-Za-z_][A-Za-z0-9_]*\.id)\s*,\s*'-'\s*,\s*''\s*\)"
 )
 
 
@@ -73,7 +86,21 @@ def normalized_typed_copy(source: Path) -> tuple[Path, int]:
         text,
     )
     normalized, auth_uuid_replacements = _normalize_auth_identity_uuid_equalities(normalized)
-    replacements = nullif_replacements + auth_uuid_replacements
+    normalized, option_join_replacements = _STALE_OPTION_UUID_TEXT_JOIN.subn(
+        "lo.id=sel.legacy_option_id",
+        normalized,
+    )
+    normalized, replace_id_replacements = _REPLACE_SIMPLE_ID.subn(
+        lambda m: f"replace(({m.group(1)})::text,'-','')",
+        normalized,
+    )
+
+    replacements = (
+        nullif_replacements
+        + auth_uuid_replacements
+        + option_join_replacements
+        + replace_id_replacements
+    )
 
     if replacements == 0:
         raise RuntimeError(f"no exact-clone compatibility expressions found in {source}")
