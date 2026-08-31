@@ -13,3 +13,6 @@ CREATE TRIGGER trg_tka_smp_readiness_after_progress_update AFTER UPDATE ON user_
 CREATE TRIGGER trg_tka_smp_recommendations_after_progress_delete AFTER DELETE ON user_knowledge_progress REFERENCING OLD TABLE AS old_rows FOR EACH STATEMENT EXECUTE FUNCTION app_private.refresh_tka_smp_recommendations_from_old_progress();
 CREATE TRIGGER trg_tka_smp_recommendations_after_progress_insert AFTER INSERT ON user_knowledge_progress REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT EXECUTE FUNCTION app_private.refresh_tka_smp_recommendations_from_new_progress();
 CREATE TRIGGER trg_tka_smp_recommendations_after_progress_update AFTER UPDATE ON user_knowledge_progress REFERENCING NEW TABLE AS new_rows FOR EACH STATEMENT EXECUTE FUNCTION app_private.refresh_tka_smp_recommendations_from_new_progress();
+
+-- Remove the bootstrap-only CREATE privilege before canonical ACL normalization.
+REVOKE CREATE ON SCHEMA public FROM postgres;
