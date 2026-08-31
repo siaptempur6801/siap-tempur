@@ -3,9 +3,14 @@
 
 The frozen canonical constraint fragments are alphabetically ordered and therefore are not
 DDL dependency ordered: a FOREIGN KEY can appear before the referenced PRIMARY KEY/UNIQUE
-constraint. This wrapper reuses the guarded local-only rehearsal runner but replaces only
-bootstrap_canonical() so all non-FK constraints from both frozen fragments are applied first,
-then all FOREIGN KEY constraints.
+constraint. The frozen pg_get_functiondef() fragments also omit the client statement terminator
+after each closing dollar quote. This wrapper reuses the guarded local-only rehearsal runner and
+normalizes only those execution details:
+
+1) all non-FK constraints from both frozen fragments are applied first;
+2) all FOREIGN KEY constraints are applied second;
+3) function fragments are executed from temporary normalized copies with a semicolon appended
+   after every complete CREATE OR REPLACE FUNCTION/PROCEDURE definition when missing.
 
 The canonical runtime/schema/ACL fingerprints are still verified unchanged after bootstrap.
 """
@@ -13,7 +18,9 @@ The canonical runtime/schema/ACL fingerprints are still verified unchanged after
 from __future__ import annotations
 
 import importlib.util
+import re
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -24,6 +31,15 @@ if spec is None or spec.loader is None:
     raise SystemExit(f"ERROR: cannot load {ORIGINAL}")
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
+
+FUNCTION_FRAGMENTS = {
+    "08_functions_app_private_a_m.sql",
+    "09_functions_app_private_n_r.sql",
+    "10_functions_app_private_s_z.sql",
+    "11_functions_public_wrappers.sql",
+    "12_functions_public_commerce_admin.sql",
+    "13_functions_public_learning_rankings.sql",
+}
 
 
 def constraint_statements(path: Path) -> list[str]:
@@ -67,6 +83,77 @@ def apply_constraints_dependency_safe(db_url: str, bootstrap: Path) -> None:
     mod.exec_sql(db_url, "\n".join(foreign_keys))
 
 
+def normalize_function_fragment(path: Path) -> tuple[str, int]:
+    """Add psql statement terminators to complete pg_get_functiondef() blocks only.
+
+    pg_get_functiondef() returns valid function DDL text but does not include the client-side
+    semicolon that separates consecutive CREATE statements. The frozen fragments intentionally
+    preserve that text. We identify each top-level CREATE at column 1, require the block to end
+    in a dollar-quote delimiter, and append exactly one semicolon when missing.
+    """
+    text = path.read_text(encoding="utf-8")
+    starts = list(
+        re.finditer(
+            r"(?m)^CREATE OR REPLACE (?:FUNCTION|PROCEDURE)\b",
+            text,
+        )
+    )
+    if not starts:
+        mod.die(f"no function/procedure definitions found in {path.name}")
+
+    prefix = text[: starts[0].start()]
+    normalized_parts = [prefix]
+    changed = 0
+
+    for idx, match in enumerate(starts):
+        end = starts[idx + 1].start() if idx + 1 < len(starts) else len(text)
+        block = text[match.start() : end]
+        stripped = block.rstrip()
+        trailing = block[len(stripped) :]
+
+        if stripped.endswith(";"):
+            normalized_parts.append(stripped + trailing)
+            continue
+
+        # A complete pg_get_functiondef() block must end in a dollar-quote delimiter.
+        # Canonical dumps currently use $function$, but support arbitrary $tag$ and $$.
+        if not re.search(r"(?:\$[A-Za-z_][A-Za-z0-9_]*\$|\$\$)$", stripped):
+            tail = stripped[-160:].replace("\n", "\\n")
+            mod.die(f"function block in {path.name} is not complete; tail={tail!r}")
+
+        normalized_parts.append(stripped + ";" + trailing)
+        changed += 1
+
+    normalized = "".join(normalized_parts)
+    normalized_count = len(
+        re.findall(r"(?m)^CREATE OR REPLACE (?:FUNCTION|PROCEDURE)\b", normalized)
+    )
+    if normalized_count != len(starts):
+        mod.die(f"function normalization count mismatch in {path.name}")
+    return normalized, changed
+
+
+def exec_function_fragment(db_url: str, path: Path) -> None:
+    normalized, changed = normalize_function_fragment(path)
+    print(f"    function fragment {path.name}: {changed} terminator(s) normalized")
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        suffix=f"-{path.name}",
+        prefix="siap-tempur-cutover-",
+        delete=False,
+    ) as tmp:
+        tmp.write(normalized)
+        tmp_path = Path(tmp.name)
+    try:
+        mod.exec_file(db_url, tmp_path)
+    finally:
+        try:
+            tmp_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def bootstrap_canonical_ordered(db_url: str, repo_root: Path) -> None:
     bootstrap = repo_root / "scripts" / "cutover" / "bootstrap"
 
@@ -107,7 +194,10 @@ def bootstrap_canonical_ordered(db_url: str, repo_root: Path) -> None:
         path = bootstrap / name
         if not path.is_file():
             mod.die(f"missing bootstrap fragment: {path}")
-        mod.exec_file(db_url, path)
+        if name in FUNCTION_FRAGMENTS:
+            exec_function_fragment(db_url, path)
+        else:
+            mod.exec_file(db_url, path)
 
     mod.recreate_auth_trigger(db_url)
     mod.verify_manifest_sql(
