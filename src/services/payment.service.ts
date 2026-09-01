@@ -5,7 +5,7 @@ import { commerceService } from '@/src/services/commerce.service'
 import type { Json } from '@/types/database.types'
 
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
-const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
+const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny', 'failure'])
 const QRIS_SIMULATOR_URL = 'https://simulator.sandbox.midtrans.com/openapi/qris/index'
 
 type WebhookProcessResult = {
@@ -230,7 +230,7 @@ export class PaymentService {
 
         await commerceService.applyProviderStatus({
             orderId: canonicalOrderId,
-            status,
+            status: status === 'failure' ? 'deny' : status,
             providerTransactionId: typeof result.transaction_id === 'string' ? result.transaction_id : null,
             paymentMethod: typeof result.payment_type === 'string' ? result.payment_type : null,
             amount,
@@ -294,7 +294,7 @@ export class PaymentService {
 
         await commerceService.applyProviderStatus({
             orderId: canonicalOrderId,
-            status: input.status,
+            status: input.status === 'failure' ? 'deny' : input.status,
             providerTransactionId: input.providerTransactionId ?? null,
             paymentMethod: input.paymentMethod ?? null,
             amount: input.amount,
