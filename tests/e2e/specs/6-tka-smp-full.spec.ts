@@ -70,14 +70,15 @@ async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/t
     await expect(page.getByText('TKA SMP · Soal yang perlu diulang')).toBeVisible()
     await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
 
-    const optionButtons = page.locator('article button').filter({
+    const questionCard = page.getByRole('article')
+    const optionButtons = questionCard.getByRole('button').filter({
         hasNotText: /Periksa jawaban|Periksa lagi|Lanjut/i,
     })
     const optionCount = await optionButtons.count()
     expect(optionCount).toBeGreaterThan(1)
 
-    const correct = page.getByText('Benar. Soal ini sudah selesai diulang.', { exact: true })
-    const wrong = page.getByText('Belum tepat. Pelajari pembahasan lalu coba jawaban lain.', { exact: true })
+    const correct = questionCard.getByText('Benar. Soal ini sudah selesai diulang.', { exact: true })
+    const wrong = questionCard.getByText('Belum tepat. Pelajari pembahasan lalu coba jawaban lain.', { exact: true })
 
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
@@ -100,14 +101,15 @@ async function resolveSingleChoiceRemedialAtPosition(
     await page.getByRole('button', { name: `Latihan perbaikan ${position}`, exact: true }).click()
     await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
 
-    const optionButtons = page.locator('article button').filter({
+    const questionCard = page.getByRole('article')
+    const optionButtons = questionCard.getByRole('button').filter({
         hasNotText: /Periksa jawaban|Periksa lagi|Lanjut latihan/i,
     })
     const optionCount = await optionButtons.count()
     expect(optionCount).toBeGreaterThan(1)
 
-    const correct = page.getByText('Benar. Perkembangan topik ini sudah diperbarui.', { exact: true })
-    const wrong = page.getByText('Belum tepat. Pelajari kembali pilihannya lalu coba lagi.', { exact: true })
+    const correct = questionCard.getByText('Benar. Perkembangan topik ini sudah diperbarui.', { exact: true })
+    const wrong = questionCard.getByText('Belum tepat. Pelajari kembali pilihannya lalu coba lagi.', { exact: true })
 
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
