@@ -31,12 +31,13 @@ export function trackProductEvent(
     properties: ProductAnalyticsProperties = {},
 ) {
     try {
-        const cleanProperties = Object.fromEntries(
-            Object.entries(properties).filter((entry): entry is [string, AnalyticsValue] => {
-                const value = entry[1]
-                return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-            }),
-        )
+        const cleanProperties: Record<string, AnalyticsValue> = {}
+
+        for (const [key, value] of Object.entries(properties)) {
+            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                cleanProperties[key] = value
+            }
+        }
 
         track(eventName, cleanProperties)
     } catch {
