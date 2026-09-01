@@ -13,36 +13,36 @@ function optionState(option: UniversalReviewOption, selected: Set<string>) {
 }
 
 function optionClass(state: ReturnType<typeof optionState>) {
-    if (state === 'selected-correct') return 'border-emerald-300 bg-emerald-50'
-    if (state === 'selected-wrong') return 'border-red-300 bg-red-50'
-    if (state === 'correct') return 'border-emerald-200 bg-emerald-50/60'
-    return 'border-slate-200 bg-white'
+    if (state === 'selected-correct') return 'border-emerald-700 bg-emerald-50'
+    if (state === 'selected-wrong') return 'border-red-700 bg-red-50'
+    if (state === 'correct') return 'border-emerald-500 bg-emerald-50/60'
+    return 'border-slate-900 bg-white'
 }
 
 function OptionRow({ option, selected }: { option: UniversalReviewOption; selected: Set<string> }) {
     const state = optionState(option, selected)
     const isSelected = selected.has(option.id)
     return (
-        <div className={cn('rounded-2xl border p-3.5', optionClass(state))}>
+        <div className={cn('border-2 p-3.5', optionClass(state))}>
             <div className="flex items-start gap-3">
                 <span className={cn(
-                    'flex h-8 min-w-8 items-center justify-center rounded-lg border text-xs font-bold',
+                    'flex h-8 min-w-8 items-center justify-center border-2 border-slate-900 text-xs font-black',
                     state === 'selected-correct' || state === 'correct'
-                        ? 'border-emerald-300 bg-white text-emerald-700'
+                        ? 'bg-emerald-100 text-emerald-800'
                         : state === 'selected-wrong'
-                            ? 'border-red-300 bg-white text-red-700'
-                            : 'border-slate-200 bg-slate-50 text-slate-600'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-slate-100 text-slate-700'
                 )}>
                     {option.key}
                 </span>
-                <div className="min-w-0 flex-1 space-y-2 text-sm font-medium leading-relaxed text-slate-800 md:text-base">
+                <div className="min-w-0 flex-1 space-y-2 text-sm font-semibold leading-relaxed text-slate-800 md:text-base">
                     {option.imageUrl && (
-                        <Image src={option.imageUrl} alt={`Pilihan ${option.key}`} width={640} height={360} unoptimized className="max-h-52 w-auto max-w-full rounded-xl object-contain" />
+                        <Image src={option.imageUrl} alt={`Pilihan ${option.key}`} width={640} height={360} unoptimized className="max-h-52 w-auto max-w-full object-contain" />
                     )}
                     <MathRenderer text={option.content} />
-                    <div className="flex flex-wrap gap-2 text-[11px] font-semibold">
-                        {isSelected && <span className="rounded-full bg-blue-50 px-2.5 py-1 text-blue-700">Jawaban kamu</span>}
-                        {option.isCorrect && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700">Jawaban benar</span>}
+                    <div className="flex flex-wrap gap-2 text-[11px] font-black">
+                        {isSelected && <span className="st-pill bg-blue-100 text-blue-700">Jawaban kamu</span>}
+                        {option.isCorrect && <span className="st-pill bg-emerald-100 text-emerald-800">Jawaban benar</span>}
                     </div>
                 </div>
             </div>
@@ -68,15 +68,15 @@ export default function TkaResultReview({ items }: { items: UniversalReviewItem[
                 const selected = new Set(item.selectedOptionIds)
                 const answered = item.selectedOptionIds.length > 0
                 return (
-                    <article key={item.questionId} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[var(--px-shadow-xs)] md:p-6">
+                    <article key={item.questionId} className="st-card p-5 md:p-6">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                                <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{item.subjectCode} · {item.responseType}</div>
-                                <h3 className="mt-1 text-xl font-bold text-slate-950">Soal {item.position}</h3>
+                                <div className="text-xs font-black uppercase tracking-wide text-blue-700">{item.subjectCode} · {item.responseType}</div>
+                                <h3 className="st-heading mt-1 text-xl">Soal {item.position}</h3>
                             </div>
                             <div className={cn(
-                                'inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold',
-                                item.isCorrect === true ? 'bg-emerald-50 text-emerald-700' : item.isCorrect === false ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600',
+                                'st-pill',
+                                item.isCorrect === true ? 'bg-emerald-100 text-emerald-800' : item.isCorrect === false ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600',
                             )}>
                                 {item.isCorrect === true ? <CheckCircle2 size={16}/> : item.isCorrect === false ? <XCircle size={16}/> : null}
                                 {item.isCorrect === true ? 'Benar' : item.isCorrect === false ? 'Belum tepat' : answered ? 'Dinilai' : 'Kosong'}
@@ -85,24 +85,24 @@ export default function TkaResultReview({ items }: { items: UniversalReviewItem[
                         </div>
 
                         {item.stimulus && (
-                            <section className="mt-5 rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
-                                {item.stimulus.title && <h4 className="mb-2 font-bold text-slate-950">{item.stimulus.title}</h4>}
+                            <section className="st-warning mt-5 p-4">
+                                {item.stimulus.title && <h4 className="st-heading mb-2">{item.stimulus.title}</h4>}
                                 {item.stimulus.imageUrl && (
-                                    <Image src={item.stimulus.imageUrl} alt="Stimulus soal" width={900} height={500} unoptimized className="mb-3 max-h-72 w-auto max-w-full rounded-xl object-contain" />
+                                    <Image src={item.stimulus.imageUrl} alt="Stimulus soal" width={900} height={500} unoptimized className="mb-3 max-h-72 w-auto max-w-full object-contain" />
                                 )}
-                                <div className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-slate-700 md:text-base"><MathRenderer text={item.stimulus.content} /></div>
+                                <div className="whitespace-pre-wrap text-sm font-semibold leading-relaxed text-slate-700 md:text-base"><MathRenderer text={item.stimulus.content} /></div>
                             </section>
                         )}
 
-                        <div className="mt-5 whitespace-pre-wrap text-lg font-semibold leading-relaxed text-slate-950">
+                        <div className="mt-5 whitespace-pre-wrap text-lg font-bold leading-relaxed text-slate-950">
                             <MathRenderer text={item.stem} />
                         </div>
 
                         <div className="mt-5 space-y-3">
                             {item.responseType === 'category' ? (
                                 groupedOptions(item).map(([group, options]) => (
-                                    <section key={group} className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                                        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{group}</h4>
+                                    <section key={group} className="space-y-2 border-l-4 border-blue-300 bg-slate-50 p-3">
+                                        <h4 className="text-xs font-black uppercase tracking-wide text-slate-500">{group}</h4>
                                         {options.map((option) => <OptionRow key={option.id} option={option} selected={selected} />)}
                                     </section>
                                 ))
@@ -111,9 +111,9 @@ export default function TkaResultReview({ items }: { items: UniversalReviewItem[
                             )}
                         </div>
 
-                        <section className="mt-6 border-t border-slate-100 pt-5">
-                            <h4 className="text-sm font-semibold text-slate-500">Pembahasan</h4>
-                            <div className="mt-2 whitespace-pre-wrap leading-relaxed text-slate-700">
+                        <section className="mt-6 border-t-2 border-dashed border-slate-200 pt-5">
+                            <h4 className="text-sm font-black uppercase tracking-[0.12em] text-slate-500">Pembahasan</h4>
+                            <div className="mt-2 whitespace-pre-wrap font-semibold leading-relaxed text-slate-700">
                                 {item.explanation ? <MathRenderer text={item.explanation} /> : 'Pembahasan belum tersedia.'}
                             </div>
                         </section>
