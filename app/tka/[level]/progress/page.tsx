@@ -29,32 +29,28 @@ export default async function TkaProgressPage({
     const dashboard = await tkaProgressDashboardService.getDashboard()
 
     return (
-        <main className="min-h-screen bg-[#fdfbf7] px-4 py-6 text-gray-900 md:px-8 md:py-10">
-            <div className="mx-auto max-w-6xl space-y-6">
+        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-8 md:py-8">
+            <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Link href={base} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 font-black shadow-[3px_3px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
-                        <ArrowLeft size={18}/> Kembali ke TKA SMP
+                    <Link href={base} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-slate-500 transition hover:bg-white hover:text-indigo-700">
+                        <ArrowLeft size={17}/> Kembali ke TKA SMP
                     </Link>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                            href={`${base}/pass`}
-                            className="inline-flex items-center gap-2 border-2 border-gray-900 bg-yellow-100 px-3 py-1 text-xs font-black uppercase shadow-[2px_2px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
-                        >
-                            <Crown size={16}/> Tempur Pass
-                        </Link>
-                        <span className="inline-flex items-center gap-2 border-2 border-gray-900 bg-cyan-100 px-3 py-1 text-xs font-black uppercase">
-                            <BarChart3 size={16}/> Learning Loop V1
-                        </span>
-                    </div>
+                    <Link
+                        href={`${base}/pass`}
+                        className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-50 px-3 text-sm font-black text-indigo-700 ring-1 ring-indigo-100 transition hover:bg-indigo-100"
+                    >
+                        <Crown size={16}/> Tempur Pass
+                    </Link>
                 </div>
 
-                <header className="border-2 border-gray-900 bg-white p-6 shadow-[6px_6px_0_0_#111] md:p-8">
-                    <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-700">
-                        <BarChart3 size={16}/> Progress Dashboard
+                <header className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-slate-950 via-indigo-950 to-indigo-800 p-6 text-white shadow-[0_22px_54px_rgba(79,70,229,0.16)] md:p-8">
+                    <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-indigo-400/20 blur-3xl" aria-hidden="true" />
+                    <div className="relative inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-indigo-200">
+                        <BarChart3 size={17}/> Perkembangan belajar
                     </div>
-                    <h1 className="mt-2 font-handwriting text-4xl font-black md:text-5xl">Progress Dashboard TKA SMP</h1>
-                    <p className="mt-2 max-w-3xl font-semibold text-gray-600">
-                        Satu tempat untuk membaca readiness, progress BIN dan MAT, gap yang masih terbuka, remedial aktif, weakest topics, serta tindakan belajar berikutnya. Semua data dibaca dari projection learning-loop yang sama; dashboard tidak menyimpan skor versinya sendiri.
+                    <h1 className="relative mt-2 text-4xl font-black tracking-tight text-white md:text-5xl">Perkembangan belajar TKA SMP</h1>
+                    <p className="relative mt-3 max-w-3xl font-semibold leading-relaxed text-slate-300 md:text-lg">
+                        Lihat bagian yang sudah kuat, materi yang masih perlu diperbaiki, latihan perbaikan yang aktif, dan rekomendasi langkah belajar berikutnya dalam satu tempat.
                     </p>
                 </header>
 

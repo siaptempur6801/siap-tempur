@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Map, X } from 'lucide-react'
+import { List, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SUBJECTS } from '@/lib/constants'
 import type { Answer, Question } from './types'
@@ -24,58 +24,60 @@ export default function ReviewSidebar({
     const renderNavigationButtons = (onItemClick?: () => void) => {
         return [SUBJECTS.TWK.short, SUBJECTS.TIU.short, SUBJECTS.TKP.short].map((questionType) => {
             const filteredAnswers = sortedAnswers
-                .map((ans, idx) => ({ ans, idx }))
-                .filter(({ ans }) => {
-                    const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
-                    return q.type === questionType
+                .map((answer, index) => ({ answer, index }))
+                .filter(({ answer }) => {
+                    const question = Array.isArray(answer.questions) ? answer.questions[0] : answer.questions
+                    return question.type === questionType
                 })
 
             if (filteredAnswers.length === 0) return null
 
             let numberOffset = 0
             if (questionType === SUBJECTS.TIU.short) {
-                numberOffset = sortedAnswers.filter(a => {
-                    const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-                    return q.type === SUBJECTS.TWK.short
+                numberOffset = sortedAnswers.filter((answer) => {
+                    const question = Array.isArray(answer.questions) ? answer.questions[0] : answer.questions
+                    return question.type === SUBJECTS.TWK.short
                 }).length
             } else if (questionType === SUBJECTS.TKP.short) {
-                numberOffset = sortedAnswers.filter(a => {
-                    const q = Array.isArray(a.questions) ? a.questions[0] : a.questions
-                    return q.type === SUBJECTS.TWK.short || q.type === SUBJECTS.TIU.short
+                numberOffset = sortedAnswers.filter((answer) => {
+                    const question = Array.isArray(answer.questions) ? answer.questions[0] : answer.questions
+                    return question.type === SUBJECTS.TWK.short || question.type === SUBJECTS.TIU.short
                 }).length
             }
 
             return (
                 <div key={questionType}>
-                    <div className="text-[11px] font-bold text-gray-800 mb-2 px-1 uppercase tracking-[0.2em] border-s-4 border-gray-900 ps-2">
-                        {questionType}
-                    </div>
-                    <div className="grid grid-cols-5 2xl:grid-cols-6 gap-1">
-                        {filteredAnswers.map(({ ans, idx }, positionInGroup) => {
-                            const q = Array.isArray(ans.questions) ? ans.questions[0] : ans.questions
-                            const s = getReviewStatus(ans, q)
+                    <div className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-slate-600">{questionType}</div>
+                    <div className="grid grid-cols-5 gap-1.5 2xl:grid-cols-6">
+                        {filteredAnswers.map(({ answer, index }, positionInGroup) => {
+                            const question = Array.isArray(answer.questions) ? answer.questions[0] : answer.questions
+                            const status = getReviewStatus(answer, question)
                             const displayNumber = positionInGroup + 1 + numberOffset
 
-                            let colorClass = 'bg-white text-gray-400 border-gray-300'
-                            if (q.type === 'TKP') {
-                                if (s === 'perfect') colorClass = 'bg-green-500 text-white border-green-700'
-                                else if (s === 'good') colorClass = 'bg-blue-500 text-white border-blue-700'
-                                else colorClass = 'bg-orange-500 text-white border-orange-700'
+                            let colorClass = 'border-slate-300 bg-white text-slate-500'
+                            if (question.type === 'TKP') {
+                                if (status === 'perfect') colorClass = 'border-emerald-600 bg-emerald-600 text-white'
+                                else if (status === 'good') colorClass = 'border-blue-600 bg-blue-600 text-white'
+                                else colorClass = 'border-amber-600 bg-amber-500 text-white'
                             } else {
-                                if (s === 'correct') colorClass = 'bg-green-500 text-white border-green-700'
-                                else colorClass = 'bg-red-500 text-white border-red-700'
+                                colorClass = status === 'correct'
+                                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                                    : 'border-red-600 bg-red-600 text-white'
                             }
 
                             return (
                                 <button
-                                    key={ans.id}
+                                    type="button"
+                                    key={answer.id}
                                     onClick={() => {
-                                        setCurrentIndex(idx)
-                                        if (onItemClick) onItemClick()
+                                        setCurrentIndex(index)
+                                        onItemClick?.()
                                     }}
+                                    aria-label={`Buka pembahasan soal ${displayNumber}`}
+                                    aria-current={currentIndex === index ? 'true' : undefined}
                                     className={cn(
-                                        "aspect-square w-full rounded-[6px] font-bold text-[11px] flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
-                                        currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-1 scale-105 z-10 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]' : 'hover:scale-[1.03]',
+                                        'st-focus aspect-square w-full rounded-md border text-xs font-black transition focus-visible:outline-none',
+                                        currentIndex === index && 'ring-2 ring-blue-500 ring-offset-2',
                                         colorClass
                                     )}
                                 >
@@ -89,72 +91,66 @@ export default function ReviewSidebar({
         })
     }
 
+    const legend = (
+        <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-slate-600">
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-emerald-600" /> Benar/tinggi</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-red-600" /> Salah</span>
+            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-blue-600" /> Poin sedang</span>
+        </div>
+    )
+
     return (
         <>
-            {/* Desktop Sidebar */}
             <AnimatePresence initial={false}>
                 {showNav && (
                     <motion.aside
-                        initial={{ x: 280, opacity: 0 }}
+                        initial={{ x: 32, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: 280, opacity: 0 }}
-                        transition={{ duration: 0.22 }}
-                        className="hidden lg:flex min-h-[720px] shrink-0 flex-col overflow-hidden rounded-xl border-2 border-gray-900 bg-[#fff9c4]/90 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] backdrop-blur-sm lg:w-80 2xl:w-96"
+                        exit={{ x: 32, opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="hidden min-h-[680px] w-80 shrink-0 flex-col overflow-hidden border-2 border-slate-900 bg-white lg:flex 2xl:w-96"
                     >
-                        <div className="shrink-0 px-3 py-4 border-b-2 border-dashed border-gray-300 font-bold text-sm flex items-center gap-2 bg-white/50">
-                            <Map size={16} />
-                            <span>Daftar Pembahasan</span>
+                        <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-4 py-4 text-sm font-black text-slate-900">
+                            <List size={17} /> Daftar soal
                         </div>
-
-                        <div className="min-h-0 flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-                            <div className="hidden lg:flex items-center gap-3 text-[11px] text-gray-700">
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-500 border border-green-700"></div><span>Benar</span></div>
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-700"></div><span>Salah</span></div>
-                                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-blue-700"></div><span>Sedang</span></div>
-                            </div>
+                        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+                            {legend}
                             {renderNavigationButtons()}
                         </div>
                     </motion.aside>
                 )}
             </AnimatePresence>
 
-            {/* Mobile Sidebar */}
             <AnimatePresence>
                 {showNav && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[1px] lg:hidden"
+                        className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-sm lg:hidden"
                         onClick={() => setShowNav(false)}
                     >
                         <motion.aside
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
-                            transition={{ duration: 0.22 }}
-                            className="ml-auto h-full w-[260px] border-l border-gray-900 bg-[#fff9c4] shadow-[-4px_0_0_0_rgba(0,0,0,1)]"
+                            transition={{ duration: 0.18 }}
+                            className="ml-auto flex h-full w-[min(86vw,320px)] flex-col border-l-2 border-slate-900 bg-white"
                             onClick={(event) => event.stopPropagation()}
                         >
-                            <div className="px-3 py-3 border-b-2 border-dashed border-gray-300 font-bold text-sm flex items-center justify-between bg-white/30">
-                                <div className="flex items-center gap-2">
-                                    <Map size={16} />
-                                    <span>Daftar Pembahasan</span>
-                                </div>
+                            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
+                                <div className="flex items-center gap-2 text-sm font-black text-slate-900"><List size={17} /> Daftar soal</div>
                                 <button
+                                    type="button"
                                     onClick={() => setShowNav(false)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-full border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                    aria-label="Tutup daftar soal"
+                                    className="st-focus flex h-11 w-11 items-center justify-center border border-slate-300 bg-white text-slate-700"
                                 >
-                                    <X size={14} />
+                                    <X size={18} />
                                 </button>
                             </div>
-
-                            <div className="px-2 py-3 space-y-3 h-[calc(100%-57px)] overflow-y-auto">
-                                <div className="flex items-center gap-3 text-[11px] text-gray-700">
-                                    <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-green-500 border border-green-700"></div><span>Benar</span></div>
-                                    <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-700"></div><span>Salah</span></div>
-                                    <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-full bg-blue-500 border border-blue-700"></div><span>Sedang</span></div>
-                                </div>
+                            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+                                {legend}
                                 {renderNavigationButtons(() => setShowNav(false))}
                             </div>
                         </motion.aside>

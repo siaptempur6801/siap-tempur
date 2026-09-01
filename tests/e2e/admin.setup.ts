@@ -113,7 +113,7 @@ setup('provision disposable ADMIN staging user', async ({ page }) => {
         await page.goto('/login?returnTo=%2Fadmin%3Fprogram%3DCPNS%26track%3DSKD')
         await page.locator('input[type="email"]').fill(email)
         await page.locator('input[type="password"]').fill(password)
-        await page.getByRole('button', { name: /Masuk|Login/i }).click()
+        await page.getByRole('button', { name: 'Masuk', exact: true }).click()
         await page.waitForURL(/\/admin(?:\?.*)?$/)
         await page.context().storageState({ path: authFile })
     } catch (error) {

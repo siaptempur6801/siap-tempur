@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import { AlertTriangle, RotateCcw } from 'lucide-react'
-import PaperBackground from '@/components/PaperBackground'
 
 export default function DashboardError({
     error,
@@ -16,31 +15,24 @@ export default function DashboardError({
     }, [error])
 
     return (
-        <div className="w-full flex-1 flex flex-col relative font-body items-center justify-center min-h-[60vh]">
-            <PaperBackground variant="light" />
-            
-            <div className="relative z-10 text-center space-y-6 max-w-lg p-8 bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl rotate-1">
-                {/* Tape Effect */}
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-red-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
-
-                <div className="flex justify-center">
-                    <AlertTriangle className="w-20 h-20 text-red-500 animate-pulse" />
+        <div className="st-product flex min-h-[60vh] w-full items-center justify-center px-4 py-10 font-body">
+            <section className="st-card-md w-full max-w-xl bg-red-50 p-7 text-center md:p-9" role="alert">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center border-2 border-[var(--st-ink)] bg-white shadow-[3px_3px_0_var(--st-ink)]">
+                    <AlertTriangle className="h-7 w-7 text-red-600" />
                 </div>
-                
-                <h2 className="font-handwriting text-4xl font-bold text-gray-900">Waduh, Ada Masalah!</h2>
-                
-                <p className="font-handwriting text-xl text-gray-600">
-                    Sepertinya ada gangguan pada komponen dashboard ini. Jangan panik, cukup muat ulang.
+                <div className="st-kicker mt-5 bg-red-100">Ada gangguan</div>
+                <h2 className="st-heading-display mt-4 text-3xl md:text-4xl">Dashboard belum bisa dimuat.</h2>
+                <p className="st-muted mx-auto mt-3 max-w-md text-sm font-semibold leading-relaxed md:text-base">
+                    Coba muat ulang bagian ini. Jika masalah masih muncul, kembali beberapa saat lagi tanpa perlu mengulang aktivitas yang sudah tersimpan.
                 </p>
-
                 <button
+                    type="button"
                     onClick={() => reset()}
-                    className="mt-4 flex items-center justify-center w-full py-4 gap-2 font-handwriting text-2xl font-bold rounded-lg transition-all cursor-pointer shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] bg-red-500 text-white border-2 border-gray-900"
+                    className="st-button mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 bg-blue-600 px-5 py-3 font-black text-white sm:w-auto"
                 >
-                    <RotateCcw className="w-6 h-6" />
-                    Coba Lagi
+                    <RotateCcw size={18} /> Coba lagi
                 </button>
-            </div>
+            </section>
         </div>
     )
 }

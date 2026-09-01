@@ -37,8 +37,8 @@ async function answerFirstVisibleOption(page: import('@playwright/test').Page) {
 
 async function goToLastQuestion(page: import('@playwright/test').Page) {
     const navigator = page.locator('aside')
-    await navigator.getByRole('button', { name: '30', exact: true }).click()
-    await expect(page.getByText('Soal 30 / 30')).toBeVisible()
+    await navigator.getByRole('button', { name: 'Buka soal 30', exact: true }).click()
+    await expect(page.getByText('Soal 30 dari 30')).toBeVisible()
 }
 
 async function submitReviewAndWait(
@@ -67,17 +67,18 @@ async function submitReviewAndWait(
 }
 
 async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/test').Page) {
-    await expect(page.getByText('TKA SMP · Mode Ulang Soal Salah')).toBeVisible()
+    await expect(page.getByText('TKA SMP · Soal yang perlu diulang')).toBeVisible()
     await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
 
-    const optionButtons = page.locator('article button').filter({
+    const questionCard = page.getByRole('article')
+    const optionButtons = questionCard.getByRole('button').filter({
         hasNotText: /Periksa jawaban|Periksa lagi|Lanjut/i,
     })
     const optionCount = await optionButtons.count()
     expect(optionCount).toBeGreaterThan(1)
 
-    const correct = page.getByText('Benar! Soal ini sudah dituntaskan.', { exact: true })
-    const wrong = page.getByText('Belum tepat. Pilih jawaban lain lalu coba lagi.', { exact: true })
+    const correct = questionCard.getByText('Benar. Soal ini sudah selesai diulang.', { exact: true })
+    const wrong = questionCard.getByText('Belum tepat. Pelajari pembahasan lalu coba jawaban lain.', { exact: true })
 
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
@@ -96,18 +97,19 @@ async function resolveSingleChoiceRemedialAtPosition(
     page: import('@playwright/test').Page,
     position: number,
 ) {
-    await expect(page.getByText('TKA SMP · Remedial Otomatis')).toBeVisible()
-    await page.getByRole('button', { name: `Remedial ${position}`, exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Latihan perbaikan', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: `Latihan perbaikan ${position}`, exact: true }).click()
     await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
 
-    const optionButtons = page.locator('article button').filter({
-        hasNotText: /Periksa jawaban|Periksa lagi|Lanjut Remedial/i,
+    const questionCard = page.getByRole('article')
+    const optionButtons = questionCard.getByRole('button').filter({
+        hasNotText: /Periksa jawaban|Periksa lagi|Lanjut latihan/i,
     })
     const optionCount = await optionButtons.count()
     expect(optionCount).toBeGreaterThan(1)
 
-    const correct = page.getByText('Benar! Evidence mastery sudah diperbarui.', { exact: true })
-    const wrong = page.getByText('Belum tepat. Pelajari lagi pilihannya lalu coba ulang.', { exact: true })
+    const correct = questionCard.getByText('Benar. Perkembangan topik ini sudah diperbarui.', { exact: true })
+    const wrong = questionCard.getByText('Belum tepat. Pelajari kembali pilihannya lalu coba lagi.', { exact: true })
 
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
@@ -126,8 +128,8 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     const session = await freshDisposableTkaSession(page)
     await page.goto('/tka/smp')
 
-    await expect(page.getByRole('heading', { name: /TKA Sekolah Menengah Pertama/i })).toBeVisible()
-    await expect(page.getByText('Track aktif')).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Apa yang sebaiknya kamu kerjakan hari ini/i })).toBeVisible()
+    await expect(page.getByText('Jalur belajar aktif')).toBeVisible()
 
     const fullCard = page.locator('article').filter({
         has: page.getByRole('heading', { name: 'Tryout Lengkap TKA SMP', exact: true }),
@@ -140,32 +142,32 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
     await expect(page.getByText('TKA SMP · Full Tryout')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Bahasa Indonesia' })).toBeVisible()
-    await expect(page.getByText('Soal 1 / 30')).toBeVisible()
+    await expect(page.getByText('Soal 1 dari 30')).toBeVisible()
 
     await answerFirstVisibleOption(page)
-    await page.getByRole('button', { name: 'Tandai', exact: true }).click()
-    await expect(page.getByText(/Terjawab section:/)).toContainText('1/30')
+    await page.getByRole('button', { name: 'Tandai untuk ditinjau', exact: true }).click()
+    await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/30')
     await page.waitForTimeout(800)
 
     // Reload proves answer + flag are persisted independently of local browser state.
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Bahasa Indonesia' })).toBeVisible()
-    await expect(page.getByText(/Terjawab section:/)).toContainText('1/30')
+    await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/30')
     await expect(page.getByRole('button', { name: 'Ditandai', exact: true })).toBeVisible()
 
     await goToLastQuestion(page)
     page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Selesai Section', exact: true }).click()
+    await page.getByRole('button', { name: 'Selesaikan bagian', exact: true }).click()
 
     await expect(page.getByRole('heading', { name: 'Matematika' })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText('Soal 1 / 30')).toBeVisible()
+    await expect(page.getByText('Soal 1 dari 30')).toBeVisible()
 
     await answerFirstVisibleOption(page)
-    await expect(page.getByText(/Terjawab section:/)).toContainText('1/30')
+    await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/30')
     await goToLastQuestion(page)
 
     page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Kirim Tryout', exact: true }).click()
+    await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     const resultUrl = page.url()
@@ -173,8 +175,8 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     expect(attemptMatch).not.toBeNull()
     const attemptId = attemptMatch?.[1] ?? ''
 
-    await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Review & Pembahasan' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Sesi selesai. Sekarang lihat apa yang perlu diperbaiki.', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Tinjau jawaban satu per satu', exact: true })).toBeVisible()
     await expect(page.getByText('Full Tryout · TKA/SMP')).toBeVisible()
     await expect(page.getByText(/2\/60/)).toBeVisible()
 
@@ -237,7 +239,7 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     const singleChoiceRemedial = remedialBefore.items.find((item) => item.status === 'pending' && item.response_type === 'single_choice')
     expect(singleChoiceRemedial).toBeDefined()
 
-    const remedialLink = page.getByRole('link', { name: 'Mulai Remedial (10)', exact: true })
+    const remedialLink = page.getByRole('link', { name: 'Mulai latihan (10)', exact: true })
     await expect(remedialLink).toBeVisible()
     await remedialLink.click()
     await page.waitForURL(/\/tka\/smp\/remedial\/[0-9a-f-]+$/i)
@@ -276,7 +278,7 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await page.goto(resultUrl)
     await expect(page.getByRole('heading', { name: 'Kesiapan TKA SMP' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya' })).toBeVisible()
-    const repeatWrongLink = page.getByRole('link', { name: /Ulang Soal Salah \(\d+\)/i })
+    const repeatWrongLink = page.getByRole('link', { name: /Ulangi soal \(\d+\)/i })
     await expect(repeatWrongLink).toBeVisible()
     await repeatWrongLink.click()
     await page.waitForURL(/\/tka\/smp\/wrong-questions$/i)
@@ -305,23 +307,23 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     // Final Milestone 3 closure: the consolidated dashboard must reflect the same
     // persisted state after exam -> remedial -> Repeat Wrong, not a stale snapshot.
     await page.goto(resultUrl)
-    const dashboardLink = page.getByRole('link', { name: 'Lihat Progress Dashboard', exact: true })
-    await expect(dashboardLink).toBeVisible()
-    await dashboardLink.click()
+    const progressLink = page.getByRole('link', { name: /Perkembangan|Progress/i }).first()
+    await expect(progressLink).toBeVisible()
+    await progressLink.click()
     await page.waitForURL(/\/tka\/smp\/progress$/i)
 
-    await expect(page.getByRole('heading', { name: 'Progress Dashboard TKA SMP', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Perkembangan belajar TKA SMP', exact: true })).toBeVisible()
     const finalReadinessCard = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Kesiapan TKA SMP' }) })
     await expect(finalReadinessCard).toContainText(`${readinessAfterRepeatWrong.readiness_percent.toFixed(1)}%`)
 
     const completedCard = page.locator('article').filter({ hasText: 'Tryout selesai' }).first()
     await expect(completedCard).toContainText('1')
-    const gapCard = page.locator('article').filter({ hasText: 'Gap terbuka' }).first()
+    const gapCard = page.locator('article').filter({ hasText: 'Soal perlu diulang' }).first()
     await expect(gapCard).toContainText(String(openAfterRepeatWrong.length))
-    const remedialCard = page.locator('article').filter({ hasText: 'Remedial pending' }).first()
+    const remedialCard = page.locator('article').filter({ hasText: 'Latihan perbaikan' }).first()
     await expect(remedialCard).toContainText(String(remedialAfterRepeatWrong.session?.pending_items ?? 0))
 
-    await expect(page.getByRole('heading', { name: 'Progress per mapel', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Lihat kekuatan tiap mata pelajaran', exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya', exact: true })).toBeVisible()
     if (focusAfterRepeatWrong[0]) {
         await expect(page.getByText(focusAfterRepeatWrong[0].topic_name, { exact: true }).first()).toBeVisible()

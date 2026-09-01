@@ -1,25 +1,21 @@
 'use client'
 
-import { useState } from 'react'
-import { motion, Variants } from 'framer-motion'
 import Link from 'next/link'
 import {
-    Flame,
-    Zap,
     ArrowRight,
-    Trophy,
-    BookOpen,
-    TrendingUp,
     BarChart3,
-    CheckCircle2,
-    Sparkles,
+    BookOpen,
     Brain,
+    CalendarDays,
+    CheckCircle2,
+    Clock3,
+    ListChecks,
+    Target,
+    Ticket,
     User,
-    Building2,
-    Rocket,
-    Ticket
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import TrackedLink from '@/components/analytics/TrackedLink'
 
 interface DashboardData {
     user: {
@@ -28,7 +24,6 @@ interface DashboardData {
         streak: number
         tryoutQuota: number
     }
-
     stats: {
         totalSessions: number
         xp: number
@@ -75,396 +70,326 @@ interface Props {
     greeting: { greeting: string; message: string }
 }
 
-const TYPE_ICONS = {
-    TWK: <BookOpen className="w-5 h-5" />,
-    TIU: <Brain className="w-5 h-5" />,
-    TKP: <User className="w-5 h-5" />,
+type SectionKey = 'twk' | 'tiu' | 'tkp'
+
+const SECTION_META: Record<SectionKey, { label: string; icon: typeof BookOpen; tone: string; bar: string }> = {
+    twk: { label: 'TWK', icon: BookOpen, tone: 'bg-rose-50 text-rose-700', bar: 'bg-rose-500' },
+    tiu: { label: 'TIU', icon: Brain, tone: 'bg-yellow-100 text-amber-800', bar: 'bg-amber-500' },
+    tkp: { label: 'TKP', icon: User, tone: 'bg-blue-100 text-blue-700', bar: 'bg-blue-600' },
+}
+
+function getWeakestSection(progress: DashboardData['progress']) {
+    return (Object.keys(progress) as SectionKey[]).reduce((weakest, key) => {
+        const current = progress[key]
+        const weakestValue = progress[weakest]
+        const currentRatio = current.target > 0 ? current.score / current.target : 1
+        const weakestRatio = weakestValue.target > 0 ? weakestValue.score / weakestValue.target : 1
+        return currentRatio < weakestRatio ? key : weakest
+    }, 'twk' as SectionKey)
+}
+
+function getActiveSessionAction(activeSession: DashboardData['activeSession']) {
+    if (!activeSession) return null
+
+    const actions = {
+        'full-tryout': {
+            href: '/cpns/dashboard/tryout',
+            title: 'Lanjutkan tryout',
+            description: 'Sesi tryout kamu masih berjalan. Selesaikan dulu sebelum memulai latihan lain.',
+        },
+        'mini-tryout': {
+            href: '/cpns/dashboard/mini-tryout',
+            title: 'Lanjutkan mini tryout',
+            description: 'Mini tryout kamu belum selesai. Lanjutkan dari sesi yang sedang berjalan.',
+        },
+        'drilling-materi': {
+            href: '/cpns/dashboard/drilling-materi',
+            title: 'Lanjutkan latihan fokus',
+            description: 'Sesi latihan fokus kamu masih aktif. Lanjutkan dari bagian terakhir.',
+        },
+        event: {
+            href: '/cpns/dashboard/event',
+            title: 'Lanjutkan event',
+            description: 'Kamu masih memiliki sesi event yang sedang berjalan.',
+        },
+    }
+
+    return actions[activeSession.kind]
 }
 
 export default function DashboardClient({ data, greeting }: Props) {
-    const [activeTab, setActiveTab] = useState<'last' | 'best'>('last')
+    const weakestKey = getWeakestSection(data.progress)
+    const weakest = data.progress[weakestKey]
+    const weakestMeta = SECTION_META[weakestKey]
+    const allTargetsReached = (Object.keys(data.progress) as SectionKey[]).every((key) => data.progress[key].passed)
+    const activeSessionAction = getActiveSessionAction(data.activeSession)
 
-
-    const containerVariants: Variants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.15 }
-        }
-    }
-
-    const itemVariants: Variants = {
-        hidden: { opacity: 0, y: 10, rotate: -1 },
-        visible: {
-            opacity: 1,
-            y: 0,
-            rotate: 0,
-            transition: { type: 'spring', stiffness: 100 }
-        }
-    }
-
-    const activeSessionCta = data.activeSession
-        ? {
-            'full-tryout': {
-                href: '/cpns/dashboard/tryout',
-                title: 'Lanjutkan Tryout',
-                description: 'Sesi tryout kamu masih berjalan',
-            },
-            'mini-tryout': {
+    const recommendation = activeSessionAction ?? (
+        data.lastExam
+            ? allTargetsReached
+                ? {
+                    href: '/cpns/dashboard/mini-tryout',
+                    title: 'Jaga konsistensi dengan mini tryout',
+                    description: 'Target TWK, TIU, dan TKP sudah tercapai pada ringkasanmu. Uji lagi satu bagian untuk menjaga ritme belajar.',
+                }
+                : {
+                    href: '/cpns/dashboard/drilling-materi',
+                    title: `Perkuat ${weakestMeta.label} lebih dulu`,
+                    description: `Skor ${weakestMeta.label} kamu masih ${weakest.score} dari target ${weakest.target}. Fokuskan latihan di bagian ini sebelum full tryout berikutnya.`,
+                }
+            : {
                 href: '/cpns/dashboard/mini-tryout',
-                title: 'Lanjutkan Mini Tryout',
-                description: 'Sesi mini tryout kamu masih berjalan',
-            },
-            'drilling-materi': {
-                href: '/cpns/dashboard/drilling-materi',
-                title: 'Lanjutkan Drilling Materi',
-                description: 'Sesi drilling materi kamu masih berjalan',
-            },
-            event: {
-                href: '/cpns/dashboard/event',
-                title: 'Lanjutkan Event',
-                description: 'Sesi event tryout kamu masih berjalan',
-            },
-        }[data.activeSession.kind]
-        : null
-    const primaryCtaHref = activeSessionCta?.href ?? '/cpns/dashboard/tryout'
-    const primaryCtaTitle = activeSessionCta?.title ?? 'Mulai Tryout'
-    const primaryCtaDescription = activeSessionCta?.description ?? 'Asah kemampuan TWK, TIU, TKP'
+                title: 'Mulai dari mini tryout',
+                description: 'Ambil satu bagian terlebih dahulu agar kamu punya hasil awal untuk menentukan fokus belajar berikutnya.',
+            }
+    )
+
+    const bestScore = data.bestExam?.total_score ?? null
 
     return (
-        <motion.div
-            className="space-y-8 font-handwriting"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            {/* 1. HERO HEADER */}
-            <motion.div variants={itemVariants} className="relative z-10">
-                <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 mb-2">
-                    {greeting.greeting}, <span className="text-blue-600 underline decoration-wavy decoration-2">{data.user.name}</span>!
+        <div data-testid="cpns-dashboard-ready" className="space-y-8 md:space-y-10">
+            <header className="max-w-4xl">
+                <span className="st-kicker">{greeting.greeting}, {data.user.name}</span>
+                <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">
+                    Apa yang sebaiknya kamu kerjakan hari ini?
                 </h1>
-                <p className="text-gray-600 text-xl font-medium">{greeting.message}</p>
-            </motion.div>
+                <p className="st-muted mt-4 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
+                    Gunakan hasil belajarmu untuk memilih langkah berikutnya, bukan sekadar mengulang tryout.
+                </p>
+            </header>
 
-            {/* 2. HERO CARD - QUICK START */}
-            <motion.div variants={itemVariants}>
-                <motion.div
-                    whileHover={{ scale: 1.01 }}
-                    className={cn(
-                        "relative overflow-hidden p-8 md:p-10 transition-all duration-300",
-                        "bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
-                    )}
-                >
-                    {/* Paper Lines Background */}
-                    <div className="absolute inset-0 z-0 opacity-20 pointer-events-none"
-                        style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 1.9rem, #9ca3af 2rem)", backgroundSize: "100% 2rem", marginTop: "1rem" }}
-                    />
-
-                    <div className="relative z-10">
-                        {/* Status Bar */}
-                        <div className="flex flex-col md:flex-row items-center md:justify-between gap-4 mb-8 max-w-6xl mx-auto">
-                            <div className="flex flex-wrap justify-center md:justify-start items-center gap-4">
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-green-300 border-2 border-gray-900 text-gray-900 text-sm font-bold uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform -rotate-1">
-                                    <Rocket className="w-4 h-4 fill-current" /> Siap Tempur
-                                </div>
-
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-yellow-200 border-2 border-gray-900 text-gray-900 text-sm font-bold shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform rotate-1">
-                                    <Trophy className="w-4 h-4 text-yellow-700 fill-current" /> Rank: {data.stats.rank ? `#${data.stats.rank}` : '-'}
-                                </div>
-                            </div>
-
-                            <Link
-                                href="/cpns/dashboard/beli-paket"
-                                className="inline-flex items-center gap-3 px-4 py-2 bg-blue-100 border-2 border-gray-900 text-gray-900 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all text-sm group"
-                            >
-                                <Ticket className="w-5 h-5 text-blue-600 -rotate-12" /> <span className="text-xl text-blue-700">{data.user.tryoutQuota}</span> <span>Tiket Sisa</span>
-                                <Sparkles className="w-4 h-4 text-blue-500 group-hover:animate-spin" />
-                            </Link>
-                        </div>
-
-                        {/* Two Columns Layout for Primary Actions */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
-                            {/* Main CTA: Tryout */}
-                            <Link
-                                href={primaryCtaHref}
-                                className="group relative p-8 bg-blue-600 text-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex flex-col justify-between min-h-[160px]"
-                            >
-                                <div>
-                                    <div className="w-12 h-12 bg-white border-2 border-gray-900 flex items-center justify-center text-blue-600 mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.2)]">
-                                        <Building2 className="w-6 h-6" />
-                                    </div>
-                                    <h3 className="text-3xl font-black mb-1">{primaryCtaTitle}</h3>
-                                    <p className="text-blue-100 font-medium">{primaryCtaDescription}</p>
-                                </div>
-                                <div className="absolute top-6 right-6 opacity-20 group-hover:opacity-40 transition-opacity">
-                                    <ArrowRight size={48} />
-                                </div>
-                            </Link>
-
-                            {/* Secondary CTA: Ranking */}
-                            <Link
-                                href="/cpns/dashboard/ranking"
-                                className="group relative p-8 bg-white text-gray-900 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all flex flex-col justify-between min-h-[160px]"
-                            >
-                                <div>
-                                    <div className="w-12 h-12 bg-yellow-400 border-2 border-gray-900 flex items-center justify-center text-gray-900 mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]">
-                                        <BarChart3 className="w-6 h-6" />
-                                    </div>
-                                    <h3 className="text-3xl font-black mb-1">Ranking Nasional</h3>
-                                    <p className="text-gray-500 font-medium tracking-tight">Cek posisimu di antara {data.stats.rank ? 'peserta lain' : 'pejuang ASN'}</p>
-                                </div>
-                                <div className="absolute bottom-6 right-6">
-                                    <motion.div
-                                        animate={{ y: [0, -4, 0] }}
-                                        transition={{ repeat: Infinity, duration: 2 }}
-                                    >
-                                        <ArrowRight className="w-8 h-8 text-gray-300 group-hover:text-yellow-500 transition-colors" />
-                                    </motion.div>
-                                </div>
-                            </Link>
-                        </div>
-
+            <section className="grid gap-5 lg:grid-cols-[1.7fr_0.8fr]" aria-label="Langkah berikutnya">
+                <article className="st-card-lg relative overflow-hidden p-6 md:p-8">
+                    <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rotate-12 border-2 border-dashed border-blue-300 bg-blue-50" aria-hidden="true" />
+                    <div className="relative">
+                        <span className="st-pill bg-yellow-100">Langkah berikutnya</span>
+                        <h2 className="st-heading mt-5 max-w-2xl text-2xl md:text-3xl">
+                            {recommendation.title}
+                        </h2>
+                        <p className="st-muted mt-3 max-w-2xl font-semibold leading-relaxed">
+                            {recommendation.description}
+                        </p>
+                        <TrackedLink
+                            href={recommendation.href}
+                            eventName="px_dashboard_action"
+                            eventProperties={{ program: 'cpns', surface: 'dashboard', cta: data.activeSession ? 'resume_recommendation' : 'learning_recommendation' }}
+                            className="st-button st-focus mt-6 inline-flex min-h-11 items-center justify-center gap-2 bg-blue-600 px-5 py-3 text-sm font-black text-white"
+                        >
+                            Kerjakan sekarang <ArrowRight size={17} />
+                        </TrackedLink>
                     </div>
-                </motion.div>
-            </motion.div>
+                </article>
 
-            {/* 3. GRID LAYOUT */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* LEFT COLUMN (Last Exam + Leaderboard) */}
-                <div className="lg:col-span-2 space-y-8">
-                    {/* PROGRESS SECTION */}
-                    <motion.div variants={itemVariants}>
-                        <div className="h-full bg-white border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-6 md:p-8 relative">
-                            {/* Tape effect */}
-                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/90 border-l border-r border-white/50 rotate-1 shadow-sm opacity-80 z-20"></div>
-
-                            {/* Header & Tabs */}
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 relative z-10">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-green-100 border-2 border-gray-900 text-green-700 rounded-md">
-                                        <TrendingUp className="w-6 h-6" />
-                                    </div>
-                                    <h3 className="font-bold text-2xl text-gray-900">Hasil Tryout</h3>
-                                </div>
-
-                                {/* Tab Switcher */}
-                                <div className="flex items-center gap-2 p-1 bg-gray-100 border-2 border-gray-900 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <button
-                                        onClick={() => setActiveTab('last')}
-                                        className={cn(
-                                            "px-4 py-1.5 text-xs font-bold transition-all rounded-md",
-                                            activeTab === 'last'
-                                                ? "bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-gray-900"
-                                                : "text-gray-500 hover:text-gray-900"
-                                        )}
-                                    >
-                                        Terakhir
-                                    </button>
-                                    <button
-                                        onClick={() => setActiveTab('best')}
-                                        className={cn(
-                                            "px-4 py-1.5 text-xs font-bold transition-all rounded-md",
-                                            activeTab === 'best'
-                                                ? "bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-gray-900"
-                                                : "text-gray-500 hover:text-gray-900"
-                                        )}
-                                    >
-                                        Tertinggi
-                                    </button>
-                                </div>
-
-                                {activeTab === 'last' && data.lastExam && (
-                                    <div className="ml-auto text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-300">
-                                        {data.lastExam.date}
-                                    </div>
-                                )}
-                                {activeTab === 'best' && data.bestExam && (
-                                    <div className="ml-auto text-sm font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full border border-gray-300">
-                                        {data.bestExam.date}
-                                    </div>
-                                )}
-                            </div>
-
-
-                            {/* Exam Result Display */}
-                            <div className="flex flex-col gap-4 relative z-10 font-sans">
-                                {((activeTab === 'last' && data.lastExam) || (activeTab === 'best' && data.bestExam)) ? (
-                                    <>
-                                        {/* Total Score Banner */}
-                                        <div className="p-4 bg-gray-900 text-white rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.2)] mb-2 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-2 sm:gap-0 text-center sm:text-left">
-                                            <div>
-                                                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Total Skor</div>
-                                                <div className="text-4xl font-black tracking-tight text-white">
-                                                    {activeTab === 'last' ? data.lastExam?.total_score : data.bestExam?.total_score}
-                                                </div>
-                                            </div>
-                                            <div className="text-center sm:text-right">
-                                                <div className={cn(
-                                                    "px-3 py-1 text-xs font-bold uppercase rounded-full inline-block mb-1",
-                                                    (activeTab === 'last' ? data.lastExam?.passed : data.bestExam?.passed) ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                                                )}>
-                                                    {(activeTab === 'last' ? data.lastExam?.passed : data.bestExam?.passed) ? "LULUS SKD" : "BELUM LULUS"}
-                                                </div>
-                                                <div className="text-xs text-gray-400">Passing Grade: 311</div>
-                                            </div>
-                                        </div>
-
-                                        {/* Score Breakdown */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                            {(['twk', 'tiu', 'tkp'] as const).map((type) => {
-                                                const exam = activeTab === 'last' ? data.lastExam : data.bestExam
-                                                const score = exam ? exam[`score_${type}`] : 0
-                                                const target = data.progress[type].target // Reuse target from constants
-                                                const passed = score >= target
-                                                const typeUpper = type.toUpperCase() as 'TWK' | 'TIU' | 'TKP'
-
-                                                return (
-                                                    <div key={type} className={cn(
-                                                        "p-4 rounded-xl border-2 transition-all",
-                                                        passed
-                                                            ? "bg-white border-green-200"
-                                                            : "bg-white border-red-200"
-                                                    )}>
-                                                        <div className="flex items-center gap-3 mb-2">
-                                                            <div className={cn(
-                                                                "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
-                                                                type === 'twk' ? 'bg-red-100 text-red-700' :
-                                                                    type === 'tiu' ? 'bg-yellow-100 text-yellow-700' :
-                                                                        'bg-blue-100 text-blue-700'
-                                                            )}>
-                                                                {TYPE_ICONS[typeUpper]}
-                                                            </div>
-                                                            <span className="font-bold text-gray-700">{typeUpper}</span>
-                                                        </div>
-
-                                                        <div className="flex items-end gap-1">
-                                                            <span className={cn(
-                                                                "text-2xl font-black",
-                                                                passed ? "text-gray-900" : "text-red-600"
-                                                            )}>{score}</span>
-                                                            <span className="text-xs text-gray-500 font-bold mb-1">/ {target}</span>
-                                                        </div>
-
-                                                        <div className="mt-2 text-[10px] font-bold uppercase tracking-wide">
-                                                            {passed ? (
-                                                                <span className="text-green-600 flex items-center gap-1">
-                                                                    <CheckCircle2 size={12} /> Lulus
-                                                                </span>
-                                                            ) : (
-                                                                <span className="text-red-500 flex items-center gap-1">
-                                                                    Target Belum Tercapai
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )
-                                            })}
-                                        </div>
-
-                                        <div className="pt-2">
-                                            <Link
-                                                href={`/cpns/dashboard/tryout/${(activeTab === 'last' ? data.lastExam : data.bestExam)?.id}/result`}
-                                                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-bold rounded-lg border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
-                                            >
-                                                Lihat Pembahasan Lengkap
-                                                <ArrowRight className="w-4 h-4" />
-                                            </Link>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl">
-                                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
-                                            <BarChart3 className="w-8 h-8 text-gray-400" />
-                                        </div>
-                                        <h3 className="font-bold text-lg text-gray-900 mb-1">Belum Ada Riwayat Tryout</h3>
-                                        <p className="text-gray-500 text-sm max-w-xs mx-auto mb-6">
-                                            Kamu belum mengerjakan Tryout atau Mini Tryout. Yuk mulai sekarang!
-                                        </p>
-                                        <Link href="/cpns/dashboard/tryout" className="px-6 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition">
-                                            Mulai Tryout Pertama
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
+                <article className="st-card-md bg-blue-50 p-6">
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Akses tryout</p>
+                            <p className="mt-2 text-5xl font-black tracking-tight text-blue-700">{data.user.tryoutQuota}</p>
+                            <p className="mt-1 text-sm font-bold text-slate-600">token tersisa</p>
                         </div>
-                    </motion.div>
+                        <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-white shadow-[2px_2px_0_#111827]">
+                            <Ticket size={22} />
+                        </div>
+                    </div>
+                    <TrackedLink
+                        href="/cpns/dashboard/beli-paket"
+                        eventName="px_dashboard_action"
+                        eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'token_packages' }}
+                        className="st-focus mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-700 hover:underline"
+                    >
+                        Lihat pilihan token <ArrowRight size={15} />
+                    </TrackedLink>
+                </article>
+            </section>
 
+            <section aria-labelledby="learning-summary-title" className="space-y-4">
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Perkembangan belajar</p>
+                        <h2 id="learning-summary-title" className="st-heading-display mt-1 text-3xl md:text-4xl">
+                            Ringkasan terbaru
+                        </h2>
+                    </div>
+                    <TrackedLink
+                        href="/cpns/dashboard/riwayat"
+                        eventName="px_dashboard_action"
+                        eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'all_results' }}
+                        className="st-focus inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-700 hover:underline"
+                    >
+                        Lihat semua hasil <ArrowRight size={16} />
+                    </TrackedLink>
                 </div>
 
-                {/* STATS & RECOMMENDATIONS COLUMN */}
-                <motion.div variants={itemVariants} className="space-y-6">
-                    {/* XP & LEVEL CARD - PREMIUM LOOK */}
-                    <motion.div
-                        whileHover={{ scale: 1.02 }}
-                        className="p-6 bg-yellow-400 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden"
-                    >
-                        {/* Decorative Zap */}
-                        <div className="absolute top-0 right-0 p-2 opacity-10">
-                            <Zap size={100} className="text-black" />
-                        </div>
-
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="px-2 py-0.5 bg-black text-white text-[10px] font-black uppercase tracking-widest">
-                                    Current Rank
-                                </div>
+                {data.lastExam ? (
+                    <div className="grid gap-5 lg:grid-cols-[0.9fr_1.6fr]">
+                        <article className="st-card-md bg-slate-950 p-6 text-white">
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Tryout terakhir · {data.lastExam.date}</p>
+                            <div className="mt-3 text-5xl font-black tracking-tight">{data.lastExam.total_score}</div>
+                            <div className={cn(
+                                'mt-4 inline-flex items-center gap-2 border-2 border-white px-3 py-1.5 text-xs font-black',
+                                data.lastExam.passed ? 'bg-emerald-300 text-slate-950' : 'bg-yellow-200 text-slate-950'
+                            )}>
+                                {data.lastExam.passed && <CheckCircle2 size={15} />}
+                                {data.lastExam.passed ? 'Target SKD tercapai' : 'Masih ada bagian yang perlu diperkuat'}
                             </div>
-
-                            <div className="text-5xl font-black text-gray-900 tracking-tighter mb-1">
-                                {data.stats.levelName}
-                            </div>
-                            <div className="text-sm font-bold text-gray-800 uppercase tracking-tight opacity-80">
-                                Level {data.stats.level} • {data.stats.xp.toLocaleString()} XP
-                            </div>
-
-                            {/* Small Progress to Next Level (Visual Only for now) */}
-                            <div className="mt-6 h-2 bg-black/10 rounded-full overflow-hidden border border-black/5">
-                                <motion.div
-                                    className="h-full bg-black"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${data.stats.levelProgress}%` }}
-                                    transition={{ duration: 1.5, delay: 0.5 }}
-                                />
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    {/* STATS GRID */}
-                    <div className="grid grid-cols-2 gap-4">
-                        {/* Ranking Card */}
-                        <Link href="/cpns/dashboard/ranking" className="block group">
-                            <motion.div
-                                whileHover={{ scale: 1.05, rotate: -1 }}
-                                className="p-4 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] group-hover:shadow-none group-hover:translate-x-0.5 group-hover:translate-y-0.5 transition-all text-center flex flex-col items-center gap-1"
+                            <TrackedLink
+                                href={`/cpns/dashboard/tryout/${data.lastExam.id}/result`}
+                                eventName="px_dashboard_action"
+                                eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'latest_result' }}
+                                className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-200 hover:text-white hover:underline"
                             >
-                                <BarChart3 className="w-6 h-6 text-yellow-500 mb-1" />
-                                <div className="text-2xl font-black text-gray-900 leading-none">
-                                    #{data.stats.rank || '-'}
-                                </div>
-                                <div className="text-[10px] uppercase font-bold text-gray-500 tracking-tighter">Posisi Nasional</div>
-                            </motion.div>
-                        </Link>
+                                Lihat hasil dan pembahasan <ArrowRight size={15} />
+                            </TrackedLink>
+                        </article>
 
-                        {/* Streak Card */}
-                        <motion.div
-                            whileHover={{ scale: 1.05, rotate: 1 }}
-                            className="p-4 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-center flex flex-col items-center gap-1"
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            {(Object.keys(data.progress) as SectionKey[]).map((key) => {
+                                const item = data.progress[key]
+                                const meta = SECTION_META[key]
+                                const Icon = meta.icon
+                                const progressValue = Math.min(100, item.target > 0 ? (item.score / item.target) * 100 : 0)
+
+                                return (
+                                    <article key={key} className="st-card p-5">
+                                        <div className={cn('flex h-10 w-10 items-center justify-center border-2 border-slate-900', meta.tone)}>
+                                            <Icon size={19} />
+                                        </div>
+                                        <div className="mt-4 flex items-end justify-between gap-2">
+                                            <div>
+                                                <p className="text-xs font-black uppercase tracking-wide text-slate-500">{meta.label}</p>
+                                                <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">{item.score}</p>
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-500">target {item.target}</span>
+                                        </div>
+                                        <div className="mt-4 h-3 overflow-hidden border-2 border-slate-900 bg-slate-100" aria-label={`Perkembangan ${meta.label} ${Math.round(progressValue)}%`}>
+                                            <div
+                                                className={cn('h-full transition-[width]', item.passed ? 'bg-emerald-400' : meta.bar)}
+                                                style={{ width: `${progressValue}%` }}
+                                            />
+                                        </div>
+                                        <p className={cn('mt-2 text-xs font-black', item.passed ? 'text-emerald-700' : 'text-slate-600')}>
+                                            {item.passed ? 'Target tercapai' : 'Perlu diperkuat'}
+                                        </p>
+                                    </article>
+                                )
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                    <article className="st-card-md p-8 text-center md:p-10">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-100 shadow-[2px_2px_0_#111827]">
+                            <BarChart3 size={24} />
+                        </div>
+                        <h3 className="st-heading mt-4 text-xl">Belum ada hasil yang bisa dianalisis</h3>
+                        <p className="st-muted mx-auto mt-2 max-w-lg text-sm font-semibold leading-relaxed">
+                            Selesaikan mini tryout atau full tryout pertamamu. Setelah itu, ringkasan ini akan membantu menunjukkan bagian yang perlu diperkuat.
+                        </p>
+                        <Link
+                            href="/cpns/dashboard/mini-tryout"
+                            className="st-button st-focus mt-5 inline-flex min-h-11 items-center gap-2 bg-blue-600 px-4 py-2.5 text-sm font-black text-white"
                         >
-                            <Flame className="w-6 h-6 text-orange-500 fill-current animate-pulse mb-1" />
-                            <div className="text-2xl font-black text-gray-900 leading-none">
-                                {data.user.streak}
-                            </div>
-                            <div className="text-[10px] uppercase font-bold text-gray-500 tracking-tighter">Hari Beruntun</div>
-                        </motion.div>
-                    </div>
+                            Mulai mini tryout <ArrowRight size={16} />
+                        </Link>
+                    </article>
+                )}
+            </section>
 
-                    {/* CALLOUT CARD */}
-                    <div className="p-4 bg-blue-50 border-2 border-blue-200 border-dashed text-blue-700 font-bold text-sm leading-relaxed relative">
-                        <Sparkles className="absolute -top-3 -right-3 w-8 h-8 text-blue-400 rotate-12 opacity-50" />
-                        "Kunci kelulusan SKD adalah KONSISTENSI. Luangkan waktu setiap hari untuk tryout!"
-                    </div>
-                </motion.div>
-            </div>
-        </motion.div>
+            <section aria-labelledby="study-path-title" className="space-y-4">
+                <div>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Pilih sesuai kebutuhan</p>
+                    <h2 id="study-path-title" className="st-heading-display mt-1 text-3xl md:text-4xl">
+                        Cara belajar yang tersedia
+                    </h2>
+                </div>
+                <div className="grid gap-5 md:grid-cols-3">
+                    <LearningPathCard
+                        href="/cpns/dashboard/drilling-materi"
+                        icon={<BookOpen size={21} />}
+                        iconClass="bg-blue-100 text-blue-700"
+                        title="Latihan fokus"
+                        description="Perkuat satu bagian atau materi yang masih lemah tanpa harus mengulang simulasi penuh."
+                        action="Pilih materi"
+                    />
+                    <LearningPathCard
+                        href="/cpns/dashboard/mini-tryout"
+                        icon={<ListChecks size={21} />}
+                        iconClass="bg-yellow-100 text-amber-800"
+                        title="Mini tryout"
+                        description="Ukur satu bagian dalam sesi yang lebih singkat untuk mengecek perkembangan belajarmu."
+                        action="Pilih mini tryout"
+                    />
+                    <LearningPathCard
+                        href="/cpns/dashboard/tryout"
+                        icon={<Target size={21} />}
+                        iconClass="bg-emerald-100 text-emerald-700"
+                        title="Full tryout"
+                        description="Ukur kesiapan TWK, TIU, dan TKP dalam satu simulasi lengkap."
+                        action="Pilih tryout"
+                    />
+                </div>
+            </section>
+
+            <section className="st-card p-2" aria-label="Ringkasan akun">
+                <div className="grid divide-y-2 divide-slate-900 sm:grid-cols-2 sm:divide-x-2 sm:divide-y-0 lg:grid-cols-4">
+                    <SummaryItem icon={<Clock3 size={18} />} value={String(data.stats.totalSessions)} label="sesi selesai" />
+                    <SummaryItem icon={<BarChart3 size={18} />} value={data.stats.rank ? `#${data.stats.rank}` : '-'} label="peringkat saat ini" />
+                    <SummaryItem icon={<Target size={18} />} value={bestScore === null ? '-' : String(bestScore)} label="skor terbaik" />
+                    <Link
+                        href="/cpns/dashboard/event"
+                        className="st-focus group p-4 transition-colors hover:bg-blue-50"
+                    >
+                        <div className="flex h-9 w-9 items-center justify-center border-2 border-slate-900 bg-blue-100 text-blue-700">
+                            <CalendarDays size={18} />
+                        </div>
+                        <p className="mt-3 line-clamp-1 text-sm font-black text-slate-950">
+                            {data.nextTryout ? data.nextTryout.name : 'Lihat event tryout'}
+                        </p>
+                        <p className="mt-1 text-xs font-bold text-slate-500">
+                            {data.nextTryout ? (data.nextTryout.daysLeft <= 0 ? 'Jadwal tersedia sekarang' : `${data.nextTryout.daysLeft} hari lagi`) : 'Cek jadwal terbaru'}
+                        </p>
+                    </Link>
+                </div>
+            </section>
+        </div>
+    )
+}
+
+function LearningPathCard({
+    href,
+    icon,
+    iconClass,
+    title,
+    description,
+    action,
+}: {
+    href: string
+    icon: React.ReactNode
+    iconClass: string
+    title: string
+    description: string
+    action: string
+}) {
+    return (
+        <Link
+            href={href}
+            className="st-card st-focus group p-5 transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+        >
+            <div className={cn('flex h-10 w-10 items-center justify-center border-2 border-slate-900', iconClass)}>{icon}</div>
+            <h3 className="st-heading mt-4 text-xl">{title}</h3>
+            <p className="st-muted mt-2 min-h-[3.5rem] text-sm font-semibold leading-relaxed">{description}</p>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-black text-blue-700 group-hover:underline">
+                {action} <ArrowRight size={15} />
+            </span>
+        </Link>
+    )
+}
+
+function SummaryItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+    return (
+        <div className="p-4">
+            <div className="flex h-9 w-9 items-center justify-center border-2 border-slate-900 bg-slate-100 text-slate-700">{icon}</div>
+            <p className="mt-3 text-2xl font-black tracking-tight text-slate-950">{value}</p>
+            <p className="mt-0.5 text-xs font-bold text-slate-500">{label}</p>
+        </div>
     )
 }

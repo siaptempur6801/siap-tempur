@@ -27,89 +27,63 @@ export default function TkaProgressDashboard({ dashboard }: { dashboard: TkaProg
         : String(dashboard.openWrongQuestions)
 
     return (
-        <div className="space-y-6">
-            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <article className="border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0_0_#111]">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase text-gray-500">
-                        <CheckCircle2 size={16}/> Tryout selesai
-                    </div>
-                    <div className="mt-2 text-3xl font-black">{dashboard.completedAttempts}</div>
-                    <p className="mt-1 text-xs font-semibold text-gray-500">Completed/submitted attempt TKA SMP.</p>
-                </article>
-                <article className="border-2 border-gray-900 bg-red-50 p-4 shadow-[3px_3px_0_0_#111]">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase text-red-700">
-                        <RotateCcw size={16}/> Gap terbuka
-                    </div>
-                    <div className="mt-2 text-3xl font-black">{wrongLabel}</div>
-                    <p className="mt-1 text-xs font-semibold text-gray-600">Soal salah atau belum dijawab yang masih perlu dibereskan.</p>
-                </article>
-                <article className="border-2 border-gray-900 bg-orange-50 p-4 shadow-[3px_3px_0_0_#111]">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase text-orange-700">
-                        <BookOpenCheck size={16}/> Remedial pending
-                    </div>
-                    <div className="mt-2 text-3xl font-black">{dashboard.pendingRemedialItems}</div>
-                    <p className="mt-1 text-xs font-semibold text-gray-600">Dari {dashboard.activeRemedialSessions} sesi remedial aktif.</p>
-                </article>
-                <article className="border-2 border-gray-900 bg-cyan-50 p-4 shadow-[3px_3px_0_0_#111]">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase text-cyan-800">
-                        <Target size={16}/> Coverage evidence
-                    </div>
-                    <div className="mt-2 text-3xl font-black">{boundedPercent(dashboard.coveragePercent).toFixed(1)}%</div>
-                    <p className="mt-1 text-xs font-semibold text-gray-600">{dashboard.evidencedNodes}/{dashboard.assessableNodes} knowledge node sudah punya evidence.</p>
-                </article>
+        <div className="space-y-6 md:space-y-8">
+            <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <MetricCard icon={<CheckCircle2 size={17}/>} tone="bg-emerald-100 text-emerald-700" label="Tryout selesai" value={String(dashboard.completedAttempts)} description="Jumlah tryout TKA SMP yang sudah kamu selesaikan." />
+                <MetricCard icon={<RotateCcw size={17}/>} tone="bg-red-100 text-red-700" label="Soal perlu diulang" value={wrongLabel} description="Soal salah atau belum dijawab yang masih perlu kamu pelajari kembali." />
+                <MetricCard icon={<BookOpenCheck size={17}/>} tone="bg-yellow-100 text-amber-800" label="Latihan perbaikan" value={String(dashboard.pendingRemedialItems)} description={`Dari ${dashboard.activeRemedialSessions} sesi perbaikan yang masih aktif.`} />
+                <MetricCard icon={<Target size={17}/>} tone="bg-blue-100 text-blue-700" label="Materi terukur" value={`${boundedPercent(dashboard.coveragePercent).toFixed(1)}%`} description={`${dashboard.evidencedNodes}/${dashboard.assessableNodes} bagian materi sudah memiliki hasil belajar yang bisa diukur.`} />
             </section>
 
             {dashboard.readiness ? (
                 <TkaReadinessCard readiness={dashboard.readiness} showDashboardLink={false}/>
             ) : (
-                <section className="border-2 border-dashed border-gray-400 bg-white p-6 text-center">
-                    <TrendingUp className="mx-auto"/>
-                    <h2 className="mt-3 text-xl font-black">Readiness belum tersedia</h2>
-                    <p className="mt-1 text-sm font-semibold text-gray-600">Selesaikan minimal satu tryout agar mastery dan readiness mulai terbentuk.</p>
-                    <Link href="/tka/smp" className="mt-4 inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2 font-black text-white shadow-[3px_3px_0_0_#aaa]">
+                <section className="st-card p-7 text-center">
+                    <div className="mx-auto flex h-11 w-11 items-center justify-center border-2 border-slate-900 bg-slate-100 text-slate-600"><TrendingUp size={21}/></div>
+                    <h2 className="st-heading mt-4 text-xl">Kesiapan belum tersedia</h2>
+                    <p className="st-muted mx-auto mt-2 max-w-xl text-sm font-semibold leading-relaxed">Selesaikan minimal satu tryout agar SiapTempur bisa mulai membaca perkembangan dan kesiapan belajarmu.</p>
+                    <Link href="/tka/smp" className="st-button st-focus mt-5 inline-flex min-h-11 items-center gap-2 bg-slate-950 px-4 py-2.5 text-sm font-black text-white">
                         Mulai latihan <ArrowRight size={16}/>
                     </Link>
                 </section>
             )}
 
-            <section className="space-y-3">
-                <div>
-                    <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-700">
-                        <TrendingUp size={16}/> Subject progress
-                    </div>
-                    <h2 className="mt-1 text-2xl font-black">Progress per mapel</h2>
-                    <p className="mt-1 text-sm font-semibold text-gray-600">Mastery, accuracy, readiness, coverage, dan gap ditampilkan berdampingan agar progres tidak dinilai dari satu metrik saja.</p>
+            <section className="space-y-4">
+                <div className="max-w-3xl">
+                    <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-blue-700"><TrendingUp size={17}/> Perkembangan per mapel</div>
+                    <h2 className="st-heading-display mt-2 text-3xl md:text-4xl">Lihat kekuatan tiap mata pelajaran</h2>
+                    <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">Bandingkan penguasaan, ketepatan jawaban, cakupan materi, dan soal yang masih perlu diulang untuk menentukan fokus berikutnya.</p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-5 md:grid-cols-2">
                     {dashboard.subjects.map((subject) => {
                         const readinessPercent = boundedPercent(subject.readinessPercent)
                         const masteryPercent = boundedPercent(subject.masteryPercent)
                         const accuracyPercent = boundedPercent(subject.accuracyPercent)
                         const coveragePercent = boundedPercent(subject.coveragePercent)
                         return (
-                            <article key={subject.subjectId} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0_0_#111]">
+                            <article key={subject.subjectId} className="st-card p-5">
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
-                                        <div className="text-xs font-black uppercase text-blue-700">{subject.subjectCode}</div>
-                                        <h3 className="text-xl font-black">{subject.subjectName}</h3>
+                                        <div className="text-xs font-black uppercase tracking-wide text-blue-700">{subject.subjectCode}</div>
+                                        <h3 className="st-heading mt-1 text-xl">{subject.subjectName}</h3>
                                     </div>
-                                    <span className="border-2 border-gray-900 bg-cyan-100 px-3 py-1 text-sm font-black">{readinessPercent.toFixed(1)}% ready</span>
+                                    <span className="st-pill bg-emerald-100 text-emerald-800">{readinessPercent.toFixed(1)}% siap</span>
                                 </div>
 
-                                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                                    <div className="border border-gray-900 bg-gray-50 p-2 text-center text-xs font-bold">Mastery<br/><b>{masteryPercent.toFixed(1)}%</b></div>
-                                    <div className="border border-gray-900 bg-green-50 p-2 text-center text-xs font-bold">Accuracy<br/><b>{accuracyPercent.toFixed(1)}%</b></div>
-                                    <div className="border border-gray-900 bg-cyan-50 p-2 text-center text-xs font-bold">Coverage<br/><b>{coveragePercent.toFixed(1)}%</b></div>
-                                    <div className="border border-gray-900 bg-red-50 p-2 text-center text-xs font-bold">Gap<br/><b>{subject.openWrongQuestions}</b></div>
+                                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    <StatTile label="Penguasaan" value={`${masteryPercent.toFixed(1)}%`} />
+                                    <StatTile label="Ketepatan" value={`${accuracyPercent.toFixed(1)}%`} tone="bg-emerald-50" />
+                                    <StatTile label="Cakupan" value={`${coveragePercent.toFixed(1)}%`} tone="bg-blue-50" />
+                                    <StatTile label="Perlu diulang" value={String(subject.openWrongQuestions)} tone="bg-red-50" />
                                 </div>
 
-                                <div className="mt-4 h-3 overflow-hidden border-2 border-gray-900 bg-gray-100">
-                                    <div className="h-full bg-blue-300" style={{ width: `${readinessPercent}%` }}/>
+                                <div className="mt-5 h-3 overflow-hidden border-2 border-slate-900 bg-slate-100">
+                                    <div className="h-full bg-emerald-400" style={{ width: `${readinessPercent}%` }}/>
                                 </div>
-                                <div className="mt-2 flex flex-wrap justify-between gap-2 text-xs font-semibold text-gray-600">
-                                    <span>{subject.attempts} attempt · {subject.questionsAnswered} jawaban dinilai</span>
-                                    <span>Evidence {subject.evidencedNodes}/{subject.assessableNodes}</span>
+                                <div className="st-muted mt-3 flex flex-wrap justify-between gap-2 text-xs font-bold">
+                                    <span>{subject.attempts} pengerjaan · {subject.questionsAnswered} jawaban dinilai</span>
+                                    <span>Materi terukur {subject.evidencedNodes}/{subject.assessableNodes}</span>
                                 </div>
                             </article>
                         )
@@ -119,42 +93,55 @@ export default function TkaProgressDashboard({ dashboard }: { dashboard: TkaProg
 
             <TkaLearningFocusPanel items={dashboard.focus.items}/>
 
-            <section className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-                <div className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0_0_#111]">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-500">
-                        <History size={16}/> Recent activity
-                    </div>
-                    <h2 className="mt-1 text-2xl font-black">Riwayat hasil terbaru</h2>
+            <section className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
+                <div className="st-card p-5">
+                    <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-slate-500"><History size={17}/> Aktivitas terbaru</div>
+                    <h2 className="st-heading-display mt-2 text-3xl">Riwayat hasil terbaru</h2>
 
                     {dashboard.recentAttempts.length > 0 ? (
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-5 space-y-3">
                             {dashboard.recentAttempts.map((attempt) => (
-                                <Link key={attempt.attemptId} href={attempt.href} className="flex flex-wrap items-center justify-between gap-3 border-2 border-gray-900 bg-gray-50 p-3 hover:bg-cyan-50">
+                                <Link key={attempt.attemptId} href={attempt.href} className="st-focus group flex min-h-16 flex-wrap items-center justify-between gap-3 border-2 border-slate-900 bg-slate-50 p-4 transition hover:bg-blue-50">
                                     <div>
-                                        <div className="font-black">{attempt.examTitle}</div>
-                                        <div className="text-xs font-semibold text-gray-500">{formatAttemptDate(attempt.updatedAt)}</div>
+                                        <div className="font-black text-slate-950">{attempt.examTitle}</div>
+                                        <div className="st-muted mt-1 text-xs font-bold">{formatAttemptDate(attempt.updatedAt)}</div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <span className="text-sm font-black">{attempt.percentage === null ? 'Skor tersimpan' : `${attempt.percentage.toFixed(0)}%`}</span>
-                                        <ArrowRight size={17}/>
+                                        <span className="text-sm font-black text-slate-700">{attempt.percentage === null ? 'Skor tersimpan' : `${attempt.percentage.toFixed(0)}%`}</span>
+                                        <ArrowRight size={16} className="text-blue-700 transition-transform group-hover:translate-x-0.5"/>
                                     </div>
                                 </Link>
                             ))}
                         </div>
                     ) : (
-                        <p className="mt-4 text-sm font-semibold text-gray-600">Belum ada hasil tryout yang tersimpan.</p>
+                        <p className="st-muted mt-4 text-sm font-semibold">Belum ada hasil tryout yang tersimpan.</p>
                     )}
                 </div>
 
-                <aside className="border-2 border-gray-900 bg-[#fff9c4] p-5 shadow-[4px_4px_0_0_#111]">
-                    <div className="text-xs font-black uppercase tracking-widest text-gray-600">Langkah berikutnya</div>
-                    <h2 className="mt-1 text-2xl font-black">Jangan berhenti di skor.</h2>
-                    <p className="mt-2 text-sm font-semibold text-gray-600">Dashboard memilih jalur berikutnya dari recommendation, remedial aktif, atau wrong-question queue yang masih terbuka.</p>
-                    <Link href={dashboard.nextAction.href} className="mt-5 inline-flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-3 font-black text-white shadow-[3px_3px_0_0_#aaa] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
-                        {dashboard.nextAction.label} <ArrowRight size={17}/>
+                <aside className="st-warning p-5">
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-amber-800">Langkah berikutnya</div>
+                    <h2 className="st-heading-display mt-2 text-3xl">Jangan berhenti di skor.</h2>
+                    <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">Gunakan rekomendasi belajar, soal yang perlu diulang, atau latihan perbaikan untuk menentukan apa yang sebaiknya kamu kerjakan berikutnya.</p>
+                    <Link href={dashboard.nextAction.href} className="st-button st-focus mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 bg-slate-950 px-4 py-2.5 text-sm font-black text-white">
+                        {dashboard.nextAction.label} <ArrowRight size={16}/>
                     </Link>
                 </aside>
             </section>
         </div>
     )
+}
+
+function MetricCard({ icon, tone, label, value, description }: { icon: React.ReactNode; tone: string; label: string; value: string; description: string }) {
+    return (
+        <article className="st-card p-4">
+            <div className={`flex h-9 w-9 items-center justify-center border-2 border-slate-900 ${tone}`}>{icon}</div>
+            <div className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</div>
+            <div className="mt-1 text-sm font-black text-slate-700">{label}</div>
+            <p className="st-muted mt-1 text-xs font-semibold leading-relaxed">{description}</p>
+        </article>
+    )
+}
+
+function StatTile({ label, value, tone = 'bg-slate-50' }: { label: string; value: string; tone?: string }) {
+    return <div className={`border-2 border-slate-900 p-2.5 text-center text-xs font-bold text-slate-600 ${tone}`}>{label}<br/><b className="text-slate-950">{value}</b></div>
 }

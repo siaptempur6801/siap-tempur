@@ -1,7 +1,6 @@
 import Image from 'next/image'
-import { Sparkles, AlertCircle } from 'lucide-react'
+import { Info } from 'lucide-react'
 import MathRenderer from '@/components/MathRenderer'
-import PaperBackground from '@/components/PaperBackground'
 import { cn } from '@/lib/utils'
 import type { Answer, Question, Option } from './types'
 
@@ -20,137 +19,112 @@ export default function ReviewContent({
     const options = question.options || []
 
     return (
-        <div className="flex-1 min-w-0 p-4 sm:p-8 xl:p-10 overflow-y-auto">
-            <div className="relative mb-6 sm:mb-10 space-y-5">
-                <div className="absolute -left-4 sm:-left-6 top-1 w-1 sm:h-full bg-blue-400 rounded-full opacity-50"></div>
-                {question.image_url && (
-                    <div className="w-full max-w-md mx-auto rounded-xl border-2 border-gray-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white relative">
-                        <div className="absolute top-2 left-2 z-10 p-1.5 bg-yellow-300 border-2 border-gray-900 rounded shadow-sm -rotate-2">
-                            <Sparkles size={14} className="text-gray-900" />
+        <div className="h-full min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <div className="mx-auto max-w-4xl">
+                <div className="space-y-5">
+                    {question.image_url && (
+                        <div className="mx-auto w-full max-w-lg overflow-hidden border border-slate-200 bg-white">
+                            <Image
+                                src={question.image_url}
+                                alt="Ilustrasi soal"
+                                width={900}
+                                height={520}
+                                unoptimized
+                                className="h-auto max-h-[340px] w-full object-contain"
+                            />
                         </div>
-                        <Image
-                            src={question.image_url}
-                            alt="Ilustrasi Soal"
-                            width={900}
-                            height={520}
-                            unoptimized
-                            className="w-full h-auto object-contain max-h-[320px]"
-                        />
+                    )}
+                    <div className="max-w-none text-base font-semibold leading-7 text-slate-900 sm:text-lg">
+                        <MathRenderer text={question.content} />
                     </div>
-                )}
-                <div className="text-lg sm:text-2xl font-bold leading-relaxed text-gray-800 max-w-none">
-                    <MathRenderer text={question.content} />
                 </div>
-            </div>
 
-            <div className="space-y-2 sm:space-y-2.5 mb-7 sm:mb-8 max-w-none">
-                {options.map((option: Option, i: number) => {
-                    const isSelected = currentAnswer.option_id === option.id
-                    const isCorrect = option.is_correct
-                    const isMaxTKP = type === 'TKP' && option.id === maxScoreOption?.id
+                <div className="mt-7 space-y-2.5">
+                    {options.map((option: Option, index: number) => {
+                        const isSelected = currentAnswer.option_id === option.id
+                        const isCorrect = option.is_correct
+                        const isMaxTKP = type === 'TKP' && option.id === maxScoreOption?.id
 
-                    let borderClass = 'border-gray-200'
-                    let bgClass = 'bg-white hover:bg-gray-50'
-                    let textClass = 'text-gray-500'
-                    let indicatorColor = 'border-gray-300 text-gray-300'
+                        let containerClass = 'border-slate-200 bg-white'
+                        let indicatorClass = 'border-slate-300 bg-white text-slate-500'
+                        let textClass = 'text-slate-700'
 
-                    if (type === 'TKP') {
-                        if (isSelected) {
-                            borderClass = 'border-blue-600 border-solid'
-                            bgClass = 'bg-blue-50 shadow-[2px_2px_0px_0px_rgba(37,99,235,1)]'
-                            textClass = 'text-blue-900 font-bold'
-                            indicatorColor = 'border-blue-600 bg-blue-600 text-white'
-                        }
-                        if (isMaxTKP && !isSelected) {
-                            borderClass = 'border-green-500 border-dashed opacity-80'
-                            bgClass = 'bg-green-50/50'
-                        }
-                    } else {
-                        if (isSelected && isCorrect) {
-                            borderClass = 'border-green-600'
-                            bgClass = 'bg-green-50 shadow-[2px_2px_0px_0px_rgba(22,163,74,1)]'
-                            textClass = 'text-green-900 font-bold'
-                            indicatorColor = 'border-green-600 bg-green-600 text-white'
+                        if (type === 'TKP') {
+                            if (isSelected) {
+                                containerClass = 'border-blue-500 bg-blue-50'
+                                indicatorClass = 'border-blue-600 bg-blue-600 text-white'
+                                textClass = 'font-bold text-blue-950'
+                            } else if (isMaxTKP) {
+                                containerClass = 'border-emerald-300 bg-emerald-50/60'
+                            }
+                        } else if (isSelected && isCorrect) {
+                            containerClass = 'border-emerald-500 bg-emerald-50'
+                            indicatorClass = 'border-emerald-600 bg-emerald-600 text-white'
+                            textClass = 'font-bold text-emerald-950'
                         } else if (isSelected && !isCorrect) {
-                            borderClass = 'border-red-600'
-                            bgClass = 'bg-red-50 shadow-[2px_2px_0px_0px_rgba(220,38,38,1)]'
-                            textClass = 'text-red-900 font-bold'
-                            indicatorColor = 'border-red-600 bg-red-600 text-white'
+                            containerClass = 'border-red-500 bg-red-50'
+                            indicatorClass = 'border-red-600 bg-red-600 text-white'
+                            textClass = 'font-bold text-red-950'
                         } else if (!isSelected && isCorrect) {
-                            borderClass = 'border-green-600 border-dashed'
-                            bgClass = 'bg-green-50/50'
-                            textClass = 'text-green-700 font-bold'
-                            indicatorColor = 'border-green-600 bg-white text-green-600'
+                            containerClass = 'border-emerald-300 bg-emerald-50/60'
+                            indicatorClass = 'border-emerald-600 bg-white text-emerald-700'
+                            textClass = 'font-bold text-emerald-900'
                         }
-                    }
 
-                    return (
-                        <div key={option.id} className={cn(
-                            "px-3 py-3.5 sm:px-3.5 sm:py-3.5 rounded-lg border-2 flex items-start gap-2.5 sm:gap-3 transition-all relative overflow-hidden group",
-                            borderClass,
-                            bgClass
-                        )}>
-                            <div className={cn(
-                                "w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-bold text-sm sm:text-base",
-                                indicatorColor
-                            )}>
-                                {String.fromCharCode(65 + i)}
-                            </div>
+                        return (
+                            <div key={option.id} className={cn('flex items-start gap-3 border p-3 sm:p-4', containerClass)}>
+                                <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-black', indicatorClass)}>
+                                    {String.fromCharCode(65 + index)}
+                                </div>
 
-                            <div className="flex-1 min-w-0 space-y-2">
-                                {option.image_url && (
-                                    <Image
-                                        src={option.image_url}
-                                        alt={`Pilihan ${String.fromCharCode(65 + i)}`}
-                                        width={360}
-                                        height={240}
-                                        unoptimized
-                                        className="max-h-44 w-full max-w-sm object-contain rounded-lg border-2 border-gray-200 bg-white"
-                                    />
-                                )}
-                                {option.content.trim() && (
-                                    <div className={cn("text-[15px] sm:text-lg leading-snug wrap-break-word", textClass)}>
-                                        <MathRenderer text={option.content} />
-                                    </div>
-                                )}
-
-                                <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                                    {isSelected && <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded bg-gray-900 text-white shadow-sm">Pilihan Anda</span>}
-                                    {type !== 'TKP' && isCorrect && <span className="text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded border-2 border-green-600 bg-white text-green-700 shadow-sm">Kunci</span>}
-                                    {type === 'TKP' && option.score_value > 0 && (
-                                        <span className={cn(
-                                            "text-[9px] sm:text-[10px] uppercase font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded border-2 shadow-sm",
-                                            option.score_value === 5 ? "bg-green-500 text-white border-green-700" : "bg-blue-50 text-blue-700 border-blue-200"
-                                        )}>
-                                            Poin: {option.score_value}
-                                        </span>
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    {option.image_url && (
+                                        <Image
+                                            src={option.image_url}
+                                            alt={`Pilihan ${String.fromCharCode(65 + index)}`}
+                                            width={360}
+                                            height={240}
+                                            unoptimized
+                                            className="max-h-44 w-full max-w-sm border border-slate-200 bg-white object-contain"
+                                        />
                                     )}
+                                    {option.content.trim() && (
+                                        <div className={cn('text-sm leading-6 sm:text-base', textClass)}>
+                                            <MathRenderer text={option.content} />
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-wrap gap-1.5 pt-1">
+                                        {isSelected && <span className="border border-slate-300 bg-slate-900 px-2 py-1 text-[10px] font-black uppercase text-white">Jawaban kamu</span>}
+                                        {type !== 'TKP' && isCorrect && <span className="border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase text-emerald-700">Jawaban benar</span>}
+                                        {type === 'TKP' && option.score_value > 0 && (
+                                            <span className={cn(
+                                                'border px-2 py-1 text-[10px] font-black uppercase',
+                                                option.score_value === 5
+                                                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                                    : 'border-blue-200 bg-blue-50 text-blue-700'
+                                            )}>
+                                                {option.score_value} poin
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )
-                })}
-            </div>
+                        )
+                    })}
+                </div>
 
-            {question.explanation && (
-                <div className="relative group max-w-none">
-                    <div className="absolute -top-3 left-10 w-24 h-7 bg-yellow-200/50 border border-white/40 shadow-sm rotate-2 z-20"></div>
-
-                    <div className="bg-[#fff740] border-2 border-gray-900 p-5 sm:p-8 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
-                        <PaperBackground />
-                        <div className="flex items-center gap-3 font-bold text-gray-900 mb-3 sm:mb-4 text-xl sm:text-2xl relative z-10">
-                            <AlertCircle size={20} className="text-orange-600 fill-yellow-100 sm:w-6 sm:h-6" />
-                            <span>Mengapa Begitu?</span>
+                {question.explanation && (
+                    <div className="mt-7 border-2 border-slate-900 bg-amber-50 p-5 sm:p-6">
+                        <div className="flex items-center gap-2 text-base font-black text-slate-950">
+                            <Info size={18} className="text-amber-700" /> Pembahasan
                         </div>
-                        <div className="text-base sm:text-xl text-gray-800 leading-relaxed relative z-10 font-medium italic">
+                        <div className="mt-3 text-sm leading-7 text-slate-700 sm:text-base">
                             <MathRenderer text={question.explanation} />
                         </div>
-                        <div className="absolute bottom-2 right-3 opacity-20 z-10">
-                            <Sparkles size={40} className="text-gray-900" />
-                        </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     )
 }
