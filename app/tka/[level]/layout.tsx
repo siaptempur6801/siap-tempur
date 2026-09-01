@@ -43,7 +43,7 @@ export default async function TkaDashboardLayout({
     return (
         <>
             <Script
-                id="midtrans-snap-script-tka"
+                id="midtrans-snap"
                 src={env.midtransSnapScriptUrl()}
                 data-client-key={env.midtransClientKey()}
                 strategy="afterInteractive"
