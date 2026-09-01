@@ -66,7 +66,7 @@ export default async function TkaHomePage() {
 
     let activeTrack = false
     let recentAttempts: Array<Record<string, unknown>> = []
-    let examById = new Map<string, { title: string; slug: string }>()
+    let examById = new Map<string, { title: string }>()
     let hasTempurPass = false
 
     if (program?.id) {
@@ -87,7 +87,7 @@ export default async function TkaHomePage() {
                     .maybeSingle(),
                 supabase
                     .from('exams')
-                    .select('id, title, slug, required_feature_id')
+                    .select('id, title, required_feature_id')
                     .eq('track_id', track.id)
                     .in('status', ['active', 'ACTIVE', 'scheduled', 'SCHEDULED']),
             ])
@@ -95,7 +95,6 @@ export default async function TkaHomePage() {
             activeTrack = String(userTrack?.status ?? '').toLowerCase() === 'active'
             examById = new Map((exams ?? []).map((exam) => [String(exam.id), {
                 title: String(exam.title),
-                slug: String(exam.slug),
             }]))
 
             const examIds = (exams ?? []).map((exam) => String(exam.id))
@@ -116,7 +115,7 @@ export default async function TkaHomePage() {
                 featureIds.length > 0
                     ? supabase
                         .from('entitlements')
-                        .select('feature_id, starts_at, expires_at, status')
+                        .select('feature_id, status')
                         .eq('user_id', user.id)
                         .in('feature_id', featureIds)
                         .in('status', ['active', 'ACTIVE'])
@@ -124,12 +123,7 @@ export default async function TkaHomePage() {
             ])
 
             recentAttempts = (attempts ?? []) as Array<Record<string, unknown>>
-            const now = Date.now()
-            hasTempurPass = (entitlements ?? []).some((row) => {
-                const starts = Date.parse(String(row.starts_at))
-                const expires = row.expires_at ? Date.parse(String(row.expires_at)) : null
-                return Number.isFinite(starts) && starts <= now && (expires === null || expires > now)
-            })
+            hasTempurPass = (entitlements ?? []).length > 0
         }
     }
 
@@ -183,11 +177,9 @@ export default async function TkaHomePage() {
                 </header>
 
                 <section aria-labelledby="level-journey" className="space-y-3">
-                    <div className="flex items-end justify-between gap-4">
-                        <div>
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Perjalanan belajar</p>
-                            <h2 id="level-journey" className="mt-1 text-xl font-black text-slate-950 md:text-2xl">SD sampai SMA, tetap satu dashboard.</h2>
-                        </div>
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Perjalanan belajar</p>
+                        <h2 id="level-journey" className="mt-1 text-xl font-black text-slate-950 md:text-2xl">SD sampai SMA, tetap satu dashboard.</h2>
                     </div>
                     <div className="grid gap-4 md:grid-cols-3">
                         <LevelJourneyCard level="SD" title="TKA SD" description="Bangun fondasi kemampuan sejak jenjang dasar." href="/tka/sd" state="Segera hadir" icon={<School size={21} />} tone="amber" />
@@ -243,11 +235,9 @@ export default async function TkaHomePage() {
                 </section>
 
                 <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-[0_10px_28px_rgba(15,23,42,0.045)] md:p-6">
-                    <div className="flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Akses cepat</p>
-                            <h2 className="mt-1 text-xl font-black text-slate-950">Mau belajar apa sekarang?</h2>
-                        </div>
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Akses cepat</p>
+                        <h2 className="mt-1 text-xl font-black text-slate-950">Mau belajar apa sekarang?</h2>
                     </div>
                     <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                         <QuickAction href="/tka/smp#tka-tryout" label="Mini & Full Tryout" icon={<ListChecks size={20} />} />
@@ -270,7 +260,7 @@ export default async function TkaHomePage() {
                             const exam = examById.get(String(attempt.exam_id))
                             const completed = ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase())
                             return (
-                                <Link key={String(attempt.id)} href={completed ? `/tka/smp/tryout/${attempt.id}/result` : `/tka/smp/tryout/${attempt.id}`} className="flex items-center gap-4 py-4 first:pt-1 last:pb-1 group">
+                                <Link key={String(attempt.id)} href={completed ? `/tka/smp/tryout/${attempt.id}/result` : `/tka/smp/tryout/${attempt.id}`} className="group flex items-center gap-4 py-4 first:pt-1 last:pb-1">
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600"><BookOpenCheck size={18} /></div>
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm font-black text-slate-900">{exam?.title ?? 'Tryout TKA SMP'}</p>
