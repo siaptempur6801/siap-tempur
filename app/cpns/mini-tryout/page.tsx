@@ -4,9 +4,6 @@ import { ArrowRight, BarChart3, CheckCircle2, Clock3, Target, Zap } from "lucide
 import StructuredData from "@/components/StructuredData";
 import SeoNavbar from "@/components/SeoNavbar";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
-import { Section } from "@/components/ui/Section";
 
 export const metadata: Metadata = {
     title: "Mini Tryout CPNS - TWK, TIU & TKP | SiapTempur",
@@ -38,129 +35,84 @@ const faqSchema = {
 };
 
 const benefits = [
-    {
-        icon: Target,
-        title: "Fokus pada satu bagian",
-        text: "Pilih mini tryout yang sesuai saat kamu ingin mengukur TWK, TIU, atau TKP tanpa harus memulai full tryout.",
-        surface: "bg-yellow-50",
-    },
-    {
-        icon: Clock3,
-        title: "Sesi lebih ringkas",
-        text: "Gunakan mini tryout ketika kamu ingin tetap berlatih tetapi belum ingin mengerjakan sesi penuh.",
-        surface: "bg-blue-50",
-    },
-    {
-        icon: BarChart3,
-        title: "Gunakan hasil untuk memilih latihan",
-        text: "Setelah selesai, lihat hasil yang tersedia dan lanjutkan ke latihan yang paling relevan untukmu.",
-        surface: "bg-green-50",
-    },
+    { icon: Target, title: "Fokus pada satu bagian", text: "Pilih Mini Tryout yang sesuai saat kamu ingin mengukur TWK, TIU, atau TKP tanpa harus memulai Full Tryout.", tone: "bg-yellow-100 text-amber-800" },
+    { icon: Clock3, title: "Sesi lebih ringkas", text: "Gunakan Mini Tryout ketika kamu ingin tetap berlatih tetapi belum ingin mengerjakan sesi penuh.", tone: "bg-blue-100 text-blue-700" },
+    { icon: BarChart3, title: "Gunakan hasil untuk memilih latihan", text: "Setelah selesai, lihat hasil yang tersedia dan lanjutkan ke latihan yang paling relevan untukmu.", tone: "bg-emerald-100 text-emerald-700" },
 ] as const;
 
 export default function MiniTryoutPage() {
     return (
-        <main data-experience-mode="marketing" className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 pb-20">
+        <main data-experience-mode="marketing" data-program="cpns" className="st-product min-h-screen pb-20">
             <StructuredData data={faqSchema} />
             <SeoNavbar />
 
-            <Section paper className="pt-32 pb-20 text-center">
-                <div className="max-w-5xl mx-auto px-4">
-                    <Badge variant="yellow" className="mb-6 inline-flex items-center gap-2 px-4 py-1">
-                        <Zap className="w-4 h-4" /> Mini tryout CPNS
-                    </Badge>
-                    <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                        Ukur satu bagian tanpa harus full tryout.
-                    </h1>
-                    <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed">
-                        Gunakan mini tryout untuk melihat kemampuanmu pada bagian tertentu, lalu tentukan apakah kamu perlu latihan fokus atau sudah siap mencoba sesi yang lebih lengkap.
-                    </p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <Button handwriting={false} size="lg" className="w-full sm:w-auto" asChild>
-                            <Link href="/login?returnTo=/cpns/dashboard/mini-tryout">
-                                Mulai mini tryout <ArrowRight className="w-5 h-5" />
-                            </Link>
+            <section className="relative overflow-hidden border-b-2 border-slate-900 px-4 pb-20 pt-32 text-center md:px-8 md:pb-24">
+                <div className="pointer-events-none absolute -left-20 top-28 h-44 w-44 rounded-full border-2 border-dashed border-yellow-500 bg-yellow-50" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-20 bottom-[-4rem] h-56 w-56 -rotate-12 border-2 border-dashed border-blue-300 bg-blue-50" aria-hidden="true" />
+                <div className="relative mx-auto max-w-5xl">
+                    <span className="st-kicker"><Zap className="h-4 w-4" /> Mini Tryout CPNS</span>
+                    <h1 className="st-heading-display mx-auto mt-7 max-w-4xl text-5xl md:text-7xl">Ukur satu bagian tanpa harus Full Tryout.</h1>
+                    <p className="st-muted mx-auto mt-6 max-w-3xl text-lg font-semibold leading-relaxed md:text-xl">Gunakan Mini Tryout untuk melihat kemampuanmu pada bagian tertentu, lalu tentukan apakah kamu perlu Latihan Fokus atau sudah siap mencoba sesi yang lebih lengkap.</p>
+                    <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
+                        <Button size="lg" className="w-full sm:w-auto" asChild>
+                            <Link href="/login?returnTo=/cpns/dashboard/mini-tryout">Mulai Mini Tryout <ArrowRight className="h-5 w-5" /></Link>
                         </Button>
-                        <Button handwriting={false} size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                            <Link href="/cpns/full-tryout">Bandingkan dengan full tryout</Link>
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                            <Link href="/cpns/full-tryout">Bandingkan dengan Full Tryout</Link>
                         </Button>
                     </div>
                 </div>
-            </Section>
+            </section>
 
-            <Section className="bg-white">
-                <div className="max-w-6xl mx-auto px-4">
-                    <div className="text-center mb-12">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700 mb-2">Kapan digunakan?</p>
-                        <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Saat kamu ingin mengukur, bukan menebak.</h2>
-                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                            Mini tryout membantu memberi gambaran sebelum kamu menentukan latihan berikutnya.
-                        </p>
+            <section className="px-4 py-16 md:px-8 md:py-24">
+                <div className="mx-auto max-w-6xl">
+                    <div className="mx-auto max-w-3xl text-center">
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Kapan digunakan?</p>
+                        <h2 className="st-heading-display mt-2 text-4xl md:text-5xl">Saat kamu ingin mengukur, bukan menebak.</h2>
+                        <p className="st-muted mt-4 text-lg font-semibold">Mini Tryout membantu memberi gambaran sebelum kamu menentukan latihan berikutnya.</p>
                     </div>
-
-                    <div className="grid md:grid-cols-3 gap-6">
-                        {benefits.map(({ icon: Icon, title, text, surface }) => (
-                            <Card key={title} className={`p-6 border-2 border-gray-900 ${surface}`}>
-                                <div className="w-12 h-12 bg-white border-2 border-gray-900 flex items-center justify-center mb-5">
-                                    <Icon className="w-6 h-6 text-blue-700" />
-                                </div>
-                                <h3 className="text-xl font-bold mb-3">{title}</h3>
-                                <p className="text-gray-600 leading-relaxed">{text}</p>
-                            </Card>
+                    <div className="mt-10 grid gap-5 md:grid-cols-3">
+                        {benefits.map(({ icon: Icon, title, text, tone }) => (
+                            <article key={title} className="st-card p-6">
+                                <div className={`flex h-12 w-12 items-center justify-center border-2 border-slate-900 ${tone}`}><Icon className="h-6 w-6" /></div>
+                                <h3 className="st-heading mt-5 text-xl">{title}</h3>
+                                <p className="st-muted mt-3 font-semibold leading-relaxed">{text}</p>
+                            </article>
                         ))}
                     </div>
                 </div>
-            </Section>
+            </section>
 
-            <Section dashedBorder="both" className="bg-blue-50">
-                <div className="max-w-5xl mx-auto px-4">
-                    <div className="grid gap-6 md:grid-cols-2">
-                        <article className="border-2 border-gray-900 bg-white p-6 shadow-[4px_4px_0_0_#111]">
-                            <div className="inline-flex items-center gap-2 text-sm font-black text-yellow-700">
-                                <Zap size={18} /> Mini tryout
-                            </div>
-                            <h2 className="mt-3 text-2xl font-black">Untuk mengukur lebih spesifik</h2>
-                            <ul className="mt-5 space-y-3 text-gray-600 font-semibold">
-                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Pilih bagian yang ingin kamu ukur.</li>
-                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Sesi lebih ringkas daripada full tryout.</li>
-                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Cocok sebagai penghubung antara latihan fokus dan full tryout.</li>
-                            </ul>
-                        </article>
+            <section className="st-section-soft px-4 py-16 md:px-8 md:py-20">
+                <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
+                    <CompareCard icon={<Zap size={18} />} label="Mini Tryout" title="Untuk mengukur lebih spesifik" items={["Pilih bagian yang ingin kamu ukur.", "Sesi lebih ringkas daripada Full Tryout.", "Cocok sebagai penghubung antara Latihan Fokus dan Full Tryout."]} />
+                    <CompareCard icon={<Clock3 size={18} />} label="Full Tryout" title="Untuk mengukur sesi yang lebih lengkap" items={["TWK, TIU, dan TKP dalam satu sesi.", "Membutuhkan komitmen waktu lebih panjang.", "Gunakan hasilnya sebagai evaluasi persiapan secara keseluruhan."]} href="/cpns/full-tryout" />
+                </div>
+            </section>
 
-                        <article className="border-2 border-gray-900 bg-white p-6 shadow-[4px_4px_0_0_#111]">
-                            <div className="inline-flex items-center gap-2 text-sm font-black text-blue-700">
-                                <Clock3 size={18} /> Full tryout
-                            </div>
-                            <h2 className="mt-3 text-2xl font-black">Untuk mengukur sesi yang lebih lengkap</h2>
-                            <ul className="mt-5 space-y-3 text-gray-600 font-semibold">
-                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> TWK, TIU, dan TKP dalam satu sesi.</li>
-                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Membutuhkan komitmen waktu lebih panjang.</li>
-                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Gunakan hasilnya sebagai evaluasi persiapan secara keseluruhan.</li>
-                            </ul>
-                            <Link href="/cpns/full-tryout" className="mt-5 inline-flex items-center gap-2 font-black text-blue-700 hover:underline">
-                                Lihat full tryout <ArrowRight size={16} />
-                            </Link>
-                        </article>
+            <section className="px-4 py-16 text-center md:px-8 md:py-24">
+                <div className="mx-auto max-w-3xl">
+                    <h2 className="st-heading-display text-4xl md:text-5xl">Pilih Mini Tryout dari akunmu.</h2>
+                    <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">Detail sesi dan kebutuhan token akan ditampilkan sebelum kamu memulai, sehingga kamu bisa memilih latihan yang sesuai tanpa menebak biaya atau aturan akses.</p>
+                    <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+                        <Button size="lg" className="w-full sm:w-auto" asChild><Link href="/login?returnTo=/cpns/dashboard/mini-tryout">Lihat Mini Tryout</Link></Button>
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild><Link href="/login?returnTo=/cpns/dashboard/beli-paket">Lihat paket token</Link></Button>
                     </div>
                 </div>
-            </Section>
-
-            <Section className="bg-white text-center">
-                <div className="max-w-3xl mx-auto px-4">
-                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Pilih mini tryout dari akunmu.</h2>
-                    <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                        Detail sesi dan kebutuhan token akan ditampilkan sebelum kamu memulai, sehingga kamu bisa memilih latihan yang sesuai tanpa menebak biaya atau aturan akses.
-                    </p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4">
-                        <Button handwriting={false} size="lg" className="w-full sm:w-auto" asChild>
-                            <Link href="/login?returnTo=/cpns/dashboard/mini-tryout">Lihat mini tryout</Link>
-                        </Button>
-                        <Button handwriting={false} size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                            <Link href="/login?returnTo=/cpns/dashboard/beli-paket">Lihat paket token</Link>
-                        </Button>
-                    </div>
-                </div>
-            </Section>
+            </section>
         </main>
+    );
+}
+
+function CompareCard({ icon, label, title, items, href }: { icon: React.ReactNode; label: string; title: string; items: string[]; href?: string }) {
+    return (
+        <article className="st-card-md p-6">
+            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-blue-700">{icon} {label}</div>
+            <h2 className="st-heading mt-3 text-2xl">{title}</h2>
+            <ul className="st-muted mt-5 space-y-3 font-semibold">
+                {items.map((item) => <li key={item} className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-600" /> {item}</li>)}
+            </ul>
+            {href && <Link href={href} className="st-focus mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-700 hover:underline">Lihat Full Tryout <ArrowRight size={16} /></Link>}
+        </article>
     );
 }
