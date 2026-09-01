@@ -74,8 +74,8 @@ type SectionKey = 'twk' | 'tiu' | 'tkp'
 
 const SECTION_META: Record<SectionKey, { label: string; icon: typeof BookOpen; tone: string; bar: string }> = {
     twk: { label: 'TWK', icon: BookOpen, tone: 'bg-rose-50 text-rose-700', bar: 'bg-rose-500' },
-    tiu: { label: 'TIU', icon: Brain, tone: 'bg-amber-50 text-amber-700', bar: 'bg-amber-500' },
-    tkp: { label: 'TKP', icon: User, tone: 'bg-blue-50 text-blue-700', bar: 'bg-blue-500' },
+    tiu: { label: 'TIU', icon: Brain, tone: 'bg-yellow-100 text-amber-800', bar: 'bg-amber-500' },
+    tkp: { label: 'TKP', icon: User, tone: 'bg-blue-100 text-blue-700', bar: 'bg-blue-600' },
 }
 
 function getWeakestSection(progress: DashboardData['progress']) {
@@ -148,57 +148,54 @@ export default function DashboardClient({ data, greeting }: Props) {
 
     return (
         <div data-testid="cpns-dashboard-ready" className="space-y-8 md:space-y-10">
-            <header className="max-w-3xl">
-                <p className="text-sm font-semibold text-blue-700">{greeting.greeting}, {data.user.name}</p>
-                <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl md:text-[2.75rem] md:leading-[1.08]">
+            <header className="max-w-4xl">
+                <span className="st-kicker">{greeting.greeting}, {data.user.name}</span>
+                <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">
                     Apa yang sebaiknya kamu kerjakan hari ini?
                 </h1>
-                <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+                <p className="st-muted mt-4 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
                     Gunakan hasil belajarmu untuk memilih langkah berikutnya, bukan sekadar mengulang tryout.
                 </p>
             </header>
 
-            <section className="grid gap-4 lg:grid-cols-[1.7fr_0.8fr]" aria-label="Langkah berikutnya">
-                <article className="relative overflow-hidden rounded-3xl border border-blue-100 bg-white p-6 shadow-[var(--px-shadow-sm)] md:p-8">
-                    <div className="absolute inset-y-0 left-0 w-1.5 bg-blue-600" aria-hidden="true" />
-                    <div className="pl-2 md:pl-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-blue-700">
-                            <span className="h-2 w-2 rounded-full bg-blue-600" aria-hidden="true" />
-                            Langkah berikutnya
-                        </div>
-                        <h2 className="mt-4 max-w-2xl text-2xl font-extrabold tracking-tight text-slate-950 md:text-3xl">
+            <section className="grid gap-5 lg:grid-cols-[1.7fr_0.8fr]" aria-label="Langkah berikutnya">
+                <article className="st-card-lg relative overflow-hidden p-6 md:p-8">
+                    <div className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rotate-12 border-2 border-dashed border-blue-300 bg-blue-50" aria-hidden="true" />
+                    <div className="relative">
+                        <span className="st-pill bg-yellow-100">Langkah berikutnya</span>
+                        <h2 className="st-heading mt-5 max-w-2xl text-2xl md:text-3xl">
                             {recommendation.title}
                         </h2>
-                        <p className="mt-3 max-w-2xl leading-relaxed text-slate-600">
+                        <p className="st-muted mt-3 max-w-2xl font-semibold leading-relaxed">
                             {recommendation.description}
                         </p>
                         <TrackedLink
                             href={recommendation.href}
                             eventName="px_dashboard_action"
                             eventProperties={{ program: 'cpns', surface: 'dashboard', cta: data.activeSession ? 'resume_recommendation' : 'learning_recommendation' }}
-                            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                            className="st-button st-focus mt-6 inline-flex min-h-11 items-center justify-center gap-2 bg-blue-600 px-5 py-3 text-sm font-black text-white"
                         >
                             Kerjakan sekarang <ArrowRight size={17} />
                         </TrackedLink>
                     </div>
                 </article>
 
-                <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[var(--px-shadow-xs)]">
+                <article className="st-card-md bg-blue-50 p-6">
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <p className="text-sm font-semibold text-slate-500">Akses tryout</p>
-                            <p className="mt-2 text-4xl font-extrabold tracking-tight text-slate-950">{data.user.tryoutQuota}</p>
-                            <p className="mt-0.5 text-sm font-medium text-slate-500">token tersisa</p>
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Akses tryout</p>
+                            <p className="mt-2 text-5xl font-black tracking-tight text-blue-700">{data.user.tryoutQuota}</p>
+                            <p className="mt-1 text-sm font-bold text-slate-600">token tersisa</p>
                         </div>
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
-                            <Ticket size={21} />
+                        <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-white shadow-[2px_2px_0_#111827]">
+                            <Ticket size={22} />
                         </div>
                     </div>
                     <TrackedLink
                         href="/cpns/dashboard/beli-paket"
                         eventName="px_dashboard_action"
                         eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'token_packages' }}
-                        className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                        className="st-focus mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-700 hover:underline"
                     >
                         Lihat pilihan token <ArrowRight size={15} />
                     </TrackedLink>
@@ -208,8 +205,8 @@ export default function DashboardClient({ data, greeting }: Props) {
             <section aria-labelledby="learning-summary-title" className="space-y-4">
                 <div className="flex flex-wrap items-end justify-between gap-3">
                     <div>
-                        <p className="text-sm font-semibold text-blue-700">Perkembangan belajar</p>
-                        <h2 id="learning-summary-title" className="mt-1 text-2xl font-extrabold tracking-tight text-slate-950 md:text-3xl">
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Perkembangan belajar</p>
+                        <h2 id="learning-summary-title" className="st-heading-display mt-1 text-3xl md:text-4xl">
                             Ringkasan terbaru
                         </h2>
                     </div>
@@ -217,20 +214,20 @@ export default function DashboardClient({ data, greeting }: Props) {
                         href="/cpns/dashboard/riwayat"
                         eventName="px_dashboard_action"
                         eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'all_results' }}
-                        className="inline-flex min-h-11 items-center gap-2 rounded-lg px-1 text-sm font-semibold text-blue-700 hover:text-blue-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                        className="st-focus inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-700 hover:underline"
                     >
                         Lihat semua hasil <ArrowRight size={16} />
                     </TrackedLink>
                 </div>
 
                 {data.lastExam ? (
-                    <div className="grid gap-4 lg:grid-cols-[0.9fr_1.6fr]">
-                        <article className="rounded-3xl bg-slate-950 p-6 text-white shadow-[var(--px-shadow-sm)]">
-                            <p className="text-sm font-medium text-slate-400">Tryout terakhir · {data.lastExam.date}</p>
-                            <div className="mt-3 text-5xl font-extrabold tracking-tight">{data.lastExam.total_score}</div>
+                    <div className="grid gap-5 lg:grid-cols-[0.9fr_1.6fr]">
+                        <article className="st-card-md bg-slate-950 p-6 text-white">
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Tryout terakhir · {data.lastExam.date}</p>
+                            <div className="mt-3 text-5xl font-black tracking-tight">{data.lastExam.total_score}</div>
                             <div className={cn(
-                                'mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold',
-                                data.lastExam.passed ? 'bg-emerald-400/15 text-emerald-300' : 'bg-amber-300/15 text-amber-200'
+                                'mt-4 inline-flex items-center gap-2 border-2 border-white px-3 py-1.5 text-xs font-black',
+                                data.lastExam.passed ? 'bg-emerald-300 text-slate-950' : 'bg-yellow-200 text-slate-950'
                             )}>
                                 {data.lastExam.passed && <CheckCircle2 size={15} />}
                                 {data.lastExam.passed ? 'Target SKD tercapai' : 'Masih ada bagian yang perlu diperkuat'}
@@ -239,13 +236,13 @@ export default function DashboardClient({ data, greeting }: Props) {
                                 href={`/cpns/dashboard/tryout/${data.lastExam.id}/result`}
                                 eventName="px_dashboard_action"
                                 eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'latest_result' }}
-                                className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-lg text-sm font-semibold text-blue-300 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                                className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-200 hover:text-white hover:underline"
                             >
                                 Lihat hasil dan pembahasan <ArrowRight size={15} />
                             </TrackedLink>
                         </article>
 
-                        <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-3">
                             {(Object.keys(data.progress) as SectionKey[]).map((key) => {
                                 const item = data.progress[key]
                                 const meta = SECTION_META[key]
@@ -253,24 +250,24 @@ export default function DashboardClient({ data, greeting }: Props) {
                                 const progressValue = Math.min(100, item.target > 0 ? (item.score / item.target) * 100 : 0)
 
                                 return (
-                                    <article key={key} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[var(--px-shadow-xs)]">
-                                        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', meta.tone)}>
+                                    <article key={key} className="st-card p-5">
+                                        <div className={cn('flex h-10 w-10 items-center justify-center border-2 border-slate-900', meta.tone)}>
                                             <Icon size={19} />
                                         </div>
                                         <div className="mt-4 flex items-end justify-between gap-2">
                                             <div>
-                                                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">{meta.label}</p>
-                                                <p className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950">{item.score}</p>
+                                                <p className="text-xs font-black uppercase tracking-wide text-slate-500">{meta.label}</p>
+                                                <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">{item.score}</p>
                                             </div>
-                                            <span className="text-xs font-medium text-slate-500">target {item.target}</span>
+                                            <span className="text-xs font-bold text-slate-500">target {item.target}</span>
                                         </div>
-                                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100" aria-label={`Perkembangan ${meta.label} ${Math.round(progressValue)}%`}>
+                                        <div className="mt-4 h-3 overflow-hidden border-2 border-slate-900 bg-slate-100" aria-label={`Perkembangan ${meta.label} ${Math.round(progressValue)}%`}>
                                             <div
-                                                className={cn('h-full rounded-full transition-[width]', item.passed ? 'bg-emerald-500' : meta.bar)}
+                                                className={cn('h-full transition-[width]', item.passed ? 'bg-emerald-400' : meta.bar)}
                                                 style={{ width: `${progressValue}%` }}
                                             />
                                         </div>
-                                        <p className={cn('mt-2 text-xs font-semibold', item.passed ? 'text-emerald-700' : 'text-slate-500')}>
+                                        <p className={cn('mt-2 text-xs font-black', item.passed ? 'text-emerald-700' : 'text-slate-600')}>
                                             {item.passed ? 'Target tercapai' : 'Perlu diperkuat'}
                                         </p>
                                     </article>
@@ -279,17 +276,17 @@ export default function DashboardClient({ data, greeting }: Props) {
                         </div>
                     </div>
                 ) : (
-                    <article className="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center md:p-10">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                    <article className="st-card-md p-8 text-center md:p-10">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-100 shadow-[2px_2px_0_#111827]">
                             <BarChart3 size={24} />
                         </div>
-                        <h3 className="mt-4 text-xl font-bold text-slate-950">Belum ada hasil yang bisa dianalisis</h3>
-                        <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-slate-600">
+                        <h3 className="st-heading mt-4 text-xl">Belum ada hasil yang bisa dianalisis</h3>
+                        <p className="st-muted mx-auto mt-2 max-w-lg text-sm font-semibold leading-relaxed">
                             Selesaikan mini tryout atau full tryout pertamamu. Setelah itu, ringkasan ini akan membantu menunjukkan bagian yang perlu diperkuat.
                         </p>
                         <Link
                             href="/cpns/dashboard/mini-tryout"
-                            className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                            className="st-button st-focus mt-5 inline-flex min-h-11 items-center gap-2 bg-blue-600 px-4 py-2.5 text-sm font-black text-white"
                         >
                             Mulai mini tryout <ArrowRight size={16} />
                         </Link>
@@ -299,16 +296,16 @@ export default function DashboardClient({ data, greeting }: Props) {
 
             <section aria-labelledby="study-path-title" className="space-y-4">
                 <div>
-                    <p className="text-sm font-semibold text-blue-700">Pilih sesuai kebutuhan</p>
-                    <h2 id="study-path-title" className="mt-1 text-2xl font-extrabold tracking-tight text-slate-950 md:text-3xl">
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Pilih sesuai kebutuhan</p>
+                    <h2 id="study-path-title" className="st-heading-display mt-1 text-3xl md:text-4xl">
                         Cara belajar yang tersedia
                     </h2>
                 </div>
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-5 md:grid-cols-3">
                     <LearningPathCard
                         href="/cpns/dashboard/drilling-materi"
                         icon={<BookOpen size={21} />}
-                        iconClass="bg-blue-50 text-blue-700"
+                        iconClass="bg-blue-100 text-blue-700"
                         title="Latihan fokus"
                         description="Perkuat satu bagian atau materi yang masih lemah tanpa harus mengulang simulasi penuh."
                         action="Pilih materi"
@@ -316,7 +313,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                     <LearningPathCard
                         href="/cpns/dashboard/mini-tryout"
                         icon={<ListChecks size={21} />}
-                        iconClass="bg-amber-50 text-amber-700"
+                        iconClass="bg-yellow-100 text-amber-800"
                         title="Mini tryout"
                         description="Ukur satu bagian dalam sesi yang lebih singkat untuk mengecek perkembangan belajarmu."
                         action="Pilih mini tryout"
@@ -324,7 +321,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                     <LearningPathCard
                         href="/cpns/dashboard/tryout"
                         icon={<Target size={21} />}
-                        iconClass="bg-emerald-50 text-emerald-700"
+                        iconClass="bg-emerald-100 text-emerald-700"
                         title="Full tryout"
                         description="Ukur kesiapan TWK, TIU, dan TKP dalam satu simulasi lengkap."
                         action="Pilih tryout"
@@ -332,22 +329,22 @@ export default function DashboardClient({ data, greeting }: Props) {
                 </div>
             </section>
 
-            <section className="rounded-3xl border border-slate-200 bg-white p-2 shadow-[var(--px-shadow-xs)]" aria-label="Ringkasan akun">
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4">
+            <section className="st-card p-2" aria-label="Ringkasan akun">
+                <div className="grid divide-y-2 divide-slate-900 sm:grid-cols-2 sm:divide-x-2 sm:divide-y-0 lg:grid-cols-4">
                     <SummaryItem icon={<Clock3 size={18} />} value={String(data.stats.totalSessions)} label="sesi selesai" />
                     <SummaryItem icon={<BarChart3 size={18} />} value={data.stats.rank ? `#${data.stats.rank}` : '-'} label="peringkat saat ini" />
                     <SummaryItem icon={<Target size={18} />} value={bestScore === null ? '-' : String(bestScore)} label="skor terbaik" />
                     <Link
                         href="/cpns/dashboard/event"
-                        className="group rounded-2xl p-4 transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-inset"
+                        className="st-focus group p-4 transition-colors hover:bg-blue-50"
                     >
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 group-hover:bg-white">
+                        <div className="flex h-9 w-9 items-center justify-center border-2 border-slate-900 bg-blue-100 text-blue-700">
                             <CalendarDays size={18} />
                         </div>
-                        <p className="mt-3 line-clamp-1 text-sm font-bold text-slate-950">
+                        <p className="mt-3 line-clamp-1 text-sm font-black text-slate-950">
                             {data.nextTryout ? data.nextTryout.name : 'Lihat event tryout'}
                         </p>
-                        <p className="mt-1 text-xs font-medium text-slate-500">
+                        <p className="mt-1 text-xs font-bold text-slate-500">
                             {data.nextTryout ? (data.nextTryout.daysLeft <= 0 ? 'Jadwal tersedia sekarang' : `${data.nextTryout.daysLeft} hari lagi`) : 'Cek jadwal terbaru'}
                         </p>
                     </Link>
@@ -375,12 +372,12 @@ function LearningPathCard({
     return (
         <Link
             href={href}
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-[var(--px-shadow-xs)] transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[var(--px-shadow-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            className="st-card st-focus group p-5 transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
         >
-            <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl', iconClass)}>{icon}</div>
-            <h3 className="mt-4 text-lg font-bold text-slate-950">{title}</h3>
-            <p className="mt-2 min-h-[3.5rem] text-sm leading-relaxed text-slate-600">{description}</p>
-            <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-blue-700 group-hover:text-blue-800">
+            <div className={cn('flex h-10 w-10 items-center justify-center border-2 border-slate-900', iconClass)}>{icon}</div>
+            <h3 className="st-heading mt-4 text-xl">{title}</h3>
+            <p className="st-muted mt-2 min-h-[3.5rem] text-sm font-semibold leading-relaxed">{description}</p>
+            <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-black text-blue-700 group-hover:underline">
                 {action} <ArrowRight size={15} />
             </span>
         </Link>
@@ -389,10 +386,10 @@ function LearningPathCard({
 
 function SummaryItem({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
     return (
-        <div className="rounded-2xl p-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">{icon}</div>
-            <p className="mt-3 text-2xl font-extrabold tracking-tight text-slate-950">{value}</p>
-            <p className="mt-0.5 text-xs font-medium text-slate-500">{label}</p>
+        <div className="p-4">
+            <div className="flex h-9 w-9 items-center justify-center border-2 border-slate-900 bg-slate-100 text-slate-700">{icon}</div>
+            <p className="mt-3 text-2xl font-black tracking-tight text-slate-950">{value}</p>
+            <p className="mt-0.5 text-xs font-bold text-slate-500">{label}</p>
         </div>
     )
 }
