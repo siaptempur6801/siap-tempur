@@ -105,27 +105,27 @@ async function finishMini(page: Page, expectedSubject: string) {
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
     await expect(page.getByText('TKA SMP · Mini Tryout')).toBeVisible()
     await expect(page.getByRole('heading', { name: expectedSubject, exact: true })).toBeVisible()
-    await expect(page.getByText('Soal 1 / 15')).toBeVisible()
+    await expect(page.getByText('Soal 1 dari 15')).toBeVisible()
     await expect(page.getByText(/Terjawab total:/)).toContainText('0/15')
     await assertNoDocumentOverflow(page)
 
     await answerFirstVisibleOption(page)
-    await page.getByRole('button', { name: 'Tandai', exact: true }).click()
-    await expect(page.getByText(/Terjawab section:/)).toContainText('1/15')
+    await page.getByRole('button', { name: 'Tandai untuk ditinjau', exact: true }).click()
+    await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/15')
     await page.waitForTimeout(800)
 
     // Browser reload proves answer + flag resume from the persisted attempt state.
     await page.reload()
     await expect(page.getByRole('heading', { name: expectedSubject, exact: true })).toBeVisible()
-    await expect(page.getByText(/Terjawab section:/)).toContainText('1/15')
+    await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/15')
     await expect(page.getByRole('button', { name: 'Ditandai', exact: true })).toBeVisible()
 
     const navigator = page.locator('aside')
-    await navigator.getByRole('button', { name: '15', exact: true }).click()
-    await expect(page.getByText('Soal 15 / 15')).toBeVisible()
+    await navigator.getByRole('button', { name: 'Buka soal 15', exact: true }).click()
+    await expect(page.getByText('Soal 15 dari 15')).toBeVisible()
 
     page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Kirim Tryout', exact: true }).click()
+    await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
