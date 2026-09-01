@@ -1,87 +1,75 @@
 'use client'
 
-import { BookOpen, Bookmark, Clock3 } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowRight, BookOpen, Bookmark, Dumbbell, FileText } from 'lucide-react'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 
-const learningNav = [
-    { label: 'Semua Materi', items: ['Ringkasan SKD', 'Strategi belajar', 'Peta topik'] },
+const learningGroups = [
     { label: 'TWK', items: ['Nasionalisme', 'Integritas', 'Bela Negara', 'Pilar Negara', 'Bahasa Negara'] },
-    { label: 'TIU', items: ['Analogi', 'Silogisme', 'Analitis', 'Berhitung', 'Deret Angka', 'Perbandingan Kuantitatif', 'Soal Cerita', 'Figural'] },
+    { label: 'TIU', items: ['Verbal', 'Numerik', 'Figural', 'Logika', 'Analitis'] },
     { label: 'TKP', items: ['Pelayanan Publik', 'Jejaring Kerja', 'Sosial Budaya', 'TIK', 'Profesionalisme', 'Anti Radikalisme'] },
 ]
 
 export default function BelajarMateriClient() {
     return (
-        <PageAnimateContainer className="space-y-4">
+        <PageAnimateContainer className="mx-auto max-w-6xl space-y-7 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-9">
             <PageAnimateItem>
-                <div className="flex items-center gap-3">
-                    <div className="border-2 border-gray-900 bg-yellow-300 p-2.5 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                        <BookOpen className="h-6 w-6 text-gray-900" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 md:text-3xl">Materi Belajar</h1>
-                        <p className="text-sm font-bold text-gray-600">Rangkuman dan latihan per submateri SKD.</p>
-                    </div>
+                <div className="st-kicker"><BookOpen size={14} /> Belajar</div>
+                <div className="mt-4 max-w-3xl">
+                    <h1 className="st-heading text-3xl sm:text-4xl lg:text-5xl">Bangun pemahaman sebelum latihan.</h1>
+                    <p className="mt-3 text-base leading-7 text-slate-600 sm:text-lg">
+                        Halaman materi mendalam per topik sedang disiapkan. Untuk sekarang, kamu tetap bisa melihat kisi-kisi dan langsung berlatih pada bagian yang ingin diperkuat.
+                    </p>
                 </div>
             </PageAnimateItem>
 
+            <PageAnimateItem className="grid gap-4 md:grid-cols-3">
+                <Link href="/cpns/dashboard/materi" className="st-card-md st-focus group p-5 focus-visible:outline-none">
+                    <div className="flex h-11 w-11 items-center justify-center border-2 border-slate-900 bg-amber-50"><FileText className="h-5 w-5 text-amber-800" /></div>
+                    <h2 className="mt-4 text-xl font-black text-slate-950">Lihat Kisi-kisi SKD</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Pelajari cakupan TWK, TIU, TKP, jumlah soal, dan nilai ambang.</p>
+                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700">Buka kisi-kisi <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></span>
+                </Link>
+
+                <Link href="/cpns/dashboard/drilling-materi" className="st-card-md st-focus group p-5 focus-visible:outline-none">
+                    <div className="flex h-11 w-11 items-center justify-center border-2 border-slate-900 bg-blue-50"><Dumbbell className="h-5 w-5 text-blue-700" /></div>
+                    <h2 className="mt-4 text-xl font-black text-slate-950">Mulai Latihan Fokus</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Pilih submateri tertentu dan kerjakan latihan yang lebih terarah.</p>
+                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700">Pilih materi <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></span>
+                </Link>
+
+                <Link href="/cpns/dashboard/mini-tryout" className="st-card-md st-focus group p-5 focus-visible:outline-none">
+                    <div className="flex h-11 w-11 items-center justify-center border-2 border-slate-900 bg-emerald-50"><Bookmark className="h-5 w-5 text-emerald-700" /></div>
+                    <h2 className="mt-4 text-xl font-black text-slate-950">Uji satu bagian</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Gunakan Mini Tryout untuk mengukur TWK, TIU, atau TKP secara terpisah.</p>
+                    <span className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700">Buka Mini Tryout <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" /></span>
+                </Link>
+            </PageAnimateItem>
+
             <PageAnimateItem>
-                <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-                    <aside className="border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <div className="mb-4 flex items-center justify-between border-b-2 border-gray-900 pb-3">
-                            <div>
-                                <h2 className="font-handwriting text-2xl font-black text-gray-900">Daftar Materi</h2>
-                                <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Coming Soon</p>
-                            </div>
-                            <Clock3 className="h-5 w-5 text-gray-500" />
-                        </div>
-
-                        <div className="space-y-3">
-                            {learningNav.map((group) => (
-                                <div key={group.label} className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-black uppercase tracking-widest text-gray-500">{group.label}</span>
-                                        <span className="rounded-sm border border-gray-300 bg-gray-50 px-1.5 py-0.5 text-[10px] font-black uppercase text-gray-400">
-                                            Soon
-                                        </span>
-                                    </div>
-                                    <div className="grid gap-1">
-                                        {group.items.map((item) => (
-                                            <button
-                                                key={`${group.label}-${item}`}
-                                                type="button"
-                                                disabled
-                                                className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-left text-sm font-bold text-gray-400"
-                                            >
-                                                <span>{item}</span>
-                                                <span className="text-[10px] font-black uppercase">Soon</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </aside>
-
-                    <div className="relative overflow-hidden border-2 border-gray-900 bg-yellow-50 p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center border-2 border-gray-900 bg-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                <Bookmark className="h-7 w-7 text-gray-900" />
-                            </div>
-                            <div className="space-y-2">
-                                <div className="inline-flex border-2 border-gray-900 bg-white px-3 py-1 text-xs font-black uppercase tracking-widest text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    Coming Soon
-                                </div>
-                                <h2 className="font-handwriting text-3xl font-black text-gray-900">
-                                    Nanti setiap submateri punya halaman belajar sendiri.
-                                </h2>
-                                <p className="max-w-2xl text-sm font-medium leading-relaxed text-gray-700">
-                                    Struktur materi sudah disiapkan. Nanti halaman ini bisa diisi rangkuman, contoh soal, pembahasan, dan latihan per topik.
-                                </p>
-                            </div>
+                <section className="st-flat-card p-5 sm:p-6">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-slate-900 bg-slate-50"><BookOpen className="h-5 w-5 text-slate-700" /></div>
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Materi mendalam</p>
+                            <h2 className="mt-1 text-xl font-black text-slate-950">Struktur topik sudah disiapkan.</h2>
+                            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">Nantinya setiap topik dapat berisi rangkuman, contoh, pembahasan, dan latihan terkait. Sampai fitur itu tersedia, gunakan alur belajar yang sudah aktif di atas.</p>
                         </div>
                     </div>
-                </div>
+
+                    <div className="mt-5 grid gap-3 md:grid-cols-3">
+                        {learningGroups.map((group) => (
+                            <div key={group.label} className="border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-700">{group.label}</p>
+                                <div className="mt-3 flex flex-wrap gap-1.5">
+                                    {group.items.map((item) => (
+                                        <span key={`${group.label}-${item}`} className="border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-500">{item}</span>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
             </PageAnimateItem>
         </PageAnimateContainer>
     )
