@@ -60,11 +60,24 @@ export default function TkaDashboardShell({
         user.user_metadata?.name ||
         'Pejuang SiapTempur'
 
+    const learnerSurface = {
+        '--st-paper': '#f6f7fb',
+        '--st-paper-strong': '#eef1f7',
+        '--st-border': '1px solid #e4e7f0',
+        '--st-shadow-sm': '0 8px 24px rgba(15, 23, 42, 0.055)',
+        '--st-shadow-md': '0 14px 36px rgba(15, 23, 42, 0.075)',
+        '--st-shadow-lg': '0 22px 54px rgba(79, 70, 229, 0.12)',
+        '--st-radius-sm': '0.875rem',
+        '--st-radius-md': '1.125rem',
+        '--st-radius-lg': '1.5rem',
+    } as React.CSSProperties
+
     return (
         <div
             data-experience-mode="learning"
             data-program={`tka-${level.toLowerCase()}`}
             className="st-product flex h-screen overflow-hidden bg-[#f6f7fb] font-body text-slate-950"
+            style={learnerSurface}
         >
             <aside className="relative z-20 hidden w-[17.5rem] min-h-0 flex-col border-r border-slate-200/80 bg-white md:flex">
                 <div className="shrink-0 px-6 pb-5 pt-7">
