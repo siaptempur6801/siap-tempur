@@ -8,10 +8,11 @@ on:
 
 jobs:
   verify:
-    # Self-hosted runners must never execute code from forks. For pull requests,
-    # only run when the head repository is this repository itself.
+    # Standard release verification must not depend on the intermittently-offline
+    # self-hosted Mac runner. Dedicated staging E2E workflows keep their own
+    # environment/OIDC boundaries.
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       CI: 'true'
@@ -64,7 +65,7 @@ jobs:
         run: npm run build
 
       - name: Install Playwright Chromium
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: E2E tests
         run: npm run test:e2e

@@ -7,6 +7,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from production_rehearsal_sql_compat import normalized_typed_copy
+
 LOCAL_HOSTS = {"127.0.0.1", "localhost"}
 
 
@@ -92,9 +94,20 @@ def main() -> None:
     print("Phase 2: 476 sessions + 16,889 answers + 1,273 subject scores")
     print("Withheld needs_revision questions remain outside the canonical bank; snapshots preserve their history.")
 
-    proc = subprocess.run(
-        ["psql", args.db_url, "-X", "-v", "ON_ERROR_STOP=1", "-f", str(script_path)]
-    )
+    try:
+        typed_script, replacements = normalized_typed_copy(script_path)
+    except Exception as exc:
+        die(f"could not normalize Phase 2 SQL for exact typed legacy clone: {exc}")
+    print(f"Exact-clone compatibility: normalized {replacements} NULLIF empty-string expression(s).")
+    try:
+        proc = subprocess.run(
+            ["psql", args.db_url, "-X", "-v", "ON_ERROR_STOP=1", "-f", str(typed_script)]
+        )
+    finally:
+        try:
+            typed_script.unlink()
+        except FileNotFoundError:
+            pass
     if proc.returncode != 0:
         raise SystemExit(proc.returncode)
 
