@@ -30,8 +30,8 @@ test.describe('Product Experience mobile accessibility regression', () => {
     test('CPNS landing keeps primary journey readable and touch friendly on mobile', async ({ page }) => {
         await page.goto('/cpns')
 
-        await expect(page.getByRole('heading', { name: /Persiapan SKD yang tidak berhenti di skor/i })).toBeVisible()
-        const primaryCta = page.getByRole('link', { name: /Mulai persiapan/i }).first()
+        await expect(page.getByRole('heading', { name: /Belajar lebih terarah\. Hadapi SKD lebih siap\./i })).toBeVisible()
+        const primaryCta = page.getByRole('link', { name: /Mulai persiapan CPNS/i }).first()
         await expectTouchTarget(primaryCta)
         await primaryCta.focus()
         await expect(primaryCta).toBeFocused()
@@ -68,7 +68,7 @@ test.describe('Product Experience mobile accessibility regression', () => {
 
         await page.getByRole('button', { name: 'Daftar gratis', exact: true }).click()
         await expect(page.locator('#fullName')).toHaveAttribute('aria-invalid', 'true')
-        await expect(page.locator('#email-address')).toHaveAttribute('aria-invalid', 'true')
+        await expect(page.locator('#email')).toHaveAttribute('aria-invalid', 'true')
         await expect(page.locator('#password')).toHaveAttribute('aria-invalid', 'true')
         await expect(page.locator('#register-name-error')).toHaveAttribute('role', 'alert')
         await expect(page.locator('#register-email-error')).toHaveAttribute('role', 'alert')
