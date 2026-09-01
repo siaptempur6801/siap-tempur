@@ -135,26 +135,16 @@ async function finishMini(page: Page, expectedSubject: string) {
 }
 
 test.describe.serial('TKA SMP Mini Tryout core', () => {
-    test('learner can activate another TKA track through authenticated self-service RPC', async ({ page }) => {
-        test.setTimeout(60_000)
-        await freshDisposableTkaSession(page)
+    test('SD coming-soon remains public and mobile-safe while SMP is the active pilot', async ({ browser }) => {
+        const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+        const page = await context.newPage()
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/sd')
 
-        await expect(page.getByText('Belum ada riwayat tryout')).toBeVisible()
-        const inactive = page.getByText('Belum diaktifkan')
-        if (await inactive.isVisible().catch(() => false)) {
-            await expect(page.getByRole('heading', { name: 'Aktifkan jalur TKA SD', exact: true })).toBeVisible()
-            await page.getByLabel('Nama sekolah').fill('CI School')
-            await page.getByLabel('Kelas').fill('6')
-            await page.getByLabel('Tahun target').fill('2026')
-            await page.getByRole('button', { name: 'Aktifkan TKA SD', exact: true }).click()
-
-            await page.waitForURL(/\/tka\/sd\?activated=1$/i)
-            await expect(page.getByText('Jalur TKA SD berhasil diaktifkan untuk akun ini.')).toBeVisible()
-        }
-        await expect(page.getByText('Track aktif')).toBeVisible()
+        await expect(page).toHaveURL(/\/tka\/sd$/i)
+        await expect(page.getByRole('heading', { name: 'Pengalaman belajar TKA SD sedang kami siapkan.', exact: true })).toBeVisible()
         await assertNoDocumentOverflow(page)
+        await context.close()
     })
 
     test('Bahasa Indonesia: mobile resume, result, history, projection, dashboard, error state, and one-free-attempt limit', async ({ page }) => {
@@ -163,7 +153,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/smp')
 
-        await expect(page.getByText('Track aktif')).toBeVisible()
+        await expect(page.getByText('Jalur belajar aktif')).toBeVisible()
         const card = await examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
         await expect(card.getByText('35 menit')).toBeVisible()
         await expect(card.getByText(/Gratis 1x tersisa/)).toBeVisible()
@@ -193,7 +183,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await page.setViewportSize({ width: 1024, height: 768 })
         await page.goto('/tka/smp')
 
-        await expect(page.getByText('Track aktif')).toBeVisible()
+        await expect(page.getByText('Jalur belajar aktif')).toBeVisible()
         const card = await examCard(page, 'Mini Tryout Matematika TKA SMP')
         await expect(card.getByText('35 menit')).toBeVisible()
         await expect(card.getByText(/Gratis 1x tersisa/)).toBeVisible()
