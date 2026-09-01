@@ -21,9 +21,13 @@ export default async function TkaDashboardLayout({
     const level = parseTkaLevel(levelParam)
     if (!level) notFound()
 
+    if (level !== 'SMP') {
+        return <>{children}</>
+    }
+
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect(`/login?returnTo=${encodeURIComponent(`/tka/${level.toLowerCase()}`)}`)
+    if (!user) redirect(`/login?returnTo=${encodeURIComponent('/tka/smp')}`)
 
     const [{ data: profile }, requestHeaders] = await Promise.all([
         supabase
