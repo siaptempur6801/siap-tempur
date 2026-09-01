@@ -84,8 +84,9 @@ setup('provision disposable CPNS SKD staging user', async ({ page }) => {
     await page.locator('input[type="password"]').fill(password)
     await page.getByRole('button', { name: 'Masuk', exact: true }).click()
     await page.waitForURL(/\/cpns\/dashboard(?:\?.*)?$/)
-    await expect(page.getByText('Siap Tempur')).toBeVisible()
-    await expect(page.getByText('Tiket Sisa')).toBeVisible()
+    await expect(page.getByTestId('cpns-dashboard-ready')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Apa yang sebaiknya kamu kerjakan hari ini?', exact: true })).toBeVisible()
+    await expect(page.getByText('token tersisa', { exact: true })).toBeVisible()
     await page.context().storageState({ path: authFile })
 
     const browserClient = createClient(supabaseUrl, publishableKey, {
