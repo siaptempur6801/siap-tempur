@@ -27,13 +27,13 @@ test.describe('Public Pages Flow', () => {
 
   test('TKA public hanya membuka SMP untuk Production V1', async ({ page }) => {
     await page.goto('/tka');
-    await expect(page.getByRole('heading', { name: /Fokus dulu ke TKA SMP/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Belajar TKA lebih terarah/i })).toBeVisible();
     await expect(page.getByText('TKA SD', { exact: true })).toBeVisible();
     await expect(page.getByText('TKA SMA', { exact: true })).toBeVisible();
 
-    const smpEntry = page.getByRole('link', { name: /TKA SMP.*Masuk & mulai/i });
+    const smpEntry = page.getByRole('link', { name: /TKA SMP.*Masuk dan mulai/i });
     await expect(smpEntry).toHaveAttribute('href', '/login?returnTo=%2Ftka%2Fsmp');
-    await expect(page.getByText('Belum dibuka', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Kami sedang menyiapkannya.', { exact: true })).toHaveCount(2);
   });
 
   test('menampilkan halaman 404 jika URL tidak valid', async ({ page }) => {
