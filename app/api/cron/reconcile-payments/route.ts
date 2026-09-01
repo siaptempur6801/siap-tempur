@@ -1,11 +1,14 @@
 import { errorResponse, successResponse } from '@/lib/api-utils'
 import { logger } from '@/lib/logger'
+import {
+    isMidtransFinalNonSuccessStatus,
+    isMidtransSuccessStatus,
+    normalizeMidtransStatus,
+} from '@/lib/midtrans-status'
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { paymentService } from '@/src/services/payment.service'
 
 const BATCH_SIZE = 50
-const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
-const FINAL_FAILURE_STATUSES = new Set(['expire', 'cancel', 'deny', 'failure'])
 
 type ReconcileSummary = {
     checked: number
@@ -72,7 +75,7 @@ export async function GET(request: Request) {
 
     for (const orderId of orderIds) {
         const order = orderById.get(orderId)
-        if (!order || String(order.status).toLowerCase() !== 'pending') {
+        if (!order || String(order.status).trim().toLowerCase() !== 'pending') {
             summary.skipped += 1
             continue
         }
@@ -88,11 +91,11 @@ export async function GET(request: Request) {
 
         try {
             const result = await paymentService.syncUserOrder(userId, orderId)
-            const status = String(result.status).toLowerCase()
+            const status = normalizeMidtransStatus(result.status)
 
-            if (SUCCESS_STATUSES.has(status)) {
+            if (isMidtransSuccessStatus(status)) {
                 summary.settled += 1
-            } else if (FINAL_FAILURE_STATUSES.has(status)) {
+            } else if (isMidtransFinalNonSuccessStatus(status)) {
                 summary.expired += 1
             } else {
                 summary.pending += 1
