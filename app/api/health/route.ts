@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/utils/supabase/server'
 import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
 
 type HealthChecks = {
     env: boolean
@@ -25,8 +27,11 @@ function healthResponse(statusCode: number, checks: HealthChecks) {
         {
             status: statusCode,
             headers: {
-                'Cache-Control': 'no-store',
+                'Cache-Control': 'no-store, max-age=0',
+                'CDN-Cache-Control': 'no-store',
                 'Vercel-CDN-Cache-Control': 'no-store',
+                Pragma: 'no-cache',
+                Expires: '0',
             },
         }
     )
