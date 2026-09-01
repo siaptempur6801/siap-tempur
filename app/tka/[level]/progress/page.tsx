@@ -43,18 +43,18 @@ export default async function TkaProgressPage({
                             <Crown size={16}/> Tempur Pass
                         </Link>
                         <span className="inline-flex items-center gap-2 border-2 border-gray-900 bg-cyan-100 px-3 py-1 text-xs font-black uppercase">
-                            <BarChart3 size={16}/> Learning Loop V1
+                            <BarChart3 size={16}/> Ringkasan belajar
                         </span>
                     </div>
                 </div>
 
                 <header className="border-2 border-gray-900 bg-white p-6 shadow-[6px_6px_0_0_#111] md:p-8">
                     <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-700">
-                        <BarChart3 size={16}/> Progress Dashboard
+                        <BarChart3 size={16}/> Perkembangan belajar
                     </div>
-                    <h1 className="mt-2 font-handwriting text-4xl font-black md:text-5xl">Progress Dashboard TKA SMP</h1>
-                    <p className="mt-2 max-w-3xl font-semibold text-gray-600">
-                        Satu tempat untuk membaca readiness, progress BIN dan MAT, gap yang masih terbuka, remedial aktif, weakest topics, serta tindakan belajar berikutnya. Semua data dibaca dari projection learning-loop yang sama; dashboard tidak menyimpan skor versinya sendiri.
+                    <h1 className="mt-2 font-handwriting text-4xl font-black md:text-5xl">Perkembangan belajar TKA SMP</h1>
+                    <p className="mt-2 max-w-3xl font-semibold leading-relaxed text-gray-600">
+                        Lihat bagian yang sudah kuat, materi yang masih perlu diperbaiki, latihan perbaikan yang aktif, dan rekomendasi langkah belajar berikutnya dalam satu tempat.
                     </p>
                 </header>
 
