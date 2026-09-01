@@ -1,0 +1,36 @@
+name: PX analytics dependency (temporary)
+
+on:
+  push:
+    branches:
+      - feat/product-experience-v1-1
+    paths:
+      - .github/workflows/px-analytics-dep-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product-experience-v1-1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install analytics SDK and sync lockfile
+        run: npm install @vercel/analytics
+
+      - name: Commit dependency files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git diff --cached --check
+          git commit -m "chore(px): add Vercel analytics SDK"
+          git push origin HEAD:feat/product-experience-v1-1
