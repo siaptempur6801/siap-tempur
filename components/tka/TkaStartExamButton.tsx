@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2, Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { startTkaExam } from '@/app/actions/tka-practice'
+import { trackProductEvent } from '@/lib/product-analytics'
 
 export default function TkaStartExamButton({
     level,
@@ -30,6 +31,11 @@ export default function TkaStartExamButton({
                 return
             }
             if (result?.success && result.sessionId) {
+                trackProductEvent('px_exam_start', {
+                    program: 'tka_smp',
+                    surface: 'exam',
+                    mode: examSlug.includes('full') ? 'full_tryout' : 'mini_tryout',
+                })
                 toast.success(result.resumed ? 'Melanjutkan tryout tersimpan.' : 'Tryout TKA dimulai!')
                 router.push(`/tka/${level.toLowerCase()}/tryout/${result.sessionId}`)
             }
@@ -50,9 +56,9 @@ export default function TkaStartExamButton({
                 disabled={Boolean(disabledReason) || loading}
                 title={disabledReason || 'Mulai tryout'}
                 aria-describedby={errorMessage ? `${examSlug}-start-error` : undefined}
-                className="inline-flex w-full min-w-0 items-center justify-center gap-2 overflow-hidden border-2 border-gray-900 bg-blue-700 px-4 py-2.5 text-center font-black leading-tight text-white shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none"
+                className="inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 overflow-hidden border-2 border-gray-900 bg-blue-700 px-4 py-2.5 text-center font-black leading-tight text-white shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 disabled:shadow-none"
             >
-                {loading ? <Loader2 size={18} className="shrink-0 animate-spin" /> : <Play size={18} className="shrink-0" />}
+                {loading ? <Loader2 size={18} className="shrink-0 animate-spin" aria-hidden="true"/> : <Play size={18} className="shrink-0" aria-hidden="true"/>}
                 <span className="min-w-0 whitespace-normal break-words">{label}</span>
             </button>
             {errorMessage && (
