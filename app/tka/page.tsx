@@ -21,17 +21,15 @@ const LEVEL_COPY = {
         description: 'Pengalaman belajar TKA SD sedang kami siapkan agar mengikuti pola latihan, evaluasi, dan pembahasan yang sama.',
         icon: School,
         available: false,
-        tone: 'bg-amber-50 text-amber-700',
-        border: 'border-amber-100',
+        tone: 'bg-yellow-100 text-amber-800',
     },
     SMP: {
         title: 'TKA SMP',
         subtitle: 'Tersedia sekarang',
-        description: 'Latihan, mini tryout, full tryout, pembahasan, soal yang perlu diulang, dan rekomendasi belajar dalam satu jalur.',
+        description: 'Latihan, Mini Tryout, Full Tryout, pembahasan, soal yang perlu diulang, dan rekomendasi belajar dalam satu jalur.',
         icon: BookOpenCheck,
         available: true,
-        tone: 'bg-emerald-50 text-emerald-700',
-        border: 'border-emerald-100',
+        tone: 'bg-emerald-100 text-emerald-700',
     },
     SMA: {
         title: 'TKA SMA',
@@ -39,8 +37,7 @@ const LEVEL_COPY = {
         description: 'Pengalaman belajar TKA SMA sedang kami siapkan dengan struktur yang konsisten dan sesuai kebutuhan jenjangnya.',
         icon: GraduationCap,
         available: false,
-        tone: 'bg-violet-50 text-violet-700',
-        border: 'border-violet-100',
+        tone: 'bg-violet-100 text-violet-700',
     },
 } as const
 
@@ -54,21 +51,18 @@ export default async function TkaLandingPage({
     const { data: { user } } = await supabase.auth.getUser()
 
     return (
-        <main data-experience-mode="marketing" className="min-h-screen bg-white text-slate-950">
-            <header className="border-b border-slate-200 bg-white/90 backdrop-blur-xl">
-                <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
-                    <Link
-                        href="/"
-                        className="rounded-md font-handwriting text-2xl font-bold tracking-tight text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 md:text-3xl"
-                    >
+        <main data-experience-mode="marketing" className="st-product min-h-screen">
+            <header className="border-b-2 border-slate-900 bg-[#fbfaf7]/95 backdrop-blur">
+                <div className="mx-auto flex min-h-18 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
+                    <Link href="/" className="st-focus font-handwriting text-3xl font-black tracking-tight text-slate-950">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                     </Link>
                     <div className="flex items-center gap-2">
-                        <Link href="/cpns" className="hidden min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-950 sm:inline-flex">
+                        <Link href="/cpns" className="st-focus hidden min-h-11 items-center px-3 text-sm font-black text-slate-800 hover:text-blue-700 sm:inline-flex">
                             CPNS
                         </Link>
                         {user ? (
-                            <Button size="sm" asChild><Link href="/tka/smp">Lanjutkan TKA</Link></Button>
+                            <Button size="sm" asChild><Link href="/tka/smp">TKA SMP</Link></Button>
                         ) : (
                             <Button size="sm" variant="outline" asChild><Link href="/login?returnTo=%2Ftka%2Fsmp">Masuk</Link></Button>
                         )}
@@ -76,31 +70,41 @@ export default async function TkaLandingPage({
                 </div>
             </header>
 
-            <section className="border-b border-slate-200 bg-slate-50/70 px-4 py-16 md:px-8 md:py-24">
-                <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+            <section className="relative overflow-hidden border-b-2 border-slate-900 px-4 py-16 md:px-8 md:py-24">
+                <div className="pointer-events-none absolute -left-20 top-16 h-44 w-44 rounded-full border-2 border-dashed border-yellow-500 bg-yellow-50" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-20 bottom-[-4rem] h-64 w-64 -rotate-12 border-2 border-dashed border-blue-300 bg-blue-50" aria-hidden="true" />
+                <div className="relative mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.1fr_0.9fr]">
                     <div>
-                        <p className="text-sm font-semibold text-emerald-700">Persiapan TKA</p>
-                        <h1 className="mt-4 max-w-4xl text-5xl font-extrabold tracking-[-0.045em] text-slate-950 sm:text-6xl md:text-7xl md:leading-[0.98]">
-                            Belajar terarah untuk kemampuan yang terus berkembang.
+                        <span className="st-kicker">Persiapan TKA</span>
+                        <h1 className="st-heading-display mt-7 max-w-4xl text-5xl sm:text-6xl md:text-7xl">
+                            Belajar TKA lebih terarah. Tahu apa yang perlu diperbaiki.
                         </h1>
-                        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-slate-600 md:text-xl">
+                        <p className="st-muted mt-6 max-w-2xl text-lg font-semibold leading-relaxed md:text-xl">
                             Pilih jenjangmu, kerjakan latihan dan tryout, pelajari pembahasan, lalu gunakan hasil untuk menentukan fokus belajar berikutnya.
                         </p>
+                        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                            <Button size="lg" asChild>
+                                <Link href={user ? '/tka/smp' : '/login?returnTo=%2Ftka%2Fsmp'}>
+                                    Mulai TKA SMP <ArrowRight size={18} />
+                                </Link>
+                            </Button>
+                            <Button size="lg" variant="outline" asChild><Link href="#pilih-jenjang">Lihat jenjang</Link></Button>
+                        </div>
                     </div>
 
-                    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[var(--px-shadow-md)] md:p-8">
-                        <p className="text-sm font-semibold text-emerald-700">Satu pola belajar</p>
-                        <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">Ukur. Pahami. Tingkatkan.</h2>
-                        <div className="mt-6 space-y-4">
+                    <div className="st-card-lg rotate-[-0.5deg] p-6 md:p-8">
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Satu pola belajar</p>
+                        <h2 className="st-heading-display mt-3 text-3xl md:text-4xl">Ukur. Pahami. Tingkatkan.</h2>
+                        <div className="mt-6 divide-y-2 divide-dashed divide-slate-200">
                             {[
                                 ['01', 'Mulai dari latihan yang sesuai jenjangmu.'],
                                 ['02', 'Lihat hasil dan perkembangan setelah mengerjakan.'],
                                 ['03', 'Pelajari pembahasan serta soal yang perlu diulang.'],
                                 ['04', 'Gunakan rekomendasi untuk memilih fokus berikutnya.'],
                             ].map(([number, text]) => (
-                                <div key={number} className="flex gap-4">
-                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-xs font-bold text-emerald-700">{number}</span>
-                                    <p className="pt-1 text-sm leading-relaxed text-slate-600">{text}</p>
+                                <div key={number} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center border-2 border-slate-900 bg-blue-50 text-xs font-black text-blue-700">{number}</span>
+                                    <p className="st-muted pt-1 text-sm font-bold leading-relaxed">{text}</p>
                                 </div>
                             ))}
                         </div>
@@ -108,40 +112,36 @@ export default async function TkaLandingPage({
                 </div>
             </section>
 
-            <section className="px-4 py-16 md:px-8 md:py-24">
+            <section id="pilih-jenjang" className="scroll-mt-24 px-4 py-16 md:px-8 md:py-24">
                 <div className="mx-auto max-w-6xl">
                     <div className="max-w-3xl">
-                        <p className="text-sm font-semibold text-emerald-700">Pilih jenjang</p>
-                        <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950 md:text-5xl">Satu SiapTempur, pengalaman yang konsisten.</h2>
-                        <p className="mt-4 text-lg leading-relaxed text-slate-600">
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Pilih jenjang</p>
+                        <h2 className="st-heading-display mt-2 text-4xl md:text-5xl">Satu SiapTempur, pengalaman yang konsisten.</h2>
+                        <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">
                             Struktur utama tetap sama di setiap jenjang, sementara materi dan latihan mengikuti kebutuhan tingkat pendidikan.
                         </p>
                     </div>
 
                     {params.error && (
-                        <div role="alert" className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-800">
-                            {params.error}
-                        </div>
+                        <div role="alert" className="st-danger mt-6 px-4 py-3 text-sm font-black text-red-800">{params.error}</div>
                     )}
 
-                    <div className="mt-10 grid gap-5 md:grid-cols-3">
+                    <div className="mt-10 grid gap-6 md:grid-cols-3">
                         {TKA_LEVELS.map((level) => {
                             const copy = LEVEL_COPY[level]
                             const Icon = copy.icon
 
                             if (!copy.available) {
                                 return (
-                                    <article key={level} data-program={`tka-${level.toLowerCase()}`} className={`flex min-h-[19rem] flex-col rounded-3xl border bg-white p-6 shadow-[var(--px-shadow-xs)] ${copy.border}`}>
+                                    <article key={level} data-program={`tka-${level.toLowerCase()}`} className="st-card flex min-h-[19rem] flex-col p-6 opacity-80">
                                         <div className="flex items-start justify-between gap-3">
-                                            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${copy.tone}`}><Icon size={23} /></div>
-                                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
-                                                <LockKeyhole size={12} /> Segera hadir
-                                            </span>
+                                            <div className={`flex h-12 w-12 items-center justify-center border-2 border-slate-900 ${copy.tone}`}><Icon size={23} /></div>
+                                            <span className="st-pill bg-slate-100 text-slate-600"><LockKeyhole size={12} /> Segera hadir</span>
                                         </div>
-                                        <h3 className="mt-6 text-2xl font-bold tracking-tight text-slate-950">{copy.title}</h3>
-                                        <p className="mt-1 text-sm font-semibold text-slate-500">{copy.subtitle}</p>
-                                        <p className="mt-4 flex-1 leading-relaxed text-slate-600">{copy.description}</p>
-                                        <p className="mt-5 text-sm font-semibold text-slate-500">Kami sedang menyiapkannya.</p>
+                                        <h3 className="st-heading mt-6 text-2xl">{copy.title}</h3>
+                                        <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-slate-500">{copy.subtitle}</p>
+                                        <p className="st-muted mt-4 flex-1 font-semibold leading-relaxed">{copy.description}</p>
+                                        <p className="mt-5 text-sm font-black text-slate-500">Kami sedang menyiapkannya.</p>
                                     </article>
                                 )
                             }
@@ -154,16 +154,16 @@ export default async function TkaLandingPage({
                                     key={level}
                                     data-program={`tka-${level.toLowerCase()}`}
                                     href={href}
-                                    className={`group flex min-h-[19rem] flex-col rounded-3xl border bg-white p-6 shadow-[var(--px-shadow-sm)] transition hover:-translate-y-1 hover:shadow-[var(--px-shadow-md)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 ${copy.border}`}
+                                    className="st-card-md st-focus group flex min-h-[19rem] flex-col p-6 transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
                                 >
                                     <div className="flex items-start justify-between gap-3">
-                                        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${copy.tone}`}><Icon size={23} /></div>
-                                        <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">Tersedia</span>
+                                        <div className={`flex h-12 w-12 items-center justify-center border-2 border-slate-900 ${copy.tone}`}><Icon size={23} /></div>
+                                        <span className="st-pill bg-emerald-100 text-emerald-800">Tersedia</span>
                                     </div>
-                                    <h3 className="mt-6 text-2xl font-bold tracking-tight text-slate-950">{copy.title}</h3>
-                                    <p className="mt-1 text-sm font-semibold text-emerald-700">{copy.subtitle}</p>
-                                    <p className="mt-4 flex-1 leading-relaxed text-slate-600">{copy.description}</p>
-                                    <span className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-emerald-700">
+                                    <h3 className="st-heading mt-6 text-2xl">{copy.title}</h3>
+                                    <p className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{copy.subtitle}</p>
+                                    <p className="st-muted mt-4 flex-1 font-semibold leading-relaxed">{copy.description}</p>
+                                    <span className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-700 group-hover:underline">
                                         {user ? 'Mulai belajar' : 'Masuk dan mulai'} <ArrowRight className="transition-transform group-hover:translate-x-1" size={17} />
                                     </span>
                                 </Link>
@@ -173,11 +173,11 @@ export default async function TkaLandingPage({
                 </div>
             </section>
 
-            <section className="border-t border-slate-200 bg-slate-50 px-4 py-10 md:px-8">
+            <section className="st-section-soft px-4 py-10 md:px-8">
                 <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
                     <div>
-                        <p className="font-semibold text-slate-900">Sedang mempersiapkan CPNS?</p>
-                        <p className="mt-1 text-sm text-slate-500">Akun yang sama juga bisa digunakan untuk persiapan SKD CPNS.</p>
+                        <p className="st-heading text-lg">Sedang mempersiapkan CPNS?</p>
+                        <p className="st-muted mt-1 text-sm font-semibold">Akun yang sama juga bisa digunakan untuk persiapan SKD CPNS.</p>
                     </div>
                     <Button variant="outline" asChild><Link href="/cpns">Lihat persiapan CPNS</Link></Button>
                 </div>
