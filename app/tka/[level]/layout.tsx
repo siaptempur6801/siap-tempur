@@ -25,18 +25,21 @@ export default async function TkaDashboardLayout({
         return <>{children}</>
     }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) redirect(`/login?returnTo=${encodeURIComponent('/tka/smp')}`)
-
-    const [{ data: profile }, requestHeaders] = await Promise.all([
-        supabase
-            .from('profiles')
-            .select('avatar_url, full_name, display_name')
-            .eq('id', user.id)
-            .maybeSingle(),
+    const [supabase, requestHeaders] = await Promise.all([
+        createClient(),
         headers(),
     ])
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+        const requestedPath = requestHeaders.get('x-pathname') || '/tka/smp'
+        redirect(`/login?returnTo=${encodeURIComponent(requestedPath)}`)
+    }
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('avatar_url, full_name, display_name')
+        .eq('id', user.id)
+        .maybeSingle()
 
     const nonce = requestHeaders.get('x-nonce') || undefined
 
