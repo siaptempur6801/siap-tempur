@@ -79,7 +79,7 @@ export default function TkaDashboardShell({
                 <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-4" aria-label={`Navigasi TKA ${level}`}>
                     <p className="mb-1.5 px-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Utama</p>
                     <div className="space-y-1.5">
-                        <NavItem href={basePath} icon={<LayoutDashboard size={18} />} label="Beranda" />
+                        <NavItem href={basePath} icon={<LayoutDashboard size={18} />} label="Beranda" exact />
                         <NavItem href={`${basePath}/progress`} icon={<BarChart3 size={18} />} label="Perkembangan" />
                         <NavItem href={`${basePath}#tka-tryout`} icon={<Target size={18} />} label="Tryout" />
                         <NavItem href={`${basePath}/wrong-questions`} icon={<BookOpenCheck size={18} />} label="Soal Salah" />
@@ -134,7 +134,7 @@ export default function TkaDashboardShell({
                 aria-label={`Navigasi utama TKA ${level}`}
             >
                 <div className="grid grid-cols-5 gap-1 px-1.5 py-1.5">
-                    <MobileNavItem href={basePath} icon={<LayoutDashboard size={20} />} label="Beranda" />
+                    <MobileNavItem href={basePath} icon={<LayoutDashboard size={20} />} label="Beranda" exact />
                     <MobileNavItem href={`${basePath}/progress`} icon={<BarChart3 size={20} />} label="Progress" />
                     <MobileNavItem href={`${basePath}#tka-tryout`} icon={<ListChecks size={20} />} label="Tryout" />
                     <MobileNavItem href={`${basePath}/wrong-questions`} icon={<BookOpenCheck size={20} />} label="Review" />
