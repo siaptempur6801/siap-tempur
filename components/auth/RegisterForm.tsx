@@ -96,11 +96,13 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                             id="fullName"
                             type="text"
                             {...register('fullName')}
+                            aria-invalid={Boolean(errors.fullName)}
+                            aria-describedby={errors.fullName ? 'register-name-error' : undefined}
                             className={`relative block w-full rounded-lg border-2 bg-[#fdfbf7] px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-lg font-handwriting ${errors.fullName ? 'border-red-500 focus:border-red-500' : 'border-gray-900 focus:border-blue-600'}`}
                             placeholder="Nama lengkap"
                         />
                         {errors.fullName && (
-                            <p className="mt-1 text-sm text-red-600 font-handwriting">{errors.fullName.message}</p>
+                            <p id="register-name-error" role="alert" className="mt-1 text-sm text-red-600 font-handwriting">{errors.fullName.message}</p>
                         )}
                     </div>
                     <div>
@@ -110,11 +112,13 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                             type="email"
                             autoComplete="email"
                             {...register('email')}
+                            aria-invalid={Boolean(errors.email)}
+                            aria-describedby={errors.email ? 'register-email-error' : undefined}
                             className={`relative block w-full rounded-lg border-2 bg-[#fdfbf7] px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-lg font-handwriting ${errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-900 focus:border-blue-600'}`}
                             placeholder="Alamat email"
                         />
                         {errors.email && (
-                            <p className="mt-1 text-sm text-red-600 font-handwriting">{errors.email.message}</p>
+                            <p id="register-email-error" role="alert" className="mt-1 text-sm text-red-600 font-handwriting">{errors.email.message}</p>
                         )}
                     </div>
                     <div>
@@ -125,19 +129,23 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="new-password"
                                 {...register('password')}
+                                aria-invalid={Boolean(errors.password)}
+                                aria-describedby={errors.password ? 'register-password-error' : undefined}
                                 className={`relative block w-full rounded-lg border-2 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-lg font-handwriting ${errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-900 focus:border-blue-600'}`}
                                 placeholder="Kata sandi (min. 8 karakter)"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
+                                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                                aria-pressed={showPassword}
+                                className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-inset"
                             >
                                 {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
                             </button>
                         </div>
                         {errors.password && (
-                            <p className="mt-1 text-sm text-red-600 font-handwriting">{errors.password.message}</p>
+                            <p id="register-password-error" role="alert" className="mt-1 text-sm text-red-600 font-handwriting">{errors.password.message}</p>
                         )}
                     </div>
                 </div>

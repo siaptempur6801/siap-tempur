@@ -130,7 +130,7 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
                                         type="button"
                                         onClick={handleResend}
                                         disabled={loading}
-                                        className="text-sm font-bold text-yellow-700 hover:text-yellow-600 underline decoration-wavy"
+                                        className="inline-flex min-h-11 items-center text-sm font-bold text-yellow-700 hover:text-yellow-600 underline decoration-wavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-700 focus-visible:ring-offset-2"
                                     >
                                         <span className="font-handwriting text-lg">Kirim ulang email verifikasi</span>
                                     </button>
@@ -148,11 +148,13 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
                             type="email"
                             autoComplete="email"
                             {...register('email')}
+                            aria-invalid={Boolean(errors.email)}
+                            aria-describedby={errors.email ? 'login-email-error' : undefined}
                             className={`relative block w-full rounded-lg border-2 bg-[#fdfbf7] px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-lg font-handwriting ${errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-900 focus:border-blue-600'}`}
                             placeholder="Alamat email"
                         />
                         {errors.email && (
-                            <p className="mt-1 text-sm text-red-600 font-handwriting">{errors.email.message}</p>
+                            <p id="login-email-error" role="alert" className="mt-1 text-sm text-red-600 font-handwriting">{errors.email.message}</p>
                         )}
                     </div>
                     <div>
@@ -163,19 +165,23 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="current-password"
                                 {...register('password')}
+                                aria-invalid={Boolean(errors.password)}
+                                aria-describedby={errors.password ? 'login-password-error' : undefined}
                                 className={`relative block w-full rounded-lg border-2 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-lg font-handwriting ${errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-900 focus:border-blue-600'}`}
                                 placeholder="Kata sandi"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
+                                aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
+                                aria-pressed={showPassword}
+                                className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-inset"
                             >
                                 {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
                             </button>
                         </div>
                         {errors.password && (
-                            <p className="mt-1 text-sm text-red-600 font-handwriting">{errors.password.message}</p>
+                            <p id="login-password-error" role="alert" className="mt-1 text-sm text-red-600 font-handwriting">{errors.password.message}</p>
                         )}
                     </div>
                     <div className="flex justify-end mt-1">
