@@ -38,11 +38,11 @@ export default function TkaPassPackagesClient({
     const buy = async (productCode: string) => {
         if (buying) return
         setBuying(productCode)
-        const loadingToast = toast.loading(hasActivePass ? 'Menyiapkan perpanjangan...' : 'Menyiapkan Tempur Pass...')
+        const loadingToast = toast.loading(hasActivePass ? 'Menyiapkan perpanjangan akses...' : 'Menyiapkan pembayaran...')
         try {
             const transaction = await createTkaPassTransaction(productCode, level)
             if (!transaction.success) {
-                toast.error('Checkout belum bisa dibuat', {
+                toast.error('Pembayaran belum bisa dimulai', {
                     id: loadingToast,
                     description: transaction.message,
                 })
@@ -51,7 +51,7 @@ export default function TkaPassPackagesClient({
 
             toast.dismiss(loadingToast)
             if (!window.snap?.pay) {
-                toast.error('Midtrans Snap belum siap', {
+                toast.error('Pembayaran belum siap dimuat', {
                     description: 'Muat ulang halaman lalu coba lagi.',
                 })
                 return
@@ -59,42 +59,50 @@ export default function TkaPassPackagesClient({
 
             window.snap.pay(transaction.token, {
                 onSuccess: async () => {
-                    const id = toast.loading(hasActivePass ? 'Memperpanjang Tempur Pass...' : 'Mengaktifkan Tempur Pass...')
+                    const id = toast.loading(hasActivePass ? 'Memperpanjang akses...' : 'Mengaktifkan akses...')
                     const ok = await syncPaymentStatus(transaction.orderId)
                     if (ok) {
-                        toast.success(hasActivePass ? 'Tempur Pass diperpanjang!' : 'Tempur Pass aktif!', {
+                        toast.success(hasActivePass ? 'Akses berhasil diperpanjang' : 'Akses belajar sudah aktif', {
                             id,
                             description: hasActivePass
-                                ? 'Masa aktif baru ditambahkan setelah masa aktif yang sudah kamu punya.'
-                                : 'Akses premium TKA sudah diperbarui.',
+                                ? 'Durasi tambahan akan dimulai setelah masa aktif kamu saat ini berakhir.'
+                                : 'Kamu sudah bisa menggunakan fitur belajar yang termasuk dalam paket.',
                         })
                         router.refresh()
                     } else {
-                        toast.info('Pembayaran diterima', {
+                        toast.info('Pembayaran sedang diverifikasi', {
                             id,
-                            description: 'Status sedang diverifikasi. Muat ulang halaman sebentar lagi.',
+                            description: 'Tunggu sebentar lalu muat ulang halaman untuk melihat status terbaru.',
                         })
                     }
                 },
                 onPending: async () => {
                     const id = toast.loading('Memperbarui status pembayaran...')
                     await syncPaymentStatus(transaction.orderId)
-                    toast.info('Pembayaran masih tertunda', { id })
+                    toast.info('Menunggu pembayaran', {
+                        id,
+                        description: 'Selesaikan pembayaran sesuai petunjuk pada metode yang kamu pilih.'
+                    })
                 },
                 onError: () => {
-                    toast.error('Pembayaran gagal.')
+                    toast.error('Pembayaran belum berhasil', {
+                        description: 'Coba lagi atau pilih metode pembayaran lain.'
+                    })
                 },
                 onClose: async () => {
-                    const id = toast.loading('Memeriksa status terakhir...')
+                    const id = toast.loading('Memeriksa status pembayaran...')
                     await syncPaymentStatus(transaction.orderId)
-                    toast.info('Pembayaran ditutup', { id })
+                    toast.info('Pembayaran belum selesai', {
+                        id,
+                        description: 'Kamu bisa mencoba pembayaran lagi jika belum menyelesaikannya.'
+                    })
                     router.refresh()
                 },
             })
         } catch (error) {
             toast.dismiss(loadingToast)
-            toast.error('Gagal membuat checkout', {
-                description: error instanceof Error ? error.message : 'Silakan coba lagi.',
+            toast.error('Pembayaran belum bisa dimulai', {
+                description: error instanceof Error ? error.message : 'Coba lagi beberapa saat.',
             })
         } finally {
             setBuying(null)
@@ -110,12 +118,12 @@ export default function TkaPassPackagesClient({
                     <Crown size={15}/> Tempur Pass
                 </div>
                 <h2 className="mt-2 text-2xl font-black">
-                    {hasActivePass ? `Perpanjang Tempur Pass TKA ${level}` : `Buka akses premium TKA ${level}`}
+                    {hasActivePass ? `Perpanjang akses TKA ${level}` : `Pilih akses belajar TKA ${level}`}
                 </h2>
                 <p className="mt-1 text-sm font-semibold text-gray-600">
                     {hasActivePass
-                        ? 'Pilih durasi tambahan. Masa aktif baru akan ditumpuk setelah masa aktif yang sudah kamu punya.'
-                        : 'Tempur Pass membuka Full Tryout dan Mini Tryout unlimited selama masa aktif paket.'}
+                        ? 'Pilih durasi tambahan. Masa aktif baru akan dimulai setelah akses kamu saat ini berakhir.'
+                        : 'Pilih durasi akses untuk membuka full tryout dan mini tryout tanpa batas selama masa aktif paket.'}
                 </p>
             </div>
 
@@ -135,14 +143,14 @@ export default function TkaPassPackagesClient({
                             )}
                             <h3 className="text-xl font-black">{pkg.name}</h3>
                             <p className="mt-2 min-h-10 text-sm font-semibold text-gray-600">
-                                {pkg.description || `Akses premium TKA ${level} selama ${days} hari.`}
+                                {pkg.description || `Akses belajar TKA ${level} selama ${days} hari.`}
                             </p>
                             <div className="mt-4 text-4xl font-black text-blue-700">{rupiah(pkg.price)}</div>
-                            <div className="mt-1 text-xs font-bold text-gray-500">+ biaya admin Rp500 saat checkout</div>
+                            <div className="mt-1 text-xs font-bold text-gray-500">Biaya admin Rp500 ditambahkan saat pembayaran</div>
 
                             <div className="my-5 space-y-2 text-sm font-bold text-gray-700">
-                                <div className="flex items-start gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700"/> Full Tryout TKA {level}</div>
-                                <div className="flex items-start gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700"/> Mini Tryout unlimited</div>
+                                <div className="flex items-start gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700"/> Full tryout TKA {level}</div>
+                                <div className="flex items-start gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700"/> Mini tryout tanpa batas</div>
                                 <div className="flex items-start gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700"/> Masa aktif {days} hari</div>
                                 <div className="flex items-start gap-2"><ShieldCheck size={18} className="mt-0.5 shrink-0 text-blue-700"/> Akses aktif otomatis setelah pembayaran terverifikasi</div>
                             </div>
@@ -157,8 +165,8 @@ export default function TkaPassPackagesClient({
                                 {buying === pkg.code
                                     ? 'Menyiapkan...'
                                     : hasActivePass
-                                        ? `Perpanjang ${days} Hari`
-                                        : `Pilih ${days} Hari`}
+                                        ? `Perpanjang ${days} hari`
+                                        : `Pilih akses ${days} hari`}
                             </button>
                         </article>
                     )
