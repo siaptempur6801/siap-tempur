@@ -7,10 +7,10 @@ function masteryPercent(value: number) {
 }
 
 function masteryLabel(level: string) {
-    if (level === 'mastered') return 'Mastered'
-    if (level === 'proficient') return 'Proficient'
-    if (level === 'developing') return 'Developing'
-    return 'Needs work'
+    if (level === 'mastered') return 'Sudah kuat'
+    if (level === 'proficient') return 'Cukup kuat'
+    if (level === 'developing') return 'Berkembang'
+    return 'Perlu diperkuat'
 }
 
 export default function TkaLearningFocusPanel({ items }: { items: TkaLearningFocusItem[] }) {
@@ -21,15 +21,15 @@ export default function TkaLearningFocusPanel({ items }: { items: TkaLearningFoc
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-700">
-                        <Lightbulb size={16}/> Rule-based Recommendation V1
+                        <Lightbulb size={16}/> Rekomendasi belajar
                     </div>
                     <h2 className="mt-1 text-2xl font-black">Fokus belajar berikutnya</h2>
-                    <p className="mt-1 max-w-3xl text-sm font-semibold text-gray-600">
-                        Tiga topik ini dipilih otomatis dari mastery terendahmu. Jika nilainya sama, evidence yang lebih banyak diprioritaskan agar rekomendasi tetap deterministic.
+                    <p className="mt-1 max-w-3xl text-sm font-semibold leading-relaxed text-gray-600">
+                        Mulai dari topik yang masih paling lemah berdasarkan hasil latihanmu, lalu cek kembali perkembangannya setelah berlatih.
                     </p>
                 </div>
                 <span className="border-2 border-gray-900 bg-white px-3 py-1 text-xs font-black uppercase">
-                    Top {items.length} weakest topics
+                    {items.length} prioritas belajar
                 </span>
             </div>
 
@@ -57,7 +57,7 @@ export default function TkaLearningFocusPanel({ items }: { items: TkaLearningFoc
 
                             <div className="mt-4">
                                 <div className="flex items-center justify-between text-xs font-black">
-                                    <span>Mastery</span>
+                                    <span>Penguasaan</span>
                                     <span>{percent}%</span>
                                 </div>
                                 <div className="mt-1 h-3 overflow-hidden border-2 border-gray-900 bg-gray-100">
@@ -68,10 +68,10 @@ export default function TkaLearningFocusPanel({ items }: { items: TkaLearningFoc
                             <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs font-bold">
                                 <div className="border border-gray-900 bg-gray-50 p-2">
                                     <Target size={14} className="mx-auto mb-1"/>
-                                    Evidence<br/><b>{item.attemptedQuestions}</b>
+                                    Soal dinilai<br/><b>{item.attemptedQuestions}</b>
                                 </div>
                                 <div className="border border-gray-900 bg-red-50 p-2">
-                                    Gap terbuka<br/><b>{item.openGapCount}</b>
+                                    Perlu diulang<br/><b>{item.openGapCount}</b>
                                 </div>
                             </div>
 
