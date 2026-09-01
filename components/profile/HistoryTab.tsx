@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CreditCard, Coins, Calendar, ShoppingCart, Ticket, FileText, ClipboardList } from 'lucide-react'
+import { Calendar, CheckCircle2, ClipboardList, Coins, CreditCard, FileText, ShoppingCart, Ticket } from 'lucide-react'
 import { syncPaymentStatus } from '@/app/actions/payment'
 import { toast } from 'sonner'
 
@@ -36,190 +36,180 @@ interface HistoryTabProps {
     usageSessions: UsageSessionItem[]
 }
 
+function formatDate(value: string, withTime = false) {
+    return new Date(value).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        ...(withTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+        timeZone: 'Asia/Jakarta',
+    })
+}
+
+function statusMeta(status: string, createdAt: string) {
+    const locallyExpired = status === 'pending' && (Date.now() - new Date(createdAt).getTime() > 15 * 60 * 1000)
+    const value = locallyExpired ? 'expire' : status
+    const map: Record<string, { label: string; className: string }> = {
+        settlement: { label: 'Berhasil', className: 'bg-green-100 text-green-800' },
+        capture: { label: 'Berhasil', className: 'bg-green-100 text-green-800' },
+        pending: { label: 'Menunggu pembayaran', className: 'bg-yellow-100 text-yellow-900' },
+        expire: { label: 'Kedaluwarsa', className: 'bg-gray-100 text-gray-700' },
+        cancel: { label: 'Dibatalkan', className: 'bg-red-100 text-red-800' },
+        deny: { label: 'Belum berhasil', className: 'bg-red-100 text-red-800' },
+    }
+    return { value, ...(map[value] || { label: value, className: 'bg-blue-50 text-blue-800' }) }
+}
+
 export function HistoryTab({ transactions, usageSessions }: HistoryTabProps) {
     const handlePayPending = (token: string, orderId: string, event: React.MouseEvent) => {
         event.preventDefault()
         event.stopPropagation()
-
-        const loadingId = toast.loading("Membuka pembayaran...")
-
-        const snap = typeof window !== "undefined"
+        const loadingId = toast.loading('Membuka pembayaran...')
+        const snap = typeof window !== 'undefined'
             ? (window as Window & { snap?: SnapController }).snap
             : undefined
 
-        if (snap) {
-            try {
-                snap.pay(token, {
-                    onSuccess: async function () {
-                        toast.loading("Memverifikasi pembayaran...", { id: loadingId })
-                        await syncPaymentStatus(orderId)
-                        toast.success("Pembayaran Berhasil!", {
-                            id: loadingId,
-                            description: "Tiket tryout kamu telah ditambahkan."
-                        })
-                        window.location.reload()
-                    },
-                    onPending: async function () {
-                        toast.loading("Memperbarui status...", { id: loadingId })
-                        await syncPaymentStatus(orderId)
-                        toast.info("Pembayaran Tertunda", {
-                            id: loadingId,
-                            description: "Silakan selesaikan pembayaran sesuai instruksi."
-                        })
-                        window.location.reload()
-                    },
-                    onError: function () {
-                        toast.dismiss(loadingId)
-                        toast.error("Pembayaran Gagal")
-                    },
-                    onClose: async function () {
-                        toast.loading("Memeriksa status terakhir...", { id: loadingId })
-                        await syncPaymentStatus(orderId)
-                        toast.info("Pembayaran Ditutup", { id: loadingId })
-                        window.location.reload()
-                    }
-                })
-            } catch (err) {
-                toast.dismiss(loadingId)
-                toast.error("Gagal memuat popup Snap", {
-                    description: err instanceof Error ? err.message : 'Terjadi kesalahan saat membuka Snap.'
-                })
-            }
-        } else {
+        if (!snap) {
             toast.dismiss(loadingId)
-            toast.error("Sistem pembayaran sedang disiapkan. Memuat ulang...", {
-                description: "Mohon tunggu sebentar..."
+            toast.error('Pembayaran belum siap dimuat', { description: 'Muat ulang halaman lalu coba lagi.' })
+            return
+        }
+
+        try {
+            snap.pay(token, {
+                onSuccess: async () => {
+                    toast.loading('Memverifikasi pembayaran...', { id: loadingId })
+                    await syncPaymentStatus(orderId)
+                    toast.success('Pembayaran berhasil', {
+                        id: loadingId,
+                        description: 'Token akan tersedia setelah pembayaran terverifikasi.',
+                    })
+                    window.location.reload()
+                },
+                onPending: async () => {
+                    toast.loading('Memperbarui status pembayaran...', { id: loadingId })
+                    await syncPaymentStatus(orderId)
+                    toast.info('Menunggu pembayaran', {
+                        id: loadingId,
+                        description: 'Selesaikan pembayaran sesuai petunjuk metode yang kamu pilih.',
+                    })
+                    window.location.reload()
+                },
+                onError: () => {
+                    toast.dismiss(loadingId)
+                    toast.error('Pembayaran belum berhasil')
+                },
+                onClose: async () => {
+                    toast.loading('Memeriksa status pembayaran...', { id: loadingId })
+                    await syncPaymentStatus(orderId)
+                    toast.info('Pembayaran belum selesai', { id: loadingId })
+                    window.location.reload()
+                },
             })
-            setTimeout(() => {
-                window.location.reload()
-            }, 1000)
+        } catch (error) {
+            toast.dismiss(loadingId)
+            toast.error('Pembayaran belum bisa dibuka', {
+                description: error instanceof Error ? error.message : 'Coba lagi beberapa saat.',
+            })
         }
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-            {/* Purchase History */}
-            <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                <div className="absolute -top-3 left-8 w-14 h-5 bg-green-200/80 -rotate-2 shadow-sm"></div>
-                <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
-                    <CreditCard className="w-6 h-6" /> Riwayat Pembelian Kuota
-                </h4>
+        <div className="space-y-6">
+            <section className="st-card-md bg-white p-5 md:p-6">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[var(--st-ink)] bg-blue-50"><CreditCard size={21} /></div>
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Pembelian token</p>
+                        <h2 className="st-heading mt-1 text-2xl">Riwayat pembayaran</h2>
+                        <p className="st-muted mt-1 text-sm font-semibold">Lihat paket yang pernah kamu pilih dan lanjutkan pembayaran yang masih tersedia.</p>
+                    </div>
+                </div>
+
                 {transactions.length > 0 ? (
-                    <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                        {transactions.map((tx) => (
-                            <div key={tx.id} className="w-full shrink-0 p-5 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all relative overflow-hidden group">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
-                                    <div className="flex items-start sm:items-center gap-4">
-                                        <div className="w-12 h-12 bg-blue-100 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0 group-hover:rotate-12 transition-transform mt-1 sm:mt-0">
-                                            <Coins className="w-6 h-6 text-gray-900" />
-                                        </div>
-                                        <div>
-                                            <div className="font-black text-lg text-gray-900 mb-1 leading-tight">{tx.package_name}</div>
-                                            <div className="flex items-center gap-2 text-sm text-gray-600 font-bold">
-                                                <Calendar size={14} className="shrink-0" />
-                                                <span className="truncate">{new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })}</span>
+                    <div className="mt-6 space-y-3">
+                        {transactions.map((transaction) => {
+                            const status = statusMeta(transaction.status, transaction.created_at)
+                            return (
+                                <article key={transaction.id} className="border-2 border-[var(--st-ink)] bg-white p-4">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex min-w-0 items-start gap-3">
+                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[var(--st-ink)] bg-blue-50"><Coins size={20} /></div>
+                                            <div className="min-w-0">
+                                                <h3 className="truncate font-black">{transaction.package_name}</h3>
+                                                <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-gray-500"><Calendar size={13} /> {formatDate(transaction.created_at)}</p>
                                             </div>
                                         </div>
+                                        <div className="sm:text-right">
+                                            <p className="text-xl font-black">Rp {transaction.amount.toLocaleString('id-ID')}</p>
+                                            <span className={`st-pill mt-2 ${status.className}`}>{status.label}</span>
+                                        </div>
                                     </div>
-                                    <div className="text-left sm:text-right pl-16 sm:pl-0">
-                                        <div className="font-black text-xl text-gray-900">Rp {tx.amount.toLocaleString('id-ID')}</div>
-                                        {(() => {
-                                            const isLocallyExpired = tx.status === 'pending' && (new Date().getTime() - new Date(tx.created_at).getTime() > 15 * 60 * 1000)
-                                            const computedStatus = isLocallyExpired ? 'expire' : tx.status
-
-                                            const statusMap: Record<string, { label: string; color: string }> = {
-                                                'settlement': { label: 'Berhasil', color: 'bg-green-300' },
-                                                'capture': { label: 'Berhasil', color: 'bg-green-300' },
-                                                'pending': { label: 'Menunggu', color: 'bg-yellow-300' },
-                                                'expire': { label: 'Kedaluwarsa', color: 'bg-gray-300' },
-                                                'cancel': { label: 'Batal', color: 'bg-red-300' },
-                                                'deny': { label: 'Gagal', color: 'bg-red-300' },
-                                            }
-                                            const s = statusMap[computedStatus] || { label: computedStatus, color: 'bg-blue-100' }
-
-                                            return (
-                                                <>
-                                                    <div className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 border border-gray-900 inline-block mt-2 shadow-sm ${s.color} transform ${['settlement', 'capture'].includes(computedStatus) ? '-rotate-2' : 'rotate-2'}`}>
-                                                        {s.label}
-                                                    </div>
-                                                    {computedStatus === 'pending' && tx.snap_token && (
-                                                        <div className="mt-3">
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => handlePayPending(tx.snap_token!, tx.order_id, e)}
-                                                                className="px-4 py-2 bg-blue-400 text-gray-900 text-sm font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-blue-500 hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer relative z-20 pointer-events-auto"
-                                                            >
-                                                                Bayar Sekarang
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </>
-                                            )
-                                        })()}
-                                    </div>
-                                </div>
-                                <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[16px_16px] z-0 pointer-events-none opacity-50"></div>
-                            </div>
-                        ))}
+                                    {status.value === 'pending' && transaction.snap_token && (
+                                        <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4">
+                                            <button
+                                                type="button"
+                                                onClick={(event) => handlePayPending(transaction.snap_token!, transaction.order_id, event)}
+                                                className="st-button inline-flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2.5 text-sm font-black text-white"
+                                            >
+                                                Lanjutkan pembayaran
+                                            </button>
+                                        </div>
+                                    )}
+                                </article>
+                            )
+                        })}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
-                        <div className="w-16 h-16 bg-green-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            <ShoppingCart className="w-8 h-8 text-gray-900" />
-                        </div>
-                        <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pembelian</p>
-                        <p className="text-sm text-gray-500 mb-4">Riwayat pembelian kuota akan muncul di sini</p>
-                        <Link
-                            href="/cpns/dashboard/beli-paket"
-                            className="px-5 py-2.5 bg-green-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all"
-                        >
-                            Beli Kuota Sekarang
-                        </Link>
-                    </div>
+                    <EmptyState
+                        icon={<ShoppingCart size={25} />}
+                        title="Belum ada pembelian token."
+                        description="Paket yang kamu beli akan muncul di sini."
+                        action={<Link href="/cpns/dashboard/beli-paket" className="st-button inline-flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2.5 text-sm font-black text-white">Lihat paket token</Link>}
+                    />
                 )}
-            </div>
+            </section>
 
-            {/* Usage History */}
-            <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                <div className="absolute -top-3 right-8 w-14 h-5 bg-orange-200/80 rotate-2 shadow-sm"></div>
-                <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
-                    <Ticket className="w-6 h-6" /> Riwayat Pemakaian Kuota
-                </h4>
+            <section className="st-card-md bg-white p-5 md:p-6">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[var(--st-ink)] bg-[var(--st-yellow)]"><Ticket size={21} /></div>
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Penggunaan token</p>
+                        <h2 className="st-heading mt-1 text-2xl">Sesi yang menggunakan token</h2>
+                        <p className="st-muted mt-1 text-sm font-semibold">Riwayat ini membantu kamu melihat kapan token digunakan untuk memulai sesi.</p>
+                    </div>
+                </div>
+
                 {usageSessions.length > 0 ? (
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="mt-6 space-y-3">
                         {usageSessions.map((session) => (
-                            <div key={session.id} className="flex flex-col shrink-0 sm:flex-row sm:items-center justify-between p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all gap-3 sm:gap-0">
-                                <div className="flex items-start sm:items-center gap-4">
-                                    <div className="w-12 h-12 bg-orange-200 border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0">
-                                        <FileText className="w-6 h-6 text-gray-900" />
-                                    </div>
+                            <article key={session.id} className="flex flex-col gap-3 border-2 border-[var(--st-ink)] bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[var(--st-ink)] bg-orange-50"><FileText size={20} /></div>
                                     <div>
-                                        <div className="font-bold text-base text-gray-900">
-                                            {session.mode === 'tryout' ? 'Tryout SKD Full' : 'Mini Tryout'}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            {new Date(session.start_time).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
-                                        </div>
+                                        <h3 className="font-black">{session.mode === 'tryout' ? 'Full Tryout SKD' : 'Mini Tryout'}</h3>
+                                        <p className="mt-1 text-xs font-semibold text-gray-500">{formatDate(session.start_time, true)}</p>
                                     </div>
                                 </div>
-                                <div className="pl-[64px] sm:pl-0">
-                                    <span className="text-base font-bold text-red-500 bg-red-100 px-3 py-1 border-2 border-gray-900 inline-block">
-                                        -1 Tiket
-                                    </span>
-                                </div>
-                            </div>
+                                <span className="st-pill bg-red-50 text-red-800">-1 token</span>
+                            </article>
                         ))}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center border-2 border-dashed border-gray-300 bg-gray-50">
-                        <div className="w-16 h-16 bg-orange-200 border-2 border-gray-900 flex items-center justify-center mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                            <ClipboardList className="w-8 h-8 text-gray-900" />
-                        </div>
-                        <p className="text-lg font-bold text-gray-700 mb-2">Belum ada pemakaian</p>
-                        <p className="text-sm text-gray-500">Riwayat pemakaian kuota akan muncul di sini</p>
-                    </div>
+                    <EmptyState icon={<ClipboardList size={25} />} title="Belum ada penggunaan token." description="Sesi berbayar yang kamu mulai akan tercatat di sini." />
                 )}
-            </div>
+            </section>
+        </div>
+    )
+}
+
+function EmptyState({ icon, title, description, action }: { icon: React.ReactNode; title: string; description: string; action?: React.ReactNode }) {
+    return (
+        <div className="mt-6 border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center border-2 border-[var(--st-ink)] bg-white">{icon}</div>
+            <h3 className="mt-4 font-black">{title}</h3>
+            <p className="st-muted mt-1 text-sm font-semibold">{description}</p>
+            {action && <div className="mt-5">{action}</div>}
         </div>
     )
 }
