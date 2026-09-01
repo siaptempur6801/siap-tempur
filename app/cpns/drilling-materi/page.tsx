@@ -5,133 +5,127 @@ import { Section } from "@/components/ui/Section";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { ArrowLeft, Target, Brain, Shield, Rocket } from "lucide-react";
+import { ArrowLeft, Brain, CheckCircle2, Shield, Target, Users } from "lucide-react";
 import SeoNavbar from "@/components/SeoNavbar";
 
 export const metadata: Metadata = {
-    title: "Drilling Materi CPNS 2026 - Latihan Soal Per Subtes",
-    description: "Fokus perbaiki kelemahanmu dengan Drilling Materi CPNS 2026. Latihan soal spesifik untuk TWK, TIU, dan TKP berulang kali sampai kamu menguasai setiap pola soal.",
-    keywords: ["drilling materi cpns", "latihan soal cpns", "belajar cpns per bab", "tryout cpns spesifik", "soal tiu", "soal twk", "soal tkp"],
+    title: "Latihan Fokus CPNS - TWK, TIU & TKP | SiapTempur",
+    description:
+        "Pilih latihan fokus CPNS untuk memperdalam TWK, TIU, atau TKP dan gunakan hasilnya sebagai bagian dari persiapan SKD yang lebih terarah.",
     alternates: {
-        canonical: "https://siaptempur.id/cpns/drilling-materi",
+        canonical: "/cpns/drilling-materi",
     },
 };
 
+const sections = [
+    {
+        code: "TWK",
+        icon: Shield,
+        title: "Latihan fokus TWK",
+        text: "Pilih materi TWK yang tersedia ketika kamu ingin memperkuat bagian tertentu sebelum mini atau full tryout.",
+        surface: "bg-red-50",
+        iconSurface: "bg-red-100 text-red-700",
+    },
+    {
+        code: "TIU",
+        icon: Brain,
+        title: "Latihan fokus TIU",
+        text: "Gunakan latihan TIU untuk memberi perhatian lebih pada materi yang masih membutuhkan banyak latihan.",
+        surface: "bg-blue-50",
+        iconSurface: "bg-blue-100 text-blue-700",
+    },
+    {
+        code: "TKP",
+        icon: Users,
+        title: "Latihan fokus TKP",
+        text: "Latih TKP secara lebih terarah dan gunakan hasil latihan sebagai bahan evaluasi sebelum sesi berikutnya.",
+        surface: "bg-green-50",
+        iconSurface: "bg-green-100 text-green-700",
+    },
+] as const;
+
 export default function DrillingMateriPage() {
     return (
-        <div className="min-h-screen bg-[#fdfbf7]">
+        <div data-experience-mode="marketing" className="min-h-screen bg-[#fdfbf7]">
             <SeoNavbar />
             <main className="pt-24 pb-16">
-                <div className="container mx-auto px-4 max-w-5xl">
-                    <Link href="/" className="inline-flex items-center text-gray-500 hover:text-gray-900 mb-8 font-body transition-colors">
+                <div className="container mx-auto px-4 max-w-6xl">
+                    <Link href="/cpns" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-8 font-body font-semibold transition-colors">
                         <ArrowLeft className="w-4 h-4 mr-2" />
-                        Kembali ke Beranda
+                        Kembali ke persiapan CPNS
                     </Link>
 
-                    {/* Hero Section */}
-                    <div className="mb-12 text-center md:text-left">
-                        <Badge variant="blue" className="mb-4">Fitur Spesial Siap Tempur</Badge>
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-handwriting font-bold mb-4 leading-tight">
-                            Drilling Materi CPNS <br className="hidden md:block" />
-                            <span className="text-blue-600">Fokus Pada Kelemahanmu</span>
+                    <section className="mb-14 text-center max-w-4xl mx-auto">
+                        <Badge variant="blue" className="mb-5 inline-flex items-center gap-2">
+                            <Target className="w-4 h-4" /> Latihan fokus
+                        </Badge>
+                        <h1 className="text-4xl md:text-6xl font-handwriting font-bold mb-5 leading-tight">
+                            Perbaiki satu bagian sebelum mencoba semuanya lagi.
                         </h1>
-                        <p className="text-xl text-gray-600 font-handwriting max-w-2xl mx-auto md:mx-0">
-                            Punya masalah di soal Deret Angka? Atau sering salah di soal Pilar Negara? Jangan buang waktu mengulang dari awal, fokus hajar bagian yang kamu belum bisa!
+                        <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto">
+                            Pilih TWK, TIU, atau TKP ketika kamu ingin memberi waktu lebih banyak pada bagian tertentu. Setelah latihan, gunakan hasilnya untuk menentukan apakah kamu perlu mengulang atau lanjut ke tryout.
                         </p>
-                    </div>
+                        <Button handwriting={false} asChild size="lg" className="mt-8">
+                            <Link href="/login?returnTo=/cpns/dashboard/drilling-materi">Mulai latihan fokus</Link>
+                        </Button>
+                    </section>
 
-                    {/* What is Drilling Card */}
-                    <Card variant="binder" className="p-8 mb-16 border-4 border-gray-900">
-                        <div className="flex flex-col md:flex-row items-center gap-8">
-                            <div className="bg-yellow-100 p-6 rounded-full border-4 border-yellow-500 shrink-0 shadow-[4px_4px_0px_0px_rgba(234,179,8,1)]">
-                                <Target className="w-12 h-12 text-yellow-600" />
-                            </div>
-                            <div>
-                                <h2 className="text-3xl font-bold font-handwriting mb-3">Apa itu Drilling Materi?</h2>
-                                <p className="text-gray-700 font-body text-lg leading-relaxed mb-4">
-                                    Berbeda dengan <strong>Full Tryout</strong> yang mensimulasikan 110 soal secara acak, fitur <strong>Drilling Materi</strong> memungkinkan kamu untuk memilih satu topik spesifik dan mengerjakannya berulang-ulang sampai kamu hafal pola penyelesaiannya.
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    <Badge variant="red">TWK Spesifik</Badge>
-                                    <Badge variant="yellow">TIU Spesifik</Badge>
-                                    <Badge variant="green">TKP Spesifik</Badge>
-                                </div>
+                    <Section dashedBorder="both" className="bg-white rounded-2xl border-2 border-gray-900 mb-14">
+                        <div className="max-w-4xl mx-auto text-center px-4">
+                            <h2 className="font-handwriting text-3xl md:text-4xl font-bold mb-4">Kapan latihan fokus paling berguna?</h2>
+                            <p className="text-gray-600 text-lg leading-relaxed">
+                                Gunakan latihan fokus setelah kamu menemukan bagian yang masih lemah, saat ingin mempelajari satu jenis materi lebih dalam, atau sebelum mengukur diri lagi lewat mini/full tryout.
+                            </p>
+                            <div className="mt-7 grid gap-3 md:grid-cols-3 text-left">
+                                {[
+                                    "Setelah melihat hasil tryout",
+                                    "Saat satu bagian terasa lebih sulit",
+                                    "Sebelum mencoba tryout berikutnya",
+                                ].map((item) => (
+                                    <div key={item} className="flex gap-3 border border-gray-300 bg-gray-50 p-4 font-semibold text-gray-700">
+                                        <CheckCircle2 className="w-5 h-5 shrink-0 text-green-700" />
+                                        {item}
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    </Card>
+                    </Section>
 
-                    {/* Subtests Section */}
-                    <div className="mb-16">
-                        <h2 className="text-4xl font-handwriting font-bold mb-8 text-center">Pilih Materi Tempurmu</h2>
+                    <section className="mb-16">
+                        <div className="text-center mb-9">
+                            <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700 mb-2">Pilih bagian</p>
+                            <h2 className="text-4xl md:text-5xl font-handwriting font-bold">Fokus pada kebutuhanmu hari ini.</h2>
+                        </div>
+
                         <div className="grid md:grid-cols-3 gap-6">
-                            
-                            {/* TWK Card */}
-                            <Card interactive className="p-6 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col h-full">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="bg-red-100 p-3 rounded-lg border-2 border-red-200">
-                                        <Shield className="w-8 h-8 text-red-600" />
+                            {sections.map(({ code, icon: Icon, title, text, surface, iconSurface }) => (
+                                <Card key={code} className={`p-6 border-2 border-gray-900 flex flex-col ${surface}`}>
+                                    <div className={`w-12 h-12 border-2 border-gray-900 flex items-center justify-center ${iconSurface}`}>
+                                        <Icon className="w-6 h-6" />
                                     </div>
-                                    <h3 className="font-handwriting font-bold text-3xl">TWK</h3>
-                                </div>
-                                <ul className="space-y-3 font-body text-gray-700 mb-6 flex-1">
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0"></div> Nasionalisme & Integritas</li>
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0"></div> Bela Negara & Pilar Negara</li>
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0"></div> Bahasa Indonesia</li>
-                                </ul>
-                                <Button asChild variant="outline" className="w-full justify-center">
-                                    <Link href="/cpns/twk">Pelajari TWK</Link>
-                                </Button>
-                            </Card>
-
-                            {/* TIU Card */}
-                            <Card interactive className="p-6 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col h-full">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="bg-blue-100 p-3 rounded-lg border-2 border-blue-200">
-                                        <Brain className="w-8 h-8 text-blue-600" />
-                                    </div>
-                                    <h3 className="font-handwriting font-bold text-3xl">TIU</h3>
-                                </div>
-                                <ul className="space-y-3 font-body text-gray-700 mb-6 flex-1">
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0"></div> Verbal (Sinonim, Antonim, Analogi)</li>
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0"></div> Numerik (Berhitung, Deret, Soal Cerita)</li>
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0"></div> Figural (Analogi, Ketidaksamaan, Serial)</li>
-                                </ul>
-                                <Button asChild variant="outline" className="w-full justify-center">
-                                    <Link href="/cpns/tiu">Pelajari TIU</Link>
-                                </Button>
-                            </Card>
-
-                            {/* TKP Card */}
-                            <Card interactive className="p-6 border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex flex-col h-full">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="bg-green-100 p-3 rounded-lg border-2 border-green-200">
-                                        <Rocket className="w-8 h-8 text-green-600" />
-                                    </div>
-                                    <h3 className="font-handwriting font-bold text-3xl">TKP</h3>
-                                </div>
-                                <ul className="space-y-3 font-body text-gray-700 mb-6 flex-1">
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0"></div> Pelayanan Publik & Jejaring Kerja</li>
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0"></div> Sosial Budaya & TIK</li>
-                                    <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0"></div> Profesionalisme & Anti Radikalisme</li>
-                                </ul>
-                                <Button asChild variant="outline" className="w-full justify-center">
-                                    <Link href="/cpns/tkp">Pelajari TKP</Link>
-                                </Button>
-                            </Card>
-
+                                    <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-gray-500">{code}</div>
+                                    <h3 className="mt-1 text-2xl font-bold">{title}</h3>
+                                    <p className="mt-3 flex-1 text-gray-600 leading-relaxed">{text}</p>
+                                </Card>
+                            ))}
                         </div>
-                    </div>
+                    </section>
 
-                    {/* CTA Section */}
-                    <Section dashedBorder="top" pattern="dots" className="text-center rounded-3xl mt-16 bg-white border-4 border-gray-900">
-                        <h2 className="text-4xl font-handwriting font-bold mb-4">Mulai Latihan Spesifik Sekarang</h2>
-                        <p className="text-gray-600 font-body text-lg mb-8 max-w-lg mx-auto">
-                            Gunakan tokenmu untuk membuka akses bebas ke seluruh materi drilling. Semakin sering berlatih, semakin tajam insting menjawab soalmu!
-                        </p>
-                        <div className="flex flex-col sm:flex-row justify-center gap-4">
-                            <Button asChild size="lg" variant="primary" className="text-xl px-8 py-6">
-                                <Link href="/login?returnTo=/cpns/dashboard/drilling-materi">Masuk ke Dashboard Drilling</Link>
-                            </Button>
+                    <Section dashedBorder="top" pattern="dots" className="text-center rounded-2xl bg-blue-50 border-2 border-gray-900">
+                        <div className="max-w-3xl mx-auto px-4">
+                            <Target className="w-10 h-10 text-blue-700 mx-auto mb-4" />
+                            <h2 className="text-3xl md:text-4xl font-handwriting font-bold mb-4">Mulai dari bagian yang paling membutuhkan perhatian.</h2>
+                            <p className="text-gray-600 text-lg mb-8 leading-relaxed">
+                                Masuk ke akunmu untuk melihat materi latihan yang tersedia. Detail akses atau kebutuhan token akan ditampilkan sebelum kamu memulai sesi.
+                            </p>
+                            <div className="flex flex-col sm:flex-row justify-center gap-4">
+                                <Button handwriting={false} asChild size="lg">
+                                    <Link href="/login?returnTo=/cpns/dashboard/drilling-materi">Buka latihan fokus</Link>
+                                </Button>
+                                <Button handwriting={false} asChild size="lg" variant="outline">
+                                    <Link href="/cpns/mini-tryout">Lihat mini tryout</Link>
+                                </Button>
+                            </div>
                         </div>
                     </Section>
                 </div>
