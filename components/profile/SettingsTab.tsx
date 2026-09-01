@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Settings, Lock, Trash2, X, Shield, Loader2 } from 'lucide-react'
+import { KeyRound, Loader2, Lock, Settings, Shield, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { updatePassword } from '@/app/auth/actions'
 import { deleteAccount } from '@/app/actions/profile'
@@ -9,30 +9,32 @@ export function SettingsTab() {
     const router = useRouter()
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
-
     const [oldPassword, setOldPassword] = useState('')
     const [newPassword, setNewPassword] = useState('')
     const [confirmPassword, setConfirmPassword] = useState('')
     const [isChangingPassword, setIsChangingPassword] = useState(false)
-
     const [deleteConfirmText, setDeleteConfirmText] = useState('')
     const [isDeleting, setIsDeleting] = useState(false)
 
+    const closePasswordModal = () => {
+        if (isChangingPassword) return
+        setShowPasswordModal(false)
+        setOldPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+    }
+
     const handleChangePassword = async () => {
-        if (!newPassword || !confirmPassword) {
-            toast.error('Harap isi semua field')
+        if (!oldPassword || !newPassword || !confirmPassword) {
+            toast.error('Lengkapi semua kolom kata sandi.')
             return
         }
         if (newPassword.length < 6) {
-            toast.error('Password minimal 6 karakter')
+            toast.error('Kata sandi baru minimal 6 karakter.')
             return
         }
         if (newPassword !== confirmPassword) {
-            toast.error('Password baru tidak cocok')
-            return
-        }
-        if (!oldPassword) {
-            toast.error('Harap isi password lama')
+            toast.error('Konfirmasi kata sandi baru belum sama.')
             return
         }
 
@@ -40,21 +42,17 @@ export function SettingsTab() {
         const formData = new FormData()
         formData.append('password', newPassword)
         formData.append('oldPassword', oldPassword)
-
         const result = await updatePassword(formData)
         setIsChangingPassword(false)
 
         if (result.success) {
-            router.push('/login?returnTo=/cpns')
-            toast.success('Password berhasil diperbarui', {
-                description: 'Silakan masuk kembali dengan password baru Anda.'
+            toast.success('Kata sandi berhasil diperbarui', {
+                description: 'Masuk kembali menggunakan kata sandi baru.',
             })
-            setShowPasswordModal(false)
-            setOldPassword('')
-            setNewPassword('')
-            setConfirmPassword('')
+            closePasswordModal()
+            router.push('/login?returnTo=/cpns')
         } else {
-            toast.error(result.error || 'Gagal mengubah password')
+            toast.error(result.error || 'Kata sandi belum bisa diubah.')
         }
     }
 
@@ -62,195 +60,153 @@ export function SettingsTab() {
         if (deleteConfirmText !== 'HAPUS') return
         setIsDeleting(true)
         try {
-            const res = await deleteAccount()
-            if (res.success) {
-                toast.success('Akun berhasil dihapus. Sampai jumpa!')
+            const result = await deleteAccount()
+            if (result.success) {
+                toast.success('Akun sudah dihapus.')
                 setTimeout(() => {
                     window.location.href = '/login'
                 }, 2000)
             } else {
-                toast.error(res.error || 'Gagal menghapus akun')
+                toast.error(result.error || 'Akun belum bisa dihapus.')
                 setIsDeleting(false)
             }
         } catch {
-            toast.error('Terjadi kesalahan sistem')
+            toast.error('Akun belum bisa dihapus. Coba lagi.')
             setIsDeleting(false)
         }
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in zoom-in duration-300">
-            <div className="bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 relative">
-                <div className="absolute -top-3 right-8 w-14 h-5 bg-purple-200/80 rotate-3 shadow-sm"></div>
-                <h4 className="font-bold text-xl mb-6 text-gray-900 flex items-center gap-2">
-                    <Settings className="w-6 h-6" /> Pengaturan Akun
-                </h4>
-                <div className="space-y-4">
+        <div className="space-y-6">
+            <section className="st-card-md bg-white p-5 md:p-6">
+                <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[var(--st-ink)] bg-blue-50"><Settings size={21} /></div>
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Keamanan akun</p>
+                        <h2 className="st-heading mt-1 text-2xl">Pengaturan akun</h2>
+                        <p className="st-muted mt-1 text-sm font-semibold">Kelola kata sandi atau tindakan permanen pada akunmu.</p>
+                    </div>
+                </div>
+
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
                     <button
+                        type="button"
                         onClick={() => setShowPasswordModal(true)}
-                        className="w-full text-left p-4 bg-gray-50 border-2 border-gray-300 hover:border-gray-900 hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all group"
+                        className="st-focus border-2 border-[var(--st-ink)] bg-blue-50 p-5 text-left transition hover:bg-blue-100"
                     >
-                        <div className="font-bold text-base mb-1 text-gray-900 group-hover:text-blue-600 flex items-center gap-2">
-                            <Lock className="w-4 h-4" /> Ubah Password
-                        </div>
-                        <div className="text-sm text-gray-600">Update password akun Anda</div>
+                        <div className="flex h-10 w-10 items-center justify-center border-2 border-[var(--st-ink)] bg-white"><Lock size={18} /></div>
+                        <h3 className="mt-4 font-black">Ubah kata sandi</h3>
+                        <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">Ganti kata sandi akun dengan memverifikasi kata sandi yang sedang digunakan.</p>
                     </button>
 
                     <button
+                        type="button"
                         onClick={() => setShowDeleteModal(true)}
-                        className="w-full text-left p-4 bg-red-50 border-2 border-red-300 hover:border-red-600 hover:shadow-[2px_2px_0px_0px_rgba(220,38,38,1)] transition-all group"
+                        className="st-focus border-2 border-red-700 bg-red-50 p-5 text-left transition hover:bg-red-100"
                     >
-                        <div className="font-bold text-base mb-1 text-red-600 flex items-center gap-2">
-                            <Trash2 className="w-4 h-4" /> Hapus Akun
-                        </div>
-                        <div className="text-sm text-red-400">Hapus akun dan semua data Anda</div>
+                        <div className="flex h-10 w-10 items-center justify-center border-2 border-red-700 bg-white text-red-700"><Trash2 size={18} /></div>
+                        <h3 className="mt-4 font-black text-red-800">Hapus akun</h3>
+                        <p className="mt-1 text-sm font-semibold leading-relaxed text-red-700">Tindakan ini menghapus akun dan data yang terkait secara permanen.</p>
                     </button>
                 </div>
-            </div>
+            </section>
 
-            {/* Modals */}
             {showPasswordModal && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-                    onClick={() => !isChangingPassword && setShowPasswordModal(false)}
-                >
-                    <div
-                        className="relative max-w-md w-full bg-[#fdfbf7] p-8 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none -rotate-1"
-                        onClick={(e) => e.stopPropagation()}
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={closePasswordModal}>
+                    <section
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="change-password-title"
+                        className="st-product st-card-lg relative w-full max-w-md bg-[var(--st-paper)] p-6 md:p-8"
+                        onClick={(event) => event.stopPropagation()}
                     >
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-blue-100/80 border-l border-r border-white/50 shadow-sm rotate-2"></div>
-                        <div className="flex items-center justify-between mb-8 relative z-10">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-yellow-300 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                    <Shield size={24} className="text-gray-900" />
-                                </div>
-                                <h3 className="text-2xl font-bold font-handwriting text-gray-900">Ubah Password</h3>
-                            </div>
-                            <button onClick={() => setShowPasswordModal(false)} disabled={isChangingPassword} className="p-2 hover:bg-red-100 transition rounded-full">
-                                <X size={24} className="text-gray-900" />
+                        <button type="button" onClick={closePasswordModal} disabled={isChangingPassword} aria-label="Tutup" className="st-focus absolute right-3 top-3 flex h-11 w-11 items-center justify-center hover:bg-white disabled:opacity-50"><X size={20} /></button>
+                        <div className="flex h-12 w-12 items-center justify-center border-2 border-[var(--st-ink)] bg-[var(--st-yellow)]"><KeyRound size={22} /></div>
+                        <h2 id="change-password-title" className="st-heading mt-4 text-2xl">Ubah kata sandi</h2>
+                        <p className="st-muted mt-1 text-sm font-semibold">Masukkan kata sandi saat ini, lalu buat kata sandi baru.</p>
+
+                        <div className="mt-6 space-y-4">
+                            <PasswordField label="Kata sandi saat ini" value={oldPassword} onChange={setOldPassword} placeholder="Kata sandi saat ini" disabled={isChangingPassword} />
+                            <PasswordField label="Kata sandi baru" value={newPassword} onChange={setNewPassword} placeholder="Minimal 6 karakter" disabled={isChangingPassword} />
+                            <PasswordField label="Konfirmasi kata sandi baru" value={confirmPassword} onChange={setConfirmPassword} placeholder="Ketik ulang kata sandi baru" disabled={isChangingPassword} />
+                        </div>
+
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
+                            <button type="button" onClick={handleChangePassword} disabled={isChangingPassword} className="st-button inline-flex min-h-12 flex-1 items-center justify-center gap-2 bg-blue-600 px-5 py-3 font-black text-white disabled:opacity-50">
+                                {isChangingPassword && <Loader2 size={18} className="animate-spin" />}{isChangingPassword ? 'Mengubah...' : 'Simpan kata sandi'}
                             </button>
+                            <button type="button" onClick={closePasswordModal} disabled={isChangingPassword} className="st-button min-h-12 bg-white px-5 py-3 font-black disabled:opacity-50">Batal</button>
                         </div>
-                        <div className="space-y-6 font-handwriting">
-                            <div>
-                                <label className="text-lg font-bold text-gray-900 mb-2 block">Password Lama</label>
-                                <input
-                                    type="password"
-                                    value={oldPassword}
-                                    onChange={(e) => setOldPassword(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
-                                    placeholder="Masukkan password saat ini"
-                                    disabled={isChangingPassword}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-lg font-bold text-gray-900 mb-2 block">Password Baru</label>
-                                <input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
-                                    placeholder="Minimal 6 karakter"
-                                    disabled={isChangingPassword}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-lg font-bold text-gray-900 mb-2 block">Konfirmasi Password Baru</label>
-                                <input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-lg"
-                                    placeholder="Ketik ulang password baru"
-                                    disabled={isChangingPassword}
-                                />
-                            </div>
-                            <div className="flex gap-4 pt-4">
-                                <button onClick={handleChangePassword} disabled={isChangingPassword} className="flex-1 px-6 py-3 bg-blue-400 text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
-                                    {isChangingPassword ? 'Mengubah...' : 'Ubah Password'}
-                                </button>
-                                <button onClick={() => { setShowPasswordModal(false); setOldPassword(''); setNewPassword(''); setConfirmPassword(''); }} disabled={isChangingPassword} className="px-6 py-3 bg-white text-gray-900 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all disabled:opacity-50 font-handwriting text-xl">
-                                    Batal
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    </section>
                 </div>
             )}
 
-            {/* Delete Account Modal */}
             {showDeleteModal && (
-                <div
-                    className="fixed inset-0 z-60 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200"
-                    onClick={() => !isDeleting && setShowDeleteModal(false)}
-                >
-                    <div
-                        className="relative max-w-md w-full bg-white p-8 border-4 border-gray-900 shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] rounded-none rotate-1"
-                        onClick={(e) => e.stopPropagation()}
+                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm" onClick={() => !isDeleting && setShowDeleteModal(false)}>
+                    <section
+                        role="alertdialog"
+                        aria-modal="true"
+                        aria-labelledby="delete-account-title"
+                        className="st-product st-card-lg relative w-full max-w-md bg-white p-6 md:p-8"
+                        onClick={(event) => event.stopPropagation()}
                     >
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-40 h-10 bg-red-500 border-2 border-gray-900 shadow-sm flex items-center justify-center -rotate-2">
-                            <span className="text-white font-black uppercase tracking-widest text-sm">Peringatan Keras!</span>
+                        <div className="flex h-12 w-12 items-center justify-center border-2 border-red-700 bg-red-50 text-red-700"><Trash2 size={23} /></div>
+                        <div className="st-kicker mt-5 bg-red-100 text-red-900">Tindakan permanen</div>
+                        <h2 id="delete-account-title" className="st-heading mt-4 text-3xl">Hapus akun?</h2>
+                        <p className="mt-2 text-sm font-semibold leading-relaxed text-red-800">Tindakan ini tidak dapat dibatalkan. Pastikan kamu benar-benar ingin menghapus akun sebelum melanjutkan.</p>
+
+                        <div className="mt-5 border-2 border-red-200 bg-red-50 p-4">
+                            <p className="font-black text-red-900">Yang akan terhapus:</p>
+                            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm font-semibold text-red-800">
+                                <li>Riwayat belajar dan tryout yang terkait dengan akun.</li>
+                                <li>Sisa token pada akun.</li>
+                                <li>Informasi profil dan akses masuk.</li>
+                            </ul>
                         </div>
 
-                        <div className="flex flex-col items-center text-center mt-6 space-y-4">
-                            <div className="w-20 h-20 bg-red-100 border-2 border-gray-900 flex items-center justify-center rounded-full shadow-[4px_4px_0px_0px_rgba(220,38,38,0.2)]">
-                                <Trash2 size={40} className="text-red-600" />
-                            </div>
+                        <label className="mt-5 block">
+                            <span className="mb-1.5 block text-sm font-black">Ketik <span className="text-red-700">HAPUS</span> untuk konfirmasi</span>
+                            <input
+                                type="text"
+                                value={deleteConfirmText}
+                                onChange={(event) => setDeleteConfirmText(event.target.value.toUpperCase())}
+                                className="st-input text-center font-black tracking-[0.15em] focus:border-red-700"
+                                placeholder="HAPUS"
+                                disabled={isDeleting}
+                                autoComplete="off"
+                            />
+                        </label>
 
-                            <h3 className="text-3xl font-black text-gray-900">Hapus Akun?</h3>
-
-                            <div className="space-y-3 w-full">
-                                <p className="text-gray-600 font-bold italic leading-relaxed">
-                                    "Tindakan ini tidak bisa dibatalkan."
-                                </p>
-                                <div className="bg-red-50 p-4 border-2 border-red-100 rounded-xl space-y-2">
-                                    <p className="text-sm font-black text-red-800">Efek Penghapusan:</p>
-                                    <ul className="text-xs text-red-700 font-bold space-y-1 text-left list-disc pl-4">
-                                        <li>Semua riwayat tryout akan hilang</li>
-                                        <li>Sisa kuota tryout akan hangus</li>
-                                        <li>Data profil akan dihapus permanen</li>
-                                        <li>Akses login akan dicabut selamanya</li>
-                                    </ul>
-                                </div>
-
-                                <div className="pt-2">
-                                    <label className="text-[10px] font-black uppercase text-gray-400 mb-1 block text-left">
-                                        Ketik <span className="text-red-600">HAPUS</span> untuk konfirmasi
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={deleteConfirmText}
-                                        onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-                                        className="w-full px-4 py-3 border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-center font-black text-xl tracking-widest outline-none focus:bg-red-50 focus:border-red-600 transition-colors"
-                                        placeholder="Ketik di sini..."
-                                        disabled={isDeleting}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col w-full gap-3 pt-4">
-                                <button
-                                    onClick={handleDeleteAccount}
-                                    disabled={isDeleting || deleteConfirmText !== 'HAPUS'}
-                                    className="w-full py-4 bg-red-600 text-white font-black text-xl border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
-                                >
-                                    {isDeleting ? <Loader2 className="animate-spin" /> : <Shield size={22} />}
-                                    Ya, Hapus Permanen
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setShowDeleteModal(false)
-                                        setDeleteConfirmText('')
-                                    }}
-                                    disabled={isDeleting}
-                                    className="w-full py-3 bg-white text-gray-700 font-bold border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-gray-50 transition disabled:opacity-50"
-                                >
-                                    Batalkan
-                                </button>
-                            </div>
+                        <div className="mt-6 space-y-3">
+                            <button
+                                type="button"
+                                onClick={handleDeleteAccount}
+                                disabled={isDeleting || deleteConfirmText !== 'HAPUS'}
+                                className="st-button inline-flex min-h-12 w-full items-center justify-center gap-2 bg-red-600 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Shield size={18} />}{isDeleting ? 'Menghapus akun...' : 'Hapus akun permanen'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText('') }}
+                                disabled={isDeleting}
+                                className="st-button min-h-12 w-full bg-white px-5 py-3 font-black disabled:opacity-50"
+                            >
+                                Batal
+                            </button>
                         </div>
-                    </div>
+                    </section>
                 </div>
             )}
         </div>
+    )
+}
+
+function PasswordField({ label, value, onChange, placeholder, disabled }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; disabled: boolean }) {
+    return (
+        <label>
+            <span className="mb-1.5 block text-sm font-black">{label}</span>
+            <input type="password" value={value} onChange={(event) => onChange(event.target.value)} className="st-input" placeholder={placeholder} disabled={disabled} autoComplete="new-password" />
+        </label>
     )
 }
