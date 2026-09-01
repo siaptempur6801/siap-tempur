@@ -239,6 +239,10 @@ body {
   --st-shadow-sm: 3px 3px 0 var(--st-ink);
   --st-shadow-md: 5px 5px 0 var(--st-ink);
   --st-shadow-lg: 8px 8px 0 var(--st-ink);
+  --st-radius-sm: 0.75rem;
+  --st-radius-md: 1rem;
+  --st-radius-lg: 1.25rem;
+  --st-radius-pill: 9999px;
 
   background: var(--st-paper);
   color: var(--st-ink);
@@ -248,28 +252,28 @@ body {
 .st-product .px-surface,
 .st-product .px-panel {
   border: var(--st-border);
-  border-radius: 0.125rem;
+  border-radius: var(--st-radius-md);
   background: #ffffff;
   box-shadow: var(--st-shadow-sm);
 }
 
 .st-product .st-card-md {
   border: var(--st-border);
-  border-radius: 0.125rem;
+  border-radius: var(--st-radius-lg);
   background: #ffffff;
   box-shadow: var(--st-shadow-md);
 }
 
 .st-product .st-card-lg {
   border: var(--st-border);
-  border-radius: 0.125rem;
+  border-radius: var(--st-radius-lg);
   background: #ffffff;
   box-shadow: var(--st-shadow-lg);
 }
 
 .st-product .st-flat-card {
   border: var(--st-border);
-  border-radius: 0.125rem;
+  border-radius: var(--st-radius-sm);
   background: #ffffff;
   box-shadow: none;
 }
@@ -279,6 +283,7 @@ body {
   align-items: center;
   gap: 0.5rem;
   border: var(--st-border);
+  border-radius: var(--st-radius-pill);
   background: var(--st-yellow);
   padding: 0.35rem 0.7rem;
   box-shadow: 2px 2px 0 var(--st-ink);
@@ -316,7 +321,7 @@ body {
   align-items: center;
   gap: 0.35rem;
   border: 1.5px solid var(--st-ink);
-  border-radius: 0;
+  border-radius: var(--st-radius-pill);
   padding: 0.25rem 0.5rem;
   font-size: 0.7rem;
   font-weight: 900;
@@ -326,7 +331,7 @@ body {
   min-height: 2.75rem;
   width: 100%;
   border: var(--st-border);
-  border-radius: 0.125rem;
+  border-radius: var(--st-radius-sm);
   background: #ffffff;
   padding: 0.65rem 0.8rem;
   font-weight: 650;
@@ -342,7 +347,7 @@ body {
 .st-product .st-button {
   border-width: 2px !important;
   border-color: var(--st-ink) !important;
-  border-radius: 0.125rem !important;
+  border-radius: var(--st-radius-sm) !important;
   box-shadow: 4px 4px 0 var(--st-ink) !important;
   font-weight: 900 !important;
 }
@@ -360,7 +365,7 @@ body {
 .st-product .st-option {
   width: 100%;
   border: var(--st-border);
-  border-radius: 0.125rem;
+  border-radius: var(--st-radius-sm);
   background: #ffffff;
   box-shadow: 2px 2px 0 #cbd5e1;
 }
@@ -382,17 +387,26 @@ body {
 
 .st-product .st-success {
   border: var(--st-border);
+  border-radius: var(--st-radius-md);
   background: var(--st-green-soft);
 }
 
 .st-product .st-warning {
   border: var(--st-border);
+  border-radius: var(--st-radius-md);
   background: var(--st-yellow-soft);
 }
 
 .st-product .st-danger {
   border: var(--st-border);
+  border-radius: var(--st-radius-md);
   background: var(--st-red-soft);
+}
+
+/* Catch TKA/CPNS learner primitives that use Tailwind border-2 directly.
+   Directional borders are excluded so layout dividers and sidebars stay flush. */
+.st-product [class~="border-2"]:not([class*="border-t-"]):not([class*="border-b-"]):not([class*="border-l-"]):not([class*="border-r-"]):not([class*="rounded-"]) {
+  border-radius: var(--st-radius-md);
 }
 
 .st-product .st-focus:focus-visible {
@@ -419,7 +433,7 @@ body {
 
 .st-product[data-experience-mode="exam"] button {
   min-height: var(--touch-target);
-  border-radius: 0.125rem !important;
+  border-radius: var(--st-radius-sm) !important;
 }
 
 .st-product[data-experience-mode="exam"] button:focus-visible,
