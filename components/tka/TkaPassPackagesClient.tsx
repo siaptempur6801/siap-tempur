@@ -206,18 +206,18 @@ export default function TkaPassPackagesClient({
     return (
         <section className="space-y-5" aria-labelledby="tka-pass-packages-title">
             <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-blue-700">
+                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-indigo-600">
                     <Crown size={17} aria-hidden="true"/> Tempur Pass
                 </div>
-                <h2 id="tka-pass-packages-title" className="st-heading-display mt-2 text-3xl md:text-4xl">
+                <h2 id="tka-pass-packages-title" className="mt-2 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
                     {hasActivePass ? `Perpanjang akses TKA ${level}` : `Pilih akses belajar TKA ${level}`}
                 </h2>
-                <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-500">
                     {hasActivePass
                         ? 'Pilih durasi tambahan. Perpanjangan dimulai setelah masa aktifmu saat ini selesai, jadi sisa akses tidak terbuang.'
                         : 'Pilih durasi yang sesuai kebutuhanmu untuk membuka Full Tryout dan Mini Tryout selama masa aktif paket.'}
                 </p>
-                <p className="st-muted mt-2 text-xs font-bold">Setiap pembayaran dikenai biaya admin {rupiah(ADMIN_FEE)} satu kali.</p>
+                <p className="mt-2 text-xs font-bold text-slate-500">Setiap pembayaran dikenai biaya admin {rupiah(ADMIN_FEE)} satu kali.</p>
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
@@ -230,31 +230,32 @@ export default function TkaPassPackagesClient({
                     return (
                         <article
                             key={pkg.code}
-                            className={`st-card-md relative flex h-full flex-col p-5 md:p-6 ${isBestValue ? 'bg-yellow-50' : 'bg-white'}`}
+                            className={`st-card-md relative flex h-full flex-col overflow-hidden p-5 md:p-6 ${isBestValue ? 'bg-gradient-to-b from-indigo-50/80 to-white' : 'bg-white'}`}
                         >
+                            {isBestValue && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-blue-500" />}
                             {isBestValue && (
-                                <span className="st-pill absolute right-4 top-4 bg-emerald-100 text-emerald-800">Nilai terbaik</span>
+                                <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">Nilai terbaik</span>
                             )}
 
                             <div>
-                                <h3 className="st-heading pr-24 text-xl">{pkg.name}</h3>
-                                <p className="st-muted mt-2 min-h-10 text-sm font-semibold leading-relaxed">
+                                <h3 className="pr-24 text-xl font-black tracking-tight text-slate-950">{pkg.name}</h3>
+                                <p className="mt-2 min-h-10 text-sm font-semibold leading-relaxed text-slate-500">
                                     {pkg.description || `Akses belajar TKA ${level} selama ${days} hari.`}
                                 </p>
                             </div>
 
-                            <div className="mt-5 border-2 border-slate-900 bg-white p-4">
+                            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
                                 <div className="flex flex-wrap items-end justify-between gap-3">
                                     <div>
-                                        <div className="text-xs font-black uppercase tracking-wide text-slate-500">Harga paket</div>
-                                        <div className="mt-1 text-3xl font-black tracking-tight text-blue-700">{rupiah(pkg.price)}</div>
+                                        <div className="text-xs font-black uppercase tracking-wide text-slate-400">Harga paket</div>
+                                        <div className="mt-1 text-3xl font-black tracking-tight text-indigo-700">{rupiah(pkg.price)}</div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xs font-black uppercase tracking-wide text-slate-500">Total dibayar</div>
+                                        <div className="text-xs font-black uppercase tracking-wide text-slate-400">Total dibayar</div>
                                         <div className="mt-1 text-xl font-black text-slate-950">{rupiah(totalPayment)}</div>
                                     </div>
                                 </div>
-                                <p className="st-muted mt-2 text-xs font-bold leading-relaxed">Harga paket {rupiah(pkg.price)} + biaya admin {rupiah(ADMIN_FEE)}.</p>
+                                <p className="mt-2 text-xs font-bold leading-relaxed text-slate-500">Harga paket {rupiah(pkg.price)} + biaya admin {rupiah(ADMIN_FEE)}.</p>
                             </div>
 
                             <div className="my-5 flex-1 space-y-2.5 text-sm font-bold text-slate-700">
@@ -269,7 +270,7 @@ export default function TkaPassPackagesClient({
                                 disabled={Boolean(buying)}
                                 aria-busy={isBuyingThis}
                                 onClick={() => void buy(pkg.code, pkg.durationDays)}
-                                className="st-button st-focus inline-flex min-h-12 w-full items-center justify-center gap-2 bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+                                className="st-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-[0_10px_24px_rgba(79,70,229,0.22)] transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
                             >
                                 {isBuyingThis ? <Loader2 size={17} className="animate-spin" aria-hidden="true"/> : <Zap size={17} aria-hidden="true"/>}
                                 {isBuyingThis
@@ -283,7 +284,7 @@ export default function TkaPassPackagesClient({
                 })}
             </div>
 
-            <p className="st-muted text-xs font-semibold leading-relaxed">Pembayaran diproses melalui Midtrans. Akses tidak berubah jika pembayaran dibatalkan atau belum terverifikasi.</p>
+            <p className="text-xs font-semibold leading-relaxed text-slate-500">Pembayaran diproses melalui Midtrans. Akses tidak berubah jika pembayaran dibatalkan atau belum terverifikasi.</p>
         </section>
     )
 }
@@ -291,7 +292,7 @@ export default function TkaPassPackagesClient({
 function Benefit({ icon, text, blue = false }: { icon: React.ReactNode; text: string; blue?: boolean }) {
     return (
         <div className="flex items-start gap-2.5">
-            <span className={`mt-0.5 shrink-0 ${blue ? 'text-blue-700' : 'text-emerald-600'}`}>{icon}</span>
+            <span className={`mt-0.5 shrink-0 ${blue ? 'text-indigo-600' : 'text-emerald-600'}`}>{icon}</span>
             <span>{text}</span>
         </div>
     )
