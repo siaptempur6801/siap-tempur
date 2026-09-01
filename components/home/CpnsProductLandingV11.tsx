@@ -14,6 +14,7 @@ import {
     Trophy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import TrackedLink from '@/components/analytics/TrackedLink'
 
 export type CpnsLandingUser = { id: string } | null
 
@@ -112,6 +113,7 @@ const learningModes = [
         text: 'Gunakan latihan TWK, TIU, atau TKP saat kamu ingin memperdalam bagian tertentu sebelum mencoba sesi yang lebih panjang.',
         href: '/login?returnTo=/cpns/dashboard/drilling-materi',
         cta: 'Mulai latihan fokus',
+        mode: 'latihan_fokus',
         surface: 'bg-yellow-50',
     },
     {
@@ -121,6 +123,7 @@ const learningModes = [
         text: 'Cocok ketika kamu ingin menguji kemampuan dalam sesi yang lebih ringkas sebelum full tryout.',
         href: '/login?returnTo=/cpns/dashboard/mini-tryout',
         cta: 'Lihat mini tryout',
+        mode: 'mini_tryout',
         surface: 'bg-cyan-50',
     },
     {
@@ -130,6 +133,7 @@ const learningModes = [
         text: 'Kerjakan TWK, TIU, dan TKP dengan batas waktu, lalu gunakan hasil dan pembahasan sebagai dasar latihan berikutnya.',
         href: '/cpns/full-tryout',
         cta: 'Lihat full tryout',
+        mode: 'full_tryout',
         surface: 'bg-blue-50',
     },
 ] as const
@@ -191,7 +195,13 @@ export default function CpnsProductLandingV11({
                             </Link>
                         )}
                         <Button handwriting={false} size="sm" asChild>
-                            <Link href={primaryAccountHref}>{user ? 'Buka dashboard' : 'Mulai belajar'}</Link>
+                            <TrackedLink
+                                href={primaryAccountHref}
+                                eventName="px_landing_cta"
+                                eventProperties={{ program: 'cpns', surface: 'landing', cta: user ? 'header_dashboard' : 'header_start' }}
+                            >
+                                {user ? 'Buka dashboard' : 'Mulai belajar'}
+                            </TrackedLink>
                         </Button>
                     </div>
                 </div>
@@ -215,9 +225,13 @@ export default function CpnsProductLandingV11({
 
                         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                             <Button handwriting={false} size="lg" asChild>
-                                <Link href={primaryAccountHref}>
+                                <TrackedLink
+                                    href={primaryAccountHref}
+                                    eventName="px_landing_cta"
+                                    eventProperties={{ program: 'cpns', surface: 'landing', cta: 'primary_start' }}
+                                >
                                     Mulai persiapan <ArrowRight size={18} />
-                                </Link>
+                                </TrackedLink>
                             </Button>
                             <Button handwriting={false} size="lg" variant="outline" asChild>
                                 <a href="#cara-belajar">Lihat cara kerjanya</a>
@@ -283,7 +297,7 @@ export default function CpnsProductLandingV11({
                     </div>
 
                     <div className="mt-9 grid gap-6 lg:grid-cols-3">
-                        {learningModes.map(({ icon: Icon, eyebrow, title, text, href, cta, surface }) => (
+                        {learningModes.map(({ icon: Icon, eyebrow, title, text, href, cta, mode, surface }) => (
                             <article key={title} className={`flex flex-col border-2 border-gray-900 p-6 shadow-[5px_5px_0_0_#111] ${surface}`}>
                                 <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-white">
                                     <Icon size={24} className="text-blue-700" />
@@ -291,9 +305,14 @@ export default function CpnsProductLandingV11({
                                 <p className="mt-5 text-xs font-black uppercase tracking-[0.16em] text-blue-700">{eyebrow}</p>
                                 <h3 className="mt-1 text-2xl font-black">{title}</h3>
                                 <p className="mt-3 flex-1 font-semibold leading-relaxed text-gray-600">{text}</p>
-                                <Link href={href} className="mt-6 inline-flex items-center gap-2 font-black text-blue-700 hover:underline">
+                                <TrackedLink
+                                    href={href}
+                                    eventName="px_landing_cta"
+                                    eventProperties={{ program: 'cpns', surface: 'landing', cta: `mode_${mode}`, mode }}
+                                    className="mt-6 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                                >
                                     {cta} <ArrowRight size={17} />
-                                </Link>
+                                </TrackedLink>
                             </article>
                         ))}
                     </div>
@@ -312,7 +331,13 @@ export default function CpnsProductLandingV11({
                                 Event memberi kamu kesempatan mengikuti sesi terjadwal dan melihat hasil dalam konteks peserta event yang sama.
                             </p>
                             <Button handwriting={false} className="mt-6" asChild>
-                                <Link href={eventHref}>Lihat event di akun</Link>
+                                <TrackedLink
+                                    href={eventHref}
+                                    eventName="px_landing_cta"
+                                    eventProperties={{ program: 'cpns', surface: 'landing', cta: 'event' }}
+                                >
+                                    Lihat event di akun
+                                </TrackedLink>
                             </Button>
                         </div>
 
@@ -375,7 +400,13 @@ export default function CpnsProductLandingV11({
                             Jumlah token, harga, biaya pembayaran, dan manfaat paket ditampilkan di akun agar kamu bisa melihat pilihan yang tersedia sebelum membeli.
                         </p>
                         <Button handwriting={false} className="mt-6" asChild>
-                            <Link href={packageHref}>Lihat paket token</Link>
+                            <TrackedLink
+                                href={packageHref}
+                                eventName="px_landing_cta"
+                                eventProperties={{ program: 'cpns', surface: 'landing', cta: 'token_packages' }}
+                            >
+                                Lihat paket token
+                            </TrackedLink>
                         </Button>
                     </div>
                     <div className="border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0_0_#111]">

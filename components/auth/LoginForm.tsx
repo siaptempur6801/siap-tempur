@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema, LoginFormData } from '@/lib/validations/auth'
 import { resolvePostLoginRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+import { trackProductEvent } from '@/lib/product-analytics'
 
 export default function LoginForm({ returnTo }: { returnTo: string }) {
     const [showPassword, setShowPassword] = useState(false)
@@ -31,6 +32,7 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
     })
 
     const onSubmit = async (data: LoginFormData) => {
+        trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'login', auth_method: 'email' })
         setLoading(true)
         setUnverifiedEmail(null)
         
@@ -47,6 +49,7 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
             } else if (result?.error) {
                 toast.error(result.error)
             } else {
+                trackProductEvent('px_auth_success', { surface: 'auth', auth_method: 'email' })
                 toast.success('Berhasil masuk', {
                     description: 'Lanjutkan belajarmu.'
                 })
@@ -84,6 +87,7 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
     }
 
     const handleGoogleLogin = async () => {
+        trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'login', auth_method: 'google' })
         setLoading(true)
         try {
             const { loginWithGoogle } = await import('@/app/auth/actions')

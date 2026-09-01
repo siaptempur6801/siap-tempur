@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { registerSchema, RegisterFormData } from '@/lib/validations/auth'
 import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+import { trackProductEvent } from '@/lib/product-analytics'
 
 export default function RegisterForm({ returnTo }: { returnTo: string }) {
     const [showPassword, setShowPassword] = useState(false)
@@ -31,6 +32,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
     })
 
     const onSubmit = async (data: RegisterFormData) => {
+        trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'register', auth_method: 'email' })
         setLoading(true)
         
         // Convert to FormData for Server Action
@@ -44,6 +46,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
             if (result?.error) {
                 toast.error(result.error)
             } else {
+                trackProductEvent('px_auth_success', { surface: 'auth', auth_method: 'email' })
                 toast.success('Akun berhasil dibuat', {
                     description: 'Cek kotak masuk atau folder spam email kamu untuk verifikasi akun.',
                     duration: 5000,
@@ -60,6 +63,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
     }
 
     const handleGoogleLogin = async () => {
+        trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'register', auth_method: 'google' })
         setLoading(true)
         try {
             const { loginWithGoogle } = await import('@/app/auth/actions')

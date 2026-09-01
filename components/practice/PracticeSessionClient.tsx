@@ -12,6 +12,7 @@ import PaperBackground from '@/components/PaperBackground'
 import MathRenderer from '@/components/MathRenderer'
 import { getPracticeSessionStorageKey } from '@/lib/practice-progress'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
+import { trackProductEvent } from '@/lib/product-analytics'
 
 
 interface Question {
@@ -442,6 +443,13 @@ export default function PracticeSessionClient({
     const finishLockRef = useRef(false)
     const exitLockRef = useRef(false)
     const sessionKindLabel = isTryout ? 'Tryout' : returnTo === 'drilling-materi' ? 'Latihan Fokus' : 'Mini Tryout'
+    const analyticsMode = isTryout
+        ? 'full_tryout'
+        : returnTo === 'drilling-materi'
+            ? 'latihan_fokus'
+            : returnTo === 'event'
+                ? 'event'
+                : 'mini_tryout'
     const sessionKindLabelLower = sessionKindLabel.toLowerCase()
     const resultFromQuery = returnTo === 'event'
         ? '?from=event'
@@ -515,6 +523,7 @@ export default function PracticeSessionClient({
                 didFinish = true
                 setHasFinished(true)
                 clearProgressFromLocalStorage(sessionId)
+                trackProductEvent('px_exam_complete', { program: 'cpns', surface: 'exam', mode: analyticsMode })
                 toast.success(`${sessionKindLabel} selesai`)
                 router.push(`/cpns/dashboard/tryout/${sessionId}/result${resultFromQuery}`)
             }
@@ -527,7 +536,7 @@ export default function PracticeSessionClient({
                 releaseSingleFlightLock(finishLockRef)
             }
         }
-    }, [resultFromQuery, sessionId, sessionKindLabel, router])
+    }, [analyticsMode, resultFromQuery, sessionId, sessionKindLabel, router])
 
     useEffect(() => {
         const savedProgress = loadProgressFromLocalStorage(sessionId)
