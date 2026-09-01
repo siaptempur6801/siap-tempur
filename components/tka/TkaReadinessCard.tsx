@@ -34,23 +34,23 @@ export default function TkaReadinessCard({
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-800">
-                        <Gauge size={16}/> Readiness Score V1
+                        <Gauge size={16}/> Kesiapan belajar
                     </div>
                     <h2 className="mt-1 text-2xl font-black">Kesiapan TKA SMP</h2>
-                    <p className="mt-1 max-w-3xl text-sm font-semibold text-gray-600">
-                        Skor ini merangkum mastery BIN dan MAT dengan bobot mapel setara, lalu memberi penalti pada mapel yang paling lemah. Confidence menunjukkan seberapa kuat evidence belajarmu.
+                    <p className="mt-1 max-w-3xl text-sm font-semibold leading-relaxed text-gray-600">
+                        Ringkasan ini membantu kamu melihat seberapa siap hasil belajarmu saat ini dan mata pelajaran mana yang masih perlu lebih banyak latihan.
                     </p>
                     {showDashboardLink && (
                         <Link
                             href="/tka/smp/progress"
                             className="mt-3 inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2 text-sm font-black text-white shadow-[3px_3px_0_0_#aaa] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
                         >
-                            Lihat Progress Dashboard <ArrowRight size={16}/>
+                            Lihat perkembangan <ArrowRight size={16}/>
                         </Link>
                     )}
                 </div>
                 <div className="min-w-40 border-2 border-gray-900 bg-white px-4 py-3 text-center shadow-[3px_3px_0_0_#111]">
-                    <div className="text-xs font-black uppercase tracking-wider text-gray-500">Readiness</div>
+                    <div className="text-xs font-black uppercase tracking-wider text-gray-500">Kesiapan</div>
                     <div className="text-4xl font-black">{readinessPercent.toFixed(1)}%</div>
                     <div className="text-sm font-black text-emerald-800">{levelLabel(readiness.readinessLevel)}</div>
                 </div>
@@ -73,7 +73,7 @@ export default function TkaReadinessCard({
                                     <div className="h-full bg-emerald-300" style={{ width: `${subjectPercent}%` }}/>
                                 </div>
                                 <div className="mt-2 text-xs font-bold text-gray-600">
-                                    Evidence node: {subject.evidencedNodes}/{subject.assessableNodes}
+                                    Materi terukur: {subject.evidencedNodes}/{subject.assessableNodes}
                                 </div>
                             </article>
                         )
@@ -82,16 +82,16 @@ export default function TkaReadinessCard({
 
                 <aside className="border-2 border-gray-900 bg-[#fff9c4] p-4">
                     <div className="flex items-center gap-2 text-xs font-black uppercase text-gray-600">
-                        <ShieldCheck size={16}/> Confidence evidence
+                        <ShieldCheck size={16}/> Kekuatan data belajar
                     </div>
                     <div className="mt-2 text-3xl font-black">{confidencePercent.toFixed(1)}%</div>
                     <div className="text-sm font-black">{confidenceLabel(readiness.confidenceLevel)}</div>
                     <div className="mt-3 h-3 overflow-hidden border-2 border-gray-900 bg-white">
                         <div className="h-full bg-yellow-300" style={{ width: `${confidencePercent}%` }}/>
                     </div>
-                    <div className="mt-3 flex items-start gap-2 text-xs font-semibold text-gray-600">
+                    <div className="mt-3 flex items-start gap-2 text-xs font-semibold leading-relaxed text-gray-600">
                         <BarChart3 size={15} className="mt-0.5 shrink-0"/>
-                        Confidence meningkat saat lebih banyak knowledge node memiliki evidence yang cukup, maksimal 5 evidence per node untuk V1.
+                        Ringkasan akan semakin kuat setelah kamu mengerjakan lebih banyak bagian materi dan memiliki lebih banyak hasil latihan yang bisa dibandingkan.
                     </div>
                 </aside>
             </div>
