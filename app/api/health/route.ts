@@ -26,6 +26,7 @@ function healthResponse(statusCode: number, checks: HealthChecks) {
             status: statusCode,
             headers: {
                 'Cache-Control': 'no-store',
+                'Vercel-CDN-Cache-Control': 'no-store',
             },
         }
     )
