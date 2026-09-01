@@ -1,8 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Final RC retrigger after repairing Vercel ↔ GitHub author authentication.
 const hasParticipantCredentials = Boolean(
   process.env.E2E_PARTICIPANT_EMAIL && process.env.E2E_PARTICIPANT_PASSWORD,
 );
+const tkaStagingE2EEnabled = process.env.E2E_TKA_STAGING === '1';
+const contentReviewStagingE2EEnabled = process.env.E2E_CONTENT_REVIEW_STAGING === '1';
+const adminStagingE2EEnabled = process.env.E2E_ADMIN_STAGING === '1';
+const remoteE2EEnabled = process.env.E2E_REMOTE_BASE_URL === '1';
+const vercelAutomationBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -25,7 +31,14 @@ export default defineConfig({
       name: 'chromium-public',
       testIgnore: [
         /.*\.setup\.ts/,
+        /.*\.cleanup\.ts/,
         /.*3-dashboard\.spec\.ts/,
+        /.*6-tka-smp-full\.spec\.ts/,
+        /.*8-tka-smp-mini\.spec\.ts/,
+        /.*9-tka-smp-monetization\.spec\.ts/,
+        /.*10-admin-workspace-authenticated\.spec\.ts/,
+        /.*11-cpns-rc\.spec\.ts/,
+        /.*7-content-review-workflow\.spec\.ts/,
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -36,7 +49,7 @@ export default defineConfig({
       ? [
           {
             name: 'setup',
-            testMatch: /.*\.setup\.ts/,
+            testMatch: /.*auth\.setup\.ts/,
           },
           {
             name: 'chromium-authenticated',
@@ -49,11 +62,89 @@ export default defineConfig({
           },
         ]
       : []),
+    ...(tkaStagingE2EEnabled
+      ? [
+          {
+            name: 'tka-setup',
+            testMatch: /.*tka\.setup\.ts/,
+            teardown: 'tka-cleanup',
+          },
+          {
+            name: 'chromium-tka-staging',
+            testMatch: /.*(?:6-tka-smp-full|8-tka-smp-mini|9-tka-smp-monetization)\.spec\.ts/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: 'playwright/.auth/tka-user.json',
+            },
+            dependencies: ['tka-setup'],
+          },
+          {
+            name: 'tka-cleanup',
+            testMatch: /.*tka\.cleanup\.ts/,
+          },
+        ]
+      : []),
+    ...(contentReviewStagingE2EEnabled
+      ? [
+          {
+            name: 'content-review-setup',
+            testMatch: /.*content-review\.setup\.ts/,
+            teardown: 'content-review-cleanup',
+          },
+          {
+            name: 'chromium-content-review-staging',
+            testMatch: /.*7-content-review-workflow\.spec\.ts/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: { cookies: [], origins: [] },
+            },
+            dependencies: ['content-review-setup'],
+          },
+          {
+            name: 'content-review-cleanup',
+            testMatch: /.*content-review\.cleanup\.ts/,
+          },
+        ]
+      : []),
+    ...(adminStagingE2EEnabled
+      ? [
+          {
+            name: 'admin-setup',
+            testMatch: /.*admin\.setup\.ts/,
+            teardown: 'admin-cleanup',
+          },
+          {
+            name: 'chromium-admin-staging',
+            testMatch: /.*10-admin-workspace-authenticated\.spec\.ts/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: 'playwright/.auth/admin-user.json',
+              ...(vercelAutomationBypass
+                ? {
+                    extraHTTPHeaders: {
+                      'x-vercel-protection-bypass': vercelAutomationBypass,
+                      'x-vercel-set-bypass-cookie': 'true',
+                    },
+                  }
+                : {}),
+            },
+            dependencies: ['admin-setup'],
+          },
+          {
+            name: 'admin-cleanup',
+            testMatch: /.*admin\.cleanup\.ts/,
+          },
+        ]
+      : []),
   ],
-  webServer: {
-    command: 'npm run start',
-    url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  ...(remoteE2EEnabled
+    ? {}
+    : {
+        webServer: {
+          command: 'npm run start',
+          url: 'http://127.0.0.1:3000',
+          reuseExistingServer: !process.env.CI,
+          timeout: 120000,
+        },
+      }),
 });

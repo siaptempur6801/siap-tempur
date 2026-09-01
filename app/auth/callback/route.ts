@@ -1,13 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { env } from '@/lib/env'
+import { resolvePostLoginRedirect } from '@/lib/auth-redirect'
 
 function sanitizeNext(rawNext: string | null) {
-    if (!rawNext || !rawNext.startsWith('/')) {
-        return '/cpns/dashboard'
-    }
-
-    return rawNext
+    return resolvePostLoginRedirect(rawNext)
 }
 
 function toErrorRedirect(origin: string, message: string) {

@@ -5,13 +5,20 @@ import { revalidatePath } from 'next/cache'
 import { ArticleFormSchema } from '@/lib/validations/admin'
 import { validateCsrf } from '@/lib/csrf'
 import { createAdminClient } from '@/lib/utils/supabase/server'
-import { canAccessArticleAdmin, canPublishArticle, getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
+import { getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
+import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import { logAuditEvent } from '@/lib/audit-log'
 import { logger } from '@/lib/logger'
 
 export type ArticleActionState = {
     success: boolean
     message: string
+}
+
+type ArticleActor = {
+    userId: string
+    role: string
+    permissions: string[]
 }
 
 type ArticleRow = {
@@ -23,6 +30,7 @@ type ArticleRow = {
 }
 
 const initialErrorState = { success: false, message: 'Invalid request' }
+const ARTICLE_ADMIN_PATH = '/admin/content/articles'
 
 function readArticleForm(formData: FormData) {
     return {
@@ -35,9 +43,13 @@ function readArticleForm(formData: FormData) {
     }
 }
 
-async function requireArticleActor() {
+function actorHasPermission(actor: ArticleActor, permission: PermissionCode) {
+    return actor.permissions.includes(permission)
+}
+
+async function requireArticleActor(permission: PermissionCode) {
     const actor = await getCurrentUserRole()
-    if (!actor || !canAccessArticleAdmin(actor.role)) return null
+    if (!actor || !actorHasPermission(actor, permission)) return null
     return actor
 }
 
@@ -57,7 +69,7 @@ async function readArticle(id: string): Promise<ArticleRow | null> {
     return data as ArticleRow | null
 }
 
-function canModifyArticle(actor: { userId: string; role: string }, article: ArticleRow) {
+function canModifyArticle(actor: ArticleActor, article: ArticleRow) {
     if (isAdminRole(actor.role)) return true
     return article.author_id === actor.userId && article.status !== 'published'
 }
@@ -65,7 +77,7 @@ function canModifyArticle(actor: { userId: string; role: string }, article: Arti
 export async function createArticle(_prevState: ArticleActionState, formData: FormData): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await requireArticleActor()
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_CREATE)
     if (!actor) return { success: false, message: 'Unauthorized' }
 
     const parsed = ArticleFormSchema.safeParse(readArticleForm(formData))
@@ -74,11 +86,7 @@ export async function createArticle(_prevState: ArticleActionState, formData: Fo
     const supabase = await createAdminClient()
     const { data, error } = await supabase
         .from('articles')
-        .insert({
-            ...parsed.data,
-            status: 'draft',
-            author_id: actor.userId,
-        })
+        .insert({ ...parsed.data, status: 'draft', author_id: actor.userId })
         .select('id')
         .single()
 
@@ -88,21 +96,15 @@ export async function createArticle(_prevState: ArticleActionState, formData: Fo
         return { success: false, message: 'Artikel gagal dibuat' }
     }
 
-    await logAuditEvent({
-        action: 'CREATE_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: data.id,
-    })
-
-    revalidatePath('/cpns/admin/articles')
-    redirect('/cpns/admin/articles')
+    await logAuditEvent({ action: 'CREATE_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: data.id })
+    revalidatePath(ARTICLE_ADMIN_PATH)
+    redirect(ARTICLE_ADMIN_PATH)
 }
 
 export async function updateArticle(id: string, _prevState: ArticleActionState, formData: FormData): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await requireArticleActor()
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_UPDATE)
     if (!actor) return { success: false, message: 'Unauthorized' }
 
     const article = await readArticle(id)
@@ -113,10 +115,7 @@ export async function updateArticle(id: string, _prevState: ArticleActionState, 
     if (!parsed.success) return { success: false, message: parsed.error.issues[0].message }
 
     const supabase = await createAdminClient()
-    const { error } = await supabase
-        .from('articles')
-        .update(parsed.data)
-        .eq('id', id)
+    const { error } = await supabase.from('articles').update(parsed.data).eq('id', id)
 
     if (error) {
         if (error.code === '23505') return { success: false, message: 'Slug artikel sudah dipakai' }
@@ -124,23 +123,17 @@ export async function updateArticle(id: string, _prevState: ArticleActionState, 
         return { success: false, message: 'Artikel gagal diupdate' }
     }
 
-    await logAuditEvent({
-        action: 'UPDATE_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: id,
-    })
-
-    revalidatePath('/cpns/admin/articles')
+    await logAuditEvent({ action: 'UPDATE_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
+    revalidatePath(ARTICLE_ADMIN_PATH)
     revalidatePath(`/blog/${parsed.data.slug}`)
-    redirect('/cpns/admin/articles')
+    redirect(ARTICLE_ADMIN_PATH)
 }
 
 export async function publishArticle(id: string): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await getCurrentUserRole()
-    if (!actor || !canPublishArticle(actor.role)) return { success: false, message: 'Unauthorized' }
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_PUBLISH)
+    if (!actor) return { success: false, message: 'Unauthorized' }
 
     const supabase = await createAdminClient()
     const { data, error } = await supabase
@@ -155,24 +148,18 @@ export async function publishArticle(id: string): Promise<ArticleActionState> {
         return { success: false, message: 'Artikel gagal dipublish' }
     }
 
-    await logAuditEvent({
-        action: 'PUBLISH_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: id,
-    })
-
+    await logAuditEvent({ action: 'PUBLISH_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
     revalidatePath('/blog')
     revalidatePath(`/blog/${data.slug}`)
-    revalidatePath('/cpns/admin/articles')
+    revalidatePath(ARTICLE_ADMIN_PATH)
     return { success: true, message: 'Artikel dipublish' }
 }
 
 export async function unpublishArticle(id: string): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await getCurrentUserRole()
-    if (!actor || !canPublishArticle(actor.role)) return { success: false, message: 'Unauthorized' }
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_PUBLISH)
+    if (!actor) return { success: false, message: 'Unauthorized' }
 
     const supabase = await createAdminClient()
     const { data, error } = await supabase
@@ -187,23 +174,17 @@ export async function unpublishArticle(id: string): Promise<ArticleActionState> 
         return { success: false, message: 'Artikel gagal ditarik dari publik' }
     }
 
-    await logAuditEvent({
-        action: 'UNPUBLISH_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: id,
-    })
-
+    await logAuditEvent({ action: 'UNPUBLISH_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
     revalidatePath('/blog')
     revalidatePath(`/blog/${data.slug}`)
-    revalidatePath('/cpns/admin/articles')
+    revalidatePath(ARTICLE_ADMIN_PATH)
     return { success: true, message: 'Artikel menjadi draft' }
 }
 
 export async function archiveArticle(id: string): Promise<ArticleActionState> {
     try { await validateCsrf() } catch { return initialErrorState }
 
-    const actor = await requireArticleActor()
+    const actor = await requireArticleActor(PERMISSIONS.CONTENT_UPDATE)
     if (!actor) return { success: false, message: 'Unauthorized' }
 
     const article = await readArticle(id)
@@ -221,15 +202,9 @@ export async function archiveArticle(id: string): Promise<ArticleActionState> {
         return { success: false, message: 'Artikel gagal diarsipkan' }
     }
 
-    await logAuditEvent({
-        action: 'ARCHIVE_ARTICLE',
-        actor_id: actor.userId,
-        target_type: 'article',
-        target_id: id,
-    })
-
+    await logAuditEvent({ action: 'ARCHIVE_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
     revalidatePath('/blog')
-    revalidatePath('/cpns/admin/articles')
+    revalidatePath(ARTICLE_ADMIN_PATH)
     return { success: true, message: 'Artikel diarsipkan' }
 }
 
@@ -241,15 +216,10 @@ export async function deleteArticle(id: string): Promise<ArticleActionState> {
 
     const article = await readArticle(id)
     if (!article) return { success: false, message: 'Artikel tidak ditemukan' }
-    if (article.status === 'published') {
-        return { success: false, message: 'Artikel published harus di-unpublish sebelum dihapus permanen' }
-    }
+    if (article.status === 'published') return { success: false, message: 'Artikel published harus di-unpublish sebelum dihapus permanen' }
 
     const supabase = await createAdminClient()
-    const { error } = await supabase
-        .from('articles')
-        .delete()
-        .eq('id', id)
+    const { error } = await supabase.from('articles').delete().eq('id', id)
 
     if (error) {
         logger.warn('[article-delete]', { error, id })
@@ -266,6 +236,6 @@ export async function deleteArticle(id: string): Promise<ArticleActionState> {
 
     revalidatePath('/blog')
     revalidatePath(`/blog/${article.slug}`)
-    revalidatePath('/cpns/admin/articles')
+    revalidatePath(ARTICLE_ADMIN_PATH)
     return { success: true, message: 'Artikel dihapus permanen' }
 }

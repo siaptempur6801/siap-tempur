@@ -19,6 +19,8 @@ function healthResponse(statusCode: number, checks: HealthChecks) {
             status: isOk ? 'ok' : 'degraded',
             checks,
             timestamp: new Date().toISOString(),
+            deploymentCommitSha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+            deploymentEnvironment: process.env.VERCEL_ENV ?? null,
         },
         {
             status: statusCode,

@@ -1,0 +1,99 @@
+name: CPNS Staging E2E
+
+on:
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: Exact Vercel Preview URL for the selected branch head
+        required: false
+        type: string
+  pull_request:
+    branches:
+      - feat/schema-v2
+    paths:
+      - 'app/actions/practice.ts'
+      - 'app/api/practice-sessions/**'
+      - 'app/cpns/**'
+      - 'components/dashboard/**'
+      - 'components/practice/**'
+      - 'src/repositories/practice-**'
+      - 'src/services/practice-**'
+      - 'src/services/exam-**'
+      - 'tests/e2e/cpns.*.ts'
+      - 'tests/e2e/specs/11-cpns-rc.spec.ts'
+      - 'playwright.cpns-rc.config.ts'
+      - 'scripts/resolve_vercel_preview.mjs'
+      - '.github/workflows/cpns-staging-e2e.yml'
+      - 'supabase/functions/ci-e2e-cpns/**'
+      - 'supabase/migrations/**'
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  id-token: write
+
+env:
+  CI: 'true'
+  APP_ENV: staging
+  NEXT_PUBLIC_APP_ENV: staging
+  E2E_REMOTE_BASE_URL: '1'
+  PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+  GITHUB_TOKEN: ${{ github.token }}
+  VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+  NEXT_PUBLIC_SUPABASE_URL: https://lpgrivowdcepcxradavu.supabase.co
+  NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF: lpgrivowdcepcxradavu
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_9MDt_8bH6lsECYEaX9zqeg_6Upvnpaf
+
+jobs:
+  cpns-rc:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, macOS, ARM64]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Require Vercel Automation Bypass
+        shell: bash
+        run: |
+          if [ -z "$VERCEL_AUTOMATION_BYPASS_SECRET" ]; then
+            echo "VERCEL_AUTOMATION_BYPASS_SECRET is required for protected CPNS Preview QA."
+            exit 1
+          fi
+
+      - name: Resolve exact protected Vercel Preview
+        env:
+          INPUT_PREVIEW_URL: ${{ inputs.preview_url }}
+        run: node scripts/resolve_vercel_preview.mjs
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Run CPNS release-candidate E2E on Vercel Preview
+        run: npx playwright test --config=playwright.cpns-rc.config.ts --project=chromium-cpns-rc
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpns-playwright-report
+          path: |
+            playwright-report-cpns
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7

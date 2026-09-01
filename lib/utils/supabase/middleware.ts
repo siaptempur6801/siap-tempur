@@ -1,11 +1,21 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { env } from '@/lib/env'
+import { resolvePostLoginRedirect } from '@/lib/auth-redirect'
 
 // Route yang hanya bisa diakses kalau BELUM login
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password']
 // Route yang WAJIB login
 const PROTECTED_ROUTES = ['/cpns/dashboard', '/cpns/admin']
+
+function copyCustomHeaders(response: NextResponse, customHeaders?: Headers) {
+    if (customHeaders) {
+        customHeaders.forEach((value, key) => {
+            response.headers.set(key, value)
+        })
+    }
+    return response
+}
 
 export async function updateSession(request: NextRequest, customHeaders?: Headers) {
     let supabaseResponse = NextResponse.next({
@@ -48,36 +58,23 @@ export async function updateSession(request: NextRequest, customHeaders?: Header
         },
     })
 
-    // PENTING: getUser() di sini wajib untuk refresh session
+    // getUser() wajib di sini untuk refresh session cookie bila diperlukan.
     const { data: { user } } = await supabase.auth.getUser()
-
     const pathname = request.nextUrl.pathname
 
     if (user && AUTH_ROUTES.some(route => pathname.startsWith(route))) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/cpns/dashboard'
-        const response = NextResponse.redirect(url)
-        // Ensure headers are preserved on redirect
-        if (customHeaders) {
-            customHeaders.forEach((value, key) => {
-                response.headers.set(key, value)
-            })
-        }
-        return response
+        const returnTo = request.nextUrl.searchParams.get('returnTo')
+        const target = new URL(resolvePostLoginRedirect(returnTo), request.url)
+        return copyCustomHeaders(NextResponse.redirect(target), customHeaders)
     }
 
     if (!user && PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
         const url = request.nextUrl.clone()
+        const returnTo = `${pathname}${request.nextUrl.search}`
         url.pathname = '/login'
-        url.searchParams.set('next', pathname)
-        const response = NextResponse.redirect(url)
-        // Ensure headers are preserved on redirect
-        if (customHeaders) {
-            customHeaders.forEach((value, key) => {
-                response.headers.set(key, value)
-            })
-        }
-        return response
+        url.search = ''
+        url.searchParams.set('returnTo', returnTo)
+        return copyCustomHeaders(NextResponse.redirect(url), customHeaders)
     }
 
     return supabaseResponse

@@ -1,28 +1,50 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient, createAdminClient } from '@/lib/utils/supabase/server'
+import { headers } from 'next/headers'
+import { createV2Client, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
+import { env } from '@/lib/env'
+import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+
+function callbackUrl(path = '/auth/callback') {
+    return `${env.siteUrl()}${path}`
+}
+
+async function resolveAuthReturnTo(explicitReturnTo?: string | null) {
+    if (explicitReturnTo) return sanitizeAuthReturnTo(explicitReturnTo)
+
+    try {
+        const requestHeaders = await headers()
+        const referer = requestHeaders.get('referer')
+        if (referer) {
+            const url = new URL(referer)
+            return sanitizeAuthReturnTo(url.searchParams.get('returnTo'))
+        }
+    } catch {
+        // Fall back to the generic public entry below.
+    }
+
+    return sanitizeAuthReturnTo(null)
+}
+
+async function callbackUrlForReturnTo(returnTo?: string | null) {
+    const url = new URL(callbackUrl())
+    url.searchParams.set('next', await resolveAuthReturnTo(returnTo))
+    return url.toString()
+}
 
 export async function login(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
-
-    const supabase = await createClient()
-
+    const supabase = await createV2Client()
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-    })
-
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
         logger.warn('Login failed', { error: error.message })
-        if (error.message.includes('Email not confirmed')) {
-            return { error: 'unverified' }
-        }
+        if (error.message.includes('Email not confirmed')) return { error: 'unverified' }
         return { error: 'Email atau password salah' }
     }
 
@@ -32,22 +54,19 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
-
-    const supabase = await createClient()
-
+    const supabase = await createV2Client()
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const fullName = formData.get('fullName') as string
+    const returnTo = await resolveAuthReturnTo(formData.get('returnTo') as string | null)
 
     const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-            data: {
-                full_name: fullName,
-            },
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`
-        }
+            data: { full_name: fullName },
+            emailRedirectTo: await callbackUrlForReturnTo(returnTo),
+        },
     })
 
     if (error) {
@@ -61,8 +80,7 @@ export async function signup(formData: FormData) {
 
 export async function signout() {
     try { await validateCsrf() } catch { return { success: false, error: 'Invalid request' } }
-
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     await supabase.auth.signOut()
     revalidatePath('/', 'layout')
     revalidatePath('/cpns')
@@ -71,55 +89,29 @@ export async function signout() {
 
 export async function updatePassword(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
-
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const password = formData.get('password') as string
     const oldPassword = formData.get('oldPassword') as string
 
-    if (!password || password.length < 8) {
-        return { error: 'Password baru minimal 8 karakter' }
-    }
+    if (!password || password.length < 8) return { error: 'Password baru minimal 8 karakter' }
+    if (!oldPassword) return { error: 'Password lama harus diisi' }
 
-    if (!oldPassword) {
-        return { error: 'Password lama harus diisi' }
-    }
-
-    // 1. Get current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
-    if (userError || !user || !user.email) {
-        return { error: 'User tidak ditemukan' }
-    }
+    if (userError || !user || !user.email) return { error: 'User tidak ditemukan' }
 
-    // 2. Verify old password by signing in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: user.email,
-        password: oldPassword
-    })
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password: oldPassword })
+    if (signInError) return { error: 'Password lama salah' }
 
-    if (signInError) {
-        return { error: 'Password lama salah' }
-    }
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) return { error: error.message }
 
-    // 3. Update password
-    const { error } = await supabase.auth.updateUser({
-        password: password
-    })
-
-    if (error) {
-        return { error: error.message }
-    }
-
-    // 4. Sign out all other sessions for security
-    const admin = await createAdminClient()
-    await admin.auth.admin.signOut(user.id, 'others').catch(() => {
-        // Best-effort: don't block user if this fails
-    })
-
+    const admin = await createV2AdminClient()
+    await admin.auth.admin.signOut(user.id, 'others').catch(() => undefined)
     revalidatePath('/cpns/dashboard/profile')
     return { success: true }
 }
 
-export async function loginWithGoogle() {
+export async function loginWithGoogle(returnTo?: string | null) {
     try {
         await validateCsrf()
     } catch (error) {
@@ -129,84 +121,50 @@ export async function loginWithGoogle() {
         return { error: 'Invalid request' }
     }
 
-    const supabase = await createClient()
-
+    const supabase = await createV2Client()
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
-            queryParams: {
-                access_type: 'offline',
-                prompt: 'consent',
-            },
+            redirectTo: await callbackUrlForReturnTo(returnTo),
+            queryParams: { access_type: 'offline', prompt: 'consent' },
         },
     })
 
-    if (error) {
-        return { error: error.message }
-    }
-
-    if (data.url) {
-        return { url: data.url }
-    }
-
+    if (error) return { error: error.message }
+    if (data.url) return { url: data.url }
     return { error: 'No URL returned' }
 }
 
-export async function resendVerificationEmail(email: string) {
+export async function resendVerificationEmail(email: string, returnTo?: string | null) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
-
-    const supabase = await createClient()
-
+    const supabase = await createV2Client()
     const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
-        options: {
-            emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
-        },
+        options: { emailRedirectTo: await callbackUrlForReturnTo(returnTo) },
     })
-
-    if (error) {
-        return { error: error.message }
-    }
-
+    if (error) return { error: error.message }
     return { success: true }
 }
 
 export async function resetPassword(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
-
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const password = formData.get('password') as string
+    if (!password || password.length < 8) return { error: 'Password baru minimal 8 karakter' }
 
-    if (!password || password.length < 8) {
-        return { error: 'Password baru minimal 8 karakter' }
-    }
-
-    const { error } = await supabase.auth.updateUser({
-        password: password
-    })
-
-    if (error) {
-        return { error: error.message }
-    }
-
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) return { error: error.message }
     return { success: true }
 }
 
 export async function forgotPassword(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
-
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const email = formData.get('email') as string
-
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?next=/auth/reset-password`,
+        redirectTo: callbackUrl('/auth/callback?next=/auth/reset-password'),
     })
-
-    if (error) {
-        return { error: error.message }
-    }
-
+    if (error) return { error: error.message }
     return { success: true }
 }

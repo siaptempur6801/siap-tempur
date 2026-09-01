@@ -11,7 +11,11 @@
     "test": "npm run lint && npm run typecheck",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test:cpns-resume": "node scripts/test_cpns_resume_flow.mjs"
+    "test:cpns-resume": "node scripts/test_cpns_resume_flow.mjs",
+    "cpns:legacy:stage": "node scripts/migrate_cpns_legacy_reviewed_to_schema_v2.mjs",
+    "cpns:legacy:repair-inline-assets": "node scripts/repair_cpns_legacy_inline_asset_urls.mjs",
+    "cpns:legacy:import:staging": "node scripts/migrate_cpns_legacy_reviewed_to_schema_v2.mjs --import-reviewed && npm run cpns:legacy:repair-inline-assets",
+    "db:types:staging": "supabase gen types typescript --project-id lpgrivowdcepcxradavu --schema public > types/database.types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -34,7 +38,6 @@
     "isomorphic-dompurify": "^3.16.0",
     "katex": "^0.16.45",
     "lucide-react": "^0.563.0",
-    "mathlive": "^0.109.2",
     "midtrans-client": "^1.4.3",
     "next": "^16.2.4",
     "react": "^19.2.5",
@@ -64,8 +67,11 @@
     "vitest": "^4.1.7"
   },
   "overrides": {
+    "dompurify": "3.4.13",
+    "nanoid": "3.3.18",
     "postcss": "8.5.23",
-    "sharp": "$sharp"
+    "sharp": "$sharp",
+    "undici": "7.29.0"
   },
   "browserslist": [
     "last 2 Chrome versions",

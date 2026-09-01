@@ -1,206 +1,212 @@
 'use server'
 
-import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
-import { createTransaction } from '@/lib/midtrans'
-import { PRICING_PACKAGES } from '@/lib/constants'
+import { createClient } from '@/lib/utils/supabase/server'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { validateCsrf } from '@/lib/csrf'
 import { isServerActionRateLimited } from '@/lib/server-rate-limit'
+import { paymentService } from '@/src/services/payment.service'
+import { authorizationService } from '@/src/services/authorization.service'
+import { PERMISSIONS } from '@/src/auth/permissions'
+import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
-const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
-const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
+export type CreatePackageTransactionResult =
+    | {
+        success: true
+        token: string
+        orderId: string
+        orderNumber: string
+        redirectUrl: string | null
+    }
+    | {
+        success: false
+        message: string
+    }
 
-function isValidMidtransStatus(status: unknown): status is string {
-    return typeof status === 'string' && MIDTRANS_STATUSES.has(status)
+export type CreateQrisQaTransactionResult =
+    | {
+        success: true
+        orderId: string
+        orderNumber: string
+        providerTransactionId: string
+        qrImageUrl: string
+        qrImageUrlV2: string | null
+        simulatorUrl: string
+        amount: number
+    }
+    | {
+        success: false
+        message: string
+    }
+
+function checkoutErrorMessage(error: unknown) {
+    const message = error instanceof Error ? error.message : ''
+
+    if (message === 'PRODUCT_NOT_AVAILABLE') return 'Paket tidak tersedia.'
+    if (message === 'MIDTRANS_TOKEN_MISSING') {
+        return 'Midtrans tidak mengembalikan token pembayaran. Silakan coba lagi.'
+    }
+    if (message.startsWith('MIDTRANS_QRIS_CHARGE_FAILED:')) {
+        return `Midtrans Sandbox menolak pembuatan QRIS: ${message.slice('MIDTRANS_QRIS_CHARGE_FAILED:'.length)}`
+    }
+    if (message === 'MIDTRANS_QRIS_IMAGE_URL_MISSING') {
+        return 'Midtrans tidak mengembalikan direct QR image URL.'
+    }
+
+    return 'Terjadi kesalahan sistem saat memproses pembayaran. Silakan coba lagi.'
 }
 
-export async function createPackageTransaction(packageId: string) {
-    try { await validateCsrf() } catch { throw new Error("Invalid request") }
-
+async function currentUser() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
+    return user
+}
 
-    if (!user) {
-        throw new Error("Unauthorized")
+export async function createPackageTransaction(productCode: string): Promise<CreatePackageTransactionResult> {
+    try {
+        await validateCsrf()
+    } catch {
+        return { success: false, message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.' }
     }
+
+    const user = await currentUser()
+    if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
 
     if (await isServerActionRateLimited(user.id, 'create_transaction', 5, 60000)) {
-        throw new Error("Terlalu banyak permintaan. Silakan coba lagi nanti.")
+        return { success: false, message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.' }
     }
 
-    // Find the package from constants
-    const pkg = PRICING_PACKAGES.find(p => p.id === packageId)
-    if (!pkg) {
-        throw new Error("Paket tidak ditemukan")
-    }
-
-    const orderId = `SKD-${pkg.id.toUpperCase()}-${user.id.substring(0, 8)}-${Date.now()}`
-    const baseAmount = pkg.price
-
-    // QRIS Flat Rp 500 Admin Fee
-    const adminFee = 500
-    const grossAmount = baseAmount + adminFee
-    const enabledPayments = ['qris', 'other_qris']
-
-    // 1. Call Midtrans API First
-    const customerDetails = {
-        first_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-        email: user.email,
-    }
-
-    const itemDetails = [
-        {
-            id: pkg.id,
-            price: baseAmount,
-            quantity: 1,
-            name: pkg.name
-        },
-        {
-            id: 'admin_fee',
-            price: adminFee,
-            quantity: 1,
-            name: 'Biaya Admin (QRIS)'
-        }
-    ]
-
-    const transaction = await createTransaction(
-        orderId,
-        grossAmount,
-        customerDetails,
-        itemDetails,
-        enabledPayments,
-        '/cpns/dashboard/profile'
-    )
-
-    if (!transaction || !transaction.token) {
-        logger.error('Midtrans transaction creation failed', { orderId })
-        throw new Error("Terjadi kesalahan sistem saat memproses pembayaran. Silakan coba lagi.")
-    }
-
-    // 2. Log transaction in DB with the snap_token (single INSERT, avoids UPDATE RLS issues)
-    const admin = await createAdminClient()
-    const { error: dbError } = await admin
-        .from('transactions')
-        .insert({
-            user_id: user.id,
-            order_id: orderId,
-            amount: grossAmount,
-            package_name: pkg.name,
-            status: 'pending',
-            snap_token: transaction.token
+    try {
+        const checkout = await paymentService.createCheckout({
+            userId: user.id,
+            email: user.email,
+            fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
+            productCode,
+            adminFee: 500,
+            returnPath: '/cpns/dashboard/profile',
         })
 
-    if (dbError) {
-        logger.error('Payment transaction insert failed', dbError, { orderId })
-        // If DB insertion fails, we should still return the token so the user can pay, 
-        // though the webhook might not find the transaction (or maybe webhook creates it via upsert).
-        // Best case: it succeeds.
+        return {
+            success: true,
+            token: checkout.token,
+            orderId: checkout.orderId,
+            orderNumber: checkout.orderNumber,
+            redirectUrl: checkout.redirectUrl,
+        }
+    } catch (error) {
+        logger.error('Package checkout creation failed', error, { productCode, userId: user.id })
+        return { success: false, message: checkoutErrorMessage(error) }
+    }
+}
+
+export async function createTkaPassTransaction(
+    productCodeValue: string,
+    levelValue: string,
+): Promise<CreatePackageTransactionResult> {
+    try {
+        await validateCsrf()
+    } catch {
+        return { success: false, message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.' }
     }
 
-    return {
-        ...transaction,
-        orderId
+    const level = parseTkaLevel(levelValue)
+    if (!level) return { success: false, message: 'Jenjang TKA tidak valid.' }
+
+    const productCode = productCodeValue.trim().toUpperCase()
+    const allowedCodes = new Set([`TKA_${level}_PASS_30`, `TKA_${level}_PASS_90`])
+    if (!allowedCodes.has(productCode)) {
+        return { success: false, message: 'Paket tidak sesuai dengan jenjang TKA ini.' }
+    }
+
+    const user = await currentUser()
+    if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
+
+    if (await isServerActionRateLimited(user.id, `create_tka_${level.toLowerCase()}_pass`, 5, 60000)) {
+        return { success: false, message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.' }
+    }
+
+    try {
+        const checkout = await paymentService.createCheckout({
+            userId: user.id,
+            email: user.email,
+            fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
+            productCode,
+            adminFee: 500,
+            returnPath: tkaLevelPath(level),
+        })
+
+        return {
+            success: true,
+            token: checkout.token,
+            orderId: checkout.orderId,
+            orderNumber: checkout.orderNumber,
+            redirectUrl: checkout.redirectUrl,
+        }
+    } catch (error) {
+        logger.error('TKA Pass checkout creation failed', error, {
+            productCode,
+            userId: user.id,
+            level,
+        })
+        return { success: false, message: checkoutErrorMessage(error) }
+    }
+}
+
+export async function createQrisQaTransaction(productCode: string): Promise<CreateQrisQaTransactionResult> {
+    try {
+        await validateCsrf()
+    } catch {
+        return { success: false, message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.' }
+    }
+
+    if (env.appEnvironment() !== 'staging') {
+        return { success: false, message: 'QRIS Simulator hanya tersedia pada staging.' }
+    }
+
+    const user = await currentUser()
+    if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
+
+    const canManagePayments = await authorizationService.hasPermission(PERMISSIONS.PAYMENT_MANAGE)
+    if (!canManagePayments) {
+        return { success: false, message: 'Akses QRIS QA hanya untuk admin dengan permission payment.manage.' }
+    }
+
+    if (await isServerActionRateLimited(user.id, 'create_qris_qa_transaction', 5, 60000)) {
+        return { success: false, message: 'Terlalu banyak QRIS QA dibuat. Coba lagi satu menit lagi.' }
+    }
+
+    try {
+        const checkout = await paymentService.createQrisQaCheckout({
+            userId: user.id,
+            email: user.email,
+            fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
+            productCode,
+            adminFee: 500,
+        })
+
+        return { success: true, ...checkout }
+    } catch (error) {
+        logger.error('QRIS QA checkout creation failed', error, { productCode, userId: user.id })
+        return { success: false, message: checkoutErrorMessage(error) }
     }
 }
 
 export async function syncPaymentStatus(orderId: string) {
     try { await validateCsrf() } catch { return false }
 
-    const supabaseContext = await createClient()
-    const { data: { user } } = await supabaseContext.auth.getUser()
-    if (!user) return false;
-    if (typeof orderId !== 'string' || orderId.trim() === '') return false;
+    const user = await currentUser()
+    if (!user || typeof orderId !== 'string' || orderId.trim() === '') return false
 
     if (await isServerActionRateLimited(user.id, 'sync_payment', 10, 60000)) {
         logger.warn('Rate limit exceeded for syncPaymentStatus', { userId: user.id, orderId })
-        return false;
+        return false
     }
 
     try {
-        const serverKey = env.midtransServerKey()
-        const isSandbox = serverKey.includes('SB-')
-        const baseUrl = isSandbox ? 'https://api.sandbox.midtrans.com/v2' : 'https://api.midtrans.com/v2'
-
-        const response = await fetch(`${baseUrl}/${orderId}/status`, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': 'Basic ' + Buffer.from(serverKey + ':').toString('base64')
-            },
-            cache: 'no-store'
-        })
-
-        if (!response.ok) {
-            // Jika Midtrans API melempar 404 (Not Found), seringkali karena snap session expired
-            // Mari kita cek umur transaksi di database
-            if (response.status === 404) {
-                const adminSupabase = await createAdminClient()
-
-                const { data: txInfo } = await adminSupabase
-                    .from('transactions')
-                    .select('created_at, status')
-                    .eq('order_id', orderId)
-                    .eq('user_id', user.id)
-                    .single()
-
-                if (txInfo && txInfo.status === 'pending') {
-                    const txAge = new Date().getTime() - new Date(txInfo.created_at).getTime();
-                    const mins15 = 15 * 60 * 1000;
-
-                    if (txAge > mins15) {
-                        // Paksa menjadi expire karena sudah terlalu lama dan tidak ditemukan di Midtrans
-                        await adminSupabase
-                            .from('transactions')
-                            .update({ status: 'expire' })
-                            .eq('order_id', orderId)
-                    }
-                }
-            }
-            return false;
-        }
-
-        const result = await response.json()
-        const transaction_status = result.transaction_status
-
-        if (!isValidMidtransStatus(transaction_status)) return false;
-
-        // Use Admin client to bypass RLS for updating transaction and quota safely
-        const adminSupabase = await createAdminClient()
-
-        const { data: tx } = await adminSupabase
-            .from('transactions')
-            .select('*')
-            .eq('order_id', orderId)
-            .eq('user_id', user.id)
-            .single()
-
-        if (!tx) return false;
-
-        const midtransAmount = Number(result.gross_amount)
-        if (!Number.isFinite(midtransAmount) || midtransAmount !== tx.amount) {
-            logger.warn('Payment gross amount mismatch', { orderId })
-            return false
-        }
-
-        const pkg = PRICING_PACKAGES.find(p => p.name === tx.package_name)
-        const tokenCount = SUCCESS_STATUSES.has(transaction_status) && pkg ? pkg.tokens : 0
-
-        const { error: processError } = await adminSupabase.rpc('process_paid_transaction', {
-            p_order_id: orderId,
-            p_transaction_status: transaction_status,
-            p_increment_by: tokenCount
-        })
-
-        if (processError) {
-            logger.error('Failed to process transaction status', processError, { orderId })
-            return false
-        }
-
-        return true;
+        await paymentService.syncUserOrder(user.id, orderId)
+        return true
     } catch (error) {
-        logger.error('Payment status sync failed', error, { orderId })
-        return false;
+        logger.error('Payment status sync failed', error, { orderId, userId: user.id })
+        return false
     }
 }

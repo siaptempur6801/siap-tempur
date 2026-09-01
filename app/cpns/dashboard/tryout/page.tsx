@@ -1,86 +1,15 @@
-import { isMissingProgressColumnError, isTryoutExpired } from '@/lib/practice-session'
-import { createClient } from '@/lib/utils/supabase/server'
+import { createV2Client } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import PracticeClient from './PracticeClient'
+import { practiceOverviewService } from '@/src/services/practice-overview.service'
 
 export default async function PracticeListingPage() {
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) {
-        redirect('/login')
-    }
+    if (!user) redirect('/login')
 
-    // Fetch profile for quota
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('tryout_quota')
-        .eq('id', user.id)
-        .single()
+    const data = await practiceOverviewService.getFullTryoutPageData(user.id)
 
-    const quota = profile?.tryout_quota ?? 0
-
-    const activeTryoutQuery = await supabase
-        .from('test_sessions')
-        .select('id, start_time, current_question_index, marked_questions')
-        .eq('user_id', user.id)
-        .eq('mode', 'tryout')
-        .eq('status', 'in_progress')
-        .order('last_activity_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-    const fallbackTryoutQuery = activeTryoutQuery.error && isMissingProgressColumnError(activeTryoutQuery.error)
-        ? await supabase
-            .from('test_sessions')
-            .select('id, start_time')
-            .eq('user_id', user.id)
-            .eq('mode', 'tryout')
-            .eq('status', 'in_progress')
-            .order('start_time', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        : null
-
-    const activeTryoutCandidate = fallbackTryoutQuery?.data ?? activeTryoutQuery.data
-
-    if (activeTryoutCandidate?.id && isTryoutExpired(activeTryoutCandidate.start_time)) {
-        const { error: finishError } = await supabase.rpc('calculate_session_score', {
-            session_uuid: activeTryoutCandidate.id
-        })
-
-        if (!finishError) {
-            await supabase.rpc('upsert_leaderboard_from_session', {
-                p_session_id: activeTryoutCandidate.id
-            })
-        }
-    }
-
-    const activeTryout =
-        activeTryoutCandidate?.id && isTryoutExpired(activeTryoutCandidate.start_time)
-            ? null
-            : activeTryoutCandidate
-    const activeResumeQuestionNumber =
-        activeTryout && 'current_question_index' in activeTryout && typeof activeTryout.current_question_index === 'number'
-            ? activeTryout.current_question_index + 1
-            : null
-
-    const answeredQuestions = activeTryout?.id
-        ? (await supabase
-            .from('test_answers')
-            .select('*', { count: 'exact', head: true })
-            .eq('session_id', activeTryout.id)
-            .not('option_id', 'is', null)).count ?? null
-        : null
-
-    return (
-        <PracticeClient
-            quota={quota}
-            activeSessionId={activeTryout?.id ?? null}
-            activeResumeQuestionNumber={activeResumeQuestionNumber}
-            activeAnsweredQuestions={answeredQuestions}
-            activeStartedAt={activeTryout?.start_time ?? null}
-        />
-    )
+    return <PracticeClient {...data} />
 }
-
