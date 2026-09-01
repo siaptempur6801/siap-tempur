@@ -274,13 +274,13 @@ export default async function TkaLevelPage({
                             <span className="mt-4 inline-flex items-center gap-1 text-sm font-black text-blue-700">Ulangi soal <ArrowRight size={15}/></span>
                         </Link>
                         <Link
-                            href={`${path}/remedial`}
+                            href={`${path}/progress`}
                             className="group border-2 border-gray-900 bg-white p-5 shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
                         >
                             <CheckCircle2 size={22} className="text-green-700" />
                             <h2 className="mt-4 text-lg font-black">Latihan perbaikan</h2>
                             <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">Fokuskan latihan pada bagian yang masih lemah sebelum mencoba tryout berikutnya.</p>
-                            <span className="mt-4 inline-flex items-center gap-1 text-sm font-black text-blue-700">Mulai perbaikan <ArrowRight size={15}/></span>
+                            <span className="mt-4 inline-flex items-center gap-1 text-sm font-black text-blue-700">Lihat rekomendasi <ArrowRight size={15}/></span>
                         </Link>
                     </section>
                 )}
