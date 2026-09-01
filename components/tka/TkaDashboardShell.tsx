@@ -48,9 +48,9 @@ export default function TkaDashboardShell({
 
     if (isFocusedSession) {
         return (
-            <main data-experience-mode="exam" data-program={`tka-${level.toLowerCase()}`} className="st-product min-h-screen bg-[#fbfaf7]">
+            <div data-experience-mode="exam" data-program={`tka-${level.toLowerCase()}`} className="st-product min-h-screen bg-[#fbfaf7]">
                 {children}
-            </main>
+            </div>
         )
     }
 
@@ -116,7 +116,7 @@ export default function TkaDashboardShell({
                 </div>
             </aside>
 
-            <main className="relative flex-1 overflow-y-auto pb-24 md:pb-0">
+            <div className="relative flex-1 overflow-y-auto pb-24 md:pb-0">
                 <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b-2 border-slate-900 bg-[#fbfaf7]/95 px-5 backdrop-blur-xl md:hidden">
                     <Link href="/tka" className="st-focus font-handwriting text-2xl font-black text-slate-950">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
@@ -127,7 +127,7 @@ export default function TkaDashboardShell({
                 <div className="mx-auto w-full max-w-7xl">
                     {children}
                 </div>
-            </main>
+            </div>
 
             <nav
                 className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-slate-900 bg-[#fbfaf7]/98 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
