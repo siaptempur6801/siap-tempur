@@ -15,14 +15,16 @@ type HealthChecks = {
 
 function healthResponse(statusCode: number, checks: HealthChecks) {
     const isOk = Object.values(checks).every(Boolean)
+    const deploymentCommitSha = process.env.VERCEL_GIT_COMMIT_SHA ?? null
+    const deploymentEnvironment = process.env.VERCEL_ENV ?? null
 
     return NextResponse.json(
         {
             status: isOk ? 'ok' : 'degraded',
             checks,
             timestamp: new Date().toISOString(),
-            deploymentCommitSha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
-            deploymentEnvironment: process.env.VERCEL_ENV ?? null,
+            deploymentCommitSha,
+            deploymentEnvironment,
         },
         {
             status: statusCode,
@@ -30,6 +32,7 @@ function healthResponse(statusCode: number, checks: HealthChecks) {
                 'Cache-Control': 'no-store, max-age=0',
                 'CDN-Cache-Control': 'no-store',
                 'Vercel-CDN-Cache-Control': 'no-store',
+                'X-Deployment-Commit-Sha': deploymentCommitSha ?? 'unknown',
                 Pragma: 'no-cache',
                 Expires: '0',
             },
