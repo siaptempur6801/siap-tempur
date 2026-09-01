@@ -67,7 +67,7 @@ async function submitReviewAndWait(
 }
 
 async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/test').Page) {
-    await expect(page.getByText('TKA SMP · Mode Ulang Soal Salah')).toBeVisible()
+    await expect(page.getByText('TKA SMP · Soal yang perlu diulang')).toBeVisible()
     await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
 
     const optionButtons = page.locator('article button').filter({
@@ -76,8 +76,8 @@ async function resolveFirstSingleChoiceWrongQuestion(page: import('@playwright/t
     const optionCount = await optionButtons.count()
     expect(optionCount).toBeGreaterThan(1)
 
-    const correct = page.getByText('Benar! Soal ini sudah dituntaskan.', { exact: true })
-    const wrong = page.getByText('Belum tepat. Pilih jawaban lain lalu coba lagi.', { exact: true })
+    const correct = page.getByText('Benar. Soal ini sudah selesai diulang.', { exact: true })
+    const wrong = page.getByText('Belum tepat. Pelajari pembahasan lalu coba jawaban lain.', { exact: true })
 
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
@@ -96,18 +96,18 @@ async function resolveSingleChoiceRemedialAtPosition(
     page: import('@playwright/test').Page,
     position: number,
 ) {
-    await expect(page.getByText('TKA SMP · Remedial Otomatis')).toBeVisible()
-    await page.getByRole('button', { name: `Remedial ${position}`, exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Latihan perbaikan', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: `Latihan perbaikan ${position}`, exact: true }).click()
     await expect(page.getByText('Pilih satu jawaban yang paling tepat.')).toBeVisible()
 
     const optionButtons = page.locator('article button').filter({
-        hasNotText: /Periksa jawaban|Periksa lagi|Lanjut Remedial/i,
+        hasNotText: /Periksa jawaban|Periksa lagi|Lanjut latihan/i,
     })
     const optionCount = await optionButtons.count()
     expect(optionCount).toBeGreaterThan(1)
 
-    const correct = page.getByText('Benar! Evidence mastery sudah diperbarui.', { exact: true })
-    const wrong = page.getByText('Belum tepat. Pelajari lagi pilihannya lalu coba ulang.', { exact: true })
+    const correct = page.getByText('Benar. Perkembangan topik ini sudah diperbarui.', { exact: true })
+    const wrong = page.getByText('Belum tepat. Pelajari kembali pilihannya lalu coba lagi.', { exact: true })
 
     let resolved = false
     for (let index = 0; index < optionCount; index += 1) {
