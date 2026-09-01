@@ -24,7 +24,7 @@ export default function TkaLevelSwitcher({
     compact?: boolean
 }) {
     return (
-        <div className={cn('w-full', compact ? 'max-w-sm' : 'max-w-xl')}>
+        <nav aria-label="Pilih jenjang TKA" className={cn('w-full', compact ? 'max-w-sm' : 'max-w-xl')}>
             {!compact && (
                 <p className="mb-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">
                     Jenjang belajar
@@ -63,6 +63,6 @@ export default function TkaLevelSwitcher({
                     )
                 })}
             </div>
-        </div>
+        </nav>
     )
 }
