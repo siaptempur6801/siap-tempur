@@ -57,7 +57,7 @@ export default function DashboardShell({
 
     if (isPracticeSession) {
         return (
-            <main data-experience-mode="exam" data-program="cpns" className="min-h-screen bg-white">
+            <main data-experience-mode="exam" data-program="cpns" className="st-product min-h-screen bg-[#fbfaf7]">
                 {children}
             </main>
         )
@@ -72,24 +72,24 @@ export default function DashboardShell({
         <div
             data-experience-mode="learning"
             data-program="cpns"
-            className="flex h-screen overflow-hidden bg-slate-50 font-body text-slate-950"
+            className="st-product flex h-screen overflow-hidden bg-[#fbfaf7] font-body text-slate-950"
         >
-            <aside className="relative z-20 hidden w-[17rem] min-h-0 flex-col border-r border-slate-200 bg-white md:flex">
-                <div className="shrink-0 px-6 pb-5 pt-6">
+            <aside className="relative z-20 hidden w-[17rem] min-h-0 flex-col border-r-2 border-slate-900 bg-[#fbfaf7] md:flex">
+                <div className="shrink-0 border-b-2 border-slate-900 px-6 pb-5 pt-6">
                     <Link
                         href="/cpns"
-                        className="inline-flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                        className="st-focus inline-flex items-center focus-visible:outline-none"
                     >
-                        <span className="font-handwriting text-3xl font-bold leading-tight text-slate-950">
+                        <span className="font-handwriting text-3xl font-black leading-tight text-slate-950">
                             Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                         </span>
                     </Link>
-                    <p className="mt-1.5 text-xs font-medium text-slate-500">Persiapan SKD CPNS</p>
+                    <p className="mt-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Persiapan SKD CPNS</p>
                 </div>
 
-                <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 pb-4" aria-label="Navigasi CPNS">
-                    <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Utama</p>
-                    <div className="space-y-1">
+                <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-4" aria-label="Navigasi CPNS">
+                    <p className="mb-1.5 px-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Utama</p>
+                    <div className="space-y-1.5">
                         <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={18} />} label="Beranda" />
                         <NavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={18} />} label="Belajar" />
                         <NavItem href="/cpns/dashboard/tryout" icon={<Target size={18} />} label="Tryout" />
@@ -97,9 +97,9 @@ export default function DashboardShell({
                         <NavItem href="/cpns/dashboard/profile" icon={<User size={18} />} label="Profil" />
                     </div>
 
-                    <div className="my-4 border-t border-slate-200" />
-                    <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Lainnya</p>
-                    <div className="space-y-1">
+                    <div className="my-4 border-t-2 border-dashed border-slate-300" />
+                    <p className="mb-1.5 px-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Lainnya</p>
+                    <div className="space-y-1.5">
                         <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={18} />} label="Mini Tryout" />
                         <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={18} />} label="Event" />
                         <NavItem href="/cpns/dashboard/materi" icon={<Library size={18} />} label="Kisi-Kisi" />
@@ -108,9 +108,9 @@ export default function DashboardShell({
 
                     {(isAdmin || canAccessArticles) && (
                         <>
-                            <div className="my-4 border-t border-slate-200" />
-                            <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">Workspace</p>
-                            <div className="space-y-1">
+                            <div className="my-4 border-t-2 border-dashed border-slate-300" />
+                            <p className="mb-1.5 px-3 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Workspace</p>
+                            <div className="space-y-1.5">
                                 {canAccessArticles && (
                                     <NavItem href="/cpns/admin/articles" icon={<PenLine size={18} />} label="Tulis Artikel" />
                                 )}
@@ -122,12 +122,12 @@ export default function DashboardShell({
                     )}
                 </nav>
 
-                <div className="shrink-0 border-t border-slate-200 p-4">
-                    <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+                <div className="shrink-0 border-t-2 border-slate-900 p-4">
+                    <div className="flex items-center gap-3 border-2 border-slate-900 bg-white p-3 shadow-[3px_3px_0_0_#111827]">
                         <Link
                             href="/cpns/dashboard/profile"
                             aria-label="Buka profil"
-                            className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-100 font-bold text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                            className="st-focus relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden border-2 border-slate-900 bg-yellow-100 font-black text-slate-900"
                         >
                             {profile?.avatar_url ? (
                                 <Image src={profile.avatar_url} alt="Foto profil" fill className="object-cover" sizes="40px" />
@@ -136,10 +136,10 @@ export default function DashboardShell({
                             )}
                         </Link>
                         <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+                            <p className="truncate text-sm font-black text-slate-900">{displayName}</p>
                             <Link
                                 href="/cpns/dashboard/beli-paket"
-                                className="mt-0.5 inline-flex min-h-7 items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                                className="st-focus mt-0.5 inline-flex min-h-7 items-center gap-1.5 text-xs font-black text-blue-700 hover:underline"
                             >
                                 <Ticket size={13} /> {profile?.tryout_quota ?? 0} token tersisa
                             </Link>
@@ -152,10 +152,10 @@ export default function DashboardShell({
             </aside>
 
             <main className="relative flex-1 overflow-y-auto pb-24 md:pb-0">
-                <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-5 backdrop-blur-xl md:hidden">
+                <div className="sticky top-0 z-30 flex h-16 items-center justify-between border-b-2 border-slate-900 bg-[#fbfaf7]/95 px-5 backdrop-blur-xl md:hidden">
                     <Link
                         href="/cpns"
-                        className="rounded-md font-handwriting text-2xl font-bold text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                        className="st-focus font-handwriting text-2xl font-black text-slate-950"
                     >
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                     </Link>
@@ -174,7 +174,7 @@ export default function DashboardShell({
             </main>
 
             <nav
-                className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+                className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-slate-900 bg-[#fbfaf7]/98 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
                 aria-label="Navigasi utama"
             >
                 <div className="grid grid-cols-5 gap-1 px-1.5 py-1.5">
