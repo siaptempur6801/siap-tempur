@@ -28,26 +28,19 @@
 }
 
 :root {
-  /* Product canvas */
   --background: #f8fafc;
   --foreground: #0f172a;
-
-  /* Brand */
   --primary: #2563eb;
   --primary-foreground: #ffffff;
   --secondary: #f1f5f9;
   --secondary-foreground: #0f172a;
   --accent: #fbbf24;
   --accent-foreground: #0f172a;
-
-  /* Neutral */
   --muted: #e2e8f0;
   --muted-foreground: #64748b;
   --border: #e2e8f0;
   --input: #cbd5e1;
   --ring: #2563eb;
-
-  /* Product Experience semantic states */
   --success: #059669;
   --success-foreground: #ffffff;
   --warning: #d97706;
@@ -57,7 +50,6 @@
   --info: #0284c7;
   --info-foreground: #ffffff;
 
-  /* Product Experience surfaces */
   --px-canvas: #f8fafc;
   --px-surface: #ffffff;
   --px-surface-subtle: #f1f5f9;
@@ -75,8 +67,6 @@
   --px-warning: #d97706;
   --px-danger: #dc2626;
 
-  /* Soft product elevation. Hard shadows remain available only for intentional
-     marketing signatures through the legacy brand variables below. */
   --px-shadow-xs: 0 1px 2px rgb(15 23 42 / 0.04);
   --px-shadow-sm: 0 1px 3px rgb(15 23 42 / 0.08), 0 1px 2px rgb(15 23 42 / 0.04);
   --px-shadow-md: 0 10px 28px rgb(15 23 42 / 0.08);
@@ -86,19 +76,16 @@
   --px-radius-lg: 1.25rem;
   --px-radius-xl: 1.5rem;
 
-  /* Legacy marketing signature shadows. */
   --shadow-brand-sm: 3px 3px 0 0 #111111;
   --shadow-brand-md: 5px 5px 0 0 #111111;
   --shadow-brand-lg: 8px 8px 0 0 #111111;
 
-  /* Shared layout rhythm */
   --content-marketing: 80rem;
   --content-learning: 75rem;
   --content-reading: 48rem;
   --touch-target: 2.75rem;
 }
 
-/* Custom Theme Scrollbar */
 ::-webkit-scrollbar {
   width: 10px !important;
   height: 10px !important;
@@ -136,7 +123,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Shared Product Experience helpers */
 .px-container-marketing {
   width: 100%;
   max-width: var(--content-marketing);
@@ -189,14 +175,11 @@ body {
   color: var(--px-text-muted);
 }
 
-/* Marketing may be expressive, but still shares the same typography and canvas
-   temperature as the product. */
 [data-experience-mode="marketing"] {
   --px-card-shadow: var(--px-shadow-md);
   color: var(--px-text);
 }
 
-/* Learning mode is deliberately calm and information-first. */
 [data-experience-mode="learning"] {
   --px-card-shadow: var(--px-shadow-sm);
   min-height: 100%;
@@ -204,7 +187,6 @@ body {
   color: var(--px-text);
 }
 
-/* Context accents: one system, subtly different learning programs. */
 [data-program="cpns"] {
   --program-accent: #2563eb;
   --program-accent-soft: #eff6ff;
@@ -225,7 +207,6 @@ body {
   --program-accent-soft: #f5f3ff;
 }
 
-/* Exam mode intentionally removes decoration and elevation. */
 [data-experience-mode="exam"] {
   --px-card-shadow: none;
   background: #ffffff;
@@ -237,7 +218,195 @@ body {
   transform: none !important;
 }
 
-/* Make all interactive buttons intentional and keyboard visible. */
+/* SiapTempur learner theme.
+   Scoped intentionally so admin surfaces keep their current UI. */
+.st-product {
+  --st-paper: #fbfaf7;
+  --st-paper-strong: #f5f2ea;
+  --st-ink: #111827;
+  --st-ink-muted: #4b5563;
+  --st-blue: #2463eb;
+  --st-blue-dark: #164ed1;
+  --st-blue-soft: #eaf2ff;
+  --st-yellow: #fff08a;
+  --st-yellow-soft: #fffbea;
+  --st-green: #16a34a;
+  --st-green-soft: #ecfdf3;
+  --st-red: #dc2626;
+  --st-red-soft: #fff1f2;
+  --st-cyan-soft: #ecfeff;
+  --st-border: 2px solid var(--st-ink);
+  --st-shadow-sm: 3px 3px 0 var(--st-ink);
+  --st-shadow-md: 5px 5px 0 var(--st-ink);
+  --st-shadow-lg: 8px 8px 0 var(--st-ink);
+
+  background: var(--st-paper);
+  color: var(--st-ink);
+}
+
+.st-product .st-card,
+.st-product .px-surface,
+.st-product .px-panel {
+  border: var(--st-border);
+  border-radius: 0.125rem;
+  background: #ffffff;
+  box-shadow: var(--st-shadow-sm);
+}
+
+.st-product .st-card-md {
+  border: var(--st-border);
+  border-radius: 0.125rem;
+  background: #ffffff;
+  box-shadow: var(--st-shadow-md);
+}
+
+.st-product .st-card-lg {
+  border: var(--st-border);
+  border-radius: 0.125rem;
+  background: #ffffff;
+  box-shadow: var(--st-shadow-lg);
+}
+
+.st-product .st-flat-card {
+  border: var(--st-border);
+  border-radius: 0.125rem;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.st-product .st-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: var(--st-border);
+  background: var(--st-yellow);
+  padding: 0.35rem 0.7rem;
+  box-shadow: 2px 2px 0 var(--st-ink);
+  color: var(--st-ink);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.st-product .st-heading-display {
+  font-family: var(--font-handwriting), var(--font-sans), sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  color: var(--st-ink);
+}
+
+.st-product .st-heading {
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  color: var(--st-ink);
+}
+
+.st-product .st-muted {
+  color: var(--st-ink-muted);
+}
+
+.st-product .st-divider {
+  border-color: var(--st-ink);
+}
+
+.st-product .st-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1.5px solid var(--st-ink);
+  border-radius: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.st-product .st-input {
+  min-height: 2.75rem;
+  width: 100%;
+  border: var(--st-border);
+  border-radius: 0.125rem;
+  background: #ffffff;
+  padding: 0.65rem 0.8rem;
+  font-weight: 650;
+  color: var(--st-ink);
+  outline: none;
+}
+
+.st-product .st-input:focus-visible {
+  box-shadow: 0 0 0 3px rgb(36 99 235 / 0.2);
+  border-color: var(--st-blue);
+}
+
+.st-product .st-button {
+  border-width: 2px !important;
+  border-color: var(--st-ink) !important;
+  border-radius: 0.125rem !important;
+  box-shadow: 4px 4px 0 var(--st-ink) !important;
+  font-weight: 900 !important;
+}
+
+.st-product .st-button:hover:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--st-ink) !important;
+}
+
+.st-product .st-button:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: none !important;
+}
+
+.st-product .st-option {
+  width: 100%;
+  border: var(--st-border);
+  border-radius: 0.125rem;
+  background: #ffffff;
+  box-shadow: 2px 2px 0 #cbd5e1;
+}
+
+.st-product .st-option:hover {
+  border-color: var(--st-blue);
+}
+
+.st-product .st-option[data-selected="true"] {
+  border-color: var(--st-ink);
+  background: var(--st-blue-soft);
+  box-shadow: 3px 3px 0 var(--st-blue);
+}
+
+.st-product .st-section-soft {
+  border-block: var(--st-border);
+  background: var(--st-blue-soft);
+}
+
+.st-product .st-success {
+  border: var(--st-border);
+  background: var(--st-green-soft);
+}
+
+.st-product .st-warning {
+  border: var(--st-border);
+  background: var(--st-yellow-soft);
+}
+
+.st-product .st-danger {
+  border: var(--st-border);
+  background: var(--st-red-soft);
+}
+
+.st-product .st-focus:focus-visible {
+  outline: 3px solid var(--st-blue);
+  outline-offset: 3px;
+}
+
+/* Exam keeps the same identity but removes most decorative elevation. */
+.st-product[data-experience-mode="exam"] .st-card,
+.st-product[data-experience-mode="exam"] .st-card-md,
+.st-product[data-experience-mode="exam"] .st-card-lg {
+  box-shadow: none;
+}
+
 button,
 [role="button"],
 [type="button"],
@@ -255,7 +424,6 @@ summary:focus-visible {
   outline-color: var(--ring);
 }
 
-/* Hide spin buttons for number inputs */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -267,7 +435,6 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
-/* Legacy animations kept for marketing surfaces that still intentionally use them. */
 @keyframes gradient-x {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
@@ -307,7 +474,6 @@ input[type=number] {
   50% { opacity: 0.4; }
 }
 
-/* Respect the user's motion preference across legacy and Product Experience UI. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -319,8 +485,6 @@ input[type=number] {
   }
 }
 
-/* TKA attempt cards are grid items; clamp their intrinsic width so status/date
-   content cannot force the mobile document wider than the viewport. */
 main a[href^="/tka/"][href*="/tryout/"] {
   box-sizing: border-box;
   min-width: 0;
