@@ -232,19 +232,19 @@ export default async function TkaLevelPage({
                             <h1 className="mt-3 font-handwriting text-4xl font-black md:text-5xl">TKA {LEVEL_LABEL[level]}</h1>
                             <p className="mt-2 max-w-2xl font-semibold text-gray-600">
                                 {level === 'SMP'
-                                    ? 'Blueprint TKA SMP 2026 memakai Matematika dan Bahasa Indonesia sebagai mata uji resmi. Bahasa Inggris dan IPA tetap tersedia sebagai pengayaan di SiapTempur.'
-                                    : 'Track ini memakai catalog, bank soal, progress, attempt, dan entitlement yang terpisah dari CPNS/SKD.'}
+                                    ? 'Untuk TKA SMP, SiapTempur memusatkan latihan pada Matematika dan Bahasa Indonesia. Bahasa Inggris dan IPA tersedia sebagai materi pengayaan.'
+                                    : 'Setiap jenjang memiliki latihan, hasil, dan perkembangan belajar yang tersimpan terpisah dari persiapan CPNS.'}
                             </p>
                         </div>
                         <div className={`border-2 border-gray-900 px-4 py-3 font-black ${activeTrack ? 'bg-green-100 text-green-900' : 'bg-yellow-100 text-yellow-900'}`}>
-                            {activeTrack ? <span className="inline-flex items-center gap-2"><CheckCircle2 size={18}/> Track aktif</span> : <span className="inline-flex items-center gap-2"><LockKeyhole size={18}/> Belum diaktifkan</span>}
+                            {activeTrack ? <span className="inline-flex items-center gap-2"><CheckCircle2 size={18}/> Jalur belajar aktif</span> : <span className="inline-flex items-center gap-2"><LockKeyhole size={18}/> Belum diaktifkan</span>}
                         </div>
                     </div>
                 </header>
 
                 {query.activated === '1' && (
                     <div className="border-2 border-gray-900 bg-green-100 px-4 py-3 font-bold text-green-900 shadow-[3px_3px_0_0_#111]">
-                        Jalur TKA {level} berhasil diaktifkan untuk akun ini.
+                        Jalur belajar TKA {level} sudah aktif di akunmu.
                     </div>
                 )}
                 {query.error && (
@@ -253,10 +253,42 @@ export default async function TkaLevelPage({
                     </div>
                 )}
 
+                {activeTrack && (
+                    <section aria-label="Lanjutkan belajar TKA" className="grid gap-3 md:grid-cols-3">
+                        <Link
+                            href={`${path}/progress`}
+                            className="group border-2 border-gray-900 bg-white p-5 shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                        >
+                            <History size={22} className="text-blue-700" />
+                            <h2 className="mt-4 text-lg font-black">Perkembangan belajar</h2>
+                            <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">Lihat hasil latihan dan perubahan kemampuanmu dari waktu ke waktu.</p>
+                            <span className="mt-4 inline-flex items-center gap-1 text-sm font-black text-blue-700">Lihat perkembangan <ArrowRight size={15}/></span>
+                        </Link>
+                        <Link
+                            href={`${path}/wrong-questions`}
+                            className="group border-2 border-gray-900 bg-white p-5 shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                        >
+                            <BookOpenCheck size={22} className="text-yellow-700" />
+                            <h2 className="mt-4 text-lg font-black">Soal yang perlu diulang</h2>
+                            <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">Kembali ke soal yang masih perlu kamu pahami dan pelajari pembahasannya.</p>
+                            <span className="mt-4 inline-flex items-center gap-1 text-sm font-black text-blue-700">Ulangi soal <ArrowRight size={15}/></span>
+                        </Link>
+                        <Link
+                            href={`${path}/remedial`}
+                            className="group border-2 border-gray-900 bg-white p-5 shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                        >
+                            <CheckCircle2 size={22} className="text-green-700" />
+                            <h2 className="mt-4 text-lg font-black">Latihan perbaikan</h2>
+                            <p className="mt-2 text-sm font-semibold leading-relaxed text-gray-600">Fokuskan latihan pada bagian yang masih lemah sebelum mencoba tryout berikutnya.</p>
+                            <span className="mt-4 inline-flex items-center gap-1 text-sm font-black text-blue-700">Mulai perbaikan <ArrowRight size={15}/></span>
+                        </Link>
+                    </section>
+                )}
+
                 {!activeTrack && (
                     <section className="border-2 border-gray-900 bg-yellow-50 p-5 shadow-[4px_4px_0_0_#111]">
                         <h2 className="text-xl font-black">Aktifkan jalur TKA {level}</h2>
-                        <p className="mt-1 text-sm font-semibold text-gray-600">Aktivasi membuat progress jenjang ini disimpan di user_tracks. Data sekolah bersifat opsional.</p>
+                        <p className="mt-1 text-sm font-semibold text-gray-600">Aktifkan jalur ini agar hasil latihan dan tryout tersimpan dalam akunmu. Data sekolah boleh dikosongkan.</p>
                         <form action={activateTkaTrackAction} className="mt-4 grid gap-3 md:grid-cols-4">
                             <input type="hidden" name="level" value={level} />
                             <label className="space-y-1">
@@ -272,7 +304,7 @@ export default async function TkaLevelPage({
                                 <input name="target_year" type="number" min="2025" max="2100" className="w-full border-2 border-gray-900 bg-white px-3 py-2 font-semibold" placeholder="2026" />
                             </label>
                             <button className="self-end border-2 border-gray-900 bg-gray-900 px-4 py-2 font-black text-white shadow-[3px_3px_0_0_#aaa] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
-                                Aktifkan TKA {level}
+                                Aktifkan jalur belajar
                             </button>
                         </form>
                     </section>
@@ -281,7 +313,7 @@ export default async function TkaLevelPage({
                 <section className="space-y-3">
                     <div>
                         <h2 className="text-2xl font-black">Mapel</h2>
-                        <p className="text-sm font-semibold text-gray-600">Bank soal dan progress dihitung per subject di track {level}.</p>
+                        <p className="text-sm font-semibold text-gray-600">Pilih mata pelajaran untuk melihat materi yang tersedia di jenjang ini.</p>
                     </div>
                     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                         {catalog.subjects.map((subject) => {
@@ -301,7 +333,7 @@ export default async function TkaLevelPage({
                                         <School size={20} />
                                     </div>
                                     <p className="mt-3 text-sm font-semibold text-gray-600">
-                                        {questionCountBySubject.get(subject.id) ?? 0} soal {stagingSmpPilot ? 'approved' : 'published'} tersedia.
+                                        {questionCountBySubject.get(subject.id) ?? 0} soal tersedia untuk latihan.
                                     </p>
                                 </article>
                             )
@@ -314,8 +346,8 @@ export default async function TkaLevelPage({
                         <h2 className="text-2xl font-black">Tryout tersedia</h2>
                         <p className="text-sm font-semibold text-gray-600">
                             {stagingSmpPilot
-                                ? 'Full Tryout dan Mini Tryout TKA SMP dibuka di staging untuk validasi end-to-end. Mini memiliki satu percobaan gratis; payment dan Tempur Pass tetap menjadi tahap monetisasi terpisah.'
-                                : 'Mini Tryout memiliki satu percobaan gratis per mapel. Setelah kuota gratis habis, Mini unlimited dan Full Tryout membutuhkan Tempur Pass aktif.'}
+                                ? 'Pilih Mini Tryout untuk mengukur satu mata pelajaran atau Full Tryout untuk mengukur kemampuan dalam sesi yang lebih lengkap.'
+                                : 'Mini Tryout memiliki satu kesempatan gratis per mata pelajaran. Akses lanjutan dan Full Tryout mengikuti paket yang aktif di akunmu.'}
                         </p>
                     </div>
                     {(exams ?? []).length > 0 ? (
@@ -339,9 +371,9 @@ export default async function TkaLevelPage({
                                     : freemiumLocked
                                         ? 'Kuota gratis habis · Butuh Tempur Pass'
                                         : null
-                                const disabledReason = !activeTrack ? 'Aktifkan track terlebih dahulu' : windowReason || accessReason
+                                const disabledReason = !activeTrack ? 'Aktifkan jalur belajar terlebih dahulu' : windowReason || accessReason
                                 const accessLabel = stagingFullExam
-                                    ? 'Staging pilot · Gratis'
+                                    ? 'Akses uji coba'
                                     : hasEntitlement
                                         ? 'Tempur Pass aktif'
                                         : access === 'FREEMIUM'
@@ -354,7 +386,7 @@ export default async function TkaLevelPage({
                                     <article key={exam.id} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0_0_#111]">
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <div className="text-xs font-black uppercase text-blue-700">{type?.name || type?.code || 'Exam'}</div>
+                                                <div className="text-xs font-black uppercase text-blue-700">{type?.name || type?.code || 'Tryout'}</div>
                                                 <h3 className="mt-1 text-xl font-black">{exam.title}</h3>
                                             </div>
                                             <BookOpenCheck />
@@ -375,7 +407,7 @@ export default async function TkaLevelPage({
                         <div className="border-2 border-dashed border-gray-400 bg-white/70 p-6 text-center">
                             <BookOpenCheck className="mx-auto" />
                             <h3 className="mt-3 font-black">Tryout belum dibuka</h3>
-                            <p className="mt-1 text-sm font-semibold text-gray-600">Konfigurasi draft tidak ditampilkan sampai bank soal dan QA selesai.</p>
+                            <p className="mt-1 text-sm font-semibold text-gray-600">Pilihan tryout akan muncul di sini setelah siap digunakan.</p>
                         </div>
                     )}
                 </section>
@@ -384,7 +416,7 @@ export default async function TkaLevelPage({
                     <div className="flex flex-wrap items-end justify-between gap-3">
                         <div>
                             <h2 className="inline-flex items-center gap-2 text-2xl font-black"><History size={22}/> Riwayat terbaru</h2>
-                            <p className="mt-1 text-sm font-semibold text-gray-600">Lanjutkan attempt yang belum selesai atau buka kembali hasil dan pembahasan.</p>
+                            <p className="mt-1 text-sm font-semibold text-gray-600">Lanjutkan pengerjaan yang belum selesai atau buka kembali hasil dan pembahasan.</p>
                         </div>
                     </div>
                     {recentAttempts.length > 0 ? (
@@ -401,7 +433,7 @@ export default async function TkaLevelPage({
                                     <Link key={attempt.id} href={href} className="group border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
-                                                <div className="text-xs font-black uppercase text-blue-700">Percobaan #{attempt.attempt_number}</div>
+                                                <div className="text-xs font-black uppercase text-blue-700">Pengerjaan #{attempt.attempt_number}</div>
                                                 <h3 className="mt-1 truncate font-black">{exam.title}</h3>
                                                 <p className="mt-1 text-xs font-semibold text-gray-500">{formatAttemptDate(attempt.updated_at || attempt.submitted_at || attempt.started_at)}</p>
                                             </div>
