@@ -39,6 +39,7 @@ export default function TkaLevelSwitcher({
                             key={item.level}
                             href={`/tka/${item.level.toLowerCase()}`}
                             aria-current={active ? 'page' : undefined}
+                            aria-label={`TKA ${item.label}${item.available ? ', tersedia' : ', segera hadir'}`}
                             className={cn(
                                 'group flex min-h-12 items-center justify-center gap-2 rounded-xl px-2.5 py-2 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2',
                                 active
