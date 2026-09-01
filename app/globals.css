@@ -28,36 +28,65 @@
 }
 
 :root {
-  /* Core paper/ink identity */
-  --background: #fdfbf7;
-  --foreground: #1f2937;
+  /* Product canvas */
+  --background: #f8fafc;
+  --foreground: #0f172a;
 
   /* Brand */
   --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --secondary: #f3f4f6;
-  --secondary-foreground: #1f2937;
-  --accent: #facc15;
-  --accent-foreground: #1f2937;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --accent: #fbbf24;
+  --accent-foreground: #0f172a;
 
   /* Neutral */
-  --muted: #e5e7eb;
-  --muted-foreground: #6b7280;
-  --border: #1f2937;
-  --input: #e5e7eb;
+  --muted: #e2e8f0;
+  --muted-foreground: #64748b;
+  --border: #e2e8f0;
+  --input: #cbd5e1;
   --ring: #2563eb;
 
   /* Product Experience semantic states */
-  --success: #15803d;
+  --success: #059669;
   --success-foreground: #ffffff;
-  --warning: #b45309;
+  --warning: #d97706;
   --warning-foreground: #ffffff;
   --danger: #dc2626;
   --danger-foreground: #ffffff;
-  --info: #0369a1;
+  --info: #0284c7;
   --info-foreground: #ffffff;
 
-  /* Brand elevation hierarchy */
+  /* Product Experience surfaces */
+  --px-canvas: #f8fafc;
+  --px-surface: #ffffff;
+  --px-surface-subtle: #f1f5f9;
+  --px-surface-blue: #eff6ff;
+  --px-surface-green: #ecfdf5;
+  --px-surface-amber: #fffbeb;
+  --px-surface-violet: #f5f3ff;
+  --px-text: #0f172a;
+  --px-text-muted: #64748b;
+  --px-border: #e2e8f0;
+  --px-border-strong: #cbd5e1;
+  --px-primary: #2563eb;
+  --px-primary-hover: #1d4ed8;
+  --px-success: #059669;
+  --px-warning: #d97706;
+  --px-danger: #dc2626;
+
+  /* Soft product elevation. Hard shadows remain available only for intentional
+     marketing signatures through the legacy brand variables below. */
+  --px-shadow-xs: 0 1px 2px rgb(15 23 42 / 0.04);
+  --px-shadow-sm: 0 1px 3px rgb(15 23 42 / 0.08), 0 1px 2px rgb(15 23 42 / 0.04);
+  --px-shadow-md: 0 10px 28px rgb(15 23 42 / 0.08);
+  --px-shadow-lg: 0 18px 48px rgb(15 23 42 / 0.11);
+  --px-radius-sm: 0.75rem;
+  --px-radius-md: 1rem;
+  --px-radius-lg: 1.25rem;
+  --px-radius-xl: 1.5rem;
+
+  /* Legacy marketing signature shadows. */
   --shadow-brand-sm: 3px 3px 0 0 #111111;
   --shadow-brand-md: 5px 5px 0 0 #111111;
   --shadow-brand-lg: 8px 8px 0 0 #111111;
@@ -77,23 +106,26 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--secondary) !important;
+  background: #f8fafc !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--muted) !important;
-  border-radius: 5px;
-  border: 2px solid var(--secondary) !important;
+  background: #cbd5e1 !important;
+  border-radius: 999px;
+  border: 2px solid #f8fafc !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground) !important;
+  background: #94a3b8 !important;
 }
 
-/* Firefox */
 * {
   scrollbar-width: thin !important;
-  scrollbar-color: var(--muted) var(--secondary) !important;
+  scrollbar-color: #cbd5e1 #f8fafc !important;
+}
+
+html {
+  background: var(--background);
 }
 
 body {
@@ -101,10 +133,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Shared Product Experience helpers. These are opt-in so existing screens do not
-   change until they are intentionally migrated. */
+/* Shared Product Experience helpers */
 .px-container-marketing {
   width: 100%;
   max-width: var(--content-marketing);
@@ -133,15 +165,71 @@ body {
   outline-offset: 3px;
 }
 
-/* Learning mode should be calmer than public marketing surfaces. */
-[data-experience-mode="learning"] {
-  --px-card-shadow: var(--shadow-brand-sm);
+.px-surface {
+  border: 1px solid var(--px-border);
+  border-radius: var(--px-radius-md);
+  background: var(--px-surface);
+  box-shadow: var(--px-shadow-xs);
 }
 
-/* Exam mode intentionally removes decorative motion/rotation from elements that
-   opt into the Product Experience mode hooks. */
+.px-panel {
+  border: 1px solid var(--px-border);
+  border-radius: var(--px-radius-lg);
+  background: var(--px-surface);
+  box-shadow: var(--px-shadow-sm);
+}
+
+.px-section-title {
+  color: var(--px-text);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.px-muted {
+  color: var(--px-text-muted);
+}
+
+/* Marketing may be expressive, but still shares the same typography and canvas
+   temperature as the product. */
+[data-experience-mode="marketing"] {
+  --px-card-shadow: var(--px-shadow-md);
+  color: var(--px-text);
+}
+
+/* Learning mode is deliberately calm and information-first. */
+[data-experience-mode="learning"] {
+  --px-card-shadow: var(--px-shadow-sm);
+  min-height: 100%;
+  background: var(--px-canvas);
+  color: var(--px-text);
+}
+
+/* Context accents: one system, subtly different learning programs. */
+[data-program="cpns"] {
+  --program-accent: #2563eb;
+  --program-accent-soft: #eff6ff;
+}
+
+[data-program="tka-sd"] {
+  --program-accent: #d97706;
+  --program-accent-soft: #fffbeb;
+}
+
+[data-program="tka-smp"] {
+  --program-accent: #059669;
+  --program-accent-soft: #ecfdf5;
+}
+
+[data-program="tka-sma"] {
+  --program-accent: #7c3aed;
+  --program-accent-soft: #f5f3ff;
+}
+
+/* Exam mode intentionally removes decoration and elevation. */
 [data-experience-mode="exam"] {
   --px-card-shadow: none;
+  background: #ffffff;
+  color: var(--px-text);
 }
 
 [data-experience-mode="exam"] .px-decorative-motion {
@@ -149,7 +237,7 @@ body {
   transform: none !important;
 }
 
-/* Make all buttons show pointer cursor */
+/* Make all interactive buttons intentional and keyboard visible. */
 button,
 [role="button"],
 [type="button"],
@@ -158,33 +246,32 @@ button,
   cursor: pointer;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline-color: var(--ring);
+}
+
 /* Hide spin buttons for number inputs */
-/* Chrome, Safari, Edge, Opera */
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Firefox */
 input[type=number] {
   appearance: textfield;
   -moz-appearance: textfield;
 }
 
-/* Custom Animations */
+/* Legacy animations kept for marketing surfaces that still intentionally use them. */
 @keyframes gradient-x {
-  0% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0% 50%;
-  }
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .animate-gradient-x {
@@ -193,36 +280,18 @@ input[type=number] {
 }
 
 @keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
+  100% { transform: translateX(100%); }
 }
 
 @keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-
-  100% {
-    transform: translateY(0px);
-  }
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
 }
 
-/* Exam Preview Animations */
 @keyframes float-annotation {
-
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-
-  50% {
-    transform: translateY(-8px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 .animate-float-annotation {
@@ -234,15 +303,8 @@ input[type=number] {
 }
 
 @keyframes blink-colon {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.4;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 /* Respect the user's motion preference across legacy and Product Experience UI. */
