@@ -12,19 +12,19 @@ function formatDuration(startedAt: string | null, submittedAt: string | null) {
     const seconds = Math.max(0, Math.floor((Date.parse(submittedAt) - Date.parse(startedAt)) / 1000))
     const minutes = Math.floor(seconds / 60)
     const rest = seconds % 60
-    return `${minutes}m ${rest}s`
+    return `${minutes} menit ${rest} detik`
 }
 
 function resolveBackTarget(kind: string | null, from?: string) {
-    if (from === 'riwayat') return { href: '/cpns/dashboard/riwayat', label: 'Riwayat' }
-    if (from === 'event' || kind === 'event') return { href: '/cpns/dashboard/event', label: 'Event' }
+    if (from === 'riwayat') return { href: '/cpns/dashboard/riwayat', label: 'riwayat' }
+    if (from === 'event' || kind === 'event') return { href: '/cpns/dashboard/event', label: 'event' }
     if (from === 'drilling-materi' || kind === 'drill') {
-        return { href: '/cpns/dashboard/drilling-materi', label: 'Drilling Materi' }
+        return { href: '/cpns/dashboard/drilling-materi', label: 'latihan fokus' }
     }
     if (from === 'mini-tryout' || kind === 'mini_tryout') {
-        return { href: '/cpns/dashboard/mini-tryout', label: 'Mini Tryout' }
+        return { href: '/cpns/dashboard/mini-tryout', label: 'mini tryout' }
     }
-    return { href: '/cpns/dashboard/tryout', label: 'Tryout' }
+    return { href: '/cpns/dashboard/tryout', label: 'tryout' }
 }
 
 export default async function PracticeResultPage({
@@ -60,9 +60,6 @@ export default async function PracticeResultPage({
                     >
                         <ArrowLeft size={18} /> Kembali ke {back.label}
                     </Link>
-                    <span className="rounded-full border-2 border-gray-900 bg-yellow-200 px-3 py-1 text-xs font-black uppercase tracking-wider">
-                        Schema V2
-                    </span>
                 </div>
 
                 <section className="relative overflow-hidden rounded-3xl border-2 border-gray-900 bg-white p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:p-7">
@@ -70,18 +67,18 @@ export default async function PracticeResultPage({
                     <div className="relative z-10 grid gap-5 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
                         <div>
                             <div className="mb-2 inline-flex items-center gap-2 rounded-full border-2 border-gray-900 bg-blue-100 px-3 py-1 text-sm font-black">
-                                <Trophy size={16} /> Hasil Latihan
+                                <Trophy size={16} /> Hasil belajarmu
                             </div>
                             <h1 className="text-3xl font-black text-gray-900 sm:text-4xl">
-                                {result.passed === false ? 'Masih Bisa Ditingkatkan' : 'Sesi Selesai!'}
+                                {result.passed === false ? 'Masih ada yang bisa diperbaiki' : 'Sesi selesai!'}
                             </h1>
                             <p className="mt-2 max-w-xl font-bold text-gray-600">
-                                Hasil dihitung server-side dari snapshot soal pada attempt. Kunci jawaban tidak dikirim ke browser selama ujian.
+                                Lihat skor, bagian yang sudah kuat, dan pembahasan soal untuk menentukan latihan berikutnya.
                             </p>
                         </div>
 
                         <div className="rounded-2xl border-2 border-gray-900 bg-[#fff9c4] p-5 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                            <div className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Total Score</div>
+                            <div className="text-xs font-black uppercase tracking-[0.2em] text-gray-500">Total skor</div>
                             <div className="mt-1 text-5xl font-black font-sans text-gray-900">{result.totalScore}</div>
                             <div className="mt-1 text-sm font-bold text-gray-600">
                                 {result.percentage === null ? 'Persentase belum tersedia' : `${result.percentage}%`}
@@ -96,7 +93,7 @@ export default async function PracticeResultPage({
                         <div className="mt-2 text-3xl font-black font-sans">{answeredCount}/{result.answers.length}</div>
                     </div>
                     <div className="rounded-2xl border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <div className="flex items-center gap-2 text-sm font-black text-gray-500"><Clock size={18} /> Durasi</div>
+                        <div className="flex items-center gap-2 text-sm font-black text-gray-500"><Clock size={18} /> Waktu pengerjaan</div>
                         <div className="mt-2 text-3xl font-black font-sans">{formatDuration(result.startedAt, result.submittedAt)}</div>
                     </div>
                     <div className="rounded-2xl border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:col-span-2">
@@ -108,7 +105,7 @@ export default async function PracticeResultPage({
                             'mt-2 text-3xl font-black font-sans',
                             result.passed === false ? 'text-red-600' : result.passed === true ? 'text-green-600' : 'text-gray-900',
                         )}>
-                            {result.passed === null ? 'Menunggu aturan kelulusan' : result.passed ? 'LULUS' : 'BELUM LULUS'}
+                            {result.passed === null ? 'Status kelulusan belum tersedia' : result.passed ? 'Lulus' : 'Belum lulus'}
                         </div>
                     </div>
                 </section>
@@ -123,7 +120,7 @@ export default async function PracticeResultPage({
                                         'rounded-full border-2 border-gray-900 px-2 py-0.5 text-[10px] font-black',
                                         subject.passed === false ? 'bg-red-100' : subject.passed === true ? 'bg-green-100' : 'bg-gray-100',
                                     )}>
-                                        {subject.passed === null ? 'N/A' : subject.passed ? 'LULUS' : 'BELUM'}
+                                        {subject.passed === null ? 'Belum tersedia' : subject.passed ? 'Lulus' : 'Belum lulus'}
                                     </span>
                                 </div>
                                 <div className="mt-3 text-3xl font-black font-sans">
@@ -132,8 +129,8 @@ export default async function PracticeResultPage({
                                 <div className="mt-3 space-y-1 text-sm font-bold text-gray-600">
                                     <div className="flex justify-between"><span>Benar</span><span>{subject.correctCount}</span></div>
                                     <div className="flex justify-between"><span>Salah</span><span>{subject.wrongCount}</span></div>
-                                    <div className="flex justify-between"><span>Kosong</span><span>{subject.unansweredCount}</span></div>
-                                    <div className="flex justify-between"><span>Passing</span><span>{subject.passingScore ?? '-'}</span></div>
+                                    <div className="flex justify-between"><span>Belum dijawab</span><span>{subject.unansweredCount}</span></div>
+                                    <div className="flex justify-between"><span>Target minimum</span><span>{subject.passingScore ?? '-'}</span></div>
                                 </div>
                             </div>
                         ))}
@@ -142,14 +139,14 @@ export default async function PracticeResultPage({
 
                 <section className="space-y-3">
                     <div>
-                        <h2 className="text-2xl font-black text-gray-900">Review Jawaban</h2>
-                        <p className="font-bold text-gray-500">Pembahasan dan answer key baru dikirim setelah attempt selesai.</p>
+                        <h2 className="text-2xl font-black text-gray-900">Pembahasan jawaban</h2>
+                        <p className="font-bold text-gray-500">Tinjau jawaban dan pembahasan untuk memahami bagian yang masih perlu kamu perbaiki.</p>
                     </div>
                     {result.answers.length > 0 ? (
                         <ResultReviewClient answers={result.answers} />
                     ) : (
                         <div className="rounded-2xl border-2 border-gray-900 bg-white p-6 text-center font-bold text-gray-500">
-                            Tidak ada soal pada attempt ini.
+                            Belum ada soal yang bisa ditinjau dari sesi ini.
                         </div>
                     )}
                 </section>
