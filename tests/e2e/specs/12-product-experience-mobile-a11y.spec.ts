@@ -79,8 +79,8 @@ test.describe('Product Experience mobile accessibility regression', () => {
     test('TKA public entry remains readable without horizontal overflow', async ({ page }) => {
         await page.goto('/tka')
 
-        await expect(page.getByRole('heading', { name: /Fokus dulu ke TKA SMP/i })).toBeVisible()
-        const smpEntry = page.getByRole('link', { name: /TKA SMP.*Masuk & mulai/i })
+        await expect(page.getByRole('heading', { name: /Belajar TKA lebih terarah/i })).toBeVisible()
+        const smpEntry = page.getByRole('link', { name: /TKA SMP.*Masuk dan mulai/i })
         await expectTouchTarget(smpEntry)
         await smpEntry.focus()
         await expect(smpEntry).toBeFocused()
