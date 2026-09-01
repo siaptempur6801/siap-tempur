@@ -9,13 +9,18 @@ interface NavItemProps {
     icon: React.ReactNode
     label: string
     badge?: string
+    exact?: boolean
 }
 
-export function NavItem({ href, icon, label, badge }: NavItemProps) {
+function matchesPath(pathname: string, href: string, exact = false) {
+    const pathOnly = href.split('#')[0] || href
+    if (exact || pathOnly.endsWith('/dashboard')) return pathname === pathOnly
+    return pathname.startsWith(pathOnly)
+}
+
+export function NavItem({ href, icon, label, badge, exact = false }: NavItemProps) {
     const pathname = usePathname()
-    const isActive = href.endsWith('/dashboard')
-        ? pathname === href
-        : pathname.startsWith(href)
+    const isActive = matchesPath(pathname, href, exact)
 
     return (
         <Link
@@ -51,11 +56,9 @@ export function NavItem({ href, icon, label, badge }: NavItemProps) {
     )
 }
 
-export function MobileNavItem({ href, icon, label }: NavItemProps) {
+export function MobileNavItem({ href, icon, label, exact = false }: NavItemProps) {
     const pathname = usePathname()
-    const isActive = href.endsWith('/dashboard')
-        ? pathname === href
-        : pathname.startsWith(href)
+    const isActive = matchesPath(pathname, href, exact)
 
     return (
         <Link
