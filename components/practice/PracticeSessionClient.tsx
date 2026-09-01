@@ -3,7 +3,7 @@
 import { memo, useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { submitAnswer, finishPractice } from '@/app/actions/practice'
 import { toast } from 'sonner'
-import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, LogOut, Key, Sparkles, X, ZoomIn } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, LogOut, Sparkles, X, ZoomIn } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn, formatSubjectName } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
@@ -401,9 +401,9 @@ const TryoutTimerBadge = memo(function TryoutTimerBadge({
     return (
         <div className={cn(
             "px-2 py-1 md:px-4 md:py-1 rounded-full text-[10px] md:text-sm font-mono flex items-center gap-1 md:gap-1.5 transition-all duration-300 border",
-            timeLeftMs <= 60000 ? "bg-red-50 text-red-600 border-red-500 animate-pulse border-2 md:shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]" :
-                timeLeftMs <= 300000 ? "bg-orange-50 text-orange-600 border-orange-500 border-2 md:shadow-[2px_2px_0px_0px_rgba(249,115,22,1)]" :
-                    "bg-blue-50 text-blue-700 border-blue-900 border-2 md:shadow-[2px_2px_0px_0px_rgba(30,58,138,1)]"
+            timeLeftMs <= 60000 ? "bg-red-50 text-red-700 border-red-300 border-2" :
+                timeLeftMs <= 300000 ? "bg-orange-50 text-orange-700 border-orange-300 border-2" :
+                    "bg-blue-50 text-blue-700 border-blue-200 border-2"
         )}>
             <Clock size={11} className="md:w-3.5 md:h-3.5" />
             <span>{timeLeft}</span>
@@ -441,7 +441,7 @@ export default function PracticeSessionClient({
     const answerSyncStateRef = useRef<Record<string, AnswerSyncState>>({})
     const finishLockRef = useRef(false)
     const exitLockRef = useRef(false)
-    const sessionKindLabel = isTryout ? 'Tryout' : returnTo === 'drilling-materi' ? 'Drilling Materi' : 'Mini Tryout'
+    const sessionKindLabel = isTryout ? 'Tryout' : returnTo === 'drilling-materi' ? 'Latihan Fokus' : 'Mini Tryout'
     const sessionKindLabelLower = sessionKindLabel.toLowerCase()
     const resultFromQuery = returnTo === 'event'
         ? '?from=event'
@@ -460,7 +460,7 @@ export default function PracticeSessionClient({
     const returnLocationLabel = returnTo === 'event'
         ? 'halaman event'
         : returnTo === 'drilling-materi'
-            ? 'halaman drilling materi'
+            ? 'halaman latihan fokus'
             : returnTo === 'mini-tryout'
                 ? 'halaman mini tryout'
                 : 'dashboard'
@@ -515,12 +515,12 @@ export default function PracticeSessionClient({
                 didFinish = true
                 setHasFinished(true)
                 clearProgressFromLocalStorage(sessionId)
-                toast.success(`${sessionKindLabel} selesai!`)
+                toast.success(`${sessionKindLabel} selesai`)
                 router.push(`/cpns/dashboard/tryout/${sessionId}/result${resultFromQuery}`)
             }
         } catch (error) {
             console.error('Error finishing practice:', error)
-            toast.error('Gagal menyelesaikan tryout')
+            toast.error(`${sessionKindLabel} belum bisa diselesaikan`)
         } finally {
             if (!didFinish) {
                 setFinishing(false)
@@ -683,7 +683,7 @@ export default function PracticeSessionClient({
             await finishSessionAfterLockAcquired()
         } catch (error) {
             console.error('Error preparing finish practice:', error)
-            toast.error('Gagal menyimpan jawaban sebelum menyelesaikan tryout')
+            toast.error('Jawaban belum berhasil disimpan. Coba lagi sebelum menyelesaikan sesi.')
             setFinishing(false)
             releaseSingleFlightLock(finishLockRef)
         }
@@ -694,7 +694,7 @@ export default function PracticeSessionClient({
     const handleAutoFinish = useCallback(async () => {
         if (finishLockRef.current || hasFinished) return
 
-        toast.info('Waktu habis! Tryout diselesaikan otomatis.')
+        toast.info('Waktu selesai. Jawaban akan dikumpulkan otomatis.')
         await startFinishFlow()
     }, [hasFinished, startFinishFlow])
 
@@ -856,7 +856,7 @@ export default function PracticeSessionClient({
 
                                 <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
                                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
-                                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ragu-ragu</span></div>
+                                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ditandai</span></div>
                                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>
                                 </div>
                             </div>
@@ -878,7 +878,7 @@ export default function PracticeSessionClient({
                             <h3 className="text-3xl font-bold text-gray-900">Keluar {sessionKindLabel}?</h3>
 
                             <p className="text-lg text-gray-700 font-medium flex items-center justify-center gap-2">
-                                Progres {sessionKindLabelLower} dan nomor soal terakhir akan tersimpan. Anda bisa lanjut lagi nanti dari {returnLocationLabel}.
+                                Progres {sessionKindLabelLower} dan nomor soal terakhir akan tersimpan. Kamu bisa lanjut lagi nanti dari {returnLocationLabel}.
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-4">
@@ -929,16 +929,16 @@ export default function PracticeSessionClient({
                         >
                             <PaperBackground />
                             <div className="relative z-10 font-handwriting">
-                                <div className="w-20 h-20 bg-orange-100 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 -rotate-3 shadow-md">
+                                <div className="w-20 h-20 bg-orange-50 border-2 border-orange-300 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <Clock className="w-12 h-12 text-orange-500" />
                                 </div>
-                                <h3 className="text-3xl font-bold mb-4 text-gray-900 flex items-center justify-center gap-2">Waktu Tipis! <Clock className="w-8 h-8 animate-pulse text-orange-600" /></h3>
-                                <p className="text-xl mb-8 text-gray-700 font-medium leading-relaxed">Waktu tersisa kurang dari 5 menit nih. Gas pol selesaikan semua soalnya!</p>
+                                <h3 className="text-3xl font-bold mb-4 text-gray-900 flex items-center justify-center gap-2">Sisa waktu 5 menit <Clock className="w-8 h-8 text-orange-600" /></h3>
+                                <p className="text-xl mb-8 text-gray-700 font-medium leading-relaxed">Periksa soal yang belum dijawab atau masih kamu tandai. Gunakan waktu tersisa dengan tenang.</p>
                                 <button
                                     onClick={() => setShowWarning5Min(false)}
                                     className="bg-orange-500 text-white px-10 py-3 rounded-lg border-2 border-gray-900 font-bold text-xl hover:bg-orange-600 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
-                                    Siap Mandraguna!
+                                    Lanjutkan mengerjakan
                                 </button>
                             </div>
                         </motion.div>
@@ -960,21 +960,21 @@ export default function PracticeSessionClient({
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="bg-[#fff9c4] border-2 border-gray-900 p-10 rounded-2xl shadow-[10px_10px_0px_0px_rgba(239,68,68,0.5)] max-w-md w-full text-center relative overflow-hidden animate-bounce-subtle"
+                            className="bg-[#fff9c4] border-2 border-gray-900 p-10 rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.18)] max-w-md w-full text-center relative overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <PaperBackground />
                             <div className="relative z-10 font-handwriting">
-                                <div className="w-24 h-24 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mx-auto mb-6 rotate-6 shadow-lg animate-pulse">
+                                <div className="w-20 h-20 bg-red-50 border-2 border-red-300 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <Clock className="w-14 h-14 text-red-600" />
                                 </div>
-                                <h3 className="text-4xl font-bold mb-4 text-red-600 flex items-center justify-center gap-2">DARURAT! <Clock className="w-10 h-10 animate-ping" /></h3>
-                                <p className="text-2xl mb-8 text-gray-800 font-bold leading-tight">Tinggal 1 menit lagi! Buruan klik Selesai sebelum auto-submit!</p>
+                                <h3 className="text-4xl font-bold mb-4 text-red-600 flex items-center justify-center gap-2">Sisa waktu 1 menit <Clock className="w-8 h-8 text-red-600" /></h3>
+                                <p className="text-2xl mb-8 text-gray-800 font-bold leading-tight">Pastikan jawaban yang ingin kamu kumpulkan sudah terisi. Saat waktu habis, sesi akan dikumpulkan otomatis.</p>
                                 <button
                                     onClick={() => setShowWarning1Min(false)}
                                     className="bg-red-600 text-white px-10 py-4 rounded-lg border-2 border-gray-900 font-bold text-2xl hover:bg-red-700 transition shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
-                                    OKE OKE!!
+                                    Lanjutkan mengerjakan
                                 </button>
                             </div>
                         </motion.div>
@@ -995,7 +995,7 @@ export default function PracticeSessionClient({
                                 <CheckCircle2 size={32} className="text-blue-600" />
                             </div>
 
-                            <h3 className="text-3xl font-bold text-gray-900">Selesaikan Tryout?</h3>
+                            <h3 className="text-3xl font-bold text-gray-900">Kumpulkan jawaban?</h3>
 
                             <div className="w-full space-y-4 bg-white/60 border-2 border-gray-900 p-6 rounded-xl text-lg text-left shadow-inner relative">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-blue-500/10"></div>
@@ -1008,7 +1008,7 @@ export default function PracticeSessionClient({
                                     <span className="text-2xl">{answeredCount}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-yellow-700 font-bold">
-                                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div> Ragu-ragu</span>
+                                    <span className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div> Ditandai</span>
                                     <span className="text-2xl">{markedCount}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-red-600 font-bold">
@@ -1017,8 +1017,8 @@ export default function PracticeSessionClient({
                                 </div>
                             </div>
 
-                            <p className="text-lg text-gray-700 font-medium italic flex items-center justify-center gap-2">
-                                "Jangan lupa cek lagi ya, teliti itu kunci kelulusan!" <Key className="w-5 h-5 text-yellow-600" /> <Sparkles className="w-5 h-5 text-blue-400" />
+                            <p className="text-base text-gray-600 font-medium leading-relaxed">
+                                Setelah dikumpulkan, jawaban tidak bisa diubah.
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 w-full mt-6">
@@ -1036,7 +1036,7 @@ export default function PracticeSessionClient({
                                     disabled={finishing}
                                     className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {finishing ? 'Menyimpan...' : 'Siap Tempur!'}
+                                    {finishing ? 'Mengumpulkan...' : 'Kumpulkan jawaban'}
                                 </button>
                             </div>
                         </div>
@@ -1057,8 +1057,8 @@ export default function PracticeSessionClient({
                             <div className="flex items-center gap-2 overflow-hidden min-w-0">
                                 <div className="flex flex-col gap-0.5 md:gap-1 overflow-hidden">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900 leading-tight">Soal #{currentIndex + 1}</span>
-                                        <span className="font-handwriting text-sm text-gray-500 md:text-lg">/ {sortedQuestions.length}</span>
+                                        <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900 leading-tight">Soal {currentIndex + 1}</span>
+                                        <span className="font-handwriting text-sm text-gray-500 md:text-lg">dari {sortedQuestions.length}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[9px] md:text-[11px] font-bold rounded uppercase tracking-wider">
@@ -1087,7 +1087,7 @@ export default function PracticeSessionClient({
                                     title={marked[currentQuestion.id] ? 'Hilangkan tanda ragu' : 'Tandai ragu'}
                                 >
                                     <Flag size={14} className={cn(marked[currentQuestion.id] ? 'fill-current' : '')} />
-                                    <span className="hidden md:inline ml-2">{marked[currentQuestion.id] ? 'Ditandai Ragu' : 'Tandai Ragu'}</span>
+                                    <span className="hidden md:inline ml-2">{marked[currentQuestion.id] ? 'Ditandai' : 'Tandai untuk ditinjau'}</span>
                                 </button>
 
                                 {isTryout ? (
@@ -1174,7 +1174,7 @@ export default function PracticeSessionClient({
                                     disabled={finishing}
                                     className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {finishing ? '...' : 'Selesai'}
+                                    {finishing ? '...' : 'Kumpulkan'}
                                     <CheckCircle2 size={20} />
                                 </button>
                             ) : (
@@ -1205,7 +1205,7 @@ export default function PracticeSessionClient({
                                 disabled={finishing}
                                 className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)] disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                {finishing ? 'Menyimpan...' : 'Selesai & Hitung'}
+                                {finishing ? 'Mengumpulkan...' : 'Kumpulkan jawaban'}
                                 <CheckCircle2 size={20} />
                             </button>
                         ) : (
@@ -1267,7 +1267,7 @@ export default function PracticeSessionClient({
                             </button>
                             <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
-                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ragu-ragu</span></div>
+                                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ditandai</span></div>
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>
                             </div>
                         </div>
