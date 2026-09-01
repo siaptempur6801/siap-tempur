@@ -1,0 +1,46 @@
+name: PX TKA action link fix (temporary)
+
+on:
+  push:
+    branches:
+      - feat/product-experience-v1-1
+    paths:
+      - .github/workflows/px-tka-link-fix-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-link:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product-experience-v1-1
+          fetch-depth: 0
+      - name: Fix learning-action destination
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app/tka/[level]/page.tsx')
+          text = path.read_text()
+          replacements = [
+              ('href={`${path}/remedial`}', 'href={`${path}/progress`}'),
+              ('Mulai perbaikan <ArrowRight size={15}/>', 'Lihat rekomendasi <ArrowRight size={15}/>'),
+          ]
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise SystemExit(f'Pattern mismatch: {old}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+          git diff --check
+      - name: Commit link fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'app/tka/[level]/page.tsx'
+          git commit -m "fix(px): route TKA improvement action safely"
+          git push origin HEAD:feat/product-experience-v1-1
