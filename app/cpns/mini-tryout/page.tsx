@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Target, Clock, Zap, CheckCircle2, ChevronRight, Coins } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, Clock3, Target, Zap } from "lucide-react";
 import StructuredData from "@/components/StructuredData";
 import SeoNavbar from "@/components/SeoNavbar";
 import { Button } from "@/components/ui/Button";
@@ -9,26 +9,9 @@ import { Card } from "@/components/ui/Card";
 import { Section } from "@/components/ui/Section";
 
 export const metadata: Metadata = {
-    title: "Mini Tryout CPNS: Latihan Soal TWK, TIU, TKP Singkat | SiapTempur",
-    description: "Latihan soal CPNS singkat dan fleksibel dengan Mini Tryout. Fokus kerjakan TWK, TIU, atau TKP kapan saja. Cocok untuk cicil belajar di tengah kesibukan.",
-};
-
-const productSchema = {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": "Token Mini Tryout SKD CPNS",
-    "description": "Token akses untuk mengikuti simulasi Mini Tryout CPNS per subtes (TWK/TIU/TKP) secara spesifik.",
-    "brand": {
-        "@type": "Brand",
-        "name": "SiapTempur"
-    },
-    "offers": {
-        "@type": "Offer",
-        "url": "https://siaptempur.id/cpns/mini-tryout",
-        "priceCurrency": "IDR",
-        "price": "10000.00",
-        "availability": "https://schema.org/InStock"
-    }
+    title: "Mini Tryout CPNS - TWK, TIU & TKP | SiapTempur",
+    description:
+        "Gunakan mini tryout CPNS untuk mengukur TWK, TIU, atau TKP dalam sesi yang lebih ringkas sebelum melanjutkan ke full tryout.",
 };
 
 const faqSchema = {
@@ -37,159 +20,145 @@ const faqSchema = {
     "mainEntity": [
         {
             "@type": "Question",
-            "name": "Apa bedanya Mini Tryout dan Full Tryout?",
+            "name": "Kapan sebaiknya menggunakan mini tryout?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Mini Tryout adalah latihan cepat per subtes (TWK/TIU/TKP) dengan jumlah soal lebih sedikit, sedangkan Full Tryout adalah simulasi lengkap 110 soal dalam 100 menit dengan sistem CAT BKN."
-            }
+                "text": "Mini tryout cocok ketika kamu ingin mengukur satu bagian dalam sesi yang lebih ringkas sebelum beralih ke full tryout atau latihan fokus.",
+            },
         },
         {
             "@type": "Question",
-            "name": "Berapa lama durasi pengerjaan Mini Tryout?",
+            "name": "Apa bedanya mini tryout dan full tryout?",
             "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "Durasi disesuaikan dengan jenis subtes, biasanya berkisar antara 15 hingga 30 menit, sangat cocok dikerjakan di sela-sela kesibukan."
-            }
-        }
-    ]
+                "text": "Mini tryout membantu mengukur bagian tertentu dalam sesi yang lebih ringkas, sedangkan full tryout menggabungkan TWK, TIU, dan TKP dalam satu sesi yang lebih lengkap.",
+            },
+        },
+    ],
 };
+
+const benefits = [
+    {
+        icon: Target,
+        title: "Fokus pada satu bagian",
+        text: "Pilih mini tryout yang sesuai saat kamu ingin mengukur TWK, TIU, atau TKP tanpa harus memulai full tryout.",
+        surface: "bg-yellow-50",
+    },
+    {
+        icon: Clock3,
+        title: "Sesi lebih ringkas",
+        text: "Gunakan mini tryout ketika kamu ingin tetap berlatih tetapi belum ingin mengerjakan sesi penuh.",
+        surface: "bg-blue-50",
+    },
+    {
+        icon: BarChart3,
+        title: "Gunakan hasil untuk memilih latihan",
+        text: "Setelah selesai, lihat hasil yang tersedia dan lanjutkan ke latihan yang paling relevan untukmu.",
+        surface: "bg-green-50",
+    },
+] as const;
 
 export default function MiniTryoutPage() {
     return (
-        <main className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 pb-20">
-            <StructuredData data={productSchema} />
+        <main data-experience-mode="marketing" className="font-body min-h-screen bg-[#fdfbf7] text-gray-800 pb-20">
             <StructuredData data={faqSchema} />
-
             <SeoNavbar />
 
-            {/* HERO SECTION */}
             <Section paper className="pt-32 pb-20 text-center">
-                <Badge variant="yellow" className="mb-6 inline-flex items-center gap-2 px-4 py-1">
-                    <Zap className="w-4 h-4" /> Latihan Cepat & Fleksibel
-                </Badge>
-                <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 max-w-4xl mx-auto leading-tight">
-                    Cicil Belajar CPNS Kapanpun dengan Mini Tryout
-                </h1>
-                <p className="text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto mb-10 font-handwriting leading-relaxed">
-                    Punya waktu cuma 15 menit? Manfaatkan untuk fokus sikat soal TWK, TIU, atau TKP. Belajar CPNS jadi lebih fleksibel dan bebas stres.
-                </p>
-                <div className="flex flex-col sm:flex-row justify-center gap-4">
-                    <Button size="lg" className="w-full sm:w-auto text-xl py-6" asChild>
-                        <Link href="/login?returnTo=/cpns/dashboard">Mulai Mini Tryout <ArrowRight className="ml-2 w-5 h-5" /></Link>
-                    </Button>
-                </div>
-            </Section>
-
-            {/* APA ITU MINI TRYOUT */}
-            <Section className="bg-white">
-                <div className="grid md:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
-                    <div>
-                        <h2 className="font-handwriting text-4xl font-bold mb-6">Apa Itu Mini Tryout?</h2>
-                        <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                            Banyak pejuang CPNS gagal karena memaksakan diri belajar 110 soal sekaligus padahal sedang sibuk. Mini Tryout dirancang untuk memecah materi raksasa SKD menjadi porsi-porsi kecil yang mudah dicerna.
-                        </p>
-                        <ul className="space-y-4">
-                            <li className="flex items-start gap-3">
-                                <CheckCircle2 className="text-green-500 shrink-0 mt-1" />
-                                <div>
-                                    <strong className="block text-gray-900">Pilih Subtes Sendiri</strong>
-                                    <span className="text-gray-600 text-sm">Bisa pilih khusus TWK, TIU, atau TKP sesuai materi yang belum kamu kuasai.</span>
-                                </div>
-                            </li>
-                            <li className="flex items-start gap-3">
-                                <CheckCircle2 className="text-green-500 shrink-0 mt-1" />
-                                <div>
-                                    <strong className="block text-gray-900">Waktu Singkat</strong>
-                                    <span className="text-gray-600 text-sm">Hanya butuh 15-30 menit. Cocok dikerjakan saat jam istirahat kantor atau nunggu dosen.</span>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                    <Card className="bg-blue-50 border-2 border-blue-200 p-8 transform rotate-2">
-                        <div className="space-y-4">
-                            <div className="bg-white p-4 rounded border border-gray-200 flex justify-between items-center shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-red-100 rounded text-red-600 flex items-center justify-center font-bold font-handwriting">TWK</div>
-                                    <div>
-                                        <div className="font-bold">Mini Tryout Nasionalisme</div>
-                                        <div className="text-xs text-gray-500">30 Soal • 20 Menit</div>
-                                    </div>
-                                </div>
-                                <Button variant="outline" size="sm">Kerjakan</Button>
-                            </div>
-                            <div className="bg-white p-4 rounded border flex justify-between items-center shadow-sm border-blue-500 ring-2 ring-blue-100">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-blue-100 rounded text-blue-600 flex items-center justify-center font-bold font-handwriting">TIU</div>
-                                    <div>
-                                        <div className="font-bold">Mini Tryout Silogisme</div>
-                                        <div className="text-xs text-gray-500">25 Soal • 25 Menit</div>
-                                    </div>
-                                </div>
-                                <Button size="sm">Sedang Dikerjakan</Button>
-                            </div>
-                            <div className="bg-white p-4 rounded border border-gray-200 flex justify-between items-center shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-green-100 rounded text-green-600 flex items-center justify-center font-bold font-handwriting">TKP</div>
-                                    <div>
-                                        <div className="font-bold">Mini Tryout Pelayanan Publik</div>
-                                        <div className="text-xs text-gray-500">35 Soal • 25 Menit</div>
-                                    </div>
-                                </div>
-                                <Button variant="outline" size="sm">Kerjakan</Button>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-            </Section>
-
-            {/* MINI VS FULL */}
-            <Section dashedBorder="both" className="bg-[#f0f4f8]">
-                <div className="text-center mb-12">
-                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Mini Tryout vs Full Tryout</h2>
-                    <p className="font-handwriting text-xl text-gray-600 max-w-2xl mx-auto">Ketahui mana yang kamu butuhkan hari ini.</p>
-                </div>
-                <div className="max-w-4xl mx-auto">
-                    <div className="grid md:grid-cols-2 gap-0 border-4 border-gray-900 rounded-xl overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
-                        <div className="p-8 border-b md:border-b-0 md:border-r border-gray-200 bg-yellow-50">
-                            <h3 className="font-handwriting text-3xl font-bold mb-6 text-yellow-700 flex items-center gap-2"><Target /> Mini Tryout</h3>
-                            <ul className="space-y-4 text-gray-700 font-medium">
-                                <li className="flex justify-between border-b border-gray-200 pb-2"><span>Tujuan</span> <strong>Latihan Topik Spesifik</strong></li>
-                                <li className="flex justify-between border-b border-gray-200 pb-2"><span>Jumlah Soal</span> <strong>20 - 35 Soal</strong></li>
-                                <li className="flex justify-between border-b border-gray-200 pb-2"><span>Durasi</span> <strong>15 - 30 Menit</strong></li>
-                                <li className="flex justify-between border-b border-gray-200 pb-2"><span>Sistem Penilaian</span> <strong>Skor Per Subtes</strong></li>
-                                <li className="flex justify-between pb-2"><span>Kelebihan</span> <strong>Fleksibel, bisa nyicil</strong></li>
-                            </ul>
-                        </div>
-                        <div className="p-8 bg-blue-50">
-                            <h3 className="font-handwriting text-3xl font-bold mb-6 text-blue-700 flex items-center gap-2"><Clock /> Full Tryout</h3>
-                            <ul className="space-y-4 text-gray-700 font-medium">
-                                <li className="flex justify-between border-b border-blue-200 pb-2"><span>Tujuan</span> <strong>Simulasi & Mental Ujian</strong></li>
-                                <li className="flex justify-between border-b border-blue-200 pb-2"><span>Jumlah Soal</span> <strong>110 Soal Lengkap</strong></li>
-                                <li className="flex justify-between border-b border-blue-200 pb-2"><span>Durasi</span> <strong>100 Menit</strong></li>
-                                <li className="flex justify-between border-b border-blue-200 pb-2"><span>Sistem Penilaian</span> <strong>Passing Grade BKN</strong></li>
-                                <li className="flex justify-between pb-2"><span>Kelebihan</span> <strong>Ukur Ranking Nasional</strong></li>
-                            </ul>
-                            <div className="mt-6 text-center">
-                                <Link href="/cpns/full-tryout" className="text-blue-600 font-bold hover:underline inline-flex items-center">Pelajari Full Tryout <ChevronRight size={16} /></Link>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </Section>
-
-            {/* BIAYA TOKEN */}
-            <Section className="bg-white text-center">
-                <div className="max-w-2xl mx-auto">
-                    <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Coins className="w-10 h-10 text-yellow-600" />
-                    </div>
-                    <h2 className="font-handwriting text-4xl font-bold mb-4">Gunakan Token dengan Bijak</h2>
-                    <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                        Akses Mini Tryout sangat mudah. Cukup gunakan token yang sudah kamu beli. <br/> <strong>1 Token bisa digunakan untuk mengakses 1 paket Mini Tryout pilihanmu.</strong>
+                <div className="max-w-5xl mx-auto px-4">
+                    <Badge variant="yellow" className="mb-6 inline-flex items-center gap-2 px-4 py-1">
+                        <Zap className="w-4 h-4" /> Mini tryout CPNS
+                    </Badge>
+                    <h1 className="font-handwriting text-5xl md:text-7xl font-bold mb-6 leading-tight">
+                        Ukur satu bagian tanpa harus full tryout.
+                    </h1>
+                    <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed">
+                        Gunakan mini tryout untuk melihat kemampuanmu pada bagian tertentu, lalu tentukan apakah kamu perlu latihan fokus atau sudah siap mencoba sesi yang lebih lengkap.
                     </p>
-                    <Button size="lg" className="w-full sm:w-auto text-xl py-6" asChild>
-                        <Link href="/login?returnTo=/cpns">Beli Token Sekarang</Link>
-                    </Button>
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
+                        <Button handwriting={false} size="lg" className="w-full sm:w-auto" asChild>
+                            <Link href="/login?returnTo=/cpns/dashboard/mini-tryout">
+                                Mulai mini tryout <ArrowRight className="w-5 h-5" />
+                            </Link>
+                        </Button>
+                        <Button handwriting={false} size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                            <Link href="/cpns/full-tryout">Bandingkan dengan full tryout</Link>
+                        </Button>
+                    </div>
+                </div>
+            </Section>
+
+            <Section className="bg-white">
+                <div className="max-w-6xl mx-auto px-4">
+                    <div className="text-center mb-12">
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700 mb-2">Kapan digunakan?</p>
+                        <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Saat kamu ingin mengukur, bukan menebak.</h2>
+                        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                            Mini tryout membantu memberi gambaran sebelum kamu menentukan latihan berikutnya.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {benefits.map(({ icon: Icon, title, text, surface }) => (
+                            <Card key={title} className={`p-6 border-2 border-gray-900 ${surface}`}>
+                                <div className="w-12 h-12 bg-white border-2 border-gray-900 flex items-center justify-center mb-5">
+                                    <Icon className="w-6 h-6 text-blue-700" />
+                                </div>
+                                <h3 className="text-xl font-bold mb-3">{title}</h3>
+                                <p className="text-gray-600 leading-relaxed">{text}</p>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            </Section>
+
+            <Section dashedBorder="both" className="bg-blue-50">
+                <div className="max-w-5xl mx-auto px-4">
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <article className="border-2 border-gray-900 bg-white p-6 shadow-[4px_4px_0_0_#111]">
+                            <div className="inline-flex items-center gap-2 text-sm font-black text-yellow-700">
+                                <Zap size={18} /> Mini tryout
+                            </div>
+                            <h2 className="mt-3 text-2xl font-black">Untuk mengukur lebih spesifik</h2>
+                            <ul className="mt-5 space-y-3 text-gray-600 font-semibold">
+                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Pilih bagian yang ingin kamu ukur.</li>
+                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Sesi lebih ringkas daripada full tryout.</li>
+                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Cocok sebagai penghubung antara latihan fokus dan full tryout.</li>
+                            </ul>
+                        </article>
+
+                        <article className="border-2 border-gray-900 bg-white p-6 shadow-[4px_4px_0_0_#111]">
+                            <div className="inline-flex items-center gap-2 text-sm font-black text-blue-700">
+                                <Clock3 size={18} /> Full tryout
+                            </div>
+                            <h2 className="mt-3 text-2xl font-black">Untuk mengukur sesi yang lebih lengkap</h2>
+                            <ul className="mt-5 space-y-3 text-gray-600 font-semibold">
+                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> TWK, TIU, dan TKP dalam satu sesi.</li>
+                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Membutuhkan komitmen waktu lebih panjang.</li>
+                                <li className="flex gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700" /> Gunakan hasilnya sebagai evaluasi persiapan secara keseluruhan.</li>
+                            </ul>
+                            <Link href="/cpns/full-tryout" className="mt-5 inline-flex items-center gap-2 font-black text-blue-700 hover:underline">
+                                Lihat full tryout <ArrowRight size={16} />
+                            </Link>
+                        </article>
+                    </div>
+                </div>
+            </Section>
+
+            <Section className="bg-white text-center">
+                <div className="max-w-3xl mx-auto px-4">
+                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Pilih mini tryout dari akunmu.</h2>
+                    <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                        Detail sesi dan kebutuhan token akan ditampilkan sebelum kamu memulai, sehingga kamu bisa memilih latihan yang sesuai tanpa menebak biaya atau aturan akses.
+                    </p>
+                    <div className="flex flex-col sm:flex-row justify-center gap-4">
+                        <Button handwriting={false} size="lg" className="w-full sm:w-auto" asChild>
+                            <Link href="/login?returnTo=/cpns/dashboard/mini-tryout">Lihat mini tryout</Link>
+                        </Button>
+                        <Button handwriting={false} size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                            <Link href="/login?returnTo=/cpns/dashboard/beli-paket">Lihat paket token</Link>
+                        </Button>
+                    </div>
                 </div>
             </Section>
         </main>
