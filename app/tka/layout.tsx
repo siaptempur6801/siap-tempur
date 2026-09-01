@@ -9,9 +9,11 @@ import { parseTkaLevel, type TkaLevel } from '@/src/tka/context'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+const DEFAULT_TKA_LEVEL: TkaLevel = 'SMP'
+
 function levelFromPath(pathname: string | null): TkaLevel {
     const match = pathname?.match(/^\/tka\/(sd|smp|sma)(?:\/|$)/i)
-    return parseTkaLevel(match?.[1]) ?? 'SMP'
+    return parseTkaLevel(match?.[1]) ?? DEFAULT_TKA_LEVEL
 }
 
 export default async function TkaRootLayout({ children }: { children: React.ReactNode }) {
