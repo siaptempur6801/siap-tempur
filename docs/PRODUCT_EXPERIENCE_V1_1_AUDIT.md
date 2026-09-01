@@ -1,39 +1,41 @@
 # Product Experience V1.1 Audit
 
-Status: **IN PROGRESS**  
+Status: **IN PROGRESS — P0 audit active**  
 Parent tracking: **GitHub Issue #21**  
 Phase tracking: **GitHub Issue #22**  
-Baseline: **Production V1 / Schema V2**
+Baseline: **Production V1 / Schema V2**  
+Working branch: `feat/product-experience-v1-1`
 
 ## 1. Objective
 
-Product Experience V1.1 turns the current technically stable SiapTempur release into a polished, understandable, conversion-ready education product.
+Product Experience V1.1 turns the current technically stable SiapTempur release into a polished, understandable, conversion-ready education product without destabilizing the accepted backend, auth, exam, payment, or database contracts.
 
-This phase focuses on:
+This milestone covers:
 
-- UI/UX across the full user-facing application
-- information architecture and user flows
+- full application UI/UX
+- information architecture
 - Indonesian UX writing
 - product copywriting
 - conversion and trust
-- marketing / go-to-market readiness
-
-The accepted Schema V2 backend, production database, payment contracts, authentication contracts, and exam business logic are treated as a stable baseline and must not be redesigned casually as part of this milestone.
-
----
+- responsive/mobile experience
+- marketing and go-to-market readiness
+- analytics/CRO preparation
 
 ## 2. Product principles
 
-### 2.1 User language
+### 2.1 Language
 
 User-facing copy must:
 
 - use natural Indonesian
 - use **kamu** consistently
-- be short and actionable
+- use sentence case for ordinary UI text
 - explain benefits before implementation details
-- avoid mixed Indonesian/English unless the English term is already conventional for the audience
-- never expose release or engineering terminology to ordinary users
+- avoid raw provider/database/engineering terms
+- avoid English unless the term is conventional and clearer
+- tell the user what they can do next
+
+Detailed rules live in `docs/PRODUCT_LANGUAGE_GUIDE_V1_1.md`.
 
 ### 2.2 Every important screen must answer
 
@@ -44,193 +46,415 @@ User-facing copy must:
 
 ### 2.3 Experience target
 
-SiapTempur should feel less like a collection of exam features and more like a learning coach:
+SiapTempur should feel like a focused learning coach, not a collection of exam features.
 
 > Latihan → ukur kemampuan → temukan kelemahan → perbaiki → ulangi.
 
-Core positioning direction:
+Core positioning:
 
 > **Bukan cuma latihan soal. SiapTempur membantu kamu tahu apa yang harus dipelajari berikutnya.**
 
+Brand line:
+
+> **Belajar lebih terarah. Hadapi ujian lebih siap.**
+
 ---
 
-## 3. Initial route/screen inventory
-
-This is an initial inventory and will be expanded during the audit.
+## 3. Priority map
 
 ### P0 — acquisition, activation, learning, payment
 
-| Area | Route / screen | Primary user goal | Initial audit priority |
-|---|---|---|---|
-| Main | `/` | Understand SiapTempur and choose CPNS/TKA | P0 |
-| Auth | `/login` | Enter account | P0 |
-| Auth | `/register` | Create account | P0 |
-| Auth | `/forgot-password` | Recover access | P1 |
-| CPNS | `/cpns` | Understand CPNS product and begin | P0 |
-| CPNS | `/cpns/dashboard` | Know learning status and next action | P0 |
-| CPNS | `/cpns/drilling-materi` | Choose focused practice | P0 |
-| CPNS | `/cpns/twk` | Practice TWK | P0 |
-| CPNS | `/cpns/tiu` | Practice TIU | P0 |
-| CPNS | `/cpns/tkp` | Practice TKP | P0 |
-| CPNS | `/cpns/mini-tryout` | Start section-level tryout | P0 |
-| CPNS | `/cpns/full-tryout` | Start full SKD simulation | P0 |
-| CPNS | exam session | Complete exam without distraction | P0 |
-| CPNS | exam result | Understand score and next learning action | P0 |
-| TKA | `/tka` | Understand available TKA product | P0 |
-| TKA SMP | `/tka/smp` | Enter SMP learning journey | P0 |
-| TKA SMP | pass/pricing | Understand access package and value | P0 |
-| TKA SMP | progress | Understand learning progress | P0 |
-| TKA SMP | wrong questions | Relearn weak questions | P0 |
-| TKA SMP | remedial | Improve weak topics | P0 |
-| TKA SMP | exam session | Complete exam without distraction | P0 |
-| TKA SMP | result | Understand performance and next action | P0 |
-| Commerce | checkout/payment states | Complete payment confidently | P0 |
+| Area | Current route/screen | User goal | Audit | Initial copy cleanup |
+|---|---|---|---|---|
+| Main | `/` | Understand product and choose CPNS/TKA | ✅ | ✅ |
+| Auth | `/login` | Enter account | ✅ | ✅ |
+| Auth | `/register` | Create account | ✅ | ✅ |
+| CPNS | `/cpns` | Understand CPNS offer | 🟡 | ⬜ |
+| CPNS | `/cpns/dashboard` | Know status and best next action | ✅ | 🟡 |
+| CPNS | `/cpns/dashboard/drilling-materi` | Choose focused practice | 🟡 | ⬜ |
+| CPNS | `/cpns/dashboard/mini-tryout` | Start section tryout | 🟡 | ⬜ |
+| CPNS | `/cpns/dashboard/tryout` | Start/resume full tryout | ✅ | ⬜ |
+| CPNS | exam session | Complete exam confidently | ✅ | ⬜ |
+| CPNS | exam result | Understand result and learn next | ✅ | ✅ |
+| TKA | `/tka` | Understand available TKA paths | ✅ | ✅ |
+| TKA SMP | `/tka/smp` | Enter learning journey | ✅ | ⬜ |
+| TKA SMP | pass/pricing | Understand paid access | ✅ | ✅ initial |
+| TKA SMP | learning/progress loops | Know what to improve | 🟡 | ⬜ |
+| Commerce | CPNS package/payment | Buy confidently | ✅ | ⬜ |
 
 ### P1 — retention, trust, secondary journeys
 
-| Area | Screen | Priority |
-|---|---|---|
-| CPNS | Riwayat | P1 |
-| CPNS | Ranking / leaderboard | P1 |
-| CPNS | Event | P1 |
-| Event | Public event page | P1 |
-| Blog | Article list/detail | P1 |
-| Account | Profile/settings | P1 |
-| System | Error / global error | P1 |
-| System | Empty/loading/locked states | P1 |
+- forgot password
+- CPNS history
+- ranking / leaderboard
+- event pages
+- articles/blog
+- profile/settings
+- global error/error/empty/loading states
 
 ### P2 — supporting information
 
-| Area | Screen | Priority |
-|---|---|---|
-| Legal | Syarat & Ketentuan | P2 |
-| Legal | Kebijakan Privasi | P2 |
-| Legal | Kebijakan Pengembalian | P2 |
-| Utility | Certificate verification | P2 |
-| Utility | Sitemap/robots/manifest | P2 |
+- legal pages
+- certificate verification
+- sitemap/robots/manifest metadata
 
 ---
 
-## 4. Confirmed initial UX/copy problems
+## 4. Implemented in the first safe-copy wave
 
-### 4.1 Internal terminology leaks into public UI
+These changes are intentionally copy-only or presentation-copy changes. They do not change Schema V2 contracts or business logic.
 
-Current public code contains product/engineering language such as:
+### 4.1 Login
 
-- `Production V1`
-- `production-ready`
-- `track`
-- `entitlement`
-- `commerce`
-- `mastery`
-- `readiness`
-- `progress dashboard`
-- internal roadmap explanations
+Implemented:
 
-These terms are useful internally but should not generally be visible to ordinary users.
+- standardized `kamu`
+- removed `Anda`
+- removed `streak` dependency from the main message
+- normalized sentence case
+- clarified success/error feedback
+- normalized `kata sandi` terminology
 
-### 4.2 TKA page explains implementation status instead of user value
+Target message now follows:
 
-The current TKA experience explains that SD/SMA are outside Production V1 and discusses roadmap/production readiness.
+> **Selamat datang kembali**  
+> Masuk untuk melanjutkan belajarmu.
 
-Target presentation:
+### 4.2 Registration
 
-- active: **TKA SMP — Mulai belajar**
-- inactive: **TKA SD — Segera hadir**
-- inactive: **TKA SMA — Segera hadir**
+Implemented:
 
-No explanation about deployment state is needed.
+- registration no longer implies the account is only for SKD
+- CPNS + TKA are presented as one account
+- sentence case standardized
+- success/error feedback clarified
 
-### 4.3 Homepage feature lists are too implementation-oriented
+Target message:
 
-Current messaging heavily lists capabilities such as Drill, Mini Tryout, Full Tryout, result, readiness, entitlement, and integrated systems.
+> **Buat akun SiapTempur**  
+> Mulai belajar CPNS atau TKA dalam satu akun.
 
-Target hierarchy should be:
+### 4.3 Main landing page
 
-1. user problem
-2. outcome / promise
-3. how SiapTempur helps
-4. proof / trust
-5. product features
-6. CTA
+Implemented first-pass cleanup:
 
-### 4.4 Logged-in navigation is product-centric rather than task-centric
+- removed `Production V1` from ordinary user UI
+- removed `commerce`, `entitlement`, `track`, `readiness`, `learning loop`, and similar internal/product language
+- changed feature-heavy hero into outcome-oriented positioning
+- clarified CPNS/TKA choice
+- changed user explanation toward the learning loop
 
-A user should not have to decide between technical product areas before seeing what needs attention.
+This is **not yet the final conversion redesign**. Social proof, pricing, trust, free acquisition hook, FAQ, analytics, and campaign structure remain pending.
 
-Target dashboard question:
+### 4.4 TKA landing
+
+Implemented:
+
+- removed production/release/roadmap language
+- replaced SD/SMA development status with simple `Segera hadir`
+- replaced `mastery`, `readiness`, `progress dashboard`, and `salah-soal`
+- changed active TKA SMP CTA toward `Mulai belajar`
+
+### 4.5 CPNS result
+
+Implemented:
+
+- removed `Schema V2`
+- removed `server-side`, `snapshot`, `attempt`, and `answer key` from learner-facing copy
+- normalized `Total Score` to `Total skor`
+- normalized result status language
+- changed `Review Jawaban` into `Pembahasan jawaban`
+- made result introduction point toward learning improvement
+
+A later wave still needs **data-driven next-best-action** based on weak subject/subtopic.
+
+### 4.6 TKA paid access
+
+Implemented initial copy cleanup:
+
+- `checkout` → payment language
+- `premium` → learning access where possible
+- raw Midtrans/Snap wording removed from ordinary user errors
+- pending/failed/closed payment states made actionable
+- package CTA now describes duration of access
+
+---
+
+## 5. Confirmed P0 findings
+
+### 5.1 Homepage/public acquisition
+
+Previous issues:
+
+- internal release terminology visible
+- feature lists described implementation instead of outcomes
+- CTA labels were destination-oriented (`Lihat CPNS`) instead of action-oriented
+- no strong free-value acquisition step
+- no social proof/trust layer
+- no pricing/value comparison on the main journey
+
+Decision:
+
+Public pages use **marketing mode**: expressive brand identity, clear outcomes, proof, and conversion path.
+
+Remaining work:
+
+- build free-to-paid funnel
+- add trust/social proof
+- add pricing/value section
+- add FAQ
+- add analytics events
+- review SEO claims
+
+### 5.2 Auth
+
+Confirmed problems:
+
+- `kamu`/`Anda` mixed
+- title case inconsistent
+- registration was CPNS-only in wording
+- generic system errors
+- success messages were noisier than needed
+
+First-pass copy is now implemented. Visual/accessibility review remains.
+
+### 5.3 CPNS dashboard
+
+Current dashboard gives very high visual weight to:
+
+- `Mulai Tryout`
+- ranking
+- ticket balance
+
+But the product promise requires the dashboard to answer:
 
 > **Apa yang sebaiknya kamu kerjakan hari ini?**
 
-The dashboard should prioritize next-best-action, weak topic, upcoming exam/event, latest score, and progress.
+Target hierarchy:
 
-### 4.5 Mixed terminology needs normalization
+1. active session resume, if any
+2. next-best learning action
+3. weakest subject/topic
+4. latest result and improvement trend
+5. upcoming event/tryout
+6. access/token status
+7. ranking as secondary motivation
 
-Candidate terminology standard:
+This requires UX redesign and may require additional derived data, so it is not being patched blindly in the safe-copy wave.
 
-| Internal/current term | Preferred user-facing term |
+### 5.4 CPNS full-tryout entry
+
+Confirmed issues:
+
+- fabricated motivational quote style is not useful for conversion or confidence
+- `CAT BKN 2025/2026` and `Passing Grade Terupdate` require factual/legal verification
+- `token` and `ticket` are used inconsistently
+- `Ticket Habis!` is both inconsistent and overly noisy
+- start page contains more decorative copy than decision-support information
+- user needs clearer explanation of cost, duration, question count, resume behavior, and what happens after completion
+
+Target structure:
+
+1. what this tryout measures
+2. format/duration/question count
+3. access cost
+4. resume/session rule
+5. clear `Mulai tryout` / `Lanjutkan tryout` CTA
+6. concise preparation note
+
+### 5.5 Exam session
+
+The current exam interface has useful functional foundations:
+
+- question navigator
+- answered/marked/unanswered states
+- timer
+- resume persistence
+- exit confirmation
+- image enlargement
+- answer sync
+
+But the tone is not appropriate for a focused high-stakes session.
+
+Confirmed copy/UX problems include:
+
+- `Waktu Tipis!`
+- `Gas pol`
+- `Siap Mandraguna!`
+- `DARURAT!`
+- `Buruan`
+- `auto-submit`
+- `OKE OKE!!`
+- `Anda` appears in exit confirmation
+
+Decision:
+
+Exam mode must be **calm, minimal, unambiguous**.
+
+Target warning examples:
+
+**5 minutes**
+> Sisa waktu kurang dari 5 menit. Periksa soal yang belum dijawab atau masih kamu tandai.
+
+CTA: `Lanjut mengerjakan`
+
+**1 minute**
+> Sisa waktu kurang dari 1 menit. Jawaban akan dikumpulkan otomatis saat waktu habis.
+
+CTA: `Kembali ke soal`
+
+Exit confirmation:
+
+> Progres dan posisi soal terakhir akan tersimpan. Kamu bisa melanjutkan sesi ini nanti.
+
+This screen also needs a visual pass to reduce animation/noise during exam mode.
+
+### 5.6 CPNS result
+
+Before cleanup, result UI exposed implementation language (`Schema V2`, server-side scoring, snapshot, attempt, answer key).
+
+Initial cleanup is complete.
+
+Remaining UX requirement:
+
+Result must progress from:
+
+`score → interpretation → weak area → recommended action`
+
+rather than ending at score/review.
+
+### 5.7 CPNS packages/payment
+
+Confirmed user-facing issues:
+
+- `Harga dan benefit langsung dari katalog SiapTempur` exposes product-system language
+- `token`, `ticket`, and `wallet` are mixed concepts
+- `Midtrans Snap belum siap` exposes provider implementation
+- provider/action errors may be surfaced too directly
+- payment close/pending states do not always tell the user what to do
+- package cards emphasize units/features more than the learning value purchased
+
+Decision required before final rewrite:
+
+Choose **one commercial mental model** for CPNS:
+
+- `token`, or
+- `tiket tryout`
+
+Do not alternate both terms in user UI.
+
+### 5.8 TKA SMP entry
+
+Confirmed technical language leakage includes:
+
+- `track`
+- `catalog`
+- `progress`
+- `attempt`
+- `entitlement`
+- `user_tracks`
+
+The activation area even explains storage implementation. This must become learner-facing language.
+
+Target activation:
+
+> **Aktifkan jalur belajar TKA SMP**  
+> Simpan perkembangan latihan dan hasil tryout kamu dalam satu tempat.
+
+Optional profile inputs should explain their benefit, not their database purpose.
+
+### 5.9 TKA paid access/payment
+
+First-pass payment copy is now clearer.
+
+Remaining work:
+
+- verify package names/descriptions coming from database follow the language guide
+- clarify exact included features
+- verify unlimited-access wording matches actual entitlement rules
+- add support/recovery path for delayed payment verification
+- audit mobile Snap flow
+
+### 5.10 Navigation
+
+Desktop/mobile labels are inconsistent:
+
+| Desktop | Mobile |
 |---|---|
-| Production V1 | remove from UI |
-| track | jalur belajar |
-| entitlement | akses |
-| progress dashboard | perkembangan belajar |
-| mastery | penguasaan materi |
-| readiness | kesiapan ujian |
-| wrong questions | soal yang perlu diulang |
-| start exam | mulai ujian |
-| submit | kumpulkan jawaban |
-| payment pending | menunggu pembayaran |
-| payment expired | waktu pembayaran habis |
-| activate pass | aktifkan akses |
-| learning recommendation | rekomendasi belajar |
+| Dashboard | Home |
+| Mini Tryout | Mini |
+| Drilling Materi | Drill |
+| Beli Token | Beli |
 
-Final terminology will be validated globally before implementation.
+Other findings:
+
+- `XP` badges may create meaning without sufficient explanation
+- `LIVE` event badge may be stale if not state-driven
+- learning/practice destinations are presented as flat product features
+- results/analysis are not first-class in the navigation
+
+Target IA should group tasks:
+
+```text
+Beranda
+Belajar
+├── Latihan fokus
+├── Mini tryout
+└── Full tryout
+Hasil & perkembangan
+Event
+Paket / akses
+Profil
+```
+
+Exact mobile architecture will be decided during design-system/navigation work.
 
 ---
 
-## 5. Initial design-system assessment
+## 6. Design-system direction
 
-Current public UI strongly uses a neo-brutalist visual identity:
+Current identity:
 
-- dark 2px borders
+- 2px dark borders
 - hard offset shadows
-- high-contrast blocks
-- handwritten/display typography
+- handwritten display typography
 - yellow/cyan/blue accents
+- playful neo-brutalist composition
 
-This can remain part of the SiapTempur identity, but it needs refinement.
+Keep the recognizable personality, but establish three experience modes.
 
-### Keep
+### Marketing mode
 
-- recognizable energetic personality
-- strong CTA contrast
-- playful educational character
-- visual differentiation from generic test-prep platforms
+Expressive, energetic, stronger brand devices.
 
-### Improve
+### Learning mode
 
-- reduce visual noise in long-session learning screens
-- use calmer surfaces in dashboards/results/exams
-- reserve hard shadows for high-priority cards/actions
-- define semantic color roles
-- standardize spacing/radius/border usage
-- separate marketing visual language from focused exam visual language
-- ensure mobile controls remain comfortable
+Calmer surfaces, clearer hierarchy, less decoration, data/action first.
 
-### Experience modes proposed
+### Exam mode
 
-**Marketing mode**  
-More expressive, branded, energetic.
+Minimal distraction, high readability, stable layout, limited animation, neutral feedback until submission.
 
-**Learning mode**  
-Cleaner, calmer, information-first.
+Design system must standardize:
 
-**Exam mode**  
-Minimal distraction, maximum readability and confidence.
+- typography roles
+- semantic colors
+- spacing/grid
+- border/radius/shadow hierarchy
+- buttons
+- forms
+- cards
+- tabs
+- alerts/toasts
+- modal/dialog
+- loading/empty/error/locked states
+- score/result visualization
+- navigation
+- mobile interaction targets
 
 ---
 
-## 6. Proposed information architecture
+## 7. Target information architecture
 
 ### Public
 
@@ -238,7 +462,7 @@ Minimal distraction, maximum readability and confidence.
 SiapTempur
 ├── CPNS
 ├── TKA
-├── Tryout/Event
+├── Tryout / Event
 ├── Artikel
 ├── Harga / Paket
 └── Masuk / Daftar
@@ -247,166 +471,184 @@ SiapTempur
 ### Logged-in CPNS
 
 ```text
-Dashboard
-├── Lanjutkan Belajar
-├── Latihan
+Beranda
+├── Lanjutkan sesi
+├── Rekomendasi hari ini
+├── Latihan fokus
 │   ├── TWK
 │   ├── TIU
 │   └── TKP
 ├── Tryout
-│   ├── Mini Tryout
-│   └── Full Tryout
-├── Hasil & Analisis
+│   ├── Mini tryout
+│   └── Full tryout
+├── Hasil & perkembangan
 ├── Riwayat
-└── Ranking / Event
+├── Event
+└── Peringkat
 ```
 
 ### Logged-in TKA SMP
 
 ```text
-Dashboard
-├── Lanjutkan Belajar
+Beranda
+├── Lanjutkan belajar
+├── Rekomendasi hari ini
 ├── Latihan
 ├── Tryout
-├── Hasil & Analisis
-├── Soal yang Perlu Diulang
-├── Latihan Perbaikan
-└── Perkembangan Belajar
+├── Hasil & perkembangan
+├── Soal yang perlu diulang
+└── Latihan perbaikan
 ```
 
 ---
 
-## 7. Target acquisition and conversion journey
+## 8. Target acquisition and conversion journey
 
 ```text
 Content / Search / Referral
         ↓
-Landing Page
+Landing page
         ↓
 Free useful action
-(Mini Tryout / Drill / Diagnostic)
         ↓
 Registration
         ↓
-Result / Analysis
+Result / analysis
         ↓
-Personalized next recommendation
+Personalized recommendation
         ↓
-Package / Access recommendation
+Package recommendation
         ↓
-Checkout
+Payment
         ↓
 Paid access
         ↓
 Learning loop
         ↓
-Retention / Referral
+Retention / referral
 ```
 
-The free experience should demonstrate the product promise instead of functioning only as a teaser.
+The free experience must demonstrate the product promise, not function only as a teaser.
 
 ---
 
-## 8. Copywriting framework
+## 9. Copy system
 
-### Brand promise
+Primary terminology is defined in `docs/PRODUCT_LANGUAGE_GUIDE_V1_1.md`.
 
-**Primary direction**
+Important replacements:
 
-> Belajar lebih terarah. Hadapi ujian lebih siap.
+| Internal / inconsistent | User-facing |
+|---|---|
+| Production V1 | remove |
+| production-ready | remove |
+| track | jalur belajar |
+| catalog | pilihan / daftar |
+| entitlement | akses |
+| attempt | pengerjaan / sesi |
+| progress | perkembangan |
+| mastery | penguasaan materi |
+| readiness | kesiapan ujian |
+| wrong questions | soal yang perlu diulang |
+| checkout | pembayaran |
+| rank | peringkat |
+| submit | kumpulkan jawaban |
 
-**Differentiator**
+Open terminology decision:
 
-> Bukan cuma latihan soal. SiapTempur membantu kamu tahu apa yang harus dipelajari berikutnya.
-
-### CPNS direction
-
-> Persiapan SKD yang tidak berhenti di skor.
-
-Supporting message:
-
-> Latihan TWK, TIU, dan TKP, ukur kemampuanmu, lalu fokus memperbaiki bagian yang masih lemah.
-
-### TKA SMP direction
-
-> Belajar dari setiap hasil, bukan sekadar menyelesaikan soal.
-
-Supporting message:
-
-> Latihan, tryout, dan rekomendasi belajar membantu kamu memahami bagian yang sudah kuat dan yang masih perlu diperbaiki.
+**CPNS `token` vs `tiket tryout` must be unified before the commerce/navigation rewrite.**
 
 ---
 
-## 9. Implementation waves
+## 10. Implementation waves
 
 ### Wave 0 — Audit
 
-- route inventory
-- copy inventory
-- terminology inventory
-- UX-flow mapping
-- P0/P1/P2 prioritization
+Status: **IN PROGRESS**
+
+- [x] establish audit document
+- [x] establish language guide
+- [x] audit homepage
+- [x] audit login/register
+- [x] audit CPNS dashboard
+- [x] audit TKA landing/entry
+- [x] audit CPNS full-tryout entry
+- [x] audit CPNS exam session
+- [x] audit CPNS result
+- [x] audit CPNS package/payment copy
+- [x] audit TKA pass/payment copy
+- [x] audit CPNS desktop/mobile navigation
+- [ ] enumerate remaining user-facing routes/components
+- [ ] audit TKA exam/result/learning-loop screens in detail
+- [ ] audit global empty/error/loading/locked states
+- [ ] validate all marketing/SEO claims
 
 ### Wave 1 — Foundation
 
-- language guide
-- design tokens
-- typography
-- layout/container rules
-- navigation model
-- common states/components
+- [x] language guide draft
+- [ ] design tokens
+- [ ] typography rules
+- [ ] layout/container rules
+- [ ] semantic color roles
+- [ ] navigation model
+- [ ] standard common states
 
 ### Wave 2 — Public acquisition
 
-- `/`
-- `/cpns`
-- `/tka`
-- auth
-- pricing/package presentation
+- [x] homepage safe-copy cleanup
+- [x] TKA landing safe-copy cleanup
+- [x] auth safe-copy cleanup
+- [ ] CPNS landing rewrite
+- [ ] final homepage conversion layout
+- [ ] trust/social proof
+- [ ] pricing/value presentation
+- [ ] FAQ
 
-### Wave 3 — CPNS core experience
+### Wave 3 — CPNS core
 
-- dashboard
-- practice selection
-- mini/full tryout selection
-- results and learning recommendations
-- history/ranking
+- [ ] dashboard redesign around next-best-action
+- [ ] practice selection
+- [ ] mini/full tryout entry
+- [ ] calm exam-mode copy/visual pass
+- [x] result safe-copy cleanup
+- [ ] data-driven learning recommendation
+- [ ] history/ranking cleanup
 
-### Wave 4 — TKA SMP core experience
+### Wave 4 — TKA SMP core
 
-- dashboard
-- practice/tryout
-- progress
-- wrong-question loop
-- remedial
-- result/recommendation
+- [ ] TKA SMP dashboard/entry rewrite
+- [ ] practice/tryout
+- [ ] result
+- [ ] development/progress
+- [ ] wrong-question loop
+- [ ] remedial
 
 ### Wave 5 — Commerce & trust
 
-- pricing
-- checkout
-- payment states
-- access activation
-- refund/support language
+- [ ] decide CPNS token/ticket terminology
+- [ ] CPNS package rewrite
+- [x] TKA payment/access initial copy cleanup
+- [ ] payment recovery/support states
+- [ ] mobile payment QA
 
 ### Wave 6 — Growth
 
-- analytics events
-- acquisition funnel
-- campaign pages
-- SEO content system
-- referral/retention
+- [ ] analytics events
+- [ ] funnel instrumentation
+- [ ] campaign pages
+- [ ] SEO content system
+- [ ] referral/retention
 
-### Wave 7 — Regression + Product Experience release
+### Wave 7 — Regression + release
 
-- responsive QA
-- accessibility pass
-- CI/build/E2E
-- release notes
+- [ ] responsive QA
+- [ ] accessibility pass
+- [ ] CI/build/E2E
+- [ ] Product Experience release notes
 
 ---
 
-## 10. Guardrails
+## 11. Guardrails
 
 Do not change without separate technical approval:
 
@@ -419,17 +661,19 @@ Do not change without separate technical approval:
 - `legacy_prod`
 - deferred TKA SD/SMA/SMK functionality
 
+All Product Experience implementation must remain isolated from `main` until reviewed, tested, and intentionally released.
+
 ---
 
-## 11. Next audit actions
+## 12. Immediate next implementation backlog
 
-- [ ] Enumerate every user-facing `page.tsx`
-- [ ] Enumerate user-facing shared components containing copy
-- [ ] Search globally for English/internal terminology
-- [ ] Audit current login/register pages
-- [ ] Audit CPNS dashboard
-- [ ] Audit TKA SMP dashboard
-- [ ] Audit both exam interfaces
-- [ ] Audit result pages
-- [ ] Audit checkout/payment states
-- [ ] Produce final P0 implementation backlog
+1. Finalize CPNS commercial terminology: **token vs tiket tryout**.
+2. Rewrite CPNS full-tryout entry without unsupported/internal claims.
+3. Refactor exam-session copy into calm exam mode.
+4. Rewrite TKA SMP entry/activation copy without database terminology.
+5. Define navigation IA and mobile bottom-nav model.
+6. Create design-system tokens and component rules.
+7. Rewrite CPNS package/payment UX.
+8. Audit TKA exam/result/remedial/wrong-question screens.
+9. Start CPNS dashboard next-best-action redesign.
+10. Add public conversion/trust/funnel sections after the foundation is locked.
