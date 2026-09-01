@@ -1,0 +1,103 @@
+name: PX calm exam copy (temporary)
+
+on:
+  push:
+    branches:
+      - feat/product-experience-v1-1
+    paths:
+      - .github/workflows/px-exam-calm-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-exam-copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/product-experience-v1-1
+          fetch-depth: 0
+
+      - name: Apply controlled Product Experience replacements
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('components/practice/PracticeSessionClient.tsx')
+          text = path.read_text()
+
+          replacements = [
+              ("ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, LogOut, Key, Sparkles, X, ZoomIn", "ChevronLeft, ChevronRight, CheckCircle2, Clock, Map, Flag, LogOut, Sparkles, X, ZoomIn"),
+              ("bg-red-50 text-red-600 border-red-500 animate-pulse border-2 md:shadow-[2px_2px_0px_0px_rgba(239,68,68,1)]", "bg-red-50 text-red-700 border-red-300 border-2"),
+              ("bg-orange-50 text-orange-600 border-orange-500 border-2 md:shadow-[2px_2px_0px_0px_rgba(249,115,22,1)]", "bg-orange-50 text-orange-700 border-orange-300 border-2"),
+              ("bg-blue-50 text-blue-700 border-blue-900 border-2 md:shadow-[2px_2px_0px_0px_rgba(30,58,138,1)]", "bg-blue-50 text-blue-700 border-blue-200 border-2"),
+              ("returnTo === 'drilling-materi' ? 'Drilling Materi' : 'Mini Tryout'", "returnTo === 'drilling-materi' ? 'Latihan Fokus' : 'Mini Tryout'"),
+              ("? 'halaman drilling materi'", "? 'halaman latihan fokus'"),
+              ("toast.success(`${sessionKindLabel} selesai!`)", "toast.success(`${sessionKindLabel} selesai`)") ,
+              ("toast.error('Gagal menyelesaikan tryout')", "toast.error(`${sessionKindLabel} belum bisa diselesaikan`)") ,
+              ("toast.error('Gagal menyimpan jawaban sebelum menyelesaikan tryout')", "toast.error('Jawaban belum berhasil disimpan. Coba lagi sebelum menyelesaikan sesi.')"),
+              ("toast.info('Waktu habis! Tryout diselesaikan otomatis.')", "toast.info('Waktu selesai. Jawaban akan dikumpulkan otomatis.')"),
+              ("Anda bisa lanjut lagi nanti", "Kamu bisa lanjut lagi nanti"),
+              ("Waktu Tipis! <Clock className=\"w-8 h-8 animate-pulse text-orange-600\" />", "Sisa waktu 5 menit <Clock className=\"w-8 h-8 text-orange-600\" />"),
+              ("Waktu tersisa kurang dari 5 menit nih. Gas pol selesaikan semua soalnya!", "Periksa soal yang belum dijawab atau masih kamu tandai. Gunakan waktu tersisa dengan tenang."),
+              ("Siap Mandraguna!", "Lanjutkan mengerjakan"),
+              ("shadow-[10px_10px_0px_0px_rgba(239,68,68,0.5)] max-w-md w-full text-center relative overflow-hidden animate-bounce-subtle", "shadow-[6px_6px_0px_0px_rgba(0,0,0,0.18)] max-w-md w-full text-center relative overflow-hidden"),
+              ("w-24 h-24 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mx-auto mb-6 rotate-6 shadow-lg animate-pulse", "w-20 h-20 bg-red-50 border-2 border-red-300 rounded-full flex items-center justify-center mx-auto mb-6"),
+              ("DARURAT! <Clock className=\"w-10 h-10 animate-ping\" />", "Sisa waktu 1 menit <Clock className=\"w-8 h-8 text-red-600\" />"),
+              ("Tinggal 1 menit lagi! Buruan klik Selesai sebelum auto-submit!", "Pastikan jawaban yang ingin kamu kumpulkan sudah terisi. Saat waktu habis, sesi akan dikumpulkan otomatis."),
+              ("OKE OKE!!", "Lanjutkan mengerjakan"),
+              ("Selesaikan Tryout?", "Kumpulkan jawaban?"),
+              ("\"Jangan lupa cek lagi ya, teliti itu kunci kelulusan!\" <Key className=\"w-5 h-5 text-yellow-600\" /> <Sparkles className=\"w-5 h-5 text-blue-400\" />", "Setelah dikumpulkan, jawaban tidak bisa diubah."),
+              ("{finishing ? 'Menyimpan...' : 'Siap Tempur!'}", "{finishing ? 'Mengumpulkan...' : 'Kumpulkan jawaban'}"),
+              ("<span className=\"font-handwriting font-bold text-xl md:text-2xl text-gray-900 leading-tight\">Soal #{currentIndex + 1}</span>\n                                        <span className=\"font-handwriting text-sm text-gray-500 md:text-lg\">/ {sortedQuestions.length}</span>", "<span className=\"font-handwriting font-bold text-xl md:text-2xl text-gray-900 leading-tight\">Soal {currentIndex + 1}</span>\n                                        <span className=\"font-handwriting text-sm text-gray-500 md:text-lg\">dari {sortedQuestions.length}</span>"),
+              ("{marked[currentQuestion.id] ? 'Ditandai Ragu' : 'Tandai Ragu'}", "{marked[currentQuestion.id] ? 'Ditandai' : 'Tandai untuk ditinjau'}"),
+              ("{finishing ? '...' : 'Selesai'}", "{finishing ? '...' : 'Kumpulkan'}"),
+              ("{finishing ? 'Menyimpan...' : 'Selesai & Hitung'}", "{finishing ? 'Mengumpulkan...' : 'Kumpulkan jawaban'}"),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly 1 occurrence, found {count}: {old[:100]}')
+              text = text.replace(old, new, 1)
+
+          # Terminology used in navigation/summary legends can occur multiple times.
+          count = text.count('Ragu-ragu')
+          if count < 2:
+              raise SystemExit(f'Expected at least 2 Ragu-ragu labels, found {count}')
+          text = text.replace('Ragu-ragu', 'Ditandai')
+
+          # Calm the 5-minute icon container without affecting any timer logic.
+          old = 'w-20 h-20 bg-orange-100 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 -rotate-3 shadow-md'
+          new = 'w-20 h-20 bg-orange-50 border-2 border-orange-300 rounded-full flex items-center justify-center mx-auto mb-6'
+          if text.count(old) != 1:
+              raise SystemExit('5-minute warning icon container pattern mismatch')
+          text = text.replace(old, new, 1)
+
+          # Make the confirmation helper neutral instead of italic/celebratory.
+          old = 'text-lg text-gray-700 font-medium italic flex items-center justify-center gap-2'
+          new = 'text-base text-gray-600 font-medium leading-relaxed'
+          if text.count(old) != 1:
+              raise SystemExit('Confirmation helper pattern mismatch')
+          text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+
+          git diff --check
+          git diff -- components/practice/PracticeSessionClient.tsx
+
+      - name: Commit calm exam copy
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add components/practice/PracticeSessionClient.tsx
+          git commit -m "refactor(px): calm CPNS exam experience"
+          git push origin HEAD:feat/product-experience-v1-1
