@@ -673,6 +673,7 @@ declare
   v_mat_subject_id uuid;
   v_bin_section_id uuid;
   v_mat_section_id uuid;
+  v_created_by uuid;
   v_item_count integer;
 begin
   select p.id, t.id
@@ -707,8 +708,16 @@ begin
   where track_id = v_track_id and upper(code) = 'MAT'
   limit 1;
 
+  select created_by
+    into v_created_by
+  from public.exams
+  where track_id = v_track_id
+    and created_by is not null
+  order by (slug = 'tka-smp-full') desc, created_at asc
+  limit 1;
+
   if v_program_id is null or v_track_id is null or v_exam_type_id is null
-     or v_bin_subject_id is null or v_mat_subject_id is null then
+     or v_bin_subject_id is null or v_mat_subject_id is null or v_created_by is null then
     raise exception 'TKA SMP diagnostic prerequisites are incomplete';
   end if;
 
@@ -728,6 +737,7 @@ begin
     status,
     required_feature_id,
     token_cost,
+    created_by,
     created_at,
     updated_at
   )
@@ -747,6 +757,7 @@ begin
     'draft',
     null,
     0,
+    v_created_by,
     now(),
     now()
   )
