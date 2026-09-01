@@ -124,7 +124,7 @@ export default function TkaDashboardShell({
                     <span className="st-pill bg-blue-100 text-blue-700">TKA {level}</span>
                 </div>
 
-                <div className="mx-auto w-full max-w-7xl p-4 sm:p-6 md:p-8 lg:p-10">
+                <div className="mx-auto w-full max-w-7xl">
                     {children}
                 </div>
             </main>
