@@ -37,8 +37,8 @@ async function answerFirstVisibleOption(page: import('@playwright/test').Page) {
 
 async function goToLastQuestion(page: import('@playwright/test').Page) {
     const navigator = page.locator('aside')
-    await navigator.getByRole('button', { name: '30', exact: true }).click()
-    await expect(page.getByText('Soal 30 / 30')).toBeVisible()
+    await navigator.getByRole('button', { name: 'Buka soal 30', exact: true }).click()
+    await expect(page.getByText('Soal 30 dari 30')).toBeVisible()
 }
 
 async function submitReviewAndWait(
@@ -140,32 +140,32 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
     await expect(page.getByText('TKA SMP · Full Tryout')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Bahasa Indonesia' })).toBeVisible()
-    await expect(page.getByText('Soal 1 / 30')).toBeVisible()
+    await expect(page.getByText('Soal 1 dari 30')).toBeVisible()
 
     await answerFirstVisibleOption(page)
-    await page.getByRole('button', { name: 'Tandai', exact: true }).click()
-    await expect(page.getByText(/Terjawab section:/)).toContainText('1/30')
+    await page.getByRole('button', { name: 'Tandai untuk ditinjau', exact: true }).click()
+    await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/30')
     await page.waitForTimeout(800)
 
     // Reload proves answer + flag are persisted independently of local browser state.
     await page.reload()
     await expect(page.getByRole('heading', { name: 'Bahasa Indonesia' })).toBeVisible()
-    await expect(page.getByText(/Terjawab section:/)).toContainText('1/30')
+    await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/30')
     await expect(page.getByRole('button', { name: 'Ditandai', exact: true })).toBeVisible()
 
     await goToLastQuestion(page)
     page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Selesai Section', exact: true }).click()
+    await page.getByRole('button', { name: 'Selesaikan bagian', exact: true }).click()
 
     await expect(page.getByRole('heading', { name: 'Matematika' })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText('Soal 1 / 30')).toBeVisible()
+    await expect(page.getByText('Soal 1 dari 30')).toBeVisible()
 
     await answerFirstVisibleOption(page)
-    await expect(page.getByText(/Terjawab section:/)).toContainText('1/30')
+    await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/30')
     await goToLastQuestion(page)
 
     page.once('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Kirim Tryout', exact: true }).click()
+    await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     const resultUrl = page.url()
