@@ -4,7 +4,6 @@ import { Geist, Geist_Mono, Patrick_Hand, Work_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -35,24 +34,24 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://siaptempur.id';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Siap Tempur - Tryout SKD CPNS & Simulasi CAT BKN",
-    template: "%s | Siap Tempur"
+    default: "SiapTempur - Persiapan CPNS & TKA",
+    template: "%s | SiapTempur"
   },
-  description: "Platform tryout SKD CPNS 2026 dengan simulasi CAT BKN, pembahasan lengkap, ranking nasional, dan dashboard belajar yang fokus ke persiapan CPNS.",
-  keywords: ["siap tempur", "tryout cpns", "tryout skd cpns", "tryout cpns online", "simulasi cat cpns", "latihan soal cpns", "tryout twk", "tryout tiu", "tryout tkp", "mini tryout cpns", "full tryout cpns", "event tryout cpns"],
-  authors: [{ name: "Siap Tempur" }],
-  creator: "Siap Tempur",
-  publisher: "Siap Tempur",
+  description: "Platform belajar CPNS/SKD dan TKA untuk latihan terarah, tryout, pembahasan, serta evaluasi hasil dalam satu akun.",
+  keywords: ["siaptempur", "tryout cpns", "tryout skd", "latihan cpns", "twk", "tiu", "tkp", "tka smp", "mini tryout", "full tryout", "latihan soal"],
+  authors: [{ name: "SiapTempur" }],
+  creator: "SiapTempur",
+  publisher: "SiapTempur",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
   openGraph: {
-    title: "Siap Tempur - Tryout SKD CPNS & Simulasi CAT BKN",
-    description: "Platform tryout SKD CPNS 2026 dengan simulasi CAT BKN, pembahasan lengkap, dan ranking nasional.",
-    url: `${siteUrl}/cpns`,
-    siteName: "Siap Tempur",
+    title: "SiapTempur - Belajar lebih terarah",
+    description: "Persiapan CPNS/SKD dan TKA dengan latihan, tryout, pembahasan, dan evaluasi hasil untuk membantu menentukan langkah belajar berikutnya.",
+    url: siteUrl,
+    siteName: "SiapTempur",
     locale: "id_ID",
     type: "website",
     images: [
@@ -60,7 +59,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Siap Tempur - Tryout SKD CPNS",
+        alt: "SiapTempur - Persiapan CPNS dan TKA",
       },
     ],
   },
@@ -74,8 +73,8 @@ export const metadata: Metadata = {
   classification: "Education/Test Prep",
   twitter: {
     card: "summary_large_image",
-    title: "Siap Tempur - Tryout SKD CPNS & Simulasi CAT BKN",
-    description: "Platform tryout SKD CPNS 2026 dengan simulasi CAT BKN, pembahasan lengkap, dan ranking nasional.",
+    title: "SiapTempur - Belajar lebih terarah",
+    description: "Persiapan CPNS/SKD dan TKA dengan latihan, tryout, pembahasan, dan evaluasi hasil untuk membantu menentukan langkah belajar berikutnya.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -116,9 +115,7 @@ export default function RootLayout({
           "antialiased"
         )}
       >
-        {/* Global Background Gradient Mesh - GPU Accelerated */}
         <div className="fixed inset-0 z-[-1] bg-background transform-gpu pointer-events-none">
-          {/* Paper Texture Overlay */}
           <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }}></div>
         </div>
         {children}
