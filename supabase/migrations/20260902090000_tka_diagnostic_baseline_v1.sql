@@ -694,7 +694,7 @@ begin
   from public.exam_blueprints eb
   where eb.track_id = v_track_id
     and lower(eb.status) = 'active'
-  order by eb.effective_from desc nulls last, eb.created_at desc
+  order by eb.updated_at desc nulls last, eb.created_at desc
   limit 1;
 
   select id into v_bin_subject_id
