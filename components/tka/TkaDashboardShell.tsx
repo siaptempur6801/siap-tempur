@@ -44,7 +44,8 @@ export default function TkaDashboardShell({
 }: TkaDashboardShellProps) {
     const pathname = usePathname()
     const basePath = `/tka/${level.toLowerCase()}`
-    const isFocusedSession = pathname.includes('/tryout/') || pathname.includes('/remedial/')
+    const isTryoutSession = pathname.includes('/tryout/') && !pathname.endsWith('/result')
+    const isFocusedSession = isTryoutSession || pathname.includes('/remedial/')
 
     if (isFocusedSession) {
         return (
