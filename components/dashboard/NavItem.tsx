@@ -10,6 +10,7 @@ interface NavItemProps {
     label: string
     badge?: string
     exact?: boolean
+    variant?: 'brand' | 'soft'
 }
 
 function matchesPath(pathname: string, href: string, exact = false) {
@@ -18,9 +19,10 @@ function matchesPath(pathname: string, href: string, exact = false) {
     return pathname.startsWith(pathOnly)
 }
 
-export function NavItem({ href, icon, label, badge, exact = false }: NavItemProps) {
+export function NavItem({ href, icon, label, badge, exact = false, variant = 'brand' }: NavItemProps) {
     const pathname = usePathname()
     const isActive = matchesPath(pathname, href, exact)
+    const soft = variant === 'soft'
 
     return (
         <Link
@@ -28,17 +30,27 @@ export function NavItem({ href, icon, label, badge, exact = false }: NavItemProp
             aria-current={isActive ? 'page' : undefined}
             className={cn(
                 'group flex min-h-11 items-center justify-between border-2 px-3 py-2.5 text-sm font-black transition-[background-color,color,transform,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
+                soft && 'rounded-2xl',
                 isActive
-                    ? 'border-slate-900 bg-blue-600 text-white shadow-[3px_3px_0_0_#111827]'
-                    : 'border-transparent text-slate-700 hover:border-slate-900 hover:bg-white hover:text-slate-950'
+                    ? soft
+                        ? 'border-indigo-100 bg-indigo-50 text-indigo-700 shadow-none'
+                        : 'border-slate-900 bg-blue-600 text-white shadow-[3px_3px_0_0_#111827]'
+                    : soft
+                        ? 'border-transparent text-slate-600 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-950'
+                        : 'border-transparent text-slate-700 hover:border-slate-900 hover:bg-white hover:text-slate-950'
             )}
         >
             <div className="flex min-w-0 items-center gap-3">
                 <span className={cn(
                     'flex h-8 w-8 shrink-0 items-center justify-center border-2 transition-colors',
+                    soft && 'rounded-xl',
                     isActive
-                        ? 'border-white/70 bg-white text-blue-700'
-                        : 'border-transparent text-slate-500 group-hover:border-slate-900 group-hover:bg-yellow-100 group-hover:text-slate-900'
+                        ? soft
+                            ? 'border-transparent bg-indigo-600 text-white'
+                            : 'border-white/70 bg-white text-blue-700'
+                        : soft
+                            ? 'border-transparent bg-slate-50 text-slate-500 group-hover:bg-indigo-50 group-hover:text-indigo-700'
+                            : 'border-transparent text-slate-500 group-hover:border-slate-900 group-hover:bg-yellow-100 group-hover:text-slate-900'
                 )}>
                     {icon}
                 </span>
@@ -47,7 +59,14 @@ export function NavItem({ href, icon, label, badge, exact = false }: NavItemProp
             {badge && (
                 <span className={cn(
                     'ml-2 border px-2 py-0.5 text-[10px] font-black uppercase tracking-wide',
-                    isActive ? 'border-white/70 bg-white text-blue-700' : 'border-slate-900 bg-yellow-100 text-slate-900'
+                    soft && 'rounded-full',
+                    isActive
+                        ? soft
+                            ? 'border-indigo-100 bg-white text-indigo-700'
+                            : 'border-white/70 bg-white text-blue-700'
+                        : soft
+                            ? 'border-slate-200 bg-slate-50 text-slate-600'
+                            : 'border-slate-900 bg-yellow-100 text-slate-900'
                 )}>
                     {badge}
                 </span>
@@ -56,9 +75,10 @@ export function NavItem({ href, icon, label, badge, exact = false }: NavItemProp
     )
 }
 
-export function MobileNavItem({ href, icon, label, exact = false }: NavItemProps) {
+export function MobileNavItem({ href, icon, label, exact = false, variant = 'brand' }: NavItemProps) {
     const pathname = usePathname()
     const isActive = matchesPath(pathname, href, exact)
+    const soft = variant === 'soft'
 
     return (
         <Link
@@ -66,12 +86,20 @@ export function MobileNavItem({ href, icon, label, exact = false }: NavItemProps
             aria-current={isActive ? 'page' : undefined}
             className={cn(
                 'flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-1.5 text-[11px] font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-inset',
-                isActive ? 'text-blue-700' : 'text-slate-500 hover:text-slate-900'
+                soft && 'rounded-2xl',
+                isActive ? (soft ? 'text-indigo-700' : 'text-blue-700') : 'text-slate-500 hover:text-slate-900'
             )}
         >
             <span className={cn(
                 'flex h-8 w-10 items-center justify-center border-2 transition-colors',
-                isActive ? 'border-slate-900 bg-yellow-100 text-blue-700 shadow-[2px_2px_0_0_#111827]' : 'border-transparent text-slate-500'
+                soft && 'rounded-xl',
+                isActive
+                    ? soft
+                        ? 'border-transparent bg-indigo-100 text-indigo-700 shadow-none'
+                        : 'border-slate-900 bg-yellow-100 text-blue-700 shadow-[2px_2px_0_0_#111827]'
+                    : soft
+                        ? 'border-transparent bg-transparent text-slate-500'
+                        : 'border-transparent text-slate-500'
             )}>
                 {icon}
             </span>
