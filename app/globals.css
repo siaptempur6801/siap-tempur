@@ -400,11 +400,32 @@ body {
   outline-offset: 3px;
 }
 
-/* Exam keeps the same identity but removes most decorative elevation. */
+/* Exam keeps the same identity while removing decorative visual noise. */
+.st-product[data-experience-mode="exam"] {
+  background: var(--st-paper);
+}
+
 .st-product[data-experience-mode="exam"] .st-card,
 .st-product[data-experience-mode="exam"] .st-card-md,
-.st-product[data-experience-mode="exam"] .st-card-lg {
-  box-shadow: none;
+.st-product[data-experience-mode="exam"] .st-card-lg,
+.st-product[data-experience-mode="exam"] [class*="shadow-["] {
+  box-shadow: none !important;
+}
+
+.st-product[data-experience-mode="exam"] .font-handwriting,
+.st-product[data-experience-mode="exam"] .prose {
+  font-family: var(--font-body), var(--font-sans), sans-serif !important;
+}
+
+.st-product[data-experience-mode="exam"] button {
+  min-height: var(--touch-target);
+  border-radius: 0.125rem !important;
+}
+
+.st-product[data-experience-mode="exam"] button:focus-visible,
+.st-product[data-experience-mode="exam"] a:focus-visible {
+  outline: 3px solid var(--st-blue);
+  outline-offset: 2px;
 }
 
 button,
