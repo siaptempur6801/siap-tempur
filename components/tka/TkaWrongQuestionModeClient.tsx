@@ -94,9 +94,9 @@ export default function TkaWrongQuestionModeClient({
             }
             setFeedback(nextFeedback)
             setRemainingOpen(nextFeedback.remainingOpen)
-            if (nextFeedback.isCorrect) toast.success('Benar. Soal ini sudah dituntaskan!')
+            if (nextFeedback.isCorrect) toast.success('Benar. Soal ini sudah selesai diulang.')
         } catch {
-            toast.error('Gagal memeriksa jawaban.')
+            toast.error('Jawaban belum bisa diperiksa. Coba lagi.')
         } finally {
             setProcessing(false)
         }
@@ -125,9 +125,9 @@ export default function TkaWrongQuestionModeClient({
             <main className="min-h-screen bg-[#fdfbf7] px-4 py-10 text-gray-900">
                 <section className="mx-auto max-w-2xl border-2 border-gray-900 bg-green-100 p-8 text-center shadow-[6px_6px_0_0_#111]">
                     <CheckCircle2 className="mx-auto" size={44}/>
-                    <h1 className="mt-3 font-handwriting text-4xl font-black">Semua sudah dituntaskan.</h1>
+                    <h1 className="mt-3 font-handwriting text-4xl font-black">Semua soal sudah diulang.</h1>
                     <p className="mt-2 font-semibold text-gray-700">
-                        Tidak ada soal salah atau kosong yang tersisa di queue TKA SMP saat ini.
+                        Tidak ada soal salah atau belum dijawab yang masih perlu kamu ulang saat ini.
                     </p>
                     <Link href="/tka/smp" className="mt-5 inline-flex border-2 border-gray-900 bg-white px-5 py-3 font-black shadow-[3px_3px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
                         Kembali ke TKA SMP
@@ -177,10 +177,10 @@ export default function TkaWrongQuestionModeClient({
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-700">
-                                <RotateCcw size={15}/> TKA SMP · Mode Ulang Soal Salah
+                                <RotateCcw size={15}/> TKA SMP · Soal yang perlu diulang
                             </div>
-                            <h1 className="mt-1 text-2xl font-black">Perbaiki gap satu per satu.</h1>
-                            <p className="mt-1 text-sm font-semibold text-gray-600">Soal keluar dari queue setelah kamu menjawabnya dengan benar.</p>
+                            <h1 className="mt-1 text-2xl font-black">Pelajari kembali satu soal dalam satu waktu.</h1>
+                            <p className="mt-1 text-sm font-semibold text-gray-600">Setelah kamu menjawab dengan benar, soal akan keluar dari daftar yang perlu diulang.</p>
                         </div>
                         <div className="border-2 border-gray-900 bg-yellow-100 px-4 py-2 text-center shadow-[2px_2px_0_0_#111]">
                             <div className="text-[10px] font-black uppercase text-gray-500">Tersisa</div>
@@ -197,7 +197,7 @@ export default function TkaWrongQuestionModeClient({
                                 <span className="border border-gray-900 bg-red-50 px-2 py-1 text-xs font-black text-red-800">{failureLabel(current)}</span>
                                 {current.questionCode && <span className="text-xs font-bold text-gray-500">{current.questionCode}</span>}
                             </div>
-                            <span className="text-xs font-bold text-gray-500">Pernah gagal {current.failureCount}x</span>
+                            <span className="text-xs font-bold text-gray-500">Perlu diulang {current.failureCount}x</span>
                         </div>
 
                         {current.stimulus && (
@@ -233,7 +233,7 @@ export default function TkaWrongQuestionModeClient({
                             )}>
                                 <div className="flex items-center gap-2 font-black">
                                     {feedback.isCorrect ? <CheckCircle2 size={20}/> : <XCircle size={20}/>}
-                                    {feedback.isCorrect ? 'Benar! Soal ini sudah dituntaskan.' : 'Belum tepat. Pilih jawaban lain lalu coba lagi.'}
+                                    {feedback.isCorrect ? 'Benar. Soal ini sudah selesai diulang.' : 'Belum tepat. Pelajari pembahasan lalu coba jawaban lain.'}
                                 </div>
                                 {feedback.explanation && (
                                     <div className="mt-3 border-t border-gray-900/20 pt-3 text-sm font-semibold text-gray-700">
@@ -259,20 +259,20 @@ export default function TkaWrongQuestionModeClient({
                     </article>
 
                     <aside className="h-fit border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0_0_#111]">
-                        <div className="text-xs font-black uppercase text-gray-500">Queue lokal</div>
+                        <div className="text-xs font-black uppercase text-gray-500">Daftar soal</div>
                         <div className="mt-1 text-2xl font-black">{currentIndex + 1}/{items.length}</div>
                         <div className="mt-4 grid grid-cols-2 gap-2">
                             <button type="button" onClick={() => navigate(-1)} disabled={currentIndex === 0 || processing || feedback?.isCorrect === true} className="inline-flex items-center justify-center gap-1 border-2 border-gray-900 bg-white px-3 py-2 font-black disabled:opacity-40">
-                                <ChevronLeft size={17}/> Prev
+                                <ChevronLeft size={17}/> Sebelumnya
                             </button>
                             <button type="button" onClick={() => navigate(1)} disabled={currentIndex >= items.length - 1 || processing || feedback?.isCorrect === true} className="inline-flex items-center justify-center gap-1 border-2 border-gray-900 bg-white px-3 py-2 font-black disabled:opacity-40">
-                                Next <ChevronRight size={17}/>
+                                Berikutnya <ChevronRight size={17}/>
                             </button>
                         </div>
                         <div className="mt-4 space-y-2 text-xs font-semibold text-gray-600">
                             <p><b>Salah:</b> {current.wrongCount}x</p>
-                            <p><b>Kosong:</b> {current.unansweredCount}x</p>
-                            <p>Jawaban benar di mode ini akan mengubah state soal menjadi <b>resolved</b>.</p>
+                            <p><b>Belum dijawab:</b> {current.unansweredCount}x</p>
+                            <p>Jawab dengan benar agar soal ini ditandai selesai dan keluar dari daftar yang perlu diulang.</p>
                         </div>
                     </aside>
                 </section>
