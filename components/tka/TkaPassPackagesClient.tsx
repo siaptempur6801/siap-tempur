@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Crown, Loader2, ShieldCheck, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { createTkaPassTransaction, syncPaymentStatus } from '@/app/actions/payment'
+import { trackProductEvent } from '@/lib/product-analytics'
 
 export type TkaPassPackage = {
     code: string
@@ -25,6 +26,11 @@ function rupiah(value: number) {
     }).format(value).replace(/\s+/g, '')
 }
 
+function analyticsPackageDays(days: number | null): 30 | 90 | undefined {
+    if (days === 30 || days === 90) return days
+    return undefined
+}
+
 export default function TkaPassPackagesClient({
     level,
     packages,
@@ -36,6 +42,14 @@ export default function TkaPassPackagesClient({
 }) {
     const router = useRouter()
     const [buying, setBuying] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (packages.length === 0) return
+        trackProductEvent('px_package_view', {
+            program: 'tka_smp',
+            surface: 'pass',
+        })
+    }, [packages.length])
 
     const bestValueCode = useMemo(() => {
         const pricedByDay = packages
@@ -50,8 +64,16 @@ export default function TkaPassPackagesClient({
         return pricedByDay[0]?.code ?? null
     }, [packages])
 
-    const buy = async (productCode: string) => {
+    const buy = async (productCode: string, durationDays: number | null) => {
         if (buying) return
+        const packageDays = analyticsPackageDays(durationDays)
+
+        trackProductEvent('px_package_select', {
+            program: 'tka_smp',
+            surface: 'pass',
+            package_days: packageDays,
+        })
+
         setBuying(productCode)
         const loadingToast = toast.loading(hasActivePass ? 'Menyiapkan perpanjangan akses...' : 'Menyiapkan pembayaran...')
         try {
@@ -61,6 +83,12 @@ export default function TkaPassPackagesClient({
                     id: loadingToast,
                     description: transaction.message,
                 })
+                trackProductEvent('px_checkout_state', {
+                    program: 'tka_smp',
+                    surface: 'pass',
+                    package_days: packageDays,
+                    payment_state: 'error',
+                })
                 return
             }
 
@@ -69,11 +97,30 @@ export default function TkaPassPackagesClient({
                 toast.error('Pembayaran belum siap dimuat', {
                     description: 'Muat ulang halaman lalu coba lagi.',
                 })
+                trackProductEvent('px_checkout_state', {
+                    program: 'tka_smp',
+                    surface: 'pass',
+                    package_days: packageDays,
+                    payment_state: 'error',
+                })
                 return
             }
 
+            trackProductEvent('px_checkout_state', {
+                program: 'tka_smp',
+                surface: 'pass',
+                package_days: packageDays,
+                payment_state: 'opened',
+            })
+
             window.snap.pay(transaction.token, {
                 onSuccess: async () => {
+                    trackProductEvent('px_checkout_state', {
+                        program: 'tka_smp',
+                        surface: 'pass',
+                        package_days: packageDays,
+                        payment_state: 'success',
+                    })
                     const id = toast.loading(hasActivePass ? 'Memperpanjang akses...' : 'Mengaktifkan akses...')
                     const ok = await syncPaymentStatus(transaction.orderId)
                     if (ok) {
@@ -85,6 +132,12 @@ export default function TkaPassPackagesClient({
                         })
                         router.refresh()
                     } else {
+                        trackProductEvent('px_checkout_state', {
+                            program: 'tka_smp',
+                            surface: 'pass',
+                            package_days: packageDays,
+                            payment_state: 'verifying',
+                        })
                         toast.info('Pembayaran sedang diverifikasi', {
                             id,
                             description: 'Tunggu sebentar lalu muat ulang halaman untuk melihat status terbaru.',
@@ -92,6 +145,12 @@ export default function TkaPassPackagesClient({
                     }
                 },
                 onPending: async () => {
+                    trackProductEvent('px_checkout_state', {
+                        program: 'tka_smp',
+                        surface: 'pass',
+                        package_days: packageDays,
+                        payment_state: 'pending',
+                    })
                     const id = toast.loading('Memperbarui status pembayaran...')
                     await syncPaymentStatus(transaction.orderId)
                     toast.info('Menunggu pembayaran', {
@@ -100,11 +159,23 @@ export default function TkaPassPackagesClient({
                     })
                 },
                 onError: () => {
+                    trackProductEvent('px_checkout_state', {
+                        program: 'tka_smp',
+                        surface: 'pass',
+                        package_days: packageDays,
+                        payment_state: 'error',
+                    })
                     toast.error('Pembayaran belum berhasil', {
                         description: 'Coba lagi atau pilih metode pembayaran lain.',
                     })
                 },
                 onClose: async () => {
+                    trackProductEvent('px_checkout_state', {
+                        program: 'tka_smp',
+                        surface: 'pass',
+                        package_days: packageDays,
+                        payment_state: 'closed',
+                    })
                     const id = toast.loading('Memeriksa status pembayaran...')
                     await syncPaymentStatus(transaction.orderId)
                     toast.info('Pembayaran belum selesai', {
@@ -116,6 +187,12 @@ export default function TkaPassPackagesClient({
             })
         } catch (error) {
             toast.dismiss(loadingToast)
+            trackProductEvent('px_checkout_state', {
+                program: 'tka_smp',
+                surface: 'pass',
+                package_days: packageDays,
+                payment_state: 'error',
+            })
             toast.error('Pembayaran belum bisa dimulai', {
                 description: error instanceof Error ? error.message : 'Coba lagi beberapa saat.',
             })
@@ -197,7 +274,7 @@ export default function TkaPassPackagesClient({
                                 type="button"
                                 disabled={Boolean(buying)}
                                 aria-busy={isBuyingThis}
-                                onClick={() => void buy(pkg.code)}
+                                onClick={() => void buy(pkg.code, pkg.durationDays)}
                                 className="inline-flex min-h-11 w-full items-center justify-center gap-2 border-2 border-gray-900 bg-blue-700 px-4 py-3 font-black text-white shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {isBuyingThis ? <Loader2 size={18} className="animate-spin" aria-hidden="true"/> : <Zap size={18} aria-hidden="true"/>}
