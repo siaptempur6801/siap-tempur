@@ -5,7 +5,7 @@ import { paymentService } from '@/src/services/payment.service'
 
 const BATCH_SIZE = 50
 const SUCCESS_STATUSES = new Set(['capture', 'settlement'])
-const FINAL_FAILURE_STATUSES = new Set(['expire', 'cancel', 'deny'])
+const FINAL_FAILURE_STATUSES = new Set(['expire', 'cancel', 'deny', 'failure'])
 
 type ReconcileSummary = {
     checked: number
