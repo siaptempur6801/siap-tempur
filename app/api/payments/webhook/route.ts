@@ -3,9 +3,8 @@ import { errorResponse, successResponse } from '@/lib/api-utils'
 import { webhookPayloadSchema } from '@/lib/validations/api'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
+import { isSupportedMidtransStatus, normalizeMidtransStatus } from '@/lib/midtrans-status'
 import { paymentService } from '@/src/services/payment.service'
-
-const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny', 'failure'])
 
 function signaturesMatch(expected: string, provided: string) {
     if (!/^[a-f0-9]{128}$/i.test(provided)) return false
@@ -36,9 +35,10 @@ export async function POST(req: Request) {
             gross_amount: string
             signature_key: string
         }
-        const { order_id, transaction_status, status_code, gross_amount, signature_key } = payload
+        const { order_id, status_code, gross_amount, signature_key } = payload
+        const transactionStatus = normalizeMidtransStatus(payload.transaction_status)
 
-        if (!MIDTRANS_STATUSES.has(transaction_status)) {
+        if (!isSupportedMidtransStatus(transactionStatus)) {
             return errorResponse('validation_error', 'Unsupported transaction status', 400)
         }
 
@@ -61,12 +61,12 @@ export async function POST(req: Request) {
         const providerTransactionId = typeof payload.transaction_id === 'string' ? payload.transaction_id : null
         const paymentMethod = typeof payload.payment_type === 'string' ? payload.payment_type : null
         const webhookEventId = providerTransactionId
-            ? `${providerTransactionId}:${transaction_status}`
-            : `${order_id}:${transaction_status}:${status_code}`
+            ? `${providerTransactionId}:${transactionStatus}`
+            : `${order_id}:${transactionStatus}:${status_code}`
 
         const result = await paymentService.processWebhook({
             orderNumber: order_id,
-            status: transaction_status,
+            status: transactionStatus,
             amount,
             providerTransactionId,
             paymentMethod,
