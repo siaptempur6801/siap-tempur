@@ -12,6 +12,14 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -20,36 +28,46 @@
 }
 
 :root {
-  /* Notebook Theme (Light Mode) */
+  /* Core paper/ink identity */
   --background: #fdfbf7;
-  /* Creamy Paper */
   --foreground: #1f2937;
-  /* Gray 800 (Pencil/Ink) */
 
+  /* Brand */
   --primary: #2563eb;
-  /* Blue 600 (Blue Pen) */
   --primary-foreground: #ffffff;
-
   --secondary: #f3f4f6;
-  /* Gray 100 */
   --secondary-foreground: #1f2937;
-
-  --muted: #e5e7eb;
-  /* Gray 200 */
-  --muted-foreground: #6b7280;
-  /* Gray 500 */
-
   --accent: #facc15;
-  /* Yellow 400 (Highlighter) */
   --accent-foreground: #1f2937;
 
+  /* Neutral */
+  --muted: #e5e7eb;
+  --muted-foreground: #6b7280;
   --border: #1f2937;
-  /* Dark Ink Border */
   --input: #e5e7eb;
   --ring: #2563eb;
+
+  /* Product Experience semantic states */
+  --success: #15803d;
+  --success-foreground: #ffffff;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+  --info: #0369a1;
+  --info-foreground: #ffffff;
+
+  /* Brand elevation hierarchy */
+  --shadow-brand-sm: 3px 3px 0 0 #111111;
+  --shadow-brand-md: 5px 5px 0 0 #111111;
+  --shadow-brand-lg: 8px 8px 0 0 #111111;
+
+  /* Shared layout rhythm */
+  --content-marketing: 80rem;
+  --content-learning: 75rem;
+  --content-reading: 48rem;
+  --touch-target: 2.75rem;
 }
-
-
 
 /* Custom Theme Scrollbar */
 ::-webkit-scrollbar {
@@ -85,6 +103,52 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Shared Product Experience helpers. These are opt-in so existing screens do not
+   change until they are intentionally migrated. */
+.px-container-marketing {
+  width: 100%;
+  max-width: var(--content-marketing);
+  margin-inline: auto;
+}
+
+.px-container-learning {
+  width: 100%;
+  max-width: var(--content-learning);
+  margin-inline: auto;
+}
+
+.px-container-reading {
+  width: 100%;
+  max-width: var(--content-reading);
+  margin-inline: auto;
+}
+
+.px-touch-target {
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
+.px-focus-ring:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+/* Learning mode should be calmer than public marketing surfaces. */
+[data-experience-mode="learning"] {
+  --px-card-shadow: var(--shadow-brand-sm);
+}
+
+/* Exam mode intentionally removes decorative motion/rotation from elements that
+   opt into the Product Experience mode hooks. */
+[data-experience-mode="exam"] {
+  --px-card-shadow: none;
+}
+
+[data-experience-mode="exam"] .px-decorative-motion {
+  animation: none !important;
+  transform: none !important;
+}
+
 /* Make all buttons show pointer cursor */
 button,
 [role="button"],
@@ -93,7 +157,6 @@ button,
 [type="reset"] {
   cursor: pointer;
 }
-
 
 /* Hide spin buttons for number inputs */
 /* Chrome, Safari, Edge, Opera */
@@ -179,6 +242,18 @@ input[type=number] {
 
   50% {
     opacity: 0.4;
+  }
+}
+
+/* Respect the user's motion preference across legacy and Product Experience UI. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
