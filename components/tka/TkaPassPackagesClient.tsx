@@ -204,21 +204,21 @@ export default function TkaPassPackagesClient({
     if (packages.length === 0) return null
 
     return (
-        <section className="space-y-4" aria-labelledby="tka-pass-packages-title">
-            <div>
-                <div className="inline-flex items-center gap-2 border-2 border-gray-900 bg-yellow-100 px-3 py-1 text-xs font-black uppercase">
-                    <Crown size={15} aria-hidden="true"/> Tempur Pass
+        <section className="space-y-5" aria-labelledby="tka-pass-packages-title">
+            <div className="max-w-3xl">
+                <div className="flex items-center gap-2 text-sm font-semibold text-amber-700">
+                    <Crown size={17} aria-hidden="true"/> Tempur Pass
                 </div>
-                <h2 id="tka-pass-packages-title" className="mt-2 text-2xl font-black">
+                <h2 id="tka-pass-packages-title" className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950 md:text-3xl">
                     {hasActivePass ? `Perpanjang akses TKA ${level}` : `Pilih akses belajar TKA ${level}`}
                 </h2>
-                <p className="mt-1 max-w-3xl text-sm font-semibold leading-relaxed text-gray-600">
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
                     {hasActivePass
                         ? 'Pilih durasi tambahan. Perpanjangan dimulai setelah masa aktifmu saat ini selesai, jadi sisa akses tidak terbuang.'
                         : 'Pilih durasi yang sesuai kebutuhanmu untuk membuka Full Tryout dan Mini Tryout selama masa aktif paket.'}
                 </p>
-                <p className="mt-2 text-xs font-bold text-gray-500">
-                    Semua pilihan di bawah dikenai biaya admin {rupiah(ADMIN_FEE)} satu kali pada setiap pembayaran.
+                <p className="mt-2 text-xs font-medium text-slate-500">
+                    Setiap pembayaran dikenai biaya admin {rupiah(ADMIN_FEE)} satu kali.
                 </p>
             </div>
 
@@ -232,42 +232,42 @@ export default function TkaPassPackagesClient({
                     return (
                         <article
                             key={pkg.code}
-                            className={`relative flex h-full flex-col border-2 border-gray-900 p-5 shadow-[5px_5px_0_0_#111] ${isBestValue ? 'bg-yellow-50' : 'bg-white'}`}
+                            className={`relative flex h-full flex-col rounded-3xl border p-5 shadow-[var(--px-shadow-xs)] md:p-6 ${isBestValue ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-white'}`}
                         >
                             {isBestValue && (
-                                <span className="absolute -right-2 -top-2 border-2 border-gray-900 bg-green-300 px-2 py-1 text-xs font-black uppercase">
+                                <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                                     Nilai terbaik
                                 </span>
                             )}
 
                             <div>
-                                <h3 className="pr-16 text-xl font-black">{pkg.name}</h3>
-                                <p className="mt-2 min-h-10 text-sm font-semibold leading-relaxed text-gray-600">
+                                <h3 className="pr-24 text-xl font-bold text-slate-950">{pkg.name}</h3>
+                                <p className="mt-2 min-h-10 text-sm leading-relaxed text-slate-600">
                                     {pkg.description || `Akses belajar TKA ${level} selama ${days} hari.`}
                                 </p>
                             </div>
 
-                            <div className="mt-5 border-y-2 border-dashed border-gray-300 py-4">
+                            <div className="mt-5 rounded-2xl bg-white/80 p-4">
                                 <div className="flex flex-wrap items-end justify-between gap-3">
                                     <div>
-                                        <div className="text-xs font-black uppercase tracking-wide text-gray-500">Harga paket</div>
-                                        <div className="mt-1 text-3xl font-black text-blue-700">{rupiah(pkg.price)}</div>
+                                        <div className="text-xs font-semibold text-slate-500">Harga paket</div>
+                                        <div className="mt-1 text-3xl font-extrabold tracking-tight text-blue-700">{rupiah(pkg.price)}</div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xs font-black uppercase tracking-wide text-gray-500">Total dibayar</div>
-                                        <div className="mt-1 text-xl font-black text-gray-900">{rupiah(totalPayment)}</div>
+                                        <div className="text-xs font-semibold text-slate-500">Total dibayar</div>
+                                        <div className="mt-1 text-xl font-bold text-slate-950">{rupiah(totalPayment)}</div>
                                     </div>
                                 </div>
-                                <p className="mt-2 text-xs font-semibold text-gray-500">
-                                    Total = harga paket {rupiah(pkg.price)} + biaya admin {rupiah(ADMIN_FEE)}.
+                                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                                    Harga paket {rupiah(pkg.price)} + biaya admin {rupiah(ADMIN_FEE)}.
                                 </p>
                             </div>
 
-                            <div className="my-5 flex-1 space-y-2 text-sm font-bold text-gray-700">
-                                <div className="flex items-start gap-2"><CheckCircle2 size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-green-700"/> Full Tryout TKA {level}</div>
-                                <div className="flex items-start gap-2"><CheckCircle2 size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-green-700"/> Mini Tryout selama paket aktif</div>
-                                <div className="flex items-start gap-2"><CheckCircle2 size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-green-700"/> Masa aktif {days} hari</div>
-                                <div className="flex items-start gap-2"><ShieldCheck size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-blue-700"/> Akses aktif setelah pembayaran terverifikasi</div>
+                            <div className="my-5 flex-1 space-y-2.5 text-sm text-slate-700">
+                                <Benefit icon={<CheckCircle2 size={17}/>} text={`Full Tryout TKA ${level}`} />
+                                <Benefit icon={<CheckCircle2 size={17}/>} text="Mini Tryout selama paket aktif" />
+                                <Benefit icon={<CheckCircle2 size={17}/>} text={`Masa aktif ${days} hari`} />
+                                <Benefit icon={<ShieldCheck size={17}/>} text="Akses aktif setelah pembayaran terverifikasi" blue />
                             </div>
 
                             <button
@@ -275,9 +275,9 @@ export default function TkaPassPackagesClient({
                                 disabled={Boolean(buying)}
                                 aria-busy={isBuyingThis}
                                 onClick={() => void buy(pkg.code, pkg.durationDays)}
-                                className="inline-flex min-h-11 w-full items-center justify-center gap-2 border-2 border-gray-900 bg-blue-700 px-4 py-3 font-black text-white shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-blue-600 bg-blue-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:border-blue-700 hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             >
-                                {isBuyingThis ? <Loader2 size={18} className="animate-spin" aria-hidden="true"/> : <Zap size={18} aria-hidden="true"/>}
+                                {isBuyingThis ? <Loader2 size={17} className="animate-spin" aria-hidden="true"/> : <Zap size={17} aria-hidden="true"/>}
                                 {isBuyingThis
                                     ? 'Menyiapkan pembayaran...'
                                     : hasActivePass
@@ -289,9 +289,18 @@ export default function TkaPassPackagesClient({
                 })}
             </div>
 
-            <p className="text-xs font-semibold leading-relaxed text-gray-500">
+            <p className="text-xs leading-relaxed text-slate-500">
                 Pembayaran diproses melalui Midtrans. Akses tidak berubah jika pembayaran dibatalkan atau belum terverifikasi.
             </p>
         </section>
+    )
+}
+
+function Benefit({ icon, text, blue = false }: { icon: React.ReactNode; text: string; blue?: boolean }) {
+    return (
+        <div className="flex items-start gap-2.5">
+            <span className={`mt-0.5 shrink-0 ${blue ? 'text-blue-700' : 'text-emerald-600'}`}>{icon}</span>
+            <span>{text}</span>
+        </div>
     )
 }
