@@ -30,49 +30,49 @@ export default function TkaReadinessCard({
     const confidencePercent = percent(readiness.confidencePercent)
 
     return (
-        <section className="border-2 border-gray-900 bg-emerald-50 p-5 shadow-[4px_4px_0_0_#111] md:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-800">
-                        <Gauge size={16}/> Kesiapan belajar
+        <section className="rounded-3xl border border-emerald-100 bg-white p-5 shadow-[var(--px-shadow-xs)] md:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-5">
+                <div className="max-w-3xl">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
+                        <Gauge size={17}/> Kesiapan belajar
                     </div>
-                    <h2 className="mt-1 text-2xl font-black">Kesiapan TKA SMP</h2>
-                    <p className="mt-1 max-w-3xl text-sm font-semibold leading-relaxed text-gray-600">
+                    <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">Kesiapan TKA SMP</h2>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
                         Ringkasan ini membantu kamu melihat seberapa siap hasil belajarmu saat ini dan mata pelajaran mana yang masih perlu lebih banyak latihan.
                     </p>
                     {showDashboardLink && (
                         <Link
                             href="/tka/smp/progress"
-                            className="mt-3 inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2 text-sm font-black text-white shadow-[3px_3px_0_0_#aaa] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                            className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2"
                         >
                             Lihat perkembangan <ArrowRight size={16}/>
                         </Link>
                     )}
                 </div>
-                <div className="min-w-40 border-2 border-gray-900 bg-white px-4 py-3 text-center shadow-[3px_3px_0_0_#111]">
-                    <div className="text-xs font-black uppercase tracking-wider text-gray-500">Kesiapan</div>
-                    <div className="text-4xl font-black">{readinessPercent.toFixed(1)}%</div>
-                    <div className="text-sm font-black text-emerald-800">{levelLabel(readiness.readinessLevel)}</div>
+                <div className="min-w-40 rounded-2xl bg-emerald-50 px-5 py-4 text-center">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Kesiapan</div>
+                    <div className="mt-1 text-4xl font-extrabold tracking-tight text-slate-950">{readinessPercent.toFixed(1)}%</div>
+                    <div className="mt-1 text-sm font-semibold text-emerald-700">{levelLabel(readiness.readinessLevel)}</div>
                 </div>
             </div>
 
-            <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.45fr]">
+            <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_0.42fr]">
                 <div className="grid gap-3 sm:grid-cols-2">
                     {readiness.subjects.map((subject) => {
                         const subjectPercent = percent(subject.readinessScore * 100)
                         return (
-                            <article key={subject.subjectId} className="border-2 border-gray-900 bg-white p-4">
-                                <div className="flex items-center justify-between gap-3">
+                            <article key={subject.subjectId} className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
+                                <div className="flex items-end justify-between gap-3">
                                     <div>
-                                        <div className="text-xs font-black uppercase text-gray-500">{subject.subjectCode}</div>
-                                        <h3 className="font-black">{subject.subjectName}</h3>
+                                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">{subject.subjectCode}</div>
+                                        <h3 className="mt-1 font-bold text-slate-950">{subject.subjectName}</h3>
                                     </div>
-                                    <div className="text-2xl font-black">{subjectPercent.toFixed(1)}%</div>
+                                    <div className="text-2xl font-extrabold tracking-tight text-slate-950">{subjectPercent.toFixed(1)}%</div>
                                 </div>
-                                <div className="mt-3 h-3 overflow-hidden border-2 border-gray-900 bg-gray-100">
-                                    <div className="h-full bg-emerald-300" style={{ width: `${subjectPercent}%` }}/>
+                                <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200">
+                                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${subjectPercent}%` }}/>
                                 </div>
-                                <div className="mt-2 text-xs font-bold text-gray-600">
+                                <div className="mt-2 text-xs font-medium text-slate-500">
                                     Materi terukur: {subject.evidencedNodes}/{subject.assessableNodes}
                                 </div>
                             </article>
@@ -80,17 +80,17 @@ export default function TkaReadinessCard({
                     })}
                 </div>
 
-                <aside className="border-2 border-gray-900 bg-[#fff9c4] p-4">
-                    <div className="flex items-center gap-2 text-xs font-black uppercase text-gray-600">
+                <aside className="rounded-2xl border border-amber-100 bg-amber-50/70 p-4">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-amber-700">
                         <ShieldCheck size={16}/> Kekuatan data belajar
                     </div>
-                    <div className="mt-2 text-3xl font-black">{confidencePercent.toFixed(1)}%</div>
-                    <div className="text-sm font-black">{confidenceLabel(readiness.confidenceLevel)}</div>
-                    <div className="mt-3 h-3 overflow-hidden border-2 border-gray-900 bg-white">
-                        <div className="h-full bg-yellow-300" style={{ width: `${confidencePercent}%` }}/>
+                    <div className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{confidencePercent.toFixed(1)}%</div>
+                    <div className="text-sm font-semibold text-amber-700">{confidenceLabel(readiness.confidenceLevel)}</div>
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-white">
+                        <div className="h-full rounded-full bg-amber-400" style={{ width: `${confidencePercent}%` }}/>
                     </div>
-                    <div className="mt-3 flex items-start gap-2 text-xs font-semibold leading-relaxed text-gray-600">
-                        <BarChart3 size={15} className="mt-0.5 shrink-0"/>
+                    <div className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-slate-600">
+                        <BarChart3 size={15} className="mt-0.5 shrink-0 text-amber-700"/>
                         Ringkasan akan semakin kuat setelah kamu mengerjakan lebih banyak bagian materi dan memiliki lebih banyak hasil latihan yang bisa dibandingkan.
                     </div>
                 </aside>
