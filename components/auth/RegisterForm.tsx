@@ -44,14 +44,16 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
             if (result?.error) {
                 toast.error(result.error)
             } else {
-                toast.success('Pendaftaran Berhasil!', {
-                    description: 'Silakan cek kotak masuk atau spam email Anda untuk verifikasi akun.',
+                toast.success('Akun berhasil dibuat', {
+                    description: 'Cek kotak masuk atau folder spam email kamu untuk verifikasi akun.',
                     duration: 5000,
                 })
                 router.push(`/login?verified=false&returnTo=${encodeURIComponent(safeReturnTo)}`)
             }
         } catch {
-            toast.error('Terjadi kesalahan saat pendaftaran')
+            toast.error('Akun belum bisa dibuat', {
+                description: 'Coba lagi beberapa saat.'
+            })
         } finally {
             setLoading(false)
         }
@@ -69,7 +71,9 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                 setLoading(false)
             }
         } catch {
-            toast.error('Gagal menghubungkan ke Google')
+            toast.error('Belum bisa daftar dengan Google', {
+                description: 'Coba lagi beberapa saat.'
+            })
             setLoading(false)
         }
     }
@@ -80,34 +84,34 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-pink-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
             <div className="text-center">
-                <h2 className="font-handwriting text-4xl font-bold tracking-tight text-gray-900">Buat Akun Baru</h2>
-                <p className="mt-2 text-gray-600 font-handwriting text-xl">Mulai persiapan SKD-mu hari ini.</p>
+                <h2 className="font-handwriting text-4xl font-bold tracking-tight text-gray-900">Buat akun SiapTempur</h2>
+                <p className="mt-2 text-gray-600 font-handwriting text-xl">Mulai belajar CPNS atau TKA dalam satu akun.</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-6">
                 <div className="space-y-4">
                     <div>
-                        <label htmlFor="fullName" className="sr-only">Nama Lengkap</label>
+                        <label htmlFor="fullName" className="sr-only">Nama lengkap</label>
                         <input
                             id="fullName"
                             type="text"
                             {...register('fullName')}
                             className={`relative block w-full rounded-lg border-2 bg-[#fdfbf7] px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-lg font-handwriting ${errors.fullName ? 'border-red-500 focus:border-red-500' : 'border-gray-900 focus:border-blue-600'}`}
-                            placeholder="Nama Lengkap"
+                            placeholder="Nama lengkap"
                         />
                         {errors.fullName && (
                             <p className="mt-1 text-sm text-red-600 font-handwriting">{errors.fullName.message}</p>
                         )}
                     </div>
                     <div>
-                        <label htmlFor="email-address" className="sr-only">Email address</label>
+                        <label htmlFor="email-address" className="sr-only">Alamat email</label>
                         <input
                             id="email-address"
                             type="email"
                             autoComplete="email"
                             {...register('email')}
                             className={`relative block w-full rounded-lg border-2 bg-[#fdfbf7] px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-lg font-handwriting ${errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-900 focus:border-blue-600'}`}
-                            placeholder="Alamat Email"
+                            placeholder="Alamat email"
                         />
                         {errors.email && (
                             <p className="mt-1 text-sm text-red-600 font-handwriting">{errors.email.message}</p>
@@ -115,14 +119,14 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                     </div>
                     <div>
                         <div className="relative">
-                            <label htmlFor="password" className="sr-only">Password</label>
+                            <label htmlFor="password" className="sr-only">Kata sandi</label>
                             <input
                                 id="password"
                                 type={showPassword ? "text" : "password"}
                                 autoComplete="new-password"
                                 {...register('password')}
                                 className={`relative block w-full rounded-lg border-2 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 sm:text-lg font-handwriting ${errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-900 focus:border-blue-600'}`}
-                                placeholder="Kata Sandi (Min. 8 karakter)"
+                                placeholder="Kata sandi (min. 8 karakter)"
                             />
                             <button
                                 type="button"
@@ -145,7 +149,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                         className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-xl font-bold font-handwriting text-white hover:bg-blue-600 hover:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all border-2 border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading && <Loader2 className="animate-spin" size={24} />}
-                        {loading ? 'Mendaftar...' : 'Daftar Sekarang'}
+                        {loading ? 'Membuat akun...' : 'Daftar gratis'}
                     </button>
                 </div>
             </form>
@@ -180,7 +184,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                             fill="#FBBC05"
                         />
                         <path
-                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 0 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                             fill="#EA4335"
                         />
                     </svg>
