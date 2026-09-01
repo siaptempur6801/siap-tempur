@@ -6,7 +6,7 @@ import { TKA_LEVELS, tkaLevelPath } from '@/src/tka/context'
 
 export const metadata: Metadata = {
     title: 'TKA SMP - SiapTempur',
-    description: 'Persiapan TKA SMP dengan Full Tryout, Mini Tryout, remedial, mastery, readiness, dan analisis progress di SiapTempur.',
+    description: 'Persiapan TKA SMP dengan latihan, mini tryout, full tryout, pembahasan, latihan perbaikan, dan analisis perkembangan belajar.',
     alternates: { canonical: '/tka' },
 }
 
@@ -16,22 +16,22 @@ export const revalidate = 0
 const LEVEL_COPY = {
     SD: {
         title: 'TKA SD',
-        subtitle: 'Fondasi literasi dan numerasi',
-        description: 'Jalur SD sedang disiapkan untuk rilis setelah Production V1.',
+        subtitle: 'Segera hadir',
+        description: 'Latihan dan tryout TKA SD sedang kami siapkan.',
         icon: School,
         available: false,
     },
     SMP: {
         title: 'TKA SMP',
-        subtitle: 'Jalur aktif Production V1',
-        description: 'Full Tryout, Mini Tryout, salah-soal, remedial, mastery, rekomendasi, readiness, dan progress dashboard.',
+        subtitle: 'Siap dipelajari',
+        description: 'Latihan, mini tryout, full tryout, pembahasan, soal yang perlu diulang, dan rekomendasi belajar dalam satu jalur.',
         icon: BookOpenCheck,
         available: true,
     },
     SMA: {
         title: 'TKA SMA',
         subtitle: 'Segera hadir',
-        description: 'Jalur SMA tetap berada di roadmap dan belum dibuka untuk Production V1.',
+        description: 'Latihan dan tryout TKA SMA sedang kami siapkan.',
         icon: GraduationCap,
         available: false,
     },
@@ -55,27 +55,27 @@ export default async function TkaLandingPage({
                     </Link>
                     {user ? (
                         <span className="border-2 border-gray-900 bg-green-100 px-3 py-2 text-sm font-black shadow-[3px_3px_0_0_#111]">
-                            Akun siap digunakan
+                            Siap lanjut belajar
                         </span>
                     ) : (
                         <Link
                             href="/login?returnTo=%2Ftka%2Fsmp"
                             className="border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
                         >
-                            Masuk untuk TKA
+                            Masuk untuk mulai TKA
                         </Link>
                     )}
                 </div>
 
                 <header className="border-2 border-gray-900 bg-white p-6 shadow-[7px_7px_0_0_#111] md:p-9">
                     <div className="inline-flex border-2 border-gray-900 bg-cyan-200 px-3 py-1 text-xs font-black uppercase">
-                        SiapTempur TKA · Production V1
+                        SiapTempur TKA
                     </div>
                     <h1 className="mt-4 font-handwriting text-4xl font-black leading-tight md:text-6xl">
-                        Fokus dulu ke TKA SMP.
+                        Belajar TKA lebih terarah.
                     </h1>
                     <p className="mt-3 max-w-3xl text-base font-semibold leading-relaxed text-gray-600 md:text-lg">
-                        Production V1 membuka TKA SMP sebagai jalur aktif. SD dan SMA tetap terlihat sebagai roadmap, tetapi tidak akan mengarahkan user ke flow yang belum production-ready.
+                        Mulai dari TKA SMP. Latihan, ikut tryout, pelajari pembahasan, lalu fokus memperbaiki bagian yang masih lemah.
                     </p>
                 </header>
 
@@ -99,13 +99,13 @@ export default async function TkaLandingPage({
                                             <Icon size={25} />
                                         </div>
                                         <span className="inline-flex items-center gap-1 border-2 border-gray-900 bg-gray-100 px-2 py-1 text-xs font-black uppercase">
-                                            <LockKeyhole size={13} /> Belum dibuka
+                                            <LockKeyhole size={13} /> Segera hadir
                                         </span>
                                     </div>
                                     <h2 className="mt-5 text-2xl font-black">{copy.title}</h2>
                                     <p className="mt-1 text-sm font-black uppercase text-gray-500">{copy.subtitle}</p>
                                     <p className="mt-3 min-h-20 font-semibold text-gray-600">{copy.description}</p>
-                                    <div className="mt-5 font-black text-gray-500">Masuk roadmap setelah V1</div>
+                                    <div className="mt-5 font-black text-gray-500">Kami sedang menyiapkannya.</div>
                                 </article>
                             )
                         }
@@ -123,13 +123,13 @@ export default async function TkaLandingPage({
                                     <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-cyan-200">
                                         <Icon size={25} />
                                     </div>
-                                    <span className="border-2 border-gray-900 bg-green-100 px-2 py-1 text-xs font-black uppercase">Aktif</span>
+                                    <span className="border-2 border-gray-900 bg-green-100 px-2 py-1 text-xs font-black uppercase">Tersedia</span>
                                 </div>
                                 <h2 className="mt-5 text-2xl font-black">{copy.title}</h2>
                                 <p className="mt-1 text-sm font-black uppercase text-blue-700">{copy.subtitle}</p>
                                 <p className="mt-3 min-h-20 font-semibold text-gray-600">{copy.description}</p>
                                 <div className="mt-5 inline-flex items-center gap-2 font-black text-blue-700">
-                                    {user ? 'Buka jalur' : 'Masuk & mulai'} <ArrowRight className="transition group-hover:translate-x-1" size={18} />
+                                    {user ? 'Mulai belajar' : 'Masuk dan mulai'} <ArrowRight className="transition group-hover:translate-x-1" size={18} />
                                 </div>
                             </Link>
                         )
@@ -138,7 +138,7 @@ export default async function TkaLandingPage({
 
                 <div className="flex flex-wrap items-center justify-between gap-4 border-2 border-dashed border-gray-400 bg-white/60 p-4 text-sm font-semibold text-gray-600">
                     <span>Persiapan CPNS/SKD juga tersedia dalam akun yang sama.</span>
-                    <Link className="font-black text-blue-700 underline" href="/cpns">Lihat SiapTempur CPNS</Link>
+                    <Link className="font-black text-blue-700 underline" href="/cpns">Lihat persiapan CPNS</Link>
                 </div>
             </div>
         </main>
