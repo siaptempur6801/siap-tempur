@@ -6,6 +6,7 @@ import ResultReviewClient from '@/components/practice/ResultReviewClient'
 import PaperBackground from '@/components/PaperBackground'
 import { practiceResultService } from '@/src/services/practice-result.service'
 import { cn } from '@/lib/utils'
+import TrackedLink from '@/components/analytics/TrackedLink'
 
 function formatDuration(startedAt: string | null, submittedAt: string | null) {
     if (!startedAt || !submittedAt) return '-'
@@ -54,12 +55,14 @@ export default async function PracticeResultPage({
         <main className="min-h-screen bg-[#fffdf5] px-4 py-6 font-handwriting sm:px-6 lg:px-8">
             <div className="mx-auto max-w-6xl space-y-6">
                 <div className="flex items-center justify-between gap-4">
-                    <Link
+                    <TrackedLink
                         href={back.href}
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-gray-900 bg-white px-4 py-2 font-black text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:shadow-none"
+                        eventName="px_result_action"
+                        eventProperties={{ program: 'cpns', surface: 'result', cta: `back_${back.label.replace(/\s+/g, '_')}` }}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-gray-900 bg-white px-4 py-2 font-black text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                     >
                         <ArrowLeft size={18} /> Kembali ke {back.label}
-                    </Link>
+                    </TrackedLink>
                 </div>
 
                 <section className="relative overflow-hidden rounded-3xl border-2 border-gray-900 bg-white p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:p-7">

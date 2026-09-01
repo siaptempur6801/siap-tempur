@@ -15,6 +15,7 @@ import {
     User,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import TrackedLink from '@/components/analytics/TrackedLink'
 
 interface DashboardData {
     user: {
@@ -170,12 +171,14 @@ export default function DashboardClient({ data, greeting }: Props) {
                         <p className="mt-3 max-w-2xl font-medium leading-relaxed text-gray-600">
                             {recommendation.description}
                         </p>
-                        <Link
+                        <TrackedLink
                             href={recommendation.href}
+                            eventName="px_dashboard_action"
+                            eventProperties={{ program: 'cpns', surface: 'dashboard', cta: data.activeSession ? 'resume_recommendation' : 'learning_recommendation' }}
                             className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 border-2 border-gray-900 bg-blue-600 px-5 py-3 font-black text-white shadow-[4px_4px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
                         >
                             Kerjakan sekarang <ArrowRight size={18} />
-                        </Link>
+                        </TrackedLink>
                     </div>
                 </article>
 
@@ -190,9 +193,14 @@ export default function DashboardClient({ data, greeting }: Props) {
                             <Ticket size={24} />
                         </div>
                     </div>
-                    <Link href="/cpns/dashboard/beli-paket" className="mt-5 inline-flex items-center gap-2 text-sm font-black text-blue-700 hover:underline">
+                    <TrackedLink
+                        href="/cpns/dashboard/beli-paket"
+                        eventName="px_dashboard_action"
+                        eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'token_packages' }}
+                        className="mt-5 inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                    >
                         Lihat pilihan token <ArrowRight size={15} />
-                    </Link>
+                    </TrackedLink>
                 </article>
             </section>
 
@@ -202,9 +210,14 @@ export default function DashboardClient({ data, greeting }: Props) {
                         <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Perkembangan belajar</p>
                         <h2 id="learning-summary-title" className="mt-1 font-handwriting text-3xl font-black text-gray-900">Ringkasan terbaru</h2>
                     </div>
-                    <Link href="/cpns/dashboard/riwayat" className="inline-flex items-center gap-2 text-sm font-black text-blue-700 hover:underline">
+                    <TrackedLink
+                        href="/cpns/dashboard/riwayat"
+                        eventName="px_dashboard_action"
+                        eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'all_results' }}
+                        className="inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                    >
                         Lihat semua hasil <ArrowRight size={16} />
-                    </Link>
+                    </TrackedLink>
                 </div>
 
                 {data.lastExam ? (
@@ -219,12 +232,14 @@ export default function DashboardClient({ data, greeting }: Props) {
                                 {data.lastExam.passed && <CheckCircle2 size={16} />}
                                 {data.lastExam.passed ? 'Target SKD tercapai' : 'Masih ada bagian yang perlu diperkuat'}
                             </div>
-                            <Link
+                            <TrackedLink
                                 href={`/cpns/dashboard/tryout/${data.lastExam.id}/result`}
-                                className="mt-6 inline-flex items-center gap-2 text-sm font-black text-blue-200 hover:text-white hover:underline"
+                                eventName="px_dashboard_action"
+                                eventProperties={{ program: 'cpns', surface: 'dashboard', cta: 'latest_result' }}
+                                className="mt-6 inline-flex min-h-11 items-center gap-2 text-sm font-black text-blue-200 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900"
                             >
                                 Lihat hasil dan pembahasan <ArrowRight size={15} />
-                            </Link>
+                            </TrackedLink>
                         </article>
 
                         <div className="grid gap-3 sm:grid-cols-3">
