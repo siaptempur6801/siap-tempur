@@ -229,50 +229,52 @@ export default async function TkaPassPage({
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <Link
                         href={base}
-                        className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 font-black shadow-[3px_3px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                        className="inline-flex min-h-11 items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 font-black shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2"
                     >
-                        <ArrowLeft size={18}/> Kembali ke TKA SMP
+                        <ArrowLeft size={18} aria-hidden="true"/> Kembali ke TKA SMP
                     </Link>
-                    <span className="inline-flex items-center gap-2 border-2 border-gray-900 bg-amber-100 px-3 py-1 text-xs font-black uppercase">
-                        <ShieldCheck size={16}/> Staging Monetization V1
+                    <span className="inline-flex items-center gap-2 border-2 border-gray-900 bg-green-100 px-3 py-1 text-xs font-black uppercase">
+                        <ShieldCheck size={16} aria-hidden="true"/> Pembayaran melalui Midtrans
                     </span>
                 </div>
 
                 <header className="border-2 border-gray-900 bg-white p-6 shadow-[6px_6px_0_0_#111] md:p-8">
                     <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-blue-700">
-                        <Sparkles size={16}/> Tempur Pass TKA SMP
+                        <Sparkles size={16} aria-hidden="true"/> Tempur Pass TKA SMP
                     </div>
-                    <h1 className="mt-2 font-handwriting text-4xl font-black md:text-5xl">Pilih Tempur Pass</h1>
-                    <p className="mt-2 max-w-3xl font-semibold text-gray-600">
-                        Aktifkan akses premium TKA SMP selama masa pass. Harga, order, pembayaran, dan entitlement diproses dari catalog server-side; halaman ini hanya tersedia pada staging selama Milestone 4.
+                    <h1 className="mt-2 font-handwriting text-4xl font-black md:text-5xl">Pilih paket yang sesuai target belajarmu</h1>
+                    <p className="mt-2 max-w-3xl font-semibold leading-relaxed text-gray-600">
+                        Tempur Pass membuka akses belajar premium TKA SMP selama durasi paket. Harga dan total pembayaran ditampilkan sebelum kamu memilih metode pembayaran.
                     </p>
                 </header>
 
                 {passAccess.hasActivePass ? (
                     <section
                         data-testid="tka-pass-status-active"
+                        role="status"
+                        aria-live="polite"
                         className="border-2 border-gray-900 bg-green-100 p-5 shadow-[4px_4px_0_0_#111]"
                     >
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div>
                                 <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-green-800">
-                                    <CheckCircle2 size={17}/> Tempur Pass aktif
+                                    <CheckCircle2 size={17} aria-hidden="true"/> Tempur Pass aktif
                                 </div>
-                                <h2 className="mt-2 text-2xl font-black">Akses premium TKA SMP sedang aktif</h2>
+                                <h2 className="mt-2 text-2xl font-black">Akses TKA SMP kamu sedang aktif</h2>
                                 <p className="mt-1 font-semibold text-gray-700">
                                     {passAccess.accessThrough
-                                        ? `Akses kamu sudah aman sampai ${formatAccessDate(passAccess.accessThrough)}.`
+                                        ? `Kamu bisa menggunakan fitur paket sampai ${formatAccessDate(passAccess.accessThrough)}.`
                                         : 'Akses kamu aktif tanpa tanggal berakhir.'}
                                 </p>
                                 {passAccess.scheduledExtensions > 0 && (
                                     <p className="mt-1 text-sm font-bold text-green-800">
-                                        Termasuk {passAccess.scheduledExtensions} perpanjangan yang sudah terjadwal tanpa membuang sisa masa aktif.
+                                        Ada {passAccess.scheduledExtensions} perpanjangan yang sudah terjadwal. Sisa masa aktifmu tidak terbuang.
                                     </p>
                                 )}
                             </div>
                             {passAccess.accessThrough && (
                                 <div className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-3 py-2 text-sm font-black">
-                                    <CalendarDays size={17}/> Sampai {formatAccessDate(passAccess.accessThrough)}
+                                    <CalendarDays size={17} aria-hidden="true"/> Sampai {formatAccessDate(passAccess.accessThrough)}
                                 </div>
                             )}
                         </div>
@@ -284,7 +286,7 @@ export default async function TkaPassPage({
                     >
                         <p className="font-black">Belum ada Tempur Pass aktif.</p>
                         <p className="mt-1 text-sm font-semibold text-gray-600">
-                            Pilih paket di bawah untuk membuka akses premium TKA SMP.
+                            Kamu tetap bisa menggunakan akses gratis yang tersedia. Pilih paket di bawah saat ingin membuka akses premium.
                         </p>
                     </section>
                 )}
@@ -296,9 +298,15 @@ export default async function TkaPassPage({
                         hasActivePass={passAccess.hasActivePass}
                     />
                 ) : (
-                    <section className="border-2 border-dashed border-gray-400 bg-white p-8 text-center">
+                    <section className="border-2 border-dashed border-gray-400 bg-white p-8 text-center" role="status">
                         <p className="font-black">Paket Tempur Pass belum tersedia.</p>
-                        <p className="mt-1 text-sm font-semibold text-gray-500">Coba lagi setelah catalog pembayaran aktif.</p>
+                        <p className="mt-1 text-sm font-semibold text-gray-500">Kamu tetap bisa kembali ke TKA SMP dan memakai fitur gratis yang tersedia.</p>
+                        <Link
+                            href={base}
+                            className="mt-4 inline-flex min-h-11 items-center justify-center border-2 border-gray-900 bg-gray-900 px-4 py-2 font-black text-white shadow-[3px_3px_0_0_#aaa] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2"
+                        >
+                            Kembali ke TKA SMP
+                        </Link>
                     </section>
                 )}
             </div>
