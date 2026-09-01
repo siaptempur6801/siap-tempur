@@ -13,8 +13,6 @@ interface NavItemProps {
 
 export function NavItem({ href, icon, label, badge }: NavItemProps) {
     const pathname = usePathname()
-
-    // Check if active - handle dashboard root as exact match, others as prefix
     const isActive = href.endsWith('/dashboard')
         ? pathname === href
         : pathname.startsWith(href)
@@ -22,22 +20,24 @@ export function NavItem({ href, icon, label, badge }: NavItemProps) {
     return (
         <Link
             href={href}
+            aria-current={isActive ? 'page' : undefined}
             className={cn(
-                "flex items-center justify-between px-3 py-2.5 rounded-md transition-all duration-200 group font-handwriting text-xl border-2",
+                'flex min-h-11 items-center justify-between rounded-md border-2 px-3 py-2 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
                 isActive
-                    ? "bg-yellow-200 text-gray-900 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] -translate-y-1 translate-x-1 font-bold"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-transparent hover:border-gray-200"
+                    ? 'border-gray-900 bg-yellow-100 text-gray-900'
+                    : 'border-transparent text-gray-600 hover:border-gray-200 hover:bg-white hover:text-gray-900'
             )}
         >
             <div className="flex items-center gap-3">
-                <span className={cn("transition-transform group-hover:rotate-12", isActive && "text-gray-900")}>
+                <span className={cn('shrink-0', isActive ? 'text-blue-700' : 'text-gray-500')}>
                     {icon}
                 </span>
                 <span>{label}</span>
             </div>
             {badge && (
-                <span className={cn("text-xs font-bold px-1.5 py-0.5 rounded-sm border-2",
-                    isActive ? "bg-white border-gray-900 text-gray-900" : "bg-blue-100 border-blue-200 text-blue-600"
+                <span className={cn(
+                    'border px-1.5 py-0.5 text-[10px] font-black uppercase',
+                    isActive ? 'border-gray-900 bg-white text-gray-900' : 'border-blue-200 bg-blue-50 text-blue-700'
                 )}>
                     {badge}
                 </span>
@@ -48,8 +48,6 @@ export function NavItem({ href, icon, label, badge }: NavItemProps) {
 
 export function MobileNavItem({ href, icon, label }: NavItemProps) {
     const pathname = usePathname()
-
-    // Check if active
     const isActive = href.endsWith('/dashboard')
         ? pathname === href
         : pathname.startsWith(href)
@@ -57,20 +55,19 @@ export function MobileNavItem({ href, icon, label }: NavItemProps) {
     return (
         <Link
             href={href}
+            aria-current={isActive ? 'page' : undefined}
             className={cn(
-                "flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-md transition-all active:scale-95",
-                isActive
-                    ? "text-blue-600 font-bold"
-                    : "text-gray-500 hover:text-gray-900"
+                'flex min-h-14 flex-col items-center justify-center gap-1 rounded-md px-1 py-1.5 text-[11px] font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-inset',
+                isActive ? 'text-gray-900' : 'text-gray-500 hover:text-gray-900'
             )}
         >
-            <div className={cn("p-1 rounded-md transition-all", isActive ? "bg-yellow-200 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "")}>
-                {icon}
-            </div>
             <span className={cn(
-                "text-[10px] font-handwriting text-lg leading-none mt-1",
-                isActive && "font-bold text-gray-900"
-            )}>{label}</span>
+                'flex h-8 w-9 items-center justify-center rounded-md border-2 transition-colors',
+                isActive ? 'border-gray-900 bg-yellow-100 text-blue-700' : 'border-transparent'
+            )}>
+                {icon}
+            </span>
+            <span className="leading-none">{label}</span>
         </Link>
     )
 }
