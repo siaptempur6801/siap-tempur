@@ -25,15 +25,18 @@ test.describe('Public Pages Flow', () => {
     await expect(page.getByRole('link', { name: /Kembali/i })).toHaveAttribute('href', '/');
   });
 
-  test('TKA public hanya membuka SMP untuk Production V1', async ({ page }) => {
+  test('TKA public memperkenalkan satu dashboard SD SMP SMA dengan SMP tersedia', async ({ page }) => {
     await page.goto('/tka');
-    await expect(page.getByRole('heading', { name: /Belajar TKA lebih terarah/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Satu dashboard untuk perjalanan TKA dari SD sampai SMA/i })).toBeVisible();
     await expect(page.getByText('TKA SD', { exact: true })).toBeVisible();
+    await expect(page.getByText('TKA SMP', { exact: true })).toBeVisible();
     await expect(page.getByText('TKA SMA', { exact: true })).toBeVisible();
 
-    const smpEntry = page.getByRole('link', { name: /TKA SMP.*Masuk dan mulai/i });
-    await expect(smpEntry).toHaveAttribute('href', '/login?returnTo=%2Ftka%2Fsmp');
-    await expect(page.getByText('Kami sedang menyiapkannya.', { exact: true })).toHaveCount(2);
+    const dashboardEntry = page.getByRole('link', { name: /Masuk ke Dashboard TKA/i });
+    await expect(dashboardEntry).toHaveAttribute('href', '/login?returnTo=%2Ftka');
+    await expect(page.getByRole('link', { name: 'Lihat TKA SMP', exact: true })).toHaveAttribute('href', '/tka/smp');
+    await expect(page.getByText('Segera hadir', { exact: true })).toHaveCount(2);
+    await expect(page.getByText('Tersedia', { exact: true })).toBeVisible();
   });
 
   test('menampilkan halaman 404 jika URL tidak valid', async ({ page }) => {
