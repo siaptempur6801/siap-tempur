@@ -5,7 +5,7 @@ import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { paymentService } from '@/src/services/payment.service'
 
-const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny'])
+const MIDTRANS_STATUSES = new Set(['pending', 'capture', 'settlement', 'expire', 'cancel', 'deny', 'failure'])
 
 function signaturesMatch(expected: string, provided: string) {
     if (!/^[a-f0-9]{128}$/i.test(provided)) return false
