@@ -71,6 +71,19 @@ describe('payments webhook route', () => {
         }))
     })
 
+    it('normalizes and accepts a supported Midtrans refund status', async () => {
+        processWebhook.mockResolvedValueOnce({ alreadyProcessed: false, paid: false })
+        const payload = signedMidtransPayload({ transaction_status: ' Refund ' })
+
+        const response = await POST(requestFor(payload))
+
+        expect(response.status).toBe(200)
+        expect(processWebhook).toHaveBeenCalledWith(expect.objectContaining({
+            status: 'refund',
+            eventId: 'midtrans-tx-001:refund',
+        }))
+    })
+
     it('rejects an invalid Midtrans signature before the payment service is called', async () => {
         const payload = { ...signedMidtransPayload(), signature_key: '0'.repeat(128) }
 
@@ -81,7 +94,7 @@ describe('payments webhook route', () => {
     })
 
     it('rejects unsupported transaction statuses', async () => {
-        const payload = signedMidtransPayload({ transaction_status: 'refund' })
+        const payload = signedMidtransPayload({ transaction_status: 'mystery_status' })
 
         const response = await POST(requestFor(payload))
 
