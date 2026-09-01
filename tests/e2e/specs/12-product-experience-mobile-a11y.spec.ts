@@ -67,9 +67,9 @@ test.describe('Product Experience mobile accessibility regression', () => {
         await expect(passwordToggle).toBeFocused()
 
         await page.getByRole('button', { name: 'Daftar gratis', exact: true }).click()
-        await expect(page.locator('#fullName')).toHaveAttribute('aria-invalid', 'true')
-        await expect(page.locator('#email')).toHaveAttribute('aria-invalid', 'true')
-        await expect(page.locator('#password')).toHaveAttribute('aria-invalid', 'true')
+        await expect(page.getByLabel('Nama lengkap', { exact: true })).toHaveAttribute('aria-invalid', 'true')
+        await expect(page.getByLabel('Alamat email', { exact: true })).toHaveAttribute('aria-invalid', 'true')
+        await expect(page.getByLabel('Kata sandi', { exact: true })).toHaveAttribute('aria-invalid', 'true')
         await expect(page.locator('#register-name-error')).toHaveAttribute('role', 'alert')
         await expect(page.locator('#register-email-error')).toHaveAttribute('role', 'alert')
         await expect(page.locator('#register-password-error')).toHaveAttribute('role', 'alert')
