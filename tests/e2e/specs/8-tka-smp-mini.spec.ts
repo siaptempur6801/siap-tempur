@@ -54,7 +54,7 @@ async function assertHistoryOpensResult(page: Page, examTitle: string) {
     await expect(entry).toBeVisible()
     await entry.click()
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i)
-    await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Sesi selesai. Sekarang lihat apa yang perlu diperbaiki.', exact: true })).toBeVisible()
     await page.getByRole('link', { name: 'Kembali ke TKA SMP', exact: true }).click()
     await page.waitForURL(/\/tka\/smp(?:\?.*)?$/)
 }
@@ -77,22 +77,22 @@ async function assertProgressDashboard(page: Page, session: DisposableTkaSession
     const readiness = await readOwnTkaReadiness(session)
     const openWrong = await readOwnTkaWrongQuestionState(session)
 
-    const dashboardLink = page.getByRole('link', { name: 'Lihat Progress Dashboard', exact: true })
-    await expect(dashboardLink).toBeVisible()
-    await dashboardLink.click()
+    const progressLink = page.getByRole('link', { name: /Perkembangan|Progress/i }).first()
+    await expect(progressLink).toBeVisible()
+    await progressLink.click()
     await page.waitForURL(/\/tka\/smp\/progress$/i)
 
-    await expect(page.getByRole('heading', { name: 'Progress Dashboard TKA SMP', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Perkembangan belajar TKA SMP', exact: true })).toBeVisible()
     const readinessCard = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Kesiapan TKA SMP', exact: true }) })
     await expect(readinessCard).toBeVisible()
     await expect(readinessCard).toContainText(`${readiness.readiness_percent.toFixed(1)}%`)
 
     const completedCard = page.locator('article').filter({ hasText: 'Tryout selesai' }).first()
     await expect(completedCard).toContainText('1')
-    const gapCard = page.locator('article').filter({ hasText: 'Gap terbuka' }).first()
+    const gapCard = page.locator('article').filter({ hasText: 'Soal perlu diulang' }).first()
     await expect(gapCard).toContainText(String(openWrong.length))
 
-    await expect(page.getByRole('heading', { name: 'Progress per mapel', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Lihat kekuatan tiap mata pelajaran', exact: true })).toBeVisible()
     await expect(page.getByText('BIN', { exact: true }).first()).toBeVisible()
     await expect(page.getByText('MAT', { exact: true }).first()).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya', exact: true })).toBeVisible()
@@ -128,8 +128,8 @@ async function finishMini(page: Page, expectedSubject: string) {
     await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
-    await expect(page.getByRole('heading', { name: 'Tryout selesai.' })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Review & Pembahasan' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Sesi selesai. Sekarang lihat apa yang perlu diperbaiki.', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Tinjau jawaban satu per satu', exact: true })).toBeVisible()
     await expect(page.getByText('Mini Tryout · TKA/SMP')).toBeVisible()
     await expect(page.getByText(/1\/15/).first()).toBeVisible()
 }
