@@ -8,13 +8,13 @@ import TrackedLink from '@/components/analytics/TrackedLink'
 
 const baseSections = [
     { id: 'peta-skd', label: 'Peta SKD' },
-    { id: 'alur', label: 'Alur belajar' },
-    { id: 'pemulihan', label: 'Soal salah' },
-    { id: 'bandingkan', label: 'Bedanya' },
+    { id: 'alur', label: 'Cara belajar' },
     { id: 'mulai-dari-mana', label: 'Mulai dari mana' },
-    { id: 'latihan', label: 'Latihan' },
-    { id: 'event', label: 'Event' },
-    { id: 'paket', label: 'Paket' },
+    { id: 'latihan', label: 'Pilihan latihan' },
+    { id: 'pemulihan', label: 'Soal salah & remedial' },
+    { id: 'bandingkan', label: 'Bedanya SiapTempur' },
+    { id: 'event', label: 'Event tryout' },
+    { id: 'paket', label: 'Paket & token' },
     { id: 'faq', label: 'FAQ' },
 ] as const
 
@@ -29,15 +29,28 @@ export default function CpnsLandingInteractions({
     isLoggedIn,
     hasArticles,
 }: CpnsLandingInteractionsProps) {
-    const [activeSection, setActiveSection] = useState('peta-skd')
+    const [activeSection, setActiveSection] = useState('')
     const [menuOpen, setMenuOpen] = useState(false)
+    const [heroPassed, setHeroPassed] = useState(false)
+    const [finalCtaVisible, setFinalCtaVisible] = useState(false)
 
     const sections = useMemo(
         () => hasArticles
-            ? [...baseSections.slice(0, -1), { id: 'artikel', label: 'Artikel' }, baseSections[baseSections.length - 1]]
+            ? [...baseSections.slice(0, -1), { id: 'artikel', label: 'Artikel CPNS' }, baseSections[baseSections.length - 1]]
             : [...baseSections],
         [hasArticles],
     )
+
+    const desktopNav = useMemo(() => [
+        { id: 'peta-skd', label: 'Peta SKD', matches: ['peta-skd'] },
+        { id: 'alur', label: 'Cara kerja', matches: ['alur', 'pemulihan', 'bandingkan'] },
+        { id: 'mulai-dari-mana', label: 'Mulai', matches: ['mulai-dari-mana'] },
+        { id: 'latihan', label: 'Latihan', matches: ['latihan', 'event'] },
+        { id: 'paket', label: 'Paket', matches: ['paket'] },
+        { id: 'faq', label: 'FAQ', matches: hasArticles ? ['artikel', 'faq'] : ['faq'] },
+    ], [hasArticles])
+
+    const activeNavId = desktopNav.find((item) => item.matches.includes(activeSection))?.id ?? ''
 
     useEffect(() => {
         const targets = sections
@@ -54,12 +67,36 @@ export default function CpnsLandingInteractions({
 
                 if (visible?.target.id) setActiveSection(visible.target.id)
             },
-            { rootMargin: '-28% 0px -58% 0px', threshold: [0.05, 0.2, 0.45] },
+            { rootMargin: '-24% 0px -62% 0px', threshold: [0.05, 0.2, 0.45] },
         )
 
         targets.forEach((target) => observer.observe(target))
         return () => observer.disconnect()
     }, [sections])
+
+    useEffect(() => {
+        const hero = document.getElementById('hero-cpns')
+        const finalCta = document.getElementById('final-cta')
+        if (!hero || !finalCta) return
+
+        const heroObserver = new IntersectionObserver(
+            ([entry]) => {
+                setHeroPassed(!entry.isIntersecting && entry.boundingClientRect.bottom < 96)
+            },
+            { rootMargin: '-72px 0px 0px 0px', threshold: 0 },
+        )
+        const finalObserver = new IntersectionObserver(
+            ([entry]) => setFinalCtaVisible(entry.isIntersecting),
+            { threshold: 0.05 },
+        )
+
+        heroObserver.observe(hero)
+        finalObserver.observe(finalCta)
+        return () => {
+            heroObserver.disconnect()
+            finalObserver.disconnect()
+        }
+    }, [])
 
     useEffect(() => {
         const seen = new Set<number>()
@@ -90,8 +127,8 @@ export default function CpnsLandingInteractions({
 
     return (
         <>
-            <header className="sticky top-0 z-50 px-4 py-3 md:px-8 md:py-4">
-                <div className="px-container-marketing flex min-h-16 items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
+            <header className="sticky top-0 z-50 px-4 py-2.5 md:px-8 md:py-3.5">
+                <div className="px-container-marketing relative flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:min-h-16 md:px-5">
                     <div className="flex min-w-0 items-center gap-3">
                         <Link href="/" className="st-focus shrink-0 font-handwriting text-2xl font-black tracking-tight md:text-3xl">
                             Siap<span className="text-blue-600">Tempur</span>.
@@ -99,19 +136,19 @@ export default function CpnsLandingInteractions({
                         <span className="hidden rounded-full bg-[var(--st-blue-soft)] px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.1em] text-blue-700 sm:inline-flex">CPNS</span>
                     </div>
 
-                    <nav className="hidden items-center gap-1 text-sm font-black xl:flex" aria-label="Navigasi CPNS">
-                        {sections.slice(0, hasArticles ? 7 : 7).map((section) => (
+                    <nav className="hidden items-center gap-0.5 text-[13px] font-black xl:flex" aria-label="Navigasi CPNS">
+                        {desktopNav.map((item) => (
                             <a
-                                key={section.id}
-                                href={`#${section.id}`}
-                                onClick={() => trackNav(section.id)}
-                                className={`st-focus rounded-xl px-3 py-2 transition-colors ${activeSection === section.id ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'}`}
-                                aria-current={activeSection === section.id ? 'location' : undefined}
+                                key={item.id}
+                                href={`#${item.id}`}
+                                onClick={() => trackNav(item.id)}
+                                className={`st-focus rounded-xl px-2.5 py-2 transition-colors ${activeNavId === item.id ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'}`}
+                                aria-current={activeNavId === item.id ? 'location' : undefined}
                             >
-                                {section.label}
+                                {item.label}
                             </a>
                         ))}
-                        <Link href="/tka" className="st-focus rounded-xl px-3 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">TKA</Link>
+                        <Link href="/tka" className="st-focus rounded-xl px-2.5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">TKA</Link>
                     </nav>
 
                     <div className="flex items-center gap-2">
@@ -140,7 +177,7 @@ export default function CpnsLandingInteractions({
                     </div>
 
                     {menuOpen && (
-                        <div className="absolute left-4 right-4 top-[4.75rem] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-2 shadow-[4px_4px_0_var(--st-ink)] md:left-auto md:right-8 md:w-72">
+                        <div className="absolute left-0 right-0 top-[4.15rem] max-h-[72vh] overflow-y-auto rounded-2xl border-2 border-[var(--st-ink)] bg-white p-2 shadow-[4px_4px_0_var(--st-ink)] md:left-auto md:right-0 md:top-[4.75rem] md:w-72">
                             {sections.map((section) => (
                                 <a
                                     key={section.id}
@@ -157,22 +194,24 @@ export default function CpnsLandingInteractions({
                 </div>
             </header>
 
-            <div className="fixed inset-x-3 bottom-3 z-40 md:hidden">
-                <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/95 p-2 shadow-[4px_4px_0_var(--st-ink)] backdrop-blur">
-                    <div className="min-w-0 flex-1 pl-2">
-                        <p className="truncate text-xs font-black uppercase tracking-[0.08em] text-blue-700">SiapTempur CPNS</p>
-                        <p className="truncate text-sm font-bold text-gray-700">TWK · TIU · TKP</p>
+            {heroPassed && !finalCtaVisible && (
+                <div className="fixed inset-x-3 bottom-3 z-40 md:hidden">
+                    <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/95 p-2 shadow-[4px_4px_0_var(--st-ink)] backdrop-blur">
+                        <div className="min-w-0 flex-1 pl-2">
+                            <p className="truncate text-xs font-black uppercase tracking-[0.08em] text-blue-700">SiapTempur CPNS</p>
+                            <p className="truncate text-sm font-bold text-gray-700">TWK · TIU · TKP</p>
+                        </div>
+                        <TrackedLink
+                            href={primaryAccountHref}
+                            eventName="px_landing_cta"
+                            eventProperties={{ program: 'cpns', surface: 'landing', cta: 'mobile_sticky_start' }}
+                            className="st-button inline-flex min-h-11 items-center justify-center gap-2 bg-blue-600 px-4 py-2 text-sm font-black text-white"
+                        >
+                            {isLoggedIn ? 'Lanjut' : 'Mulai'} <ArrowRight size={16} />
+                        </TrackedLink>
                     </div>
-                    <TrackedLink
-                        href={primaryAccountHref}
-                        eventName="px_landing_cta"
-                        eventProperties={{ program: 'cpns', surface: 'landing', cta: 'mobile_sticky_start' }}
-                        className="st-button inline-flex min-h-11 items-center justify-center gap-2 bg-blue-600 px-4 py-2 text-sm font-black text-white"
-                    >
-                        {isLoggedIn ? 'Lanjut' : 'Mulai'} <ArrowRight size={16} />
-                    </TrackedLink>
                 </div>
-            </div>
+            )}
         </>
     )
 }
