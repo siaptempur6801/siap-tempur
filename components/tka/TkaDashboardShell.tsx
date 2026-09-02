@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
+import styles from '@/components/dashboard/CompactLearning.module.css'
 import TkaLevelSwitcher from '@/components/tka/TkaLevelSwitcher'
 
 interface TkaDashboardShellProps {
@@ -66,70 +67,70 @@ export default function TkaDashboardShell({
         '--st-paper': '#f6f7fb',
         '--st-paper-strong': '#eef1f7',
         '--st-border': '1px solid #e4e7f0',
-        '--st-shadow-sm': '0 8px 24px rgba(15, 23, 42, 0.055)',
-        '--st-shadow-md': '0 14px 36px rgba(15, 23, 42, 0.075)',
-        '--st-shadow-lg': '0 22px 54px rgba(79, 70, 229, 0.12)',
-        '--st-radius-sm': '0.875rem',
-        '--st-radius-md': '1.125rem',
-        '--st-radius-lg': '1.5rem',
+        '--st-shadow-sm': '0 6px 18px rgba(15, 23, 42, 0.05)',
+        '--st-shadow-md': '0 10px 28px rgba(15, 23, 42, 0.065)',
+        '--st-shadow-lg': '0 16px 38px rgba(79, 70, 229, 0.10)',
+        '--st-radius-sm': '0.75rem',
+        '--st-radius-md': '0.95rem',
+        '--st-radius-lg': '1.15rem',
     } as React.CSSProperties
 
     return (
         <div
             data-experience-mode="learning"
             data-program={`tka-${level.toLowerCase()}`}
-            className="st-product flex h-screen overflow-hidden bg-[#f6f7fb] font-body text-slate-950"
+            className={`${styles.compact} st-product flex h-screen overflow-hidden bg-[#f6f7fb] font-body text-slate-950`}
             style={learnerSurface}
         >
-            <aside className="relative z-20 hidden w-[18rem] min-h-0 flex-col border-r border-slate-200/80 bg-white md:flex">
-                <div className="shrink-0 px-5 pb-4 pt-7">
+            <aside className="relative z-20 hidden w-[16rem] min-h-0 flex-col border-r border-slate-200/80 bg-white md:flex">
+                <div className="shrink-0 px-4 pb-3.5 pt-5">
                     <Link href="/tka" className="st-focus inline-flex items-center focus-visible:outline-none">
-                        <span className="font-handwriting text-3xl font-black leading-tight text-slate-950">
+                        <span className="font-handwriting text-[1.65rem] font-black leading-tight text-slate-950">
                             Siap<span className="text-indigo-600">Tempur</span>.
                         </span>
                     </Link>
-                    <p className="mt-1 text-xs font-bold text-slate-400">Dashboard TKA</p>
-                    <div className="mt-5">
+                    <p className="mt-1 text-[11px] font-bold text-slate-400">Dashboard TKA</p>
+                    <div className="mt-3.5">
                         <TkaLevelSwitcher activeLevel={level} />
                     </div>
                 </div>
 
-                <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-3" aria-label="Navigasi dashboard TKA">
-                    <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Belajar</p>
+                <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-3 py-2.5" aria-label="Navigasi dashboard TKA">
+                    <p className="mb-1.5 px-2.5 text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">Belajar</p>
                     <div className="space-y-1">
-                        <NavItem href="/tka" icon={<Home size={18} />} label="Beranda" exact variant="soft" />
-                        <NavItem href={basePath} icon={<LayoutDashboard size={18} />} label={`TKA ${level}`} exact variant="soft" />
-                        <NavItem href={featureHref('/progress')} icon={<BarChart3 size={18} />} label="Perkembangan" variant="soft" />
-                        <NavItem href={level === 'SMP' ? `${basePath}#tka-tryout` : basePath} icon={<ListChecks size={18} />} label="Tryout" variant="soft" />
-                        <NavItem href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={18} />} label="Soal Salah" variant="soft" />
+                        <NavItem href="/tka" icon={<Home size={17} />} label="Beranda" exact variant="soft" />
+                        <NavItem href={basePath} icon={<LayoutDashboard size={17} />} label={`TKA ${level}`} exact variant="soft" />
+                        <NavItem href={featureHref('/progress')} icon={<BarChart3 size={17} />} label="Perkembangan" variant="soft" />
+                        <NavItem href={level === 'SMP' ? `${basePath}#tka-tryout` : basePath} icon={<ListChecks size={17} />} label="Tryout" variant="soft" />
+                        <NavItem href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={17} />} label="Soal Salah" variant="soft" />
                     </div>
 
-                    <div className="my-5 border-t border-slate-100" />
-                    <p className="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Akun & akses</p>
+                    <div className="my-3.5 border-t border-slate-100" />
+                    <p className="mb-1.5 px-2.5 text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">Akun & akses</p>
                     <div className="space-y-1">
-                        <NavItem href={level === 'SMP' ? `${basePath}#tempur-pass` : basePath} icon={<Ticket size={18} />} label="Tempur Pass" variant="soft" />
-                        <NavItem href="/cpns/dashboard" icon={<ShieldCheck size={18} />} label="Dashboard CPNS" variant="soft" />
+                        <NavItem href={level === 'SMP' ? `${basePath}#tempur-pass` : basePath} icon={<Ticket size={17} />} label="Tempur Pass" variant="soft" />
+                        <NavItem href="/cpns/dashboard" icon={<ShieldCheck size={17} />} label="Dashboard CPNS" variant="soft" />
                     </div>
                 </nav>
 
-                <div className="shrink-0 border-t border-slate-100 p-4">
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5">
-                        <div className="flex items-center gap-3">
-                            <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-indigo-100 font-black text-indigo-700 ring-1 ring-indigo-100">
+                <div className="shrink-0 border-t border-slate-100 p-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-2.5">
+                        <div className="flex items-center gap-2.5">
+                            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-indigo-100 text-sm font-black text-indigo-700 ring-1 ring-indigo-100">
                                 {profile?.avatar_url ? (
-                                    <Image src={profile.avatar_url} alt="Foto profil" fill className="object-cover" sizes="44px" />
+                                    <Image src={profile.avatar_url} alt="Foto profil" fill className="object-cover" sizes="36px" />
                                 ) : (
                                     <span>{user.email?.[0]?.toUpperCase() || '?'}</span>
                                 )}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-black text-slate-900">{displayName}</p>
-                                <Link href={level === 'SMP' ? `${basePath}#tempur-pass` : basePath} className="st-focus mt-1 inline-flex min-h-6 items-center gap-1.5 text-xs font-bold text-indigo-700 hover:underline">
-                                    <Ticket size={13} /> Akses TKA
+                                <p className="truncate text-[13px] font-black text-slate-900">{displayName}</p>
+                                <Link href={level === 'SMP' ? `${basePath}#tempur-pass` : basePath} className="st-focus mt-0.5 inline-flex min-h-6 items-center gap-1.5 text-[11px] font-bold text-indigo-700 hover:underline">
+                                    <Ticket size={12} /> Akses TKA
                                 </Link>
                             </div>
                         </div>
-                        <div className="mt-2 flex justify-end">
+                        <div className="mt-1.5 flex justify-end">
                             <SidebarSignoutButton signoutAction={signoutAction} />
                         </div>
                     </div>
@@ -138,24 +139,24 @@ export default function TkaDashboardShell({
 
             <div className="relative flex-1 overflow-y-auto pb-24 md:pb-0">
                 <div className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl md:hidden">
-                    <div className="flex h-16 items-center justify-between px-5">
-                        <Link href="/tka" className="st-focus font-handwriting text-2xl font-black text-slate-950">
+                    <div className="flex h-14 items-center justify-between px-4">
+                        <Link href="/tka" className="st-focus font-handwriting text-xl font-black text-slate-950">
                             Siap<span className="text-indigo-600">Tempur</span>.
                         </Link>
-                        <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-[11px] font-black text-indigo-700">TKA</span>
+                        <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black text-indigo-700">TKA</span>
                     </div>
-                    <div className="px-4 pb-3">
+                    <div className="px-3.5 pb-2.5">
                         <TkaLevelSwitcher activeLevel={level} compact />
                     </div>
                 </div>
 
-                <div className="mx-auto w-full max-w-7xl">
+                <div className="mx-auto w-full max-w-6xl">
                     {children}
                 </div>
             </div>
 
             <nav
-                className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(15,23,42,0.05)] backdrop-blur-xl md:hidden"
+                className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(15,23,42,0.045)] backdrop-blur-xl md:hidden"
                 aria-label="Navigasi utama TKA"
             >
                 <div className="grid grid-cols-5 gap-1 px-2 py-1.5">
