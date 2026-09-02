@@ -142,9 +142,9 @@ export default async function Index() {
     const { data: { user } } = await supabase.auth.getUser()
 
     return (
-        <main className="st-product min-h-screen overflow-hidden bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
-            <header className="relative z-50 px-4 pt-4 md:px-8 md:pt-6">
-                <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 rounded-2xl border-2 border-[var(--st-ink)] bg-white/95 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur md:px-5">
+        <main className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
+            <header className="sticky top-0 z-50 px-4 py-3 md:px-8 md:py-4">
+                <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
                     <Link href="/" className="st-focus shrink-0 font-handwriting text-2xl font-black tracking-tight md:text-3xl">
                         Siap<span className="text-blue-600">Tempur</span>.
                     </Link>
