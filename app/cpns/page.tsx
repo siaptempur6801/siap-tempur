@@ -1,4 +1,4 @@
-import CpnsProductLandingV11 from '@/components/home/CpnsProductLandingV11'
+import CpnsProductLandingV12 from '@/components/home/CpnsProductLandingV12'
 import { Metadata } from 'next'
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
@@ -90,10 +90,10 @@ export default async function Home() {
   }
 
   return (
-    <CpnsProductLandingV11
+    <CpnsProductLandingV12
       user={user ? { id: user.id } : null}
-      activeEvents={(activeEvents || []) as Parameters<typeof CpnsProductLandingV11>[0]['activeEvents']}
-      latestArticles={(latestArticles || []) as Parameters<typeof CpnsProductLandingV11>[0]['latestArticles']}
+      activeEvents={(activeEvents || []) as Parameters<typeof CpnsProductLandingV12>[0]['activeEvents']}
+      latestArticles={(latestArticles || []) as Parameters<typeof CpnsProductLandingV12>[0]['latestArticles']}
     />
   )
 }
