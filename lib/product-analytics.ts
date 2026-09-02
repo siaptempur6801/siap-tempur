@@ -4,6 +4,8 @@ import { track } from '@vercel/analytics'
 
 export type ProductEventName =
     | 'px_landing_cta'
+    | 'px_landing_nav'
+    | 'px_landing_scroll'
     | 'px_auth_intent'
     | 'px_auth_success'
     | 'px_dashboard_action'
@@ -19,6 +21,8 @@ export type ProductAnalyticsProperties = Partial<{
     surface: 'landing' | 'auth' | 'dashboard' | 'exam' | 'diagnostic' | 'result' | 'pass'
     cta: string
     mode: 'latihan_fokus' | 'mini_tryout' | 'full_tryout' | 'diagnostic' | 'event'
+    section: string
+    depth: 25 | 50 | 75 | 90
     package_days: 30 | 90
     payment_state: 'opened' | 'success' | 'pending' | 'error' | 'closed' | 'verifying'
     auth_method: 'email' | 'google'
