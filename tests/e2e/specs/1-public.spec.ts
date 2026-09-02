@@ -13,7 +13,7 @@ test.describe('Public Pages Flow', () => {
 
   test('memuat landing utama multi-program', async ({ page }) => {
     await expect(page).toHaveTitle(/SiapTempur.*CPNS.*TKA|SiapTempur/i);
-    await expect(page.getByRole('heading', { name: /Belajar lebih terarah/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Jangan cuma banyak latihan.*Tahu apa yang harus diperbaiki/i })).toBeVisible();
     await expect(homePage.cpnsCard).toBeVisible();
     await expect(homePage.tkaCard).toBeVisible();
   });
