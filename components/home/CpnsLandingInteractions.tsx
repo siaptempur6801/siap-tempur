@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Menu, X } from 'lucide-react'
-import { track } from '@vercel/analytics'
 import TrackedLink from '@/components/analytics/TrackedLink'
+import { trackProductEvent } from '@/lib/product-analytics'
 
 const baseSections = [
     { id: 'peta-skd', label: 'Peta SKD' },
@@ -100,7 +100,7 @@ export default function CpnsLandingInteractions({
 
     useEffect(() => {
         const seen = new Set<number>()
-        const thresholds = [25, 50, 75, 90]
+        const thresholds = [25, 50, 75, 90] as const
 
         const onScroll = () => {
             const scrollable = document.documentElement.scrollHeight - window.innerHeight
@@ -110,7 +110,7 @@ export default function CpnsLandingInteractions({
             thresholds.forEach((threshold) => {
                 if (depth >= threshold && !seen.has(threshold)) {
                     seen.add(threshold)
-                    track('px_landing_scroll', { program: 'cpns', depth: threshold })
+                    trackProductEvent('px_landing_scroll', { program: 'cpns', surface: 'landing', depth: threshold })
                 }
             })
         }
@@ -121,7 +121,7 @@ export default function CpnsLandingInteractions({
     }, [])
 
     function trackNav(section: string) {
-        track('px_landing_nav', { program: 'cpns', section })
+        trackProductEvent('px_landing_nav', { program: 'cpns', surface: 'landing', section })
         setMenuOpen(false)
     }
 
@@ -177,7 +177,7 @@ export default function CpnsLandingInteractions({
                     </div>
 
                     {menuOpen && (
-                        <div className="absolute left-0 right-0 top-[4.15rem] max-h-[72vh] overflow-y-auto rounded-2xl border-2 border-[var(--st-ink)] bg-white p-2 shadow-[4px_4px_0_var(--st-ink)] md:left-auto md:right-0 md:top-[4.75rem] md:w-72">
+                        <div data-testid="cpns-mobile-menu" className="absolute left-0 right-0 top-[4.15rem] max-h-[72vh] overflow-y-auto rounded-2xl border-2 border-[var(--st-ink)] bg-white p-2 shadow-[4px_4px_0_var(--st-ink)] md:left-auto md:right-0 md:top-[4.75rem] md:w-72">
                             {sections.map((section) => (
                                 <a
                                     key={section.id}
@@ -195,7 +195,7 @@ export default function CpnsLandingInteractions({
             </header>
 
             {heroPassed && !finalCtaVisible && (
-                <div className="fixed inset-x-3 bottom-3 z-40 md:hidden">
+                <div data-testid="cpns-mobile-sticky-cta" className="fixed inset-x-3 bottom-3 z-40 md:hidden">
                     <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/95 p-2 shadow-[4px_4px_0_var(--st-ink)] backdrop-blur">
                         <div className="min-w-0 flex-1 pl-2">
                             <p className="truncate text-xs font-black uppercase tracking-[0.08em] text-blue-700">SiapTempur CPNS</p>
