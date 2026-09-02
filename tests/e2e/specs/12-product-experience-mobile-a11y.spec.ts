@@ -30,8 +30,8 @@ test.describe('Product Experience mobile accessibility regression', () => {
     test('CPNS landing keeps primary journey readable and touch friendly on mobile', async ({ page }) => {
         await page.goto('/cpns')
 
-        await expect(page.getByRole('heading', { name: /Belajar lebih terarah\. Hadapi SKD lebih siap\./i })).toBeVisible()
-        const primaryCta = page.getByRole('link', { name: /Mulai persiapan CPNS/i }).first()
+        await expect(page.getByRole('heading', { name: /Bukan cuma latihan SKD/i })).toBeVisible()
+        const primaryCta = page.getByRole('link', { name: /Mulai belajar CPNS/i }).first()
         await expectTouchTarget(primaryCta)
         await primaryCta.focus()
         await expect(primaryCta).toBeFocused()
