@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { activateTkaTrackAction } from '@/app/actions/user-track'
 import TkaPassPackagesClient from '@/components/tka/TkaPassPackagesClient'
+import TkaLearningHierarchy from '@/components/tka/TkaLearningHierarchy'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
@@ -226,6 +227,11 @@ export default async function TkaLevelPage({
 
     const examTypeById = new Map((examTypes ?? []).map((row) => [String(row.id), row]))
     const examById = new Map((exams ?? []).map((exam) => [String(exam.id), exam]))
+    const tryoutExams = (exams ?? []).filter((exam) => {
+        const typeCode = String(examTypeById.get(String(exam.exam_type_id))?.code ?? '').toUpperCase()
+        const slug = String(exam.slug ?? '').toLowerCase()
+        return typeCode.includes('TRYOUT') || slug.includes('-mini-') || slug.endsWith('-full')
+    })
     const questionCountBySubject = new Map<string, number>()
     for (const row of questionRows ?? []) {
         const id = String(row.subject_id)
@@ -233,7 +239,11 @@ export default async function TkaLevelPage({
     }
 
     const activeTrack = userTrack?.status.toLowerCase() === 'active'
-    const recentAttempts = (attemptRows ?? []).slice(0, 6)
+    const recentAttempts = (attemptRows ?? []).filter((attempt) => {
+        const exam = examById.get(String(attempt.exam_id))
+        const typeCode = String(examTypeById.get(String(exam?.exam_type_id ?? ''))?.code ?? '').toUpperCase()
+        return typeCode !== 'DIAGNOSTIC'
+    }).slice(0, 6)
     const activeAttempt = recentAttempts.find((attempt) => String(attempt.status ?? '').toLowerCase() === 'in_progress') ?? null
     const latestCompletedAttempt = recentAttempts.find((attempt) => ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase())) ?? null
     const latestCompletedExam = latestCompletedAttempt ? examById.get(String(latestCompletedAttempt.exam_id)) : null
@@ -254,10 +264,10 @@ export default async function TkaLevelPage({
                 action: 'Mulai perbaikan',
             }
             : {
-                href: '#tka-tryout',
+                href: '#tka-learning-hierarchy',
                 title: 'Mulai dari Mini Tryout',
-                description: 'Ambil satu mata pelajaran terlebih dahulu agar SiapTempur punya data awal untuk membantu menentukan fokus belajarmu.',
-                action: 'Pilih Mini Tryout',
+                description: 'Pilih mata pelajaran, buka materi yang ingin diperkuat, lalu mulai dari Drill atau Mini Tryout.',
+                action: 'Buka peta belajar',
             }
 
     return (
@@ -348,6 +358,8 @@ export default async function TkaLevelPage({
                         </form>
                     </section>
                 )}
+
+                <TkaLearningHierarchy activeTrack={activeTrack} />
 
                 <section aria-labelledby="tka-learning-summary" className="space-y-4">
                     <div className="flex flex-wrap items-end justify-between gap-3">
@@ -455,9 +467,9 @@ export default async function TkaLevelPage({
                             ? 'Pilih Mini Tryout untuk mengukur satu mata pelajaran atau Full Tryout untuk mengukur kemampuan dalam sesi yang lebih lengkap.'
                             : 'Mini Tryout memiliki satu kesempatan gratis per mata pelajaran. Akses lanjutan dan Full Tryout mengikuti paket yang aktif di akunmu.'}
                     />
-                    {(exams ?? []).length > 0 ? (
+                    {tryoutExams.length > 0 ? (
                         <div className="grid gap-5 md:grid-cols-2">
-                            {(exams ?? []).map((exam) => {
+                            {tryoutExams.map((exam) => {
                                 const type = examTypeById.get(String(exam.exam_type_id))
                                 const duration = minutes(exam.duration_seconds)
                                 const windowReason = examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at })
