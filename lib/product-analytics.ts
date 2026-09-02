@@ -16,9 +16,9 @@ export type ProductEventName =
 
 export type ProductAnalyticsProperties = Partial<{
     program: 'cpns' | 'tka_smp'
-    surface: 'landing' | 'auth' | 'dashboard' | 'exam' | 'result' | 'pass'
+    surface: 'landing' | 'auth' | 'dashboard' | 'exam' | 'diagnostic' | 'result' | 'pass'
     cta: string
-    mode: 'latihan_fokus' | 'mini_tryout' | 'full_tryout' | 'event'
+    mode: 'latihan_fokus' | 'mini_tryout' | 'full_tryout' | 'diagnostic' | 'event'
     package_days: 30 | 90
     payment_state: 'opened' | 'success' | 'pending' | 'error' | 'closed' | 'verifying'
     auth_method: 'email' | 'google'

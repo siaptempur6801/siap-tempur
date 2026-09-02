@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
     BarChart3,
     BookOpenCheck,
+    BrainCircuit,
     Home,
     LayoutDashboard,
     ListChecks,
@@ -46,7 +47,8 @@ export default function TkaDashboardShell({
     const pathname = usePathname()
     const basePath = `/tka/${level.toLowerCase()}`
     const isTryoutSession = pathname.includes('/tryout/') && !pathname.endsWith('/result')
-    const isFocusedSession = isTryoutSession || pathname.includes('/remedial/')
+    const isDiagnosticSession = /\/diagnostic\/[0-9a-f-]+$/i.test(pathname)
+    const isFocusedSession = isTryoutSession || isDiagnosticSession || pathname.includes('/remedial/')
     const featureHref = (path: string) => level === 'SMP' ? `${basePath}${path}` : basePath
 
     if (isFocusedSession) {
@@ -100,6 +102,7 @@ export default function TkaDashboardShell({
                     <div className="space-y-1">
                         <NavItem href="/tka" icon={<Home size={17} />} label="Beranda" exact variant="soft" />
                         <NavItem href={basePath} icon={<LayoutDashboard size={17} />} label={`TKA ${level}`} exact variant="soft" />
+                        <NavItem href={featureHref('/diagnostic')} icon={<BrainCircuit size={17} />} label="Tes Diagnostik" variant="soft" />
                         <NavItem href={featureHref('/progress')} icon={<BarChart3 size={17} />} label="Perkembangan" variant="soft" />
                         <NavItem href={level === 'SMP' ? `${basePath}#tka-tryout` : basePath} icon={<ListChecks size={17} />} label="Tryout" variant="soft" />
                         <NavItem href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={17} />} label="Soal Salah" variant="soft" />
@@ -161,10 +164,10 @@ export default function TkaDashboardShell({
             >
                 <div className="grid grid-cols-5 gap-1 px-2 py-1.5">
                     <MobileNavItem href="/tka" icon={<Home size={20} />} label="Beranda" exact variant="soft" />
+                    <MobileNavItem href={featureHref('/diagnostic')} icon={<BrainCircuit size={20} />} label="Diagnostik" variant="soft" />
                     <MobileNavItem href={featureHref('/progress')} icon={<BarChart3 size={20} />} label="Progress" variant="soft" />
                     <MobileNavItem href={level === 'SMP' ? `${basePath}#tka-tryout` : basePath} icon={<ListChecks size={20} />} label="Tryout" variant="soft" />
                     <MobileNavItem href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={20} />} label="Review" variant="soft" />
-                    <MobileNavItem href={level === 'SMP' ? `${basePath}#tempur-pass` : basePath} icon={<Ticket size={20} />} label="Akses" variant="soft" />
                 </div>
             </nav>
         </div>
