@@ -39,9 +39,9 @@ export default function SidebarSignoutButton({ signoutAction }: SidebarSignoutBu
         <>
             <button
                 onClick={() => setShowModal(true)}
-                className="flex items-center gap-3 px-4 py-2 font-handwriting text-xl font-bold text-red-600 hover:bg-red-50 rounded-md w-full transition border-2 border-transparent hover:border-red-200 hover:shadow-sm"
+                className="flex min-h-9 w-full items-center gap-2 rounded-md border-2 border-transparent px-3 py-1.5 font-handwriting text-sm font-bold text-red-600 transition hover:border-red-200 hover:bg-red-50 hover:shadow-sm"
             >
-                <LogOut size={20} />
+                <LogOut size={16} />
                 Keluar
             </button>
 
