@@ -27,7 +27,7 @@ function formatDuration(startedAt: string | null, submittedAt: string | null) {
 
 function practiceLabel(kind: string | null | undefined) {
     if (kind === 'mini_tryout') return 'Mini Tryout'
-    if (kind === 'drill') return 'Latihan'
+    if (kind === 'drill') return 'Latihan Fokus'
     return 'Full Tryout'
 }
 
@@ -51,12 +51,12 @@ export default async function TkaResultPage({
     let learningFocus: TkaLearningFocusView | null = null
     let readiness: TkaReadinessView | null = null
 
-    if (level === 'SMP' && env.appEnvironment() !== 'production') {
+    if (level === 'SMP') {
         try {
             const candidate = await tkaFullExamRpcService.getState(sessionId)
             if (candidate.sections.length > 0) fullExamState = candidate
         } catch {
-            // Legacy TKA mini/drill result continues through practiceResultService.
+            // Legacy/generic TKA result continues through practiceResultService.
         }
     }
 

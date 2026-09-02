@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { freshDisposableTkaSession } from '../tka.ci'
+import { freshDisposableTkaSession, readOwnTkaLearningProjection } from '../tka.ci'
+import { readOwnStoredTkaRecommendations } from '../tka-learning-focus.ci'
 
-test('TKA SMP diagnostic maps seven competencies and recommends next learning priorities', async ({ page }) => {
-    test.setTimeout(180_000)
-    await freshDisposableTkaSession(page)
+test('TKA SMP diagnostic maps seven competencies and drives the first focused drill', async ({ page }) => {
+    test.setTimeout(300_000)
+    const learner = await freshDisposableTkaSession(page)
 
     await page.goto('/tka/smp/diagnostic')
     await expect(page.getByRole('heading', { name: 'Temukan fokus belajar sebelum mulai banyak tryout.', exact: true })).toBeVisible()
@@ -35,8 +36,9 @@ test('TKA SMP diagnostic maps seven competencies and recommends next learning pr
     await page.waitForURL(/\/tka\/smp\/diagnostic\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Peta kemampuan awalmu sudah siap.', exact: true })).toBeVisible()
     const competencyCards = page.getByTestId('diagnostic-competency-card')
+    const recommendationCards = page.getByTestId('diagnostic-recommendation-card')
     await expect(competencyCards).toHaveCount(7)
-    await expect(page.getByTestId('diagnostic-recommendation-card')).toHaveCount(3)
+    await expect(recommendationCards).toHaveCount(3)
 
     for (const competency of [
         'Pemahaman Tekstual',
@@ -53,4 +55,49 @@ test('TKA SMP diagnostic maps seven competencies and recommends next learning pr
     await expect(page.getByText('Baseline tersimpan', { exact: true })).toBeVisible()
     await expect(page.getByText(/28 soal dipetakan/i)).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Mulai dari tiga prioritas ini', exact: true })).toBeVisible()
+
+    const baselineProjection = await readOwnTkaLearningProjection(learner)
+    expect(baselineProjection.knowledge).toHaveLength(0)
+    expect(baselineProjection.subjects).toHaveLength(0)
+
+    const firstRecommendation = recommendationCards.first()
+    const recommendedTopic = (await firstRecommendation.getByRole('heading').textContent())?.trim() ?? ''
+    expect(recommendedTopic).not.toBe('')
+    await expect(firstRecommendation.getByTestId('diagnostic-start-drill')).toBeEnabled()
+    await firstRecommendation.getByTestId('diagnostic-start-drill').click()
+
+    await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i, { timeout: 20_000 })
+    await expect(page.getByText('Soal 1 dari 10', { exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: recommendedTopic, exact: true })).toBeVisible()
+
+    for (let index = 1; index <= 10; index += 1) {
+        await expect(page.getByText(`Soal ${index} dari 10`, { exact: true })).toBeVisible()
+        const questionCard = page.locator('article').last()
+        await questionCard.getByRole('button').first().click()
+
+        if (index < 10) {
+            await page.getByRole('button', { name: 'Selanjutnya', exact: true }).click()
+        }
+    }
+
+    page.once('dialog', (dialog) => dialog.accept())
+    await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
+    await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 30_000 })
+
+    await expect(page.getByTestId('tka-learning-focus')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya', exact: true })).toBeVisible()
+
+    const projection = await readOwnTkaLearningProjection(learner)
+    expect(projection.knowledge.length).toBeGreaterThan(0)
+    expect(projection.subjects.length).toBeGreaterThan(0)
+    expect(projection.knowledge.reduce((sum, row) => sum + Number(row.attempted_questions || 0), 0)).toBeGreaterThanOrEqual(10)
+
+    const storedFocus = await readOwnStoredTkaRecommendations(learner)
+    expect(storedFocus.length).toBeGreaterThan(0)
+    expect(storedFocus.length).toBeLessThanOrEqual(3)
+    expect(storedFocus[0]?.priority).toBe(1)
+
+    await page.goto('/tka/smp/progress')
+    await expect(page.getByRole('heading', { name: 'Perkembangan belajar TKA SMP', exact: true })).toBeVisible()
+    await expect(page.getByTestId('tka-learning-focus')).toBeVisible()
 })

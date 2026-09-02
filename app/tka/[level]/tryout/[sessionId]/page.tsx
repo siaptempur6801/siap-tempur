@@ -1,5 +1,4 @@
 import { redirect, notFound } from 'next/navigation'
-import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaFullExamSessionClient from '@/components/tka/TkaFullExamSessionClient'
 import TkaPracticeSessionClient from '@/components/tka/TkaPracticeSessionClient'
@@ -25,13 +24,13 @@ export default async function TkaPracticeSessionPage({
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/tryout/${sessionId}`)}`)
 
     let fullExamState: TkaFullExamState | null = null
-    if (level === 'SMP' && env.appEnvironment() !== 'production') {
+    if (level === 'SMP') {
         try {
             const candidate = await tkaFullExamRpcService.getState(sessionId)
             if (candidate.sections.length > 0) fullExamState = candidate
         } catch {
-            // Mini tryout/drill attempts do not use the full-exam section engine.
-            // They continue through the existing Schema V2 practice service below.
+            // Legacy/generic TKA attempts do not use the section engine. They
+            // continue through the Schema V2 practice service below.
         }
     }
 

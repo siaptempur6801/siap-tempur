@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, BarChart3, Crown } from 'lucide-react'
 import TkaProgressDashboard from '@/components/tka/TkaProgressDashboard'
-import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { tkaProgressDashboardService } from '@/src/services/tka-progress-dashboard.service'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
@@ -20,8 +19,6 @@ export default async function TkaProgressPage({
     if (!level || level !== 'SMP') notFound()
 
     const base = tkaLevelPath(level)
-    if (env.appEnvironment() === 'production') redirect(base)
-
     const supabase = await createV2Client()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/progress`)}`)
@@ -50,7 +47,7 @@ export default async function TkaProgressPage({
                     </div>
                     <h1 className="relative mt-2 text-4xl font-black tracking-tight text-white md:text-5xl">Perkembangan belajar TKA SMP</h1>
                     <p className="relative mt-3 max-w-3xl font-semibold leading-relaxed text-slate-300 md:text-lg">
-                        Lihat bagian yang sudah kuat, materi yang masih perlu diperbaiki, latihan perbaikan yang aktif, dan rekomendasi langkah belajar berikutnya dalam satu tempat.
+                        Lihat bagian yang sudah kuat, materi yang masih perlu diperbaiki, dan rekomendasi langkah belajar berikutnya dalam satu tempat.
                     </p>
                 </header>
 

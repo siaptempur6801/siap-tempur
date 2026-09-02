@@ -5,18 +5,27 @@ import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
-import { createV2Client } from '@/lib/utils/supabase/server'
+import { createClient, createV2Client } from '@/lib/utils/supabase/server'
 import { examAttemptService, PracticeDomainError, type StartAttemptResult } from '@/src/services/exam-attempt.service'
 import { examCompletionService } from '@/src/services/exam-completion.service'
 import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
 import { parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
 const EXAM_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const TKA_DRILL_SUBJECTS = new Set(['BIN', 'MAT'])
 const SMP_SECTION_EXAM_SLUGS = new Set([
     'tka-smp-full',
     'tka-smp-mini-bahasa-indonesia',
     'tka-smp-mini-matematika',
 ])
+
+type DrillStartPayload = {
+    attempt_id?: string
+    resumed?: boolean
+    subject_code?: string
+    knowledge_node_name?: string
+    exam_slug?: string
+}
 
 async function getCurrentUserContext(returnTo: string) {
     const supabase = await createV2Client()
@@ -75,6 +84,22 @@ function friendlyError(error: PracticeDomainError) {
     }
 }
 
+function friendlyDrillRpcError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('ENTITLEMENT_REQUIRED')) {
+        return 'Latihan gratis untuk topik ini sudah digunakan. Tempur Pass diperlukan untuk latihan fokus berikutnya.'
+    }
+    if (message.includes('ACTIVE_USER_TRACK_REQUIRED')) return 'Aktifkan jalur TKA SMP terlebih dahulu.'
+    if (message.includes('DRILL_EXAM_NOT_CONFIGURED')) return 'Latihan fokus untuk topik ini belum dibuka.'
+    if (message.includes('DRILL_KNOWLEDGE_NODE_INVALID')) return 'Topik rekomendasi belum memiliki latihan fokus.'
+    if (message.includes('DRILL_SUBJECT_INVALID')) return 'Mata pelajaran latihan fokus tidak valid.'
+    if (message.includes('DRILL_ENTITLEMENT_FEATURE_MISSING')) return 'Konfigurasi Tempur Pass untuk latihan fokus belum siap.'
+    if (message.includes('Exam item count') || message.includes('question count') || message.includes('question version')) {
+        return 'Konfigurasi soal latihan fokus belum siap.'
+    }
+    return 'Gagal memulai latihan fokus.'
+}
+
 function friendlySmpRpcError(error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     if (message.includes('ENTITLEMENT_REQUIRED')) return 'Paket aktif diperlukan untuk membuka tryout ini.'
@@ -99,6 +124,60 @@ async function startWithExpiredRecovery(userId: string, start: () => Promise<Sta
             }
         }
         throw error
+    }
+}
+
+export async function startTkaDrill(levelValue: string, subjectCodeValue: string, knowledgeNodeNameValue: string) {
+    try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    const level = parseTkaLevel(levelValue)
+    const subjectCode = subjectCodeValue.trim().toUpperCase()
+    const knowledgeNodeName = knowledgeNodeNameValue.trim()
+    if (level !== 'SMP' || !TKA_DRILL_SUBJECTS.has(subjectCode) || !knowledgeNodeName || knowledgeNodeName.length > 120) {
+        return { error: 'Konfigurasi latihan fokus tidak valid.' }
+    }
+
+    const path = tkaLevelPath(level)
+    const { supabase, userId } = await getCurrentUserContext(path)
+    const context = tkaContext(level)
+    if (!await hasActiveTrack(supabase, userId, context)) {
+        return { error: 'Aktifkan jalur TKA SMP terlebih dahulu.' }
+    }
+
+    try {
+        // Use the authenticated learner RPC rather than the privileged generic
+        // repository path. The RPC enforces ownership, free quota, entitlement,
+        // exact competency mapping, and starts the frozen section-engine attempt.
+        const learnerClient = await createClient()
+        const { data, error } = await learnerClient.rpc('start_tka_smp_drill', {
+            p_subject_code: subjectCode,
+            p_knowledge_node_name: knowledgeNodeName,
+        })
+        if (error) throw new Error(error.message)
+
+        const payload = (data && typeof data === 'object' && !Array.isArray(data))
+            ? data as DrillStartPayload
+            : null
+        if (!payload?.attempt_id) throw new Error('DRILL_ATTEMPT_START_FAILED')
+
+        revalidatePath(path)
+        revalidatePath(`${path}/progress`)
+        return {
+            success: true as const,
+            sessionId: payload.attempt_id,
+            resumed: payload.resumed === true,
+            level,
+            subjectCode: payload.subject_code ?? subjectCode,
+            knowledgeNodeName: payload.knowledge_node_name ?? knowledgeNodeName,
+        }
+    } catch (error) {
+        logger.warn('[startTkaDrill:rpc] Failed to start TKA SMP focused drill', {
+            error: error instanceof Error ? error.message : String(error),
+            userId,
+            subjectCode,
+            knowledgeNodeName,
+        })
+        return { error: friendlyDrillRpcError(error) }
     }
 }
 

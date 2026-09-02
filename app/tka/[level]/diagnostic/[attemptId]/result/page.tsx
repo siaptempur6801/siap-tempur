@@ -10,6 +10,7 @@ import {
     Sparkles,
     Target,
 } from 'lucide-react'
+import TkaStartDrillButton from '@/components/tka/TkaStartDrillButton'
 import { createClient } from '@/lib/utils/supabase/server'
 import { cn } from '@/lib/utils'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
@@ -197,14 +198,19 @@ export default async function TkaDiagnosticResultPage({
                             const node = nodeById.get(row.knowledge_node_id)
                             const subject = competency ? subjectById.get(competency.subject_id) : null
                             const resource = row.resource_id ? resourceById.get(row.resource_id) : null
+                            const drillReady = Boolean(subject?.code && node?.name)
                             return (
                                 <article key={row.knowledge_node_id} data-testid="diagnostic-recommendation-card" className="rounded-[1rem] border border-indigo-100 bg-white p-4 shadow-sm">
                                     <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-700">Prioritas {Number(row.priority)}</span>
                                     <h3 className="mt-3 text-lg font-black text-slate-950">{node?.name ?? 'Fokus belajar'}</h3>
                                     <p className="mt-1 text-xs font-bold text-slate-500">{subject?.name ?? 'TKA SMP'} · baseline {competency ? Number(competency.baseline_score).toFixed(0) : '—'}%</p>
-                                    <Link href={`${base}#tka-tryout`} className="st-focus mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl text-sm font-black text-indigo-700 hover:underline">
-                                        {resource?.title ? `Latih lewat ${resource.title}` : 'Pilih latihan berikutnya'} <ArrowRight size={15} />
-                                    </Link>
+                                    {resource?.title && <p className="mt-2 text-[11px] font-semibold leading-relaxed text-slate-400">Jalur terkait: {resource.title}</p>}
+                                    <TkaStartDrillButton
+                                        level={level}
+                                        subjectCode={subject?.code ?? ''}
+                                        knowledgeNodeName={node?.name ?? 'Fokus belajar'}
+                                        disabledReason={drillReady ? null : 'Latihan fokus belum tersedia untuk topik ini.'}
+                                    />
                                 </article>
                             )
                         })}
@@ -215,9 +221,9 @@ export default async function TkaDiagnosticResultPage({
                     <div>
                         <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400"><CircleAlert size={15} /> Langkah berikutnya</div>
                         <h2 className="mt-1 text-xl font-black text-slate-950">Gunakan baseline ini, lalu kumpulkan bukti belajar nyata.</h2>
-                        <p className="mt-1 text-sm font-semibold text-slate-500">Mini Tryout dan latihan berikutnya akan memperbarui fokusmu berdasarkan performa terbaru.</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-500">Mulai dari Drill rekomendasi di atas. Hasil latihan akan memperbarui penguasaan dan fokus belajar berikutnya.</p>
                     </div>
-                    <Link href={`${base}#tka-tryout`} className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white">Mulai belajar <ArrowRight size={16} /></Link>
+                    <Link href={`${base}/progress`} className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white">Lihat perkembangan <ArrowRight size={16} /></Link>
                 </section>
             </div>
         </main>
