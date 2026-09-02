@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock3, RotateCcw, Target, Trophy, XCircle } from 'lucide-react'
-import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
 import TkaReadinessCard from '@/components/tka/TkaReadinessCard'
@@ -74,7 +73,7 @@ export default async function TkaResultPage({
         redirect(`${base}/tryout/${sessionId}`)
     }
 
-    if (level === 'SMP' && env.appEnvironment() !== 'production') {
+    if (level === 'SMP') {
         if (fullExamState) {
             try {
                 remedial = await tkaRemedialService.findBySourceAttempt(sessionId)
@@ -98,7 +97,7 @@ export default async function TkaResultPage({
 
     const label = practiceLabel(result.practiceKind)
     const wrongGapCount = result.reviewItems.filter((item) => item.isCorrect !== true).length
-    const repeatWrongEnabled = level === 'SMP' && env.appEnvironment() !== 'production' && wrongGapCount > 0
+    const repeatWrongEnabled = level === 'SMP' && wrongGapCount > 0
     const automaticRemedialEnabled = Boolean(remedial?.session && remedial.session.pendingItems > 0)
 
     return (

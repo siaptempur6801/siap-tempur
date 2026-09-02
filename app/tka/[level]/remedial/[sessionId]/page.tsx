@@ -1,5 +1,4 @@
 import { notFound, redirect } from 'next/navigation'
-import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaRemedialModeClient from '@/components/tka/TkaRemedialModeClient'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
@@ -18,7 +17,7 @@ export default async function TkaRemedialPage({
     if (!level) notFound()
 
     const base = tkaLevelPath(level)
-    if (level !== 'SMP' || env.appEnvironment() === 'production') redirect(base)
+    if (level !== 'SMP') redirect(base)
 
     const supabase = await createV2Client()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
