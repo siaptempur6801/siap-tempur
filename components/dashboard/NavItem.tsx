@@ -29,21 +29,21 @@ export function NavItem({ href, icon, label, badge, exact = false, variant = 'br
             href={href}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-                'group flex min-h-11 items-center justify-between border-2 px-3 py-2.5 text-sm font-black transition-[background-color,color,transform,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
-                soft && 'rounded-2xl',
+                'group flex min-h-10 items-center justify-between border-2 px-2.5 py-2 text-[13px] font-black transition-[background-color,color,transform,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
+                soft && 'rounded-xl',
                 isActive
                     ? soft
                         ? 'border-indigo-100 bg-indigo-50 text-indigo-700 shadow-none'
-                        : 'border-slate-900 bg-blue-600 text-white shadow-[3px_3px_0_0_#111827]'
+                        : 'border-slate-900 bg-blue-600 text-white shadow-[2px_2px_0_0_#111827]'
                     : soft
                         ? 'border-transparent text-slate-600 hover:border-slate-100 hover:bg-slate-50 hover:text-slate-950'
                         : 'border-transparent text-slate-700 hover:border-slate-900 hover:bg-white hover:text-slate-950'
             )}
         >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
                 <span className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center border-2 transition-colors',
-                    soft && 'rounded-xl',
+                    'flex h-7 w-7 shrink-0 items-center justify-center border-2 transition-colors',
+                    soft && 'rounded-lg',
                     isActive
                         ? soft
                             ? 'border-transparent bg-indigo-600 text-white'
@@ -58,7 +58,7 @@ export function NavItem({ href, icon, label, badge, exact = false, variant = 'br
             </div>
             {badge && (
                 <span className={cn(
-                    'ml-2 border px-2 py-0.5 text-[10px] font-black uppercase tracking-wide',
+                    'ml-2 border px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide',
                     soft && 'rounded-full',
                     isActive
                         ? soft
@@ -85,14 +85,14 @@ export function MobileNavItem({ href, icon, label, exact = false, variant = 'bra
             href={href}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-                'flex min-h-14 flex-col items-center justify-center gap-1 px-1 py-1.5 text-[11px] font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-inset',
-                soft && 'rounded-2xl',
+                'flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1 text-[10px] font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-inset',
+                soft && 'rounded-xl',
                 isActive ? (soft ? 'text-indigo-700' : 'text-blue-700') : 'text-slate-500 hover:text-slate-900'
             )}
         >
             <span className={cn(
-                'flex h-8 w-10 items-center justify-center border-2 transition-colors',
-                soft && 'rounded-xl',
+                'flex h-7 w-9 items-center justify-center border-2 transition-colors',
+                soft && 'rounded-lg',
                 isActive
                     ? soft
                         ? 'border-transparent bg-indigo-100 text-indigo-700 shadow-none'
