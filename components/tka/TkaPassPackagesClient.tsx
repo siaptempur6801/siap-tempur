@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Crown, Loader2, ShieldCheck, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { createTkaPassTransaction, syncPaymentStatus } from '@/app/actions/payment'
+import { trackProductEvent } from '@/lib/product-analytics'
 
 export type TkaPassPackage = {
     code: string
@@ -15,12 +16,19 @@ export type TkaPassPackage = {
     durationDays: number | null
 }
 
+const ADMIN_FEE = 500
+
 function rupiah(value: number) {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         maximumFractionDigits: 0,
     }).format(value).replace(/\s+/g, '')
+}
+
+function analyticsPackageDays(days: number | null): 30 | 90 | undefined {
+    if (days === 30 || days === 90) return days
+    return undefined
 }
 
 export default function TkaPassPackagesClient({
@@ -35,66 +43,158 @@ export default function TkaPassPackagesClient({
     const router = useRouter()
     const [buying, setBuying] = useState<string | null>(null)
 
-    const buy = async (productCode: string) => {
+    useEffect(() => {
+        if (packages.length === 0) return
+        trackProductEvent('px_package_view', {
+            program: 'tka_smp',
+            surface: 'pass',
+        })
+    }, [packages.length])
+
+    const bestValueCode = useMemo(() => {
+        const pricedByDay = packages
+            .filter((pkg) => (pkg.durationDays ?? 0) > 0)
+            .map((pkg) => ({
+                code: pkg.code,
+                pricePerDay: pkg.price / Number(pkg.durationDays),
+            }))
+            .sort((a, b) => a.pricePerDay - b.pricePerDay)
+
+        if (pricedByDay.length < 2) return null
+        return pricedByDay[0]?.code ?? null
+    }, [packages])
+
+    const buy = async (productCode: string, durationDays: number | null) => {
         if (buying) return
+        const packageDays = analyticsPackageDays(durationDays)
+
+        trackProductEvent('px_package_select', {
+            program: 'tka_smp',
+            surface: 'pass',
+            package_days: packageDays,
+        })
+
         setBuying(productCode)
-        const loadingToast = toast.loading(hasActivePass ? 'Menyiapkan perpanjangan...' : 'Menyiapkan Tempur Pass...')
+        const loadingToast = toast.loading(hasActivePass ? 'Menyiapkan perpanjangan akses...' : 'Menyiapkan pembayaran...')
         try {
             const transaction = await createTkaPassTransaction(productCode, level)
             if (!transaction.success) {
-                toast.error('Checkout belum bisa dibuat', {
+                toast.error('Pembayaran belum bisa dimulai', {
                     id: loadingToast,
                     description: transaction.message,
+                })
+                trackProductEvent('px_checkout_state', {
+                    program: 'tka_smp',
+                    surface: 'pass',
+                    package_days: packageDays,
+                    payment_state: 'error',
                 })
                 return
             }
 
             toast.dismiss(loadingToast)
             if (!window.snap?.pay) {
-                toast.error('Midtrans Snap belum siap', {
+                toast.error('Pembayaran belum siap dimuat', {
                     description: 'Muat ulang halaman lalu coba lagi.',
+                })
+                trackProductEvent('px_checkout_state', {
+                    program: 'tka_smp',
+                    surface: 'pass',
+                    package_days: packageDays,
+                    payment_state: 'error',
                 })
                 return
             }
 
+            trackProductEvent('px_checkout_state', {
+                program: 'tka_smp',
+                surface: 'pass',
+                package_days: packageDays,
+                payment_state: 'opened',
+            })
+
             window.snap.pay(transaction.token, {
                 onSuccess: async () => {
-                    const id = toast.loading(hasActivePass ? 'Memperpanjang Tempur Pass...' : 'Mengaktifkan Tempur Pass...')
+                    trackProductEvent('px_checkout_state', {
+                        program: 'tka_smp',
+                        surface: 'pass',
+                        package_days: packageDays,
+                        payment_state: 'success',
+                    })
+                    const id = toast.loading(hasActivePass ? 'Memperpanjang akses...' : 'Mengaktifkan akses...')
                     const ok = await syncPaymentStatus(transaction.orderId)
                     if (ok) {
-                        toast.success(hasActivePass ? 'Tempur Pass diperpanjang!' : 'Tempur Pass aktif!', {
+                        toast.success(hasActivePass ? 'Akses berhasil diperpanjang' : 'Akses belajar sudah aktif', {
                             id,
                             description: hasActivePass
-                                ? 'Masa aktif baru ditambahkan setelah masa aktif yang sudah kamu punya.'
-                                : 'Akses premium TKA sudah diperbarui.',
+                                ? 'Durasi tambahan akan dimulai setelah masa aktif kamu saat ini berakhir.'
+                                : 'Kamu sudah bisa menggunakan fitur belajar yang termasuk dalam paket.',
                         })
                         router.refresh()
                     } else {
-                        toast.info('Pembayaran diterima', {
+                        trackProductEvent('px_checkout_state', {
+                            program: 'tka_smp',
+                            surface: 'pass',
+                            package_days: packageDays,
+                            payment_state: 'verifying',
+                        })
+                        toast.info('Pembayaran sedang diverifikasi', {
                             id,
-                            description: 'Status sedang diverifikasi. Muat ulang halaman sebentar lagi.',
+                            description: 'Tunggu sebentar lalu muat ulang halaman untuk melihat status terbaru.',
                         })
                     }
                 },
                 onPending: async () => {
+                    trackProductEvent('px_checkout_state', {
+                        program: 'tka_smp',
+                        surface: 'pass',
+                        package_days: packageDays,
+                        payment_state: 'pending',
+                    })
                     const id = toast.loading('Memperbarui status pembayaran...')
                     await syncPaymentStatus(transaction.orderId)
-                    toast.info('Pembayaran masih tertunda', { id })
+                    toast.info('Menunggu pembayaran', {
+                        id,
+                        description: 'Selesaikan pembayaran sesuai petunjuk pada metode yang kamu pilih.',
+                    })
                 },
                 onError: () => {
-                    toast.error('Pembayaran gagal.')
+                    trackProductEvent('px_checkout_state', {
+                        program: 'tka_smp',
+                        surface: 'pass',
+                        package_days: packageDays,
+                        payment_state: 'error',
+                    })
+                    toast.error('Pembayaran belum berhasil', {
+                        description: 'Coba lagi atau pilih metode pembayaran lain.',
+                    })
                 },
                 onClose: async () => {
-                    const id = toast.loading('Memeriksa status terakhir...')
+                    trackProductEvent('px_checkout_state', {
+                        program: 'tka_smp',
+                        surface: 'pass',
+                        package_days: packageDays,
+                        payment_state: 'closed',
+                    })
+                    const id = toast.loading('Memeriksa status pembayaran...')
                     await syncPaymentStatus(transaction.orderId)
-                    toast.info('Pembayaran ditutup', { id })
+                    toast.info('Pembayaran belum selesai', {
+                        id,
+                        description: 'Tidak ada akses yang diaktifkan sebelum pembayaran berhasil diverifikasi.',
+                    })
                     router.refresh()
                 },
             })
         } catch (error) {
             toast.dismiss(loadingToast)
-            toast.error('Gagal membuat checkout', {
-                description: error instanceof Error ? error.message : 'Silakan coba lagi.',
+            trackProductEvent('px_checkout_state', {
+                program: 'tka_smp',
+                surface: 'pass',
+                package_days: packageDays,
+                payment_state: 'error',
+            })
+            toast.error('Pembayaran belum bisa dimulai', {
+                description: error instanceof Error ? error.message : 'Coba lagi beberapa saat.',
             })
         } finally {
             setBuying(null)
@@ -104,66 +204,96 @@ export default function TkaPassPackagesClient({
     if (packages.length === 0) return null
 
     return (
-        <section className="space-y-3">
-            <div>
-                <div className="inline-flex items-center gap-2 border-2 border-gray-900 bg-yellow-100 px-3 py-1 text-xs font-black uppercase">
-                    <Crown size={15}/> Tempur Pass
+        <section className="space-y-5" aria-labelledby="tka-pass-packages-title">
+            <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-indigo-600">
+                    <Crown size={17} aria-hidden="true"/> Tempur Pass
                 </div>
-                <h2 className="mt-2 text-2xl font-black">
-                    {hasActivePass ? `Perpanjang Tempur Pass TKA ${level}` : `Buka akses premium TKA ${level}`}
+                <h2 id="tka-pass-packages-title" className="mt-2 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                    {hasActivePass ? `Perpanjang akses TKA ${level}` : `Pilih akses belajar TKA ${level}`}
                 </h2>
-                <p className="mt-1 text-sm font-semibold text-gray-600">
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-500">
                     {hasActivePass
-                        ? 'Pilih durasi tambahan. Masa aktif baru akan ditumpuk setelah masa aktif yang sudah kamu punya.'
-                        : 'Tempur Pass membuka Full Tryout dan Mini Tryout unlimited selama masa aktif paket.'}
+                        ? 'Pilih durasi tambahan. Perpanjangan dimulai setelah masa aktifmu saat ini selesai, jadi sisa akses tidak terbuang.'
+                        : 'Pilih durasi yang sesuai kebutuhanmu untuk membuka Full Tryout dan Mini Tryout selama masa aktif paket.'}
                 </p>
+                <p className="mt-2 text-xs font-bold text-slate-500">Setiap pembayaran dikenai biaya admin {rupiah(ADMIN_FEE)} satu kali.</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-5 md:grid-cols-2">
                 {packages.map((pkg) => {
                     const days = pkg.durationDays ?? 0
-                    const isLongPass = days >= 90
+                    const totalPayment = pkg.price + ADMIN_FEE
+                    const isBestValue = pkg.code === bestValueCode
+                    const isBuyingThis = buying === pkg.code
+
                     return (
                         <article
                             key={pkg.code}
-                            className={`relative border-2 border-gray-900 p-5 shadow-[5px_5px_0_0_#111] ${isLongPass ? 'bg-yellow-50' : 'bg-white'}`}
+                            className={`st-card-md relative flex h-full flex-col overflow-hidden p-5 md:p-6 ${isBestValue ? 'bg-gradient-to-b from-indigo-50/80 to-white' : 'bg-white'}`}
                         >
-                            {isLongPass && (
-                                <span className="absolute -right-2 -top-2 border-2 border-gray-900 bg-green-300 px-2 py-1 text-xs font-black uppercase">
-                                    Lebih hemat
-                                </span>
+                            {isBestValue && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-blue-500" />}
+                            {isBestValue && (
+                                <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">Nilai terbaik</span>
                             )}
-                            <h3 className="text-xl font-black">{pkg.name}</h3>
-                            <p className="mt-2 min-h-10 text-sm font-semibold text-gray-600">
-                                {pkg.description || `Akses premium TKA ${level} selama ${days} hari.`}
-                            </p>
-                            <div className="mt-4 text-4xl font-black text-blue-700">{rupiah(pkg.price)}</div>
-                            <div className="mt-1 text-xs font-bold text-gray-500">+ biaya admin Rp500 saat checkout</div>
 
-                            <div className="my-5 space-y-2 text-sm font-bold text-gray-700">
-                                <div className="flex items-start gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700"/> Full Tryout TKA {level}</div>
-                                <div className="flex items-start gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700"/> Mini Tryout unlimited</div>
-                                <div className="flex items-start gap-2"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-green-700"/> Masa aktif {days} hari</div>
-                                <div className="flex items-start gap-2"><ShieldCheck size={18} className="mt-0.5 shrink-0 text-blue-700"/> Akses aktif otomatis setelah pembayaran terverifikasi</div>
+                            <div>
+                                <h3 className="pr-24 text-xl font-black tracking-tight text-slate-950">{pkg.name}</h3>
+                                <p className="mt-2 min-h-10 text-sm font-semibold leading-relaxed text-slate-500">
+                                    {pkg.description || `Akses belajar TKA ${level} selama ${days} hari.`}
+                                </p>
+                            </div>
+
+                            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+                                <div className="flex flex-wrap items-end justify-between gap-3">
+                                    <div>
+                                        <div className="text-xs font-black uppercase tracking-wide text-slate-400">Harga paket</div>
+                                        <div className="mt-1 text-3xl font-black tracking-tight text-indigo-700">{rupiah(pkg.price)}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs font-black uppercase tracking-wide text-slate-400">Total dibayar</div>
+                                        <div className="mt-1 text-xl font-black text-slate-950">{rupiah(totalPayment)}</div>
+                                    </div>
+                                </div>
+                                <p className="mt-2 text-xs font-bold leading-relaxed text-slate-500">Harga paket {rupiah(pkg.price)} + biaya admin {rupiah(ADMIN_FEE)}.</p>
+                            </div>
+
+                            <div className="my-5 flex-1 space-y-2.5 text-sm font-bold text-slate-700">
+                                <Benefit icon={<CheckCircle2 size={17}/>} text={`Full Tryout TKA ${level}`} />
+                                <Benefit icon={<CheckCircle2 size={17}/>} text="Mini Tryout selama paket aktif" />
+                                <Benefit icon={<CheckCircle2 size={17}/>} text={`Masa aktif ${days} hari`} />
+                                <Benefit icon={<ShieldCheck size={17}/>} text="Akses aktif setelah pembayaran terverifikasi" blue />
                             </div>
 
                             <button
                                 type="button"
                                 disabled={Boolean(buying)}
-                                onClick={() => void buy(pkg.code)}
-                                className="inline-flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-blue-700 px-4 py-3 font-black text-white shadow-[3px_3px_0_0_#111] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:cursor-not-allowed disabled:opacity-50"
+                                aria-busy={isBuyingThis}
+                                onClick={() => void buy(pkg.code, pkg.durationDays)}
+                                className="st-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-[0_10px_24px_rgba(79,70,229,0.22)] transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
                             >
-                                {buying === pkg.code ? <Loader2 size={18} className="animate-spin"/> : <Zap size={18}/>} 
-                                {buying === pkg.code
-                                    ? 'Menyiapkan...'
+                                {isBuyingThis ? <Loader2 size={17} className="animate-spin" aria-hidden="true"/> : <Zap size={17} aria-hidden="true"/>}
+                                {isBuyingThis
+                                    ? 'Menyiapkan pembayaran...'
                                     : hasActivePass
-                                        ? `Perpanjang ${days} Hari`
-                                        : `Pilih ${days} Hari`}
+                                        ? `Perpanjang ${days} hari · ${rupiah(totalPayment)}`
+                                        : `Pilih ${days} hari · ${rupiah(totalPayment)}`}
                             </button>
                         </article>
                     )
                 })}
             </div>
+
+            <p className="text-xs font-semibold leading-relaxed text-slate-500">Pembayaran diproses melalui Midtrans. Akses tidak berubah jika pembayaran dibatalkan atau belum terverifikasi.</p>
         </section>
+    )
+}
+
+function Benefit({ icon, text, blue = false }: { icon: React.ReactNode; text: string; blue?: boolean }) {
+    return (
+        <div className="flex items-start gap-2.5">
+            <span className={`mt-0.5 shrink-0 ${blue ? 'text-indigo-600' : 'text-emerald-600'}`}>{icon}</span>
+            <span>{text}</span>
+        </div>
     )
 }

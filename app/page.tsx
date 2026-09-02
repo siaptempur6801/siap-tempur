@@ -13,7 +13,7 @@ import { createV2Client } from '@/lib/utils/supabase/server'
 
 export const metadata: Metadata = {
     title: 'SiapTempur - Persiapan CPNS & TKA',
-    description: 'Satu akun untuk persiapan CPNS/SKD dan TKA SMP dengan tryout, latihan terarah, pembahasan, dan analisis progress.',
+    description: 'Satu akun untuk persiapan CPNS/SKD dan TKA SMP dengan latihan, tryout, pembahasan, dan rekomendasi belajar.',
     alternates: { canonical: '/' },
 }
 
@@ -24,21 +24,21 @@ const productCards = [
     {
         code: 'CPNS / SKD',
         title: 'SiapTempur CPNS',
-        description: 'Drill TWK, TIU, TKP, Mini Tryout, Full Tryout SKD, pembahasan, history, dan ranking dalam satu jalur.',
+        description: 'Latihan TWK, TIU, dan TKP, ikuti mini atau full tryout, lalu gunakan hasilnya untuk menentukan bagian yang perlu kamu perbaiki.',
         href: '/cpns',
-        cta: 'Lihat CPNS',
+        cta: 'Mulai persiapan CPNS',
         icon: Target,
-        badge: 'Production V1',
+        badge: 'Siap dipelajari',
         accent: 'bg-yellow-200',
     },
     {
         code: 'TKA / SMP',
         title: 'SiapTempur TKA SMP',
-        description: 'Full Tryout, Mini Tryout, salah-soal, remedial, mastery, rekomendasi, readiness, dan progress dashboard.',
+        description: 'Latihan, mini tryout, full tryout, pembahasan, soal yang perlu diulang, dan rekomendasi belajar untuk membantu kamu lebih siap menghadapi TKA.',
         href: '/tka',
-        cta: 'Lihat TKA',
+        cta: 'Mulai TKA SMP',
         icon: GraduationCap,
-        badge: 'Production V1',
+        badge: 'Siap dipelajari',
         accent: 'bg-cyan-200',
     },
 ] as const
@@ -87,7 +87,7 @@ export default async function Index() {
                                     href="/register?returnTo=%2F"
                                     className="hidden border-2 border-gray-900 bg-gray-900 px-4 py-2 text-sm font-black text-white shadow-[3px_3px_0_0_#3b82f6] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none sm:inline-flex"
                                 >
-                                    Daftar Gratis
+                                    Daftar gratis
                                 </Link>
                             </>
                         )}
@@ -101,39 +101,39 @@ export default async function Index() {
                 <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
                     <div>
                         <div className="inline-flex items-center gap-2 border-2 border-gray-900 bg-yellow-200 px-3 py-1 text-xs font-black uppercase shadow-[3px_3px_0_0_#111]">
-                            <Sparkles size={15} /> Satu akun, dua medan tempur
+                            <Sparkles size={15} /> Satu akun untuk CPNS dan TKA
                         </div>
                         <h1 className="mt-6 max-w-5xl font-handwriting text-5xl font-black leading-[0.98] md:text-7xl">
-                            Belajar lebih terarah. Tempur lebih siap.
+                            Belajar lebih terarah. Hadapi ujian lebih siap.
                         </h1>
                         <p className="mt-6 max-w-3xl text-lg font-semibold leading-relaxed text-gray-600 md:text-xl">
-                            SiapTempur menyatukan persiapan CPNS/SKD dan TKA SMP dalam satu akun. Pilih jalurmu, latihan, ikut tryout, lalu lihat bagian mana yang harus diperbaiki berikutnya.
+                            Bukan cuma latihan soal. SiapTempur membantu kamu mengukur kemampuan, melihat bagian yang masih lemah, dan menentukan apa yang perlu dipelajari berikutnya.
                         </p>
                         <div className="mt-8 flex flex-wrap gap-3">
                             <Link
                                 href="/cpns"
                                 className="inline-flex items-center gap-2 border-2 border-gray-900 bg-blue-600 px-5 py-3 font-black text-white shadow-[5px_5px_0_0_#111] transition hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
                             >
-                                Mulai dari CPNS <ArrowRight size={18} />
+                                Mulai persiapan CPNS <ArrowRight size={18} />
                             </Link>
                             <Link
                                 href="/tka"
                                 className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-5 py-3 font-black shadow-[5px_5px_0_0_#111] transition hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
                             >
-                                Lihat TKA SMP <BookOpenCheck size={18} />
+                                Mulai TKA SMP <BookOpenCheck size={18} />
                             </Link>
                         </div>
                     </div>
 
                     <div className="rotate-1 border-2 border-gray-900 bg-white p-6 shadow-[10px_10px_0_0_#111] md:p-8">
-                        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Production V1</p>
-                        <h2 className="mt-2 font-handwriting text-4xl font-black">Fokus yang sudah siap dipakai.</h2>
+                        <p className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Cara SiapTempur membantu</p>
+                        <h2 className="mt-2 font-handwriting text-4xl font-black">Belajar dari setiap hasil.</h2>
                         <div className="mt-6 space-y-4">
                             {[
-                                'CPNS: Drill, Mini Tryout, Full SKD, result & pembahasan',
-                                'TKA SMP: Full/Mini Tryout, learning loop & readiness',
-                                'Satu akun dan progress terpisah per track',
-                                'Commerce, event, entitlement, dan Admin Workspace terintegrasi',
+                                'Latihan dan tryout CPNS/SKD untuk TWK, TIU, dan TKP',
+                                'Latihan dan tryout TKA SMP dalam satu akun',
+                                'Hasil dan pembahasan untuk melihat bagian yang perlu diperbaiki',
+                                'Perkembangan belajar tersimpan agar kamu tahu langkah berikutnya',
                             ].map((item) => (
                                 <div key={item} className="flex items-start gap-3 border-b border-dashed border-gray-300 pb-4 last:border-b-0 last:pb-0">
                                     <CheckCircle2 className="mt-0.5 shrink-0 text-green-600" size={20} />
@@ -148,9 +148,9 @@ export default async function Index() {
             <section className="px-4 py-14 md:px-8 md:py-20">
                 <div className="mx-auto max-w-7xl">
                     <div className="max-w-3xl">
-                        <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Pilih jalur</span>
-                        <h2 className="mt-2 font-handwriting text-4xl font-black md:text-5xl">Kamu mau tempur di mana?</h2>
-                        <p className="mt-3 font-semibold text-gray-600">Tidak perlu membuat akun berbeda. Satu akun dapat menyimpan progress untuk jalur yang kamu aktifkan.</p>
+                        <span className="text-xs font-black uppercase tracking-[0.2em] text-blue-700">Pilih tujuan belajar</span>
+                        <h2 className="mt-2 font-handwriting text-4xl font-black md:text-5xl">Kamu sedang menyiapkan ujian apa?</h2>
+                        <p className="mt-3 font-semibold text-gray-600">Satu akun menyimpan perkembangan belajarmu untuk setiap jalur yang kamu gunakan.</p>
                     </div>
 
                     <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -184,9 +184,9 @@ export default async function Index() {
             <section className="border-y-2 border-gray-900 bg-blue-50 px-4 py-14 md:px-8">
                 <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-3">
                     {[
-                        { icon: ShieldCheck, title: 'Masuk sekali', text: 'Login email/password atau Google, lalu kembali ke jalur yang tadi kamu pilih.' },
-                        { icon: BookOpenCheck, title: 'Aktifkan jalur', text: 'CPNS dan TKA menyimpan konteks, progress, attempt, serta entitlement secara terpisah.' },
-                        { icon: CheckCircle2, title: 'Belajar dari hasil', text: 'Tryout bukan titik akhir: pembahasan, salah-soal, remedial, dan readiness membantu menentukan langkah berikutnya.' },
+                        { icon: ShieldCheck, title: 'Pilih tujuanmu', text: 'Mulai dari persiapan CPNS/SKD atau TKA SMP dengan akun yang sama.' },
+                        { icon: BookOpenCheck, title: 'Latihan dan ukur kemampuan', text: 'Kerjakan latihan atau tryout untuk melihat bagian yang sudah kuat dan yang masih perlu diperbaiki.' },
+                        { icon: CheckCircle2, title: 'Belajar dari hasil', text: 'Gunakan hasil, pembahasan, dan rekomendasi belajar untuk menentukan latihan berikutnya.' },
                     ].map(({ icon: Icon, title, text }, index) => (
                         <article key={title} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0_0_#111]">
                             <div className="flex items-center gap-3">

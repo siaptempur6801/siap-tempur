@@ -94,9 +94,9 @@ export default function TkaWrongQuestionModeClient({
             }
             setFeedback(nextFeedback)
             setRemainingOpen(nextFeedback.remainingOpen)
-            if (nextFeedback.isCorrect) toast.success('Benar. Soal ini sudah dituntaskan!')
+            if (nextFeedback.isCorrect) toast.success('Benar. Soal ini sudah selesai diulang.')
         } catch {
-            toast.error('Gagal memeriksa jawaban.')
+            toast.error('Jawaban belum bisa diperiksa. Coba lagi.')
         } finally {
             setProcessing(false)
         }
@@ -122,16 +122,12 @@ export default function TkaWrongQuestionModeClient({
 
     if (!current) {
         return (
-            <main className="min-h-screen bg-[#fdfbf7] px-4 py-10 text-gray-900">
-                <section className="mx-auto max-w-2xl border-2 border-gray-900 bg-green-100 p-8 text-center shadow-[6px_6px_0_0_#111]">
-                    <CheckCircle2 className="mx-auto" size={44}/>
-                    <h1 className="mt-3 font-handwriting text-4xl font-black">Semua sudah dituntaskan.</h1>
-                    <p className="mt-2 font-semibold text-gray-700">
-                        Tidak ada soal salah atau kosong yang tersisa di queue TKA SMP saat ini.
-                    </p>
-                    <Link href="/tka/smp" className="mt-5 inline-flex border-2 border-gray-900 bg-white px-5 py-3 font-black shadow-[3px_3px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
-                        Kembali ke TKA SMP
-                    </Link>
+            <main data-experience-mode="learning" data-program="tka-smp" className="st-product min-h-screen px-4 py-10">
+                <section className="st-card-lg mx-auto max-w-2xl p-8 text-center md:p-10">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center border-2 border-slate-900 bg-emerald-100 text-emerald-700"><CheckCircle2 size={27}/></div>
+                    <h1 className="st-heading-display mt-5 text-4xl">Semua soal sudah diulang.</h1>
+                    <p className="st-muted mt-3 font-semibold leading-relaxed">Tidak ada soal salah atau belum dijawab yang masih perlu kamu ulang saat ini.</p>
+                    <Link href="/tka/smp" className="st-button st-focus mt-6 inline-flex min-h-11 items-center bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Kembali ke TKA SMP</Link>
                 </section>
             </main>
         )
@@ -145,21 +141,20 @@ export default function TkaWrongQuestionModeClient({
                 type="button"
                 onClick={() => chooseOption(option.id)}
                 disabled={processing || feedback?.isCorrect === true}
+                data-selected={selected}
                 className={cn(
-                    'w-full border-2 p-3 text-left transition shadow-[2px_2px_0_0_#bbb] disabled:cursor-not-allowed',
-                    selected
-                        ? 'translate-x-0.5 translate-y-0.5 border-blue-700 bg-blue-100 shadow-none'
-                        : 'border-gray-300 bg-white hover:border-gray-900',
+                    'st-option p-3.5 text-left transition disabled:cursor-not-allowed disabled:opacity-70',
+                    selected ? 'bg-blue-50' : 'bg-white',
                 )}
             >
                 <div className="flex items-start gap-3">
                     <span className={cn(
-                        'flex h-7 min-w-7 items-center justify-center border-2 border-gray-900 text-xs font-black',
-                        selected ? 'bg-blue-700 text-white' : 'bg-white',
+                        'flex h-8 min-w-8 items-center justify-center border-2 border-slate-900 text-xs font-black',
+                        selected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700',
                     )}>
                         {selected ? <Check size={15}/> : option.key || String.fromCharCode(65 + index)}
                     </span>
-                    <div className="min-w-0 flex-1 space-y-2 font-semibold text-gray-800">
+                    <div className="min-w-0 flex-1 space-y-2 text-sm font-semibold leading-relaxed text-slate-800 md:text-base">
                         {option.imageUrl && (
                             <Image src={option.imageUrl} alt="Pilihan jawaban" width={640} height={360} unoptimized className="max-h-56 w-auto max-w-full object-contain" />
                         )}
@@ -171,55 +166,51 @@ export default function TkaWrongQuestionModeClient({
     }
 
     return (
-        <main className="min-h-screen bg-[#fdfbf7] p-3 text-gray-900 md:p-6">
-            <div className="mx-auto max-w-6xl space-y-4">
-                <header className="border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0_0_#111]">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-red-700">
-                                <RotateCcw size={15}/> TKA SMP · Mode Ulang Soal Salah
-                            </div>
-                            <h1 className="mt-1 text-2xl font-black">Perbaiki gap satu per satu.</h1>
-                            <p className="mt-1 text-sm font-semibold text-gray-600">Soal keluar dari queue setelah kamu menjawabnya dengan benar.</p>
+        <main data-experience-mode="learning" data-program="tka-smp" className="st-product min-h-screen p-3 md:p-6">
+            <div className="mx-auto max-w-6xl space-y-5">
+                <header className="st-card p-5 md:p-6">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <div className="max-w-3xl">
+                            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-red-700"><RotateCcw size={16}/> TKA SMP · Soal yang perlu diulang</div>
+                            <h1 className="st-heading-display mt-2 text-3xl md:text-4xl">Pelajari kembali satu soal dalam satu waktu.</h1>
+                            <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">Setelah kamu menjawab dengan benar, soal akan keluar dari daftar yang perlu diulang.</p>
                         </div>
-                        <div className="border-2 border-gray-900 bg-yellow-100 px-4 py-2 text-center shadow-[2px_2px_0_0_#111]">
-                            <div className="text-[10px] font-black uppercase text-gray-500">Tersisa</div>
-                            <div className="text-2xl font-black">{remainingOpen}</div>
+                        <div className="border-2 border-slate-900 bg-yellow-100 px-5 py-3 text-center shadow-[2px_2px_0_#111827]">
+                            <div className="text-[10px] font-black uppercase tracking-wide text-amber-800">Tersisa</div>
+                            <div className="mt-0.5 text-2xl font-black text-slate-950">{remainingOpen}</div>
                         </div>
                     </div>
                 </header>
 
-                <section className="grid gap-4 lg:grid-cols-[1fr_280px]">
-                    <article className="min-w-0 border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0_0_#111] md:p-6">
+                <section className="grid gap-4 lg:grid-cols-[1fr_17rem]">
+                    <article className="st-card min-w-0 p-4 md:p-6">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                             <div className="flex flex-wrap items-center gap-2">
-                                <span className="border border-gray-900 bg-cyan-100 px-2 py-1 text-xs font-black">{current.subjectCode || 'TKA SMP'}</span>
-                                <span className="border border-gray-900 bg-red-50 px-2 py-1 text-xs font-black text-red-800">{failureLabel(current)}</span>
-                                {current.questionCode && <span className="text-xs font-bold text-gray-500">{current.questionCode}</span>}
+                                <span className="st-pill bg-emerald-100 text-emerald-800">{current.subjectCode || 'TKA SMP'}</span>
+                                <span className="st-pill bg-red-100 text-red-700">{failureLabel(current)}</span>
+                                {current.questionCode && <span className="text-xs font-bold text-slate-500">{current.questionCode}</span>}
                             </div>
-                            <span className="text-xs font-bold text-gray-500">Pernah gagal {current.failureCount}x</span>
+                            <span className="text-xs font-bold text-slate-500">Perlu diulang {current.failureCount}x</span>
                         </div>
 
                         {current.stimulus && (
-                            <div className="mt-4 border-2 border-gray-900 bg-gray-50 p-4">
-                                {current.stimulus.title && <h2 className="mb-2 font-black">{current.stimulus.title}</h2>}
+                            <div className="st-warning mt-5 p-4">
+                                {current.stimulus.title && <h2 className="st-heading mb-2">{current.stimulus.title}</h2>}
                                 {current.stimulus.imageUrl && (
                                     <Image src={current.stimulus.imageUrl} alt="Stimulus soal" width={960} height={540} unoptimized className="mb-3 max-h-80 w-auto max-w-full object-contain" />
                                 )}
-                                <MathRenderer text={current.stimulus.content} />
+                                <div className="text-sm font-semibold leading-relaxed text-slate-700 md:text-base"><MathRenderer text={current.stimulus.content} /></div>
                             </div>
                         )}
 
-                        <div className="mt-5 text-lg font-bold leading-relaxed">
-                            <MathRenderer text={current.stem} />
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-gray-500">{responseInstruction(current.responseType)}</p>
+                        <div className="mt-5 text-lg font-bold leading-relaxed text-slate-950"><MathRenderer text={current.stem} /></div>
+                        <p className="st-muted mt-2 text-sm font-semibold">{responseInstruction(current.responseType)}</p>
 
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-5 space-y-3">
                             {current.responseType === 'category'
                                 ? categoryGroups.map((group) => (
-                                    <div key={group} className="space-y-2 border-l-4 border-cyan-300 pl-3">
-                                        <div className="text-xs font-black uppercase text-gray-500">{group}</div>
+                                    <div key={group} className="space-y-2 border-l-4 border-blue-300 bg-slate-50 p-3">
+                                        <div className="text-xs font-black uppercase tracking-wide text-slate-500">{group}</div>
                                         {current.options.filter((option) => (option.responseGroup ?? 'Kelompok') === group).map(renderOption)}
                                     </div>
                                 ))
@@ -227,52 +218,49 @@ export default function TkaWrongQuestionModeClient({
                         </div>
 
                         {feedback && (
-                            <div className={cn(
-                                'mt-5 border-2 border-gray-900 p-4 shadow-[3px_3px_0_0_#111]',
-                                feedback.isCorrect ? 'bg-green-100' : 'bg-red-100',
-                            )}>
-                                <div className="flex items-center gap-2 font-black">
+                            <div className={cn('mt-6 p-4', feedback.isCorrect ? 'st-success' : 'st-danger')}>
+                                <div className={cn('flex items-center gap-2 font-black', feedback.isCorrect ? 'text-emerald-800' : 'text-red-800')}>
                                     {feedback.isCorrect ? <CheckCircle2 size={20}/> : <XCircle size={20}/>}
-                                    {feedback.isCorrect ? 'Benar! Soal ini sudah dituntaskan.' : 'Belum tepat. Pilih jawaban lain lalu coba lagi.'}
+                                    {feedback.isCorrect ? 'Benar. Soal ini sudah selesai diulang.' : 'Belum tepat. Pelajari pembahasan lalu coba jawaban lain.'}
                                 </div>
                                 {feedback.explanation && (
-                                    <div className="mt-3 border-t border-gray-900/20 pt-3 text-sm font-semibold text-gray-700">
-                                        <div className="mb-1 text-xs font-black uppercase text-gray-500">Pembahasan</div>
+                                    <div className="mt-3 border-t-2 border-dashed border-slate-200 pt-3 text-sm font-semibold leading-relaxed text-slate-700">
+                                        <div className="mb-1 text-xs font-black uppercase text-slate-500">Pembahasan</div>
                                         <MathRenderer text={feedback.explanation} />
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                            <Link href="/tka/smp" className="border-2 border-gray-900 bg-white px-4 py-2 font-black shadow-[2px_2px_0_0_#bbb]">Keluar</Link>
+                        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-slate-200 pt-5">
+                            <Link href="/tka/smp" className="st-button st-focus inline-flex min-h-11 items-center bg-white px-4 py-2.5 text-sm font-black text-slate-800">Keluar</Link>
                             {feedback?.isCorrect ? (
-                                <button type="button" onClick={nextResolved} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-green-200 px-5 py-2 font-black shadow-[3px_3px_0_0_#111] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none">
-                                    Lanjut <ChevronRight size={18}/>
+                                <button type="button" onClick={nextResolved} className="st-button st-focus inline-flex min-h-11 items-center gap-2 bg-emerald-500 px-5 py-2.5 text-sm font-black text-white">
+                                    Lanjut <ChevronRight size={17}/>
                                 </button>
                             ) : (
-                                <button type="button" onClick={checkAnswer} disabled={processing || selectedIds.length === 0} className="border-2 border-gray-900 bg-gray-900 px-5 py-2 font-black text-white shadow-[3px_3px_0_0_#aaa] disabled:cursor-not-allowed disabled:opacity-50">
+                                <button type="button" onClick={checkAnswer} disabled={processing || selectedIds.length === 0} className="st-button st-focus inline-flex min-h-11 items-center bg-slate-950 px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
                                     {processing ? 'Memeriksa...' : feedback ? 'Periksa lagi' : 'Periksa jawaban'}
                                 </button>
                             )}
                         </div>
                     </article>
 
-                    <aside className="h-fit border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0_0_#111]">
-                        <div className="text-xs font-black uppercase text-gray-500">Queue lokal</div>
-                        <div className="mt-1 text-2xl font-black">{currentIndex + 1}/{items.length}</div>
+                    <aside className="st-card h-fit p-4 lg:sticky lg:top-5">
+                        <div className="text-xs font-black uppercase tracking-wide text-slate-500">Daftar soal</div>
+                        <div className="mt-1 text-2xl font-black tracking-tight text-slate-950">{currentIndex + 1}/{items.length}</div>
                         <div className="mt-4 grid grid-cols-2 gap-2">
-                            <button type="button" onClick={() => navigate(-1)} disabled={currentIndex === 0 || processing || feedback?.isCorrect === true} className="inline-flex items-center justify-center gap-1 border-2 border-gray-900 bg-white px-3 py-2 font-black disabled:opacity-40">
-                                <ChevronLeft size={17}/> Prev
+                            <button type="button" onClick={() => navigate(-1)} disabled={currentIndex === 0 || processing || feedback?.isCorrect === true} className="st-flat-card inline-flex min-h-11 items-center justify-center gap-1 px-3 py-2 text-xs font-black text-slate-700 disabled:opacity-40">
+                                <ChevronLeft size={16}/> Sebelumnya
                             </button>
-                            <button type="button" onClick={() => navigate(1)} disabled={currentIndex >= items.length - 1 || processing || feedback?.isCorrect === true} className="inline-flex items-center justify-center gap-1 border-2 border-gray-900 bg-white px-3 py-2 font-black disabled:opacity-40">
-                                Next <ChevronRight size={17}/>
+                            <button type="button" onClick={() => navigate(1)} disabled={currentIndex >= items.length - 1 || processing || feedback?.isCorrect === true} className="st-flat-card inline-flex min-h-11 items-center justify-center gap-1 px-3 py-2 text-xs font-black text-slate-700 disabled:opacity-40">
+                                Berikutnya <ChevronRight size={16}/>
                             </button>
                         </div>
-                        <div className="mt-4 space-y-2 text-xs font-semibold text-gray-600">
-                            <p><b>Salah:</b> {current.wrongCount}x</p>
-                            <p><b>Kosong:</b> {current.unansweredCount}x</p>
-                            <p>Jawaban benar di mode ini akan mengubah state soal menjadi <b>resolved</b>.</p>
+                        <div className="st-muted mt-4 space-y-2 border-t-2 border-dashed border-slate-200 pt-4 text-xs font-semibold leading-relaxed">
+                            <p><b className="text-slate-800">Salah:</b> {current.wrongCount}x</p>
+                            <p><b className="text-slate-800">Belum dijawab:</b> {current.unansweredCount}x</p>
+                            <p>Jawab dengan benar agar soal ini ditandai selesai dan keluar dari daftar yang perlu diulang.</p>
                         </div>
                     </aside>
                 </section>

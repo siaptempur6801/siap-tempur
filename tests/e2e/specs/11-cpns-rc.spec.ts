@@ -11,10 +11,20 @@ async function waitForInteractivePreview(page: Page) {
   await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => undefined)
 }
 
-async function expectTicketBalance(page: Page, balance: number) {
-  const ticketLink = page.getByRole('link').filter({ hasText: 'Tiket Sisa' }).first()
-  await expect(ticketLink).toBeVisible()
-  await expect(ticketLink.getByText(String(balance), { exact: true })).toBeVisible()
+async function expectDashboardTokenBalance(page: Page, balance: number) {
+  const dashboard = page.getByTestId('cpns-dashboard-ready')
+  await expect(dashboard).toBeVisible()
+
+  const accessCard = dashboard.locator('article').filter({ hasText: 'Akses tryout' }).first()
+  await expect(accessCard).toBeVisible()
+  await expect(accessCard).toContainText(String(balance))
+  await expect(accessCard).toContainText('token tersisa')
+}
+
+async function expectListingTokenBalance(page: Page, balance: number) {
+  const tokenLabel = page.getByText('Saldo token', { exact: true }).first()
+  await expect(tokenLabel).toBeVisible()
+  await expect(tokenLabel.locator('..')).toContainText(String(balance))
 }
 
 async function openTokenDialog(page: Page, startButton: Locator) {
@@ -53,9 +63,8 @@ test.describe('CPNS SKD release-candidate', () => {
   test('dashboard uses canonical track/wallet state', async ({ page }) => {
     await page.goto('/cpns/dashboard', NAVIGATION_OPTIONS)
     await expect(page).toHaveURL(/\/cpns\/dashboard(?:\?.*)?$/)
-    await expect(page.getByText('Siap Tempur')).toBeVisible()
-    await expectTicketBalance(page, 3)
-    await expect(page.getByRole('heading', { name: 'Mulai Tryout', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Apa yang sebaiknya kamu kerjakan hari ini?', exact: true })).toBeVisible()
+    await expectDashboardTokenBalance(page, 3)
   })
 
   test('full lifecycle, mini tryout, and drill preserve state and charge exactly once', async ({ page }) => {
@@ -63,17 +72,18 @@ test.describe('CPNS SKD release-candidate', () => {
 
     // FULL TRYOUT: 3 -> 2 tokens.
     await page.goto('/cpns/dashboard/tryout', NAVIGATION_OPTIONS)
-    await expect(page.getByRole('heading', { name: 'Siap Tryout Hari Ini?' })).toBeVisible()
-    await expect(page.getByText('3 Tiket', { exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Uji kesiapanmu dalam satu sesi penuh.', exact: true })).toBeVisible()
+    await expectListingTokenBalance(page, 3)
 
-    const fullStartButton = page.getByRole('button', { name: /Mulai Tryout/i })
+    const fullStartButton = page.getByRole('button', { name: 'Mulai Full Tryout', exact: true })
     const fullDialog = await openTokenDialog(page, fullStartButton)
     await expect(fullDialog.getByText('Mulai Full Tryout SKD?')).toBeVisible()
     await confirmOneToken(fullDialog, 3, 2)
 
     await page.waitForURL(SESSION_URL, NAVIGATION_OPTIONS)
     const fullSessionUrl = page.url()
-    await expect(page.getByText('Soal #1', { exact: true })).toBeVisible()
+    await expect(page.getByText('Soal 1', { exact: true })).toBeVisible()
+    await expect(page.getByText('dari 110', { exact: true })).toBeVisible()
 
     // Answer question 1 and wait for the Next.js server action response.
     const firstOption = page.locator('button').filter({ hasText: /^A/ }).first()
@@ -98,8 +108,8 @@ test.describe('CPNS SKD release-candidate', () => {
 
     // Returning to listing shows the one-token debit and active resume state.
     await page.goto('/cpns/dashboard/tryout', NAVIGATION_OPTIONS)
-    await expect(page.getByText('2 Tiket', { exact: true })).toBeVisible()
-    const resumeButton = page.getByRole('button', { name: /Lanjutkan Tryout/i })
+    await expectListingTokenBalance(page, 2)
+    const resumeButton = page.getByRole('button', { name: 'Lanjutkan Full Tryout', exact: true })
     await expect(resumeButton).toBeVisible()
     await waitForInteractivePreview(page)
     await resumeButton.click()
@@ -108,32 +118,35 @@ test.describe('CPNS SKD release-candidate', () => {
 
     // Resume is free/idempotent: balance remains 2.
     await page.goto('/cpns/dashboard/tryout', NAVIGATION_OPTIONS)
-    await expect(page.getByText('2 Tiket', { exact: true })).toBeVisible()
+    await expectListingTokenBalance(page, 2)
     await waitForInteractivePreview(page)
-    await page.getByRole('button', { name: /Lanjutkan Tryout/i }).click()
+    await page.getByRole('button', { name: 'Lanjutkan Full Tryout', exact: true }).click()
     await page.waitForURL(SESSION_URL, NAVIGATION_OPTIONS)
 
     // Finish with unanswered questions allowed, then verify result + review.
     await page.getByRole('button', { name: '110', exact: true }).click()
-    await expect(page.getByText('Soal #110', { exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Selesai & Hitung', exact: true }).click()
-    await expect(page.getByText('Selesaikan Tryout?', { exact: true })).toBeVisible()
-    await page.getByRole('button', { name: 'Siap Tempur!', exact: true }).click()
+    await expect(page.getByText('Soal 110', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Kumpulkan jawaban', exact: true }).click()
+
+    const finishPrompt = page.getByRole('heading', { name: 'Kumpulkan jawaban?', exact: true })
+    await expect(finishPrompt).toBeVisible()
+    await finishPrompt.locator('..').getByRole('button', { name: 'Kumpulkan jawaban', exact: true }).click()
+
     await page.waitForURL(RESULT_URL, { ...NAVIGATION_OPTIONS, timeout: 60_000 })
-    await expect(page.getByRole('heading', { name: /Sesi Selesai!|Masih Bisa Ditingkatkan/ })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Review Jawaban', exact: true })).toBeVisible()
-    await expect(page.getByText('Pembahasan dan answer key baru dikirim setelah attempt selesai.')).toBeVisible()
-    await expect(page.getByText('Pilihan Anda', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Hasilnya sudah jelas|Sesi selesai/i })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Pahami jawabanmu satu per satu.', exact: true })).toBeVisible()
+    await expect(page.getByText('Jawaban kamu', { exact: true }).first()).toBeVisible()
 
     // MINI TRYOUT TWK: 2 -> 1 token, start a real session, then exit/resume-save.
     await page.goto('/cpns/dashboard/mini-tryout', NAVIGATION_OPTIONS)
-    await expect(page.getByRole('heading', { name: 'Latihan Fokus TWK, TIU, dan TKP' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Uji satu bagian sebelum mencoba sesi penuh.', exact: true })).toBeVisible()
+    await expectListingTokenBalance(page, 2)
     const miniStartButton = page.getByRole('button', { name: 'Mulai TWK', exact: true })
     const miniDialog = await openTokenDialog(page, miniStartButton)
     await expect(miniDialog.getByText('Mulai Mini Tryout TWK?')).toBeVisible()
     await confirmOneToken(miniDialog, 2, 1)
     await page.waitForURL(SESSION_URL, NAVIGATION_OPTIONS)
-    await expect(page.getByText('Soal #1', { exact: true })).toBeVisible()
+    await expect(page.getByText('Soal 1', { exact: true })).toBeVisible()
 
     await waitForInteractivePreview(page)
     await page.getByRole('button', { name: 'Keluar Mini Tryout', exact: true }).click()
@@ -142,12 +155,12 @@ test.describe('CPNS SKD release-candidate', () => {
     await page.waitForURL(/\/cpns\/dashboard\/mini-tryout(?:\?.*)?$/, NAVIGATION_OPTIONS)
     await expect(page.getByRole('button', { name: 'Lanjutkan TWK', exact: true })).toBeVisible()
 
-    // DRILL: choose the first material with >=30 published questions; 1 -> 0.
+    // LATIHAN FOKUS: choose the first material with >=30 published questions; 1 -> 0.
     await page.goto('/cpns/dashboard/drilling-materi', NAVIGATION_OPTIONS)
-    await expect(page.getByRole('heading', { name: 'Latihan Materi yang Mau Kamu Kuasai' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Perkuat materi yang paling perlu kamu kuasai.', exact: true })).toBeVisible()
     await waitForInteractivePreview(page)
 
-    const drillButtons = page.getByRole('button', { name: 'Mulai Drilling', exact: true })
+    const drillButtons = page.getByRole('button', { name: 'Mulai Latihan Fokus', exact: true })
     const drillCount = await drillButtons.count()
     let drillStartButton: Locator | null = null
     for (let index = 0; index < drillCount; index += 1) {
@@ -157,16 +170,16 @@ test.describe('CPNS SKD release-candidate', () => {
         break
       }
     }
-    expect(drillStartButton, 'Expected at least one drilling material with >=30 published questions').not.toBeNull()
+    expect(drillStartButton, 'Expected at least one Latihan Fokus material with >=30 published questions').not.toBeNull()
 
     const drillDialog = await openTokenDialog(page, drillStartButton!)
-    await expect(drillDialog.getByText(/^Mulai Drilling /)).toBeVisible()
+    await expect(drillDialog.getByText(/^Mulai Latihan Fokus /).first()).toBeVisible()
     await confirmOneToken(drillDialog, 1, 0)
     await page.waitForURL(SESSION_URL, NAVIGATION_OPTIONS)
-    await expect(page.getByText('Soal #1', { exact: true })).toBeVisible()
+    await expect(page.getByText('Soal 1', { exact: true })).toBeVisible()
 
     // Final wallet state proves all three new-session debits happened once.
     await page.goto('/cpns/dashboard', NAVIGATION_OPTIONS)
-    await expectTicketBalance(page, 0)
+    await expectDashboardTokenBalance(page, 0)
   })
 })

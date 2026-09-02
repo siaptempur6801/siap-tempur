@@ -259,10 +259,10 @@ export default function TkaFullExamSessionClient({
         if (processing) return
         const unanswered = Math.max(0, questions.length - answeredCount)
         if (!automatic) {
-            const label = activeSection?.title ?? 'section ini'
+            const label = activeSection?.title ?? 'bagian ini'
             const message = unanswered > 0
-                ? `Masih ada ${unanswered} soal belum dijawab di ${label}. Selesaikan section sekarang? Setelah berpindah, jawaban section ini tidak dapat diubah.`
-                : `Semua soal ${label} sudah dijawab. Selesaikan section sekarang? Setelah berpindah, jawaban tidak dapat diubah.`
+                ? `Masih ada ${unanswered} soal belum dijawab di ${label}. Selesaikan bagian ini sekarang? Setelah berpindah, jawaban bagian ini tidak dapat diubah.`
+                : `Semua soal ${label} sudah dijawab. Selesaikan bagian ini sekarang? Setelah berpindah, jawaban tidak dapat diubah.`
             if (!window.confirm(message)) return
         }
 
@@ -281,15 +281,15 @@ export default function TkaFullExamSessionClient({
                     toast.error(submitted.error)
                     return
                 }
-                toast.success(automatic ? 'Waktu habis. Tryout sudah dikirim.' : 'Tryout TKA selesai!')
+                toast.success(automatic ? 'Waktu habis. Tryout sudah dikirim.' : 'Tryout TKA selesai.')
                 router.push(resultPath)
                 return
             }
 
-            toast.success(automatic ? 'Waktu section habis. Lanjut ke section berikutnya.' : 'Section selesai. Lanjut ke mata uji berikutnya.')
+            toast.success(automatic ? 'Waktu bagian ini habis. Lanjut ke bagian berikutnya.' : 'Bagian selesai. Lanjut ke mata uji berikutnya.')
             router.refresh()
         } catch {
-            toast.error('Gagal menyelesaikan section.')
+            toast.error('Bagian ini belum bisa diselesaikan. Coba lagi.')
         } finally {
             setProcessing(false)
         }
@@ -319,9 +319,9 @@ export default function TkaFullExamSessionClient({
 
     if (!activeSection || !currentQuestion) {
         return (
-            <main className="min-h-screen bg-[#fdfbf7] p-8 text-center">
-                <div className="mx-auto max-w-xl border-2 border-gray-900 bg-white p-6 font-black shadow-[5px_5px_0_0_#111]">
-                    Tidak ada section aktif. Muat ulang halaman atau kembali ke TKA {level}.
+            <main data-experience-mode="exam" data-program="tka-smp" className="st-product min-h-screen p-8 text-center">
+                <div className="st-flat-card mx-auto max-w-xl p-6 font-black">
+                    Tidak ada bagian aktif. Muat ulang halaman atau kembali ke TKA {level}.
                 </div>
             </main>
         )
@@ -340,21 +340,17 @@ export default function TkaFullExamSessionClient({
                 key={option.id}
                 type="button"
                 onClick={() => handleSelect(currentQuestion, option.id)}
-                className={cn(
-                    'w-full border-2 p-3 text-left transition shadow-[2px_2px_0_0_#bbb]',
-                    selected
-                        ? 'translate-x-0.5 translate-y-0.5 border-blue-700 bg-blue-100 shadow-none'
-                        : 'border-gray-300 bg-white hover:border-gray-900',
-                )}
+                data-selected={selected}
+                className="st-option st-focus p-3.5 text-left transition-colors"
             >
                 <div className="flex items-start gap-3">
                     <span className={cn(
-                        'flex h-7 min-w-7 items-center justify-center border-2 border-gray-900 text-xs font-black',
-                        selected ? 'bg-blue-700 text-white' : 'bg-white',
+                        'flex h-8 min-w-8 items-center justify-center border-2 border-slate-900 text-xs font-black',
+                        selected ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-700',
                     )}>
                         {selected ? <Check size={15}/> : option.key || String.fromCharCode(65 + index)}
                     </span>
-                    <div className="min-w-0 flex-1 space-y-2 font-semibold text-gray-800">
+                    <div className="min-w-0 flex-1 space-y-2 font-semibold leading-relaxed text-slate-800">
                         {option.imageUrl && (
                             <Image src={option.imageUrl} alt="Pilihan jawaban" width={640} height={360} unoptimized className="max-h-56 w-auto max-w-full object-contain" />
                         )}
@@ -366,22 +362,22 @@ export default function TkaFullExamSessionClient({
     }
 
     return (
-        <main className="min-h-screen bg-[#fdfbf7] p-3 text-gray-900 md:p-6">
+        <main data-experience-mode="exam" data-program="tka-smp" className="st-product min-h-screen p-3 md:p-6">
             <div className="mx-auto max-w-7xl space-y-4">
-                <header className="border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0_0_#111]">
+                <header className="st-flat-card p-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <div className="text-xs font-black uppercase tracking-widest text-blue-700">TKA SMP · {examModeLabel}</div>
-                            <h1 className="mt-1 text-xl font-black">{activeSection.title}</h1>
+                            <div className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">TKA SMP · {examModeLabel}</div>
+                            <h1 className="st-heading mt-1 text-xl">{activeSection.title}</h1>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className={cn(
-                                'inline-flex items-center gap-2 border-2 border-gray-900 px-3 py-2 font-mono font-black',
-                                remainingMs !== null && remainingMs <= 300000 ? 'bg-red-100 text-red-700' : 'bg-cyan-100',
+                                'inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 px-3 py-2 font-mono font-black tabular-nums',
+                                remainingMs !== null && remainingMs <= 300000 ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-slate-950',
                             )}>
                                 <Clock3 size={16}/>{remainingMs === null ? '--:--:--' : formatRemaining(remainingMs)}
                             </div>
-                            <button type="button" onClick={() => router.push(returnPath)} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-3 py-2 font-black">
+                            <button type="button" onClick={() => router.push(returnPath)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-white px-3 py-2 text-sm font-black">
                                 <LogOut size={16}/><span className="hidden sm:inline">Keluar</span>
                             </button>
                         </div>
@@ -389,8 +385,8 @@ export default function TkaFullExamSessionClient({
                     <div className="mt-4 grid gap-2 sm:grid-cols-2">
                         {state.sections.map((section) => (
                             <div key={section.sectionId} className={cn(
-                                'border-2 border-gray-900 px-3 py-2 text-sm font-black',
-                                section.status === 'active' ? 'bg-blue-700 text-white' : section.status === 'completed' ? 'bg-green-100' : 'bg-gray-100 text-gray-500',
+                                'border-2 border-slate-900 px-3 py-2 text-sm font-black',
+                                section.status === 'active' ? 'bg-blue-600 text-white' : section.status === 'completed' ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-100 text-slate-500',
                             )}>
                                 {section.sortOrder}. {section.title} · {section.questionCount} soal · {Math.round(section.durationSeconds / 60)} menit
                             </div>
@@ -400,39 +396,39 @@ export default function TkaFullExamSessionClient({
 
                 <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
                     <section className="min-w-0 space-y-4">
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-2 border-gray-900 bg-white p-3">
+                        <div className="st-flat-card flex flex-wrap items-center justify-between gap-3 p-3">
                             <div>
-                                <div className="text-xs font-black uppercase text-blue-700">{activeSection.subjectCode} · {currentQuestion.responseType}</div>
-                                <div className="text-lg font-black">Soal {currentIndex + 1} / {questions.length}</div>
+                                <div className="text-xs font-black uppercase tracking-[0.12em] text-blue-700">{activeSection.subjectCode}</div>
+                                <div className="mt-0.5 text-lg font-black">Soal {currentIndex + 1} dari {questions.length}</div>
                             </div>
-                            <button type="button" onClick={toggleFlag} className={cn('inline-flex items-center gap-2 border-2 border-gray-900 px-3 py-2 font-black', flags[currentQuestion.attemptQuestionId] ? 'bg-yellow-300' : 'bg-white')}>
-                                <Flag size={16}/>{flags[currentQuestion.attemptQuestionId] ? 'Ditandai' : 'Tandai'}
+                            <button type="button" onClick={toggleFlag} className={cn('st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 px-3 py-2 text-sm font-black', flags[currentQuestion.attemptQuestionId] ? 'bg-yellow-200' : 'bg-white')}>
+                                <Flag size={16}/>{flags[currentQuestion.attemptQuestionId] ? 'Ditandai' : 'Tandai untuk ditinjau'}
                             </button>
                         </div>
 
                         {currentQuestion.stimulus && (
-                            <article className="border-2 border-gray-900 bg-yellow-50 p-5 shadow-[4px_4px_0_0_#bbb]">
-                                {currentQuestion.stimulus.title && <h2 className="mb-3 text-lg font-black">{currentQuestion.stimulus.title}</h2>}
+                            <article className="st-warning p-5">
+                                {currentQuestion.stimulus.title && <h2 className="st-heading mb-3 text-lg">{currentQuestion.stimulus.title}</h2>}
                                 {currentQuestion.stimulus.imageUrl && (
                                     <Image src={currentQuestion.stimulus.imageUrl} alt="Stimulus soal" width={900} height={500} unoptimized className="mb-4 max-h-80 w-auto max-w-full object-contain" />
                                 )}
-                                <div className="whitespace-pre-wrap font-semibold leading-relaxed text-gray-800">
+                                <div className="whitespace-pre-wrap font-semibold leading-relaxed text-slate-800">
                                     <MathRenderer text={currentQuestion.stimulus.content} />
                                 </div>
                             </article>
                         )}
 
-                        <article className="border-2 border-gray-900 bg-white p-5 shadow-[5px_5px_0_0_#111] md:p-7">
+                        <article className="st-flat-card p-5 md:p-7">
                             <div className="whitespace-pre-wrap text-lg font-bold leading-relaxed md:text-xl">
                                 <MathRenderer text={currentQuestion.stem} />
                             </div>
-                            <p className="mt-4 border-t-2 border-dashed border-gray-200 pt-3 text-sm font-black text-blue-700">
+                            <p className="mt-4 border-t-2 border-dashed border-slate-200 pt-3 text-sm font-black text-blue-700">
                                 {responseInstruction(currentQuestion.responseType)}
                             </p>
                             <div className="mt-5 space-y-3">
                                 {currentQuestion.responseType === 'category' ? categoryGroups.map((group) => (
-                                    <div key={group} className="space-y-2 border-2 border-dashed border-gray-300 bg-gray-50 p-3">
-                                        <h3 className="text-sm font-black uppercase text-gray-600">{group}</h3>
+                                    <div key={group} className="space-y-2 border-l-4 border-blue-300 bg-slate-50 p-3">
+                                        <h3 className="text-sm font-black uppercase text-slate-600">{group}</h3>
                                         {currentQuestion.options
                                             .filter((option) => (option.responseGroup ?? 'Kelompok') === group)
                                             .map((option, index) => renderOption(option, index))}
@@ -442,25 +438,25 @@ export default function TkaFullExamSessionClient({
                         </article>
 
                         <div className="flex items-center justify-between gap-3">
-                            <button type="button" disabled={currentIndex === 0} onClick={() => navigate(currentIndex - 1)} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 font-black disabled:opacity-40">
+                            <button type="button" disabled={currentIndex === 0} onClick={() => navigate(currentIndex - 1)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-white px-4 py-2 text-sm font-black disabled:opacity-40">
                                 <ChevronLeft size={18}/> Sebelumnya
                             </button>
                             {currentIndex === questions.length - 1 ? (
-                                <button type="button" disabled={processing} onClick={() => void advanceSection(false)} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-blue-700 px-5 py-2 font-black text-white disabled:opacity-50">
-                                    <CheckCircle2 size={18}/>{processing ? 'Memproses...' : state.sections.some((section) => section.status === 'locked') ? 'Selesai Section' : 'Kirim Tryout'}
+                                <button type="button" disabled={processing} onClick={() => void advanceSection(false)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-blue-600 px-5 py-2 text-sm font-black text-white disabled:opacity-50">
+                                    <CheckCircle2 size={18}/>{processing ? 'Memproses...' : state.sections.some((section) => section.status === 'locked') ? 'Selesaikan bagian' : 'Kirim tryout'}
                                 </button>
                             ) : (
-                                <button type="button" onClick={() => navigate(currentIndex + 1)} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-gray-900 px-4 py-2 font-black text-white">
+                                <button type="button" onClick={() => navigate(currentIndex + 1)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-slate-950 px-4 py-2 text-sm font-black text-white">
                                     Selanjutnya <ChevronRight size={18}/>
                                 </button>
                             )}
                         </div>
                     </section>
 
-                    <aside className="h-fit border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0_0_#111] lg:sticky lg:top-5">
+                    <aside className="st-flat-card h-fit p-4 lg:sticky lg:top-5">
                         <div className="flex items-center justify-between gap-2">
-                            <h2 className="inline-flex items-center gap-2 font-black"><MapIcon size={18}/> Navigasi</h2>
-                            <span className="text-xs font-black text-gray-500">{answeredCount}/{questions.length}</span>
+                            <h2 className="inline-flex items-center gap-2 font-black"><MapIcon size={18}/> Navigasi soal</h2>
+                            <span className="text-xs font-black text-slate-500">{answeredCount}/{questions.length}</span>
                         </div>
                         <div className="mt-4 grid grid-cols-5 gap-2">
                             {questions.map((question, index) => {
@@ -471,22 +467,24 @@ export default function TkaFullExamSessionClient({
                                         key={question.attemptQuestionId}
                                         type="button"
                                         onClick={() => navigate(index)}
+                                        aria-label={`Buka soal ${index + 1}`}
+                                        aria-current={index === currentIndex ? 'step' : undefined}
                                         className={cn(
-                                            'relative aspect-square border-2 border-gray-900 text-sm font-black',
-                                            index === currentIndex ? 'bg-blue-700 text-white' : answered ? 'bg-green-100' : 'bg-white',
+                                            'st-focus relative aspect-square min-h-10 border-2 border-slate-900 text-sm font-black',
+                                            index === currentIndex ? 'bg-blue-600 text-white' : answered ? 'bg-emerald-100 text-slate-950' : 'bg-white text-slate-700',
                                         )}
                                     >
                                         {index + 1}
-                                        {flagged && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-gray-900 bg-yellow-300"/>}
+                                        {flagged && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-slate-900 bg-yellow-300"/>}
                                     </button>
                                 )
                             })}
                         </div>
-                        <div className="mt-4 space-y-2 border-t-2 border-dashed border-gray-300 pt-4 text-xs font-bold text-gray-600">
-                            <div>Terjawab section: <b>{answeredCount}/{questions.length}</b></div>
-                            <div>Terjawab total: <b>{state.answeredCount}/{state.totalQuestions}</b></div>
-                            <div>Ditandai: <b>{markedCount}</b></div>
-                            <div>Percobaan: <b>#{state.attemptNumber}</b></div>
+                        <div className="st-muted mt-4 space-y-2 border-t-2 border-dashed border-slate-200 pt-4 text-xs font-bold">
+                            <div>Terjawab bagian ini: <b className="text-slate-900">{answeredCount}/{questions.length}</b></div>
+                            <div>Terjawab total: <b className="text-slate-900">{state.answeredCount}/{state.totalQuestions}</b></div>
+                            <div>Ditandai: <b className="text-slate-900">{markedCount}</b></div>
+                            <div>Pengerjaan: <b className="text-slate-900">#{state.attemptNumber}</b></div>
                         </div>
                     </aside>
                 </div>

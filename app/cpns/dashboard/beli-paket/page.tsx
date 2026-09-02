@@ -1,4 +1,3 @@
-import PaperBackground from '@/components/PaperBackground'
 import CommercePackagesClient from '@/components/dashboard/CommercePackagesClient'
 import { commerceService } from '@/src/services/commerce.service'
 import { authorizationService } from '@/src/services/authorization.service'
@@ -24,10 +23,5 @@ export default async function BeliPaketPage() {
     const qaQrisEnabled = env.appEnvironment() === 'staging'
         && await authorizationService.hasPermission(PERMISSIONS.PAYMENT_MANAGE)
 
-    return (
-        <div className="font-body w-full flex flex-col relative">
-            <PaperBackground />
-            <CommercePackagesClient packages={packages} qaQrisEnabled={qaQrisEnabled} />
-        </div>
-    )
+    return <CommercePackagesClient packages={packages} qaQrisEnabled={qaQrisEnabled} />
 }

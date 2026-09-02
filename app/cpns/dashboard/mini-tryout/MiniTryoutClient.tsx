@@ -3,19 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
-import {
-    ArrowRight,
-    Brain,
-    CheckCircle2,
-    Clock3,
-    Loader2,
-    ShieldCheck,
-    Target,
-    Ticket,
-    Trophy,
-    UserCheck,
-    Zap,
-} from 'lucide-react'
+import { ArrowRight, Brain, Clock3, Loader2, ShieldCheck, Ticket, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { startMiniTryout } from '@/app/actions/practice'
 import PaperBackground from '@/components/PaperBackground'
@@ -41,37 +29,29 @@ type MiniTryoutClientProps = {
 
 type ProductStyle = {
     Icon: LucideIcon
-    badgeClassName: string
     iconClassName: string
-    borderClassName: string
-    softClassName: string
+    badgeClassName: string
     buttonClassName: string
 }
 
 const PRODUCT_STYLES: Record<MiniTryoutType, ProductStyle> = {
     TWK: {
         Icon: ShieldCheck,
-        badgeClassName: 'bg-red-100 text-red-700 border-red-300',
-        iconClassName: 'bg-red-100 text-red-700 border-red-300',
-        borderClassName: 'border-red-200',
-        softClassName: 'bg-red-50 text-red-700 border-red-200',
-        buttonClassName: 'bg-red-600 hover:bg-red-700 text-white border-red-800',
+        iconClassName: 'bg-red-50 text-red-700',
+        badgeClassName: 'bg-red-50 text-red-700',
+        buttonClassName: 'bg-red-600 text-white hover:bg-red-700',
     },
     TIU: {
         Icon: Brain,
-        badgeClassName: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-        iconClassName: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-        borderClassName: 'border-yellow-200',
-        softClassName: 'bg-yellow-50 text-yellow-800 border-yellow-200',
-        buttonClassName: 'bg-yellow-400 hover:bg-yellow-500 text-gray-900 border-gray-900',
+        iconClassName: 'bg-amber-50 text-amber-800',
+        badgeClassName: 'bg-amber-50 text-amber-800',
+        buttonClassName: 'bg-amber-300 text-slate-950 hover:bg-amber-400',
     },
     TKP: {
         Icon: UserCheck,
-        badgeClassName: 'bg-blue-100 text-blue-700 border-blue-300',
-        iconClassName: 'bg-blue-100 text-blue-700 border-blue-300',
-        borderClassName: 'border-blue-200',
-        softClassName: 'bg-blue-50 text-blue-700 border-blue-200',
-        buttonClassName: 'bg-blue-600 hover:bg-blue-700 text-white border-blue-800',
+        iconClassName: 'bg-blue-50 text-blue-700',
+        badgeClassName: 'bg-blue-50 text-blue-700',
+        buttonClassName: 'bg-blue-600 text-white hover:bg-blue-700',
     },
 }
 
@@ -91,17 +71,12 @@ function getActiveSessionDetails(activeSession: MiniTryoutActiveSession | undefi
     if (!activeSession) return null
 
     const items = [`Soal ${activeSession.resumeQuestionNumber}`]
-
-    if (activeSession.answeredQuestions > 0) {
-        items.push(`${activeSession.answeredQuestions} terjawab`)
-    }
+    if (activeSession.answeredQuestions > 0) items.push(`${activeSession.answeredQuestions} terjawab`)
 
     const startedAt = formatStartedAt(activeSession.startedAt)
-    if (startedAt) {
-        items.push(startedAt)
-    }
+    if (startedAt) items.push(startedAt)
 
-    return items.join(' | ')
+    return items.join(' • ')
 }
 
 export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTryoutClientProps) {
@@ -145,9 +120,7 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
         if (typeof window === 'undefined') return
 
         const handleVisibilityChange = () => {
-            if (!document.hidden) {
-                hydrateActiveSessionsFromLocalStorage()
-            }
+            if (!document.hidden) hydrateActiveSessionsFromLocalStorage()
         }
 
         window.addEventListener('focus', hydrateActiveSessionsFromLocalStorage)
@@ -186,7 +159,7 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
                 router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
             }
         } catch {
-            toast.error('Gagal memulai mini tryout')
+            toast.error('Mini Tryout belum bisa dimulai')
         } finally {
             if (!isNavigating) {
                 startLockRef.current = null
@@ -203,8 +176,8 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
         }
 
         if (!hasToken) {
-            toast.error('Token mini tryout habis!', {
-                description: 'Setiap produk mini tryout membutuhkan 1 token.',
+            toast.error('Token belum tersedia', {
+                description: `Mini Tryout baru membutuhkan ${TRYOUT_TOKEN_COST} token.`,
             })
             return
         }
@@ -219,59 +192,49 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
     return (
         <div className="relative min-h-screen w-full">
             <PaperBackground />
-            <PageAnimateContainer className="relative z-10 mx-auto max-w-6xl space-y-8 p-4 pb-20 font-handwriting md:p-8">
-                <PageAnimateItem className="space-y-4">
-                    <div className="inline-flex items-center gap-2 border-2 border-gray-900 bg-green-200 px-3 py-1.5 text-xs font-black uppercase tracking-widest text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] -rotate-1">
-                        <Zap size={14} className="fill-current" />
-                        <span>Mini Tryout SKD</span>
-                    </div>
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                        <div className="space-y-2">
-                            <h1 className="text-4xl font-black text-gray-900 md:text-5xl">
-                                Latihan Fokus TWK, TIU, dan TKP
-                            </h1>
-                            <p className="max-w-3xl text-lg font-sans leading-relaxed text-gray-600">
-                                Pilih satu kategori SKD untuk latihan terukur dengan sistem pengerjaan, penyimpanan progres, scoring, dan pembahasan yang sama seperti tryout utama. Setiap produk mini tryout membutuhkan {TRYOUT_TOKEN_COST} token.
+            <PageAnimateContainer className="relative z-10 mx-auto max-w-6xl space-y-7 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-9">
+                <PageAnimateItem>
+                    <div className="st-kicker">Mini Tryout SKD</div>
+                    <div className="mt-4 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                        <div className="max-w-3xl">
+                            <h1 className="st-heading text-3xl sm:text-4xl lg:text-5xl">Uji satu bagian sebelum mencoba sesi penuh.</h1>
+                            <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+                                Pilih TWK, TIU, atau TKP. Mini Tryout membantu kamu mengukur satu bagian secara terpisah sebelum kembali ke Full Tryout.
                             </p>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 font-sans text-sm sm:min-w-[360px]">
-                            <div className="border-2 border-gray-900 bg-white px-3 py-3 text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                <div className="text-2xl font-black text-gray-900">3</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Produk</div>
+                        <div className="st-flat-card flex min-w-52 items-center justify-between gap-4 p-4">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Saldo token</p>
+                                <p className="mt-1 text-2xl font-black text-slate-950">{quota}</p>
                             </div>
-                            <div className="border-2 border-gray-900 bg-white px-3 py-3 text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                <div className="text-2xl font-black text-gray-900">XP</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Aktif</div>
-                            </div>
-                            <div className="border-2 border-gray-900 bg-white px-3 py-3 text-center shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                                <div className="text-2xl font-black text-gray-900">{TRYOUT_TOKEN_COST}</div>
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-500">Token/Produk</div>
-                            </div>
+                            <Ticket className="h-6 w-6 text-blue-700" />
                         </div>
                     </div>
                 </PageAnimateItem>
 
                 {totalActiveSessions > 0 && (
                     <PageAnimateItem>
-                        <div className="flex w-full items-center gap-3 border-2 border-dashed border-blue-300 bg-blue-50 px-4 py-3 font-sans text-sm font-bold text-blue-700 shadow-[3px_3px_0px_0px_rgba(147,197,253,0.45)]">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center border-2 border-blue-300 bg-white text-blue-700">
-                                <Clock3 size={16} />
+                        <div className="st-card flex items-start gap-3 border-blue-600 bg-blue-50 p-4">
+                            <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-blue-700" />
+                            <div>
+                                <p className="font-black text-slate-950">Ada {totalActiveSessions} sesi yang bisa dilanjutkan</p>
+                                <p className="mt-1 text-sm leading-6 text-slate-600">Sesi aktif tidak memakai token baru saat kamu melanjutkannya.</p>
                             </div>
-                            <span>
-                                {totalActiveSessions} sesi mini tryout masih aktif dan bisa dilanjutkan.
-                            </span>
                         </div>
                     </PageAnimateItem>
                 )}
 
                 {!hasToken && totalActiveSessions === 0 && (
                     <PageAnimateItem>
-                        <div className="flex w-full flex-col gap-3 border-2 border-dashed border-red-300 bg-red-50 px-4 py-3 font-sans text-sm font-bold text-red-700 shadow-[3px_3px_0px_0px_rgba(252,165,165,0.45)] sm:flex-row sm:items-center sm:justify-between">
-                            <span>Token kamu habis. Setiap produk mini tryout membutuhkan {TRYOUT_TOKEN_COST} token.</span>
+                        <div className="flex flex-col gap-3 border-2 border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="font-black text-amber-950">Token belum tersedia</p>
+                                <p className="mt-1 text-sm text-amber-900">Kamu membutuhkan {TRYOUT_TOKEN_COST} token untuk memulai Mini Tryout baru.</p>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => router.push('/cpns/dashboard/beli-paket')}
-                                className="w-full border-2 border-red-700 bg-white px-3 py-2 text-xs font-black uppercase tracking-widest text-red-700 shadow-[2px_2px_0px_0px_rgba(185,28,28,0.5)] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none sm:w-auto"
+                                className="st-button st-focus min-h-11 bg-white px-4 py-2.5 text-sm text-blue-700"
                             >
                                 Beli Token
                             </button>
@@ -289,113 +252,66 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
 
                         return (
                             <PageAnimateItem key={product.type}>
-                                <article
-                                    className={cn(
-                                        'relative flex h-full flex-col overflow-hidden border-4 border-gray-900 bg-white p-5 shadow-[7px_7px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]',
-                                        style.borderClassName
-                                    )}
-                                >
-                                    <div className="absolute inset-0 z-0 opacity-[0.04] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
-                                    <div className="relative z-10 flex h-full flex-col gap-5">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div
-                                                className={cn(
-                                                    'flex h-14 w-14 items-center justify-center border-2 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]',
-                                                    style.iconClassName
-                                                )}
-                                            >
-                                                <Icon className="h-7 w-7" />
-                                            </div>
-                                            <span
-                                                className={cn(
-                                                    'border-2 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest',
-                                                    style.badgeClassName
-                                                )}
-                                            >
-                                                {product.type}
+                                <article className="st-card-md flex h-full flex-col p-5 sm:p-6">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className={cn('flex h-12 w-12 items-center justify-center border-2 border-slate-900', style.iconClassName)}>
+                                            <Icon className="h-6 w-6" />
+                                        </div>
+                                        <span className={cn('st-pill', style.badgeClassName)}>{product.type}</span>
+                                    </div>
+
+                                    <div className="mt-5">
+                                        <h2 className="text-2xl font-black tracking-tight text-slate-950">{product.title}</h2>
+                                        <p className="mt-1 text-xs font-black uppercase tracking-[0.1em] text-slate-500">{product.subtitle}</p>
+                                        <p className="mt-3 text-sm leading-6 text-slate-600">{product.description}</p>
+                                    </div>
+
+                                    <div className="mt-5 grid grid-cols-3 gap-2">
+                                        <div className="border border-slate-200 bg-slate-50 p-3">
+                                            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">Soal</p>
+                                            <p className="mt-1 text-xl font-black text-slate-950">{product.questionCount}</p>
+                                        </div>
+                                        <div className="border border-slate-200 bg-slate-50 p-3">
+                                            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">Ambang</p>
+                                            <p className="mt-1 text-xl font-black text-slate-950">{product.passingGrade}</p>
+                                        </div>
+                                        <div className="border border-slate-200 bg-slate-50 p-3">
+                                            <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">Maks</p>
+                                            <p className="mt-1 text-xl font-black text-slate-950">{product.maxScore}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 flex flex-wrap gap-1.5">
+                                        {product.focusItems.map((item) => (
+                                            <span key={`${product.type}-${item}`} className="border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-600">
+                                                {item}
                                             </span>
-                                        </div>
+                                        ))}
+                                    </div>
 
-                                        <div className="space-y-2">
-                                            <h2 className="text-3xl font-black text-gray-900">{product.title}</h2>
-                                            <p className="text-sm font-black uppercase tracking-widest text-gray-400">{product.subtitle}</p>
-                                            <p className="font-sans text-sm leading-relaxed text-gray-600">{product.description}</p>
-                                        </div>
-
-                                        <div className="grid grid-cols-3 gap-2 font-sans">
-                                            <div className="border-2 border-gray-200 bg-gray-50 p-2">
-                                                <div className="text-[10px] font-black uppercase text-gray-400">Soal</div>
-                                                <div className="text-xl font-black text-gray-900">{product.questionCount}</div>
+                                    {activeSession && (
+                                        <div className="mt-5 border-2 border-blue-200 bg-blue-50 p-3">
+                                            <div className="flex items-center gap-2 text-sm font-black text-blue-800">
+                                                <Clock3 className="h-4 w-4" /> Sesi aktif
                                             </div>
-                                            <div className="border-2 border-gray-200 bg-gray-50 p-2">
-                                                <div className="text-[10px] font-black uppercase text-gray-400">Target</div>
-                                                <div className="text-xl font-black text-gray-900">{product.passingGrade}</div>
-                                            </div>
-                                            <div className="border-2 border-gray-200 bg-gray-50 p-2">
-                                                <div className="text-[10px] font-black uppercase text-gray-400">Maks</div>
-                                                <div className="text-xl font-black text-gray-900">{product.maxScore}</div>
-                                            </div>
+                                            {activeDetails && <p className="mt-1 text-xs font-semibold text-blue-700">{activeDetails}</p>}
                                         </div>
+                                    )}
 
-                                        <div className={cn('flex items-center gap-2 border-2 px-3 py-2 font-sans text-sm font-black', style.softClassName)}>
-                                            <Ticket size={16} />
-                                            <span>Biaya akses: {product.tokenCost} token per produk</span>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 border-2 border-yellow-300 bg-yellow-50 px-3 py-2 font-sans text-sm font-black text-yellow-800">
-                                            <Zap size={16} className="fill-current" />
-                                            <span>Reward XP: sampai {product.maxScore} XP setelah selesai</span>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-2">
-                                            {product.focusItems.map((item) => (
-                                                <span
-                                                    key={`${product.type}-${item}`}
-                                                    className={cn(
-                                                        'border px-2 py-1 text-[11px] font-bold font-sans',
-                                                        style.softClassName
-                                                    )}
-                                                >
-                                                    {item}
-                                                </span>
-                                            ))}
-                                        </div>
-
-                                        {activeSession && (
-                                            <div className="border-2 border-dashed border-blue-300 bg-blue-50 px-3 py-3 font-sans text-sm text-blue-700">
-                                                <div className="flex items-center gap-2 font-bold">
-                                                    <Clock3 size={15} />
-                                                    <span>Sesi tersimpan</span>
-                                                </div>
-                                                {activeDetails && (
-                                                    <p className="mt-1 text-xs font-medium">{activeDetails}</p>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        <div className="mt-auto pt-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleStartMiniTryout(product.type)}
-                                                disabled={Boolean(loadingType) || (!activeSession && !hasToken)}
-                                                className={cn(
-                                                    'group flex w-full items-center justify-center gap-2 border-2 px-4 py-3 text-lg font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:cursor-not-allowed disabled:opacity-60',
-                                                    style.buttonClassName
-                                                )}
-                                            >
-                                                {isLoading ? (
-                                                    <>
-                                                        <Loader2 className="h-5 w-5 animate-spin" />
-                                                        Menyiapkan...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        {!activeSession && !hasToken ? 'Token Habis' : `${activeSession ? 'Lanjutkan' : 'Mulai'} ${product.type}`}
-                                                        <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
+                                    <div className="mt-auto pt-5">
+                                        <p className="mb-3 text-xs font-semibold text-slate-500">{product.tokenCost} token untuk sesi baru</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleStartMiniTryout(product.type)}
+                                            disabled={Boolean(loadingType) || (!activeSession && !hasToken)}
+                                            className={cn(
+                                                'st-button st-focus flex min-h-12 w-full items-center justify-center gap-2 px-4 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60',
+                                                style.buttonClassName
+                                            )}
+                                        >
+                                            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
+                                            {isLoading ? 'Menyiapkan...' : activeSession ? `Lanjutkan ${product.type}` : `Mulai ${product.type}`}
+                                        </button>
                                     </div>
                                 </article>
                             </PageAnimateItem>
@@ -404,26 +320,19 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
                 </div>
 
                 <PageAnimateItem>
-                    <div className="grid gap-4 border-4 border-gray-900 bg-yellow-50 p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] md:grid-cols-[auto_1fr_auto] md:items-center">
-                        <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-yellow-300 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-                            <Trophy className="h-6 w-6 text-gray-900" />
-                        </div>
+                    <div className="st-flat-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h3 className="text-2xl font-black text-gray-900">Full tryout tetap untuk simulasi akhir.</h3>
-                            <p className="font-sans text-sm leading-relaxed text-gray-600">
-                                Gunakan mini tryout untuk memperbaiki satu kategori, lalu validasi kesiapan di full tryout SKD 110 soal.
-                            </p>
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-500">Setelah Mini Tryout</p>
+                            <h3 className="mt-1 text-xl font-black text-slate-950">Validasi kesiapan di Full Tryout.</h3>
+                            <p className="mt-1 text-sm leading-6 text-slate-600">Gunakan hasil satu bagian untuk menentukan apa yang perlu dilatih, lalu uji kembali ketiganya dalam satu sesi.</p>
                         </div>
-                        <div className="flex flex-wrap gap-2 font-sans text-xs font-black uppercase">
-                            <span className="inline-flex items-center gap-1 border-2 border-green-300 bg-green-100 px-2 py-1 text-green-700">
-                                <CheckCircle2 size={14} />
-                                Scoring
-                            </span>
-                            <span className="inline-flex items-center gap-1 border-2 border-blue-300 bg-blue-100 px-2 py-1 text-blue-700">
-                                <Target size={14} />
-                                Pembahasan
-                            </span>
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => router.push('/cpns/dashboard/tryout')}
+                            className="st-button st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-white px-4 py-2.5 text-sm text-slate-950"
+                        >
+                            Buka Full Tryout <ArrowRight className="h-4 w-4" />
+                        </button>
                     </div>
                 </PageAnimateItem>
             </PageAnimateContainer>
@@ -432,11 +341,11 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
                 <TokenUsageConfirmModal
                     isOpen={Boolean(confirmType)}
                     title={`Mulai ${confirmProduct.title}?`}
-                    description={`${confirmProduct.title} baru akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu. Setelah selesai, skor kamu otomatis masuk sebagai XP.`}
+                    description={`${confirmProduct.title} baru akan memakai ${TRYOUT_TOKEN_COST} token dari saldo kamu.`}
                     details={[
                         { label: 'Soal', value: confirmProduct.questionCount },
-                        { label: 'Target', value: confirmProduct.passingGrade },
-                        { label: 'Maks XP', value: confirmProduct.maxScore },
+                        { label: 'Ambang', value: confirmProduct.passingGrade },
+                        { label: 'Skor maks', value: confirmProduct.maxScore },
                     ]}
                     quota={quota}
                     isLoading={loadingType === confirmProduct.type}

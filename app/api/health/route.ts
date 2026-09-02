@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/utils/supabase/server'
 import { logger } from '@/lib/logger'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const fetchCache = 'force-no-store'
 
 type HealthChecks = {
     env: boolean
@@ -13,19 +15,26 @@ type HealthChecks = {
 
 function healthResponse(statusCode: number, checks: HealthChecks) {
     const isOk = Object.values(checks).every(Boolean)
+    const deploymentCommitSha = process.env.VERCEL_GIT_COMMIT_SHA ?? null
+    const deploymentEnvironment = process.env.VERCEL_ENV ?? null
 
     return NextResponse.json(
         {
             status: isOk ? 'ok' : 'degraded',
             checks,
             timestamp: new Date().toISOString(),
-            deploymentCommitSha: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
-            deploymentEnvironment: process.env.VERCEL_ENV ?? null,
+            deploymentCommitSha,
+            deploymentEnvironment,
         },
         {
             status: statusCode,
             headers: {
-                'Cache-Control': 'no-store',
+                'Cache-Control': 'no-store, max-age=0',
+                'CDN-Cache-Control': 'no-store',
+                'Vercel-CDN-Cache-Control': 'no-store',
+                'X-Deployment-Commit-Sha': deploymentCommitSha ?? 'unknown',
+                Pragma: 'no-cache',
+                Expires: '0',
             },
         }
     )

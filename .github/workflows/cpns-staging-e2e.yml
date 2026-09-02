@@ -27,6 +27,10 @@ on:
       - 'supabase/functions/ci-e2e-cpns/**'
       - 'supabase/migrations/**'
 
+concurrency:
+  group: cpns-staging-e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   issues: read
@@ -50,7 +54,7 @@ env:
 jobs:
   cpns-rc:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
@@ -82,7 +86,7 @@ jobs:
         run: npm install
 
       - name: Install Chromium
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run CPNS release-candidate E2E on Vercel Preview
         run: npx playwright test --config=playwright.cpns-rc.config.ts --project=chromium-cpns-rc

@@ -12,8 +12,8 @@ export class AuthPage {
     this.page = page;
     this.emailInput = page.locator('input[type="email"]');
     this.passwordInput = page.locator('input[type="password"]');
-    this.loginSubmitBtn = page.getByRole('button', { name: /Masuk|Login/i });
-    this.registerSubmitBtn = page.getByRole('button', { name: /Daftar/i });
+    this.loginSubmitBtn = page.getByRole('button', { name: 'Masuk', exact: true });
+    this.registerSubmitBtn = page.getByRole('button', { name: 'Daftar gratis', exact: true });
     this.logoutBtn = page.getByRole('button', { name: /Keluar|Logout/i });
   }
 

@@ -1,4 +1,4 @@
-import LandingUI from '@/components/home/LandingUI'
+import CpnsProductLandingV11 from '@/components/home/CpnsProductLandingV11'
 import { Metadata } from 'next'
 import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
@@ -7,9 +7,9 @@ const eventSelect = 'id, title, description, starts_at, ends_at, start_grace_min
 const legacyEventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url'
 
 export const metadata: Metadata = {
-  title: 'Tryout SKD CPNS 2026 Online - Simulasi CAT BKN',
+  title: 'Persiapan SKD CPNS - Latihan & Tryout | SiapTempur',
   description:
-    'Platform tryout CPNS online & Kedinasan 2026. Latihan soal CPNS dengan simulasi CAT BKN asli. Akses ribuan soal TWK, TIU, TKP, pembahasan lengkap, dan ranking nasional.',
+    'Persiapan SKD CPNS dengan latihan TWK, TIU, TKP, mini tryout, full tryout, pembahasan, dan analisis hasil untuk membantu belajar lebih terarah.',
   alternates: {
     canonical: '/cpns',
   },
@@ -34,7 +34,8 @@ export default async function Home() {
     .in('status', ['scheduled', 'live'])
     .gte('ends_at', now)
     .order('starts_at', { ascending: true })
-    .limit(8)
+    .limit(3)
+
   const activeEvents = activeEventsResult.error
     ? (await admin
       .from('tryout_events')
@@ -42,25 +43,8 @@ export default async function Home() {
       .in('status', ['scheduled', 'live'])
       .gte('ends_at', now)
       .order('starts_at', { ascending: true })
-      .limit(8)).data?.map((event) => ({ ...event, documentation_url: null }))
+      .limit(3)).data?.map((event) => ({ ...event, documentation_url: null }))
     : activeEventsResult.data
-
-  const completedEventsResult = await admin
-    .from('tryout_events')
-    .select(eventSelect)
-    .in('status', ['scheduled', 'live', 'closed'])
-    .or(`status.eq.closed,ends_at.lt.${now}`)
-    .order('ends_at', { ascending: false })
-    .limit(6)
-  const completedEvents = completedEventsResult.error
-    ? (await admin
-      .from('tryout_events')
-      .select(legacyEventSelect)
-      .in('status', ['scheduled', 'live', 'closed'])
-      .or(`status.eq.closed,ends_at.lt.${now}`)
-      .order('ends_at', { ascending: false })
-      .limit(6)).data?.map((event) => ({ ...event, documentation_url: null }))
-    : completedEventsResult.data
 
   const { data: latestArticles } = await supabase
     .from('articles')
@@ -70,11 +54,10 @@ export default async function Home() {
     .limit(3)
 
   return (
-    <LandingUI
+    <CpnsProductLandingV11
       user={user ? { id: user.id } : null}
-      activeEvents={activeEvents || []}
-      completedEvents={completedEvents || []}
-      latestArticles={latestArticles || []}
+      activeEvents={(activeEvents || []) as Parameters<typeof CpnsProductLandingV11>[0]['activeEvents']}
+      latestArticles={(latestArticles || []) as Parameters<typeof CpnsProductLandingV11>[0]['latestArticles']}
     />
   )
 }

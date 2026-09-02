@@ -20,6 +20,16 @@ async function assertNoDocumentOverflow(page: Page) {
     expect(report.documentWidth, JSON.stringify(report)).toBeLessThanOrEqual(report.viewportWidth + 1)
 }
 
+async function assertTouchTarget(page: Page, accessibleName: RegExp) {
+    const control = page.getByRole('button', { name: accessibleName }).first()
+    await expect(control).toBeVisible()
+    const box = await control.boundingBox()
+    expect(box, `Missing bounding box for ${accessibleName}`).not.toBeNull()
+    expect(box!.height).toBeGreaterThanOrEqual(44)
+    await control.focus()
+    await expect(control).toBeFocused()
+}
+
 function examCard(page: Page, title: string) {
     return page.locator('article').filter({ has: page.getByRole('heading', { name: title, exact: true }) })
 }
@@ -44,7 +54,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await setTkaSmpMonetizationEnforcement(false)
     })
 
-    test('authenticated learner can discover active SMP pass catalog with sandbox Snap loader', async ({ page }) => {
+    test('authenticated learner can discover active SMP pass catalog with transparent mobile checkout UX', async ({ page }) => {
         test.setTimeout(60_000)
         await fresh(page)
         await page.setViewportSize({ width: 390, height: 844 })
@@ -55,14 +65,19 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await passLink.click()
         await page.waitForURL(/\/tka\/smp\/pass$/i)
 
-        await expect(page.getByRole('heading', { name: 'Pilih Tempur Pass', exact: true })).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Pilih paket yang sesuai target belajarmu', exact: true })).toBeVisible()
         await expect(page.getByTestId('tka-pass-status-inactive')).toContainText('Belum ada Tempur Pass aktif.')
-        await expect(page.getByRole('heading', { name: 'Buka akses premium TKA SMP', exact: true })).toBeVisible()
-        await expect(page.getByRole('button', { name: 'Pilih 30 Hari', exact: true })).toBeVisible()
-        await expect(page.getByRole('button', { name: 'Pilih 90 Hari', exact: true })).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Pilih akses belajar TKA SMP', exact: true })).toBeVisible()
+        await expect(page.getByText('Harga paket', { exact: true }).first()).toBeVisible()
+        await expect(page.getByText('Total dibayar', { exact: true }).first()).toBeVisible()
         await expect(page.getByText('Rp29.000', { exact: true })).toBeVisible()
+        await expect(page.getByText('Rp29.500', { exact: true })).toBeVisible()
         await expect(page.getByText('Rp69.000', { exact: true })).toBeVisible()
-        await expect(page.getByText('+ biaya admin Rp500 saat checkout', { exact: true }).first()).toBeVisible()
+        await expect(page.getByText('Rp69.500', { exact: true })).toBeVisible()
+        await expect(page.getByText(/biaya admin Rp500 satu kali/i)).toBeVisible()
+
+        await assertTouchTarget(page, /Pilih 30 hari · Rp29\.500/i)
+        await assertTouchTarget(page, /Pilih 90 hari · Rp69\.500/i)
 
         const snapScript = page.locator('script#midtrans-snap')
         await expect(snapScript).toHaveAttribute('src', 'https://app.sandbox.midtrans.com/snap/snap.js')
@@ -102,8 +117,8 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
 
         await page.goto('/tka/smp/pass')
         await expect(page.getByTestId('tka-pass-status-active')).toContainText('Tempur Pass aktif')
-        await expect(page.getByRole('heading', { name: 'Perpanjang Tempur Pass TKA SMP', exact: true })).toBeVisible()
-        await expect(page.getByRole('button', { name: 'Perpanjang 30 Hari', exact: true })).toBeVisible()
+        await expect(page.getByRole('heading', { name: 'Perpanjang akses TKA SMP', exact: true })).toBeVisible()
+        await expect(page.getByRole('button', { name: /Perpanjang 30 hari · Rp29\.500/i })).toBeVisible()
 
         await page.goto('/tka/smp')
         const full = examCard(page, 'Tryout Lengkap TKA SMP')

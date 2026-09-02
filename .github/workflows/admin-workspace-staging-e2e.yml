@@ -29,6 +29,10 @@ permissions:
   pull-requests: read
   id-token: write
 
+concurrency:
+  group: admin-workspace-staging-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   CI: 'true'
   APP_ENV: staging
@@ -47,7 +51,7 @@ env:
 jobs:
   workspace-authenticated:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     steps:
@@ -56,6 +60,11 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
       - name: Require Vercel Automation Bypass
         shell: bash
@@ -224,16 +233,11 @@ jobs:
           throw new Error(`Exact protected Vercel Preview not resolved for ${expectedSha}`)
           NODE
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
       - name: Install dependencies
         run: npm install
 
       - name: Install Chromium
-        run: npx playwright install chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run authenticated Admin Workspace E2E on Vercel Preview
         run: npx playwright test --project=chromium-admin-staging
