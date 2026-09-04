@@ -7,7 +7,7 @@ import { createV2Client, createV2AdminClient } from '@/lib/utils/supabase/server
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
 import { env } from '@/lib/env'
-import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+import { resolvePostLogoutRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 
 function callbackUrl(path = '/auth/callback') {
     return `${env.siteUrl()}${path}`
@@ -84,7 +84,7 @@ export async function signout(redirectTo = '/') {
     const supabase = await createV2Client()
     const { error } = await supabase.auth.signOut()
     if (error) return { success: false, error: 'Belum bisa keluar' }
-    redirect(sanitizeAuthReturnTo(redirectTo))
+    redirect(resolvePostLogoutRedirect(redirectTo))
 }
 
 export async function updatePassword(formData: FormData) {
