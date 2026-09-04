@@ -14,7 +14,6 @@ import {
     Library,
     ListChecks,
     Dumbbell,
-    PenLine,
     User,
 } from 'lucide-react'
 
@@ -40,7 +39,6 @@ interface DashboardShellProps {
     tokenBalance: number
     signoutAction: () => Promise<{ success: boolean }>
     isAdmin?: boolean
-    canAccessArticles?: boolean
 }
 
 export default function DashboardShell({
@@ -50,7 +48,6 @@ export default function DashboardShell({
     tokenBalance,
     signoutAction,
     isAdmin = false,
-    canAccessArticles = false,
 }: DashboardShellProps) {
     const pathname = usePathname()
 
@@ -108,17 +105,12 @@ export default function DashboardShell({
                         <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={17} />} label="Beli Token" />
                     </div>
 
-                    {(isAdmin || canAccessArticles) && (
+                    {isAdmin && (
                         <>
                             <div className="my-3.5 border-t-2 border-dashed border-slate-300" />
                             <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Workspace</p>
                             <div className="space-y-1">
-                                {canAccessArticles && (
-                                    <NavItem href="/cpns/admin/articles" icon={<PenLine size={17} />} label="Tulis Artikel" />
-                                )}
-                                {isAdmin && (
-                                    <NavItem href="/cpns/admin" icon={<Shield size={17} />} label="Admin" />
-                                )}
+                                <NavItem href="/cpns/admin" icon={<Shield size={17} />} label="Admin" />
                             </div>
                         </>
                     )}
@@ -177,7 +169,6 @@ export default function DashboardShell({
                             tokenBalance={tokenBalance}
                             signoutAction={signoutAction}
                             signoutRedirectTo="/cpns"
-                            canAccessArticles={canAccessArticles}
                             isAdmin={isAdmin}
                         />
                     </div>

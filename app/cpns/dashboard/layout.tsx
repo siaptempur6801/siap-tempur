@@ -62,13 +62,6 @@ export default async function DashboardLayout({
     ])
     const permissions = authorization?.permissions ?? []
     const isAdminUser = permissions.includes('admin.access')
-    const canAccessArticles = [
-        'content.read',
-        'content.create',
-        'content.update',
-        'content.review',
-        'content.publish',
-    ].some((permission) => permissions.includes(permission as never))
 
     return (
         <>
@@ -85,7 +78,6 @@ export default async function DashboardLayout({
                 tokenBalance={tokenBalance}
                 signoutAction={signout}
                 isAdmin={isAdminUser}
-                canAccessArticles={canAccessArticles}
             >
                 {children}
             </DashboardShell>
