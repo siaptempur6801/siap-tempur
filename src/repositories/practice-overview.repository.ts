@@ -1,4 +1,5 @@
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { getAttemptXp } from '@/lib/gamification'
 import type { Json } from '@/types/database.types'
 
 export type ActiveAttemptOverview = {
@@ -64,15 +65,21 @@ export class PracticeOverviewRepository {
         while (true) {
             const { data, error } = await admin
                 .from('exam_attempts')
-                .select('total_score')
+                .select('total_score, metadata')
                 .eq('user_id', userId)
                 .in('status', ['completed', 'COMPLETED'])
                 .order('id', { ascending: true })
                 .range(from, from + pageSize - 1)
             if (error) throw error
 
-            const rows = (data ?? []) as Array<{ total_score: number | null }>
-            for (const row of rows) totalXp += numberOrZero(row.total_score)
+            const rows = (data ?? []) as Array<{ total_score: number | null; metadata: Json }>
+            for (const row of rows) {
+                const metadata = row.metadata && !Array.isArray(row.metadata) && typeof row.metadata === 'object'
+                    ? row.metadata
+                    : null
+                const practiceKind = typeof metadata?.practiceKind === 'string' ? metadata.practiceKind : null
+                totalXp += getAttemptXp(numberOrZero(row.total_score), practiceKind)
+            }
             totalSessions += rows.length
             if (rows.length < pageSize) break
             from += pageSize

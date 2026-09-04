@@ -16,6 +16,19 @@ function normalizeXp(value: number) {
     return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
 }
 
+export function getAttemptXp(score: number, practiceKind?: string | null) {
+    const scoreXp = normalizeXp(score)
+    const minimumXp = practiceKind === 'drill'
+        ? 10
+        : practiceKind === 'mini_tryout'
+            ? 20
+            : practiceKind === 'full_tryout' || practiceKind === 'event'
+                ? 30
+                : 10
+
+    return Math.max(scoreXp, minimumXp)
+}
+
 export function getGamificationProgress(value: number): GamificationProgress {
     const xp = normalizeXp(value)
     let currentIndex = 0

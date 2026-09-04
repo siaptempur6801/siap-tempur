@@ -44,7 +44,10 @@ export default async function PracticeResultPage({
         redirect(`/cpns/dashboard/tryout/${sessionId}`)
     }
     const xpInfo = completed === '1'
-        ? await gamificationService.getAttemptReward(user.id, result.totalScore)
+        ? await gamificationService.getAttemptReward(user.id, {
+            score: result.totalScore,
+            practiceKind: result.practiceKind,
+        })
         : null
 
     const back = resolveBackTarget(result.practiceKind, from)

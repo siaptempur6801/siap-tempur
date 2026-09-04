@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { getGamificationProgress, getGamificationReward } from '@/lib/gamification'
+import { getAttemptXp, getGamificationProgress, getGamificationReward } from '@/lib/gamification'
+
+describe('attempt XP reward', () => {
+    it('awards minimum XP for completed mini tryout and focused practice', () => {
+        expect(getAttemptXp(0, 'mini_tryout')).toBe(20)
+        expect(getAttemptXp(0, 'drill')).toBe(10)
+    })
+
+    it('keeps the score when it is higher than the completion minimum', () => {
+        expect(getAttemptXp(75, 'mini_tryout')).toBe(75)
+        expect(getAttemptXp(45, 'drill')).toBe(45)
+        expect(getAttemptXp(5, 'full_tryout')).toBe(30)
+    })
+})
 
 describe('gamification level calculation', () => {
     it('normalizes invalid XP and starts at level one', () => {

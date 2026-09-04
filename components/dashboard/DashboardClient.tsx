@@ -218,7 +218,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                             <span className="pb-2 text-sm font-black text-slate-300">{data.stats.levelName}</span>
                         </div>
                         <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-300">
-                            Setiap skor dari sesi yang selesai menambah XP secara otomatis.
+                            Setiap sesi yang selesai memberi XP, dan skor yang lebih tinggi meningkatkan reward-mu.
                         </p>
                     </div>
 

@@ -78,7 +78,10 @@ export default async function TkaResultPage({
         redirect(`${base}/tryout/${sessionId}`)
     }
     const xpInfo = completed === '1'
-        ? await gamificationService.getAttemptReward(user.id, result.totalScore)
+        ? await gamificationService.getAttemptReward(user.id, {
+            score: result.totalScore,
+            practiceKind: result.practiceKind,
+        })
         : null
 
     if (level === 'SMP') {

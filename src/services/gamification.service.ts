@@ -1,4 +1,4 @@
-import { getGamificationProgress, getGamificationReward } from '@/lib/gamification'
+import { getAttemptXp, getGamificationProgress, getGamificationReward } from '@/lib/gamification'
 import { practiceOverviewRepository } from '@/src/repositories/practice-overview.repository'
 
 export class GamificationService {
@@ -15,10 +15,10 @@ export class GamificationService {
         }
     }
 
-    async getAttemptReward(userId: string, earnedXp: number) {
+    async getAttemptReward(userId: string, attempt: { score: number; practiceKind?: string | null }) {
         const overview = await this.getOverview(userId)
         return {
-            ...getGamificationReward(overview.xp, earnedXp),
+            ...getGamificationReward(overview.xp, getAttemptXp(attempt.score, attempt.practiceKind)),
             streakCount: overview.streak,
             isStreak: overview.streak > 0,
         }
