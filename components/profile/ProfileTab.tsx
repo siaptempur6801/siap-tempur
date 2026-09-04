@@ -6,8 +6,17 @@ import { Calendar, Camera, Edit, Eye, Loader2, Mail, Save, Target, Ticket, X } f
 import { toast } from 'sonner'
 import ImageCropper from '@/components/ui/ImageCropper'
 import VoucherClaim from '@/components/VoucherClaim'
-import { updateProfileInfo } from '@/app/actions/profile'
-import { createClient } from '@/lib/utils/supabase/client'
+import { saveProfileAvatar, updateProfileInfo } from '@/app/actions/profile'
+import { createV2Client } from '@/lib/utils/supabase/client'
+
+const MAX_SOURCE_IMAGE_BYTES = 10 * 1024 * 1024
+const ALLOWED_SOURCE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+
+function genderLabel(value: string | null) {
+    if (value === 'male') return 'Laki-laki'
+    if (value === 'female') return 'Perempuan'
+    return ''
+}
 
 type Profile = {
     id: string
@@ -61,34 +70,45 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files || event.target.files.length === 0) return
         const file = event.target.files[0]
+        event.target.value = ''
+
+        if (!ALLOWED_SOURCE_IMAGE_TYPES.has(file.type)) {
+            toast.error('Format foto harus JPG, PNG, atau WebP.')
+            return
+        }
+        if (file.size > MAX_SOURCE_IMAGE_BYTES) {
+            toast.error('Ukuran foto maksimal 10 MB.')
+            return
+        }
+
         const reader = new FileReader()
         reader.addEventListener('load', () => setSelectedImage(reader.result?.toString() || null))
+        reader.addEventListener('error', () => toast.error('Foto belum bisa dibaca. Pilih file lain.'))
         reader.readAsDataURL(file)
-        event.target.value = ''
     }
 
     const onCropComplete = async (croppedBlob: Blob) => {
         try {
             setIsUploading(true)
             setSelectedImage(null)
-            const fileName = `${user.id}-${crypto.randomUUID()}.jpg`
-            const supabase = createClient()
+            const fileName = `${user.id}/avatar-${crypto.randomUUID()}.jpg`
+            const supabase = createV2Client()
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(fileName, croppedBlob, {
-                    upsert: true,
+                    upsert: false,
                     contentType: 'image/jpeg',
+                    cacheControl: '3600',
                 })
             if (uploadError) throw uploadError
 
-            const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(fileName)
-            const result = await updateProfileInfo({ avatar_url: publicUrl })
-            if (result.success) {
-                setProfile({ ...profile, avatar_url: publicUrl })
+            const result = await saveProfileAvatar(fileName)
+            if (result.success && result.avatarUrl) {
+                setProfile((current) => ({ ...current, avatar_url: result.avatarUrl! }))
                 toast.success('Foto profil berhasil diperbarui')
                 router.refresh()
             } else {
-                toast.error('Foto profil belum bisa disimpan')
+                toast.error(result.error || 'Foto profil belum bisa disimpan')
             }
         } catch (error) {
             console.error('Upload error:', error)
@@ -100,19 +120,8 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
 
     const handleSave = async () => {
         startTransition(async () => {
-            const result = await updateProfileInfo({
-                full_name: editedName,
-                bio: editedBio,
-                phone_number: editedPhone,
-                birth_date: editedBirthDate,
-                gender: editedGender,
-                education_level: editedEducation,
-                target_instance: editedTarget,
-            })
-
-            if (result.success) {
-                setProfile({
-                    ...profile,
+            try {
+                const result = await updateProfileInfo({
                     full_name: editedName,
                     bio: editedBio,
                     phone_number: editedPhone,
@@ -121,11 +130,36 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                     education_level: editedEducation,
                     target_instance: editedTarget,
                 })
+
+                if (!result.success || !result.profile) {
+                    toast.error(result.error || 'Profil belum bisa diperbarui')
+                    return
+                }
+
+                const saved = result.profile
+                const savedGender = genderLabel(saved.gender)
+                setProfile((current) => ({
+                    ...current,
+                    full_name: saved.full_name,
+                    bio: saved.bio,
+                    phone_number: saved.phone,
+                    birth_date: saved.birth_date,
+                    gender: savedGender,
+                    education_level: saved.education_level,
+                    target_instance: saved.target_instance,
+                }))
+                setEditedName(saved.full_name)
+                setEditedBio(saved.bio || '')
+                setEditedPhone(saved.phone || '')
+                setEditedBirthDate(saved.birth_date || '')
+                setEditedGender(savedGender)
+                setEditedEducation(saved.education_level || '')
+                setEditedTarget(saved.target_instance || '')
                 setIsEditing(false)
                 toast.success('Profil berhasil diperbarui')
                 router.refresh()
-            } else {
-                toast.error(result.error || 'Profil belum bisa diperbarui')
+            } catch {
+                toast.error('Profil belum bisa diperbarui. Coba lagi.')
             }
         })
     }
@@ -160,7 +194,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                 )}
                                 <span className="absolute inset-0 flex items-center justify-center bg-black/60 text-white opacity-0 transition group-hover:opacity-100"><Eye size={25} /></span>
                             </button>
-                            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                            <input type="file" ref={fileInputRef} className="hidden" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarUpload} />
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
@@ -181,16 +215,16 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                             <div className="space-y-5">
                                 <div className="grid gap-4 sm:grid-cols-2">
                                     <Field label="Nama lengkap" full>
-                                        <input className="st-input" value={editedName} onChange={(e) => setEditedName(e.target.value)} placeholder="Nama lengkap" />
+                                        <input className="st-input" value={editedName} onChange={(e) => setEditedName(e.target.value)} placeholder="Nama lengkap" minLength={2} maxLength={100} required />
                                     </Field>
                                     <Field label="Bio" full>
-                                        <textarea className="st-input min-h-28 resize-y" value={editedBio} onChange={(e) => setEditedBio(e.target.value)} placeholder="Ceritakan sedikit tentang target belajarmu" />
+                                        <textarea className="st-input min-h-28 resize-y" value={editedBio} onChange={(e) => setEditedBio(e.target.value)} placeholder="Ceritakan sedikit tentang target belajarmu" maxLength={500} />
                                     </Field>
                                     <Field label="No. handphone">
-                                        <input type="tel" className="st-input" value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} placeholder="08xxxxxxxxxx" />
+                                        <input type="tel" className="st-input" value={editedPhone} onChange={(e) => setEditedPhone(e.target.value)} placeholder="08xxxxxxxxxx" maxLength={30} autoComplete="tel" />
                                     </Field>
                                     <Field label="Tanggal lahir">
-                                        <input type="date" className="st-input" value={editedBirthDate} onChange={(e) => setEditedBirthDate(e.target.value)} />
+                                        <input type="date" className="st-input" value={editedBirthDate} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} onChange={(e) => setEditedBirthDate(e.target.value)} />
                                     </Field>
                                     <Field label="Jenis kelamin">
                                         <select className="st-input" value={editedGender} onChange={(e) => setEditedGender(e.target.value)}>
@@ -209,7 +243,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                         </select>
                                     </Field>
                                     <Field label="Instansi tujuan" full>
-                                        <input className="st-input" value={editedTarget} onChange={(e) => setEditedTarget(e.target.value)} placeholder="Contoh: Kemenkumham" />
+                                        <input className="st-input" value={editedTarget} onChange={(e) => setEditedTarget(e.target.value)} placeholder="Contoh: Kemenkumham" maxLength={120} />
                                     </Field>
                                 </div>
                                 <div className="flex flex-wrap gap-3">

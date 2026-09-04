@@ -34,6 +34,9 @@ type ProfilesTable = {
         phone: string | null
         birth_date: string | null
         gender: string | null
+        bio: string | null
+        education_level: string | null
+        target_instance: string | null
         onboarding_completed: boolean
         status: string
         created_at: string
@@ -47,6 +50,9 @@ type ProfilesTable = {
         phone?: string | null
         birth_date?: string | null
         gender?: string | null
+        bio?: string | null
+        education_level?: string | null
+        target_instance?: string | null
         onboarding_completed?: boolean
         status?: string
         created_at?: string

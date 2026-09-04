@@ -1,4 +1,4 @@
-import { createAdminClient, createV2Client } from '@/lib/utils/supabase/server'
+import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import { Suspense } from 'react'
 import ProfileClient from '@/components/profile/ProfileClient'
@@ -38,30 +38,30 @@ function legacyGenderLabel(value: unknown) {
 }
 
 export default async function ProfilePage() {
-    const supabase = await createV2Client()
+    // This page still has nested commerce relations missing from the generated
+    // type snapshot. The authenticated client keeps all reads protected by RLS.
+    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect('/login')
 
-    const admin = await createAdminClient()
-
     const [profileResult, completedScoresResult, recentAttemptsResult, ordersResult, walletResult] = await Promise.all([
-        admin
+        supabase
             .from('profiles')
             .select('id, full_name, avatar_url, phone, birth_date, gender, bio, education_level, target_instance')
             .eq('id', user.id)
             .maybeSingle(),
-        admin
+        supabase
             .from('exam_attempts')
             .select('total_score')
             .eq('user_id', user.id)
             .eq('status', 'completed'),
-        admin
+        supabase
             .from('exam_attempts')
             .select('id, started_at, metadata, status')
             .eq('user_id', user.id)
             .order('started_at', { ascending: false })
             .limit(100),
-        admin
+        supabase
             .from('orders')
             .select(`
                 id,
@@ -75,7 +75,7 @@ export default async function ProfilePage() {
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(100),
-        admin
+        supabase
             .from('wallets')
             .select('balance')
             .eq('user_id', user.id)
@@ -91,6 +91,7 @@ export default async function ProfilePage() {
 
     let profile = profileResult.data
     if (!profile) {
+        const admin = await createAdminClient()
         const fallbackName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'Pejuang'
         const { data: inserted, error } = await admin
             .from('profiles')

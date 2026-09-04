@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { KeyRound, Loader2, Lock, Settings, Shield, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { updatePassword } from '@/app/auth/actions'
-import { deleteAccount } from '@/app/actions/profile'
+import { deleteAccount, updatePassword } from '@/app/actions/profile'
+import { createV2Client } from '@/lib/utils/supabase/client'
 
 export function SettingsTab() {
-    const router = useRouter()
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [oldPassword, setOldPassword] = useState('')
@@ -29,30 +27,30 @@ export function SettingsTab() {
             toast.error('Lengkapi semua kolom kata sandi.')
             return
         }
-        if (newPassword.length < 6) {
-            toast.error('Kata sandi baru minimal 6 karakter.')
-            return
-        }
         if (newPassword !== confirmPassword) {
             toast.error('Konfirmasi kata sandi baru belum sama.')
             return
         }
 
         setIsChangingPassword(true)
-        const formData = new FormData()
-        formData.append('password', newPassword)
-        formData.append('oldPassword', oldPassword)
-        const result = await updatePassword(formData)
-        setIsChangingPassword(false)
+        try {
+            const result = await updatePassword({ currentPassword: oldPassword, newPassword })
+            if (!result.success) {
+                toast.error(result.error || 'Kata sandi belum bisa diubah.')
+                return
+            }
 
-        if (result.success) {
+            setShowPasswordModal(false)
+            setOldPassword('')
+            setNewPassword('')
+            setConfirmPassword('')
             toast.success('Kata sandi berhasil diperbarui', {
-                description: 'Masuk kembali menggunakan kata sandi baru.',
+                description: 'Sesi pada perangkat lain telah diakhiri.',
             })
-            closePasswordModal()
-            router.push('/login?returnTo=/cpns')
-        } else {
-            toast.error(result.error || 'Kata sandi belum bisa diubah.')
+        } catch {
+            toast.error('Kata sandi belum bisa diubah. Coba lagi.')
+        } finally {
+            setIsChangingPassword(false)
         }
     }
 
@@ -60,12 +58,13 @@ export function SettingsTab() {
         if (deleteConfirmText !== 'HAPUS') return
         setIsDeleting(true)
         try {
-            const result = await deleteAccount()
+            const result = await deleteAccount(deleteConfirmText)
             if (result.success) {
+                await createV2Client().auth.signOut({ scope: 'local' }).catch(() => undefined)
                 toast.success('Akun sudah dihapus.')
                 setTimeout(() => {
-                    window.location.href = '/login'
-                }, 2000)
+                    window.location.replace('/cpns')
+                }, 1200)
             } else {
                 toast.error(result.error || 'Akun belum bisa dihapus.')
                 setIsDeleting(false)
@@ -126,9 +125,10 @@ export function SettingsTab() {
                         <p className="st-muted mt-1 text-sm font-semibold">Masukkan kata sandi saat ini, lalu buat kata sandi baru.</p>
 
                         <div className="mt-6 space-y-4">
-                            <PasswordField label="Kata sandi saat ini" value={oldPassword} onChange={setOldPassword} placeholder="Kata sandi saat ini" disabled={isChangingPassword} />
-                            <PasswordField label="Kata sandi baru" value={newPassword} onChange={setNewPassword} placeholder="Minimal 6 karakter" disabled={isChangingPassword} />
-                            <PasswordField label="Konfirmasi kata sandi baru" value={confirmPassword} onChange={setConfirmPassword} placeholder="Ketik ulang kata sandi baru" disabled={isChangingPassword} />
+                            <PasswordField label="Kata sandi saat ini" value={oldPassword} onChange={setOldPassword} placeholder="Kata sandi saat ini" disabled={isChangingPassword} autoComplete="current-password" />
+                            <PasswordField label="Kata sandi baru" value={newPassword} onChange={setNewPassword} placeholder="Minimal 10 karakter" disabled={isChangingPassword} autoComplete="new-password" />
+                            <PasswordField label="Konfirmasi kata sandi baru" value={confirmPassword} onChange={setConfirmPassword} placeholder="Ketik ulang kata sandi baru" disabled={isChangingPassword} autoComplete="new-password" />
+                            <p className="text-xs font-semibold leading-relaxed text-slate-500">Gunakan minimal 10 karakter dengan huruf besar, huruf kecil, dan angka.</p>
                         </div>
 
                         <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
@@ -202,11 +202,11 @@ export function SettingsTab() {
     )
 }
 
-function PasswordField({ label, value, onChange, placeholder, disabled }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; disabled: boolean }) {
+function PasswordField({ label, value, onChange, placeholder, disabled, autoComplete }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; disabled: boolean; autoComplete: 'current-password' | 'new-password' }) {
     return (
         <label>
             <span className="mb-1.5 block text-sm font-black">{label}</span>
-            <input type="password" value={value} onChange={(event) => onChange(event.target.value)} className="st-input" placeholder={placeholder} disabled={disabled} autoComplete="new-password" />
+            <input type="password" value={value} onChange={(event) => onChange(event.target.value)} className="st-input" placeholder={placeholder} disabled={disabled} autoComplete={autoComplete} />
         </label>
     )
 }

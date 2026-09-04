@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, startTransition, useState } from 'react'
+import { useEffect, useRef, startTransition, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Clock, ClipboardList, Shield, User } from 'lucide-react'
 import { ProfileTab } from './ProfileTab'
@@ -52,6 +52,12 @@ interface ProfileClientProps {
     level: number
 }
 
+type ProfileTabId = 'profile' | 'history' | 'settings'
+
+function parseProfileTab(value: string | null): ProfileTabId {
+    return value === 'history' || value === 'settings' ? value : 'profile'
+}
+
 export default function ProfileClient({
     profile: initialProfile,
     user,
@@ -61,18 +67,20 @@ export default function ProfileClient({
 }: ProfileClientProps) {
     const searchParams = useSearchParams()
     const router = useRouter()
-    const initialTab = (searchParams.get('tab') as 'profile' | 'history' | 'settings') || 'profile'
-    const [activeTab, setActiveTab] = useState<'profile' | 'history' | 'settings'>(initialTab)
+    const requestedTab = searchParams.get('tab')
+    const [activeTab, setActiveTab] = useState<ProfileTabId>(() => parseProfileTab(requestedTab))
     const [profile, setProfile] = useState(initialProfile)
+    const activeTabRef = useRef<HTMLButtonElement>(null)
 
     useEffect(() => {
-        const tab = searchParams.get('tab') as 'profile' | 'history' | 'settings' | null
-        if (tab && ['profile', 'history', 'settings'].includes(tab)) {
-            startTransition(() => setActiveTab(tab))
-        }
-    }, [searchParams])
+        startTransition(() => setActiveTab(parseProfileTab(requestedTab)))
+    }, [requestedTab])
 
-    const handleTabChange = (tabId: 'profile' | 'history' | 'settings') => {
+    useEffect(() => {
+        activeTabRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }, [activeTab])
+
+    const handleTabChange = (tabId: ProfileTabId) => {
         setActiveTab(tabId)
         router.push(`/cpns/dashboard/profile?tab=${tabId}`, { scroll: false })
     }
@@ -97,6 +105,7 @@ export default function ProfileClient({
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
+                        ref={activeTab === tab.id ? activeTabRef : undefined}
                         type="button"
                         onClick={() => handleTabChange(tab.id)}
                         aria-current={activeTab === tab.id ? 'page' : undefined}
