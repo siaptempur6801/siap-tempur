@@ -467,20 +467,25 @@ export default function TkaFullExamSessionClient({
                                         key={question.attemptQuestionId}
                                         type="button"
                                         onClick={() => navigate(index)}
-                                        aria-label={`Buka soal ${index + 1}`}
+                                        aria-label={`Buka soal ${index + 1}${index === currentIndex ? ', sedang dikerjakan' : ''}`}
                                         aria-current={index === currentIndex ? 'step' : undefined}
+                                        style={index === currentIndex ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
                                         className={cn(
                                             'st-focus relative aspect-square min-h-10 border-2 border-slate-900 text-sm font-black',
-                                            index === currentIndex ? 'bg-blue-600 text-white' : answered ? 'bg-emerald-100 text-slate-950' : 'bg-white text-slate-700',
+                                            index === currentIndex ? 'z-10 bg-blue-600 text-white' : answered ? 'bg-emerald-100 text-slate-950' : 'bg-white text-slate-700',
                                         )}
                                     >
                                         {index + 1}
+                                        {index === currentIndex && (
+                                            <span aria-hidden="true" className="absolute -left-1.5 -top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-sm" />
+                                        )}
                                         {flagged && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-slate-900 bg-yellow-300"/>}
                                     </button>
                                 )
                             })}
                         </div>
                         <div className="st-muted mt-4 space-y-2 border-t-2 border-dashed border-slate-200 pt-4 text-xs font-bold">
+                            <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Sedang dikerjakan</div>
                             <div>Terjawab bagian ini: <b className="text-slate-900">{answeredCount}/{questions.length}</b></div>
                             <div>Terjawab total: <b className="text-slate-900">{state.answeredCount}/{state.totalQuestions}</b></div>
                             <div>Ditandai: <b className="text-slate-900">{markedCount}</b></div>

@@ -34,6 +34,7 @@ interface TkaDashboardShellProps {
         full_name?: string
         display_name?: string
     } | null
+    tokenBalance: number
     signoutAction: () => Promise<{ success: boolean }>
 }
 
@@ -42,6 +43,7 @@ export default function TkaDashboardShell({
     level,
     user,
     profile,
+    tokenBalance,
     signoutAction,
 }: TkaDashboardShellProps) {
     const pathname = usePathname()
@@ -129,7 +131,7 @@ export default function TkaDashboardShell({
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-[13px] font-black text-slate-900">{displayName}</p>
                                 <Link href={level === 'SMP' ? `${basePath}#tempur-pass` : basePath} className="st-focus mt-0.5 inline-flex min-h-6 items-center gap-1.5 text-[11px] font-bold text-indigo-700 hover:underline">
-                                    <Ticket size={12} /> Akses TKA
+                                    <Ticket size={12} /> {tokenBalance} token tersisa
                                 </Link>
                             </div>
                         </div>
@@ -147,6 +149,15 @@ export default function TkaDashboardShell({
                             Siap<span className="text-indigo-600">Tempur</span>.
                         </Link>
                         <div className="flex items-center gap-2">
+                            <Link
+                                href={level === 'SMP' ? `${basePath}#tempur-pass` : basePath}
+                                aria-label={`${tokenBalance} token tersisa`}
+                                className="st-focus inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-2 text-[11px] font-black text-indigo-700"
+                            >
+                                <Ticket size={13} aria-hidden="true" />
+                                <span className="tabular-nums">{tokenBalance}</span>
+                                <span className="hidden min-[390px]:inline">token</span>
+                            </Link>
                             <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black text-indigo-700">TKA</span>
                             <SidebarSignoutButton signoutAction={signoutAction} redirectTo="/tka" compact />
                         </div>

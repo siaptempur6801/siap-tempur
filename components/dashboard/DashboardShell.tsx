@@ -36,8 +36,8 @@ interface DashboardShellProps {
     profile: {
         avatar_url?: string
         full_name?: string
-        tryout_quota?: number
     } | null
+    tokenBalance: number
     signoutAction: () => Promise<{ success: boolean }>
     isAdmin?: boolean
     canAccessArticles?: boolean
@@ -47,6 +47,7 @@ export default function DashboardShell({
     children,
     user,
     profile,
+    tokenBalance,
     signoutAction,
     isAdmin = false,
     canAccessArticles = false,
@@ -142,7 +143,7 @@ export default function DashboardShell({
                                 href="/cpns/dashboard/beli-paket"
                                 className="st-focus mt-0.5 inline-flex min-h-6 items-center gap-1.5 text-[11px] font-black text-blue-700 hover:underline"
                             >
-                                <Ticket size={12} /> {profile?.tryout_quota ?? 0} token tersisa
+                                <Ticket size={12} /> {tokenBalance} token tersisa
                             </Link>
                         </div>
                     </div>
@@ -160,14 +161,26 @@ export default function DashboardShell({
                     >
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
                     </Link>
-                    <MobileProfileDropdown
-                        user={user}
-                        profile={profile}
-                        signoutAction={signoutAction}
-                        signoutRedirectTo="/cpns"
-                        canAccessArticles={canAccessArticles}
-                        isAdmin={isAdmin}
-                    />
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href="/cpns/dashboard/beli-paket"
+                            aria-label={`${tokenBalance} token tersisa`}
+                            className="st-focus inline-flex min-h-9 shrink-0 items-center gap-1.5 border-2 border-slate-900 bg-yellow-100 px-2.5 text-xs font-black text-slate-900 shadow-[2px_2px_0_0_#111827]"
+                        >
+                            <Ticket size={14} aria-hidden="true" />
+                            <span className="tabular-nums">{tokenBalance}</span>
+                            <span className="hidden min-[360px]:inline">token</span>
+                        </Link>
+                        <MobileProfileDropdown
+                            user={user}
+                            profile={profile}
+                            tokenBalance={tokenBalance}
+                            signoutAction={signoutAction}
+                            signoutRedirectTo="/cpns"
+                            canAccessArticles={canAccessArticles}
+                            isAdmin={isAdmin}
+                        />
+                    </div>
                 </div>
 
                 <div className="mx-auto w-full max-w-6xl p-4 sm:p-5 md:p-6 lg:p-7">

@@ -838,9 +838,12 @@ export default function PracticeSessionClient({
                                                 handleNavigateToIndex(idx)
                                                 setShowMobileNav(false)
                                             }}
+                                            aria-label={`Buka soal ${idx + 1}${currentIndex === idx ? ', sedang dikerjakan' : ''}`}
+                                            aria-current={currentIndex === idx ? 'step' : undefined}
+                                            style={currentIndex === idx ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
                                             className={cn(
-                                                "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
-                                                currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-2 border-blue-600 z-10' : '',
+                                                "relative aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
+                                                currentIndex === idx ? 'z-10' : '',
                                                 marked[q.id]
                                                     ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
                                                     : answers[q.id]
@@ -849,6 +852,9 @@ export default function PracticeSessionClient({
                                             )}
                                         >
                                             {idx + 1}
+                                            {currentIndex === idx && (
+                                                <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-sm" />
+                                            )}
                                         </button>
                                     ))}
                                 </div>
@@ -864,6 +870,7 @@ export default function PracticeSessionClient({
                                 </button>
 
                                 <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
+                                    <div className="flex items-center gap-2"><div className="relative h-3 w-3 rounded-full border-2 border-slate-950 bg-white"><span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-red-500" /></div><span>Sedang dikerjakan</span></div>
                                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
                                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ditandai</span></div>
                                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>
@@ -1252,9 +1259,12 @@ export default function PracticeSessionClient({
                                     <button
                                         key={q.id}
                                         onClick={() => handleNavigateToIndex(idx)}
+                                        aria-label={`Buka soal ${idx + 1}${currentIndex === idx ? ', sedang dikerjakan' : ''}`}
+                                        aria-current={currentIndex === idx ? 'step' : undefined}
+                                        style={currentIndex === idx ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
                                         className={cn(
-                                            "aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
-                                            currentIndex === idx ? 'ring-2 ring-blue-400 ring-offset-2 border-blue-600 z-10' : '',
+                                            "relative aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
+                                            currentIndex === idx ? 'z-10' : '',
                                             marked[q.id]
                                                 ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
                                                 : answers[q.id]
@@ -1263,6 +1273,9 @@ export default function PracticeSessionClient({
                                         )}
                                     >
                                         {idx + 1}
+                                        {currentIndex === idx && (
+                                            <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-sm" />
+                                        )}
                                     </button>
                                 ))}
                             </div>
@@ -1275,6 +1288,7 @@ export default function PracticeSessionClient({
                                 <LogOut size={18} /> Keluar {sessionKindLabel}
                             </button>
                             <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
+                                <div className="flex items-center gap-2"><div className="relative h-3 w-3 rounded-full border-2 border-slate-950 bg-white"><span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-red-500" /></div><span>Sedang dikerjakan</span></div>
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ditandai</span></div>
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>

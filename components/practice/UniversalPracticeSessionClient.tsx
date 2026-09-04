@@ -360,17 +360,24 @@ export default function UniversalPracticeSessionClient({
                                 key={question.id}
                                 type="button"
                                 onClick={() => navigate(index)}
+                                aria-label={`Buka soal ${index + 1}${currentIndex === index ? ', sedang dikerjakan' : ''}`}
+                                aria-current={currentIndex === index ? 'step' : undefined}
+                                style={currentIndex === index ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
                                 className={cn(
-                                    'aspect-square border-2 border-gray-900 text-sm font-black',
-                                    currentIndex === index ? 'ring-2 ring-blue-500 ring-offset-1' : '',
+                                    'relative aspect-square border-2 border-gray-900 text-sm font-black',
+                                    currentIndex === index ? 'z-10' : '',
                                     marked[question.id] ? 'bg-yellow-300' : answeredQuestionIds.has(question.id) ? 'bg-blue-600 text-white' : 'bg-white',
                                 )}
                             >
                                 {index + 1}
+                                {currentIndex === index && (
+                                    <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-sm" />
+                                )}
                             </button>
                         ))}
                     </div>
                     <div className="mt-4 space-y-1 border-t-2 border-dashed border-gray-300 pt-3 text-xs font-bold text-gray-600">
+                        <p className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Sedang dikerjakan</p>
                         <p>{answeredQuestionIds.size} dijawab</p>
                         <p>{questions.length - answeredQuestionIds.size} belum dijawab</p>
                         <p>{markedCount} ditandai</p>

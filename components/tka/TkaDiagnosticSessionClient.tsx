@@ -238,9 +238,28 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                         <div className="mt-3 grid grid-cols-4 gap-2 lg:grid-cols-4">
                             {questions.map((question, index) => {
                                 const answered = (selections[question.attemptQuestionId] ?? []).length > 0
-                                return <button key={question.attemptQuestionId} type="button" aria-label={`Buka soal diagnostik ${index + 1}`} onClick={() => { setCurrentIndex(index); enteredAtRef.current = Date.now() }} className={cn('st-focus flex h-9 items-center justify-center rounded-lg text-xs font-black', index === currentIndex ? 'bg-indigo-600 text-white' : answered ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' : 'bg-slate-50 text-slate-500')}>{index + 1}</button>
+                                return (
+                                    <button
+                                        key={question.attemptQuestionId}
+                                        type="button"
+                                        aria-label={`Buka soal diagnostik ${index + 1}${index === currentIndex ? ', sedang dikerjakan' : ''}`}
+                                        aria-current={index === currentIndex ? 'step' : undefined}
+                                        onClick={() => { setCurrentIndex(index); enteredAtRef.current = Date.now() }}
+                                        style={index === currentIndex ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
+                                        className={cn(
+                                            'st-focus relative flex h-9 items-center justify-center rounded-lg text-xs font-black',
+                                            index === currentIndex ? 'z-10 bg-indigo-600 text-white' : answered ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' : 'bg-slate-50 text-slate-500',
+                                        )}
+                                    >
+                                        {index + 1}
+                                        {index === currentIndex && (
+                                            <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-sm" />
+                                        )}
+                                    </button>
+                                )
                             })}
                         </div>
+                        <div className="mt-3 flex items-center gap-2 text-[11px] font-bold text-slate-500"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Sedang dikerjakan</div>
                     </aside>
                 </div>
             </div>
