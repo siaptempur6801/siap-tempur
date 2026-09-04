@@ -80,7 +80,7 @@ export default function DashboardShell({
                         className="st-focus inline-flex items-center focus-visible:outline-none"
                     >
                         <span className="font-handwriting text-[1.65rem] font-black leading-tight text-slate-950">
-                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </span>
                     </Link>
                     <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-500">Persiapan SKD CPNS</p>
@@ -151,7 +151,7 @@ export default function DashboardShell({
                         href="/cpns"
                         className="st-focus font-handwriting text-xl font-black text-slate-950"
                     >
-                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>
                     <div className="flex items-center gap-2">
                         <Link

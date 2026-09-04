@@ -454,7 +454,9 @@ function EventCard({
                         </div>
                         {canViewEventLeaderboard && (
                             <Link
-                                href={`/cpns/dashboard/event/${event.id}/live`}
+                                href={`/cpns/live/${event.id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="mt-3 flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-yellow-300 px-3 py-2 text-xs font-black uppercase text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-yellow-200 hover:shadow-none"
                             >
                                 <Trophy size={14} />

@@ -90,7 +90,7 @@ export default function TkaDashboardShell({
                 <div className="shrink-0 px-4 pb-3.5 pt-5">
                     <Link href="/tka" className="st-focus inline-flex items-center focus-visible:outline-none">
                         <span className="font-handwriting text-[1.65rem] font-black leading-tight text-slate-950">
-                            Siap<span className="text-indigo-600">Tempur</span>.
+                            Siap<span className="text-indigo-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </span>
                     </Link>
                     <p className="mt-1 text-[11px] font-bold text-slate-400">Dashboard TKA</p>
@@ -146,7 +146,7 @@ export default function TkaDashboardShell({
                 <div className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl md:hidden">
                     <div className="flex h-14 items-center justify-between px-4">
                         <Link href="/tka" className="st-focus font-handwriting text-xl font-black text-slate-950">
-                            Siap<span className="text-indigo-600">Tempur</span>.
+                            Siap<span className="text-indigo-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </Link>
                         <div className="flex items-center gap-2">
                             <Link

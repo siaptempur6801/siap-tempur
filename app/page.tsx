@@ -187,7 +187,7 @@ export default async function Index() {
             <header className="sticky top-0 z-50 px-4 py-3 md:px-8 md:py-4">
                 <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
                     <Link href="/" className="st-focus shrink-0 font-handwriting text-2xl font-black tracking-tight md:text-3xl">
-                        Siap<span className="text-blue-600">Tempur</span>.
+                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>
 
                     <nav className="hidden items-center gap-1 text-sm font-black lg:flex" aria-label="Navigasi utama">
@@ -543,7 +543,7 @@ export default async function Index() {
             <footer className="border-t border-gray-200 bg-white px-4 py-8 md:px-8">
                 <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <Link href="/" className="font-handwriting text-2xl font-black">Siap<span className="text-blue-600">Tempur</span>.</Link>
+                        <Link href="/" className="font-handwriting text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link>
                         <p className="st-muted mt-1 text-sm font-semibold">Belajar lebih terarah untuk menghadapi ujian dengan lebih siap.</p>
                     </div>
                     <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600">

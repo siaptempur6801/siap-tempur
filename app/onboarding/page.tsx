@@ -51,7 +51,7 @@ export default async function OnboardingPage() {
 
             <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-5xl flex-col">
                 <Link href="/" className="st-focus w-fit font-handwriting text-2xl font-black tracking-tight md:text-3xl">
-                    Siap<span className="text-blue-600">Tempur</span>.
+                    Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                 </Link>
 
                 <section className="flex flex-1 flex-col justify-center py-10" aria-labelledby="program-title">

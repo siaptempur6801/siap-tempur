@@ -155,7 +155,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="flex items-center group cursor-pointer">
                         <span className="text-3xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
-                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2">Tempur</span>.
+                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </span>
                     </button>
 
@@ -1175,7 +1175,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                     <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-6 font-handwriting text-lg text-gray-500">
                         <div className="flex items-center gap-2">
-                            <span className="font-bold text-white">Siap Tempur</span> © 2026
+                            <span className="font-bold text-white">Siap <span className="text-blue-400 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span></span> © 2026
                         </div>
                     </div>
                 </div>

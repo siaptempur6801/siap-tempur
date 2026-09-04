@@ -56,7 +56,7 @@ export default function SeoNavbarClient({
             <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                     <Link href="/" className="st-focus shrink-0 font-handwriting text-2xl font-black tracking-tight md:text-3xl">
-                        Siap<span className="text-blue-600">Tempur</span>.
+                        Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>
                     {programLabel ? (
                         <span

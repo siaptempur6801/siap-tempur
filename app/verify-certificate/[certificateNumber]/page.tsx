@@ -1,46 +1,21 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Award, CheckCircle2 } from 'lucide-react'
-import { createAdminClient } from '@/lib/utils/supabase/server'
+import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { getCertificateAchievementLabel, getCertificateTitle, type EventCertificateKind } from '@/lib/event-certificates'
-import { PASSING_GRADES } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
 type CertificateVerifyRow = {
+    user_id: string
+    event_id: string
     certificate_number: string
     certificate_name: string
     certificate_kind: EventCertificateKind
     rank: number | null
     score: number | null
-    generated_at: string | null
+    issued_at: string
     name_locked_at: string | null
-    tryout_events: {
-        title: string
-        starts_at: string
-    } | Array<{
-        title: string
-        starts_at: string
-    }> | null
-}
-
-type CertificateScoreSessionRow = {
-    test_sessions: {
-        is_passed: boolean | null
-        score_twk: number | null
-        score_tiu: number | null
-        score_tkp: number | null
-    } | Array<{
-        is_passed: boolean | null
-        score_twk: number | null
-        score_tiu: number | null
-        score_tkp: number | null
-    }> | null
-}
-
-function firstRelated<T>(value: T | T[] | null | undefined): T | null {
-    if (Array.isArray(value)) return value[0] || null
-    return value || null
 }
 
 function formatDate(value: string | null | undefined) {
@@ -53,62 +28,45 @@ function formatDate(value: string | null | undefined) {
     }).format(new Date(value))
 }
 
-async function getCertificatePassingStatus(
-    admin: Awaited<ReturnType<typeof createAdminClient>>,
-    certificateNumber: string
-) {
-    const { data: certificate } = await admin
-        .from('event_certificates')
-        .select('event_id, user_id')
-        .eq('certificate_number', certificateNumber)
-        .maybeSingle()
-
-    if (!certificate) return false
-
-    const { data } = await admin
-        .from('tryout_event_sessions')
-        .select('test_sessions(is_passed, score_twk, score_tiu, score_tkp)')
-        .eq('event_id', certificate.event_id)
-        .eq('user_id', certificate.user_id)
-        .eq('status', 'completed')
-        .maybeSingle()
-
-    const row = data as CertificateScoreSessionRow | null
-    const testSession = firstRelated(row?.test_sessions)
-    if (!testSession) return false
-
-    return Boolean(testSession.is_passed) || (
-        Number(testSession.score_twk || 0) >= PASSING_GRADES.TWK &&
-        Number(testSession.score_tiu || 0) >= PASSING_GRADES.TIU &&
-        Number(testSession.score_tkp || 0) >= PASSING_GRADES.TKP
-    )
-}
-
 export default async function VerifyCertificatePage({
     params,
 }: {
     params: Promise<{ certificateNumber: string }>
 }) {
     const { certificateNumber } = await params
-    const admin = await createAdminClient()
+    const admin = await createV2AdminClient()
     const { data, error } = await admin
-        .from('event_certificates')
-        .select('certificate_number, certificate_name, certificate_kind, rank, score, generated_at, name_locked_at, tryout_events(title, starts_at)')
+        .from('certificates')
+        .select('user_id, event_id, certificate_number, certificate_name, certificate_kind, rank, score, issued_at, name_locked_at')
         .eq('certificate_number', certificateNumber)
         .maybeSingle()
 
     if (error || !data) notFound()
 
-    const certificate = data as CertificateVerifyRow
+    const certificate = data as unknown as CertificateVerifyRow
     if (!certificate.name_locked_at) notFound()
 
-    const event = firstRelated(certificate.tryout_events)
-    const isPassed = await getCertificatePassingStatus(admin, certificateNumber)
+    const [{ data: event }, { data: attempt }] = await Promise.all([
+        admin
+            .from('events')
+            .select('title, starts_at')
+            .eq('id', certificate.event_id)
+            .maybeSingle(),
+        admin
+            .from('exam_attempts')
+            .select('passed')
+            .eq('user_id', certificate.user_id)
+            .contains('metadata', { eventId: certificate.event_id })
+            .in('status', ['completed', 'COMPLETED'])
+            .order('submitted_at', { ascending: false, nullsFirst: false })
+            .limit(1)
+            .maybeSingle(),
+    ])
     const achievementLabel = getCertificateAchievementLabel({
         kind: certificate.certificate_kind,
         rank: certificate.rank,
         score: certificate.score,
-        isPassed,
+        isPassed: Boolean(attempt?.passed),
     })
 
     return (
@@ -141,8 +99,8 @@ export default async function VerifyCertificatePage({
                     </div>
                     <div className="border-2 border-gray-200 bg-gray-50 p-4">
                         <p className="text-xs font-black uppercase text-gray-500">Event</p>
-                        <p className="mt-1 font-black">{event?.title || 'Tryout Akbar Siap Tempur'}</p>
-                        <p className="mt-1 text-sm font-bold text-gray-500">{formatDate(event?.starts_at)}</p>
+                        <p className="mt-1 font-black">{typeof event?.title === 'string' ? event.title : 'Tryout Akbar Siap Tempur'}</p>
+                        <p className="mt-1 text-sm font-bold text-gray-500">{formatDate(typeof event?.starts_at === 'string' ? event.starts_at : null)}</p>
                     </div>
                     <div className="border-2 border-gray-900 bg-yellow-100 p-4">
                         <div className="flex items-center gap-2">
@@ -150,7 +108,7 @@ export default async function VerifyCertificatePage({
                             <p className="text-xs font-black uppercase text-gray-700">Nomor Sertifikat</p>
                         </div>
                         <p className="mt-2 break-all font-mono text-sm font-black">{certificate.certificate_number}</p>
-                        <p className="mt-2 text-xs font-bold text-gray-600">Diterbitkan {formatDate(certificate.generated_at)}</p>
+                        <p className="mt-2 text-xs font-bold text-gray-600">Diterbitkan {formatDate(certificate.issued_at)}</p>
                     </div>
                 </div>
 

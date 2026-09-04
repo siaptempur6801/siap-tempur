@@ -59,10 +59,11 @@ export class EventService {
         if (events.length === 0) return []
 
         const eventIds = events.map((event) => event.id)
-        const [sessions, registrations, attempts] = await Promise.all([
+        const [sessions, registrations, attempts, certificates] = await Promise.all([
             eventRepository.listSessions(eventIds),
             eventRepository.listRegistrations(userId, eventIds),
             eventRepository.listUserEventAttempts(userId, eventIds),
+            eventRepository.listUserEventCertificates(userId, eventIds),
         ])
 
         const sessionsByEvent = new Map<string, CanonicalEventSessionRow[]>()
@@ -72,6 +73,7 @@ export class EventService {
             sessionsByEvent.set(session.event_id, rows)
         }
         const registrationByEvent = new Map(registrations.map((row) => [row.event_id, row]))
+        const certificateByEvent = new Map(certificates.map((row) => [row.event_id, row]))
         const attemptByEvent = new Map<string, (typeof attempts)[number]>()
         for (const attempt of attempts) {
             const eventId = eventRepository.getAttemptEventId(attempt.metadata)
@@ -97,6 +99,7 @@ export class EventService {
 
         return events.map((event) => {
             const registration = registrationByEvent.get(event.id) ?? null
+            const certificate = certificateByEvent.get(event.id) ?? null
             const eventSessions = sessionsByEvent.get(event.id) ?? []
             const selectedSession = registration?.session_id
                 ? eventSessions.find((row) => row.id === registration.session_id) ?? eventSessions[0] ?? null
@@ -111,6 +114,7 @@ export class EventService {
                 ? sessionLatestStart(selectedSession, examDurationSeconds)
                 : Date.parse(event.starts_at)
             const startGraceMinutes = Math.max(0, Math.floor((latestStart - Date.parse(selectedSession?.starts_at ?? event.starts_at)) / 60000))
+            const effectiveStatus = statusFor(event)
 
             return {
                 id: event.id,
@@ -124,16 +128,16 @@ export class EventService {
                 registered_participants: selectedSession ? sessionRegistrationCounts.get(selectedSession.id) ?? 0 : 0,
                 requires_code: false,
                 group_link: null,
-                flyer_image_url: null,
+                flyer_image_url: event.flyer_image_url,
                 is_paid: false,
                 price: 0,
-                status: statusFor(event),
-                certificate_enabled: false,
-                certificate_released_at: null,
-                certificate_number: null,
-                certificate_name: null,
-                certificate_kind: null,
-                certificate_name_locked_at: null,
+                status: effectiveStatus,
+                certificate_enabled: effectiveStatus === 'closed',
+                certificate_released_at: effectiveStatus === 'closed' ? event.ends_at : null,
+                certificate_number: certificate?.certificate_number ?? null,
+                certificate_name: certificate?.certificate_name ?? null,
+                certificate_kind: certificate?.certificate_kind ?? null,
+                certificate_name_locked_at: certificate?.name_locked_at ?? null,
                 participant_id: registration?.id ?? null,
                 participant_status: registration?.status ?? null,
                 session_id: attempt?.id ?? null,

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json } from '@/types/database.types'
+import { env } from '@/lib/env'
 import {
     catalogContextService,
     CPNS_SKD_CONTEXT,
@@ -43,6 +44,24 @@ function validNonNegative(value: number | null | undefined) {
 
 function contextOrDefault(context?: ProgramTrackContext) {
     return context ?? CPNS_SKD_CONTEXT
+}
+
+function normalizeEventFlyerUrl(value?: string | null) {
+    if (!value) return null
+    if (value.length > 1000) throw new Error('EVENT_FLYER_URL_INVALID')
+
+    try {
+        const url = new URL(value)
+        const supabaseUrl = new URL(env.supabaseUrl())
+        const bucketPrefix = '/storage/v1/object/public/event-flyers/'
+        if (url.origin !== supabaseUrl.origin || !url.pathname.startsWith(bucketPrefix) || url.pathname === bucketPrefix) {
+            throw new Error('EVENT_FLYER_URL_INVALID')
+        }
+        url.hash = ''
+        return url.toString()
+    } catch {
+        throw new Error('EVENT_FLYER_URL_INVALID')
+    }
 }
 
 function validateQuestionOptions(questionType: string, options: AdminQuestionOptionInput[]) {
@@ -110,7 +129,7 @@ export class AdminV2Service {
                 .limit(50),
             admin
                 .from('events')
-                .select('id, code, title, slug, event_type, description, registration_start, registration_end, starts_at, ends_at, status, created_at')
+                .select('id, code, title, slug, event_type, description, flyer_image_url, registration_start, registration_end, starts_at, ends_at, status, created_at')
                 .eq('program_id', catalog.program.id)
                 .eq('track_id', catalog.track.id)
                 .order('starts_at', { ascending: false })
@@ -319,6 +338,7 @@ export class AdminV2Service {
         title: string
         slug?: string | null
         description?: string | null
+        flyerImageUrl?: string | null
         registrationStart?: string | null
         registrationEnd?: string | null
         startsAt: string
@@ -347,6 +367,7 @@ export class AdminV2Service {
             program_id: catalog.program.id,
             track_id: catalog.track.id,
             description: input.description?.trim() || null,
+            flyer_image_url: normalizeEventFlyerUrl(input.flyerImageUrl),
             registration_start: input.registrationStart || null,
             registration_end: input.registrationEnd || null,
             starts_at: input.startsAt,

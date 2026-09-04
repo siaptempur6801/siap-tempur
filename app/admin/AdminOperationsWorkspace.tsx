@@ -19,6 +19,7 @@ import {
     saveQuestionAction,
 } from '@/app/actions/admin-v2'
 import AdminModal from '@/components/admin/AdminModal'
+import EventFlyerField from '@/components/admin/EventFlyerField'
 import {
     AdminBadge,
     AdminCard,
@@ -241,6 +242,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                     <Field label="Mulai"><input className={adminInputClass} required type="datetime-local" name="starts_at" defaultValue={localDateTime(editedEvent?.starts_at)}/></Field>
                     <Field label="Selesai"><input className={adminInputClass} required type="datetime-local" name="ends_at" defaultValue={localDateTime(editedEvent?.ends_at)}/></Field>
                     <Field label="Deskripsi" className="md:col-span-2"><input className={adminInputClass} name="description" defaultValue={s(editedEvent?.description)}/></Field>
+                    <EventFlyerField defaultValue={nullable(editedEvent?.flyer_image_url)}/>
                     <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}><Save size={16}/>{editedEvent ? 'Simpan perubahan' : 'Simpan event'}</button></div>
                 </form>
             </AdminModal>

@@ -11,6 +11,7 @@ export type CanonicalEventRow = {
     program_id: string
     track_id: string
     description: string | null
+    flyer_image_url: string | null
     registration_start: string | null
     registration_end: string | null
     starts_at: string
@@ -51,6 +52,14 @@ export type CanonicalEventAttemptRow = {
     metadata: Json
 }
 
+export type CanonicalEventCertificateRow = {
+    event_id: string
+    certificate_number: string
+    certificate_name: string
+    certificate_kind: string
+    name_locked_at: string | null
+}
+
 function metadataString(metadata: Json, key: string) {
     if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') return null
     const value = metadata[key]
@@ -62,7 +71,7 @@ export class EventRepository {
         const admin = await createV2AdminClient()
         const { data, error } = await admin
             .from('events')
-            .select('id, code, title, slug, event_type, program_id, track_id, description, registration_start, registration_end, starts_at, ends_at, status')
+            .select('id, code, title, slug, event_type, program_id, track_id, description, flyer_image_url, registration_start, registration_end, starts_at, ends_at, status')
             .in('status', ['scheduled', 'SCHEDULED', 'live', 'LIVE', 'closed', 'CLOSED', 'active', 'ACTIVE'])
             .order('starts_at', { ascending: true })
         if (error) throw error
@@ -73,7 +82,7 @@ export class EventRepository {
         const admin = await createV2AdminClient()
         const { data, error } = await admin
             .from('events')
-            .select('id, code, title, slug, event_type, program_id, track_id, description, registration_start, registration_end, starts_at, ends_at, status')
+            .select('id, code, title, slug, event_type, program_id, track_id, description, flyer_image_url, registration_start, registration_end, starts_at, ends_at, status')
             .eq('id', eventId)
             .maybeSingle()
         if (error) throw error
@@ -193,6 +202,18 @@ export class EventRepository {
     async getUserEventAttempt(userId: string, eventId: string): Promise<CanonicalEventAttemptRow | null> {
         const attempts = await this.listUserEventAttempts(userId, [eventId])
         return attempts[0] ?? null
+    }
+
+    async listUserEventCertificates(userId: string, eventIds: string[]): Promise<CanonicalEventCertificateRow[]> {
+        if (eventIds.length === 0) return []
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('certificates')
+            .select('event_id, certificate_number, certificate_name, certificate_kind, name_locked_at')
+            .eq('user_id', userId)
+            .in('event_id', eventIds)
+        if (error) throw error
+        return (data ?? []) as CanonicalEventCertificateRow[]
     }
 
     async resolveSessionExam(session: CanonicalEventSessionRow): Promise<ResolvedExam | null> {

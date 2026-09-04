@@ -131,7 +131,7 @@ export default function CpnsLandingInteractions({
                 <div className="px-container-marketing relative flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:min-h-16 md:px-5">
                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                         <Link href="/" className="st-focus shrink-0 font-handwriting text-2xl font-black tracking-tight md:text-3xl">
-                            Siap<span className="text-blue-600">Tempur</span>.
+                            Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </Link>
                         <span className="inline-flex shrink-0 rounded-full border-2 border-[var(--st-ink)] bg-blue-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-blue-800 sm:px-2.5 sm:text-[11px]">CPNS</span>
                     </div>
@@ -213,7 +213,7 @@ export default function CpnsLandingInteractions({
                 <div data-testid="cpns-mobile-sticky-cta" className="fixed inset-x-3 bottom-3 z-40 md:hidden">
                     <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/95 p-2 shadow-[4px_4px_0_var(--st-ink)] backdrop-blur">
                         <div className="min-w-0 flex-1 pl-2">
-                            <p className="truncate text-xs font-black uppercase tracking-[0.08em] text-blue-700">SiapTempur CPNS</p>
+                            <p className="truncate text-xs font-black uppercase tracking-[0.08em] text-blue-700">Siap<span className="underline decoration-wavy decoration-2 underline-offset-2">Tempur</span> CPNS</p>
                             <p className="truncate text-sm font-bold text-gray-700">TWK · TIU · TKP</p>
                         </div>
                         <TrackedLink

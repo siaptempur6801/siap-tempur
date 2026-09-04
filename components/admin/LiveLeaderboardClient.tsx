@@ -158,10 +158,12 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
 
     if (loading && entries.length === 0) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-yellow-400 px-4 text-gray-900">
+            <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
                 <div className="flex flex-col items-center gap-4 text-center">
-                    <RefreshCw className="animate-spin text-gray-900" size={44} />
-                    <h2 className="text-xl font-black uppercase tracking-widest sm:text-2xl">Memuat Live Data...</h2>
+                    <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-300 shadow-[3px_3px_0_0_#0f172a]">
+                        <RefreshCw className="animate-spin text-slate-900" size={24} />
+                    </div>
+                    <h2 className="font-handwriting text-2xl font-black text-slate-950">Memuat leaderboard...</h2>
                 </div>
             </div>
         )
@@ -169,39 +171,42 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
 
     if (errorMessage && entries.length === 0) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-yellow-400 px-4 text-gray-900">
-                <div className="max-w-lg border-4 border-gray-900 bg-white p-6 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                    <Trophy className="mx-auto mb-4 text-gray-900" size={44} />
-                    <h2 className="text-xl font-black uppercase tracking-widest sm:text-2xl">Leaderboard Tidak Tersedia</h2>
-                    <p className="mt-3 text-sm font-bold text-gray-600 sm:text-base">{errorMessage}</p>
+            <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
+                <div className="max-w-lg border-2 border-slate-900 bg-white p-6 text-center shadow-[4px_4px_0_0_#0f172a]">
+                    <Trophy className="mx-auto mb-4 text-blue-600" size={36} />
+                    <h2 className="font-handwriting text-2xl font-black sm:text-3xl">Leaderboard tidak tersedia</h2>
+                    <p className="mt-2 text-sm font-semibold text-slate-600">{errorMessage}</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="h-screen bg-[#f8f9fa] text-gray-900 overflow-hidden flex flex-col font-sans">
-            {/* Header (Brutalist style) */}
-            <header className="relative z-10 flex flex-col gap-4 border-b-4 border-gray-900 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-6">
+        <div data-experience-mode="event-leaderboard" data-program="cpns" className="st-product flex h-screen flex-col overflow-hidden bg-[#fbfaf7] font-body text-slate-950">
+            <header className="relative z-10 flex flex-col gap-3 border-b-2 border-slate-900 bg-[#fbfaf7]/95 px-4 py-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
                 <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-gray-900 bg-yellow-400 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:h-12 sm:w-12 sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <Trophy className="text-gray-900" size={22} />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-slate-900 bg-yellow-300 shadow-[2px_2px_0_0_#0f172a]">
+                        <Trophy className="text-slate-900" size={20} />
                     </div>
                     <div className="min-w-0">
-                        <h1 className="text-xl font-black uppercase leading-tight tracking-wider text-gray-900 sm:text-3xl">
+                        <div className="flex min-w-0 items-baseline gap-2">
+                            <span className="hidden shrink-0 font-handwriting text-lg font-black text-slate-950 sm:inline">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</span>
+                            <span className="hidden text-slate-300 sm:inline">/</span>
+                            <h1 className="truncate font-handwriting text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
                             {isFinalLeaderboard ? 'Leaderboard Event' : 'Live Leaderboard'}
-                        </h1>
-                        <p className="mt-1 line-clamp-2 text-xs font-bold uppercase text-gray-500 sm:text-sm">{event?.title || 'Memuat Event...'}</p>
+                            </h1>
+                        </div>
+                        <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500 sm:text-xs">{event?.title || 'Memuat event...'}</p>
                     </div>
                 </div>
                 
-                <div className="flex items-center gap-4 sm:gap-6">
-                    <div className="flex w-full flex-col items-start border-2 border-gray-900 bg-gray-50 px-3 py-2 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:w-auto sm:items-end sm:px-4 sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                        <div className="flex items-center gap-2 text-gray-500">
-                            <Clock size={16} />
-                            <span className="text-[10px] font-black uppercase tracking-widest sm:text-xs">Update Terakhir</span>
+                <div className="flex items-center">
+                    <div className="flex w-full items-center justify-between gap-3 border-2 border-slate-900 bg-white px-3 py-2 shadow-[2px_2px_0_0_#0f172a] sm:w-auto">
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                            <Clock size={14} />
+                            <span className="text-[10px] font-black uppercase tracking-[0.1em]">Update</span>
                         </div>
-                        <span className="font-mono text-lg font-black text-gray-900 sm:text-xl">
+                        <span className="font-mono text-sm font-black tabular-nums text-slate-900">
                             {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta' })}
                         </span>
                     </div>
@@ -209,10 +214,10 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
             </header>
 
             {/* Main Content */}
-            <main ref={scrollContainerRef} className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 custom-scrollbar">
+            <main ref={scrollContainerRef} className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 lg:p-7">
                 <div className="mx-auto max-w-6xl">
                     {/* Header Columns */}
-                    <div className="mb-4 hidden grid-cols-[80px_1fr_240px_140px_180px] items-center gap-5 px-6 text-sm font-black uppercase tracking-widest text-gray-500 lg:grid">
+                    <div className="mb-2 hidden grid-cols-[72px_1fr_220px_120px_170px] items-center gap-4 px-4 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 lg:grid">
                         <div className="text-center">Rank</div>
                         <div>Peserta</div>
                         <div className="text-center">{isFinalLeaderboard ? 'Nilai Final' : 'Nilai Live'}</div>
@@ -221,19 +226,19 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     </div>
 
                     {/* Leaderboard List */}
-                    <div className="flex flex-col gap-8 pb-20">
+                    <div className="flex flex-col gap-7 pb-20">
                         {entries.length > 0 ? leaderboardSections.map((section) => (
-                            <section key={section.key} className="flex flex-col gap-4">
+                            <section key={section.key} className="flex flex-col gap-3">
                                 <div className={cn(
-                                    'flex flex-col gap-2 border-2 border-gray-900 px-4 py-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:flex-row sm:items-center sm:justify-between sm:px-6',
-                                    section.key === 'passed' ? 'bg-green-100' : 'bg-yellow-100'
+                                    'flex flex-col gap-2 border-2 border-slate-900 px-4 py-3 shadow-[3px_3px_0_0_#0f172a] sm:flex-row sm:items-center sm:justify-between',
+                                    section.key === 'passed' ? 'bg-emerald-100' : 'bg-yellow-100'
                                 )}>
                                     <div>
-                                        <h2 className="text-lg font-black uppercase tracking-widest text-gray-900 sm:text-2xl">{section.title}</h2>
-                                        <p className="mt-1 text-xs font-bold uppercase tracking-wide text-gray-600 sm:text-sm">{section.description}</p>
+                                        <h2 className="font-handwriting text-xl font-black text-slate-950 sm:text-2xl">{section.title}</h2>
+                                        <p className="mt-0.5 text-xs font-semibold text-slate-600">{section.description}</p>
                                     </div>
-                                    <div className="inline-flex w-fit items-center gap-2 border-2 border-gray-900 bg-white px-3 py-2 text-sm font-black uppercase tracking-widest text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                        <Users size={16} strokeWidth={3} />
+                                    <div className="inline-flex w-fit items-center gap-1.5 border-2 border-slate-900 bg-white px-2.5 py-1.5 text-xs font-black text-slate-900 shadow-[2px_2px_0_0_#0f172a]">
+                                        <Users size={14} strokeWidth={3} />
                                         {section.entries.length} Peserta
                                     </div>
                                 </div>
@@ -270,13 +275,13 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                             scale: { duration: 1.4, ease: 'easeOut' },
                                         }}
                                         className={cn(
-                                            'group relative grid overflow-hidden grid-cols-[58px_minmax(0,1fr)] items-center gap-x-3 gap-y-4 border-2 p-3 transition-transform hover:-translate-y-1 sm:grid-cols-[70px_minmax(0,1fr)] sm:p-4 lg:grid-cols-[80px_minmax(0,1fr)_240px_140px_180px] lg:gap-5',
-                                            section.key === 'passed' ? 'bg-blue-50' : 'bg-white',
+                                            'group relative grid overflow-hidden grid-cols-[52px_minmax(0,1fr)] items-center gap-x-3 gap-y-3 border-2 p-3 transition-transform hover:-translate-y-0.5 sm:grid-cols-[64px_minmax(0,1fr)] sm:p-4 lg:grid-cols-[72px_minmax(0,1fr)_220px_120px_170px] lg:gap-4',
+                                            section.key === 'passed' ? 'bg-blue-50/60' : 'bg-white',
                                             isRankUp
-                                                ? 'border-green-500 shadow-[6px_6px_0px_0px_rgba(22,163,74,1)] hover:shadow-[8px_8px_0px_0px_rgba(22,163,74,1)]'
+                                                ? 'border-emerald-500 shadow-[3px_3px_0_0_#10b981]'
                                                 : isRankDown
-                                                    ? 'border-red-500 shadow-[6px_6px_0px_0px_rgba(220,38,38,1)] hover:shadow-[8px_8px_0px_0px_rgba(220,38,38,1)]'
-                                                    : 'border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]'
+                                                    ? 'border-red-500 shadow-[3px_3px_0_0_#ef4444]'
+                                                    : 'border-slate-900 shadow-[2px_2px_0_0_#0f172a] hover:shadow-[3px_3px_0_0_#0f172a]'
                                         )}
                                     >
                                         <AnimatePresence>
@@ -309,7 +314,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                                     <motion.div
                                                         key={`badge-${entry.entry_id}-${entry.live_rank}`}
                                                         className={cn(
-                                                            'pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 border-2 border-gray-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:right-4 sm:top-4 sm:text-xs',
+                                                            'pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 border-2 border-slate-900 px-2 py-1 text-[10px] font-black uppercase tracking-wide shadow-[2px_2px_0_0_#0f172a] sm:right-4 sm:top-4',
                                                             isRankUp
                                                                 ? 'bg-green-400 text-gray-950'
                                                                 : 'bg-red-500 text-white'
@@ -327,13 +332,13 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                         </AnimatePresence>
 
                                         {/* Rank Column */}
-                                        <div className="relative z-10 flex flex-col items-center justify-center gap-1 border-r-2 border-gray-200 pr-3 sm:pr-4 lg:pr-6">
+                                        <div className="relative z-10 flex flex-col items-center justify-center gap-1 border-r-2 border-slate-200 pr-3 sm:pr-4">
                                             <div className={cn(
-                                                "flex h-10 w-10 items-center justify-center border-2 border-gray-900 text-base font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:h-12 sm:w-12 sm:text-xl",
-                                                entry.live_rank === 1 ? 'bg-yellow-400 text-gray-900' :
-                                                entry.live_rank === 2 ? 'bg-gray-200 text-gray-900' :
-                                                entry.live_rank === 3 ? 'bg-orange-400 text-gray-900' :
-                                                'bg-white text-gray-900'
+                                                "flex h-9 w-9 items-center justify-center border-2 border-slate-900 text-sm font-black shadow-[2px_2px_0_0_#0f172a] sm:h-10 sm:w-10 sm:text-base",
+                                                entry.live_rank === 1 ? 'bg-yellow-300 text-slate-900' :
+                                                entry.live_rank === 2 ? 'bg-slate-200 text-slate-900' :
+                                                entry.live_rank === 3 ? 'bg-orange-300 text-slate-900' :
+                                                'bg-white text-slate-900'
                                             )}>
                                                 #{entry.live_rank}
                                             </div>
@@ -358,7 +363,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
 
                                         {/* User Info Column */}
                                         <div className="relative z-10 flex min-w-0 items-center gap-3 sm:gap-4">
-                                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border-2 border-gray-900 bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:h-14 sm:w-14">
+                                            <div className="relative h-11 w-11 shrink-0 overflow-hidden border-2 border-slate-900 bg-slate-100 shadow-[2px_2px_0_0_#0f172a] sm:h-12 sm:w-12">
                                                 {entry.avatar_url ? (
                                                     <Image 
                                                         src={entry.avatar_url} 
@@ -368,20 +373,20 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                                         className="object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="flex h-full w-full items-center justify-center text-base font-black uppercase text-gray-900 sm:text-xl">
+                                                    <div className="flex h-full w-full items-center justify-center text-base font-black uppercase text-slate-900">
                                                         {entry.full_name.substring(0, 2)}
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="flex min-w-0 flex-col">
-                                                <span className="truncate text-base font-black tracking-tight text-gray-900 sm:text-xl lg:max-w-[500px] lg:text-2xl">
+                                                <span className="truncate text-sm font-black text-slate-900 sm:text-lg lg:max-w-[500px] lg:text-xl">
                                                     {entry.full_name}
                                                 </span>
                                             </div>
                                         </div>
 
                                         {/* Live Score Breakdown */}
-                                        <div className="relative z-10 col-span-2 grid grid-cols-3 gap-2 border-t-2 border-gray-100 pt-3 lg:col-span-1 lg:border-l-2 lg:border-t-0 lg:border-gray-200 lg:pl-5 lg:pt-0">
+                                        <div className="relative z-10 col-span-2 grid grid-cols-3 gap-2 border-t-2 border-slate-100 pt-3 lg:col-span-1 lg:border-l-2 lg:border-t-0 lg:border-slate-200 lg:pl-4 lg:pt-0">
                                             {[
                                                 { label: 'TWK', value: entry.score_twk ?? 0, className: 'bg-red-50 text-red-700 border-red-200' },
                                                 { label: 'TIU', value: entry.score_tiu ?? 0, className: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
@@ -389,7 +394,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                             ].map((score) => (
                                                 <div
                                                     key={score.label}
-                                                    className={cn('min-w-0 border-2 px-1.5 py-2 text-center font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,0.08)] sm:px-2', score.className)}
+                                                    className={cn('min-w-0 border px-1.5 py-2 text-center font-black sm:px-2', score.className)}
                                                 >
                                                     <div className="text-[10px] uppercase tracking-widest">{score.label}</div>
                                                     <div className="font-mono text-lg leading-none sm:text-xl">{String(score.value).padStart(2, '0')}</div>
@@ -398,20 +403,20 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                         </div>
 
                                         {/* Score Column */}
-                                        <div className="relative z-10 flex min-w-0 flex-col items-center justify-center border-t-2 border-gray-100 pt-3 lg:border-l-2 lg:border-t-0 lg:border-gray-200 lg:pl-5 lg:pt-0">
-                                            <span className="text-2xl font-black text-blue-600 sm:text-3xl">{entry.total_score ?? 0}</span>
-                                            <span className="text-xs font-black uppercase tracking-widest text-gray-400">Poin</span>
+                                        <div className="relative z-10 flex min-w-0 flex-col items-center justify-center border-t-2 border-slate-100 pt-3 lg:border-l-2 lg:border-t-0 lg:border-slate-200 lg:pl-4 lg:pt-0">
+                                            <span className="text-2xl font-black text-blue-600">{entry.total_score ?? 0}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">Poin</span>
                                         </div>
 
                                         {/* Progress Column */}
-                                        <div className="relative z-10 flex min-w-0 flex-col items-center justify-center gap-2 border-t-2 border-gray-100 pt-3 lg:border-l-2 lg:border-t-0 lg:border-gray-200 lg:pl-5 lg:pt-0">
+                                        <div className="relative z-10 flex min-w-0 flex-col items-center justify-center gap-1.5 border-t-2 border-slate-100 pt-3 lg:border-l-2 lg:border-t-0 lg:border-slate-200 lg:pl-4 lg:pt-0">
                                             <div className="flex items-end gap-1 font-mono">
-                                                <span className="text-2xl font-black text-gray-900 sm:text-3xl">{entry.progress_count}</span>
-                                                <span className="mb-1 text-xs font-bold text-gray-500 sm:text-sm">/{questionCount}</span>
+                                                <span className="text-xl font-black text-slate-900 sm:text-2xl">{entry.progress_count}</span>
+                                                <span className="mb-0.5 text-xs font-bold text-slate-500">/{questionCount}</span>
                                             </div>
-                                            <div className="h-4 w-full min-w-0 overflow-hidden border-2 border-gray-900 bg-gray-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                            <div className="h-3 w-full min-w-0 overflow-hidden border-2 border-slate-900 bg-slate-100">
                                                 <motion.div 
-                                                    className="h-full bg-blue-500 border-r-2 border-gray-900" 
+                                                    className="h-full border-r-2 border-slate-900 bg-blue-500"
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${Math.min((entry.progress_count / questionCount) * 100, 100)}%` }}
                                                     transition={{ duration: 1 }}
@@ -423,9 +428,9 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                         })}
                                     </AnimatePresence>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center border-4 border-dashed border-gray-300 bg-white/60 py-12 text-center text-gray-500">
-                                        <Users size={48} className="mb-3 text-gray-400 opacity-60" />
-                                        <p className="text-base font-black uppercase tracking-widest text-gray-400">
+                                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 bg-white/60 py-10 text-center text-slate-500">
+                                        <Users size={36} className="mb-3 text-slate-400" />
+                                        <p className="text-sm font-bold text-slate-500">
                                             {section.key === 'passed'
                                                 ? 'Belum ada peserta yang melewati passing grade'
                                                 : 'Belum ada peserta di section ini'}
@@ -434,9 +439,9 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                 )}
                             </section>
                         )) : !loading && (
-                            <div className="flex flex-col items-center justify-center py-20 text-gray-500 border-4 border-dashed border-gray-300">
-                                <Users size={64} className="mb-4 opacity-50 text-gray-400" />
-                                <p className="text-xl font-black uppercase tracking-widest text-gray-400">
+                            <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 bg-white/60 py-16 text-slate-500">
+                                <Users size={44} className="mb-3 text-slate-400" />
+                                <p className="text-base font-bold text-slate-500">
                                     {isFinalLeaderboard ? 'Belum ada skor peserta' : 'Belum ada peserta yang memulai'}
                                 </p>
                             </div>
@@ -445,22 +450,22 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 </div>
             </main>
 
-            <div className="fixed bottom-4 right-4 z-30 flex w-[220px] flex-col gap-2 sm:bottom-6 sm:right-6">
-                <div className="overflow-hidden border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <div className="border-b-2 border-gray-900 bg-gray-50 px-3 py-1 text-center text-[10px] font-black uppercase tracking-widest text-gray-500">
+            <div className="fixed bottom-3 right-3 z-30 flex w-44 flex-col gap-1.5 sm:bottom-4 sm:right-4">
+                <div className="overflow-hidden border-2 border-slate-900 bg-white shadow-[2px_2px_0_0_#0f172a]">
+                    <div className="border-b-2 border-slate-900 bg-slate-50 px-2 py-0.5 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">
                         Speed
                     </div>
-                    <div className="grid grid-cols-[48px_1fr_48px]">
+                    <div className="grid grid-cols-[36px_1fr_36px]">
                         <button
                             type="button"
                             aria-label="Kurangi kecepatan autoscroll"
                             onClick={decreaseAutoScrollSpeed}
                             disabled={autoScrollSpeed <= MIN_AUTO_SCROLL_SPEED}
-                            className="flex h-12 items-center justify-center border-r-2 border-gray-900 bg-white text-gray-900 transition-colors hover:bg-yellow-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
+                            className="flex h-9 items-center justify-center border-r-2 border-slate-900 bg-white text-slate-900 transition-colors hover:bg-yellow-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-300"
                         >
-                            <Minus size={18} strokeWidth={4} />
+                            <Minus size={14} strokeWidth={4} />
                         </button>
-                        <div className="flex h-12 items-center justify-center bg-white px-2 text-center font-mono text-sm font-black text-gray-900">
+                        <div className="flex h-9 items-center justify-center bg-white px-1 text-center font-mono text-xs font-black text-slate-900">
                             {autoScrollSpeed}
                         </div>
                         <button
@@ -468,9 +473,9 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                             aria-label="Tambah kecepatan autoscroll"
                             onClick={increaseAutoScrollSpeed}
                             disabled={autoScrollSpeed >= MAX_AUTO_SCROLL_SPEED}
-                            className="flex h-12 items-center justify-center border-l-2 border-gray-900 bg-white text-gray-900 transition-colors hover:bg-yellow-100 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-300"
+                            className="flex h-9 items-center justify-center border-l-2 border-slate-900 bg-white text-slate-900 transition-colors hover:bg-yellow-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-300"
                         >
-                            <Plus size={18} strokeWidth={4} />
+                            <Plus size={14} strokeWidth={4} />
                         </button>
                     </div>
                 </div>
@@ -480,13 +485,13 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     aria-pressed={isAutoScrollEnabled}
                     onClick={() => setIsAutoScrollEnabled((current) => !current)}
                     className={cn(
-                        'flex h-14 w-full items-center justify-center gap-2 border-2 border-gray-900 px-4 text-xs font-black uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[4px] active:translate-y-[4px] active:shadow-none sm:text-sm',
+                        'flex h-10 w-full items-center justify-center gap-1.5 border-2 border-slate-900 px-2 text-[10px] font-black uppercase tracking-wide shadow-[2px_2px_0_0_#0f172a] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none active:shadow-none',
                         isAutoScrollEnabled
                             ? 'bg-blue-500 text-white'
-                            : 'bg-white text-gray-900'
+                            : 'bg-white text-slate-900'
                     )}
                 >
-                    {isAutoScrollEnabled ? <Pause size={18} strokeWidth={3} /> : <Play size={18} strokeWidth={3} />}
+                    {isAutoScrollEnabled ? <Pause size={14} strokeWidth={3} /> : <Play size={14} strokeWidth={3} />}
                     {isAutoScrollEnabled ? 'Autoscroll ON' : 'Autoscroll OFF'}
                 </button>
             </div>
@@ -496,12 +501,12 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     width: 12px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-track {
-                    background: #f8f9fa;
-                    border-left: 2px solid #111827;
+                    background: #fbfaf7;
+                    border-left: 2px solid #0f172a;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #111827;
-                    border: 2px solid #f8f9fa;
+                    background: #0f172a;
+                    border: 2px solid #fbfaf7;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                     background: #374151;

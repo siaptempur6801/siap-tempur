@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { Download, ShieldCheck } from 'lucide-react'
-import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
+import { createV2AdminClient, createV2Client } from '@/lib/utils/supabase/server'
 import { EventCertificatePreview } from '@/components/certificates/EventCertificatePreview'
+import { authorizationService } from '@/src/services/authorization.service'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,13 +19,13 @@ export default async function CertificatePreviewPage({
     params: Promise<{ certificateNumber: string }>
 }) {
     const { certificateNumber } = await params
-    const supabase = await createClient()
+    const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect(`/login?next=/cpns/dashboard/certificates/${encodeURIComponent(certificateNumber)}`)
 
-    const admin = await createAdminClient()
+    const admin = await createV2AdminClient()
     const { data: certificate, error } = await admin
-        .from('event_certificates')
+        .from('certificates')
         .select('user_id, certificate_number, name_locked_at')
         .eq('certificate_number', certificateNumber)
         .maybeSingle()
@@ -34,15 +35,8 @@ export default async function CertificatePreviewPage({
     if (!row.name_locked_at) redirect('/cpns/dashboard/event')
 
     if (row.user_id !== user.id) {
-        const { data: profile } = await admin
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle()
-
-        if (!profile || !['admin', 'superadmin'].includes(String(profile.role))) {
-            notFound()
-        }
+        const authorization = await authorizationService.getAuthorizationForUser(user.id)
+        if (!authorization?.permissions.includes('admin.access')) notFound()
     }
 
     const downloadUrl = `/api/certificates/${encodeURIComponent(row.certificate_number)}/download`

@@ -86,7 +86,7 @@ export default function AdminShell({ children, user, profile, role, permissions,
                     <div className="relative z-10 shrink-0 p-6">
                         <Link href={isFullAdmin ? '/cpns/admin' : canReviewWorkspace ? '/cpns/admin/review' : '/cpns/admin/articles'} className="group flex flex-col items-start">
                             <span className="text-xl font-handwriting font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span>
-                            <span className="ml-1 -mt-1 text-xs font-handwriting font-bold text-gray-500">Schema V2 · SiapTempur</span>
+                            <span className="ml-1 -mt-1 text-xs font-handwriting font-bold text-gray-500">Schema V2 · Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span></span>
                         </Link>
                     </div>
                     <nav className="relative z-10 min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
