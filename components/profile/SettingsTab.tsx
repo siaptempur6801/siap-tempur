@@ -40,13 +40,7 @@ export function SettingsTab() {
                 return
             }
 
-            setShowPasswordModal(false)
-            setOldPassword('')
-            setNewPassword('')
-            setConfirmPassword('')
-            toast.success('Kata sandi berhasil diperbarui', {
-                description: 'Sesi pada perangkat lain telah diakhiri.',
-            })
+            window.location.replace('/login?returnTo=%2Fcpns&password=updated')
         } catch {
             toast.error('Kata sandi belum bisa diubah. Coba lagi.')
         } finally {

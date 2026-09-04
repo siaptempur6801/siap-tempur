@@ -210,11 +210,15 @@ export async function updatePassword(data: { currentPassword: string; newPasswor
         return { success: false, error: 'Gagal memperbarui password' }
     }
 
-    const { error: signOutError } = await supabase.auth.signOut({ scope: 'others' })
+    const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' })
     if (signOutError) {
-        logger.warn('Other session sign-out failed after password update', { userId: user.id, error: signOutError })
+        logger.error('Global sign-out failed after password update', signOutError, { userId: user.id })
+        return {
+            success: false,
+            error: 'Password berhasil diubah, tetapi sesi belum bisa diakhiri. Silakan keluar secara manual.',
+        }
     }
-    revalidatePath('/cpns/dashboard/profile')
+
     return { success: true }
 }
 

@@ -42,6 +42,26 @@ type UsageSession = {
     id: string
     start_time: string
     mode: string
+    label: string
+    amount: number
+    balance_after: number
+}
+
+type TokenCredit = {
+    id: string
+    created_at: string
+    amount: number
+    balance_after: number
+    source_label: string
+    source_detail: string
+}
+
+type HistoryPageInfo = {
+    page: number
+    pageSize: number
+    total: number
+    from: string
+    to: string
 }
 
 interface ProfileClientProps {
@@ -49,6 +69,10 @@ interface ProfileClientProps {
     user: UserData
     transactions: Transaction[]
     usageSessions: UsageSession[]
+    tokenCredits: TokenCredit[]
+    transactionPage: HistoryPageInfo
+    usagePage: HistoryPageInfo
+    creditPage: HistoryPageInfo
     level: number
 }
 
@@ -63,6 +87,10 @@ export default function ProfileClient({
     user,
     transactions,
     usageSessions,
+    tokenCredits,
+    transactionPage,
+    usagePage,
+    creditPage,
     level,
 }: ProfileClientProps) {
     const searchParams = useSearchParams()
@@ -126,7 +154,14 @@ export default function ProfileClient({
                 <ProfileTab profile={profile} setProfile={setProfile} user={user} level={level} />
             )}
             {activeTab === 'history' && (
-                <HistoryTab transactions={transactions} usageSessions={usageSessions} />
+                <HistoryTab
+                    transactions={transactions}
+                    usageSessions={usageSessions}
+                    tokenCredits={tokenCredits}
+                    transactionPage={transactionPage}
+                    usagePage={usagePage}
+                    creditPage={creditPage}
+                />
             )}
             {activeTab === 'settings' && <SettingsTab />}
         </div>
