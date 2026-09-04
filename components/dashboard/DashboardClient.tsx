@@ -222,7 +222,7 @@ export default function DashboardClient({ data, greeting }: Props) {
 
                 {data.lastExam ? (
                     <div className="grid gap-5 lg:grid-cols-[0.9fr_1.6fr]">
-                        <article className="st-card-md bg-slate-950 p-6 text-white">
+                        <article className="st-card-md !bg-slate-950 p-6 text-white">
                             <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">Tryout terakhir · {data.lastExam.date}</p>
                             <div className="mt-3 text-5xl font-black tracking-tight">{data.lastExam.total_score}</div>
                             <div className={cn(
