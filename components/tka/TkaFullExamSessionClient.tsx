@@ -67,7 +67,7 @@ export default function TkaFullExamSessionClient({
     const router = useRouter()
     const activeSection = state.sections.find((section) => section.sectionId === state.activeSectionId) ?? null
     const returnPath = `/tka/${level.toLowerCase()}`
-    const resultPath = `${returnPath}/tryout/${state.attemptId}/result`
+    const resultPath = `${returnPath}/tryout/${state.attemptId}/result?completed=1`
     const examModeLabel = state.sections.length === 1 ? 'Mini Tryout' : 'Full Tryout'
 
     const initialSelections = useMemo(() => Object.fromEntries(

@@ -3,7 +3,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Target, Trophy, XCircle } from 'lucide-react'
 import ResultReviewClient from '@/components/practice/ResultReviewClient'
+import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import { practiceResultService } from '@/src/services/practice-result.service'
+import { gamificationService } from '@/src/services/gamification.service'
 import { cn } from '@/lib/utils'
 import TrackedLink from '@/components/analytics/TrackedLink'
 
@@ -31,7 +33,7 @@ export default async function PracticeResultPage({
     searchParams: Promise<{ from?: string; completed?: string }>
 }) {
     const { sessionId } = await params
-    const { from } = await searchParams
+    const { from, completed } = await searchParams
     const supabase = await createV2Client()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) redirect('/login')
@@ -41,13 +43,17 @@ export default async function PracticeResultPage({
     if (!['completed', 'COMPLETED', 'submitted', 'SUBMITTED'].includes(result.status)) {
         redirect(`/cpns/dashboard/tryout/${sessionId}`)
     }
+    const xpInfo = completed === '1'
+        ? await gamificationService.getAttemptReward(user.id, result.totalScore)
+        : null
 
     const back = resolveBackTarget(result.practiceKind, from)
     const answeredCount = result.answers.filter((answer) => Boolean(answer.option_id)).length
     const needsImprovement = result.passed === false
 
     return (
-        <main className="st-product min-h-screen bg-[var(--st-paper)] px-4 py-6 font-body text-[var(--st-ink)] sm:px-6 lg:px-8">
+        <ResultXPWrapper rewardKey={sessionId} xpInfo={xpInfo} showReward={completed === '1'}>
+            <main className="st-product min-h-screen bg-[var(--st-paper)] px-4 py-6 font-body text-[var(--st-ink)] sm:px-6 lg:px-8">
             <div className="mx-auto max-w-6xl space-y-7">
                 <TrackedLink
                     href={back.href}
@@ -152,7 +158,8 @@ export default async function PracticeResultPage({
                     )}
                 </section>
             </div>
-        </main>
+            </main>
+        </ResultXPWrapper>
     )
 }
 

@@ -54,6 +54,33 @@ function numberOrZero(value: unknown) {
 }
 
 export class PracticeOverviewRepository {
+    async getCompletedAttemptTotals(userId: string) {
+        const admin = await createV2AdminClient()
+        const pageSize = 1000
+        let from = 0
+        let totalSessions = 0
+        let totalXp = 0
+
+        while (true) {
+            const { data, error } = await admin
+                .from('exam_attempts')
+                .select('total_score')
+                .eq('user_id', userId)
+                .in('status', ['completed', 'COMPLETED'])
+                .order('id', { ascending: true })
+                .range(from, from + pageSize - 1)
+            if (error) throw error
+
+            const rows = (data ?? []) as Array<{ total_score: number | null }>
+            for (const row of rows) totalXp += numberOrZero(row.total_score)
+            totalSessions += rows.length
+            if (rows.length < pageSize) break
+            from += pageSize
+        }
+
+        return { totalSessions, totalXp }
+    }
+
     async getWalletBalance(userId: string) {
         const admin = await createV2AdminClient()
         const { data, error } = await admin

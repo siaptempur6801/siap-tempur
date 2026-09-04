@@ -5,7 +5,9 @@ import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
 import TkaReadinessCard from '@/components/tka/TkaReadinessCard'
 import TkaResultReview from '@/components/tka/TkaResultReview'
+import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import { practiceResultService, type PracticeResultView } from '@/src/services/practice-result.service'
+import { gamificationService } from '@/src/services/gamification.service'
 import { tkaFullExamRpcService, type TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
 import { tkaLearningFocusService, type TkaLearningFocusView } from '@/src/services/tka-learning-focus.service'
 import { tkaReadinessService, type TkaReadinessView } from '@/src/services/tka-readiness.service'
@@ -32,10 +34,13 @@ function practiceLabel(kind: string | null | undefined) {
 
 export default async function TkaResultPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ level: string; sessionId: string }>
+    searchParams: Promise<{ completed?: string }>
 }) {
     const { level: rawLevel, sessionId } = await params
+    const { completed } = await searchParams
     const level = parseTkaLevel(rawLevel)
     if (!level) notFound()
 
@@ -72,6 +77,9 @@ export default async function TkaResultPage({
     if (!['completed', 'COMPLETED', 'submitted', 'SUBMITTED'].includes(result.status)) {
         redirect(`${base}/tryout/${sessionId}`)
     }
+    const xpInfo = completed === '1'
+        ? await gamificationService.getAttemptReward(user.id, result.totalScore)
+        : null
 
     if (level === 'SMP') {
         if (fullExamState) {
@@ -101,7 +109,8 @@ export default async function TkaResultPage({
     const automaticRemedialEnabled = Boolean(remedial?.session && remedial.session.pendingItems > 0)
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-8 md:py-8">
+        <ResultXPWrapper rewardKey={sessionId} xpInfo={xpInfo} showReward={completed === '1'}>
+            <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <Link href={base} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-slate-500 transition hover:bg-white hover:text-indigo-700">
@@ -208,7 +217,8 @@ export default async function TkaResultPage({
                     <TkaResultReview items={result.reviewItems} />
                 </section>
             </div>
-        </main>
+            </main>
+        </ResultXPWrapper>
     )
 }
 

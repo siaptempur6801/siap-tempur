@@ -2,6 +2,9 @@
 
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
+import { createV2Client } from '@/lib/utils/supabase/server'
+import { activityService } from '@/src/services/activity.service'
+import { streakService } from '@/src/services/streak.service'
 import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -75,6 +78,20 @@ export async function submitTkaFullExamAttempt(attemptId: string) {
 
     try {
         const result = await tkaFullExamRpcService.submitAttempt(attemptId)
+        const supabase = await createV2Client()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+            try {
+                await activityService.syncAttemptDay(user.id, attemptId)
+                await streakService.sync(user.id)
+            } catch (syncError) {
+                logger.warn('[tka-full-exam] gamification sync failed', {
+                    error: syncError instanceof Error ? syncError.message : String(syncError),
+                    attemptId,
+                    userId: user.id,
+                })
+            }
+        }
         return {
             success: true as const,
             rawScore: typeof result.raw_score === 'number' ? result.raw_score : Number(result.raw_score ?? 0),

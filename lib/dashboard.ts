@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { PASSING_GRADES, LEVEL_THRESHOLDS } from './constants'
+import { getGamificationProgress, getGamificationReward } from './gamification'
 import { getDashboardActiveSessionKind, isMissingProgressColumnError, type DashboardActiveSessionKind } from './practice-session'
 import { calculateCurrentStreak } from './utils'
 
@@ -63,53 +64,33 @@ interface DashboardData {
 }
 
 export function getLevel(xp: number) {
-    let current: typeof LEVEL_THRESHOLDS[number] = LEVEL_THRESHOLDS[0]
-    for (const threshold of LEVEL_THRESHOLDS) {
-        if (xp >= threshold.xp) current = threshold
-        else break
-    }
-    return current
+    const progress = getGamificationProgress(xp)
+    return LEVEL_THRESHOLDS.find((threshold) => threshold.level === progress.level) ?? LEVEL_THRESHOLDS[0]
 }
 
 // Get progress to next level (percentage)
 export function getLevelProgress(xp: number) {
-    const currentLevel = getLevel(xp)
-    const currentIndex = LEVEL_THRESHOLDS.findIndex(t => t.level === currentLevel.level)
-    const nextLevel = LEVEL_THRESHOLDS[currentIndex + 1]
-
-    if (!nextLevel) {
-        return { current: currentLevel, next: null, progress: 100, xpToNext: 0 }
-    }
-
-    const xpInCurrentLevel = xp - currentLevel.xp
-    const xpNeededForNext = nextLevel.xp - currentLevel.xp
-    const progress = Math.round((xpInCurrentLevel / xpNeededForNext) * 100)
+    const gamification = getGamificationProgress(xp)
+    const currentLevel = getLevel(gamification.xp)
+    const nextLevel = gamification.nextLevel === null
+        ? null
+        : LEVEL_THRESHOLDS.find((threshold) => threshold.level === gamification.nextLevel) ?? null
 
     return {
         current: currentLevel,
         next: nextLevel,
-        progress: Math.min(progress, 100),
-        xpToNext: nextLevel.xp - xp,
+        progress: gamification.progress,
+        xpToNext: gamification.xpToNext,
     }
 }
 
 export function getXPInfo(previousTotalXP: number, xpEarned: number) {
-    const newTotalXP = previousTotalXP + xpEarned
-    const previousLevel = getLevel(previousTotalXP)
-    const newLevel = getLevel(newTotalXP)
-    const levelProgress = getLevelProgress(newTotalXP)
+    const reward = getGamificationReward(previousTotalXP + xpEarned, xpEarned)
+    const previousLevel = getLevel(reward.previousXP)
 
     return {
-        previousXP: previousTotalXP,
-        newXP: newTotalXP,
-        xpEarned,
-        previousLevel: previousLevel.level,
+        ...reward,
         previousLevelName: previousLevel.name,
-        newLevel: newLevel.level,
-        newLevelName: newLevel.name,
-        leveledUp: newLevel.level > previousLevel.level,
-        progress: levelProgress.progress,
-        xpToNext: levelProgress.xpToNext,
     }
 }
 

@@ -34,7 +34,7 @@ export default function TkaPracticeSessionClient({
             initialMarked={initialMarked}
             endTime={endTime}
             returnPath={base}
-            resultPath={(attemptId) => `${base}/tryout/${attemptId}/result`}
+            resultPath={(attemptId) => `${base}/tryout/${attemptId}/result?completed=1`}
         />
     )
 }

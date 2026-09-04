@@ -9,9 +9,12 @@ import {
     CalendarDays,
     CheckCircle2,
     Clock3,
+    Flame,
     ListChecks,
+    Sparkles,
     Target,
     Ticket,
+    Trophy,
     User,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -30,6 +33,8 @@ interface DashboardData {
         level: number
         levelName: string
         levelProgress: number
+        xpToNext: number
+        nextLevelName: string | null
         rank: number | null
     }
     progress: {
@@ -200,6 +205,62 @@ export default function DashboardClient({ data, greeting }: Props) {
                         Lihat pilihan token <ArrowRight size={15} />
                     </TrackedLink>
                 </article>
+            </section>
+
+            <section className="st-card-md overflow-hidden" aria-labelledby="gamification-title">
+                <div className="grid lg:grid-cols-[0.72fr_1.28fr]">
+                    <div className="bg-slate-950 p-6 text-white md:p-7">
+                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-yellow-300">
+                            <Trophy size={17} aria-hidden="true" /> Level belajar
+                        </div>
+                        <div className="mt-5 flex items-end gap-3">
+                            <span className="text-6xl font-black tracking-tight">{data.stats.level}</span>
+                            <span className="pb-2 text-sm font-black text-slate-300">{data.stats.levelName}</span>
+                        </div>
+                        <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-300">
+                            Setiap skor dari sesi yang selesai menambah XP secara otomatis.
+                        </p>
+                    </div>
+
+                    <div className="p-6 md:p-7">
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Perkembanganmu</p>
+                                <h2 id="gamification-title" className="st-heading mt-1 text-2xl">{data.stats.xp.toLocaleString('id-ID')} XP terkumpul</h2>
+                            </div>
+                            <div className="flex items-center gap-2 border-2 border-slate-900 bg-orange-100 px-3 py-2 text-sm font-black text-orange-800 shadow-[2px_2px_0_#111827]">
+                                <Flame size={18} aria-hidden="true" /> {data.user.streak} hari
+                            </div>
+                        </div>
+
+                        <div className="mt-6">
+                            <div className="flex flex-wrap justify-between gap-2 text-xs font-black text-slate-600">
+                                <span>Level {data.stats.level}</span>
+                                <span>
+                                    {data.stats.nextLevelName
+                                        ? `${data.stats.xpToNext.toLocaleString('id-ID')} XP menuju ${data.stats.nextLevelName}`
+                                        : 'Level tertinggi tercapai'}
+                                </span>
+                            </div>
+                            <div
+                                className="mt-2 h-4 overflow-hidden border-2 border-slate-900 bg-slate-100"
+                                role="progressbar"
+                                aria-label="Progres menuju level berikutnya"
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-valuenow={data.stats.levelProgress}
+                            >
+                                <div className="h-full bg-blue-600" style={{ width: `${data.stats.levelProgress}%` }} />
+                            </div>
+                            <div className="mt-3 flex items-center gap-2 text-xs font-bold text-slate-500">
+                                <Sparkles size={15} className="text-blue-600" aria-hidden="true" />
+                                {data.user.streak > 0
+                                    ? 'Selesaikan latihan setiap hari agar streak tetap berjalan.'
+                                    : 'Selesaikan satu latihan hari ini untuk memulai streak.'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             <section aria-labelledby="learning-summary-title" className="space-y-4">

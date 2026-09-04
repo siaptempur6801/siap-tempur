@@ -1,4 +1,5 @@
-import { LEVEL_THRESHOLDS, MINI_TRYOUT_TYPES, SUBJECTS, type MiniTryoutType } from '@/lib/constants'
+import { MINI_TRYOUT_TYPES, SUBJECTS, type MiniTryoutType } from '@/lib/constants'
+import { getGamificationProgress } from '@/lib/gamification'
 import { getDrillingMaterialKey, type DashboardActiveSessionKind } from '@/lib/practice-session'
 import { practiceOverviewRepository, type ActiveAttemptOverview, type CompletedAttemptOverview } from '@/src/repositories/practice-overview.repository'
 import { subjectProgressReadRepository, type SubjectProgressOverview } from '@/src/repositories/subject-progress-read.repository'
@@ -42,25 +43,6 @@ function formatCompletedAt(value: string) {
         minute: '2-digit',
         timeZone: 'Asia/Jakarta',
     }).format(new Date(value))
-}
-
-function getLevel(xp: number) {
-    let current: typeof LEVEL_THRESHOLDS[number] = LEVEL_THRESHOLDS[0]
-    for (const threshold of LEVEL_THRESHOLDS) {
-        if (xp >= threshold.xp) current = threshold
-        else break
-    }
-    return current
-}
-
-function getLevelProgress(xp: number) {
-    const current = getLevel(xp)
-    const currentIndex = LEVEL_THRESHOLDS.findIndex((threshold) => threshold.level === current.level)
-    const next = LEVEL_THRESHOLDS[currentIndex + 1]
-    if (!next) return 100
-    const span = next.xp - current.xp
-    if (span <= 0) return 100
-    return Math.min(100, Math.max(0, Math.round(((xp - current.xp) / span) * 100)))
 }
 
 function dashboardKind(attempt: ActiveAttemptOverview): { mode: 'practice' | 'tryout'; kind: DashboardActiveSessionKind } | null {
@@ -229,18 +211,18 @@ export class PracticeOverviewService {
     }
 
     async getDashboardData(userId: string) {
-        const [profile, streak, quota, rank, attempts, activeAttempts, subjectProgress] = await Promise.all([
+        const [profile, streak, quota, rank, attempts, totals, activeAttempts, subjectProgress] = await Promise.all([
             practiceOverviewRepository.getProfile(userId),
             practiceOverviewRepository.getStreak(userId),
             practiceOverviewRepository.getWalletBalance(userId),
             practiceOverviewRepository.getCurrentRank(userId),
             practiceOverviewRepository.listCompletedAttempts(userId, 100),
+            practiceOverviewRepository.getCompletedAttemptTotals(userId),
             this.activeAttempts(userId),
             subjectProgressReadRepository.listCpnsProgress(userId),
         ])
 
-        const xp = attempts.reduce((sum, attempt) => sum + attempt.totalScore, 0)
-        const level = getLevel(xp)
+        const gamification = getGamificationProgress(totals.totalXp)
         const last = attempts[0] ?? null
         const best = attempts.reduce<CompletedAttemptOverview | null>((current, attempt) => {
             if (!current || attempt.totalScore > current.totalScore) return attempt
@@ -260,11 +242,13 @@ export class PracticeOverviewService {
         return {
             user: { id: userId, name: profile?.full_name || 'Calon ASN', streak, tryoutQuota: quota },
             stats: {
-                totalSessions: attempts.length,
-                xp,
-                level: level.level,
-                levelName: level.name,
-                levelProgress: getLevelProgress(xp),
+                totalSessions: totals.totalSessions,
+                xp: gamification.xp,
+                level: gamification.level,
+                levelName: gamification.levelName,
+                levelProgress: gamification.progress,
+                xpToNext: gamification.xpToNext,
+                nextLevelName: gamification.nextLevelName,
                 rank,
             },
             progress: {
