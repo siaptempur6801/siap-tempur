@@ -9,17 +9,16 @@ import {
     GraduationCap,
     History,
     ListChecks,
-    LockKeyhole,
     School,
     Target,
     Ticket,
 } from 'lucide-react'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { Button } from '@/components/ui/Button'
+import SeoNavbarClient from '@/components/SeoNavbarClient'
 
 export const metadata: Metadata = {
-    title: 'Dashboard TKA - SiapTempur',
-    description: 'Satu dashboard TKA untuk perjalanan belajar SD, SMP, dan SMA.',
+    title: 'Persiapan TKA SD, SMP, SMA - SiapTempur',
+    description: 'Persiapan TKA untuk jenjang SD, SMP, dan SMA dengan latihan, tryout, pembahasan, analisis hasil, serta remedial dalam satu akun SiapTempur.',
     alternates: { canonical: '/tka' },
 }
 
@@ -349,50 +348,121 @@ function QuickAction({ href, label, icon }: { href: string; label: string; icon:
 
 function PublicTkaLanding() {
     return (
-        <main className="min-h-screen bg-[#f6f7fb] text-slate-950">
-            <header className="border-b border-slate-200 bg-white/90 backdrop-blur">
-                <div className="mx-auto flex min-h-18 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
-                    <Link href="/" className="font-handwriting text-3xl font-black">Siap<span className="text-indigo-600">Tempur</span>.</Link>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" asChild><Link href="/cpns">CPNS</Link></Button>
-                        <Button size="sm" asChild><Link href="/login?returnTo=%2Ftka">Masuk</Link></Button>
+        <main data-experience-mode="marketing" data-program="tka" className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
+            <SeoNavbarClient isAuthenticated={false} programLabel="TKA" />
+
+            <section className="relative px-4 pb-16 pt-32 md:px-8 md:pb-24 md:pt-36">
+                <div className="pointer-events-none absolute -left-24 top-40 h-52 w-52 rounded-full border-2 border-dashed border-amber-400 bg-[var(--st-yellow-soft)]" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-16 top-24 h-56 w-48 rotate-12 rounded-[2rem] border-2 border-dashed border-emerald-300 bg-[var(--st-green-soft)]" aria-hidden="true" />
+
+                <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14">
+                    <div>
+                        <div className="st-kicker"><GraduationCap size={15} /> TKA SD · SMP · SMA</div>
+                        <h1 className="st-heading-display mt-6 max-w-4xl text-5xl sm:text-6xl md:text-7xl">
+                            Persiapan TKA untuk <span className="text-blue-600">setiap jenjang belajar.</span>
+                        </h1>
+                        <p className="st-muted mt-6 max-w-2xl text-lg font-semibold leading-relaxed md:text-xl">
+                            Mulai dari SD, lanjut ke SMP, hingga SMA dalam satu lingkungan belajar. Kerjakan latihan dan tryout, pahami hasilnya, lalu perbaiki bagian yang masih lemah.
+                        </p>
+                        <div className="mt-8 flex flex-wrap gap-3">
+                            <Link href="/register?returnTo=%2Ftka" className="st-button inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
+                                Mulai persiapan TKA <ArrowRight size={18} />
+                            </Link>
+                            <Link href="#jenjang-tka" className="st-focus inline-flex min-h-12 items-center rounded-xl px-4 py-3 font-black text-gray-700 hover:bg-white">
+                                Pilih jenjang
+                            </Link>
+                        </div>
+                        <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-gray-600">
+                            {['Satu akun lintas jenjang', 'Progres belajar tersimpan', 'Belajar dari hasil'].map((item) => (
+                                <span key={item} className="inline-flex items-center gap-2">
+                                    <CheckCircle2 size={17} className="text-green-600" /> {item}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="st-card-lg bg-white p-6 md:p-8">
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-blue-700">Siklus belajar SiapTempur</p>
+                        <h2 className="st-heading-display mt-3 text-4xl md:text-5xl">Ukur, pahami, lalu perbaiki.</h2>
+                        <div className="mt-7 divide-y-2 divide-dashed divide-gray-200">
+                            {[
+                                { number: '01', title: 'Pilih jenjang', text: 'Masuk ke jalur TKA SD, SMP, atau SMA.' },
+                                { number: '02', title: 'Kerjakan dan ukur', text: 'Gunakan latihan atau tryout sesuai tujuanmu.' },
+                                { number: '03', title: 'Belajar dari hasil', text: 'Buka pembahasan dan ulangi bagian yang perlu diperkuat.' },
+                            ].map((step) => (
+                                <div key={step.number} className="flex gap-4 py-4 first:pt-0 last:pb-0">
+                                    <span className="font-handwriting text-3xl font-black text-blue-600">{step.number}</span>
+                                    <div>
+                                        <p className="font-black">{step.title}</p>
+                                        <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">{step.text}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
-            </header>
+            </section>
+
+            <section id="jenjang-tka" className="scroll-mt-28 border-y-2 border-[var(--st-ink)] bg-white px-4 py-16 md:px-8 md:py-24">
+                <div className="mx-auto max-w-7xl">
+                    <div className="max-w-3xl">
+                        <div className="st-kicker">Pilih jenjang</div>
+                        <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Satu fondasi belajar, tiga tahap perjalanan.</h2>
+                        <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">Setiap jenjang memiliki jalur belajar tersendiri agar materi, hasil, dan progres tetap sesuai kebutuhanmu.</p>
+                    </div>
+                    <div className="mt-10 grid gap-5 md:grid-cols-3">
+                        <PublicLevelCard href="/tka/sd" level="SD" title="TKA SD" description="Bangun fondasi literasi dan numerasi melalui latihan yang terarah sejak jenjang dasar." icon={<School size={24} />} tone="amber" />
+                        <PublicLevelCard href="/tka/smp" level="SMP" title="TKA SMP" description="Perkuat Bahasa Indonesia dan Matematika lewat latihan, tryout, serta pembahasan." icon={<BookOpenCheck size={24} />} tone="blue" />
+                        <PublicLevelCard href="/tka/sma" level="SMA" title="TKA SMA" description="Siapkan kemampuan akademik sesuai jenjang dan pilihan mata pelajaran yang tersedia." icon={<GraduationCap size={24} />} tone="green" />
+                    </div>
+                </div>
+            </section>
+
             <section className="px-4 py-16 md:px-8 md:py-24">
-                <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.08fr_0.92fr]">
+                <div className="mx-auto grid max-w-7xl items-center gap-8 rounded-[2rem] border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white shadow-[6px_6px_0_var(--st-ink)] md:grid-cols-[1fr_auto] md:px-10 md:py-12">
                     <div>
-                        <span className="inline-flex rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-black text-indigo-700">TKA di SiapTempur</span>
-                        <h1 className="mt-6 max-w-4xl text-5xl font-black tracking-[-0.045em] md:text-7xl">Satu dashboard untuk perjalanan TKA dari SD sampai SMA.</h1>
-                        <p className="mt-5 max-w-2xl text-lg font-semibold leading-relaxed text-slate-500">Belajar, tryout, lihat perkembangan, dan lanjutkan perjalananmu tanpa berpindah lingkungan.</p>
-                        <div className="mt-8 flex flex-wrap gap-3">
-                            <Button size="lg" asChild><Link href="/login?returnTo=%2Ftka">Masuk ke Dashboard TKA <ArrowRight size={18} /></Link></Button>
-                            <Button size="lg" variant="outline" asChild><Link href="/tka/smp">Lihat TKA SMP</Link></Button>
-                        </div>
+                        <h2 className="font-handwriting text-4xl font-black leading-tight md:text-5xl">Mulai dari jenjangmu hari ini.</h2>
+                        <p className="mt-3 max-w-2xl font-semibold leading-relaxed text-blue-100">Satu akun menyimpan perjalanan belajar TKA dari SD, SMP, hingga SMA.</p>
                     </div>
-                    <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_24px_60px_rgba(79,70,229,0.12)] md:p-8">
-                        <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Jenjang belajar</p>
-                        <div className="mt-5 space-y-3">
-                            <PublicLevelRow label="TKA SD" state="Segera hadir" icon={<School size={19} />} />
-                            <PublicLevelRow label="TKA SMP" state="Tersedia" icon={<BookOpenCheck size={19} />} active />
-                            <PublicLevelRow label="TKA SMA" state="Segera hadir" icon={<GraduationCap size={19} />} />
-                        </div>
-                    </div>
+                    <Link href="/register?returnTo=%2Ftka" className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">
+                        Buat akun gratis <ArrowRight size={18} />
+                    </Link>
                 </div>
             </section>
         </main>
     )
 }
 
-function PublicLevelRow({ label, state, icon, active = false }: { label: string; state: string; icon: React.ReactNode; active?: boolean }) {
+function PublicLevelCard({
+    href,
+    level,
+    title,
+    description,
+    icon,
+    tone,
+}: {
+    href: string
+    level: string
+    title: string
+    description: string
+    icon: React.ReactNode
+    tone: 'amber' | 'blue' | 'green'
+}) {
+    const toneClass = tone === 'amber'
+        ? 'bg-amber-100 text-amber-700'
+        : tone === 'green'
+            ? 'bg-emerald-100 text-emerald-700'
+            : 'bg-blue-100 text-blue-700'
+
     return (
-        <div className={`flex items-center gap-4 rounded-2xl border p-4 ${active ? 'border-indigo-200 bg-indigo-50/60' : 'border-slate-100 bg-slate-50/60'}`}>
-            <span className={`flex h-11 w-11 items-center justify-center rounded-2xl ${active ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500'}`}>{icon}</span>
-            <div className="flex-1">
-                <p className="font-black text-slate-900">{label}</p>
-                <p className={`mt-1 text-xs font-bold ${active ? 'text-emerald-600' : 'text-slate-400'}`}>{state}</p>
+        <Link href={href} className="st-card-md st-focus group flex min-h-72 flex-col bg-white p-6 transition-transform hover:-translate-y-1 md:p-7">
+            <div className="flex items-start justify-between gap-4">
+                <span className={`flex h-13 w-13 items-center justify-center rounded-2xl border-2 border-[var(--st-ink)] ${toneClass}`}>{icon}</span>
+                <span className="text-xs font-black uppercase tracking-[0.12em] text-gray-500">Jenjang {level}</span>
             </div>
-            {active ? <CheckCircle2 size={18} className="text-emerald-500" /> : <LockKeyhole size={17} className="text-slate-300" />}
-        </div>
+            <h3 className="st-heading-display mt-6 text-4xl">{title}</h3>
+            <p className="st-muted mt-3 flex-1 font-semibold leading-relaxed">{description}</p>
+            <span className="mt-6 inline-flex items-center gap-2 font-black text-blue-700">Buka jenjang <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" /></span>
+        </Link>
     )
 }

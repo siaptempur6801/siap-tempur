@@ -3,13 +3,18 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { LogOut } from 'lucide-react'
-import { toast } from 'sonner'
 
 interface SidebarSignoutButtonProps {
-    signoutAction: () => Promise<{ success: boolean }>
+    signoutAction: (redirectTo?: string) => Promise<{ success: boolean }>
+    redirectTo?: string
+    compact?: boolean
 }
 
-export default function SidebarSignoutButton({ signoutAction }: SidebarSignoutButtonProps) {
+export default function SidebarSignoutButton({
+    signoutAction,
+    redirectTo = '/',
+    compact = false,
+}: SidebarSignoutButtonProps) {
     const [showModal, setShowModal] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [mounted, setMounted] = useState(false)
@@ -21,16 +26,8 @@ export default function SidebarSignoutButton({ signoutAction }: SidebarSignoutBu
 
     const handleSignout = async () => {
         setIsLoading(true)
-        const result = await signoutAction()
-        if (result?.success) {
-            toast.success('Berhasil keluar!', {
-                description: 'Sampai jumpa lagi!'
-            })
-            // Delay redirect to allow toast to be seen
-            setTimeout(() => {
-                window.location.href = '/login?returnTo=/cpns'
-            }, 1500)
-        } else {
+        const result = await signoutAction(redirectTo)
+        if (!result?.success) {
             setIsLoading(false)
         }
     }
@@ -39,10 +36,13 @@ export default function SidebarSignoutButton({ signoutAction }: SidebarSignoutBu
         <>
             <button
                 onClick={() => setShowModal(true)}
-                className="flex min-h-9 w-full items-center gap-2 rounded-md border-2 border-transparent px-3 py-1.5 font-handwriting text-sm font-bold text-red-600 transition hover:border-red-200 hover:bg-red-50 hover:shadow-sm"
+                aria-label={compact ? 'Keluar' : undefined}
+                className={compact
+                    ? 'st-focus flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100'
+                    : 'flex min-h-9 w-full items-center gap-2 rounded-md border-2 border-transparent px-3 py-1.5 font-handwriting text-sm font-bold text-red-600 transition hover:border-red-200 hover:bg-red-50 hover:shadow-sm'}
             >
                 <LogOut size={16} />
-                Keluar
+                {compact ? null : 'Keluar'}
             </button>
 
             {/* Logout Confirmation Modal */}

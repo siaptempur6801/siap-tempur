@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom'
 import { BarChart3, Clock3, Library, LogOut, PenLine, Shield, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { toast } from 'sonner'
 
 interface MobileProfileDropdownProps {
     user: {
@@ -21,7 +20,8 @@ interface MobileProfileDropdownProps {
         tryout_quota?: number
     } | null
 
-    signoutAction: () => Promise<{ success: boolean }>
+    signoutAction: (redirectTo?: string) => Promise<{ success: boolean }>
+    signoutRedirectTo?: string
     canAccessArticles?: boolean
     isAdmin?: boolean
 }
@@ -30,6 +30,7 @@ export default function MobileProfileDropdown({
     user,
     profile,
     signoutAction,
+    signoutRedirectTo = '/',
     canAccessArticles = false,
     isAdmin = false,
 }: MobileProfileDropdownProps) {
@@ -61,16 +62,8 @@ export default function MobileProfileDropdown({
 
     const handleSignout = async () => {
         setIsLoading(true)
-        const result = await signoutAction()
-        if (result?.success) {
-            toast.success('Berhasil keluar!', {
-                description: 'Sampai jumpa lagi!'
-            })
-            // Delay redirect to allow toast to be seen
-            setTimeout(() => {
-                window.location.href = '/login'
-            }, 1500)
-        } else {
+        const result = await signoutAction(signoutRedirectTo)
+        if (!result?.success) {
             setIsLoading(false)
         }
     }
@@ -79,6 +72,8 @@ export default function MobileProfileDropdown({
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
+                aria-label={isOpen ? 'Tutup menu profil' : 'Buka menu profil'}
+                aria-expanded={isOpen}
                 className="relative w-10 h-10 bg-white border-2 border-gray-900 flex items-center justify-center overflow-hidden hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
             >
                 {avatarUrl ? (

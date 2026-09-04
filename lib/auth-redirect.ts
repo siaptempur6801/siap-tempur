@@ -14,5 +14,6 @@ export function sanitizeAuthReturnTo(returnTo?: string | null) {
 
 export function resolvePostLoginRedirect(returnTo?: string | null) {
     const safeReturnTo = sanitizeAuthReturnTo(returnTo)
+    if (safeReturnTo === '/') return '/onboarding'
     return safeReturnTo === '/cpns' ? '/cpns/dashboard' : safeReturnTo
 }

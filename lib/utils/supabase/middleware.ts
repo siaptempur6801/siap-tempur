@@ -6,7 +6,7 @@ import { resolvePostLoginRedirect } from '@/lib/auth-redirect'
 // Route yang hanya bisa diakses kalau BELUM login
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password']
 // Route yang WAJIB login
-const PROTECTED_ROUTES = ['/cpns/dashboard', '/cpns/admin']
+const PROTECTED_ROUTES = ['/onboarding', '/cpns/dashboard', '/cpns/admin']
 
 function copyCustomHeaders(response: NextResponse, customHeaders?: Headers) {
     if (customHeaders) {

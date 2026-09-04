@@ -21,8 +21,8 @@ import {
 import { createV2Client } from '@/lib/utils/supabase/server'
 
 export const metadata: Metadata = {
-    title: 'SiapTempur - Persiapan CPNS & TKA',
-    description: 'Satu akun untuk persiapan CPNS/SKD dan TKA SMP dengan latihan, tryout, pembahasan, analisis hasil, drill, dan remedial yang lebih terarah.',
+    title: 'SiapTempur - Persiapan CPNS & TKA SD, SMP, SMA',
+    description: 'Satu akun untuk persiapan CPNS/SKD dan TKA jenjang SD, SMP, hingga SMA dengan latihan, tryout, pembahasan, analisis hasil, drill, dan remedial yang lebih terarah.',
     alternates: { canonical: '/' },
 }
 
@@ -42,14 +42,14 @@ const productCards = [
         features: ['Drill per materi', 'Mini & Full Tryout', 'Rapor & remedial'],
     },
     {
-        code: 'TKA / SMP',
-        title: 'SiapTempur TKA SMP',
-        description: 'Latihan dan tryout TKA SMP dengan pembahasan, analisis, soal salah, dan fokus belajar berikutnya.',
+        code: 'TKA / SD · SMP · SMA',
+        title: 'SiapTempur TKA',
+        description: 'Persiapan TKA untuk jenjang SD, SMP, dan SMA dengan latihan, tryout, pembahasan, analisis hasil, serta fokus belajar berikutnya.',
         href: '/tka',
         cta: 'Lihat program TKA',
         icon: GraduationCap,
         surface: 'bg-[var(--st-green-soft)]',
-        topics: ['Bahasa Indonesia', 'Matematika', 'Mapel tersedia'],
+        topics: ['TKA SD', 'TKA SMP', 'TKA SMA'],
         features: ['Drill per kompetensi', 'Mini & Full Tryout', 'Pembahasan & remedial'],
     },
 ] as const
@@ -248,7 +248,7 @@ export default async function Index() {
                             Jangan cuma tahu skormu. <span className="text-blue-600">Tahu apa yang harus diperbaiki.</span>
                         </h1>
                         <p className="st-muted mt-6 max-w-2xl text-lg font-semibold leading-relaxed md:text-xl">
-                            SiapTempur menghubungkan latihan, tryout, pembahasan, analisis hasil, dan latihan ulang menjadi satu siklus belajar yang lebih terarah.
+                            Untuk CPNS maupun TKA SD, SMP, dan SMA, SiapTempur menghubungkan latihan, tryout, pembahasan, analisis hasil, dan latihan ulang menjadi satu siklus belajar yang lebih terarah.
                         </p>
 
                         <div className="mt-8 flex flex-wrap gap-3">
@@ -483,7 +483,7 @@ export default async function Index() {
                         <div>
                             <div className="st-kicker bg-white">Satu akun</div>
                             <h2 className="st-heading-display mt-5 text-4xl md:text-5xl">Pindah target tanpa bikin akun baru.</h2>
-                            <p className="st-muted mt-4 font-semibold leading-relaxed">Akun yang sama bisa digunakan untuk produk SiapTempur yang tersedia. Jalur belajarnya tetap terpisah supaya progres CPNS dan TKA tidak bercampur.</p>
+                            <p className="st-muted mt-4 font-semibold leading-relaxed">Akun yang sama bisa digunakan untuk persiapan CPNS serta TKA SD, SMP, dan SMA. Jalur belajarnya tetap terpisah supaya setiap progres tidak bercampur.</p>
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
                             {[

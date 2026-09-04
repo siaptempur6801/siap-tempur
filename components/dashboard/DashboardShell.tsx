@@ -147,7 +147,7 @@ export default function DashboardShell({
                         </div>
                     </div>
                     <div className="mt-1.5 flex justify-end">
-                        <SidebarSignoutButton signoutAction={signoutAction} />
+                        <SidebarSignoutButton signoutAction={signoutAction} redirectTo="/cpns" />
                     </div>
                 </div>
             </aside>
@@ -164,6 +164,7 @@ export default function DashboardShell({
                         user={user}
                         profile={profile}
                         signoutAction={signoutAction}
+                        signoutRedirectTo="/cpns"
                         canAccessArticles={canAccessArticles}
                         isAdmin={isAdmin}
                     />

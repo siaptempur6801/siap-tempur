@@ -129,11 +129,11 @@ export default function CpnsLandingInteractions({
         <>
             <header className="sticky top-0 z-50 px-4 py-2.5 md:px-8 md:py-3.5">
                 <div className="px-container-marketing relative flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:min-h-16 md:px-5">
-                    <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                         <Link href="/" className="st-focus shrink-0 font-handwriting text-2xl font-black tracking-tight md:text-3xl">
                             Siap<span className="text-blue-600">Tempur</span>.
                         </Link>
-                        <span className="hidden rounded-full bg-[var(--st-blue-soft)] px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.1em] text-blue-700 sm:inline-flex">CPNS</span>
+                        <span className="inline-flex shrink-0 rounded-full border-2 border-[var(--st-ink)] bg-blue-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-blue-800 sm:px-2.5 sm:text-[11px]">CPNS</span>
                     </div>
 
                     <nav className="hidden items-center gap-0.5 text-[13px] font-black xl:flex" aria-label="Navigasi CPNS">
@@ -189,12 +189,27 @@ export default function CpnsLandingInteractions({
                                 </a>
                             ))}
                             <Link href="/tka" className="st-focus flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-green-700 hover:bg-green-50">Buka SiapTempur TKA</Link>
+                            {!isLoggedIn && (
+                                <div className="mt-2 grid gap-2 border-t border-gray-200 pt-3 sm:hidden">
+                                    <Link href="/login?returnTo=/cpns" className="st-focus flex min-h-11 items-center justify-center rounded-xl text-sm font-black text-gray-700 hover:bg-gray-100">
+                                        Masuk
+                                    </Link>
+                                    <TrackedLink
+                                        href={primaryAccountHref}
+                                        eventName="px_landing_cta"
+                                        eventProperties={{ program: 'cpns', surface: 'landing', cta: 'mobile_menu_start' }}
+                                        className="st-button flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white"
+                                    >
+                                        Mulai belajar
+                                    </TrackedLink>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
             </header>
 
-            {heroPassed && !finalCtaVisible && (
+            {heroPassed && !finalCtaVisible && activeSection !== 'artikel' && (
                 <div data-testid="cpns-mobile-sticky-cta" className="fixed inset-x-3 bottom-3 z-40 md:hidden">
                     <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/95 p-2 shadow-[4px_4px_0_var(--st-ink)] backdrop-blur">
                         <div className="min-w-0 flex-1 pl-2">

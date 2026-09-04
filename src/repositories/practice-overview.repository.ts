@@ -39,6 +39,16 @@ export type DrillingMaterialOverview = {
 
 type GenericRow = Record<string, unknown>
 
+const SUPABASE_IN_FILTER_BATCH_SIZE = 100
+
+function chunkValues<T>(values: T[], size = SUPABASE_IN_FILTER_BATCH_SIZE) {
+    const chunks: T[][] = []
+    for (let index = 0; index < values.length; index += size) {
+        chunks.push(values.slice(index, index + size))
+    }
+    return chunks
+}
+
 function numberOrZero(value: unknown) {
     return typeof value === 'number' ? value : Number(value ?? 0) || 0
 }
@@ -138,13 +148,17 @@ export class PracticeOverviewRepository {
         const questionIds = questions.map((row) => row.id)
         let answers: Array<{ attempt_question_id: string; selected_option_id: string | null }> = []
         if (questionIds.length > 0) {
-            const { data: answerRows, error: answerError } = await admin
-                .from('attempt_answers')
-                .select('attempt_question_id, selected_option_id')
-                .in('attempt_question_id', questionIds)
-                .limit(5000)
-            if (answerError) throw answerError
-            answers = (answerRows ?? []) as Array<{ attempt_question_id: string; selected_option_id: string | null }>
+            const answerRows: Array<{ attempt_question_id: string; selected_option_id: string | null }> = []
+            for (const batch of chunkValues(questionIds)) {
+                const { data, error } = await admin
+                    .from('attempt_answers')
+                    .select('attempt_question_id, selected_option_id')
+                    .in('attempt_question_id', batch)
+                    .limit(5000)
+                if (error) throw error
+                answerRows.push(...((data ?? []) as Array<{ attempt_question_id: string; selected_option_id: string | null }>))
+            }
+            answers = answerRows
         }
 
         const attemptIdByQuestionId = new Map(questions.map((row) => [row.id, row.attempt_id]))
@@ -313,37 +327,48 @@ export class PracticeOverviewRepository {
         if (nodes.length === 0) return []
         const nodeIds = nodes.map((row) => row.id)
 
-        const { data: pathRows, error: pathError } = await admin
-            .from('knowledge_node_paths')
-            .select('ancestor_id, descendant_id')
-            .in('ancestor_id', nodeIds)
-            .limit(5000)
-        if (pathError) throw pathError
+        const pathRows: Array<{ ancestor_id: string; descendant_id: string }> = []
+        for (const batch of chunkValues(nodeIds)) {
+            const { data, error } = await admin
+                .from('knowledge_node_paths')
+                .select('ancestor_id, descendant_id')
+                .in('ancestor_id', batch)
+                .limit(5000)
+            if (error) throw error
+            pathRows.push(...((data ?? []) as Array<{ ancestor_id: string; descendant_id: string }>))
+        }
         const descendantsByNode = new Map<string, Set<string>>()
         for (const node of nodes) descendantsByNode.set(node.id, new Set([node.id]))
-        for (const path of (pathRows ?? []) as Array<{ ancestor_id: string; descendant_id: string }>) {
+        for (const path of pathRows) {
             descendantsByNode.get(path.ancestor_id)?.add(path.descendant_id)
         }
 
         const allDescendantIds = Array.from(new Set(Array.from(descendantsByNode.values()).flatMap((set) => Array.from(set))))
-        const { data: linkRows, error: linkError } = await admin
-            .from('question_knowledge_nodes')
-            .select('question_id, knowledge_node_id')
-            .in('knowledge_node_id', allDescendantIds)
-            .limit(10000)
-        if (linkError) throw linkError
-        const links = (linkRows ?? []) as Array<{ question_id: string; knowledge_node_id: string }>
+        const links: Array<{ question_id: string; knowledge_node_id: string }> = []
+        for (const batch of chunkValues(allDescendantIds)) {
+            const { data, error } = await admin
+                .from('question_knowledge_nodes')
+                .select('question_id, knowledge_node_id')
+                .in('knowledge_node_id', batch)
+                .limit(10000)
+            if (error) throw error
+            links.push(...((data ?? []) as Array<{ question_id: string; knowledge_node_id: string }>))
+        }
         const questionIds = Array.from(new Set(links.map((row) => row.question_id)))
         if (questionIds.length === 0) return []
 
-        const { data: questionRows, error: questionError } = await admin
-            .from('questions')
-            .select('id, subject_id')
-            .in('id', questionIds)
-            .in('status', ['published', 'PUBLISHED', 'active', 'ACTIVE'])
-            .limit(10000)
-        if (questionError) throw questionError
-        const publishedQuestions = new Map(((questionRows ?? []) as Array<{ id: string; subject_id: string }>).map((row) => [row.id, row.subject_id]))
+        const questionRows: Array<{ id: string; subject_id: string }> = []
+        for (const batch of chunkValues(questionIds)) {
+            const { data, error } = await admin
+                .from('questions')
+                .select('id, subject_id')
+                .in('id', batch)
+                .in('status', ['published', 'PUBLISHED', 'active', 'ACTIVE'])
+                .limit(10000)
+            if (error) throw error
+            questionRows.push(...((data ?? []) as Array<{ id: string; subject_id: string }>))
+        }
+        const publishedQuestions = new Map(questionRows.map((row) => [row.id, row.subject_id]))
 
         const linksByNode = new Map<string, Set<string>>()
         for (const link of links) {

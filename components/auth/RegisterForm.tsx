@@ -60,7 +60,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
         setLoading(true)
         try {
             const { loginWithGoogle } = await import('@/app/auth/actions')
-            const result = await loginWithGoogle()
+            const result = await loginWithGoogle(safeReturnTo)
             if (result?.url) {
                 window.location.href = result.url
             } else if (result?.error) {

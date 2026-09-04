@@ -93,6 +93,10 @@ export async function proxy(request: NextRequest) {
     const nonce = crypto.randomUUID().replace(/-/g, '')
     const csrfToken = crypto.randomUUID()
 
+    const upgradeInsecureRequests = process.env.NODE_ENV === 'production'
+        ? 'upgrade-insecure-requests;'
+        : ''
+
     const cspHeader = `
         default-src 'self';
         script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"} https://app.midtrans.com https://app.sandbox.midtrans.com;
@@ -105,7 +109,7 @@ export async function proxy(request: NextRequest) {
         base-uri 'self';
         form-action 'self';
         frame-ancestors 'none';
-        upgrade-insecure-requests;
+        ${upgradeInsecureRequests}
         ${process.env.CSP_REPORT_URI ? `report-uri ${process.env.CSP_REPORT_URI};` : ''}
     `.replace(/\s{2,}/g, ' ').trim()
 
@@ -129,6 +133,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!_next/static|_next/image|_next/hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 }

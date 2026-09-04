@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { createV2Client, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
@@ -78,13 +79,12 @@ export async function signup(formData: FormData) {
     return { success: true }
 }
 
-export async function signout() {
+export async function signout(redirectTo = '/') {
     try { await validateCsrf() } catch { return { success: false, error: 'Invalid request' } }
     const supabase = await createV2Client()
-    await supabase.auth.signOut()
-    revalidatePath('/', 'layout')
-    revalidatePath('/cpns')
-    return { success: true }
+    const { error } = await supabase.auth.signOut()
+    if (error) return { success: false, error: 'Belum bisa keluar' }
+    redirect(sanitizeAuthReturnTo(redirectTo))
 }
 
 export async function updatePassword(formData: FormData) {

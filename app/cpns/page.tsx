@@ -5,7 +5,7 @@ import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
 
 const eventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url, documentation_url'
 const legacyEventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url'
-const articleSelect = 'id, title, slug, cover_image_url, published_at, excerpt'
+const articleSelect = 'id, title, slug, cover_image_url, published_at, excerpt, content, category'
 
 export const metadata: Metadata = {
   title: 'Persiapan SKD CPNS - TWK, TIU, TKP, Drill & Tryout | SiapTempur',
@@ -63,31 +63,12 @@ export default async function Home() {
       .limit(3)).data?.map((event) => ({ ...event, documentation_url: null }))
     : activeEventsResult.data
 
-  const cpnsArticlesResult = await supabase
+  const { data: latestArticles } = await supabase
     .from('articles')
     .select(articleSelect)
     .eq('status', 'published')
-    .or('title.ilike.%CPNS%,title.ilike.%SKD%,title.ilike.%TWK%,title.ilike.%TIU%,title.ilike.%TKP%,excerpt.ilike.%CPNS%,excerpt.ilike.%SKD%')
     .order('published_at', { ascending: false })
     .limit(3)
-
-  let latestArticles = cpnsArticlesResult.data || []
-
-  if (cpnsArticlesResult.error || latestArticles.length < 3) {
-    const { data: fallbackArticles } = await supabase
-      .from('articles')
-      .select(articleSelect)
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(6)
-
-    const merged = [...latestArticles]
-    for (const article of fallbackArticles || []) {
-      if (!merged.some((item) => item.id === article.id)) merged.push(article)
-      if (merged.length >= 3) break
-    }
-    latestArticles = merged.slice(0, 3)
-  }
 
   return (
     <CpnsProductLandingV12

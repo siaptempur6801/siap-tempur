@@ -134,7 +134,7 @@ export default function TkaDashboardShell({
                             </div>
                         </div>
                         <div className="mt-1.5 flex justify-end">
-                            <SidebarSignoutButton signoutAction={signoutAction} />
+                            <SidebarSignoutButton signoutAction={signoutAction} redirectTo="/tka" />
                         </div>
                     </div>
                 </div>
@@ -146,7 +146,10 @@ export default function TkaDashboardShell({
                         <Link href="/tka" className="st-focus font-handwriting text-xl font-black text-slate-950">
                             Siap<span className="text-indigo-600">Tempur</span>.
                         </Link>
-                        <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black text-indigo-700">TKA</span>
+                        <div className="flex items-center gap-2">
+                            <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black text-indigo-700">TKA</span>
+                            <SidebarSignoutButton signoutAction={signoutAction} redirectTo="/tka" compact />
+                        </div>
                     </div>
                     <div className="px-3.5 pb-2.5">
                         <TkaLevelSwitcher activeLevel={level} compact />

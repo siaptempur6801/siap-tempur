@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest'
 import { resolvePostLoginRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 
 describe('auth redirect helpers', () => {
-  it('uses the public multi-program landing as the generic auth fallback', () => {
+  it('uses program onboarding after login from the generic entry', () => {
     expect(sanitizeAuthReturnTo(null)).toBe('/')
-    expect(resolvePostLoginRedirect(null)).toBe('/')
+    expect(resolvePostLoginRedirect(null)).toBe('/onboarding')
+    expect(resolvePostLoginRedirect('/')).toBe('/onboarding')
   })
 
   it('keeps the legacy /cpns return target pointed at the dashboard after login', () => {
     expect(resolvePostLoginRedirect('/cpns')).toBe('/cpns/dashboard')
+  })
+
+  it('keeps the TKA landing target pointed at its authenticated dashboard', () => {
+    expect(resolvePostLoginRedirect('/tka')).toBe('/tka')
   })
 
   it('preserves explicit CPNS and TKA internal return targets', () => {

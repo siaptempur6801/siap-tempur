@@ -9,7 +9,6 @@ import {
     ChevronDown,
     ClipboardCheck,
     Clock3,
-    FileText,
     History,
     RotateCcw,
     ShieldCheck,
@@ -19,6 +18,7 @@ import {
     Trophy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import ArticlePreviewCard from '@/components/articles/ArticlePreviewCard'
 import TrackedLink from '@/components/analytics/TrackedLink'
 import CpnsLandingInteractions, { CpnsEventCountdown } from '@/components/home/CpnsLandingInteractions'
 
@@ -48,6 +48,8 @@ export type CpnsLandingArticle = {
     cover_image_url: string | null
     published_at: string | null
     excerpt: string | null
+    content: string
+    category: string | null
 }
 
 const dateFormatter = new Intl.DateTimeFormat('id-ID', {
@@ -56,13 +58,6 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'Asia/Jakarta',
-})
-
-const articleDateFormatter = new Intl.DateTimeFormat('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
     timeZone: 'Asia/Jakarta',
 })
 
@@ -79,13 +74,6 @@ function formatPrice(event: CpnsLandingEvent) {
         currency: 'IDR',
         maximumFractionDigits: 0,
     }).format(event.price)
-}
-
-function formatArticleDate(value: string | null) {
-    if (!value) return null
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return null
-    return articleDateFormatter.format(date)
 }
 
 const skdMap = [
@@ -580,20 +568,9 @@ export default function CpnsProductLandingV12({
                             <Link href="/blog" className="st-focus inline-flex min-h-11 items-center font-black text-blue-700 hover:underline">Lihat semua artikel</Link>
                         </div>
                         <div className="mt-8 grid gap-4 lg:grid-cols-3 lg:gap-5">
-                            {latestArticles.map((article) => {
-                                const published = formatArticleDate(article.published_at)
-                                return (
-                                    <article key={article.id} className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition-transform hover:-translate-y-1">
-                                        <div className="h-1.5 bg-blue-600" />
-                                        <div className="flex flex-1 flex-col p-5 sm:p-6">
-                                            <div className="flex items-center gap-2 text-xs font-bold text-gray-500"><FileText size={15} /> {published ?? 'Artikel SiapTempur'}</div>
-                                            <h3 className="mt-4 text-xl font-black leading-snug tracking-tight">{article.title}</h3>
-                                            {article.excerpt && <p className="st-muted mt-3 line-clamp-3 flex-1 text-sm font-semibold leading-relaxed">{article.excerpt}</p>}
-                                            <Link href={`/blog/${article.slug}`} className="st-focus mt-4 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">Baca artikel <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" /></Link>
-                                        </div>
-                                    </article>
-                                )
-                            })}
+                            {latestArticles.map((article) => (
+                                <ArticlePreviewCard key={article.id} article={article} />
+                            ))}
                         </div>
                     </div>
                 </section>
