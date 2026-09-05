@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Flame, Sparkles, Trophy, X, Zap } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 interface XPRewardPopupProps {
     xpEarned: number
@@ -111,21 +112,7 @@ export default function XPRewardPopup({
                                 ) : null}
                             </div>
 
-                            <div
-                                className="mt-4 h-4 overflow-hidden border-2 border-slate-950 bg-slate-100"
-                                role="progressbar"
-                                aria-label="Progres level"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={progress}
-                            >
-                                <motion.div
-                                    className="h-full bg-blue-600"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progress}%` }}
-                                    transition={{ duration: 0.7, delay: 0.15 }}
-                                />
-                            </div>
+                            <ProgressBar value={progress} label="Progres level" className="mt-4" />
                             <p className="mt-2 text-xs font-bold text-slate-500">
                                 {xpToNext > 0 ? `${xpToNext.toLocaleString('id-ID')} XP lagi menuju level berikutnya.` : 'Kamu sudah mencapai level tertinggi.'}
                             </p>

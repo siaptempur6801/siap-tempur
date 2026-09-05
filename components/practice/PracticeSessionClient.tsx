@@ -1048,6 +1048,7 @@ export default function PracticeSessionClient({
                                 </button>
                                 <button
                                     type="button"
+                                    data-prevent-double="true"
                                     onClick={handleConfirmFinish}
                                     disabled={finishing}
                                     className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
@@ -1186,6 +1187,7 @@ export default function PracticeSessionClient({
 
                             {currentIndex === sortedQuestions.length - 1 ? (
                                 <button
+                                    data-prevent-double="true"
                                     onClick={onFinishClick}
                                     disabled={finishing}
                                     className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
@@ -1217,6 +1219,7 @@ export default function PracticeSessionClient({
 
                         {currentIndex === sortedQuestions.length - 1 ? (
                             <button
+                                data-prevent-double="true"
                                 onClick={onFinishClick}
                                 disabled={finishing}
                                 className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)] disabled:cursor-not-allowed disabled:opacity-60"

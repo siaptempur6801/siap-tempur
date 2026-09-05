@@ -3,7 +3,6 @@ import {
     ArrowRight,
     BarChart3,
     BookOpenCheck,
-    BrainCircuit,
     CalendarDays,
     CheckCircle2,
     ChevronDown,
@@ -21,6 +20,7 @@ import { Button } from '@/components/ui/Button'
 import ArticlePreviewCard from '@/components/articles/ArticlePreviewCard'
 import TrackedLink from '@/components/analytics/TrackedLink'
 import CpnsLandingInteractions, { CpnsEventCountdown } from '@/components/home/CpnsLandingInteractions'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 export type CpnsLandingUser = { id: string } | null
 
@@ -318,9 +318,13 @@ export default function CpnsProductLandingV12({
                                         <p className="text-[10px] font-black uppercase tracking-[0.08em] text-gray-600 sm:text-xs">{item.label}</p>
                                         <span className="text-[10px] font-black text-gray-700 sm:text-xs">{item.value}%</span>
                                     </div>
-                                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/90 sm:mt-3 sm:h-2">
-                                        <div className="h-full rounded-full bg-blue-600" style={{ width: `${item.value}%` }} />
-                                    </div>
+                                    <ProgressBar
+                                        value={item.value}
+                                        label={`Progres ${item.label}`}
+                                        size="sm"
+                                        className="mt-2 h-1.5 rounded-full border-0 bg-white/90 sm:mt-3 sm:h-2"
+                                        indicatorClassName="rounded-full bg-blue-600"
+                                    />
                                     <p className="mt-2 truncate text-[10px] font-black text-gray-700 sm:text-xs">{item.status}</p>
                                 </div>
                             ))}

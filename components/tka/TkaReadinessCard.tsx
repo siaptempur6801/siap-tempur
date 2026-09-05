@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, BarChart3, Gauge, ShieldCheck } from 'lucide-react'
 import type { TkaReadinessView } from '@/src/services/tka-readiness.service'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 function levelLabel(level: TkaReadinessView['readinessLevel']) {
     if (level === 'ready') return 'Siap'
@@ -69,9 +70,13 @@ export default function TkaReadinessCard({
                                     </div>
                                     <div className="text-2xl font-black tracking-tight text-slate-950">{subjectPercent.toFixed(1)}%</div>
                                 </div>
-                                <div className="mt-4 h-3 overflow-hidden border-2 border-slate-900 bg-white">
-                                    <div className="h-full bg-emerald-400" style={{ width: `${subjectPercent}%` }}/>
-                                </div>
+                                <ProgressBar
+                                    value={subjectPercent}
+                                    label={`Kesiapan ${subject.subjectName}`}
+                                    size="sm"
+                                    className="mt-4 bg-white"
+                                    indicatorClassName="bg-emerald-400"
+                                />
                                 <div className="st-muted mt-2 text-xs font-bold">
                                     Materi terukur: {subject.evidencedNodes}/{subject.assessableNodes}
                                 </div>
@@ -86,9 +91,13 @@ export default function TkaReadinessCard({
                     </div>
                     <div className="mt-2 text-3xl font-black tracking-tight text-slate-950">{confidencePercent.toFixed(1)}%</div>
                     <div className="text-sm font-black text-amber-800">{confidenceLabel(readiness.confidenceLevel)}</div>
-                    <div className="mt-4 h-3 overflow-hidden border-2 border-slate-900 bg-white">
-                        <div className="h-full bg-yellow-300" style={{ width: `${confidencePercent}%` }}/>
-                    </div>
+                    <ProgressBar
+                        value={confidencePercent}
+                        label="Kekuatan data belajar"
+                        size="sm"
+                        className="mt-4 bg-white"
+                        indicatorClassName="bg-yellow-300"
+                    />
                     <div className="st-muted mt-4 flex items-start gap-2 text-xs font-semibold leading-relaxed">
                         <BarChart3 size={15} className="mt-0.5 shrink-0 text-amber-700"/>
                         Ringkasan akan semakin kuat setelah kamu mengerjakan lebih banyak bagian materi dan memiliki lebih banyak hasil latihan yang bisa dibandingkan.

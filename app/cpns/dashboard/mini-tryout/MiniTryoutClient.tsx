@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
-import { ArrowRight, Brain, Clock3, Loader2, ShieldCheck, Ticket, UserCheck } from 'lucide-react'
+import { ArrowRight, Brain, Clock3, ShieldCheck, Ticket, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { startMiniTryout } from '@/app/actions/practice'
 import PaperBackground from '@/components/PaperBackground'
 import TokenUsageConfirmModal from '@/components/practice/TokenUsageConfirmModal'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
+import { LoadingSpinner } from '@/components/ui/LoadingState'
 import { MINI_TRYOUT_PRODUCTS, TRYOUT_TOKEN_COST, type MiniTryoutType } from '@/lib/constants'
 import { getPracticeSessionStorageKey, getResumeQuestionNumberFromStoredProgress } from '@/lib/practice-progress'
 import { cn } from '@/lib/utils'
@@ -309,7 +310,7 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
                                                 style.buttonClassName
                                             )}
                                         >
-                                            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
+                                            {isLoading ? <LoadingSpinner label={`Menyiapkan mini tryout ${product.type}`} /> : <ArrowRight className="h-5 w-5" />}
                                             {isLoading ? 'Menyiapkan...' : activeSession ? `Lanjutkan ${product.type}` : `Mulai ${product.type}`}
                                         </button>
                                     </div>

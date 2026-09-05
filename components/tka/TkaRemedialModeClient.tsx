@@ -7,6 +7,7 @@ import MathRenderer from '@/components/MathRenderer'
 import { reviewTkaRemedialItem } from '@/app/actions/tka-remedial'
 import type { TkaRemedialItem, TkaRemedialSession } from '@/src/services/tka-remedial.service'
 import { cn } from '@/lib/utils'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 type Feedback = {
     isCorrect: boolean
@@ -136,9 +137,13 @@ export default function TkaRemedialModeClient({
                             <div className="mt-1 text-2xl font-black tracking-tight text-slate-950">{completedItems}/{totalItems}</div>
                         </div>
                     </div>
-                    <div className="mt-5 h-3 overflow-hidden border-2 border-slate-900 bg-white" aria-label={`Perkembangan latihan perbaikan ${progress}%`}>
-                        <div className="h-full bg-yellow-300 transition-[width]" style={{ width: `${progress}%` }}/>
-                    </div>
+                    <ProgressBar
+                        value={progress}
+                        label="Perkembangan latihan perbaikan"
+                        size="sm"
+                        className="mt-5 bg-white"
+                        indicatorClassName="bg-yellow-300"
+                    />
                 </section>
 
                 {allDone ? (

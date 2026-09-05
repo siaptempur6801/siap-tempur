@@ -458,6 +458,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     <div className="grid grid-cols-[36px_1fr_36px]">
                         <button
                             type="button"
+                            data-allow-repeat="true"
                             aria-label="Kurangi kecepatan autoscroll"
                             onClick={decreaseAutoScrollSpeed}
                             disabled={autoScrollSpeed <= MIN_AUTO_SCROLL_SPEED}
@@ -470,6 +471,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                         </div>
                         <button
                             type="button"
+                            data-allow-repeat="true"
                             aria-label="Tambah kecepatan autoscroll"
                             onClick={increaseAutoScrollSpeed}
                             disabled={autoScrollSpeed >= MAX_AUTO_SCROLL_SPEED}

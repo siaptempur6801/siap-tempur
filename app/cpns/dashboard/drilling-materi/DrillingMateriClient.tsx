@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
-import { ArrowRight, Brain, Clock3, Dumbbell, Loader2, ShieldCheck, UserCheck, Zap } from 'lucide-react'
+import { ArrowRight, Brain, Clock3, Dumbbell, ShieldCheck, UserCheck, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { startDrillingMateri } from '@/app/actions/practice'
 import TokenUsageConfirmModal from '@/components/practice/TokenUsageConfirmModal'
@@ -11,6 +11,7 @@ import { MINI_TRYOUT_TYPES, SUBJECTS, TRYOUT_TOKEN_COST, type MiniTryoutType } f
 import { DRILLING_MATERI_QUESTION_COUNT } from '@/lib/practice-session'
 import { getPracticeSessionStorageKey, getResumeQuestionNumberFromStoredProgress } from '@/lib/practice-progress'
 import { cn } from '@/lib/utils'
+import { LoadingSpinner } from '@/components/ui/LoadingState'
 
 export type DrillingMateriItem = {
     key: string
@@ -294,7 +295,7 @@ export default function DrillingMateriClient({ activeSessionsByKey, materials, q
                                                     className="st-button mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
                                                 >
                                                     {isLoading ? (
-                                                        <><Loader2 size={18} className="animate-spin" /> Menyiapkan...</>
+                                                        <><LoadingSpinner label="Menyiapkan Latihan Fokus" /> Menyiapkan...</>
                                                     ) : (
                                                         <>{!activeSession && !hasToken ? 'Token belum cukup' : activeSession ? 'Lanjutkan Latihan Fokus' : 'Mulai Latihan Fokus'} <ArrowRight size={17} /></>
                                                     )}

@@ -13,6 +13,7 @@ import {
     submitTkaFullExamAttempt,
 } from '@/app/actions/tka-full-exam'
 import type { TkaFullExamQuestionView, TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 function formatRemaining(milliseconds: number) {
     const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
@@ -194,9 +195,13 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                             <Clock3 size={16} /> {remainingMs === null ? '--:--' : formatRemaining(remainingMs)}
                         </div>
                     </div>
-                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div className="h-full rounded-full bg-indigo-600 transition-[width]" style={{ width: `${Math.max(3, ((currentIndex + 1) / questions.length) * 100)}%` }} />
-                    </div>
+                    <ProgressBar
+                        value={((currentIndex + 1) / questions.length) * 100}
+                        label="Progres tes diagnostik"
+                        size="sm"
+                        className="mt-3 border-slate-200"
+                        indicatorClassName="bg-indigo-600"
+                    />
                 </header>
 
                 <div className="grid gap-3 lg:grid-cols-[1fr_15rem]">
@@ -226,7 +231,7 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                             {currentIndex < questions.length - 1 ? (
                                 <button type="button" onClick={() => { setCurrentIndex((index) => Math.min(questions.length - 1, index + 1)); enteredAtRef.current = Date.now() }} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white">Berikutnya <ArrowRight size={16} /></button>
                             ) : (
-                                <button type="button" disabled={processing || Boolean(savingId)} onClick={() => void finishSection(false)} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white disabled:opacity-50">
+                                <button type="button" data-prevent-double="true" disabled={processing || Boolean(savingId)} onClick={() => void finishSection(false)} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white disabled:opacity-50">
                                     {isLastSection ? <Send size={16} /> : <ArrowRight size={16} />}{isLastSection ? 'Lihat hasil diagnostik' : `Selesaikan ${activeSection.title}`}
                                 </button>
                             )}

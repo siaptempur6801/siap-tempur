@@ -1,7 +1,7 @@
 'use client'
 
 import { startTryout } from '@/app/actions/practice'
-import { AlertCircle, ArrowRight, BookOpen, CheckCircle2, Clock3, Loader2, ShieldCheck, Ticket } from 'lucide-react'
+import { AlertCircle, ArrowRight, BookOpen, CheckCircle2, Clock3, ShieldCheck, Ticket } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnima
 import PaperBackground from '@/components/PaperBackground'
 import { TRYOUT_TOKEN_COST } from '@/lib/constants'
 import TokenUsageConfirmModal from '@/components/practice/TokenUsageConfirmModal'
+import { LoadingSpinner } from '@/components/ui/LoadingState'
 
 interface PracticeClientProps {
     quota: number
@@ -199,7 +200,7 @@ export default function PracticeClient({
                                 disabled={loadingTryout}
                                 className="st-button st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 bg-blue-600 px-4 py-2.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                {loadingTryout ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                                {loadingTryout ? <LoadingSpinner label="Menyiapkan full tryout" size="sm" /> : <ArrowRight className="h-4 w-4" />}
                                 {loadingTryout ? 'Menyiapkan...' : 'Lanjutkan'}
                             </button>
                         </div>
@@ -265,7 +266,7 @@ export default function PracticeClient({
                                             disabled={loadingTryout}
                                             className="st-button st-focus flex min-h-12 w-full items-center justify-center gap-2 bg-blue-600 px-5 py-3 text-base text-white disabled:cursor-not-allowed disabled:opacity-60"
                                         >
-                                            {loadingTryout ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRight className="h-5 w-5" />}
+                                            {loadingTryout ? <LoadingSpinner label="Menyiapkan full tryout" /> : <ArrowRight className="h-5 w-5" />}
                                             {loadingTryout ? 'Menyiapkan sesi...' : activeSessionId ? 'Lanjutkan Full Tryout' : 'Mulai Full Tryout'}
                                         </button>
                                     ) : (

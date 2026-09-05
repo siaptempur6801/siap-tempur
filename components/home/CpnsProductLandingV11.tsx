@@ -17,11 +17,11 @@ import {
     Target,
     Ticket,
     Trophy,
-    Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import TrackedLink from '@/components/analytics/TrackedLink'
 import CpnsLandingInteractions, { CpnsEventCountdown } from '@/components/home/CpnsLandingInteractions'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 export type CpnsLandingUser = { id: string } | null
 
@@ -353,9 +353,13 @@ export default function CpnsProductLandingV11({
                                         <p className="text-xs font-black uppercase tracking-[0.1em] text-gray-600">{item.label}</p>
                                         <span className="text-xs font-black text-gray-700">{item.value}%</span>
                                     </div>
-                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/90">
-                                        <div className="h-full rounded-full bg-blue-600 transition-[width] duration-500" style={{ width: `${item.value}%` }} />
-                                    </div>
+                                    <ProgressBar
+                                        value={item.value}
+                                        label={`Progres ${item.label}`}
+                                        size="sm"
+                                        className="mt-3 h-2 rounded-full border-0 bg-white/90"
+                                        indicatorClassName="rounded-full bg-blue-600"
+                                    />
                                     <p className="mt-2 text-xs font-black text-gray-700">{item.status}</p>
                                 </div>
                             ))}

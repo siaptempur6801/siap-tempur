@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Play } from 'lucide-react'
+import { Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { startTkaExam } from '@/app/actions/tka-practice'
 import { trackProductEvent } from '@/lib/product-analytics'
+import { LoadingSpinner } from '@/components/ui/LoadingState'
 
 export default function TkaStartExamButton({
     level,
@@ -58,7 +59,7 @@ export default function TkaStartExamButton({
                 aria-describedby={errorMessage ? `${examSlug}-start-error` : undefined}
                 className="st-focus inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-black leading-tight text-white shadow-[0_10px_22px_rgba(79,70,229,0.22)] transition hover:bg-indigo-700 hover:shadow-[0_12px_26px_rgba(79,70,229,0.28)] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
             >
-                {loading ? <Loader2 size={17} className="shrink-0 animate-spin" aria-hidden="true"/> : <Play size={17} className="shrink-0" aria-hidden="true"/>}
+                {loading ? <LoadingSpinner label="Menyiapkan tryout TKA" size="sm" /> : <Play size={17} className="shrink-0" aria-hidden="true"/>}
                 <span className="min-w-0 whitespace-normal break-words">{label}</span>
             </button>
             {errorMessage && (

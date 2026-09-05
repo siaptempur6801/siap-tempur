@@ -442,7 +442,7 @@ export default function TkaFullExamSessionClient({
                                 <ChevronLeft size={18}/> Sebelumnya
                             </button>
                             {currentIndex === questions.length - 1 ? (
-                                <button type="button" disabled={processing} onClick={() => void advanceSection(false)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-blue-600 px-5 py-2 text-sm font-black text-white disabled:opacity-50">
+                                <button type="button" data-prevent-double="true" disabled={processing} onClick={() => void advanceSection(false)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-blue-600 px-5 py-2 text-sm font-black text-white disabled:opacity-50">
                                     <CheckCircle2 size={18}/>{processing ? 'Memproses...' : state.sections.some((section) => section.status === 'locked') ? 'Selesaikan bagian' : 'Kirim tryout'}
                                 </button>
                             ) : (

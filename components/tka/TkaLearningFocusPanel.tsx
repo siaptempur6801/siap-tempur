@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight, Lightbulb, Target } from 'lucide-react'
 import { tkaLearningFocusService, type TkaLearningFocusItem } from '@/src/services/tka-learning-focus.service'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 function masteryPercent(value: number) {
     return Math.max(0, Math.min(100, Math.round(value * 100)))
@@ -62,9 +63,13 @@ export default async function TkaLearningFocusPanel({ items }: { items?: TkaLear
                                     <span>Penguasaan</span>
                                     <span>{percent}%</span>
                                 </div>
-                                <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
-                                    <div className="h-full rounded-full bg-violet-400" style={{ width: `${percent}%` }}/>
-                                </div>
+                                <ProgressBar
+                                    value={percent}
+                                    label={`Penguasaan ${item.topicName}`}
+                                    size="sm"
+                                    className="mt-2 border-slate-200 bg-white"
+                                    indicatorClassName="bg-violet-400"
+                                />
                             </div>
 
                             <div className="mt-4 grid grid-cols-2 gap-2 text-center text-xs font-bold">

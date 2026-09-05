@@ -3,7 +3,6 @@ import { notFound, redirect } from 'next/navigation'
 import {
     ArrowLeft,
     ArrowRight,
-    BarChart3,
     BrainCircuit,
     CheckCircle2,
     CircleAlert,
@@ -11,6 +10,7 @@ import {
     Target,
 } from 'lucide-react'
 import TkaStartDrillButton from '@/components/tka/TkaStartDrillButton'
+import ProgressBar from '@/components/ui/ProgressBar'
 import { createClient } from '@/lib/utils/supabase/server'
 import { cn } from '@/lib/utils'
 import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
@@ -175,7 +175,13 @@ export default async function TkaDiagnosticResultPage({
                                         <div className="text-3xl font-black tracking-tight text-slate-950">{score.toFixed(0)}%</div>
                                         <div className="text-xs font-bold text-slate-500">{Number(row.correct_questions)}/{Number(row.attempted_questions)} benar</div>
                                     </div>
-                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className={cn('h-full rounded-full', score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-400' : 'bg-rose-500')} style={{ width: `${Math.max(3, Math.min(100, score))}%` }} /></div>
+                                    <ProgressBar
+                                        value={score}
+                                        label={`Skor diagnostik ${node?.name ?? subject?.name ?? 'kompetensi'}`}
+                                        size="sm"
+                                        className="mt-3 border-slate-200"
+                                        indicatorClassName={score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-400' : 'bg-rose-500'}
+                                    />
                                     <p className="mt-2 text-[11px] font-bold text-slate-400">Prioritas #{Number(row.priority_rank)} · keyakinan data {(Number(row.confidence ?? 0) * 100).toFixed(0)}%</p>
                                 </article>
                             )

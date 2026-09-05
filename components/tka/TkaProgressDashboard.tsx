@@ -3,6 +3,7 @@ import { ArrowRight, BookOpenCheck, CheckCircle2, History, RotateCcw, Target, Tr
 import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
 import TkaReadinessCard from '@/components/tka/TkaReadinessCard'
 import type { TkaProgressDashboardView } from '@/src/services/tka-progress-dashboard.service'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 function boundedPercent(value: number) {
     return Math.max(0, Math.min(100, value))
@@ -78,9 +79,13 @@ export default function TkaProgressDashboard({ dashboard }: { dashboard: TkaProg
                                     <StatTile label="Perlu diulang" value={String(subject.openWrongQuestions)} tone="bg-red-50" />
                                 </div>
 
-                                <div className="mt-5 h-3 overflow-hidden border-2 border-slate-900 bg-slate-100">
-                                    <div className="h-full bg-emerald-400" style={{ width: `${readinessPercent}%` }}/>
-                                </div>
+                                <ProgressBar
+                                    value={readinessPercent}
+                                    label={`Kesiapan ${subject.subjectName}`}
+                                    size="sm"
+                                    className="mt-5"
+                                    indicatorClassName="bg-emerald-400"
+                                />
                                 <div className="st-muted mt-3 flex flex-wrap justify-between gap-2 text-xs font-bold">
                                     <span>{subject.attempts} pengerjaan · {subject.questionsAnswered} jawaban dinilai</span>
                                     <span>Materi terukur {subject.evidencedNodes}/{subject.assessableNodes}</span>

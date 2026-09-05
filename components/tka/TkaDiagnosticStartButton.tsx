@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BrainCircuit, Loader2 } from 'lucide-react'
+import { BrainCircuit } from 'lucide-react'
 import { startTkaSmpDiagnostic } from '@/app/actions/tka-diagnostic'
 import { trackProductEvent } from '@/lib/product-analytics'
+import { LoadingSpinner } from '@/components/ui/LoadingState'
 
 export default function TkaDiagnosticStartButton({
     disabledReason,
@@ -52,7 +53,7 @@ export default function TkaDiagnosticStartButton({
                 disabled={Boolean(disabledReason) || loading}
                 className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-[0_10px_24px_rgba(79,70,229,0.2)] transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:w-auto"
             >
-                {loading ? <Loader2 size={17} className="animate-spin" /> : <BrainCircuit size={17} />}
+                {loading ? <LoadingSpinner label="Menyiapkan tes diagnostik" size="sm" /> : <BrainCircuit size={17} />}
                 {loading ? 'Menyiapkan tes...' : disabledReason || 'Mulai Tes Diagnostik'}
             </button>
             {error && <p role="alert" className="mt-2 text-sm font-bold text-red-700">{error}</p>}

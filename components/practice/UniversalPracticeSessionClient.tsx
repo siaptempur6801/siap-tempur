@@ -341,7 +341,7 @@ export default function UniversalPracticeSessionClient({
                             <ChevronLeft size={18}/> Sebelumnya
                         </button>
                         {currentIndex === questions.length - 1 ? (
-                            <button type="button" disabled={finishing} onClick={confirmAndFinish} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-blue-700 px-5 py-2 font-black text-white disabled:opacity-50">
+                            <button type="button" data-prevent-double="true" disabled={finishing} onClick={confirmAndFinish} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-blue-700 px-5 py-2 font-black text-white disabled:opacity-50">
                                 <CheckCircle2 size={18}/>{finishing ? 'Menghitung...' : 'Selesai'}
                             </button>
                         ) : (

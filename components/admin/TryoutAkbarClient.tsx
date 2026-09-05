@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import MathRenderer from '@/components/MathRenderer'
 import { createClient } from '@/lib/utils/supabase/client'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 type EventStatus = 'draft' | 'scheduled' | 'live' | 'closed' | 'cancelled'
 
@@ -442,9 +443,13 @@ function ProgressRow({ label, value, max, color }: { label: string; value: numbe
                 <span className="text-gray-600">{label}</span>
                 <span className="text-gray-900">{value}<span className="text-gray-400">/{max}</span> <span className="text-gray-400">({pct}%)</span></span>
             </div>
-            <div className="h-2 w-full border border-gray-200 bg-gray-100 rounded-sm overflow-hidden">
-                <div className={cn('h-full transition-all', color)} style={{ width: `${pct}%` }} />
-            </div>
+            <ProgressBar
+                value={pct}
+                label={`${label} ${pct}%`}
+                size="sm"
+                className="h-2 border border-gray-200 bg-gray-100"
+                indicatorClassName={color}
+            />
         </div>
     )
 }
@@ -1376,9 +1381,13 @@ function DetailPanel({
                                             <p className="text-[11px] font-bold text-gray-500">
                                                 {code.used_count}/{code.max_uses} dipakai · exp {formatDate(code.expires_at)}
                                             </p>
-                                            <div className="h-1.5 w-full bg-gray-100 border border-gray-200 rounded-sm overflow-hidden">
-                                                <div className="h-full bg-blue-400" style={{ width: `${Math.round((code.used_count / code.max_uses) * 100)}%` }} />
-                                            </div>
+                                            <ProgressBar
+                                                value={code.max_uses > 0 ? (code.used_count / code.max_uses) * 100 : 0}
+                                                label={`Penggunaan kode ${code.code}`}
+                                                size="sm"
+                                                className="h-1.5 border border-gray-200 bg-gray-100"
+                                                indicatorClassName="bg-blue-400"
+                                            />
                                             <div className="flex gap-2">
                                                 <button disabled={isPending}
                                                     onClick={() => onRunAction(() => toggleTryoutEventCode(code.id, !code.is_active))}

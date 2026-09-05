@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import TrackedLink from '@/components/analytics/TrackedLink'
+import ProgressBar from '@/components/ui/ProgressBar'
 
 interface DashboardData {
     user: {
@@ -242,16 +243,11 @@ export default function DashboardClient({ data, greeting }: Props) {
                                         : 'Level tertinggi tercapai'}
                                 </span>
                             </div>
-                            <div
-                                className="mt-2 h-4 overflow-hidden border-2 border-slate-900 bg-slate-100"
-                                role="progressbar"
-                                aria-label="Progres menuju level berikutnya"
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                                aria-valuenow={data.stats.levelProgress}
-                            >
-                                <div className="h-full bg-blue-600" style={{ width: `${data.stats.levelProgress}%` }} />
-                            </div>
+                            <ProgressBar
+                                value={data.stats.levelProgress}
+                                label="Progres menuju level berikutnya"
+                                className="mt-2"
+                            />
                             <div className="mt-3 flex items-center gap-2 text-xs font-bold text-slate-500">
                                 <Sparkles size={15} className="text-blue-600" aria-hidden="true" />
                                 {data.user.streak > 0
@@ -322,12 +318,13 @@ export default function DashboardClient({ data, greeting }: Props) {
                                             </div>
                                             <span className="text-xs font-bold text-slate-500">target {item.target}</span>
                                         </div>
-                                        <div className="mt-4 h-3 overflow-hidden border-2 border-slate-900 bg-slate-100" aria-label={`Perkembangan ${meta.label} ${Math.round(progressValue)}%`}>
-                                            <div
-                                                className={cn('h-full transition-[width]', item.passed ? 'bg-emerald-400' : meta.bar)}
-                                                style={{ width: `${progressValue}%` }}
-                                            />
-                                        </div>
+                                        <ProgressBar
+                                            value={progressValue}
+                                            label={`Perkembangan ${meta.label}`}
+                                            size="sm"
+                                            className="mt-4"
+                                            indicatorClassName={item.passed ? 'bg-emerald-400' : meta.bar}
+                                        />
                                         <p className={cn('mt-2 text-xs font-black', item.passed ? 'text-emerald-700' : 'text-slate-600')}>
                                             {item.passed ? 'Target tercapai' : 'Perlu diperkuat'}
                                         </p>

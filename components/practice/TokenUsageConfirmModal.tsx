@@ -1,8 +1,9 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { AlertTriangle, Loader2, Ticket } from 'lucide-react'
+import { AlertTriangle, Ticket } from 'lucide-react'
 import { TRYOUT_TOKEN_COST } from '@/lib/constants'
+import { LoadingSpinner } from '@/components/ui/LoadingState'
 
 type TokenUsageConfirmModalProps = {
     isOpen: boolean
@@ -103,7 +104,7 @@ export default function TokenUsageConfirmModal({
                                     disabled={isLoading}
                                     className="flex flex-1 items-center justify-center gap-2 border-2 border-gray-900 bg-blue-600 px-4 py-3 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Ticket size={18} />}
+                                    {isLoading ? <LoadingSpinner label="Memulai sesi" /> : <Ticket size={18} />}
                                     {isLoading ? 'Memulai...' : confirmLabel}
                                 </button>
                             </div>
