@@ -64,6 +64,7 @@ export async function updateProfile(formData: FormData) {
 
     revalidatePath('/cpns/dashboard', 'layout')
     revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/tka', 'layout')
     return { success: true }
 }
 
@@ -118,6 +119,7 @@ export async function updateProfileInfo(data: {
     revalidatePath('/', 'layout')
     revalidatePath('/cpns/dashboard', 'layout')
     revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/tka', 'layout')
     return { success: true, profile: savedProfile }
 }
 
@@ -177,6 +179,7 @@ export async function saveProfileAvatar(storagePath: string) {
     revalidatePath('/', 'layout')
     revalidatePath('/cpns/dashboard', 'layout')
     revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/tka', 'layout')
     return { success: true, avatarUrl: publicUrlData.publicUrl }
 }
 

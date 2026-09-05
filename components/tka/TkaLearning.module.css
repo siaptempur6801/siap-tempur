@@ -1,0 +1,83 @@
+.learning {
+  --st-radius-sm: 0.625rem;
+  --st-radius-md: 0.875rem;
+  --st-radius-lg: 1rem;
+}
+
+.learning.learning :global(.st-heading-display) {
+  font-family: var(--font-body), sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.learning.learning :global(.st-button) {
+  min-height: 42px;
+  border-width: 1px;
+  font-weight: 700;
+  transition: all 0.15s ease-in-out;
+}
+
+.learning.learning :global(.st-pill) {
+  border: 1px solid #e2e8f0;
+  font-weight: 600;
+}
+
+.learning.learning :global(.st-kicker) {
+  border: 0;
+  box-shadow: none;
+  letter-spacing: 0.05em;
+}
+
+.learning main {
+  min-width: 0;
+  padding: 24px;
+}
+
+.learning h1 {
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.learning h2 {
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.learning h3 {
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.learning :is(article, section, header) {
+  min-width: 0;
+  border-radius: 0.875rem;
+  scroll-margin-top: 24px;
+}
+
+.learning :global(.st-card),
+.learning :global(.st-card-md),
+.learning :global(.st-card-lg) {
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.03), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.learning :global(.st-card):hover,
+.learning :global(.st-card-md):hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px 0 rgba(15, 23, 42, 0.05);
+}
+
+.learning :global(.st-focus):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .learning main { padding: 16px 12px; }
+  .learning :is(section, header) { scroll-margin-top: 100px; }
+}

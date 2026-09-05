@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, BookOpenCheck, CheckCircle2, Clock3, RotateCcw, Target, Trophy, XCircle } from 'lucide-react'
+import { BookOpenCheck, CheckCircle2, Clock3, ListChecks, RotateCcw, Target, Trophy, XCircle } from 'lucide-react'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
 import TkaReadinessCard from '@/components/tka/TkaReadinessCard'
@@ -116,9 +116,6 @@ export default async function TkaResultPage({
             <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Link href={base} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-slate-500 transition hover:bg-white hover:text-indigo-700">
-                        <ArrowLeft size={18}/> Kembali ke TKA {level}
-                    </Link>
                     <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-[11px] font-black text-indigo-700 ring-1 ring-indigo-100">{label} · TKA/{level}</span>
                 </div>
 
@@ -173,6 +170,15 @@ export default async function TkaResultPage({
                     </section>
                 )}
 
+                <section id="pembahasan" className="scroll-mt-6 space-y-4">
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Pembahasan</p>
+                        <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">Pelajari jawaban satu per satu</h2>
+                        <p className="mt-2 text-sm font-semibold text-slate-500">Bandingkan jawabanmu dengan kunci, lalu pahami penjelasannya sebelum mengulang soal.</p>
+                    </div>
+                    <TkaResultReview items={result.reviewItems} />
+                </section>
+
                 {readiness && <TkaReadinessCard readiness={readiness}/>} 
 
                 <TkaLearningFocusPanel items={learningFocus?.items ?? []}/>
@@ -194,7 +200,7 @@ export default async function TkaResultPage({
                     </section>
                 )}
 
-                {repeatWrongEnabled && (
+                {repeatWrongEnabled && !automaticRemedialEnabled && (
                     <section className="flex flex-col gap-4 rounded-[1.5rem] border border-red-100 bg-red-50/70 p-5 shadow-sm md:flex-row md:items-center md:justify-between">
                         <div>
                             <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-red-700">
@@ -211,13 +217,15 @@ export default async function TkaResultPage({
                     </section>
                 )}
 
-                <section className="space-y-4">
+                <section className="flex flex-col gap-4 border-t border-slate-200 pt-6 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Pembahasan</p>
-                        <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">Tinjau jawaban satu per satu</h2>
-                        <p className="mt-2 text-sm font-semibold text-slate-500">Bandingkan jawabanmu dengan kunci dan pelajari penjelasannya.</p>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-600">Langkah berikutnya</p>
+                        <h2 className="mt-1 text-xl font-black text-slate-950">Coba lagi setelah selesai memperbaiki hasilmu.</h2>
+                        <p className="mt-1 text-sm font-semibold text-slate-500">Pilih Mini Tryout atau Full Tryout berikutnya saat kamu sudah siap.</p>
                     </div>
-                    <TkaResultReview items={result.reviewItems} />
+                    <Link href={`${base}/tryout`} className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white hover:bg-blue-700">
+                        <ListChecks size={18} /> Pilih tryout berikutnya
+                    </Link>
                 </section>
             </div>
             </main>

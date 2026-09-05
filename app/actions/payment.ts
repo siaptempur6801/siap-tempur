@@ -62,7 +62,10 @@ async function currentUser() {
     return user
 }
 
-export async function createPackageTransaction(productCode: string): Promise<CreatePackageTransactionResult> {
+export async function createPackageTransaction(productCode: string, returnPath = '/cpns/dashboard/profile'): Promise<CreatePackageTransactionResult> {
+    if (returnPath !== '/cpns/dashboard/profile' && !/^\/tka\/(sd|smp|sma)\/profile\?tab=history$/.test(returnPath)) {
+        return { success: false, message: 'Tujuan pembayaran tidak valid.' }
+    }
     try {
         await validateCsrf()
     } catch {
@@ -83,7 +86,7 @@ export async function createPackageTransaction(productCode: string): Promise<Cre
             fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
             productCode,
             adminFee: 500,
-            returnPath: '/cpns/dashboard/profile',
+            returnPath,
         })
 
         return {

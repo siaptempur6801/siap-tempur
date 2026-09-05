@@ -3,8 +3,10 @@ import { KeyRound, Loader2, Lock, Settings, Shield, Trash2, X } from 'lucide-rea
 import { toast } from 'sonner'
 import { deleteAccount, updatePassword } from '@/app/actions/profile'
 import { createV2Client } from '@/lib/utils/supabase/client'
+import { useProfileNavigation } from './useProfileNavigation'
 
 export function SettingsTab() {
+    const { landingPath } = useProfileNavigation()
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [oldPassword, setOldPassword] = useState('')
@@ -40,7 +42,7 @@ export function SettingsTab() {
                 return
             }
 
-            window.location.replace('/login?returnTo=%2Fcpns&password=updated')
+            window.location.replace(`/login?returnTo=${encodeURIComponent(landingPath)}&password=updated`)
         } catch {
             toast.error('Kata sandi belum bisa diubah. Coba lagi.')
         } finally {
@@ -57,7 +59,7 @@ export function SettingsTab() {
                 await createV2Client().auth.signOut({ scope: 'local' }).catch(() => undefined)
                 toast.success('Akun sudah dihapus.')
                 setTimeout(() => {
-                    window.location.replace('/cpns')
+                    window.location.replace(landingPath)
                 }, 1200)
             } else {
                 toast.error(result.error || 'Akun belum bisa dihapus.')

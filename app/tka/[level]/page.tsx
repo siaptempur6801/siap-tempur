@@ -1,28 +1,30 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import {
-    ArrowLeft,
     ArrowRight,
     BarChart3,
+    BookOpen,
     BookOpenCheck,
+    BrainCircuit,
+    Calculator,
     CheckCircle2,
     Clock3,
+    Dumbbell,
     GraduationCap,
-    History,
     ListChecks,
     LockKeyhole,
+    RotateCcw,
     School,
-    Target,
-    Ticket,
+    Sparkles,
+    Timer,
 } from 'lucide-react'
 import { activateTkaTrackAction } from '@/app/actions/user-track'
-import TkaPassPackagesClient from '@/components/tka/TkaPassPackagesClient'
 import TkaLearningHierarchy from '@/components/tka/TkaLearningHierarchy'
+import TkaNextStep from '@/components/tka/TkaNextStep'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { commerceService } from '@/src/services/commerce.service'
 import { parseTkaLevel, tkaContext, tkaLevelPath, type TkaLevel } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
@@ -32,6 +34,21 @@ const LEVEL_LABEL: Record<TkaLevel, string> = {
     SD: 'Sekolah Dasar',
     SMP: 'Sekolah Menengah Pertama',
     SMA: 'Sekolah Menengah Atas',
+}
+
+type AccessTone = 'default' | 'success' | 'warning'
+
+interface TryoutOption {
+    id: string
+    title: string
+    slug: string
+    typeLabel: string
+    duration: number | null
+    details: string[]
+    accessLabel: string
+    accessTone: AccessTone
+    disabledReason: string | null
+    full: boolean
 }
 
 function minutes(seconds: unknown) {
@@ -60,14 +77,6 @@ function entitlementUsable(input: {
     const withinWindow = Number.isFinite(startsAt) && startsAt <= now && (expiresAt === null || expiresAt > now)
     const withinUsage = input.usage_limit === null || input.usage_count < input.usage_limit
     return withinWindow && withinUsage
-}
-
-function attemptStatus(status: unknown) {
-    const value = String(status ?? '').toLowerCase()
-    if (value === 'completed' || value === 'submitted') return { label: 'Selesai', className: 'bg-emerald-50 text-emerald-700 ring-emerald-100' }
-    if (value === 'in_progress') return { label: 'Sedang dikerjakan', className: 'bg-indigo-50 text-indigo-700 ring-indigo-100' }
-    if (value === 'expired') return { label: 'Kedaluwarsa', className: 'bg-amber-50 text-amber-700 ring-amber-100' }
-    return { label: value || 'Tidak diketahui', className: 'bg-slate-100 text-slate-600 ring-slate-200' }
 }
 
 function formatAttemptDate(value: unknown) {
@@ -153,11 +162,6 @@ export default async function TkaLevelPage({
         })),
     }
 
-    const rawPassOffers = stagingEnvironment
-        ? []
-        : await commerceService.listActiveProductOffers('TKA', level)
-    const passOffers = rawPassOffers.filter((offer) => offer.code.startsWith(`TKA_${level}_PASS_`))
-
     const questionStatuses = stagingSmpPilot ? ['approved', 'published'] : ['published']
     const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { data: questionRows, error: questionError }] = await Promise.all([
         supabase
@@ -219,24 +223,19 @@ export default async function TkaLevelPage({
         }
     }
 
-    const attemptCountByExam = new Map<string, number>()
-    for (const row of attemptRows ?? []) {
-        const id = String(row.exam_id)
-        attemptCountByExam.set(id, (attemptCountByExam.get(id) ?? 0) + 1)
-    }
-
     const examTypeById = new Map((examTypes ?? []).map((row) => [String(row.id), row]))
     const examById = new Map((exams ?? []).map((exam) => [String(exam.id), exam]))
-    const tryoutExams = (exams ?? []).filter((exam) => {
-        const typeCode = String(examTypeById.get(String(exam.exam_type_id))?.code ?? '').toUpperCase()
-        const slug = String(exam.slug ?? '').toLowerCase()
-        return typeCode.includes('TRYOUT') || slug.includes('-mini-') || slug.endsWith('-full')
-    })
     const questionCountBySubject = new Map<string, number>()
     for (const row of questionRows ?? []) {
         const id = String(row.subject_id)
         questionCountBySubject.set(id, (questionCountBySubject.get(id) ?? 0) + 1)
     }
+
+    const totalQuestions = (questionRows ?? []).length
+    const studentName = user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        (user.email ? user.email.split('@')[0] : null) ||
+        'Pejuang TKA'
 
     const activeTrack = userTrack?.status.toLowerCase() === 'active'
     const recentAttempts = (attemptRows ?? []).filter((attempt) => {
@@ -245,334 +244,534 @@ export default async function TkaLevelPage({
         return typeCode !== 'DIAGNOSTIC'
     }).slice(0, 6)
     const activeAttempt = recentAttempts.find((attempt) => String(attempt.status ?? '').toLowerCase() === 'in_progress') ?? null
+    const activeExam = activeAttempt ? examById.get(String(activeAttempt.exam_id)) : null
+    const activeExamType = activeExam ? examTypeById.get(String(activeExam.exam_type_id)) : null
+    const activeTypeCode = String(activeExamType?.code ?? '').toUpperCase()
+    const activeSlug = String(activeExam?.slug ?? '').toLowerCase()
+    const activePracticeLabel = activeTypeCode.includes('DRILL') || activeSlug.includes('drill')
+        ? 'Latihan Fokus'
+        : activeSlug.includes('mini')
+            ? 'Mini Tryout'
+            : 'Full Tryout'
     const latestCompletedAttempt = recentAttempts.find((attempt) => ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase())) ?? null
     const latestCompletedExam = latestCompletedAttempt ? examById.get(String(latestCompletedAttempt.exam_id)) : null
     const hasTempurPass = entitledFeatures.size > 0
 
+    const tryoutExams = (exams ?? []).filter((exam) => {
+        const typeCode = String(examTypeById.get(String(exam.exam_type_id))?.code ?? '').toUpperCase()
+        const slug = String(exam.slug ?? '').toLowerCase()
+        return typeCode.includes('TRYOUT') || slug.includes('-mini-') || slug.endsWith('-full')
+    })
+
+    const attemptCountByExam = new Map<string, number>()
+    for (const row of attemptRows ?? []) {
+        const id = String(row.exam_id)
+        attemptCountByExam.set(id, (attemptCountByExam.get(id) ?? 0) + 1)
+    }
+
+    const tryoutOptions: TryoutOption[] = tryoutExams.map((exam) => {
+        const type = examTypeById.get(String(exam.exam_type_id))
+        const typeCode = String(type?.code ?? '').toUpperCase()
+        const slug = String(exam.slug)
+        const full = slug.toLowerCase().includes('full') || typeCode.includes('FULL')
+        const featureId = exam.required_feature_id ? String(exam.required_feature_id) : null
+        const hasEntitlement = featureId ? entitledFeatures.has(featureId) : false
+        const usedAttempts = attemptCountByExam.get(String(exam.id)) ?? 0
+        const access = String(exam.access_type ?? 'FREE').toUpperCase()
+        const freeLimit = Number(exam.attempt_limit ?? 1)
+        const stagingFullExam = stagingSmpPilot && slug === 'tka-smp-full'
+        const stagingMiniExam = stagingSmpPilot && slug.startsWith('tka-smp-mini-')
+        const freemiumLocked = access === 'FREEMIUM' && !hasEntitlement && usedAttempts >= freeLimit
+        const premiumLocked = !stagingFullExam && access === 'PREMIUM' && !hasEntitlement
+        const accessReason = premiumLocked
+            ? 'Butuh Tempur Pass'
+            : freemiumLocked
+                ? 'Kuota gratis habis · Butuh Tempur Pass'
+                : null
+        const accessLabel = stagingFullExam
+            ? 'Akses uji coba'
+            : hasEntitlement
+                ? 'Tempur Pass aktif'
+                : access === 'FREEMIUM'
+                    ? `Gratis ${Math.max(0, freeLimit - usedAttempts)}x tersisa`
+                    : access === 'PREMIUM'
+                        ? 'Premium · Tempur Pass'
+                        : 'Gratis'
+        const details = stagingFullExam
+            ? ['60 soal · 30 + 30', '75 menit per bagian']
+            : stagingMiniExam
+                ? ['15 soal · 1 mapel']
+                : []
+
+        return {
+            id: String(exam.id),
+            title: String(exam.title),
+            slug,
+            typeLabel: String(type?.name || type?.code || (full ? 'Full Tryout' : 'Mini Tryout')),
+            duration: minutes(exam.duration_seconds),
+            details,
+            accessLabel,
+            accessTone: hasEntitlement ? 'success' : accessReason ? 'warning' : 'default',
+            disabledReason: !activeTrack ? 'Aktifkan jalur belajar terlebih dahulu' : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }) || accessReason,
+            full,
+        }
+    })
+
     const recommendation = activeAttempt
         ? {
             href: `${path}/tryout/${activeAttempt.id}`,
-            title: 'Lanjutkan tryout yang belum selesai',
-            description: 'Sesi TKA kamu masih berjalan. Selesaikan dulu agar hasilnya masuk ke perkembangan belajar.',
-            action: 'Lanjutkan sekarang',
+            title: `Lanjutkan ${activePracticeLabel} yang belum selesai`,
+            description: `${activePracticeLabel} kamu masih berjalan. Lanjutkan dari soal terakhir agar progres tetap tersimpan rapi.`,
+            action: 'Lanjutkan Sekarang',
         }
         : latestCompletedAttempt
             ? {
                 href: `${path}/wrong-questions`,
                 title: 'Perbaiki soal yang masih lemah',
                 description: 'Gunakan hasil tryout terakhir untuk mengulang soal yang belum dikuasai sebelum mencoba sesi berikutnya.',
-                action: 'Mulai perbaikan',
+                action: 'Mulai Perbaikan',
             }
             : {
-                href: '#tka-learning-hierarchy',
+                href: `${path}/tryout`,
                 title: 'Mulai dari Mini Tryout',
-                description: 'Pilih mata pelajaran, buka materi yang ingin diperkuat, lalu mulai dari Drill atau Mini Tryout.',
-                action: 'Buka peta belajar',
+                description: 'Ukur kemampuan awal lewat Mini Tryout, lalu gunakan hasilnya untuk memilih latihan fokus materi.',
+                action: 'Pilih Tryout',
             }
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div data-testid="tka-level-ready" className="mx-auto max-w-6xl space-y-8 md:space-y-10">
-                <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                    <Link href="/tka" className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-2 font-bold text-slate-500 transition hover:bg-white hover:text-indigo-700">
-                        <ArrowLeft size={16} /> Semua jenjang TKA
-                    </Link>
-                    <Link href="/cpns/dashboard" className="st-focus inline-flex min-h-10 items-center rounded-xl px-2 font-bold text-slate-500 transition hover:bg-white hover:text-indigo-700">
-                        Dashboard CPNS
-                    </Link>
-                </div>
-
-                <header className="max-w-4xl">
-                    <div className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.13em] text-indigo-700">
-                        TKA · {level}
+                {/* Welcoming Learner Header */}
+                <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-6">
+                    <div className="max-w-2xl">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black tracking-wide text-indigo-700 ring-1 ring-indigo-200/50">
+                            <Sparkles size={13} className="text-indigo-600" />
+                            <span>TKA · {level}</span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-indigo-900 font-bold">{LEVEL_LABEL[level]}</span>
+                        </div>
+                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                            Halo, {studentName}! Semangat belajar hari ini 🎯
+                        </h1>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
+                            Latihan terarah, simulasi tryout berkala, evaluasi hasil, dan bank remedial dalam satu ruang belajar.
+                        </p>
                     </div>
-                    <h1 className="mt-4 text-4xl font-black tracking-[-0.035em] text-slate-950 sm:text-5xl md:text-[3.4rem] md:leading-[1.05]">
-                        Apa yang sebaiknya kamu kerjakan hari ini?
-                    </h1>
-                    <p className="mt-4 max-w-2xl text-base font-semibold leading-relaxed text-slate-500 md:text-lg">
-                        Gunakan hasil TKA-mu untuk memilih langkah berikutnya. Fokus pada mata pelajaran yang perlu diperkuat, lalu ukur lagi lewat tryout.
-                    </p>
+
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-2xs">
+                            <BookOpenCheck size={14} className="text-indigo-600" />
+                            <span className="text-slate-500 font-semibold">Bank Soal:</span>
+                            <span className="font-bold text-slate-900">{totalQuestions} soal</span>
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-2 shadow-2xs">
+                            <CheckCircle2 size={14} className={activeTrack ? "text-emerald-600" : "text-amber-500"} />
+                            <span className="text-slate-500 font-semibold">Jalur:</span>
+                            <span className="font-bold text-slate-900">{activeTrack ? "Aktif" : "Belum Aktif"}</span>
+                        </div>
+                    </div>
                 </header>
 
                 {query.activated === '1' && (
-                    <div role="status" className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800 shadow-sm">
-                        Jalur belajar TKA {level} sudah aktif di akunmu.
+                    <div role="status" className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm">
+                        <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
+                        <span>Jalur belajar TKA {level} berhasil diaktifkan di akunmu. Selamat belajar!</span>
                     </div>
                 )}
                 {query.error && (
-                    <div role="alert" className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-black text-red-800 shadow-sm">{query.error}</div>
+                    <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800 shadow-sm">
+                        {query.error}
+                    </div>
                 )}
 
+                {/* Hero Step & Access Status */}
                 <section className="grid gap-5 lg:grid-cols-[1.65fr_0.85fr]" aria-label="Langkah berikutnya TKA">
-                    <article className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-600 p-6 text-white shadow-[0_24px_60px_rgba(79,70,229,0.24)] md:p-8">
-                        <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
-                        <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-cyan-300/15 blur-3xl" aria-hidden="true" />
-                        <div className="relative max-w-2xl">
-                            <span className="inline-flex rounded-full border border-white/20 bg-white/15 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-white backdrop-blur">
-                                Langkah berikutnya
-                            </span>
-                            <h2 className="mt-5 text-2xl font-black tracking-tight text-white md:text-3xl">{recommendation.title}</h2>
-                            <p className="mt-3 max-w-xl font-semibold leading-relaxed text-indigo-100">{recommendation.description}</p>
-                            <Link
-                                href={recommendation.href}
-                                className="st-focus mt-6 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-indigo-700 shadow-[0_10px_24px_rgba(15,23,42,0.14)] transition hover:-translate-y-0.5 hover:bg-indigo-50"
-                            >
-                                {recommendation.action} <ArrowRight size={17} />
+                    <TkaNextStep recommendation={recommendation} />
+
+                    <article className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md">
+                        <div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Status Akses</span>
+                                <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black ring-1 ${activeTrack ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-800 ring-amber-200'}`}>
+                                    {activeTrack ? <><CheckCircle2 size={13} /> Jalur Aktif</> : <><LockKeyhole size={13} /> Belum Aktif</>}
+                                </div>
+                            </div>
+
+                            <div className="mt-4">
+                                <p className="text-2xl font-black tracking-tight text-slate-950">
+                                    {hasTempurPass ? 'Tempur Pass' : activeTrack ? 'Jalur Terhubung' : 'Belum Aktif'}
+                                </p>
+                                <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                                    {hasTempurPass
+                                        ? 'Akses tak terbatas untuk semua Full Tryout, diagnostik kemampuan, dan latihan remedial.'
+                                        : activeTrack
+                                            ? 'Jalur belajar SMP aktif. Nilai dan progres latihanmu otomatis tersimpan di profil.'
+                                            : 'Aktifkan jalur belajar di bawah agar riwayat tryout dan statistik belajar tersimpan.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 border-t border-slate-100 pt-4">
+                            <Link href={`${path}/pass`} className="st-focus inline-flex items-center gap-2 text-xs font-black text-indigo-600 hover:text-indigo-800 hover:underline">
+                                <span>{hasTempurPass ? 'Detail Tempur Pass' : 'Lihat Akses & Tempur Pass'}</span>
+                                <ArrowRight size={14} />
                             </Link>
                         </div>
                     </article>
-
-                    <article className="rounded-[1.75rem] border border-emerald-100 bg-gradient-to-b from-emerald-50 to-white p-6 shadow-[0_14px_34px_rgba(15,23,42,0.06)]">
-                        <div className="flex items-start justify-between gap-4">
-                            <div>
-                                <p className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">Status akses</p>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-slate-950">
-                                    {hasTempurPass ? 'Tempur Pass' : activeTrack ? 'Jalur aktif' : 'Belum aktif'}
-                                </p>
-                                <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black ring-1 ${activeTrack ? 'bg-emerald-100 text-emerald-800 ring-emerald-200' : 'bg-amber-50 text-amber-800 ring-amber-100'}`}>
-                                    {activeTrack ? <><CheckCircle2 size={15} /> Jalur belajar aktif</> : <><LockKeyhole size={15} /> Belum diaktifkan</>}
-                                </div>
-                            </div>
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200">
-                                <Ticket size={22} />
-                            </div>
-                        </div>
-                        <a href="#tempur-pass" className="st-focus mt-6 inline-flex min-h-10 items-center gap-2 rounded-xl px-1 text-sm font-black text-emerald-700 hover:underline">
-                            Lihat akses TKA <ArrowRight size={15} />
-                        </a>
-                    </article>
                 </section>
 
+                {/* Form Aktivasi Jalur (jika belum aktif) */}
                 {!activeTrack && (
-                    <section className="rounded-[1.5rem] border border-amber-100 bg-amber-50/70 p-5 shadow-sm md:p-6">
-                        <h2 className="text-xl font-black tracking-tight text-slate-950">Aktifkan jalur TKA {level}</h2>
-                        <p className="mt-1 text-sm font-semibold leading-relaxed text-slate-600">
-                            Aktifkan jalur ini agar hasil latihan dan tryout tersimpan dalam akunmu. Data sekolah boleh dikosongkan.
-                        </p>
-                        <form action={activateTkaTrackAction} className="mt-5 grid gap-4 md:grid-cols-4">
+                    <section className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-6 shadow-sm">
+                        <div className="max-w-2xl">
+                            <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-black text-amber-800">
+                                <Sparkles size={13} /> Aktivasi Jalur
+                            </div>
+                            <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-950">Aktifkan Jalur TKA {level}</h2>
+                            <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                                Aktifkan jalur ini agar hasil latihan, tryout, dan riwayat remedial tersimpan di akunmu. Data sekolah bersifat opsional.
+                            </p>
+                        </div>
+                        <form action={activateTkaTrackAction} className="mt-5 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                             <input type="hidden" name="level" value={level} />
-                            <Field label="Nama sekolah"><input name="school_name" className="st-input" placeholder="Opsional" /></Field>
-                            <Field label="Kelas"><input name="school_grade" className="st-input" placeholder="Contoh: 9" /></Field>
-                            <Field label="Tahun target"><input name="target_year" type="number" min="2025" max="2100" className="st-input" placeholder="2026" /></Field>
-                            <Button type="submit" className="self-end">Aktifkan jalur belajar</Button>
+                            <Field label="Nama Sekolah"><input name="school_name" className="st-input rounded-xl" placeholder="Opsional" /></Field>
+                            <Field label="Kelas"><input name="school_grade" className="st-input rounded-xl" placeholder="Contoh: 9" /></Field>
+                            <Field label="Tahun Target"><input name="target_year" type="number" min="2025" max="2100" className="st-input rounded-xl" placeholder="2026" /></Field>
+                            <Button type="submit" className="self-end rounded-xl font-bold">Aktifkan Jalur Belajar</Button>
                         </form>
                     </section>
                 )}
 
+                {/* Learning Hub: 4 Core Learning Modes */}
+                <section aria-labelledby="tka-learning-hub" className="space-y-4">
+                    <div>
+                        <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Mode Belajar</p>
+                        <h2 id="tka-learning-hub" className="mt-1 text-xl font-bold text-slate-950">Pusat Belajar TKA {level}</h2>
+                        <p className="mt-1 text-sm text-slate-500">Pilih mode belajar sesuai dengan target dan waktu belajarmu hari ini.</p>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                        <LearningModeCard
+                            href={`${path}/focus`}
+                            icon={<Dumbbell size={20} className="text-indigo-600" />}
+                            iconBg="bg-indigo-50"
+                            title="Latihan Fokus"
+                            description="Berlatih per bab & kisi-kisi topik dengan umpan balik langsung."
+                            action="Mulai Latihan"
+                        />
+                        <LearningModeCard
+                            href={`${path}/mini-tryout`}
+                            icon={<Timer size={20} className="text-violet-600" />}
+                            iconBg="bg-violet-50"
+                            title="Mini Tryout"
+                            description="15 butir soal per mata pelajaran untuk evaluasi cepat."
+                            action="Pilih Mini Tryout"
+                        />
+                        <LearningModeCard
+                            href={`${path}/tryout`}
+                            icon={<ListChecks size={20} className="text-blue-600" />}
+                            iconBg="bg-blue-50"
+                            title="Tryout & Simulasi"
+                            description="Simulasi lengkap 60 soal bertempo standar ujian."
+                            action="Buka Tryout"
+                        />
+                        <LearningModeCard
+                            href={`${path}/diagnostic`}
+                            icon={<BrainCircuit size={20} className="text-amber-600" />}
+                            iconBg="bg-amber-50"
+                            title="Tes Diagnostik"
+                            description="Petakan kekuatan awal dan identifikasi topik yang perlu diperkuat."
+                            action="Tes Diagnostik"
+                        />
+                        <LearningModeCard
+                            href={`${path}/wrong-questions`}
+                            icon={<RotateCcw size={20} className="text-rose-600" />}
+                            iconBg="bg-rose-50"
+                            title="Bank Soal Salah"
+                            description="Ulangi soal yang belum tepat hingga benar-benar paham."
+                            action="Perbaiki Soal"
+                        />
+                    </div>
+                </section>
+
                 <TkaLearningHierarchy activeTrack={activeTrack} />
 
+                {/* Exam Cards for Quick Tryout Start */}
+                {tryoutOptions.length > 0 && (
+                    <section aria-labelledby="tka-tryout-section" className="space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Simulasi & Ujian</p>
+                                <h2 id="tka-tryout-section" className="mt-1 text-xl font-bold text-slate-950">Paket Tryout TKA {level}</h2>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Link href={`${path}/mini-tryout`} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                                    Halaman Mini Tryout →
+                                </Link>
+                                <Link href={`${path}/tryout`} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                                    Halaman Full Tryout →
+                                </Link>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-5 md:grid-cols-2">
+                            {tryoutOptions.map((exam) => (
+                                <article key={exam.id} className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-all duration-200 hover:border-indigo-200 hover:shadow-md">
+                                    <div>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">{exam.typeLabel}</p>
+                                                <h3 className="mt-2 text-xl font-bold text-slate-950">{exam.title}</h3>
+                                            </div>
+                                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                                                {exam.full ? <ListChecks size={20} /> : <Timer size={20} />}
+                                            </div>
+                                        </div>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {exam.duration && <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600"><Clock3 size={13} />{exam.duration} menit</span>}
+                                            {exam.details.map((detail) => <span key={detail} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-600">{detail}</span>)}
+                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                                                exam.accessTone === 'success'
+                                                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60'
+                                                    : exam.accessTone === 'warning'
+                                                        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/60'
+                                                        : 'bg-slate-100 text-slate-600'
+                                            }`}>
+                                                {exam.accessLabel}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={exam.disabledReason} />
+                                </article>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* Summary & Subjects */}
                 <section aria-labelledby="tka-learning-summary" className="space-y-4">
-                    <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200/80 pb-3">
                         <div>
-                            <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Perkembangan belajar</p>
-                            <h2 id="tka-learning-summary" className="mt-1 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">Ringkasan terbaru</h2>
+                            <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Perkembangan & Mata Pelajaran</p>
+                            <h2 id="tka-learning-summary" className="mt-1 text-xl font-bold text-slate-950">Ringkasan Capaian Terkini</h2>
                         </div>
                         {activeTrack && (
-                            <Link href={`${path}/progress`} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-black text-indigo-700 transition hover:bg-white hover:underline">
-                                Lihat perkembangan <ArrowRight size={16} />
+                            <Link href={`${path}/progress`} className="st-focus inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                                <span>Lihat Analisis Lengkap</span> <ArrowRight size={14} />
                             </Link>
                         )}
                     </div>
 
                     {latestCompletedAttempt ? (
-                        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.6fr]">
-                            <article className="rounded-[1.5rem] bg-slate-950 p-6 text-white shadow-[0_18px_42px_rgba(15,23,42,0.16)]">
-                                <p className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">
-                                    Tryout terakhir · {formatAttemptDate(latestCompletedAttempt.submitted_at || latestCompletedAttempt.updated_at)}
-                                </p>
-                                <div className="mt-3 text-5xl font-black tracking-tight">
-                                    {latestCompletedAttempt.percentage !== null ? `${Number(latestCompletedAttempt.percentage).toFixed(0)}%` : Number(latestCompletedAttempt.total_score ?? 0).toFixed(0)}
+                        <div className="grid gap-5 lg:grid-cols-[0.95fr_1.65fr]">
+                            {/* Latest Attempt Spotlight */}
+                            <article className="relative flex flex-col justify-between overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-md">
+                                <div className="pointer-events-none absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-2xl" aria-hidden="true" />
+                                <div>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-indigo-200 backdrop-blur-sm">
+                                            <Clock3 size={13} /> Tryout Terakhir
+                                        </span>
+                                        <span className="text-[11px] font-medium text-slate-400">
+                                            {formatAttemptDate(latestCompletedAttempt.submitted_at || latestCompletedAttempt.updated_at)}
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-5 flex items-baseline gap-2">
+                                        <span className="text-5xl font-black tracking-tight text-white">
+                                            {latestCompletedAttempt.percentage !== null
+                                                ? `${Number(latestCompletedAttempt.percentage).toFixed(0)}%`
+                                                : Number(latestCompletedAttempt.total_score ?? 0).toFixed(0)}
+                                        </span>
+                                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Skor Capaian</span>
+                                    </div>
+
+                                    <h3 className="mt-3 text-base font-bold text-slate-200 line-clamp-1">
+                                        {latestCompletedExam?.title ?? 'Hasil TKA Terbaru'}
+                                    </h3>
+                                    <p className="mt-1 text-xs text-slate-400">
+                                        Pengerjaan #{latestCompletedAttempt.attempt_number} · Nilai tersimpan
+                                    </p>
                                 </div>
-                                <p className="mt-3 text-sm font-bold text-slate-300">{latestCompletedExam?.title ?? 'Hasil TKA terbaru'}</p>
-                                <Link
-                                    href={`${path}/tryout/${latestCompletedAttempt.id}/result`}
-                                    className="st-focus mt-6 inline-flex min-h-10 items-center gap-2 rounded-xl text-sm font-black text-indigo-200 hover:text-white hover:underline"
-                                >
-                                    Lihat hasil dan pembahasan <ArrowRight size={15} />
-                                </Link>
+
+                                <div className="mt-6 pt-2">
+                                    <Link
+                                        href={`${path}/tryout/${latestCompletedAttempt.id}/result`}
+                                        className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-xs font-bold text-white backdrop-blur-sm transition-all hover:bg-white/25 active:scale-[0.98]"
+                                    >
+                                        <span>Buka Hasil & Pembahasan</span>
+                                        <ArrowRight size={14} />
+                                    </Link>
+                                </div>
                             </article>
 
+                            {/* Subject Exploration Cards */}
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 {catalog.subjects.map((subject) => {
                                     const enrichment = subject.subjectType.toLowerCase() === 'enrichment'
+                                    const count = questionCountBySubject.get(subject.id) ?? 0
+                                    const isMath = subject.code.toLowerCase().includes('mat') || subject.name.toLowerCase().includes('matematika')
+                                    const isIndo = subject.code.toLowerCase().includes('ind') || subject.name.toLowerCase().includes('indonesia')
+
                                     return (
-                                        <article key={subject.id} className="st-card p-5">
-                                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${enrichment ? 'bg-amber-50 text-amber-700' : 'bg-indigo-50 text-indigo-700'}`}>
-                                                <School size={19} />
+                                        <article key={subject.id} className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all duration-200 hover:border-indigo-200 hover:shadow-md">
+                                            <div>
+                                                <div className="flex items-center justify-between">
+                                                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+                                                        enrichment
+                                                            ? 'bg-amber-50 text-amber-700'
+                                                            : isMath
+                                                                ? 'bg-violet-50 text-violet-700'
+                                                                : 'bg-indigo-50 text-indigo-700'
+                                                    }`}>
+                                                        {isMath ? <Calculator size={19} /> : isIndo ? <BookOpen size={19} /> : <School size={19} />}
+                                                    </div>
+                                                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black tracking-wide ${
+                                                        enrichment ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/50' : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50'
+                                                    }`}>
+                                                        {enrichment ? 'Pengayaan' : 'Wajib TKA'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="mt-4">
+                                                    <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">{subject.code}</span>
+                                                    <h3 className="mt-1 text-base font-bold text-slate-950 group-hover:text-indigo-600 transition-colors">{subject.name}</h3>
+                                                </div>
+
+                                                <p className="mt-2 text-xs font-semibold text-slate-500">
+                                                    {count} butir soal tersedia
+                                                </p>
                                             </div>
-                                            <p className="mt-4 text-xs font-black uppercase tracking-wide text-slate-400">{subject.code}</p>
-                                            <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">{subject.name}</h3>
-                                            <p className="mt-3 text-sm font-bold text-slate-500">{questionCountBySubject.get(subject.id) ?? 0} soal tersedia</p>
-                                            <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ${enrichment ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
-                                                {enrichment ? 'Pengayaan' : 'Wajib TKA'}
-                                            </span>
+
+                                            <div className="mt-5 border-t border-slate-100 pt-3">
+                                                <Link
+                                                    href={`${path}/focus`}
+                                                    className="st-focus inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                                                >
+                                                    <span>Latihan materi ini</span>
+                                                    <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
+                                                </Link>
+                                            </div>
                                         </article>
                                     )
                                 })}
                             </div>
                         </div>
                     ) : (
-                        <article className="st-card-md p-8 text-center md:p-10">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">
-                                <BarChart3 size={24} />
+                        <article className="rounded-2xl border border-slate-200/90 bg-white p-8 text-center shadow-sm md:p-12">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100">
+                                <BarChart3 size={26} />
                             </div>
-                            <h3 className="mt-4 text-xl font-black tracking-tight text-slate-950">Belum ada hasil yang bisa dianalisis</h3>
-                            <p className="mx-auto mt-2 max-w-lg text-sm font-semibold leading-relaxed text-slate-500">
-                                Selesaikan Mini Tryout atau Full Tryout pertamamu. Setelah itu, ringkasan ini akan membantu menunjukkan fokus belajar berikutnya.
+                            <h3 className="mt-4 text-xl font-bold tracking-tight text-slate-950">Belum Ada Hasil yang Dicatat</h3>
+                            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                                Kerjakan Mini Tryout atau Full Tryout pertamamu. Setelah itu, ringkasan capaian dan analisis penguasaan materi akan tampil di sini.
                             </p>
-                            <a href="#tka-tryout" className="st-focus mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-[0_10px_22px_rgba(79,70,229,0.22)] transition hover:bg-indigo-700">
-                                Mulai Mini Tryout <ArrowRight size={16} />
-                            </a>
+                            <Link href={`${path}/tryout`} className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-[0.98]">
+                                <span>Mulai Mini Tryout Pertama</span> <ArrowRight size={16} />
+                            </Link>
                         </article>
                     )}
                 </section>
 
-                <section aria-labelledby="tka-study-path" className="space-y-4">
-                    <div>
-                        <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Pilih sesuai kebutuhan</p>
-                        <h2 id="tka-study-path" className="mt-1 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">Cara belajar yang tersedia</h2>
-                    </div>
-                    <div className="grid gap-5 md:grid-cols-3">
-                        <ShortcutCard
-                            href={`${path}/progress`}
-                            icon={<BookOpenCheck size={21} />}
-                            tone="bg-indigo-50 text-indigo-700"
-                            title="Latihan fokus"
-                            description="Gunakan perkembangan belajar untuk menentukan mata pelajaran yang perlu diperkuat lebih dulu."
-                            action="Lihat perkembangan"
-                        />
-                        <ShortcutCard
-                            href="#tka-tryout"
-                            icon={<ListChecks size={21} />}
-                            tone="bg-violet-50 text-violet-700"
-                            title="Mini & Full Tryout"
-                            description="Ukur satu mata pelajaran lewat Mini Tryout atau simulasikan sesi lebih lengkap lewat Full Tryout."
-                            action="Pilih tryout"
-                        />
-                        <ShortcutCard
-                            href={`${path}/wrong-questions`}
-                            icon={<Target size={21} />}
-                            tone="bg-emerald-50 text-emerald-700"
-                            title="Perbaikan hasil"
-                            description="Ulangi soal yang salah dan lanjutkan remedial agar kelemahan tidak terbawa ke tryout berikutnya."
-                            action="Perbaiki hasil"
-                        />
-                    </div>
-                </section>
-
-                <section id="tka-tryout" className="scroll-mt-6 space-y-4">
-                    <SectionHeading
-                        title="Tryout tersedia"
-                        description={stagingSmpPilot
-                            ? 'Pilih Mini Tryout untuk mengukur satu mata pelajaran atau Full Tryout untuk mengukur kemampuan dalam sesi yang lebih lengkap.'
-                            : 'Mini Tryout memiliki satu kesempatan gratis per mata pelajaran. Akses lanjutan dan Full Tryout mengikuti paket yang aktif di akunmu.'}
-                    />
-                    {tryoutExams.length > 0 ? (
-                        <div className="grid gap-5 md:grid-cols-2">
-                            {tryoutExams.map((exam) => {
-                                const type = examTypeById.get(String(exam.exam_type_id))
-                                const duration = minutes(exam.duration_seconds)
-                                const windowReason = examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at })
-                                const featureId = exam.required_feature_id ? String(exam.required_feature_id) : null
-                                const hasEntitlement = featureId ? entitledFeatures.has(featureId) : false
-                                const usedAttempts = attemptCountByExam.get(String(exam.id)) ?? 0
-                                const access = String(exam.access_type ?? 'FREE').toUpperCase()
-                                const freeLimit = Number(exam.attempt_limit ?? 1)
-                                const stagingFullExam = stagingSmpPilot && exam.slug === 'tka-smp-full'
-                                const stagingMiniExam = stagingSmpPilot && exam.slug.startsWith('tka-smp-mini-')
-                                const freemiumLocked = access === 'FREEMIUM' && !hasEntitlement && usedAttempts >= freeLimit
-                                const premiumLocked = !stagingFullExam && access === 'PREMIUM' && !hasEntitlement
-                                const accessLocked = freemiumLocked || premiumLocked
-                                const accessReason = premiumLocked
-                                    ? 'Butuh Tempur Pass'
-                                    : freemiumLocked
-                                        ? 'Kuota gratis habis · Butuh Tempur Pass'
-                                        : null
-                                const disabledReason = !activeTrack ? 'Aktifkan jalur belajar terlebih dahulu' : windowReason || accessReason
-                                const accessLabel = stagingFullExam
-                                    ? 'Akses uji coba'
-                                    : hasEntitlement
-                                        ? 'Tempur Pass aktif'
-                                        : access === 'FREEMIUM'
-                                            ? `Gratis ${Math.max(0, freeLimit - usedAttempts)}x tersisa`
-                                            : access === 'PREMIUM'
-                                                ? 'Premium · Tempur Pass'
-                                                : 'Gratis'
-
-                                return (
-                                    <article key={exam.id} className="st-card-md p-5 md:p-6">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div>
-                                                <p className="text-xs font-black uppercase tracking-wide text-indigo-600">{type?.name || type?.code || 'Tryout'}</p>
-                                                <h3 className="mt-2 text-xl font-black tracking-tight text-slate-950">{exam.title}</h3>
-                                            </div>
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><BookOpenCheck size={19} /></div>
-                                        </div>
-                                        <div className="mt-4 flex flex-wrap gap-2 text-xs font-black">
-                                            {duration && <MetaChip icon={<Clock3 size={13} />} text={`${duration} menit`} />}
-                                            {stagingFullExam && <MetaChip text="60 soal · 30 + 30" />}
-                                            {stagingFullExam && <MetaChip text="75 menit / bagian" />}
-                                            {stagingMiniExam && <MetaChip text="15 soal · 1 mapel" />}
-                                            <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-black ${stagingFullExam ? 'bg-indigo-50 text-indigo-700' : hasEntitlement ? 'bg-emerald-50 text-emerald-700' : access === 'FREEMIUM' && !accessLocked ? 'bg-blue-50 text-blue-700' : accessLocked ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>{accessLabel}</span>
-                                        </div>
-                                        <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={disabledReason} />
-                                    </article>
-                                )
-                            })}
+                {/* Recent Learning Activity Timeline */}
+                {recentAttempts.length > 0 && (
+                    <section aria-labelledby="recent-activity-title" className="space-y-3 pt-2">
+                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                            <div>
+                                <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Aktivitas</p>
+                                <h2 id="recent-activity-title" className="mt-1 text-xl font-bold text-slate-950">
+                                    Riwayat Sesi Terakhir
+                                </h2>
+                            </div>
+                            <Link href={`${path}/progress`} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+                                Semua Riwayat →
+                            </Link>
                         </div>
-                    ) : (
-                        <EmptyState icon={<BookOpenCheck size={22} />} title="Tryout belum dibuka" description="Pilihan tryout akan muncul di sini setelah siap digunakan." />
-                    )}
-                </section>
 
-                <section className="space-y-4">
-                    <SectionHeading title="Riwayat terbaru" description="Lanjutkan pengerjaan yang belum selesai atau buka kembali hasil dan pembahasan." icon={<History size={20} />} />
-                    {recentAttempts.length > 0 ? (
-                        <div className="grid gap-4 md:grid-cols-2">
-                            {recentAttempts.map((attempt) => {
+                        <div className="divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+                            {recentAttempts.slice(0, 4).map((attempt) => {
                                 const exam = examById.get(String(attempt.exam_id))
                                 if (!exam) return null
-                                const status = attemptStatus(attempt.status)
                                 const completed = ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase())
-                                const href = completed ? `${path}/tryout/${attempt.id}/result` : `${path}/tryout/${attempt.id}`
+                                const inProgress = String(attempt.status ?? '').toLowerCase() === 'in_progress'
+                                const href = inProgress ? `${path}/tryout/${attempt.id}` : `${path}/tryout/${attempt.id}/result`
+
                                 return (
-                                    <Link key={attempt.id} href={href} className="st-card st-focus group p-5 transition hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <p className="text-xs font-black uppercase tracking-wide text-indigo-600">Pengerjaan #{attempt.attempt_number}</p>
-                                                <h3 className="mt-1 truncate font-black text-slate-950">{exam.title}</h3>
-                                                <p className="mt-1 text-xs font-bold text-slate-500">{formatAttemptDate(attempt.updated_at || attempt.submitted_at || attempt.started_at)}</p>
+                                    <div key={attempt.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 transition-colors hover:bg-slate-50/80">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="truncate text-sm font-bold text-slate-900">{exam.title}</p>
+                                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black ring-1 ${
+                                                    completed ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-indigo-50 text-indigo-700 ring-indigo-200'
+                                                }`}>
+                                                    {completed ? 'Selesai' : 'Sedang Berjalan'}
+                                                </span>
                                             </div>
-                                            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-black ring-1 ${status.className}`}>{status.label}</span>
+                                            <p className="mt-1 text-xs text-slate-400">
+                                                Pengerjaan #{attempt.attempt_number} · {formatAttemptDate(attempt.updated_at || attempt.submitted_at || attempt.started_at)}
+                                            </p>
                                         </div>
-                                        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm">
-                                            <span className="font-bold text-slate-500">{completed && attempt.percentage !== null ? `Skor ${Number(attempt.percentage).toFixed(0)}%` : completed ? 'Lihat hasil' : 'Lanjutkan tryout'}</span>
-                                            <span className="inline-flex items-center gap-1 font-black text-indigo-700 group-hover:underline">Buka <ArrowRight size={15} /></span>
+
+                                        <div className="flex items-center gap-3">
+                                            {completed && attempt.percentage !== null && (
+                                                <span className="text-sm font-black tabular-nums text-slate-900">
+                                                    {Number(attempt.percentage).toFixed(0)}%
+                                                </span>
+                                            )}
+                                            <Link
+                                                href={href}
+                                                className="st-focus inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+                                            >
+                                                <span>{inProgress ? 'Lanjutkan' : 'Buka Pembahasan'}</span>
+                                                <ArrowRight size={13} />
+                                            </Link>
                                         </div>
-                                    </Link>
+                                    </div>
                                 )
                             })}
                         </div>
-                    ) : (
-                        <EmptyState icon={<History size={22} />} title="Belum ada hasil tryout" description="Mulai Mini Tryout atau Full Tryout pertama untuk membangun riwayat belajarmu." />
-                    )}
-                </section>
+                    </section>
+                )}
 
-                <div id="tempur-pass" className="scroll-mt-6">
-                    <TkaPassPackagesClient
-                        level={level}
-                        packages={passOffers.map((offer) => ({
-                            code: offer.code,
-                            name: offer.name,
-                            description: offer.description,
-                            price: offer.price,
-                            currency: offer.currency,
-                            durationDays: offer.durationDays,
-                        }))}
-                    />
-                </div>
             </div>
         </main>
+    )
+}
+
+function LearningModeCard({
+    href,
+    icon,
+    iconBg,
+    title,
+    description,
+    action,
+}: {
+    href: string
+    icon: React.ReactNode
+    iconBg: string
+    title: string
+    description: string
+    action: string
+}) {
+    return (
+        <Link
+            href={href}
+            className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
+        >
+            <div>
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${iconBg} transition-transform group-hover:scale-105`}>
+                    {icon}
+                </div>
+                <h3 className="mt-4 text-base font-bold text-slate-950 group-hover:text-indigo-600 transition-colors">{title}</h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{description}</p>
+            </div>
+            <div className="mt-5 border-t border-slate-100 pt-3">
+                <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 group-hover:text-indigo-800">
+                    <span>{action}</span>
+                    <ArrowRight size={13} className="transition-transform group-hover:translate-x-1" />
+                </span>
+            </div>
+        </Link>
     )
 }
 
@@ -584,11 +783,10 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
     return (
         <main data-experience-mode="marketing" data-program={`tka-${level.toLowerCase()}`} className="st-product min-h-screen px-4 py-8 md:px-8 md:py-14">
             <div className="mx-auto max-w-4xl">
-                <Link href="/tka" className="st-focus inline-flex min-h-11 items-center gap-2 text-sm font-black text-slate-700 hover:text-indigo-700"><ArrowLeft size={17} /> Semua jenjang TKA</Link>
-                <section className="st-card-lg relative mt-8 overflow-hidden p-7 md:p-12">
-                    <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-indigo-50" aria-hidden="true" />
-                    <div className={`relative flex h-14 w-14 items-center justify-center rounded-2xl ${tone}`}><Icon size={27} /></div>
-                    <p className="relative mt-7 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">TKA {level}</p>
+                <section className="st-card-lg relative overflow-hidden p-7 md:p-12">
+                    <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-blue-50" aria-hidden="true" />
+                    <div className={`relative flex h-14 w-14 items-center justify-center rounded-lg ${tone}`}><Icon size={27} /></div>
+                    <p className="relative mt-7 text-xs font-black uppercase tracking-[0.16em] text-blue-700">TKA {level}</p>
                     <h1 className="relative mt-2 text-4xl font-black tracking-tight text-slate-950 md:text-6xl">Pengalaman belajar TKA {level} sedang kami siapkan.</h1>
                     <p className="relative mt-5 max-w-2xl text-lg font-semibold leading-relaxed text-slate-500">
                         Saat tersedia nanti, jalur ini akan mengikuti pola SiapTempur yang sama: latihan, tryout, pembahasan, perkembangan belajar, dan rekomendasi langkah berikutnya.
@@ -603,41 +801,7 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
     )
 }
 
-function ShortcutCard({ href, icon, tone, title, description, action }: { href: string; icon: React.ReactNode; tone: string; title: string; description: string; action: string }) {
-    return (
-        <Link href={href} className="st-card st-focus group p-5 transition hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(15,23,42,0.09)]">
-            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${tone}`}>{icon}</div>
-            <h2 className="mt-4 text-lg font-black tracking-tight text-slate-950">{title}</h2>
-            <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-500">{description}</p>
-            <span className="mt-4 inline-flex min-h-8 items-center gap-1.5 text-sm font-black text-indigo-700 group-hover:underline">{action} <ArrowRight size={15} /></span>
-        </Link>
-    )
-}
-
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return <label className="space-y-1.5"><span className="block text-xs font-black text-slate-700">{label}</span>{children}</label>
 }
 
-function SectionHeading({ title, description, icon }: { title: string; description: string; icon?: React.ReactNode }) {
-    return (
-        <div>
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">{icon ? <span className="inline-flex items-center gap-2">{icon} TKA SMP</span> : 'TKA SMP'}</p>
-            <h2 className="mt-1 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">{title}</h2>
-            <p className="mt-2 max-w-3xl text-sm font-semibold leading-relaxed text-slate-500">{description}</p>
-        </div>
-    )
-}
-
-function MetaChip({ icon, text }: { icon?: React.ReactNode; text: string }) {
-    return <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black text-slate-600">{icon}{text}</span>
-}
-
-function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-    return (
-        <div className="st-card p-7 text-center">
-            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">{icon}</div>
-            <h3 className="mt-4 font-black tracking-tight text-slate-950">{title}</h3>
-            <p className="mx-auto mt-1 max-w-lg text-sm font-semibold leading-relaxed text-slate-500">{description}</p>
-        </div>
-    )
-}

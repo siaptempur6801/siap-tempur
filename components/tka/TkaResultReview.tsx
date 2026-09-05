@@ -26,7 +26,7 @@ function OptionRow({ option, selected }: { option: UniversalReviewOption; select
         <div className={cn('border-2 p-3.5', optionClass(state))}>
             <div className="flex items-start gap-3">
                 <span className={cn(
-                    'flex h-8 min-w-8 items-center justify-center border-2 border-slate-900 text-xs font-black',
+                    'flex h-8 min-w-8 items-center justify-center rounded-lg border border-slate-200 text-xs font-black',
                     state === 'selected-correct' || state === 'correct'
                         ? 'bg-emerald-100 text-emerald-800'
                         : state === 'selected-wrong'

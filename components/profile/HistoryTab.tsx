@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { syncPaymentStatus } from '@/app/actions/payment'
 import { toast } from 'sonner'
+import { useProfileNavigation } from './useProfileNavigation'
 
 type SnapController = {
     pay: (
@@ -109,6 +110,7 @@ export function HistoryTab({
     usagePage,
     creditPage,
 }: HistoryTabProps) {
+    const { purchasePath, isTka } = useProfileNavigation()
     const handlePayPending = (token: string, orderId: string, event: React.MouseEvent) => {
         event.preventDefault()
         event.stopPropagation()
@@ -130,7 +132,7 @@ export function HistoryTab({
                     await syncPaymentStatus(orderId)
                     toast.success('Pembayaran berhasil', {
                         id: loadingId,
-                        description: 'Token akan tersedia setelah pembayaran terverifikasi.',
+                        description: isTka ? 'Pembelian akan aktif setelah pembayaran terverifikasi.' : 'Token akan tersedia setelah pembayaran terverifikasi.',
                     })
                     window.location.reload()
                 },
@@ -165,7 +167,7 @@ export function HistoryTab({
     return (
         <div className="space-y-6">
             <HistorySection
-                eyebrow="Pembelian token"
+                eyebrow={isTka ? 'Pembelian akun' : 'Pembelian token'}
                 title="Riwayat pembayaran"
                 description="Lihat paket yang pernah kamu pilih dan lanjutkan pembayaran yang masih tersedia."
                 icon={<CreditCard size={21} />}
@@ -206,9 +208,9 @@ export function HistoryTab({
                 ) : (
                     <EmptyState
                         icon={<ShoppingCart size={25} />}
-                        title={transactionPage.from || transactionPage.to ? 'Tidak ada pembayaran pada tanggal ini.' : 'Belum ada pembelian token.'}
-                        description="Paket token yang kamu pilih akan muncul di sini."
-                        action={!transactionPage.from && !transactionPage.to ? <Link href="/cpns/dashboard/beli-paket" className="st-button inline-flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2.5 text-sm font-black text-white">Lihat paket token</Link> : undefined}
+                        title={transactionPage.from || transactionPage.to ? 'Tidak ada pembayaran pada tanggal ini.' : isTka ? 'Belum ada pembelian.' : 'Belum ada pembelian token.'}
+                        description={isTka ? 'Pembelian Tempur Pass dan paket akunmu akan muncul di sini.' : 'Paket token yang kamu pilih akan muncul di sini.'}
+                        action={!transactionPage.from && !transactionPage.to ? <Link href={purchasePath} className="st-button inline-flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2.5 text-sm font-black text-white">Lihat paket token</Link> : undefined}
                     />
                 )}
             </HistorySection>
@@ -306,6 +308,7 @@ function HistorySection({ eyebrow, title, description, icon, iconTone, filterPre
 }
 
 function HistoryControls({ prefix, pageInfo }: { prefix: 'tx' | 'usage' | 'credit'; pageInfo: HistoryPageInfo }) {
+    const { profilePath } = useProfileNavigation()
     const router = useRouter()
     const searchParams = useSearchParams()
     const [from, setFrom] = useState(pageInfo.from)
@@ -326,7 +329,7 @@ function HistoryControls({ prefix, pageInfo }: { prefix: 'tx' | 'usage' | 'credi
         else params.delete(`${prefix}_from`)
         if (nextTo) params.set(`${prefix}_to`, nextTo)
         else params.delete(`${prefix}_to`)
-        startTransition(() => router.push(`/cpns/dashboard/profile?${params.toString()}`, { scroll: false }))
+        startTransition(() => router.push(`${profilePath}?${params.toString()}`, { scroll: false }))
     }
 
     return (
@@ -360,6 +363,7 @@ function DateField({ label, value, max, onChange }: { label: string; value: stri
 }
 
 function HistoryPagination({ prefix, pageInfo }: { prefix: 'tx' | 'usage' | 'credit'; pageInfo: HistoryPageInfo }) {
+    const { profilePath } = useProfileNavigation()
     const router = useRouter()
     const searchParams = useSearchParams()
     const [isPending, startTransition] = useTransition()
@@ -371,7 +375,7 @@ function HistoryPagination({ prefix, pageInfo }: { prefix: 'tx' | 'usage' | 'cre
         const params = new URLSearchParams(searchParams.toString())
         params.set('tab', 'history')
         params.set(`${prefix}_page`, String(page))
-        startTransition(() => router.push(`/cpns/dashboard/profile?${params.toString()}`, { scroll: false }))
+        startTransition(() => router.push(`${profilePath}?${params.toString()}`, { scroll: false }))
     }
 
     const firstItem = (currentPage - 1) * pageInfo.pageSize + 1

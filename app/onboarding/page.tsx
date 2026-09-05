@@ -6,7 +6,7 @@ import { createV2Client } from '@/lib/utils/supabase/server'
 
 export const metadata: Metadata = {
     title: 'Pilih Program Belajar - SiapTempur',
-    description: 'Pilih dashboard CPNS atau TKA untuk melanjutkan perjalanan belajar di SiapTempur.',
+    description: 'Pilih program CPNS atau jenjang TKA untuk melanjutkan perjalanan belajar di SiapTempur.',
     robots: { index: false, follow: false },
 }
 
@@ -28,8 +28,8 @@ const programOptions = [
     {
         href: '/tka',
         code: 'TKA',
-        title: 'Dashboard TKA',
-        description: 'Persiapan TKA untuk jenjang SD, SMP, dan SMA dalam satu perjalanan belajar.',
+        title: 'TKA sesuai jenjang',
+        description: 'Lanjutkan ke ruang belajar SD, SMP, atau SMA sesuai jenjang aktifmu.',
         details: ['Pilih jenjang belajar', 'Latihan dan diagnostik', 'Pantau perkembangan'],
         icon: GraduationCap,
         badgeClass: 'bg-emerald-100 text-emerald-800',
@@ -58,7 +58,7 @@ export default async function OnboardingPage() {
                     <div className="mx-auto max-w-3xl text-center">
                         <div className="st-kicker"><BookOpenCheck size={15} /> Pilih ruang belajar</div>
                         <h1 id="program-title" className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">
-                            Mau masuk ke dashboard yang mana?
+                            Mau belajar di program yang mana?
                         </h1>
                         <p className="st-muted mx-auto mt-4 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
                             Akunmu dapat digunakan untuk semua program. Pilih tujuan belajar yang ingin kamu lanjutkan sekarang.

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Script from 'next/script'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, CalendarDays, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Sparkles } from 'lucide-react'
 import TkaPassPackagesClient, { type TkaPassPackage } from '@/components/tka/TkaPassPackagesClient'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
@@ -211,21 +211,11 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
             <Script id="midtrans-snap" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key={snapClientKey} strategy="afterInteractive" />
 
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Link href={base} className="st-focus inline-flex min-h-11 items-center gap-2 text-sm font-black text-slate-700 hover:text-blue-700">
-                        <ArrowLeft size={17} aria-hidden="true"/> Kembali ke TKA SMP
-                    </Link>
-                    <span className="st-pill bg-emerald-100 text-emerald-800">
-                        <ShieldCheck size={15} aria-hidden="true"/> Pembayaran melalui Midtrans
-                    </span>
-                </div>
-
-                <header className="st-card-lg relative overflow-hidden p-6 md:p-8">
-                    <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rotate-12 border-2 border-dashed border-yellow-400 bg-yellow-50" aria-hidden="true" />
+                <header className="border-b border-slate-200 pb-5">
                     <div className="relative inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-blue-700"><Sparkles size={17} aria-hidden="true"/> Tempur Pass TKA SMP</div>
-                    <h1 className="st-heading-display relative mt-2 text-4xl md:text-5xl">Pilih paket yang sesuai target belajarmu</h1>
-                    <p className="st-muted relative mt-3 max-w-3xl font-semibold leading-relaxed md:text-lg">
-                        Tempur Pass membuka akses belajar premium TKA SMP selama durasi paket. Harga dan total pembayaran ditampilkan sebelum kamu memilih metode pembayaran.
+                    <h1 className="mt-2 text-2xl font-bold text-slate-950">Tempur Pass</h1>
+                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">
+                        Bangun ritme belajar TKA SMP dengan akses Mini Tryout dan Full Tryout selama masa aktif paket. Pilih durasi yang sesuai rencana persiapanmu, lalu luangkan waktu untuk berlatih dan mengevaluasi hasilnya.
                     </p>
                 </header>
 
@@ -234,7 +224,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div className="max-w-3xl">
                                 <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-emerald-800"><CheckCircle2 size={17} aria-hidden="true"/> Tempur Pass aktif</div>
-                                <h2 className="st-heading mt-2 text-2xl">Akses TKA SMP kamu sedang aktif</h2>
+                                <h2 className="st-heading mt-2 text-2xl">Aksesmu siap. Lanjutkan progres belajarmu.</h2>
                                 <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">
                                     {passAccess.accessThrough
                                         ? `Kamu bisa menggunakan fitur paket sampai ${formatAccessDate(passAccess.accessThrough)}.`
@@ -251,8 +241,8 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
                     </section>
                 ) : (
                     <section data-testid="tka-pass-status-inactive" className="st-card p-4">
-                        <p className="st-heading">Belum ada Tempur Pass aktif.</p>
-                        <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">Kamu tetap bisa menggunakan akses gratis yang tersedia. Pilih paket di bawah saat ingin membuka akses premium.</p>
+                        <p className="st-heading">Siap membangun rutinitas tryout?</p>
+                        <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">Tempur Pass kamu belum aktif. Pilih durasi di bawah untuk membuka akses tryout dalam paket, atau lanjutkan dulu dengan fitur gratis yang tersedia.</p>
                     </section>
                 )}
 

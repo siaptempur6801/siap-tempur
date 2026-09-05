@@ -10,6 +10,7 @@ interface NavItemProps {
     label: string
     badge?: string
     exact?: boolean
+    active?: boolean
     variant?: 'brand' | 'soft'
 }
 
@@ -19,9 +20,9 @@ function matchesPath(pathname: string, href: string, exact = false) {
     return pathname.startsWith(pathOnly)
 }
 
-export function NavItem({ href, icon, label, badge, exact = false, variant = 'brand' }: NavItemProps) {
+export function NavItem({ href, icon, label, badge, exact = false, variant = 'brand', active }: NavItemProps) {
     const pathname = usePathname()
-    const isActive = matchesPath(pathname, href, exact)
+    const isActive = active ?? matchesPath(pathname, href, exact)
     const soft = variant === 'soft'
 
     return (
@@ -75,9 +76,9 @@ export function NavItem({ href, icon, label, badge, exact = false, variant = 'br
     )
 }
 
-export function MobileNavItem({ href, icon, label, exact = false, variant = 'brand' }: NavItemProps) {
+export function MobileNavItem({ href, icon, label, exact = false, variant = 'brand', active }: NavItemProps) {
     const pathname = usePathname()
-    const isActive = matchesPath(pathname, href, exact)
+    const isActive = active ?? matchesPath(pathname, href, exact)
     const soft = variant === 'soft'
 
     return (

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
-import { ArrowLeft, CheckCircle2, ChevronRight, RotateCcw, Sparkles } from 'lucide-react'
+import { ArrowLeft, BookOpen, CheckCircle2, ChevronRight, RotateCcw, Sparkles } from 'lucide-react'
 import MathRenderer from '@/components/MathRenderer'
 import { reviewTkaRemedialItem } from '@/app/actions/tka-remedial'
 import type { TkaRemedialItem, TkaRemedialSession } from '@/src/services/tka-remedial.service'
@@ -97,12 +97,23 @@ export default function TkaRemedialModeClient({
 
     if (!current || totalItems === 0) {
         return (
-            <main data-experience-mode="learning" data-program="tka-smp" className="st-product min-h-screen px-4 py-8">
-                <div className="st-card-lg mx-auto max-w-3xl p-8 text-center">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center border-2 border-slate-900 bg-emerald-100 text-emerald-700"><CheckCircle2 size={27}/></div>
-                    <h1 className="st-heading-display mt-5 text-4xl">Tidak ada latihan perbaikan aktif.</h1>
-                    <p className="st-muted mx-auto mt-2 max-w-lg font-semibold leading-relaxed">Kamu bisa kembali ke TKA SMP untuk melanjutkan latihan atau melihat perkembangan belajar.</p>
-                    <Link href="/tka/smp" className="st-button st-focus mt-6 inline-flex min-h-11 items-center bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Kembali ke TKA SMP</Link>
+            <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-12 md:py-16">
+                <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-lg md:p-12">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/50">
+                        <CheckCircle2 size={36} />
+                    </div>
+                    <h1 className="mt-6 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                        Tidak ada latihan perbaikan aktif.
+                    </h1>
+                    <p className="mx-auto mt-3 max-w-lg font-medium leading-relaxed text-slate-600">
+                        Kamu bisa kembali ke TKA SMP untuk melanjutkan latihan atau melihat perkembangan belajar.
+                    </p>
+                    <Link
+                        href="/tka/smp"
+                        className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-black text-white hover:bg-slate-800 transition"
+                    >
+                        Kembali ke TKA SMP
+                    </Link>
                 </div>
             </main>
         )
@@ -116,90 +127,152 @@ export default function TkaRemedialModeClient({
             : 'Pasangkan pilihan sesuai kategori yang diminta.'
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="st-product min-h-screen px-4 py-6 md:px-8 md:py-8">
-            <div className="mx-auto max-w-6xl space-y-5">
+        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+            <div className="mx-auto max-w-6xl space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Link href="/tka/smp" className="st-focus inline-flex min-h-11 items-center gap-2 text-sm font-black text-slate-700 hover:text-blue-700">
-                        <ArrowLeft size={17}/> TKA SMP
+                    <Link
+                        href="/tka/smp"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                    >
+                        <ArrowLeft size={16} /> Kembali ke TKA SMP
                     </Link>
-                    <span className="st-pill bg-yellow-100 text-amber-800">Latihan perbaikan</span>
+                    <span className="rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1 text-xs font-black text-amber-800">
+                        Latihan perbaikan
+                    </span>
                 </div>
 
-                <section className="st-card p-5 md:p-6">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
+                {/* Header Sesi Remedial */}
+                <section className="rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="max-w-3xl">
-                            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-amber-800"><Sparkles size={16}/> Fokus pada bagian yang perlu diperbaiki</div>
-                            <h1 className="st-heading-display mt-2 text-4xl">Latihan perbaikan</h1>
-                            <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">SiapTempur memilih beberapa soal dari bagian yang masih perlu kamu pahami. Jawab dengan benar untuk menuntaskan satu per satu.</p>
+                            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-amber-700">
+                                <Sparkles size={16} /> Fokus pada bagian yang perlu diperbaiki
+                            </div>
+                            <h1 className="mt-2 text-2xl md:text-3xl font-black tracking-tight text-slate-950">
+                                Latihan perbaikan
+                            </h1>
+                            <p className="mt-1.5 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+                                SiapTempur memilih beberapa soal dari bagian yang masih perlu kamu pahami. Jawab dengan benar untuk menuntaskan satu per satu.
+                            </p>
                         </div>
-                        <div className="border-2 border-slate-900 bg-yellow-100 p-3 text-center shadow-[2px_2px_0_#111827]">
-                            <div className="text-xs font-black uppercase tracking-wide text-amber-800">Perkembangan</div>
-                            <div className="mt-1 text-2xl font-black tracking-tight text-slate-950">{completedItems}/{totalItems}</div>
+                        <div className="rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-center min-w-28 shrink-0">
+                            <div className="text-[11px] font-black uppercase tracking-wider text-amber-800">Perkembangan</div>
+                            <div className="mt-0.5 text-2xl font-black text-slate-950">{completedItems}/{totalItems}</div>
                         </div>
                     </div>
-                    <ProgressBar
-                        value={progress}
-                        label="Perkembangan latihan perbaikan"
-                        size="sm"
-                        className="mt-5 bg-white"
-                        indicatorClassName="bg-yellow-300"
-                    />
+                    <div className="mt-5">
+                        <ProgressBar
+                            value={progress}
+                            label="Perkembangan latihan perbaikan"
+                            size="sm"
+                            className="bg-slate-100 rounded-full"
+                            indicatorClassName="bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
+                        />
+                    </div>
                 </section>
 
                 {allDone ? (
-                    <section className="st-success p-8 text-center">
-                        <div className="mx-auto flex h-14 w-14 items-center justify-center border-2 border-slate-900 bg-emerald-100 text-emerald-700"><CheckCircle2 size={27}/></div>
-                        <h2 className="st-heading-display mt-5 text-4xl">Latihan perbaikan selesai.</h2>
-                        <p className="st-muted mx-auto mt-2 max-w-xl font-semibold leading-relaxed">Semua soal pada sesi ini sudah dituntaskan dan perkembangan belajarmu sudah diperbarui.</p>
-                        <Link href="/tka/smp" className="st-button st-focus mt-6 inline-flex min-h-11 items-center bg-slate-950 px-5 py-2.5 text-sm font-black text-white">Kembali ke TKA SMP</Link>
+                    <section className="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-8 text-center md:p-12 shadow-sm">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 ring-8 ring-emerald-100/50">
+                            <CheckCircle2 size={36} />
+                        </div>
+                        <h2 className="mt-6 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                            Latihan perbaikan selesai.
+                        </h2>
+                        <p className="mx-auto mt-3 max-w-xl text-base font-medium leading-relaxed text-slate-600">
+                            Semua soal pada sesi ini sudah dituntaskan dan perkembangan belajarmu sudah diperbarui.
+                        </p>
+                        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                            <Link
+                                href="/tka/smp/progress"
+                                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700"
+                            >
+                                Lihat Perkembangan
+                            </Link>
+                            <Link
+                                href="/tka/smp"
+                                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+                            >
+                                Kembali ke TKA SMP
+                            </Link>
+                        </div>
                     </section>
                 ) : (
-                    <div className="grid gap-5 lg:grid-cols-[14rem_minmax(0,1fr)]">
-                        <aside className="st-card h-fit p-4 lg:sticky lg:top-5">
-                            <div className="text-xs font-black uppercase tracking-wide text-slate-500">Daftar latihan</div>
-                            <div className="mt-3 grid grid-cols-5 gap-2 lg:grid-cols-4">
-                                {items.map((item, index) => (
-                                    <button
-                                        key={item.id}
-                                        type="button"
-                                        disabled={item.status === 'completed'}
-                                        onClick={() => chooseIndex(index)}
-                                        aria-label={`Latihan perbaikan ${item.position}`}
-                                        className={cn(
-                                            'st-focus aspect-square min-h-10 border-2 border-slate-900 text-sm font-black transition-colors',
-                                            item.status === 'completed'
-                                                ? 'bg-emerald-100 text-emerald-700'
-                                                : index === activeIndex
-                                                    ? 'bg-yellow-200 text-slate-950'
-                                                    : 'bg-white text-slate-700 hover:bg-yellow-50',
-                                        )}
-                                    >
-                                        {item.status === 'completed' ? '✓' : item.position}
-                                    </button>
-                                ))}
+                    <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
+                        {/* Aside: Navigator Latihan Perbaikan */}
+                        <aside className="space-y-4 h-fit lg:sticky lg:top-5">
+                            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                                <div className="text-xs font-black uppercase tracking-wider text-slate-500">
+                                    Daftar latihan
+                                </div>
+                                <div className="mt-3.5 grid grid-cols-5 gap-2 lg:grid-cols-4">
+                                    {items.map((item, index) => (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            disabled={item.status === 'completed'}
+                                            onClick={() => chooseIndex(index)}
+                                            aria-label={`Latihan perbaikan ${item.position}`}
+                                            className={cn(
+                                                'flex aspect-square items-center justify-center rounded-xl text-xs font-black transition-all',
+                                                item.status === 'completed'
+                                                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-700 opacity-80 cursor-default'
+                                                    : index === activeIndex
+                                                        ? 'scale-105 bg-amber-400 text-slate-950 shadow-sm ring-2 ring-amber-400/30'
+                                                        : 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+                                            )}
+                                        >
+                                            {item.status === 'completed' ? '✓' : item.position}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="mt-4 border-t border-slate-100 pt-3 text-xs font-bold text-slate-500">
+                                    Tersisa {pendingItems} soal.
+                                </div>
                             </div>
-                            <div className="st-muted mt-4 border-t-2 border-dashed border-slate-200 pt-3 text-xs font-bold">Tersisa {pendingItems} soal.</div>
                         </aside>
 
-                        <article className="st-card min-w-0 p-5 md:p-7">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
+                        {/* Question Card */}
+                        <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                                 <div className="flex flex-wrap gap-2 text-xs font-black">
-                                    <span className="st-pill bg-emerald-100 text-emerald-800">{current.subjectCode}</span>
-                                    <span className="st-pill bg-slate-100 text-slate-700">Soal {current.position}/{totalItems}</span>
-                                    {current.questionCode && <span className="st-pill bg-white text-slate-500">{current.questionCode}</span>}
+                                    <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-800">
+                                        {current.subjectCode}
+                                    </span>
+                                    <span className="rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-slate-700">
+                                        Soal {current.position}/{totalItems}
+                                    </span>
+                                    {current.questionCode && (
+                                        <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-500">
+                                            {current.questionCode}
+                                        </span>
+                                    )}
                                 </div>
-                                <span className="text-xs font-bold text-slate-500">{current.reason === 'source_attempt_unanswered' ? 'Sebelumnya belum dijawab' : 'Sebelumnya salah'}</span>
+                                <span className="text-xs font-bold text-slate-500">
+                                    {current.reason === 'source_attempt_unanswered' ? 'Sebelumnya belum dijawab' : 'Sebelumnya salah'}
+                                </span>
                             </div>
 
                             {current.stimulus && (
-                                <div className="st-warning mt-5 p-4">
-                                    {current.stimulus.title && <div className="st-heading mb-2">{current.stimulus.title}</div>}
-                                    <div className="text-sm font-semibold leading-relaxed text-slate-700 md:text-base"><MathRenderer text={current.stimulus.content}/></div>
+                                <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50/70 p-5">
+                                    {current.stimulus.title && (
+                                        <div className="mb-2.5 flex items-center gap-2 text-sm font-black text-slate-800">
+                                            <BookOpen size={16} className="text-amber-600" />
+                                            <span>{current.stimulus.title}</span>
+                                        </div>
+                                    )}
+                                    <div className="text-sm md:text-base font-normal leading-relaxed text-slate-700">
+                                        <MathRenderer text={current.stimulus.content} />
+                                    </div>
                                 </div>
                             )}
 
-                            <div className="mt-5 text-lg font-bold leading-relaxed text-slate-950"><MathRenderer text={current.stem}/></div>
-                            <p className="st-muted mt-3 text-sm font-semibold">{instruction}</p>
+                            <div className="mt-6 text-lg md:text-xl font-bold leading-relaxed text-slate-950">
+                                <MathRenderer text={current.stem} />
+                            </div>
+                            <p className="mt-3 text-xs md:text-sm font-semibold text-slate-500">
+                                {instruction}
+                            </p>
 
                             <div className="mt-5 grid gap-3">
                                 {current.options.map((option) => {
@@ -211,44 +284,86 @@ export default function TkaRemedialModeClient({
                                             onClick={() => toggleOption(option.id)}
                                             disabled={feedback?.isCorrect === true}
                                             data-selected={selected}
-                                            className="st-option st-focus flex min-h-12 w-full items-start gap-3 p-3.5 text-left text-sm font-semibold leading-relaxed disabled:cursor-not-allowed disabled:opacity-70 md:text-base"
+                                            className={cn(
+                                                'group flex min-h-12 w-full items-start gap-3.5 rounded-xl border p-4 text-left transition-all',
+                                                'disabled:cursor-not-allowed disabled:opacity-75',
+                                                selected
+                                                    ? 'border-amber-500 bg-amber-50/70 text-amber-950 ring-2 ring-amber-500/20'
+                                                    : 'border-slate-200 bg-white hover:border-amber-200 hover:bg-slate-50/80 text-slate-800',
+                                            )}
                                         >
-                                            <span className={cn('flex h-8 min-w-8 items-center justify-center border-2 border-slate-900 text-xs font-black', selected ? 'bg-yellow-300 text-slate-950' : 'bg-slate-100 text-slate-700')}>{option.key || '•'}</span>
-                                            <span className="min-w-0 flex-1"><MathRenderer text={option.content}/></span>
+                                            <span
+                                                className={cn(
+                                                    'flex h-8 w-8 min-w-8 shrink-0 items-center justify-center rounded-lg border text-xs font-black transition-colors',
+                                                    selected
+                                                        ? 'border-amber-500 bg-amber-400 text-slate-950'
+                                                        : 'border-slate-200 bg-slate-100 text-slate-700 group-hover:border-slate-300',
+                                                )}
+                                            >
+                                                {option.key || '•'}
+                                            </span>
+                                            <span className="min-w-0 flex-1 text-sm md:text-base font-semibold leading-relaxed">
+                                                <MathRenderer text={option.content} />
+                                            </span>
                                         </button>
                                     )
                                 })}
                             </div>
 
                             {feedback && (
-                                <div className={cn('mt-6 p-4 text-sm font-semibold leading-relaxed', feedback.error ? 'st-danger' : feedback.isCorrect ? 'st-success' : 'st-warning')}>
+                                <div className={cn(
+                                    'mt-6 rounded-xl border p-5 transition-all',
+                                    feedback.error
+                                        ? 'border-rose-200 bg-rose-50/80 text-rose-950'
+                                        : feedback.isCorrect
+                                            ? 'border-emerald-200 bg-emerald-50/80 text-emerald-950'
+                                            : 'border-amber-200 bg-amber-50/80 text-amber-950',
+                                )}>
                                     {feedback.error ? (
-                                        <div className="font-black text-red-700">{feedback.error}</div>
+                                        <div className="font-black text-rose-700">{feedback.error}</div>
                                     ) : feedback.isCorrect ? (
                                         <>
-                                            <div className="font-black text-emerald-800">Benar. Perkembangan topik ini sudah diperbarui.</div>
-                                            {feedback.explanation && <div className="mt-3 border-t-2 border-dashed border-slate-200 pt-3 text-slate-700"><MathRenderer text={feedback.explanation}/></div>}
+                                            <div className="flex items-center gap-2 font-black text-emerald-800">
+                                                <CheckCircle2 size={20} className="text-emerald-600" />
+                                                <span>Benar. Perkembangan topik ini sudah diperbarui.</span>
+                                            </div>
+                                            {feedback.explanation && (
+                                                <div className="mt-3.5 rounded-lg border border-slate-200/80 bg-white/95 p-4 text-slate-800 shadow-xs">
+                                                    <div className="mb-2 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-emerald-800">
+                                                        <Sparkles size={14} /> Pembahasan
+                                                    </div>
+                                                    <div className="text-sm font-medium leading-relaxed text-slate-700">
+                                                        <MathRenderer text={feedback.explanation} />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </>
                                     ) : (
-                                        <div className="font-black text-amber-800">Belum tepat. Pelajari kembali pilihannya lalu coba lagi.</div>
+                                        <div className="font-black text-amber-900">
+                                            Belum tepat. Pelajari kembali pilihannya lalu coba lagi.
+                                        </div>
                                     )}
                                 </div>
                             )}
 
-                            <div className="mt-6 flex flex-wrap justify-end gap-3 border-t-2 border-dashed border-slate-200 pt-5">
+                            <div className="mt-7 flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-5">
                                 {!feedback?.isCorrect && (
                                     <button
                                         type="button"
                                         disabled={selectedIds.length === 0 || isPending}
                                         onClick={review}
-                                        className="st-button st-focus inline-flex min-h-11 items-center gap-2 bg-slate-950 px-5 py-2.5 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
-                                        <RotateCcw size={16}/> {feedback ? 'Periksa lagi' : 'Periksa jawaban'}
+                                        <RotateCcw size={16} /> {feedback ? 'Periksa lagi' : 'Periksa jawaban'}
                                     </button>
                                 )}
                                 {feedback?.isCorrect && pendingIndexes.length > 1 && (
-                                    <button type="button" onClick={nextPending} className="st-button st-focus inline-flex min-h-11 items-center gap-2 bg-yellow-300 px-5 py-2.5 text-sm font-black text-slate-950">
-                                        Lanjut latihan <ChevronRight size={17}/>
+                                    <button
+                                        type="button"
+                                        onClick={nextPending}
+                                        className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-amber-400 px-6 py-2.5 text-sm font-black text-slate-950 shadow-md shadow-amber-400/20 transition hover:bg-amber-300"
+                                    >
+                                        Lanjut latihan <ChevronRight size={17} />
                                     </button>
                                 )}
                             </div>
@@ -259,3 +374,4 @@ export default function TkaRemedialModeClient({
         </main>
     )
 }
+

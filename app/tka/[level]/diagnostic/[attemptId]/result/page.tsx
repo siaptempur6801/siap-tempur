@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import {
-    ArrowLeft,
     ArrowRight,
     BrainCircuit,
     CheckCircle2,
@@ -126,79 +125,104 @@ export default async function TkaDiagnosticResultPage({
     const weakest = competencies[0]
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-7 md:py-7">
+        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div data-testid="tka-diagnostic-result" className="mx-auto max-w-6xl space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Link href={`${base}/diagnostic`} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-slate-500 hover:bg-white hover:text-indigo-700"><ArrowLeft size={17} /> Tes Diagnostik</Link>
-                    <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-emerald-700 ring-1 ring-emerald-100">Baseline tersimpan</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200/70">
+                        <CheckCircle2 size={14} className="text-emerald-600" />
+                        Baseline tersimpan
+                    </span>
+                    <Link
+                        href={`${base}/diagnostic`}
+                        className="st-focus inline-flex items-center gap-1.5 text-xs font-black text-slate-500 hover:text-indigo-600 transition"
+                    >
+                        Kembali ke Ringkasan Diagnostik
+                    </Link>
                 </div>
 
-                <section className="grid gap-5 overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-600 p-5 text-white shadow-[0_18px_42px_rgba(79,70,229,0.18)] lg:grid-cols-[1.4fr_0.6fr] lg:items-center md:p-7">
+                <section className="grid gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-6 text-white shadow-xl shadow-indigo-600/15 lg:grid-cols-[1.4fr_0.6fr] lg:items-center md:p-8">
                     <div>
-                        <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em]"><Sparkles size={15} /> Hasil Diagnostik</span>
-                        <h1 className="mt-4 text-3xl font-black tracking-[-0.035em] md:text-4xl">Peta kemampuan awalmu sudah siap.</h1>
-                        <p className="mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-indigo-100 md:text-base">Ini bukan nilai kelulusan. Baseline ini dipakai untuk menentukan kompetensi mana yang paling berguna kamu perkuat lebih dulu.</p>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-black uppercase tracking-wider text-indigo-100 backdrop-blur-sm">
+                            <Sparkles size={14} /> Hasil Diagnostik
+                        </span>
+                        <h1 className="mt-4 text-3xl font-black tracking-tight md:text-4xl text-white">Peta kemampuan awalmu sudah siap.</h1>
+                        <p className="mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-indigo-100/90 md:text-base">
+                            Ini bukan nilai kelulusan. Baseline ini dipakai untuk menentukan kompetensi mana yang paling berguna kamu perkuat lebih dulu.
+                        </p>
                     </div>
-                    <div className="rounded-[1.1rem] border border-white/20 bg-white/15 p-4 text-center backdrop-blur-sm">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-indigo-100">Baseline keseluruhan</div>
-                        <div className="mt-1 text-5xl font-black">{overall.toFixed(0)}%</div>
-                        <div className="mt-1 text-xs font-bold text-indigo-100">{Number(profile.evidence_count ?? 0)} soal dipetakan</div>
+                    <div className="rounded-2xl border border-white/20 bg-white/10 p-5 text-center backdrop-blur-md">
+                        <div className="text-xs font-black uppercase tracking-wider text-indigo-200">Baseline keseluruhan</div>
+                        <div className="mt-2 text-5xl font-black tracking-tight text-white">{overall.toFixed(0)}%</div>
+                        <div className="mt-2 text-xs font-bold text-indigo-100">{Number(profile.evidence_count ?? 0)} soal dipetakan</div>
                     </div>
                 </section>
 
-                <section className="grid gap-3 sm:grid-cols-3">
-                    <Summary icon={<BrainCircuit size={17} />} label="Kompetensi dipetakan" value={`${competencies.length}/7`} />
-                    <Summary icon={<CheckCircle2 size={17} />} label="Terkuat saat ini" value={strongest ? nodeById.get(strongest.knowledge_node_id)?.name ?? '—' : '—'} />
-                    <Summary icon={<Target size={17} />} label="Prioritas pertama" value={weakest ? nodeById.get(weakest.knowledge_node_id)?.name ?? '—' : '—'} />
+                <section className="grid gap-4 sm:grid-cols-3">
+                    <Summary icon={<BrainCircuit size={18} className="text-indigo-600" />} label="Kompetensi dipetakan" value={`${competencies.length}/7`} />
+                    <Summary icon={<CheckCircle2 size={18} className="text-emerald-600" />} label="Terkuat saat ini" value={strongest ? nodeById.get(strongest.knowledge_node_id)?.name ?? '—' : '—'} />
+                    <Summary icon={<Target size={18} className="text-amber-600" />} label="Prioritas pertama" value={weakest ? nodeById.get(weakest.knowledge_node_id)?.name ?? '—' : '—'} />
                 </section>
 
-                <section>
+                <section className="space-y-4">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600">Peta kompetensi</p>
-                        <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">7 kompetensi, satu baseline yang mudah dibaca</h2>
+                        <p className="text-xs font-black uppercase tracking-wider text-indigo-600">Peta kompetensi</p>
+                        <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900">7 kompetensi, satu baseline yang mudah dibaca</h2>
                     </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {competencies.map((row) => {
                             const node = nodeById.get(row.knowledge_node_id)
                             const subject = subjectById.get(row.subject_id)
                             const score = Number(row.baseline_score ?? 0)
                             return (
-                                <article key={row.knowledge_node_id} data-testid="diagnostic-competency-card" className="rounded-[1.1rem] border border-slate-200 bg-white p-4 shadow-sm">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{subject?.name ?? subject?.code ?? 'TKA SMP'}</p>
-                                            <h3 className="mt-1 text-base font-black text-slate-900">{node?.name ?? 'Kompetensi'}</h3>
+                                <article
+                                    key={row.knowledge_node_id}
+                                    data-testid="diagnostic-competency-card"
+                                    className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                                >
+                                    <div>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs font-black uppercase tracking-wide text-slate-400">{subject?.name ?? subject?.code ?? 'TKA SMP'}</p>
+                                                <h3 className="mt-1 text-base font-black text-slate-900">{node?.name ?? 'Kompetensi'}</h3>
+                                            </div>
+                                            <Strength label={row.strength_label} />
                                         </div>
-                                        <Strength label={row.strength_label} />
+                                        <div className="mt-4 flex items-end justify-between gap-3">
+                                            <div className="text-3xl font-black tracking-tight text-slate-900">{score.toFixed(0)}%</div>
+                                            <div className="text-xs font-bold text-slate-500">{Number(row.correct_questions)}/{Number(row.attempted_questions)} benar</div>
+                                        </div>
+                                        <ProgressBar
+                                            value={score}
+                                            label={`Skor diagnostik ${node?.name ?? subject?.name ?? 'kompetensi'}`}
+                                            size="sm"
+                                            className="mt-3 border-slate-200"
+                                            indicatorClassName={score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-400' : 'bg-rose-500'}
+                                        />
                                     </div>
-                                    <div className="mt-4 flex items-end justify-between gap-3">
-                                        <div className="text-3xl font-black tracking-tight text-slate-950">{score.toFixed(0)}%</div>
-                                        <div className="text-xs font-bold text-slate-500">{Number(row.correct_questions)}/{Number(row.attempted_questions)} benar</div>
+                                    <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-slate-400">
+                                        <span>Prioritas #{Number(row.priority_rank)}</span>
+                                        <span>Keyakinan {(Number(row.confidence ?? 0) * 100).toFixed(0)}%</span>
                                     </div>
-                                    <ProgressBar
-                                        value={score}
-                                        label={`Skor diagnostik ${node?.name ?? subject?.name ?? 'kompetensi'}`}
-                                        size="sm"
-                                        className="mt-3 border-slate-200"
-                                        indicatorClassName={score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-amber-400' : 'bg-rose-500'}
-                                    />
-                                    <p className="mt-2 text-[11px] font-bold text-slate-400">Prioritas #{Number(row.priority_rank)} · keyakinan data {(Number(row.confidence ?? 0) * 100).toFixed(0)}%</p>
                                 </article>
                             )
                         })}
                     </div>
                 </section>
 
-                <section className="rounded-[1.2rem] border border-indigo-100 bg-indigo-50/60 p-5">
+                <section className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/60 via-white to-indigo-50/30 p-6 md:p-7 shadow-sm">
                     <div className="flex items-start gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white"><BrainCircuit size={18} /></span>
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-sm shadow-indigo-200">
+                            <BrainCircuit size={20} />
+                        </span>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600">Rekomendasi personal</p>
-                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Mulai dari tiga prioritas ini</h2>
-                            <p className="mt-1 max-w-2xl text-sm font-semibold text-slate-500">Urutan dibuat dari baseline terendah. Setelah kamu punya bukti belajar baru, rekomendasi diagnostik akan digantikan oleh rekomendasi berbasis perkembangan aktual.</p>
+                            <p className="text-xs font-black uppercase tracking-wider text-indigo-600">Rekomendasi personal</p>
+                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900">Mulai dari tiga prioritas ini</h2>
+                            <p className="mt-1.5 max-w-2xl text-sm font-semibold text-slate-500 leading-relaxed">
+                                Urutan dibuat dari baseline terendah. Setelah kamu punya bukti belajar baru, rekomendasi diagnostik akan digantikan oleh rekomendasi berbasis perkembangan aktual.
+                            </p>
                         </div>
                     </div>
-                    <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                    <div className="mt-6 grid gap-4 lg:grid-cols-3">
                         {recommendations.slice(0, 3).map((row) => {
                             const competency = competencyByNode.get(row.knowledge_node_id)
                             const node = nodeById.get(row.knowledge_node_id)
@@ -206,30 +230,60 @@ export default async function TkaDiagnosticResultPage({
                             const resource = row.resource_id ? resourceById.get(row.resource_id) : null
                             const drillReady = Boolean(subject?.code && node?.name)
                             return (
-                                <article key={row.knowledge_node_id} data-testid="diagnostic-recommendation-card" className="rounded-[1rem] border border-indigo-100 bg-white p-4 shadow-sm">
-                                    <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[10px] font-black text-indigo-700">Prioritas {Number(row.priority)}</span>
-                                    <h3 className="mt-3 text-lg font-black text-slate-950">{node?.name ?? 'Fokus belajar'}</h3>
-                                    <p className="mt-1 text-xs font-bold text-slate-500">{subject?.name ?? 'TKA SMP'} · baseline {competency ? Number(competency.baseline_score).toFixed(0) : '—'}%</p>
-                                    {resource?.title && <p className="mt-2 text-[11px] font-semibold leading-relaxed text-slate-400">Jalur terkait: {resource.title}</p>}
-                                    <TkaStartDrillButton
-                                        level={level}
-                                        subjectCode={subject?.code ?? ''}
-                                        knowledgeNodeName={node?.name ?? 'Fokus belajar'}
-                                        disabledReason={drillReady ? null : 'Latihan fokus belum tersedia untuk topik ini.'}
-                                    />
+                                <article
+                                    key={row.knowledge_node_id}
+                                    data-testid="diagnostic-recommendation-card"
+                                    className="flex flex-col justify-between rounded-2xl border border-indigo-100/90 bg-white p-5 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all"
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-black text-indigo-700 ring-1 ring-indigo-100">
+                                                Prioritas {Number(row.priority)}
+                                            </span>
+                                            {competency && (
+                                                <span className="text-xs font-bold text-slate-400">
+                                                    Baseline {Number(competency.baseline_score).toFixed(0)}%
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="mt-3 text-lg font-black text-slate-900">{node?.name ?? 'Fokus belajar'}</h3>
+                                        <p className="mt-1 text-xs font-bold text-slate-500">{subject?.name ?? 'TKA SMP'}</p>
+                                        {resource?.title && (
+                                            <p className="mt-2 text-xs font-medium leading-relaxed text-slate-400">
+                                                Jalur terkait: {resource.title}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="mt-4">
+                                        <TkaStartDrillButton
+                                            level={level}
+                                            subjectCode={subject?.code ?? ''}
+                                            knowledgeNodeName={node?.name ?? 'Fokus belajar'}
+                                            disabledReason={drillReady ? null : 'Latihan fokus belum tersedia untuk topik ini.'}
+                                        />
+                                    </div>
                                 </article>
                             )
                         })}
                     </div>
                 </section>
 
-                <section className="flex flex-col gap-4 rounded-[1.2rem] border border-slate-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400"><CircleAlert size={15} /> Langkah berikutnya</div>
-                        <h2 className="mt-1 text-xl font-black text-slate-950">Gunakan baseline ini, lalu kumpulkan bukti belajar nyata.</h2>
-                        <p className="mt-1 text-sm font-semibold text-slate-500">Mulai dari Drill rekomendasi di atas. Hasil latihan akan memperbarui penguasaan dan fokus belajar berikutnya.</p>
+                <section className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+                    <div className="max-w-2xl">
+                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                            <CircleAlert size={16} /> Langkah berikutnya
+                        </div>
+                        <h2 className="mt-1.5 text-xl font-black text-slate-900">Gunakan baseline ini, lalu kumpulkan bukti belajar nyata.</h2>
+                        <p className="mt-1 text-sm font-semibold text-slate-500 leading-relaxed">
+                            Mulai dari Latihan Fokus rekomendasi di atas. Hasil latihan akan memperbarui penguasaan dan fokus belajar berikutnya.
+                        </p>
                     </div>
-                    <Link href={`${base}/progress`} className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 text-sm font-black text-white">Lihat perkembangan <ArrowRight size={16} /></Link>
+                    <Link
+                        href={`${base}/progress`}
+                        className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-black text-white hover:bg-slate-800 transition"
+                    >
+                        Lihat perkembangan <ArrowRight size={16} />
+                    </Link>
                 </section>
             </div>
         </main>
@@ -239,15 +293,22 @@ export default async function TkaDiagnosticResultPage({
 function Strength({ label }: { label: string }) {
     const normalized = String(label).toUpperCase()
     const text = normalized === 'KUAT' ? 'Kuat' : normalized === 'CUKUP' ? 'Cukup' : 'Perlu dikuatkan'
-    const className = normalized === 'KUAT' ? 'bg-emerald-50 text-emerald-700' : normalized === 'CUKUP' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
-    return <span className={cn('rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide', className)}>{text}</span>
+    const className = normalized === 'KUAT'
+        ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70'
+        : normalized === 'CUKUP'
+        ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/70'
+        : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200/70'
+    return <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-black tracking-wide', className)}>{text}</span>
 }
 
 function Summary({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
     return (
-        <div className="rounded-[1rem] border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">{icon}{label}</div>
-            <div className="mt-2 line-clamp-2 text-lg font-black text-slate-950">{value}</div>
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+                {icon}
+                {label}
+            </div>
+            <div className="mt-2 line-clamp-2 text-lg font-black text-slate-900">{value}</div>
         </div>
     )
 }

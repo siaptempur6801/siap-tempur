@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { CheckCircle2, Copy, ExternalLink, Package, QrCode, RefreshCw, ShieldCheck, Sparkles, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -11,6 +11,7 @@ import {
     type CreateQrisQaTransactionResult,
 } from '@/app/actions/payment'
 import { cn } from '@/lib/utils'
+import tkaStyles from './TkaTokenPackages.module.css'
 
 export type CommercePackage = {
     code: string
@@ -34,11 +35,14 @@ function rupiah(value: number) {
 export default function CommercePackagesClient({
     packages,
     qaQrisEnabled = false,
+    program = 'CPNS',
 }: {
     packages: CommercePackage[]
     qaQrisEnabled?: boolean
+    program?: 'CPNS' | 'TKA'
 }) {
     const router = useRouter()
+    const pathname = usePathname()
     const [qaQris, setQaQris] = useState<QrisQaData | null>(null)
     const [buying, setBuying] = useState<string | null>(null)
 
@@ -61,7 +65,10 @@ export default function CommercePackagesClient({
         setBuying(productCode)
         const loadingToast = toast.loading('Menyiapkan pembayaran...')
         try {
-            const transaction = await createPackageTransaction(productCode)
+            const returnPath = program === 'TKA'
+                ? `${pathname.replace(/\/beli-token$/, '/profile')}?tab=history`
+                : '/cpns/dashboard/profile'
+            const transaction = await createPackageTransaction(productCode, returnPath)
             if (!transaction.success) {
                 toast.error('Pembayaran belum bisa dimulai', {
                     id: loadingToast,
@@ -180,18 +187,20 @@ export default function CommercePackagesClient({
     }
 
     return (
-        <div className="st-product mx-auto w-full max-w-7xl space-y-10 font-body text-[var(--st-ink)]">
+        <div className={cn('st-product mx-auto w-full max-w-7xl space-y-10 font-body text-[var(--st-ink)]', program === 'TKA' && tkaStyles.packages)}>
             <header className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
                 <div className="max-w-3xl">
-                    <div className="st-kicker"><Package size={15} /> Paket token CPNS</div>
-                    <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">Pilih token sesuai ritme tryout-mu.</h1>
+                    <div className="st-kicker"><Package size={15} /> Paket token {program}</div>
+                    <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">{program === 'TKA' ? 'Beli token' : 'Pilih token sesuai ritme tryout-mu.'}</h1>
                     <p className="st-muted mt-4 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
-                        Token digunakan untuk akses tryout sesuai aturan yang ditampilkan sebelum sesi dimulai. Harga paket berasal dari katalog aktif SiapTempur.
+                        {program === 'TKA'
+                            ? 'Siapkan token untuk langkah belajar berikutnya. Pilih paket sesuai kebutuhan, lalu gunakan pada sesi yang ingin kamu kerjakan. Jumlah token yang diperlukan selalu terlihat sebelum mulai.'
+                            : 'Token digunakan untuk akses tryout sesuai aturan yang ditampilkan sebelum sesi dimulai. Harga paket berasal dari katalog aktif SiapTempur.'}
                     </p>
                 </div>
                 <div className="st-card bg-blue-50 p-4 sm:min-w-64">
-                    <div className="text-xs font-black uppercase tracking-[0.12em] text-blue-700">Sebelum membayar</div>
-                    <p className="mt-2 text-sm font-bold leading-relaxed text-gray-700">Periksa jumlah token, harga paket, dan total yang tampil di halaman pembayaran.</p>
+                    <div className="text-xs font-black uppercase tracking-[0.12em] text-blue-700">{program === 'TKA' ? 'Pilih sesuai rencana belajarmu' : 'Sebelum membayar'}</div>
+                    <p className="mt-2 text-sm font-bold leading-relaxed text-gray-700">{program === 'TKA' ? 'Mulai dengan paket kecil atau siapkan lebih banyak token untuk latihan rutin. Bandingkan harga per token sebelum memilih.' : 'Periksa jumlah token, harga paket, dan total yang tampil di halaman pembayaran.'}</p>
                 </div>
             </header>
 
@@ -225,13 +234,13 @@ export default function CommercePackagesClient({
                         return (
                             <article key={pkg.code} className={cn('st-card-md relative flex flex-col p-6', isBestValue && 'bg-[var(--st-yellow-soft)]')}>
                                 {isBestValue && (
-                                    <span className="st-kicker absolute -right-2 -top-3 bg-[var(--st-yellow)]">Nilai per token terbaik</span>
+                                    <span className="st-kicker absolute -right-2 -top-3 bg-[var(--st-yellow)]">{program === 'TKA' ? 'Harga per token terendah' : 'Nilai per token terbaik'}</span>
                                 )}
 
                                 <div className="pr-20">
                                     <h2 className="st-heading text-2xl">{pkg.name}</h2>
                                     <p className="st-muted mt-2 min-h-10 text-sm font-semibold leading-relaxed">
-                                        {pkg.description || `${pkg.tokenGrant} token untuk akses tryout CPNS.`}
+                                        {program === 'TKA' ? (pkg.code === unitPackage?.code ? 'Mulai secukupnya, fokus pada sesi yang paling kamu butuhkan.' : 'Siapkan bekal untuk latihan berikutnya dan bangun ritme belajar yang konsisten.') : pkg.description || `${pkg.tokenGrant} token untuk akses tryout CPNS.`}
                                     </p>
                                 </div>
 
@@ -248,8 +257,8 @@ export default function CommercePackagesClient({
 
                                 <div className="my-6 flex-1 space-y-3 text-sm font-semibold text-gray-700">
                                     <Benefit text={`${pkg.tokenGrant} token masuk ke akun setelah pembayaran terverifikasi`} />
-                                    <Benefit text="Gunakan token pada tryout yang menampilkan kebutuhan token" />
-                                    <Benefit text="Sisa token tetap tersimpan di akunmu" />
+                                    <Benefit text={program === 'TKA' ? 'Kamu pilih sesi belajarnya, kebutuhan token jelas sebelum mulai' : 'Gunakan token pada tryout yang menampilkan kebutuhan token'} />
+                                    <Benefit text={program === 'TKA' ? 'Sisa token tersimpan untuk langkah belajar berikutnya' : 'Sisa token tetap tersimpan di akunmu'} />
                                 </div>
 
                                 <button
@@ -258,7 +267,7 @@ export default function CommercePackagesClient({
                                     disabled={Boolean(buying)}
                                     className="st-button inline-flex min-h-12 w-full items-center justify-center gap-2 bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
                                 >
-                                    <Zap size={18} /> {isBuying ? 'Menyiapkan pembayaran...' : `Pilih ${pkg.tokenGrant} token`}
+                                    <Zap size={18} /> {isBuying ? 'Menyiapkan pembayaran...' : `${program === 'TKA' ? 'Beli' : 'Pilih'} ${pkg.tokenGrant} token`}
                                 </button>
 
                                 {qaQrisEnabled && (
@@ -316,8 +325,8 @@ export default function CommercePackagesClient({
             <section className="st-card mx-auto flex max-w-3xl items-start gap-3 bg-green-50 p-5">
                 <ShieldCheck className="h-6 w-6 shrink-0 text-green-700" />
                 <div>
-                    <h3 className="font-black">Token masuk setelah pembayaran terverifikasi.</h3>
-                    <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">Jika pembayaran masih menunggu atau ditutup sebelum selesai, saldo token tidak berubah. Status terbaru akan terlihat setelah pembayaran berhasil diverifikasi.</p>
+                    <h3 className="font-black">{program === 'TKA' ? 'Bayar, cek saldo, lanjut belajar.' : 'Token masuk setelah pembayaran terverifikasi.'}</h3>
+                    <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">{program === 'TKA' ? 'Token masuk setelah pembayaran berhasil diverifikasi. Periksa total di halaman pembayaran, lalu pantau pembelian dan saldo melalui riwayat akunmu.' : 'Jika pembayaran masih menunggu atau ditutup sebelum selesai, saldo token tidak berubah. Status terbaru akan terlihat setelah pembayaran berhasil diverifikasi.'}</p>
                 </div>
             </section>
         </div>

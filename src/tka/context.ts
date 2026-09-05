@@ -2,6 +2,7 @@ import type { ProgramTrackContext } from '@/src/services/catalog-context.service
 
 export const TKA_LEVELS = ['SD', 'SMP', 'SMA'] as const
 export type TkaLevel = (typeof TKA_LEVELS)[number]
+export const TKA_AVAILABLE_LEVELS: readonly TkaLevel[] = ['SMP']
 
 export function parseTkaLevel(value: string | null | undefined): TkaLevel | null {
     const normalized = value?.trim().toUpperCase()
@@ -14,4 +15,8 @@ export function tkaContext(level: TkaLevel): ProgramTrackContext {
 
 export function tkaLevelPath(level: TkaLevel) {
     return `/tka/${level.toLowerCase()}`
+}
+
+export function isTkaLevelAvailable(level: TkaLevel) {
+    return TKA_AVAILABLE_LEVELS.includes(level)
 }

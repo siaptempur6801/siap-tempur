@@ -16,8 +16,6 @@ export type TkaPassPackage = {
     durationDays: number | null
 }
 
-const ADMIN_FEE = 500
-
 function rupiah(value: number) {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -206,24 +204,22 @@ export default function TkaPassPackagesClient({
     return (
         <section className="space-y-5" aria-labelledby="tka-pass-packages-title">
             <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-indigo-600">
+                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-blue-600">
                     <Crown size={17} aria-hidden="true"/> Tempur Pass
                 </div>
                 <h2 id="tka-pass-packages-title" className="mt-2 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
-                    {hasActivePass ? `Perpanjang akses TKA ${level}` : `Pilih akses belajar TKA ${level}`}
+                    {hasActivePass ? 'Jaga ritme belajar, tambah masa aktifmu' : 'Pilih durasi untuk rencana belajarmu'}
                 </h2>
                 <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-500">
                     {hasActivePass
-                        ? 'Pilih durasi tambahan. Perpanjangan dimulai setelah masa aktifmu saat ini selesai, jadi sisa akses tidak terbuang.'
-                        : 'Pilih durasi yang sesuai kebutuhanmu untuk membuka Full Tryout dan Mini Tryout selama masa aktif paket.'}
+                        ? 'Lanjutkan persiapanmu dengan durasi tambahan. Perpanjangan dimulai setelah masa aktif saat ini berakhir, sehingga sisa aksesmu tetap utuh.'
+                        : 'Mulai dengan persiapan satu bulan atau beri diri lebih banyak waktu untuk latihan rutin. Mini Tryout dan Full Tryout tersedia sesuai akses paket selama masa aktif.'}
                 </p>
-                <p className="mt-2 text-xs font-bold text-slate-500">Setiap pembayaran dikenai biaya admin {rupiah(ADMIN_FEE)} satu kali.</p>
             </div>
 
             <div className="grid gap-5 md:grid-cols-2">
                 {packages.map((pkg) => {
                     const days = pkg.durationDays ?? 0
-                    const totalPayment = pkg.price + ADMIN_FEE
                     const isBestValue = pkg.code === bestValueCode
                     const isBuyingThis = buying === pkg.code
 
@@ -234,34 +230,25 @@ export default function TkaPassPackagesClient({
                         >
                             {isBestValue && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-blue-500" />}
                             {isBestValue && (
-                                <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">Nilai terbaik</span>
+                                <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">Hemat per hari</span>
                             )}
 
                             <div>
                                 <h3 className="pr-24 text-xl font-black tracking-tight text-slate-950">{pkg.name}</h3>
                                 <p className="mt-2 min-h-10 text-sm font-semibold leading-relaxed text-slate-500">
-                                    {pkg.description || `Akses belajar TKA ${level} selama ${days} hari.`}
+                                    {days === 30 ? 'Satu bulan untuk mulai rutin, mengenali kemampuan, dan menentukan fokus latihan.' : days === 90 ? 'Lebih banyak waktu untuk membangun kebiasaan, mengulang latihan, dan mengevaluasi progres.' : pkg.description || `Siapkan rencana belajarmu dengan akses TKA ${level} selama ${days} hari.`}
                                 </p>
                             </div>
 
-                            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-                                <div className="flex flex-wrap items-end justify-between gap-3">
-                                    <div>
-                                        <div className="text-xs font-black uppercase tracking-wide text-slate-400">Harga paket</div>
-                                        <div className="mt-1 text-3xl font-black tracking-tight text-indigo-700">{rupiah(pkg.price)}</div>
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-xs font-black uppercase tracking-wide text-slate-400">Total dibayar</div>
-                                        <div className="mt-1 text-xl font-black text-slate-950">{rupiah(totalPayment)}</div>
-                                    </div>
-                                </div>
-                                <p className="mt-2 text-xs font-bold leading-relaxed text-slate-500">Harga paket {rupiah(pkg.price)} + biaya admin {rupiah(ADMIN_FEE)}.</p>
+                            <div className="mt-5 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
+                                <div className="text-xs font-black uppercase tracking-wide text-slate-400">Harga</div>
+                                <div className="mt-1 text-3xl font-black tracking-tight text-blue-700">{rupiah(pkg.price)}</div>
                             </div>
 
                             <div className="my-5 flex-1 space-y-2.5 text-sm font-bold text-slate-700">
-                                <Benefit icon={<CheckCircle2 size={17}/>} text={`Full Tryout TKA ${level}`} />
-                                <Benefit icon={<CheckCircle2 size={17}/>} text="Mini Tryout selama paket aktif" />
-                                <Benefit icon={<CheckCircle2 size={17}/>} text={`Masa aktif ${days} hari`} />
+                                <Benefit icon={<CheckCircle2 size={17}/>} text={`Ukur kesiapan dengan Full Tryout TKA ${level}`} />
+                                <Benefit icon={<CheckCircle2 size={17}/>} text="Evaluasi per mata pelajaran lewat Mini Tryout" />
+                                <Benefit icon={<CheckCircle2 size={17}/>} text={`${days} hari untuk menjalankan rencana belajarmu`} />
                                 <Benefit icon={<ShieldCheck size={17}/>} text="Akses aktif setelah pembayaran terverifikasi" blue />
                             </div>
 
@@ -270,14 +257,14 @@ export default function TkaPassPackagesClient({
                                 disabled={Boolean(buying)}
                                 aria-busy={isBuyingThis}
                                 onClick={() => void buy(pkg.code, pkg.durationDays)}
-                                className="st-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-[0_10px_24px_rgba(79,70,229,0.22)] transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+                                className="st-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-none transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
                             >
                                 {isBuyingThis ? <Loader2 size={17} className="animate-spin" aria-hidden="true"/> : <Zap size={17} aria-hidden="true"/>}
                                 {isBuyingThis
                                     ? 'Menyiapkan pembayaran...'
                                     : hasActivePass
-                                        ? `Perpanjang ${days} hari · ${rupiah(totalPayment)}`
-                                        : `Pilih ${days} hari · ${rupiah(totalPayment)}`}
+                                        ? `Perpanjang ${days} hari · ${rupiah(pkg.price)}`
+                                        : `Aktifkan ${days} hari · ${rupiah(pkg.price)}`}
                             </button>
                         </article>
                     )
@@ -292,7 +279,7 @@ export default function TkaPassPackagesClient({
 function Benefit({ icon, text, blue = false }: { icon: React.ReactNode; text: string; blue?: boolean }) {
     return (
         <div className="flex items-start gap-2.5">
-            <span className={`mt-0.5 shrink-0 ${blue ? 'text-indigo-600' : 'text-emerald-600'}`}>{icon}</span>
+            <span className={`mt-0.5 shrink-0 ${blue ? 'text-blue-600' : 'text-emerald-600'}`}>{icon}</span>
             <span>{text}</span>
         </div>
     )

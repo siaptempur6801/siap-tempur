@@ -79,11 +79,11 @@ test.describe('Product Experience mobile accessibility regression', () => {
     test('TKA public entry remains readable without horizontal overflow', async ({ page }) => {
         await page.goto('/tka')
 
-        await expect(page.getByRole('heading', { name: /Satu dashboard untuk perjalanan TKA dari SD sampai SMA/i })).toBeVisible()
-        const dashboardEntry = page.getByRole('link', { name: /Masuk ke Dashboard TKA/i })
-        await expectTouchTarget(dashboardEntry)
-        await dashboardEntry.focus()
-        await expect(dashboardEntry).toBeFocused()
+        await expect(page.getByRole('heading', { name: /Persiapan TKA untuk setiap jenjang belajar/i })).toBeVisible()
+        const registrationEntry = page.getByRole('link', { name: /Mulai persiapan TKA/i })
+        await expectTouchTarget(registrationEntry)
+        await registrationEntry.focus()
+        await expect(registrationEntry).toBeFocused()
         await expect(page.getByText('TKA SD', { exact: true })).toBeVisible()
         await expect(page.getByText('TKA SMP', { exact: true })).toBeVisible()
         await expect(page.getByText('TKA SMA', { exact: true })).toBeVisible()

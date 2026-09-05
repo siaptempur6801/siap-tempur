@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import {
-    ArrowLeft,
     BarChart3,
     BookOpenText,
     BrainCircuit,
@@ -78,70 +77,116 @@ export default async function TkaDiagnosticPage({
             : null
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-7 md:py-7">
-            <div className="mx-auto max-w-6xl space-y-6">
-                <Link href={base} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-slate-500 transition hover:bg-white hover:text-indigo-700">
-                    <ArrowLeft size={17} /> Kembali ke TKA SMP
-                </Link>
-
-                <section className="grid gap-5 overflow-hidden rounded-[1.35rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-600 p-5 text-white shadow-[0_18px_42px_rgba(79,70,229,0.18)] lg:grid-cols-[1.4fr_0.6fr] lg:items-center md:p-7">
+        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+            <div className="mx-auto max-w-6xl space-y-8">
+                {/* Hero Section */}
+                <section className="grid gap-6 border-b border-slate-200/80 pb-8 text-slate-950 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
                     <div>
-                        <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em]">
-                            <BrainCircuit size={15} /> Baseline kemampuan
-                        </span>
-                        <h1 className="mt-4 max-w-3xl text-3xl font-black tracking-[-0.035em] md:text-4xl">Temukan fokus belajar sebelum mulai banyak tryout.</h1>
-                        <p className="mt-3 max-w-2xl text-sm font-semibold leading-relaxed text-indigo-100 md:text-base">
-                            Kerjakan 28 soal singkat untuk memetakan 7 kompetensi utama TKA SMP. Setelah selesai, SiapTempur akan menunjukkan tiga prioritas belajar pertamamu.
+                        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black tracking-wide text-indigo-700 ring-1 ring-indigo-200/50">
+                            <BrainCircuit size={14} className="text-indigo-600" />
+                            <span>Baseline Kemampuan · TKA SMP</span>
+                        </div>
+                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
+                            Temukan fokus belajar sebelum mulai banyak tryout.
+                        </h1>
+                        <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                            Kerjakan 28 soal singkat untuk memetakan 7 kompetensi utama TKA SMP. Ini bukan ujian kelulusan, melainkan pemetaan awal agar kamu tahu materi mana yang paling penting diperkuat lebih dulu.
                         </p>
-                        <div className="mt-5">
+
+                        <div className="mt-6">
                             {completed?.id ? (
-                                <Link href={`${base}/diagnostic/${completed.id}/result`} className="st-focus inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-indigo-700 shadow-sm">
-                                    <BarChart3 size={17} /> Lihat Hasil Diagnostik
-                                </Link>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                    <Link
+                                        href={`${base}/diagnostic/${completed.id}/result`}
+                                        className="st-focus inline-flex min-h-11 items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.98]"
+                                    >
+                                        <BarChart3 size={17} />
+                                        <span>Lihat Hasil & Rekomendasi Diagnostik</span>
+                                    </Link>
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+                                        <CheckCircle2 size={14} /> Baseline tersimpan
+                                    </span>
+                                </div>
                             ) : inProgress?.id ? (
-                                <Link href={`${base}/diagnostic/${inProgress.id}`} className="st-focus inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-indigo-700 shadow-sm">
-                                    <BrainCircuit size={17} /> Lanjutkan Tes Diagnostik
+                                <Link
+                                    href={`${base}/diagnostic/${inProgress.id}`}
+                                    className="st-focus inline-flex min-h-11 items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.98]"
+                                >
+                                    <BrainCircuit size={17} />
+                                    <span>Lanjutkan Tes Diagnostik Berjalan</span>
                                 </Link>
                             ) : (
                                 <TkaDiagnosticStartButton disabledReason={disabledReason} />
                             )}
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <Stat icon={<Target size={17} />} value="28" label="soal" />
-                        <Stat icon={<BrainCircuit size={17} />} value="7" label="kompetensi" />
-                        <Stat icon={<Clock3 size={17} />} value="35" label="menit" />
-                        <Stat icon={<CheckCircle2 size={17} />} value="1x" label="gratis" />
+
+                    <div className="grid grid-cols-2 gap-3.5">
+                        <Stat icon={<Target size={18} className="text-indigo-600" />} value="28" label="soal" />
+                        <Stat icon={<BrainCircuit size={18} className="text-blue-600" />} value="7" label="kompetensi" />
+                        <Stat icon={<Clock3 size={18} className="text-amber-600" />} value="35" label="menit" />
+                        <Stat icon={<CheckCircle2 size={18} className="text-emerald-600" />} value="1x" label="gratis" />
                     </div>
                 </section>
 
                 {!activeTrack && (
-                    <section className="rounded-[1.15rem] border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
-                        Jalur TKA SMP belum aktif. <Link href={base} className="font-black underline">Aktifkan jalur belajar</Link> terlebih dahulu, lalu kembali ke tes diagnostik.
+                    <section className="rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-5 text-sm font-semibold text-amber-900 shadow-sm">
+                        Jalur belajar TKA SMP belum aktif di akunmu. <Link href={base} className="font-bold underline text-amber-950 hover:text-indigo-700">Aktifkan jalur belajar</Link> terlebih dahulu agar hasil pemetaan otomatis tersimpan di profilmu.
                     </section>
                 )}
 
-                <section className="grid gap-4 lg:grid-cols-[0.75fr_1.25fr]">
-                    <article className="rounded-[1.2rem] border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600">Cara kerja</p>
-                        <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">Dua bagian, satu peta kemampuan.</h2>
-                        <div className="mt-4 space-y-3 text-sm font-semibold text-slate-600">
-                            <Step icon={<BookOpenText size={16} />} title="Bahasa Indonesia" description="12 soal · 15 menit · 3 kompetensi" />
-                            <Step icon={<Sigma size={16} />} title="Matematika" description="16 soal · 20 menit · 4 elemen" />
-                            <Step icon={<BarChart3 size={16} />} title="Hasil personal" description="Baseline 7 kompetensi + 3 prioritas belajar" />
+                {/* Cara Kerja & Yang Dipetakan */}
+                <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+                    <article className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600">
+                            <span>Alur Pengerjaan</span>
+                        </div>
+                        <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+                            Dua bagian, satu peta kemampuan.
+                        </h2>
+                        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                            Tes dibagi menjadi dua sesi terarah tanpa jeda berbelit:
+                        </p>
+
+                        <div className="mt-5 space-y-4 text-sm">
+                            <Step
+                                icon={<BookOpenText size={18} className="text-indigo-600" />}
+                                title="Bagian 1: Bahasa Indonesia"
+                                description="12 butir soal · 15 menit · 3 kompetensi literasi"
+                            />
+                            <Step
+                                icon={<Sigma size={18} className="text-violet-600" />}
+                                title="Bagian 2: Matematika"
+                                description="16 butir soal · 20 menit · 4 elemen numerasi"
+                            />
+                            <Step
+                                icon={<BarChart3 size={18} className="text-emerald-600" />}
+                                title="Hasil Analisis Personal"
+                                description="Peta baseline 7 kompetensi + 3 prioritas materi drill pertama"
+                            />
                         </div>
                     </article>
 
-                    <article className="rounded-[1.2rem] border border-slate-200 bg-white p-5 shadow-sm">
-                        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600">Yang dipetakan</p>
-                        <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">7 kompetensi utama</h2>
-                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <article className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm">
+                        <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600">
+                            <span>Cakupan Materi</span>
+                        </div>
+                        <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+                            7 kompetensi utama yang dipetakan
+                        </h2>
+                        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                            Mencakup seluruh standar kompetensi dasar TKA SMP:
+                        </p>
+
+                        <div className="mt-5 grid gap-3 sm:grid-cols-2">
                             {COMPETENCIES.map(([subject, competency], index) => (
-                                <div key={competency} className="flex items-start gap-3 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-100">
-                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-xs font-black text-indigo-700">{index + 1}</span>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">{subject}</p>
-                                        <p className="mt-0.5 text-sm font-black text-slate-800">{competency}</p>
+                                <div key={competency} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 transition-colors hover:bg-slate-50">
+                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-xs font-black text-indigo-700 ring-1 ring-indigo-200/60">
+                                        {index + 1}
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{subject}</p>
+                                        <p className="mt-0.5 text-sm font-bold text-slate-900 leading-snug">{competency}</p>
                                     </div>
                                 </div>
                             ))}
@@ -155,19 +200,29 @@ export default async function TkaDiagnosticPage({
 
 function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
     return (
-        <div className="rounded-xl border border-white/15 bg-white/12 p-3 backdrop-blur-sm">
-            <div className="text-indigo-100">{icon}</div>
-            <div className="mt-2 text-2xl font-black">{value}</div>
-            <div className="text-[11px] font-bold text-indigo-100">{label}</div>
+        <div className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50">
+                    {icon}
+                </span>
+                <span className="text-xs font-semibold text-slate-500">{label}</span>
+            </div>
+            <div className="mt-3 text-3xl font-bold tracking-tight text-slate-950">{value}</div>
         </div>
     )
 }
 
 function Step({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
     return (
-        <div className="flex items-start gap-3">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">{icon}</span>
-            <div><p className="font-black text-slate-800">{title}</p><p className="mt-0.5 text-xs text-slate-500">{description}</p></div>
+        <div className="flex items-start gap-3.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 ring-1 ring-slate-200/60">
+                {icon}
+            </span>
+            <div className="min-w-0">
+                <p className="font-bold text-slate-900 leading-snug">{title}</p>
+                <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{description}</p>
+            </div>
         </div>
     )
 }
+

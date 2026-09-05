@@ -51,10 +51,10 @@ export default function TkaDiagnosticStartButton({
                 type="button"
                 onClick={() => void start()}
                 disabled={Boolean(disabledReason) || loading}
-                className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-black text-white shadow-[0_10px_24px_rgba(79,70,229,0.2)] transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:w-auto"
+                className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-all duration-150 hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-600/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:w-auto"
             >
-                {loading ? <LoadingSpinner label="Menyiapkan tes diagnostik" size="sm" /> : <BrainCircuit size={17} />}
-                {loading ? 'Menyiapkan tes...' : disabledReason || 'Mulai Tes Diagnostik'}
+                {loading ? <LoadingSpinner label="Menyiapkan tes diagnostik" size="sm" /> : <BrainCircuit size={17} aria-hidden="true" />}
+                <span>{loading ? 'Menyiapkan tes...' : disabledReason || 'Mulai Tes Diagnostik'}</span>
             </button>
             {error && <p role="alert" className="mt-2 text-sm font-bold text-red-700">{error}</p>}
         </div>

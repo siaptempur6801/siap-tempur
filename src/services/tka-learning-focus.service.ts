@@ -57,10 +57,13 @@ function parseAction(value: unknown): TkaLearningFocusAction | null {
     const action = asRecord(value)
     const type = readString(action, 'type')
     const label = readString(action, 'label')
-    const href = readString(action, 'href')
+    let href = readString(action, 'href')
     if (!type || !label || !href) return null
     if (!['continue_remedial', 'repeat_wrong', 'practice_tka'].includes(type)) return null
     if (!href.startsWith('/tka/smp')) return null
+    if (type === 'practice_tka' && (href === '/tka/smp' || href.startsWith('/tka/smp#'))) {
+        href = '/tka/smp/focus'
+    }
     return { type: type as TkaLearningFocusAction['type'], label, href }
 }
 

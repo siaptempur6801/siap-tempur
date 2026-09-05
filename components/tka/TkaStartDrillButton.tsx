@@ -13,11 +13,13 @@ export default function TkaStartDrillButton({
     subjectCode,
     knowledgeNodeName,
     disabledReason,
+    compact = false,
 }: {
     level: string
     subjectCode: string
     knowledgeNodeName: string
     disabledReason?: string | null
+    compact?: boolean
 }) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
@@ -51,7 +53,7 @@ export default function TkaStartDrillButton({
     }
 
     return (
-        <div className="mt-4">
+        <div className={compact ? 'm-0 w-full' : 'mt-4'}>
             <button
                 type="button"
                 data-testid="diagnostic-start-drill"
@@ -59,14 +61,14 @@ export default function TkaStartDrillButton({
                 disabled={Boolean(disabledReason) || loading}
                 aria-label={`Latih topik ${knowledgeNodeName}`}
                 aria-describedby={errorMessage ? `drill-${subjectCode}-${knowledgeNodeName}-error` : undefined}
-                className="st-focus inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_18px_rgba(79,70,229,0.18)] transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+                className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 disabled:shadow-none disabled:active:scale-100"
             >
                 {loading ? <LoadingSpinner label="Menyiapkan latihan" size="sm" /> : <Dumbbell size={16} aria-hidden="true" />}
-                {loading ? 'Menyiapkan latihan...' : 'Latih topik ini'}
+                {loading ? 'Menyiapkan...' : compact ? 'Mulai Latihan' : 'Latih topik ini'}
             </button>
-            <p className="mt-2 text-center text-[11px] font-bold text-slate-400">10 soal fokus · sekitar 15 menit</p>
+            {!compact && <p className="mt-2 text-center text-[11px] font-bold text-slate-400">10 soal fokus · sekitar 15 menit</p>}
             {errorMessage && (
-                <p id={`drill-${subjectCode}-${knowledgeNodeName}-error`} role="alert" className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-black text-red-700">
+                <p id={`drill-${subjectCode}-${knowledgeNodeName}-error`} role="alert" className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-bold text-red-700">
                     {errorMessage}
                 </p>
             )}

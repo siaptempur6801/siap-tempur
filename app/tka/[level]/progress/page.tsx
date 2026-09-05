@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, BarChart3, Crown } from 'lucide-react'
+import { BarChart3 } from 'lucide-react'
 import TkaProgressDashboard from '@/components/tka/TkaProgressDashboard'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { tkaProgressDashboardService } from '@/src/services/tka-progress-dashboard.service'
@@ -26,28 +25,18 @@ export default async function TkaProgressPage({
     const dashboard = await tkaProgressDashboardService.getDashboard()
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                    <Link href={base} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-2 text-sm font-bold text-slate-500 transition hover:bg-white hover:text-indigo-700">
-                        <ArrowLeft size={17}/> Kembali ke TKA SMP
-                    </Link>
-                    <Link
-                        href={`${base}/pass`}
-                        className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-50 px-3 text-sm font-black text-indigo-700 ring-1 ring-indigo-100 transition hover:bg-indigo-100"
-                    >
-                        <Crown size={16}/> Tempur Pass
-                    </Link>
-                </div>
-
-                <header className="relative overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-slate-950 via-indigo-950 to-indigo-800 p-6 text-white shadow-[0_22px_54px_rgba(79,70,229,0.16)] md:p-8">
-                    <div className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-indigo-400/20 blur-3xl" aria-hidden="true" />
-                    <div className="relative inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-indigo-200">
-                        <BarChart3 size={17}/> Perkembangan belajar
+                <header className="border-b border-slate-200/80 pb-6 text-slate-950">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black tracking-wide text-indigo-700 ring-1 ring-indigo-200/50">
+                        <BarChart3 size={14} className="text-indigo-600" />
+                        <span>Analisis & Progres · TKA {level}</span>
                     </div>
-                    <h1 className="relative mt-2 text-4xl font-black tracking-tight text-white md:text-5xl">Perkembangan belajar TKA SMP</h1>
-                    <p className="relative mt-3 max-w-3xl font-semibold leading-relaxed text-slate-300 md:text-lg">
-                        Lihat bagian yang sudah kuat, materi yang masih perlu diperbaiki, dan rekomendasi langkah belajar berikutnya dalam satu tempat.
+                    <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                        Perkembangan belajar TKA {level}
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                        Pantau tingkat kesiapan ujian, peta kekuatan tiap mata pelajaran, serta rekomendasi materi prioritas yang perlu diperkuat untuk memaksimalkan hasil belajarmu.
                     </p>
                 </header>
 

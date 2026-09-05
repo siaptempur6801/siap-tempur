@@ -7,6 +7,8 @@ import { ProfileTab } from './ProfileTab'
 import { HistoryTab } from './HistoryTab'
 import { SettingsTab } from './SettingsTab'
 import { cn } from '@/lib/utils'
+import { useProfileNavigation } from './useProfileNavigation'
+import tkaStyles from './TkaProfile.module.css'
 
 type Profile = {
     id: string
@@ -94,6 +96,7 @@ export default function ProfileClient({
     level,
 }: ProfileClientProps) {
     const searchParams = useSearchParams()
+    const { profilePath, isTka } = useProfileNavigation()
     const router = useRouter()
     const requestedTab = searchParams.get('tab')
     const [activeTab, setActiveTab] = useState<ProfileTabId>(() => parseProfileTab(requestedTab))
@@ -110,7 +113,9 @@ export default function ProfileClient({
 
     const handleTabChange = (tabId: ProfileTabId) => {
         setActiveTab(tabId)
-        router.push(`/cpns/dashboard/profile?tab=${tabId}`, { scroll: false })
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tab', tabId)
+        router.push(`${profilePath}?${params.toString()}`, { scroll: false })
     }
 
     const tabs = [
@@ -120,10 +125,10 @@ export default function ProfileClient({
     ] as const
 
     return (
-        <div className="st-product space-y-7 font-body text-[var(--st-ink)]">
+        <div className={cn('st-product space-y-7 font-body text-[var(--st-ink)]', isTka && tkaStyles.profile)}>
             <header className="max-w-3xl">
                 <div className="st-kicker"><ClipboardList size={15} /> Akun SiapTempur</div>
-                <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">Profil dan pengaturan akunmu.</h1>
+                <h1 className={isTka ? 'mt-2 text-2xl font-bold text-slate-950' : 'st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl'}>Profil dan pengaturan akunmu.</h1>
                 <p className="st-muted mt-3 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
                     Perbarui informasi profil, lihat riwayat transaksi dan penggunaan token, serta kelola pengaturan akun dari satu tempat.
                 </p>
@@ -139,7 +144,7 @@ export default function ProfileClient({
                         aria-current={activeTab === tab.id ? 'page' : undefined}
                         className={cn(
                             'inline-flex min-h-11 shrink-0 items-center gap-2 border-2 border-[var(--st-ink)] px-4 py-2.5 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
-                            activeTab === tab.id
+                            isTka ? (activeTab === tab.id ? 'rounded-lg !border-indigo-200 bg-indigo-50 text-indigo-700 shadow-none' : 'rounded-lg !border-slate-200 bg-white text-slate-600 hover:bg-slate-50') : activeTab === tab.id
                                 ? 'bg-[var(--st-yellow)] shadow-[3px_3px_0_var(--st-ink)]'
                                 : 'bg-white text-gray-600 hover:bg-blue-50'
                         )}

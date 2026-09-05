@@ -229,8 +229,8 @@ export class TkaProgressDashboardService {
 
         let nextAction: TkaLearningFocusAction = focus.items[0]?.nextAction ?? {
             type: 'practice_tka',
-            label: 'Latihan TKA SMP',
-            href: '/tka/smp',
+            label: 'Buka Latihan Fokus',
+            href: '/tka/smp/focus',
         }
         if (focus.items.length === 0 && activeRemedial) {
             nextAction = {

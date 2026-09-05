@@ -8,6 +8,7 @@ import ImageCropper from '@/components/ui/ImageCropper'
 import VoucherClaim from '@/components/VoucherClaim'
 import { saveProfileAvatar, updateProfileInfo } from '@/app/actions/profile'
 import { createV2Client } from '@/lib/utils/supabase/client'
+import { useProfileNavigation } from './useProfileNavigation'
 
 const MAX_SOURCE_IMAGE_BYTES = 10 * 1024 * 1024
 const ALLOWED_SOURCE_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
@@ -45,6 +46,7 @@ interface ProfileTabProps {
 }
 
 export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps) {
+    const { isTka, purchasePath, level: tkaLevel } = useProfileNavigation()
     const router = useRouter()
     const [isEditing, setIsEditing] = useState(false)
     const [isPending, startTransition] = useTransition()
@@ -127,8 +129,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                     phone_number: editedPhone,
                     birth_date: editedBirthDate,
                     gender: editedGender,
-                    education_level: editedEducation,
-                    target_instance: editedTarget,
+                    ...(!isTka ? { education_level: editedEducation, target_instance: editedTarget } : {}),
                 })
 
                 if (!result.success || !result.profile) {
@@ -233,7 +234,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                             <option value="Perempuan">Perempuan</option>
                                         </select>
                                     </Field>
-                                    <Field label="Pendidikan terakhir">
+                                    {!isTka && <Field label="Pendidikan terakhir">
                                         <select className="st-input" value={editedEducation} onChange={(e) => setEditedEducation(e.target.value)}>
                                             <option value="">Pilih</option>
                                             <option value="SMA/SMK">SMA/SMK</option>
@@ -241,10 +242,10 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                             <option value="S1">S1/D4</option>
                                             <option value="S2">S2</option>
                                         </select>
-                                    </Field>
-                                    <Field label="Instansi tujuan" full>
+                                    </Field>}
+                                    {!isTka && <Field label="Instansi tujuan" full>
                                         <input className="st-input" value={editedTarget} onChange={(e) => setEditedTarget(e.target.value)} placeholder="Contoh: Kemenkumham" maxLength={120} />
-                                    </Field>
+                                    </Field>}
                                 </div>
                                 <div className="flex flex-wrap gap-3">
                                     <button type="button" onClick={handleSave} disabled={isPending} className="st-button inline-flex min-h-11 items-center gap-2 bg-green-500 px-5 py-2.5 font-black disabled:opacity-50">
@@ -272,8 +273,8 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                     <InfoCard icon={<Mail size={18} />} label="Email" value={user.email || '-'} tone="bg-blue-50" />
                                     <InfoCard icon={<Calendar size={18} />} label="Bergabung" value={createdAt} tone="bg-green-50" />
                                     <InfoCard label="No. handphone" value={profile.phone_number || '-'} tone="bg-yellow-50" />
-                                    <InfoCard icon={<Target size={18} />} label="Target instansi" value={profile.target_instance || '-'} tone="bg-cyan-50" />
-                                    <InfoCard label="Pendidikan" value={profile.education_level || '-'} tone="bg-purple-50" />
+                                    {!isTka && <InfoCard icon={<Target size={18} />} label="Target instansi" value={profile.target_instance || '-'} tone="bg-cyan-50" />}
+                                    <InfoCard label={isTka ? 'Jenjang belajar' : 'Pendidikan'} value={isTka ? tkaLevel || '-' : profile.education_level || '-'} tone="bg-purple-50" />
                                     <InfoCard label="Tanggal lahir" value={profile.birth_date ? new Date(profile.birth_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) : '-'} tone="bg-orange-50" />
                                 </div>
                             </div>
@@ -286,12 +287,12 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                 <div className="flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center border-2 border-[var(--st-ink)] bg-[var(--st-yellow)]"><Ticket size={23} /></div>
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.12em] text-green-800">Token CPNS</p>
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-green-800">{isTka ? 'Token SiapTempur' : 'Token CPNS'}</p>
                         <h3 className="st-heading text-xl">{profile.tryout_quota ?? 0} token tersisa</h3>
                         <p className="st-muted mt-0.5 text-sm font-semibold">Gunakan pada sesi yang menampilkan kebutuhan token sebelum dimulai.</p>
                     </div>
                 </div>
-                <Link href="/cpns/dashboard/beli-paket" className="st-button inline-flex min-h-11 items-center justify-center bg-blue-600 px-5 py-2.5 text-sm font-black text-white">Lihat paket token</Link>
+                <Link href={purchasePath} className="st-button inline-flex min-h-11 items-center justify-center bg-blue-600 px-5 py-2.5 text-sm font-black text-white">Lihat paket token</Link>
             </section>
 
             <section aria-label="Klaim voucher">
