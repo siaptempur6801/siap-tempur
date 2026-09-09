@@ -113,16 +113,16 @@ export default function TkaDashboardShell({
                         <NavItem active={level === 'SMP' ? undefined : false} href={featureHref('/focus')} icon={<Dumbbell size={17} />} label="Latihan Fokus" variant="soft" />
                         <NavItem active={level === 'SMP' ? undefined : false} href={featureHref('/mini-tryout')} icon={<Timer size={17} />} label="Mini Tryout" variant="soft" />
                         <NavItem active={level === 'SMP' ? undefined : false} href={featureHref('/tryout')} icon={<ListChecks size={17} />} label="Tryout" variant="soft" />
-                        <NavItem active={level === "SMP" ? undefined : false} href={featureHref('/progress')} icon={<BarChart3 size={17} />} label="Perkembangan" variant="soft" />
                         <NavItem active={level === "SMP" ? undefined : false} href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={17} />} label="Bank Soal Salah" variant="soft" />
+                        <NavItem active={level === "SMP" ? undefined : false} href={featureHref('/progress')} icon={<BarChart3 size={17} />} label="Perkembangan" variant="soft" />
                     </div>
 
                     <div className="my-3.5 border-t border-slate-100" />
                     <p className="mb-1.5 px-2.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">Akun & Akses</p>
                     <div className="space-y-1">
                         <NavItem href={`${basePath}/profile`} icon={<User size={17} />} label="Profil Siswa" variant="soft" />
-                        <NavItem href={`${basePath}/beli-token`} icon={<Ticket size={17} />} label="Beli Token" variant="soft" />
                         <NavItem active={level === 'SMP' ? undefined : false} href={level === 'SMP' ? `${basePath}/pass` : basePath} icon={<Ticket size={17} />} label="Tempur Pass" variant="soft" />
+                        <NavItem href={`${basePath}/beli-token`} icon={<Ticket size={17} />} label="Beli Token" variant="soft" />
                         <NavItem href="/cpns/dashboard" icon={<ShieldCheck size={17} />} label="Jalur CPNS" variant="soft" />
                     </div>
                 </nav>

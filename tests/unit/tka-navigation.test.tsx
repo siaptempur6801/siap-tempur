@@ -59,6 +59,34 @@ describe('TKA navigation selection', () => {
         expect(markup).toContain('TKA SMP')
     })
 
+    it('keeps the learner sidebar in study-flow order', () => {
+        navigation.pathname = '/tka/smp'
+        const markup = renderToStaticMarkup(
+            <TkaDashboardShell
+                level="SMP"
+                user={{ id: 'user-1', email: 'user@example.com' }}
+                profile={null}
+                tokenBalance={10}
+                signoutAction={async () => ({ success: true })}
+            >
+                <div>Dashboard</div>
+            </TkaDashboardShell>,
+        )
+
+        const order = [
+            'Ringkasan',
+            'Tes Diagnostik',
+            'Latihan Fokus',
+            'Mini Tryout',
+            'Tryout',
+            'Bank Soal Salah',
+            'Perkembangan',
+        ].map((label) => markup.indexOf(`>${label}</span>`))
+
+        expect(order.every((index) => index >= 0)).toBe(true)
+        expect(order).toEqual([...order].sort((left, right) => left - right))
+    })
+
     it('marks Latihan Fokus active on its dedicated route', () => {
         navigation.pathname = '/tka/smp/focus'
         const focus = renderToStaticMarkup(<NavItem href="/tka/smp/focus" label="Latihan Fokus" icon={null} />)
