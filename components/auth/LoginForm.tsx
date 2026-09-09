@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { login, resendVerificationEmail } from '@/app/auth/actions'
@@ -11,11 +11,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { loginSchema, LoginFormData } from '@/lib/validations/auth'
 import { resolvePostLoginRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 import { trackProductEvent } from '@/lib/product-analytics'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 export default function LoginForm({ returnTo }: { returnTo: string }) {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
     const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
+    const authActionLock = useRef(false)
     const router = useRouter()
     const safeReturnTo = sanitizeAuthReturnTo(returnTo)
 
@@ -29,6 +31,8 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
     })
 
     const onSubmit = async (data: LoginFormData) => {
+        if (!acquireSingleFlightLock(authActionLock)) return
+
         trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'login', auth_method: 'email' })
         setLoading(true)
         setUnverifiedEmail(null)
@@ -42,8 +46,12 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
             if (result?.error === 'unverified') {
                 setUnverifiedEmail(data.email)
                 toast.error('Email belum diverifikasi')
+                releaseSingleFlightLock(authActionLock)
+                setLoading(false)
             } else if (result?.error) {
                 toast.error(result.error)
+                releaseSingleFlightLock(authActionLock)
+                setLoading(false)
             } else {
                 trackProductEvent('px_auth_success', { surface: 'auth', auth_method: 'email' })
                 toast.success('Berhasil masuk', { description: 'Lanjutkan belajarmu.' })
@@ -51,13 +59,15 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
             }
         } catch {
             toast.error('Belum bisa masuk', { description: 'Coba lagi beberapa saat.' })
-        } finally {
+            releaseSingleFlightLock(authActionLock)
             setLoading(false)
         }
     }
 
     const handleResend = async () => {
         if (!unverifiedEmail) return
+        if (!acquireSingleFlightLock(authActionLock)) return
+
         setLoading(true)
         try {
             const result = await resendVerificationEmail(unverifiedEmail)
@@ -72,11 +82,14 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
         } catch {
             toast.error('Email verifikasi belum bisa dikirim', { description: 'Coba lagi beberapa saat.' })
         } finally {
+            releaseSingleFlightLock(authActionLock)
             setLoading(false)
         }
     }
 
     const handleGoogleLogin = async () => {
+        if (!acquireSingleFlightLock(authActionLock)) return
+
         trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'login', auth_method: 'google' })
         setLoading(true)
         try {
@@ -86,10 +99,12 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
                 window.location.href = result.url
             } else if (result?.error) {
                 toast.error(result.error)
+                releaseSingleFlightLock(authActionLock)
                 setLoading(false)
             }
         } catch {
             toast.error('Belum bisa masuk dengan Google', { description: 'Coba lagi beberapa saat.' })
+            releaseSingleFlightLock(authActionLock)
             setLoading(false)
         }
     }

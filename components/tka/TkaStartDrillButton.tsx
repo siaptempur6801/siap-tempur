@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dumbbell } from 'lucide-react'
 import { toast } from 'sonner'
 import { startTkaDrill } from '@/app/actions/tka-practice'
 import { trackProductEvent } from '@/lib/product-analytics'
 import { LoadingSpinner } from '@/components/ui/LoadingState'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 export default function TkaStartDrillButton({
     level,
@@ -24,9 +25,11 @@ export default function TkaStartDrillButton({
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
+    const startLockRef = useRef(false)
 
     const start = async () => {
-        if (disabledReason || loading) return
+        if (disabledReason || !acquireSingleFlightLock(startLockRef)) return
+        let isNavigating = false
         setLoading(true)
         setErrorMessage(null)
         try {
@@ -44,11 +47,15 @@ export default function TkaStartDrillButton({
                 })
                 toast.success(result.resumed ? 'Melanjutkan latihan fokus tersimpan.' : `Latihan ${knowledgeNodeName} dimulai!`)
                 router.push(`/tka/${level.toLowerCase()}/tryout/${result.sessionId}`)
+                isNavigating = true
             }
         } catch {
             setErrorMessage('Gagal memulai latihan fokus.')
         } finally {
-            setLoading(false)
+            if (!isNavigating) {
+                releaseSingleFlightLock(startLockRef)
+                setLoading(false)
+            }
         }
     }
 

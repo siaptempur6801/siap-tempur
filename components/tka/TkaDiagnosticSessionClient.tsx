@@ -14,6 +14,7 @@ import {
 } from '@/app/actions/tka-full-exam'
 import type { TkaFullExamQuestionView, TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
 import ProgressBar from '@/components/ui/ProgressBar'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 function formatRemaining(milliseconds: number) {
     const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
@@ -40,6 +41,7 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
     const [remainingMs, setRemainingMs] = useState<number | null>(null)
     const [savingId, setSavingId] = useState<string | null>(null)
     const [processing, setProcessing] = useState(false)
+    const finishLockRef = useRef(false)
     const enteredAtRef = useRef(Date.now())
     const expiredRef = useRef(false)
 
@@ -95,13 +97,17 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
     }
 
     const finishSection = useCallback(async (automatic = false) => {
-        if (!activeSection || processing) return
+        if (!activeSection || !acquireSingleFlightLock(finishLockRef)) return
         const unanswered = Math.max(0, questions.length - answeredCount)
         if (!automatic) {
             const warning = unanswered > 0 ? `Masih ada ${unanswered} soal belum dijawab. ` : ''
-            if (!window.confirm(`${warning}Selesaikan bagian ${activeSection.title} sekarang? Jawaban bagian ini tidak dapat diubah setelah lanjut.`)) return
+            if (!window.confirm(`${warning}Selesaikan bagian ${activeSection.title} sekarang? Jawaban bagian ini tidak dapat diubah setelah lanjut.`)) {
+                releaseSingleFlightLock(finishLockRef)
+                return
+            }
         }
 
+        let isNavigating = false
         setProcessing(true)
         try {
             const transition = await completeTkaFullExamSection(state.attemptId)
@@ -117,6 +123,7 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                 }
                 toast.success('Tes diagnostik selesai. Peta kemampuanmu sudah dibuat.')
                 router.push(`/tka/smp/diagnostic/${state.attemptId}/result`)
+                isNavigating = true
                 return
             }
             toast.success(automatic ? 'Waktu bagian selesai. Lanjut ke bagian berikutnya.' : 'Bagian selesai. Lanjut ke bagian berikutnya.')
@@ -124,9 +131,12 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
         } catch {
             toast.error('Bagian ini belum dapat diselesaikan. Coba lagi.')
         } finally {
-            setProcessing(false)
+            if (!isNavigating) {
+                releaseSingleFlightLock(finishLockRef)
+                setProcessing(false)
+            }
         }
-    }, [activeSection, answeredCount, processing, questions.length, router, state.attemptId])
+    }, [activeSection, answeredCount, questions.length, router, state.attemptId])
 
     useEffect(() => {
         if (!activeSection) return

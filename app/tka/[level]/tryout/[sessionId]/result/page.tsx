@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { logger } from '@/lib/logger'
 import { BookOpenCheck, CheckCircle2, Clock3, ListChecks, RotateCcw, Target, Trophy, XCircle } from 'lucide-react'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
@@ -59,7 +60,12 @@ export default async function TkaResultPage({
         try {
             const candidate = await tkaFullExamRpcService.getState(sessionId)
             if (candidate.sections.length > 0) fullExamState = candidate
-        } catch {
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            if (!message.toLowerCase().includes('attempt not found')) {
+                logger.error('[tka-result] Section engine result lookup failed', error, { sessionId, level })
+                throw error
+            }
             // Legacy/generic TKA result continues through practiceResultService.
         }
     }
@@ -170,6 +176,38 @@ export default async function TkaResultPage({
                     </section>
                 )}
 
+                {(automaticRemedialEnabled || (repeatWrongEnabled && !automaticRemedialEnabled)) && (
+                    <section className="flex flex-col gap-4 rounded-[1.5rem] border border-indigo-100 bg-indigo-50/70 p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
+                                {automaticRemedialEnabled ? <BookOpenCheck size={16}/> : <RotateCcw size={16}/>} Langkah berikutnya
+                            </div>
+                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+                                {automaticRemedialEnabled
+                                    ? `${remedial?.session?.pendingItems ?? 0} soal prioritas sudah dipilih untukmu.`
+                                    : `Ada ${wrongGapCount} soal yang perlu kamu pelajari lagi.`}
+                            </h2>
+                            <p className="mt-1 max-w-2xl text-sm font-semibold leading-relaxed text-slate-500">
+                                {automaticRemedialEnabled
+                                    ? 'Kerjakan latihan perbaikan ini sebelum mencoba sesi berikutnya agar hasil belajarmu lebih kuat.'
+                                    : 'Ulangi soal yang salah atau belum dijawab sampai kamu benar-benar memahami materinya.'}
+                            </p>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap gap-2 md:justify-end">
+                            {automaticRemedialEnabled && remedial?.session && (
+                                <Link href={`${base}/remedial/${remedial.session.id}`} className="st-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 font-black text-white shadow-sm transition hover:bg-indigo-700">
+                                    <BookOpenCheck size={18}/> Mulai remedial
+                                </Link>
+                            )}
+                            {repeatWrongEnabled && !automaticRemedialEnabled && (
+                                <Link href={`${base}/wrong-questions`} className="st-focus inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 font-black text-white shadow-sm transition hover:bg-slate-800">
+                                    <RotateCcw size={18}/> Ulangi soal
+                                </Link>
+                            )}
+                        </div>
+                    </section>
+                )}
+
                 <section id="pembahasan" className="scroll-mt-6 space-y-4">
                     <div>
                         <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Pembahasan</p>
@@ -182,40 +220,6 @@ export default async function TkaResultPage({
                 {readiness && <TkaReadinessCard readiness={readiness}/>} 
 
                 <TkaLearningFocusPanel items={learningFocus?.items ?? []}/>
-
-                {automaticRemedialEnabled && remedial?.session && (
-                    <section className="flex flex-col gap-4 rounded-[1.5rem] border border-amber-100 bg-amber-50/70 p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-amber-700">
-                                <BookOpenCheck size={16}/> Latihan perbaikan
-                            </div>
-                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">{remedial.session.pendingItems} soal prioritas sudah dipilih untukmu.</h2>
-                            <p className="mt-1 max-w-2xl text-sm font-semibold leading-relaxed text-slate-500">
-                                Kerjakan soal prioritas dari hasil tryout ini untuk memperkuat bagian yang masih lemah sebelum mencoba sesi berikutnya.
-                            </p>
-                        </div>
-                        <Link href={`${base}/remedial/${remedial.session.id}`} className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950 shadow-[0_10px_22px_rgba(245,158,11,0.18)] transition hover:bg-amber-300">
-                            <BookOpenCheck size={18}/> Mulai latihan ({remedial.session.pendingItems})
-                        </Link>
-                    </section>
-                )}
-
-                {repeatWrongEnabled && !automaticRemedialEnabled && (
-                    <section className="flex flex-col gap-4 rounded-[1.5rem] border border-red-100 bg-red-50/70 p-5 shadow-sm md:flex-row md:items-center md:justify-between">
-                        <div>
-                            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-red-700">
-                                <RotateCcw size={16}/> Soal yang perlu diulang
-                            </div>
-                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">Ada {wrongGapCount} soal yang perlu kamu pelajari lagi.</h2>
-                            <p className="mt-1 max-w-2xl text-sm font-semibold leading-relaxed text-slate-500">
-                                Daftar ini berisi jawaban salah dan soal yang belum dijawab. Soal akan selesai setelah kamu berhasil menjawabnya dengan benar.
-                            </p>
-                        </div>
-                        <Link href={`${base}/wrong-questions`} className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 py-3 font-black text-white shadow-[0_10px_22px_rgba(15,23,42,0.16)] transition hover:bg-slate-800">
-                            <RotateCcw size={18}/> Ulangi soal ({wrongGapCount})
-                        </Link>
-                    </section>
-                )}
 
                 <section className="flex flex-col gap-4 border-t border-slate-200 pt-6 md:flex-row md:items-center md:justify-between">
                     <div>

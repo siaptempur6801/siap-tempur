@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { RefreshCw, Loader2 } from 'lucide-react'
 import { startMiniTryout, startTryout } from '@/app/actions/practice'
 import { toast } from 'sonner'
 import { MINI_TRYOUT_PRODUCTS, TRYOUT_TOKEN_COST } from '@/lib/constants'
 import TokenUsageConfirmModal from './TokenUsageConfirmModal'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 interface RetakeButtonProps {
     isCombined: boolean
@@ -17,9 +18,11 @@ interface RetakeButtonProps {
 export default function RetakeButton({ isCombined, singleType, quota }: RetakeButtonProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [showTokenConfirm, setShowTokenConfirm] = useState(false)
+    const retakeLockRef = useRef(false)
     const router = useRouter()
 
     const handleRetake = async () => {
+        if (!acquireSingleFlightLock(retakeLockRef)) return
         let isNavigating = false
         setIsLoading(true)
         try {
@@ -37,14 +40,15 @@ export default function RetakeButton({ isCombined, singleType, quota }: RetakeBu
                 toast.error(result.error)
             } else if (result.sessionId) {
                 toast.success(result.resumed ? 'Melanjutkan sesi tersimpan.' : isCombined ? 'Tryout baru dimulai!' : 'Mini tryout baru dimulai!')
-                isNavigating = true
                 router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
+                isNavigating = true
             }
         } catch (error) {
             console.error('Failed to retake:', error)
             toast.error('Terjadi kesalahan saat memulai ulang tryout')
         } finally {
             if (!isNavigating) {
+                releaseSingleFlightLock(retakeLockRef)
                 setIsLoading(false)
             }
         }

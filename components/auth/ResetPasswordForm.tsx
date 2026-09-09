@@ -1,19 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { resetPassword } from '@/app/auth/actions'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 export default function ResetPasswordForm() {
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [loading, setLoading] = useState(false)
+    const submitLockRef = useRef(false)
     const router = useRouter()
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
+        if (!acquireSingleFlightLock(submitLockRef)) return
         setLoading(true)
         const formData = new FormData(event.currentTarget)
 
@@ -24,10 +27,12 @@ export default function ResetPasswordForm() {
             toast.error('Password tidak cocok', {
                 description: 'Pastikan password baru dan konfirmasi password sama.'
             })
+            releaseSingleFlightLock(submitLockRef)
             setLoading(false)
             return
         }
 
+        let isNavigating = false
         try {
             const result = await resetPassword(formData)
             if (result?.error) {
@@ -37,11 +42,15 @@ export default function ResetPasswordForm() {
                     description: 'Silakan login kembali dengan password baru Anda.'
                 })
                 router.push('/login')
+                isNavigating = true
             }
         } catch {
             toast.error('Gagal mengubah password')
         } finally {
-            setLoading(false)
+            if (!isNavigating) {
+                releaseSingleFlightLock(submitLockRef)
+                setLoading(false)
+            }
         }
     }
 

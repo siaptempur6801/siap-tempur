@@ -48,6 +48,7 @@ interface TryoutOption {
     accessLabel: string
     accessTone: AccessTone
     disabledReason: string | null
+    activeAttemptId: string | null
     full: boolean
 }
 
@@ -238,12 +239,13 @@ export default async function TkaLevelPage({
         'Pejuang TKA'
 
     const activeTrack = userTrack?.status.toLowerCase() === 'active'
-    const recentAttempts = (attemptRows ?? []).filter((attempt) => {
+    const learnerAttempts = (attemptRows ?? []).filter((attempt) => {
         const exam = examById.get(String(attempt.exam_id))
         const typeCode = String(examTypeById.get(String(exam?.exam_type_id ?? ''))?.code ?? '').toUpperCase()
         return typeCode !== 'DIAGNOSTIC'
-    }).slice(0, 6)
-    const activeAttempt = recentAttempts.find((attempt) => String(attempt.status ?? '').toLowerCase() === 'in_progress') ?? null
+    })
+    const recentAttempts = learnerAttempts.slice(0, 6)
+    const activeAttempt = learnerAttempts.find((attempt) => String(attempt.status ?? '').toLowerCase() === 'in_progress') ?? null
     const activeExam = activeAttempt ? examById.get(String(activeAttempt.exam_id)) : null
     const activeExamType = activeExam ? examTypeById.get(String(activeExam.exam_type_id)) : null
     const activeTypeCode = String(activeExamType?.code ?? '').toUpperCase()
@@ -256,12 +258,25 @@ export default async function TkaLevelPage({
     const latestCompletedAttempt = recentAttempts.find((attempt) => ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase())) ?? null
     const latestCompletedExam = latestCompletedAttempt ? examById.get(String(latestCompletedAttempt.exam_id)) : null
     const hasTempurPass = entitledFeatures.size > 0
+    const diagnosticExam = (exams ?? []).find((exam) => String(exam.slug).toLowerCase() === 'tka-smp-diagnostic-awal')
+    const diagnosticAttempts = diagnosticExam
+        ? (attemptRows ?? []).filter((attempt) => String(attempt.exam_id) === String(diagnosticExam.id))
+        : []
+    const diagnosticInProgress = diagnosticAttempts.find((attempt) => String(attempt.status ?? '').toLowerCase() === 'in_progress') ?? null
+    const hasCompletedDiagnostic = diagnosticAttempts.some((attempt) => ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase()))
 
     const tryoutExams = (exams ?? []).filter((exam) => {
         const typeCode = String(examTypeById.get(String(exam.exam_type_id))?.code ?? '').toUpperCase()
         const slug = String(exam.slug ?? '').toLowerCase()
         return typeCode.includes('TRYOUT') || slug.includes('-mini-') || slug.endsWith('-full')
     })
+
+    const activeAttemptByExam = new Map<string, string>()
+    for (const attempt of learnerAttempts) {
+        if (String(attempt.status ?? '').toLowerCase() !== 'in_progress') continue
+        const examId = String(attempt.exam_id)
+        if (!activeAttemptByExam.has(examId)) activeAttemptByExam.set(examId, String(attempt.id))
+    }
 
     const attemptCountByExam = new Map<string, number>()
     for (const row of attemptRows ?? []) {
@@ -313,18 +328,40 @@ export default async function TkaLevelPage({
             accessLabel,
             accessTone: hasEntitlement ? 'success' : accessReason ? 'warning' : 'default',
             disabledReason: !activeTrack ? 'Aktifkan jalur belajar terlebih dahulu' : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }) || accessReason,
+            activeAttemptId: activeAttemptByExam.get(String(exam.id)) ?? null,
             full,
         }
     })
 
-    const recommendation = activeAttempt
+    const recommendation = !activeTrack
+        ? {
+            href: path,
+            title: `Aktifkan Jalur TKA ${level} terlebih dahulu`,
+            description: 'Aktifkan jalur belajar agar hasil diagnostik, latihan, dan riwayat tryout tersimpan di akunmu.',
+            action: 'Aktifkan Jalur',
+        }
+        : activeAttempt
         ? {
             href: `${path}/tryout/${activeAttempt.id}`,
             title: `Lanjutkan ${activePracticeLabel} yang belum selesai`,
             description: `${activePracticeLabel} kamu masih berjalan. Lanjutkan dari soal terakhir agar progres tetap tersimpan rapi.`,
             action: 'Lanjutkan Sekarang',
         }
-        : latestCompletedAttempt
+        : diagnosticInProgress
+            ? {
+                href: `${path}/diagnostic/${diagnosticInProgress.id}`,
+                title: 'Lanjutkan Tes Diagnostik',
+                description: 'Tes diagnostikmu belum selesai. Lanjutkan untuk mendapatkan peta kemampuan dan rekomendasi belajar.',
+                action: 'Lanjutkan Diagnostik',
+            }
+            : !hasCompletedDiagnostic
+                ? {
+                    href: `${path}/diagnostic`,
+                    title: 'Mulai dari Tes Diagnostik',
+                    description: 'Petakan kemampuan awalmu lebih dulu agar latihan berikutnya langsung fokus pada topik yang paling perlu diperkuat.',
+                    action: 'Mulai Diagnostik',
+                }
+                : latestCompletedAttempt
             ? {
                 href: `${path}/wrong-questions`,
                 title: 'Perbaiki soal yang masih lemah',
@@ -332,10 +369,10 @@ export default async function TkaLevelPage({
                 action: 'Mulai Perbaikan',
             }
             : {
-                href: `${path}/tryout`,
-                title: 'Mulai dari Mini Tryout',
-                description: 'Ukur kemampuan awal lewat Mini Tryout, lalu gunakan hasilnya untuk memilih latihan fokus materi.',
-                action: 'Pilih Tryout',
+                href: `${path}/focus`,
+                title: 'Mulai Latihan Fokus',
+                description: 'Gunakan rekomendasi diagnostik untuk memperkuat topik pertama sebelum masuk ke Mini Tryout.',
+                action: 'Mulai Latihan',
             }
 
     return (
@@ -541,7 +578,12 @@ export default async function TkaLevelPage({
                                             </span>
                                         </div>
                                     </div>
-                                    <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={exam.disabledReason} />
+                            <TkaStartExamButton
+                                level={level}
+                                examSlug={exam.slug}
+                                disabledReason={exam.disabledReason}
+                                activeAttemptId={exam.activeAttemptId}
+                            />
                                 </article>
                             ))}
                         </div>
@@ -804,4 +846,3 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
     return <label className="space-y-1.5"><span className="block text-xs font-black text-slate-700">{label}</span>{children}</label>
 }
-

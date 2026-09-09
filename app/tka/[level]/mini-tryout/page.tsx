@@ -21,6 +21,7 @@ interface TryoutOption {
     accessLabel: string
     accessTone: AccessTone
     disabledReason: string | null
+    activeAttemptId: string | null
     full: boolean
 }
 
@@ -175,9 +176,13 @@ export default async function TkaMiniTryoutPage({
     }
 
     const attemptCountByExam = new Map<string, number>()
+    const activeAttemptByExam = new Map<string, string>()
     for (const row of attemptRows ?? []) {
         const examId = String(row.exam_id)
         attemptCountByExam.set(examId, (attemptCountByExam.get(examId) ?? 0) + 1)
+        if (String(row.status ?? '').toLowerCase() === 'in_progress' && !activeAttemptByExam.has(examId)) {
+            activeAttemptByExam.set(examId, String(row.id))
+        }
     }
 
     const examById = new Map(miniTryoutExams.map((exam) => [String(exam.id), exam]))
@@ -221,7 +226,12 @@ export default async function TkaMiniTryoutPage({
             details,
             accessLabel,
             accessTone: hasEntitlement ? 'success' : accessReason ? 'warning' : 'default',
-            disabledReason: !activeTrack ? 'Aktifkan jalur belajar terlebih dahulu' : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }) || accessReason,
+            disabledReason: activeAttemptByExam.has(String(exam.id))
+                ? null
+                : !activeTrack
+                    ? 'Aktifkan jalur belajar terlebih dahulu'
+                    : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }) || accessReason,
+            activeAttemptId: activeAttemptByExam.get(String(exam.id)) ?? null,
             full: false,
         }
     })
@@ -300,7 +310,12 @@ export default async function TkaMiniTryoutPage({
                                             <MetaChip text={exam.accessLabel} tone={exam.accessTone} />
                                         </div>
                                     </div>
-                                    <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={exam.disabledReason} />
+                                    <TkaStartExamButton
+                                        level={level}
+                                        examSlug={exam.slug}
+                                        disabledReason={exam.disabledReason}
+                                        activeAttemptId={exam.activeAttemptId}
+                                    />
                                 </article>
                             ))}
                         </div>

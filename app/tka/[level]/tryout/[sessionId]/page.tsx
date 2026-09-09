@@ -1,5 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import { createV2Client } from '@/lib/utils/supabase/server'
+import { logger } from '@/lib/logger'
 import TkaFullExamSessionClient from '@/components/tka/TkaFullExamSessionClient'
 import TkaPracticeSessionClient from '@/components/tka/TkaPracticeSessionClient'
 import { practiceSessionService } from '@/src/services/practice-session.service'
@@ -28,7 +29,12 @@ export default async function TkaPracticeSessionPage({
         try {
             const candidate = await tkaFullExamRpcService.getState(sessionId)
             if (candidate.sections.length > 0) fullExamState = candidate
-        } catch {
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error)
+            if (!message.toLowerCase().includes('attempt not found')) {
+                logger.error('[tka-session] Section engine state lookup failed', error, { sessionId, level })
+                throw error
+            }
             // Legacy/generic TKA attempts do not use the section engine. They
             // continue through the Schema V2 practice service below.
         }

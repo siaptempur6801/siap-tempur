@@ -1,16 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { forgotPassword } from '@/app/auth/actions'
 import { Loader2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 export default function ForgotPasswordForm() {
     const [loading, setLoading] = useState(false)
     const [sent, setSent] = useState(false)
+    const submitLockRef = useRef(false)
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault()
+        if (!acquireSingleFlightLock(submitLockRef)) return
         setLoading(true)
         const formData = new FormData(event.currentTarget)
 
@@ -27,6 +30,7 @@ export default function ForgotPasswordForm() {
         } catch {
             toast.error('Email reset belum bisa dikirim', { description: 'Coba lagi beberapa saat.' })
         } finally {
+            releaseSingleFlightLock(submitLockRef)
             setLoading(false)
         }
     }

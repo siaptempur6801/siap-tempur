@@ -120,6 +120,11 @@ export default async function TkaDiagnosticResultPage({
             score: Math.max(0, 1 - Number(row.baseline_score) / 100),
         }))
     const competencyByNode = new Map(competencies.map((row) => [row.knowledge_node_id, row]))
+    const primaryRecommendation = recommendations[0] ?? null
+    const primaryCompetency = primaryRecommendation ? competencyByNode.get(primaryRecommendation.knowledge_node_id) : null
+    const primaryNode = primaryRecommendation ? nodeById.get(primaryRecommendation.knowledge_node_id) : null
+    const primarySubject = primaryCompetency ? subjectById.get(primaryCompetency.subject_id) : null
+    const primaryDrillReady = Boolean(primarySubject?.code && primaryNode?.name)
     const overall = Number(profile.overall_score ?? attempt.percentage ?? 0)
     const strongest = [...competencies].sort((a, b) => Number(b.baseline_score) - Number(a.baseline_score))[0]
     const weakest = competencies[0]
@@ -216,14 +221,38 @@ export default async function TkaDiagnosticResultPage({
                         </span>
                         <div>
                             <p className="text-xs font-black uppercase tracking-wider text-indigo-600">Rekomendasi personal</p>
-                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900">Mulai dari tiga prioritas ini</h2>
+                            <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900">Mulai dari prioritas utama</h2>
                             <p className="mt-1.5 max-w-2xl text-sm font-semibold text-slate-500 leading-relaxed">
-                                Urutan dibuat dari baseline terendah. Setelah kamu punya bukti belajar baru, rekomendasi diagnostik akan digantikan oleh rekomendasi berbasis perkembangan aktual.
+                                Kerjakan prioritas pertama terlebih dahulu. Setelah punya bukti belajar baru, rekomendasi diagnostik akan digantikan oleh rekomendasi berbasis perkembangan aktual.
                             </p>
                         </div>
                     </div>
-                    <div className="mt-6 grid gap-4 lg:grid-cols-3">
-                        {recommendations.slice(0, 3).map((row) => {
+                    {primaryRecommendation && (
+                        <div className="mt-6 flex flex-col gap-4 rounded-2xl border-2 border-indigo-200 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <div className="inline-flex rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-black text-white">
+                                    Prioritas utama
+                                </div>
+                                <h3 className="mt-3 text-xl font-black text-slate-900">{primaryNode?.name ?? 'Fokus belajar'}</h3>
+                                <p className="mt-1 text-sm font-bold text-slate-500">{primarySubject?.name ?? 'TKA SMP'} · 10 soal fokus · sekitar 15 menit</p>
+                            </div>
+                            <div className="shrink-0 md:w-56">
+                                <TkaStartDrillButton
+                                    level={level}
+                                    subjectCode={primarySubject?.code ?? ''}
+                                    knowledgeNodeName={primaryNode?.name ?? 'Fokus belajar'}
+                                    disabledReason={primaryDrillReady ? null : 'Latihan fokus belum tersedia untuk topik ini.'}
+                                    compact
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {recommendations.length > 1 && (
+                        <p className="mt-6 text-xs font-black uppercase tracking-wider text-slate-400">Pilihan fokus berikutnya</p>
+                    )}
+                    {recommendations.length > 1 && (
+                        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+                            {recommendations.slice(1, 3).map((row) => {
                             const competency = competencyByNode.get(row.knowledge_node_id)
                             const node = nodeById.get(row.knowledge_node_id)
                             const subject = competency ? subjectById.get(competency.subject_id) : null
@@ -264,8 +293,9 @@ export default async function TkaDiagnosticResultPage({
                                     </div>
                                 </article>
                             )
-                        })}
-                    </div>
+                            })}
+                        </div>
+                    )}
                 </section>
 
                 <section className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">

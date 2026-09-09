@@ -21,6 +21,7 @@ interface TryoutOption {
     accessLabel: string
     accessTone: AccessTone
     disabledReason: string | null
+    activeAttemptId: string | null
     full: boolean
 }
 
@@ -181,6 +182,12 @@ export default async function TkaTryoutPage({
     const examById = new Map(tryoutExams.map((exam) => [String(exam.id), exam]))
     const activeTrack = userTrack?.status.toLowerCase() === 'active'
     const recentAttempts = (attemptRows ?? []).slice(0, 6)
+    const activeAttemptByExam = new Map<string, string>()
+    for (const attempt of attemptRows ?? []) {
+        if (String(attempt.status ?? '').toLowerCase() !== 'in_progress') continue
+        const examId = String(attempt.exam_id)
+        if (!activeAttemptByExam.has(examId)) activeAttemptByExam.set(examId, String(attempt.id))
+    }
     const tryoutOptions: TryoutOption[] = tryoutExams.map((exam) => {
         const type = examTypeById.get(String(exam.exam_type_id))
         const typeCode = String(type?.code ?? '').toUpperCase()
@@ -224,7 +231,12 @@ export default async function TkaTryoutPage({
             details,
             accessLabel,
             accessTone: hasEntitlement ? 'success' : accessReason ? 'warning' : 'default',
-            disabledReason: !activeTrack ? 'Aktifkan jalur belajar terlebih dahulu' : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }) || accessReason,
+            disabledReason: activeAttemptByExam.has(String(exam.id))
+                ? null
+                : !activeTrack
+                    ? 'Aktifkan jalur belajar terlebih dahulu'
+                    : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }) || accessReason,
+            activeAttemptId: activeAttemptByExam.get(String(exam.id)) ?? null,
             full,
         }
     })
@@ -374,7 +386,12 @@ function TryoutGroup({
                                     <MetaChip text={exam.accessLabel} tone={exam.accessTone} />
                                 </div>
                             </div>
-                            <TkaStartExamButton level={level} examSlug={exam.slug} disabledReason={exam.disabledReason} />
+                            <TkaStartExamButton
+                                level={level}
+                                examSlug={exam.slug}
+                                disabledReason={exam.disabledReason}
+                                activeAttemptId={exam.activeAttemptId}
+                            />
                         </article>
                     ))}
                 </div>

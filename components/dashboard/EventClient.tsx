@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition, useEffect } from 'react'
+import { useMemo, useRef, useState, useTransition, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -13,6 +13,7 @@ import { EventCertificatePreview } from '@/components/certificates/EventCertific
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { canViewCompletedEventLeaderboard } from '@/lib/event-access'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 type EventStatus = 'scheduled' | 'live' | 'closed'
 
@@ -784,6 +785,7 @@ export default function EventClient({ events }: EventClientProps) {
     const [paymentEvent, setPaymentEvent] = useState<UserEvent | null>(null)
     const [certificateEvent, setCertificateEvent] = useState<UserEvent | null>(null)
     const [eventCodes, setEventCodes] = useState<Record<string, string>>({})
+    const eventStartLockRef = useRef(false)
     const [isPending, startTransition] = useTransition()
     const router = useRouter()
 
@@ -893,17 +895,30 @@ export default function EventClient({ events }: EventClientProps) {
 
     const handleConfirmStart = () => {
         if (!confirmEvent) return
+        if (!acquireSingleFlightLock(eventStartLockRef)) return
+        const eventId = confirmEvent.id
         setPendingEventId(confirmEvent.id)
         startTransition(async () => {
-            const result = await startTryoutEvent(confirmEvent.id)
-            setPendingEventId(null)
-            setConfirmEvent(null)
-            if (!result.success) { toast.error(result.message); return }
-            toast.success(result.message || 'Tryout Akbar dimulai')
-            if ('sessionId' in result && result.sessionId) {
-                router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
-            } else {
-                router.refresh()
+            let isNavigating = false
+            try {
+                const result = await startTryoutEvent(eventId)
+                setConfirmEvent(null)
+                if (!result.success) {
+                    toast.error(result.message)
+                    return
+                }
+                toast.success(result.message || 'Tryout Akbar dimulai')
+                if ('sessionId' in result && result.sessionId) {
+                    router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
+                    isNavigating = true
+                } else {
+                    router.refresh()
+                }
+            } catch {
+                toast.error('Tryout Akbar belum bisa dimulai')
+            } finally {
+                setPendingEventId(null)
+                if (!isNavigating) releaseSingleFlightLock(eventStartLockRef)
             }
         })
     }

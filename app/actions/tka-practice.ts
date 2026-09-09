@@ -3,7 +3,6 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
-import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { createClient, createV2Client } from '@/lib/utils/supabase/server'
 import { examAttemptService, PracticeDomainError, type StartAttemptResult } from '@/src/services/exam-attempt.service'
@@ -198,7 +197,6 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
 
     const useSmpSectionRpc = level === 'SMP'
         && SMP_SECTION_EXAM_SLUGS.has(examSlug)
-        && env.appEnvironment() !== 'production'
 
     if (useSmpSectionRpc) {
         try {

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BrainCircuit } from 'lucide-react'
 import { startTkaSmpDiagnostic } from '@/app/actions/tka-diagnostic'
 import { trackProductEvent } from '@/lib/product-analytics'
 import { LoadingSpinner } from '@/components/ui/LoadingState'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 export default function TkaDiagnosticStartButton({
     disabledReason,
@@ -15,9 +16,11 @@ export default function TkaDiagnosticStartButton({
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const startLockRef = useRef(false)
 
     const start = async () => {
-        if (loading || disabledReason) return
+        if (disabledReason || !acquireSingleFlightLock(startLockRef)) return
+        let isNavigating = false
         setLoading(true)
         setError(null)
         try {
@@ -28,6 +31,7 @@ export default function TkaDiagnosticStartButton({
             }
             if (result?.completedId) {
                 router.push(`/tka/smp/diagnostic/${result.completedId}/result`)
+                isNavigating = true
                 return
             }
             if (result?.sessionId) {
@@ -37,11 +41,15 @@ export default function TkaDiagnosticStartButton({
                     mode: 'diagnostic',
                 })
                 router.push(`/tka/smp/diagnostic/${result.sessionId}`)
+                isNavigating = true
             }
         } catch {
             setError('Tes diagnostik belum dapat dimulai.')
         } finally {
-            setLoading(false)
+            if (!isNavigating) {
+                releaseSingleFlightLock(startLockRef)
+                setLoading(false)
+            }
         }
     }
 

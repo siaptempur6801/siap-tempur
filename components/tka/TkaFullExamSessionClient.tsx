@@ -25,6 +25,7 @@ import type {
     TkaFullExamQuestionView,
     TkaFullExamState,
 } from '@/src/services/tka-full-exam-rpc.service'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 type SyncState = {
     latestIds: string[]
@@ -82,6 +83,7 @@ export default function TkaFullExamSessionClient({
     const [flags, setFlags] = useState<Record<string, boolean>>(initialFlags)
     const [remainingMs, setRemainingMs] = useState<number | null>(null)
     const [processing, setProcessing] = useState(false)
+    const finishLockRef = useRef(false)
     const syncStateRef = useRef<Record<string, SyncState>>({})
     const questionEnteredAtRef = useRef<number | null>(null)
     const expiredHandledRef = useRef(false)
@@ -256,16 +258,20 @@ export default function TkaFullExamSessionClient({
     }, [questions, syncSelection])
 
     const advanceSection = useCallback(async (automatic = false) => {
-        if (processing) return
+        if (!acquireSingleFlightLock(finishLockRef)) return
         const unanswered = Math.max(0, questions.length - answeredCount)
         if (!automatic) {
             const label = activeSection?.title ?? 'bagian ini'
             const message = unanswered > 0
                 ? `Masih ada ${unanswered} soal belum dijawab di ${label}. Selesaikan bagian ini sekarang? Setelah berpindah, jawaban bagian ini tidak dapat diubah.`
                 : `Semua soal ${label} sudah dijawab. Selesaikan bagian ini sekarang? Setelah berpindah, jawaban tidak dapat diubah.`
-            if (!window.confirm(message)) return
+            if (!window.confirm(message)) {
+                releaseSingleFlightLock(finishLockRef)
+                return
+            }
         }
 
+        let isNavigating = false
         setProcessing(true)
         try {
             await flushSelections()
@@ -283,6 +289,7 @@ export default function TkaFullExamSessionClient({
                 }
                 toast.success(automatic ? 'Waktu habis. Tryout sudah dikirim.' : 'Tryout TKA selesai.')
                 router.push(resultPath)
+                isNavigating = true
                 return
             }
 
@@ -291,9 +298,12 @@ export default function TkaFullExamSessionClient({
         } catch {
             toast.error('Bagian ini belum bisa diselesaikan. Coba lagi.')
         } finally {
-            setProcessing(false)
+            if (!isNavigating) {
+                releaseSingleFlightLock(finishLockRef)
+                setProcessing(false)
+            }
         }
-    }, [activeSection?.title, answeredCount, flushSelections, processing, questions.length, resultPath, router, state.attemptId])
+    }, [activeSection?.title, answeredCount, flushSelections, questions.length, resultPath, router, state.attemptId])
 
     useEffect(() => {
         if (!activeSection || processing) {

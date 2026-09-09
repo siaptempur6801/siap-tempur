@@ -2,7 +2,7 @@
 
 import { startTryout } from '@/app/actions/practice'
 import { AlertCircle, ArrowRight, BookOpen, CheckCircle2, Clock3, ShieldCheck, Ticket } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
@@ -10,6 +10,7 @@ import PaperBackground from '@/components/PaperBackground'
 import { TRYOUT_TOKEN_COST } from '@/lib/constants'
 import TokenUsageConfirmModal from '@/components/practice/TokenUsageConfirmModal'
 import { LoadingSpinner } from '@/components/ui/LoadingState'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 interface PracticeClientProps {
     quota: number
@@ -62,6 +63,7 @@ export default function PracticeClient({
     const [showTokenConfirm, setShowTokenConfirm] = useState(false)
     const [hydratedResumeQuestionNumber, setHydratedResumeQuestionNumber] = useState<number | null>(activeResumeQuestionNumber)
     const [resumeTimeLabel, setResumeTimeLabel] = useState<string | null>(null)
+    const startLockRef = useRef(false)
     const router = useRouter()
 
     const hydrateResumeQuestionNumber = useCallback(() => {
@@ -123,6 +125,7 @@ export default function PracticeClient({
         : null
 
     const startTryoutSession = async () => {
+        if (!acquireSingleFlightLock(startLockRef)) return
         let isNavigating = false
         try {
             setLoadingTryout(true)
@@ -135,13 +138,16 @@ export default function PracticeClient({
 
             if (result?.success && result?.sessionId) {
                 toast.success(result.resumed ? 'Melanjutkan Full Tryout.' : 'Full Tryout dimulai.')
-                isNavigating = true
                 router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
+                isNavigating = true
             }
         } catch {
             toast.error('Full Tryout belum bisa dimulai')
         } finally {
-            if (!isNavigating) setLoadingTryout(false)
+            if (!isNavigating) {
+                releaseSingleFlightLock(startLockRef)
+                setLoadingTryout(false)
+            }
         }
     }
 

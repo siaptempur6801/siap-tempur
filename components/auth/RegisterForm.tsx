@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signup } from '@/app/auth/actions'
@@ -11,10 +11,12 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { registerSchema, RegisterFormData } from '@/lib/validations/auth'
 import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 import { trackProductEvent } from '@/lib/product-analytics'
+import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 export default function RegisterForm({ returnTo }: { returnTo: string }) {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
+    const authActionLock = useRef(false)
     const router = useRouter()
     const safeReturnTo = sanitizeAuthReturnTo(returnTo)
 
@@ -28,8 +30,11 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
     })
 
     const onSubmit = async (data: RegisterFormData) => {
+        if (!acquireSingleFlightLock(authActionLock)) return
+
         trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'register', auth_method: 'email' })
         setLoading(true)
+        let isNavigating = false
 
         const formData = new FormData()
         formData.append('fullName', data.fullName)
@@ -47,29 +52,40 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
                     duration: 5000,
                 })
                 router.push(`/login?verified=false&returnTo=${encodeURIComponent(safeReturnTo)}`)
+                isNavigating = true
             }
         } catch {
             toast.error('Akun belum bisa dibuat', { description: 'Coba lagi beberapa saat.' })
         } finally {
-            setLoading(false)
+            if (!isNavigating) {
+                releaseSingleFlightLock(authActionLock)
+                setLoading(false)
+            }
         }
     }
 
     const handleGoogleLogin = async () => {
+        if (!acquireSingleFlightLock(authActionLock)) return
+
         trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'register', auth_method: 'google' })
         setLoading(true)
+        let isNavigating = false
         try {
             const { loginWithGoogle } = await import('@/app/auth/actions')
             const result = await loginWithGoogle(safeReturnTo)
             if (result?.url) {
                 window.location.href = result.url
+                isNavigating = true
             } else if (result?.error) {
                 toast.error(result.error)
-                setLoading(false)
             }
         } catch {
             toast.error('Belum bisa daftar dengan Google', { description: 'Coba lagi beberapa saat.' })
-            setLoading(false)
+        } finally {
+            if (!isNavigating) {
+                releaseSingleFlightLock(authActionLock)
+                setLoading(false)
+            }
         }
     }
 
