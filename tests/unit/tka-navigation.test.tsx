@@ -117,12 +117,12 @@ describe('TKA navigation selection', () => {
         expect(mobileNav).toContain('href="/tka/smp/riwayat"')
     })
 
-    it('does not link levels that are not available yet', () => {
+    it('allows switching between all TKA levels with proper links and active state', () => {
         const markup = renderToStaticMarkup(<TkaLevelSwitcher activeLevel="SMP" />)
 
         expect(markup).toContain('href="/tka/smp"')
-        expect(markup).not.toContain('href="/tka/sd"')
-        expect(markup).not.toContain('href="/tka/sma"')
-        expect(markup.match(/aria-disabled="true"/g)).toHaveLength(2)
+        expect(markup).toContain('href="/tka/sd"')
+        expect(markup).toContain('href="/tka/sma"')
+        expect(markup).toContain('aria-current="page"')
     })
 })

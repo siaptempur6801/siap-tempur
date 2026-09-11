@@ -21,6 +21,7 @@ import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
 import styles from '@/components/tka/TkaLearning.module.css'
 import TkaLevelSwitcher from '@/components/tka/TkaLevelSwitcher'
+import { parseTkaLevel } from '@/src/tka/context'
 
 interface TkaDashboardShellProps {
     children: React.ReactNode
@@ -44,13 +45,15 @@ interface TkaDashboardShellProps {
 
 export default function TkaDashboardShell({
     children,
-    level,
+    level: initialLevel,
     user,
     profile,
     tokenBalance,
     signoutAction,
 }: TkaDashboardShellProps) {
     const pathname = usePathname()
+    const levelFromPath = pathname?.match(/^\/tka\/(sd|smp|sma)(?:\/|$)/i)?.[1]
+    const level = parseTkaLevel(levelFromPath) ?? initialLevel
     const basePath = `/tka/${level.toLowerCase()}`
     const isTryoutSession = pathname.includes('/tryout/') && !pathname.endsWith('/result')
     const isDiagnosticSession = /\/diagnostic\/[0-9a-f-]+$/i.test(pathname)

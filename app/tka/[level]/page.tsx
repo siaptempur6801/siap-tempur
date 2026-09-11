@@ -4,10 +4,12 @@ import {
     ArrowRight,
     BarChart3,
     BookOpenCheck,
+    BrainCircuit,
     CheckCircle2,
     GraduationCap,
     History,
     LockKeyhole,
+    RotateCcw,
     School,
     Sparkles,
 } from 'lucide-react'
@@ -416,26 +418,170 @@ function SummaryMetric({ icon, label, value, detail }: { icon: React.ReactNode; 
 function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
     const isSd = level === 'SD'
     const Icon = isSd ? School : GraduationCap
-    const tone = isSd ? 'bg-amber-50 text-amber-700' : 'bg-violet-50 text-violet-700'
+    const badgeTone = isSd
+        ? 'bg-amber-50 text-amber-800 ring-1 ring-amber-200/80'
+        : 'bg-violet-50 text-violet-700 ring-1 ring-violet-200/80'
+    const iconTone = isSd
+        ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white ring-2 ring-amber-200/60 shadow-xs'
+        : 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white ring-2 ring-violet-200/60 shadow-xs'
 
     return (
-        <main data-experience-mode="marketing" data-program={`tka-${level.toLowerCase()}`} className="st-product min-h-screen px-4 py-8 md:px-8 md:py-14">
-            <div className="mx-auto max-w-4xl">
-                <section className="st-card-lg relative overflow-hidden p-7 md:p-12">
-                    <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-blue-50" aria-hidden="true" />
-                    <div className={`relative flex h-14 w-14 items-center justify-center rounded-lg ${tone}`}><Icon size={27} /></div>
-                    <p className="relative mt-7 text-xs font-black uppercase tracking-[0.16em] text-blue-700">TKA {level}</p>
-                    <h1 className="relative mt-2 text-4xl font-black tracking-tight text-slate-950 md:text-6xl">Pengalaman belajar TKA {level} sedang kami siapkan.</h1>
-                    <p className="relative mt-5 max-w-2xl text-lg font-semibold leading-relaxed text-slate-500">
-                        Saat tersedia nanti, jalur ini akan mengikuti pola SiapTempur yang sama: latihan, tryout, pembahasan, perkembangan belajar, dan rekomendasi langkah berikutnya.
-                    </p>
-                    <div className="relative mt-8 flex flex-wrap gap-3">
-                        <Button asChild><Link href="/tka">Kembali ke TKA</Link></Button>
-                        <Button variant="outline" asChild><Link href="/cpns">Lihat persiapan CPNS</Link></Button>
+        <main
+            data-experience-mode="marketing"
+            data-program={`tka-${level.toLowerCase()}`}
+            className="min-h-screen px-4 py-8 md:px-8 md:py-14 font-sans text-slate-900"
+        >
+            <div className="mx-auto max-w-4xl space-y-6 md:space-y-8">
+                {/* Hero Section */}
+                <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/60 to-indigo-50/30 p-6 sm:p-10 md:p-14 shadow-xs">
+                    {/* Decorative aura */}
+                    <div
+                        className={`pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full blur-3xl ${
+                            isSd ? 'bg-amber-200/20' : 'bg-violet-200/20'
+                        }`}
+                        aria-hidden="true"
+                    />
+                    <div
+                        className="pointer-events-none absolute -bottom-16 left-1/3 h-56 w-56 rounded-full bg-indigo-200/15 blur-2xl"
+                        aria-hidden="true"
+                    />
+
+                    <div className="relative z-10">
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${iconTone}`}>
+                                <Icon size={28} />
+                            </div>
+                            <div>
+                                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black tracking-wide ${badgeTone} shadow-2xs`}>
+                                    <Sparkles size={13} />
+                                    <span>TKA {level} · {LEVEL_LABEL[level]}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <h1 className="mt-6 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl md:text-5xl leading-tight">
+                            Pengalaman belajar TKA {level} sedang kami siapkan.
+                        </h1>
+
+                        <p className="mt-4 max-w-2xl text-base font-normal leading-relaxed text-slate-600 sm:text-lg">
+                            Saat tersedia nanti, jalur ini akan mengikuti pola SiapTempur yang sama: latihan, tryout, pembahasan, perkembangan belajar, dan rekomendasi langkah berikutnya.
+                        </p>
+
+                        {/* Pilot recommendation card */}
+                        <div className="mt-8 rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/90 via-white to-violet-50/40 p-5 sm:p-6 shadow-2xs">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div className="space-y-1">
+                                    <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-2xs">
+                                        Pilot Aktif SiapTempur
+                                    </div>
+                                    <h2 className="text-base font-bold text-slate-950">
+                                        Coba ekosistem TKA sekarang melalui jalur TKA SMP
+                                    </h2>
+                                    <p className="text-xs text-slate-600">
+                                        Modul Tes Diagnostik, Latihan Fokus, Mini Tryout, dan Tryout Lengkap sudah aktif dan siap digunakan.
+                                    </p>
+                                </div>
+                                <Link
+                                    href="/tka/smp"
+                                    className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black text-white shadow-xs transition-all duration-200 hover:bg-indigo-700 active:scale-[0.98]"
+                                >
+                                    <span>Buka TKA SMP</span>
+                                    <ArrowRight size={15} />
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Navigation button row */}
+                        <div className="mt-8 flex flex-wrap items-center gap-3">
+                            <Link
+                                href="/tka"
+                                className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all duration-200 hover:bg-slate-50 active:scale-[0.98]"
+                            >
+                                Kembali ke TKA
+                            </Link>
+                            <Link
+                                href="/tka/smp/pilih-jalur"
+                                className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50/60 px-5 py-2.5 text-xs font-bold text-indigo-700 shadow-2xs transition-all duration-200 hover:bg-indigo-100 active:scale-[0.98]"
+                            >
+                                Pilih Jalur Belajar
+                            </Link>
+                            <Link
+                                href="/cpns"
+                                className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-medium text-slate-500 transition-all duration-200 hover:text-slate-900"
+                            >
+                                Lihat persiapan CPNS
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Features preview cards */}
+                <section className="space-y-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-500">
+                        <Sparkles size={14} className="text-indigo-600" />
+                        <span>Fitur yang sedang disiapkan untuk TKA {level}</span>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FeaturePreviewCard
+                            icon={<BrainCircuit size={20} />}
+                            tone="bg-violet-50 text-violet-700 ring-1 ring-violet-200/70"
+                            title="Tes Diagnostik Cerdas"
+                            description="Identifikasi penguasaan konsep awal siswa untuk menentukan materi mana yang perlu dipelajari terlebih dahulu."
+                        />
+                        <FeaturePreviewCard
+                            icon={<RotateCcw size={20} />}
+                            tone="bg-sky-50 text-sky-700 ring-1 ring-sky-200/70"
+                            title="Latihan Fokus per Bab"
+                            description="Drilling butir soal bertingkat per topik materi dengan pembahasan komprehensif dan latihan remedial terarah."
+                        />
+                        <FeaturePreviewCard
+                            icon={<BookOpenCheck size={20} />}
+                            tone="bg-amber-50 text-amber-800 ring-1 ring-amber-200/70"
+                            title="Mini & Full Tryout"
+                            description="Simulasi ujian dengan format CBT standar, timer realistis, dan sistem navigasi soal mutakhir."
+                        />
+                        <FeaturePreviewCard
+                            icon={<BarChart3 size={20} />}
+                            tone="bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70"
+                            title="Analisis Kesiapan Adaptif"
+                            description="Peta kekuatan per mata pelajaran dan rekomendasi materi prioritas untuk menaikkan skor kesiapan secara berkala."
+                        />
                     </div>
                 </section>
             </div>
         </main>
+    )
+}
+
+function FeaturePreviewCard({
+    icon,
+    tone,
+    title,
+    description,
+}: {
+    icon: React.ReactNode
+    tone: string
+    title: string
+    description: string
+}) {
+    return (
+        <article className="group flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
+            <div>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-2xs ${tone}`}>
+                    {icon}
+                </div>
+                <h3 className="mt-3.5 text-base font-bold text-slate-950 group-hover:text-indigo-950 transition-colors">
+                    {title}
+                </h3>
+                <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-500">
+                    {description}
+                </p>
+            </div>
+            <div className="mt-4 border-t border-slate-100 pt-2.5 text-[11px] font-bold text-indigo-600">
+                Segera Hadir
+            </div>
+        </article>
     )
 }
 

@@ -28,15 +28,15 @@ type ExamRow = {
 function statusView(status: unknown) {
     const value = String(status ?? '').toLowerCase()
     if (value === 'completed' || value === 'submitted') {
-        return { label: 'Selesai', className: 'bg-emerald-50 text-emerald-700 ring-emerald-100' }
+        return { label: 'Selesai', className: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80' }
     }
     if (value === 'in_progress') {
-        return { label: 'Sedang dikerjakan', className: 'bg-indigo-50 text-indigo-700 ring-indigo-100' }
+        return { label: 'Sedang dikerjakan', className: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/80' }
     }
     if (value === 'expired') {
-        return { label: 'Kedaluwarsa', className: 'bg-amber-50 text-amber-700 ring-amber-100' }
+        return { label: 'Kedaluwarsa', className: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/80' }
     }
-    return { label: value || 'Tidak diketahui', className: 'bg-slate-100 text-slate-600 ring-slate-200' }
+    return { label: value || 'Tidak diketahui', className: 'bg-slate-100 text-slate-600 ring-1 ring-slate-200' }
 }
 
 function formatDate(value: string | null) {
@@ -56,15 +56,31 @@ function formatDate(value: string | null) {
 function modeView(exam: ExamRow, typeCode: string, typeName: string) {
     const slug = exam.slug.toLowerCase()
     if (typeCode.includes('DIAGNOSTIC') || slug.includes('diagnostic')) {
-        return { label: 'Tes Diagnostik', icon: <BrainCircuit size={16} /> }
+        return {
+            label: 'Tes Diagnostik',
+            icon: <BrainCircuit size={14} />,
+            tone: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200/70',
+        }
     }
     if (typeCode.includes('DRILL') || slug.includes('drill')) {
-        return { label: 'Latihan Fokus', icon: <RotateCcw size={16} /> }
+        return {
+            label: 'Latihan Fokus',
+            icon: <RotateCcw size={14} />,
+            tone: 'bg-sky-50 text-sky-700 ring-1 ring-sky-200/70',
+        }
     }
     if (typeCode.includes('MINI') || slug.includes('mini')) {
-        return { label: 'Mini Tryout', icon: <Clock3 size={16} /> }
+        return {
+            label: 'Mini Tryout',
+            icon: <Clock3 size={14} />,
+            tone: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200/70',
+        }
     }
-    return { label: typeName || 'Full Tryout', icon: <ListChecks size={16} /> }
+    return {
+        label: typeName || 'Full Tryout',
+        icon: <ListChecks size={14} />,
+        tone: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/70',
+    }
 }
 
 function resultHref(base: string, attempt: AttemptRow, exam: ExamRow, typeCode: string) {
@@ -149,30 +165,66 @@ export default async function TkaHistoryPage({
     return (
         <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
-                <header className="border-b border-slate-200/80 pb-6">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black tracking-wide text-indigo-700 ring-1 ring-indigo-200/50">
-                        <History size={14} className="text-indigo-600" />
-                        <span>Aktivitas Belajar · TKA {level}</span>
+                <header className="relative overflow-hidden rounded-3xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/40 p-6 sm:p-8 md:p-10 shadow-xs">
+                    {/* Decorative blur aura */}
+                    <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-indigo-200/25 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-16 right-20 h-48 w-48 rounded-full bg-violet-200/20 blur-2xl" />
+
+                    <div className="relative z-10 max-w-3xl">
+                        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3.5 py-1 text-xs font-bold tracking-wide text-indigo-700 ring-1 ring-indigo-200/70 shadow-2xs">
+                            <History size={14} className="text-indigo-600" />
+                            <span>Aktivitas Belajar · TKA {level}</span>
+                        </div>
+                        <h1 className="mt-4 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl md:text-4xl">
+                            Riwayat Pengerjaan
+                        </h1>
+                        <p className="mt-3 text-sm leading-relaxed text-slate-600 sm:text-base">
+                            Lihat semua diagnostik, latihan fokus, mini tryout, dan tryout yang pernah kamu kerjakan untuk meninjau perkembangan belajarmu.
+                        </p>
                     </div>
-                    <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Riwayat Pengerjaan</h1>
-                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
-                        Lihat semua diagnostik, latihan fokus, mini tryout, dan tryout yang pernah kamu kerjakan.
-                    </p>
                 </header>
 
                 <section className="grid gap-4 sm:grid-cols-3">
-                    <SummaryCard icon={<History size={17} />} label="Total sesi" value={String(history.length)} />
-                    <SummaryCard icon={<CheckCircle2 size={17} />} label="Selesai" value={String(completedCount)} />
-                    <SummaryCard icon={<Clock3 size={17} />} label="Berjalan" value={String(activeCount)} />
+                    <SummaryCard
+                        icon={<History size={18} />}
+                        tone="bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/70"
+                        label="Total sesi"
+                        value={String(history.length)}
+                        description="Seluruh sesi evaluasi yang tercatat di akunmu."
+                    />
+                    <SummaryCard
+                        icon={<CheckCircle2 size={18} />}
+                        tone="bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/70"
+                        label="Selesai"
+                        value={String(completedCount)}
+                        description="Sesi tryout dan latihan yang berhasil dituntaskan."
+                    />
+                    <SummaryCard
+                        icon={<Clock3 size={18} />}
+                        tone="bg-amber-50 text-amber-800 ring-1 ring-amber-200/70"
+                        label="Berjalan"
+                        value={String(activeCount)}
+                        description="Sesi aktif yang masih bisa kamu lanjutkan."
+                    />
                 </section>
 
                 <section aria-labelledby="tka-history-list" className="space-y-4">
-                    <div>
-                        <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-600">Semua aktivitas</p>
-                        <h2 id="tka-history-list" className="mt-1 text-xl font-bold text-slate-950">Pilih sesi untuk melanjutkan atau melihat hasil</h2>
+                    <div className="flex flex-wrap items-end justify-between gap-2">
+                        <div>
+                            <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+                                Semua aktivitas
+                            </p>
+                            <h2 id="tka-history-list" className="mt-1 text-xl font-black text-slate-950 sm:text-2xl">
+                                Pilih sesi untuk melanjutkan atau melihat hasil
+                            </h2>
+                        </div>
+                        <span className="text-xs font-bold text-slate-500">
+                            {history.length} sesi tercatat
+                        </span>
                     </div>
+
                     {history.length > 0 ? (
-                        <div className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="space-y-3">
                             {history.map(({ attempt, exam, type }) => {
                                 const status = statusView(attempt.status)
                                 const mode = modeView(exam, type.code, type.name)
@@ -181,39 +233,63 @@ export default async function TkaHistoryPage({
                                     <Link
                                         key={attempt.id}
                                         href={resultHref(base, attempt, exam, type.code)}
-                                        className="st-focus group grid gap-4 px-5 py-5 transition hover:bg-slate-50 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+                                        className="st-focus group flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md md:flex-row md:items-center"
                                     >
-                                        <div className="min-w-0">
+                                        <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-black text-indigo-700">
-                                                    {mode.icon} {mode.label}
+                                                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-black ${mode.tone}`}>
+                                                    {mode.icon}
+                                                    <span>{mode.label}</span>
                                                 </span>
-                                                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ${status.className}`}>{status.label}</span>
+                                                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${status.className}`}>
+                                                    {status.label}
+                                                </span>
                                             </div>
-                                            <h3 className="mt-2 truncate text-base font-bold text-slate-950">{exam.title}</h3>
-                                            <p className="mt-1 text-xs text-slate-500">
+                                            <h3 className="mt-2.5 text-base font-bold text-slate-950 transition-colors group-hover:text-indigo-950 sm:text-lg">
+                                                {exam.title}
+                                            </h3>
+                                            <p className="mt-1 text-xs font-medium text-slate-500">
                                                 Pengerjaan #{attempt.attempt_number ?? '-'} · {formatDate(attempt.updated_at || attempt.submitted_at || attempt.started_at)}
                                             </p>
                                         </div>
-                                        <span className="inline-flex items-center gap-1 text-sm font-bold text-indigo-700 group-hover:underline">
-                                            {completed && attempt.percentage !== null
-                                                ? `Skor ${Number(attempt.percentage).toFixed(0)}%`
-                                                : completed
-                                                    ? 'Lihat hasil'
-                                                    : 'Lanjutkan'}
-                                            <ArrowRight size={15} />
-                                        </span>
+
+                                        <div className="flex items-center justify-between border-t border-slate-100 pt-3 md:border-t-0 md:pt-0">
+                                            <span className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold shadow-2xs transition-all ${
+                                                completed
+                                                    ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/80 group-hover:bg-indigo-600 group-hover:text-white'
+                                                    : 'bg-slate-900 text-white group-hover:bg-slate-800'
+                                            }`}>
+                                                <span>
+                                                    {completed && attempt.percentage !== null
+                                                        ? `Skor ${Number(attempt.percentage).toFixed(0)}%`
+                                                        : completed
+                                                            ? 'Lihat hasil'
+                                                            : 'Lanjutkan'}
+                                                </span>
+                                                <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                                            </span>
+                                        </div>
                                     </Link>
                                 )
                             })}
                         </div>
                     ) : (
-                        <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-sm">
-                            <History size={28} className="mx-auto text-slate-400" />
-                            <h3 className="mt-3 text-base font-bold text-slate-950">Belum ada riwayat pengerjaan</h3>
-                            <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-slate-500">Mulai dari Tes Diagnostik atau pilih Full Tryout untuk membangun riwayat belajarmu.</p>
-                            <Link href={`${base}/diagnostic`} className="st-focus mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-black text-white hover:bg-indigo-700">
-                                Mulai Tes Diagnostik <ArrowRight size={16} />
+                        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-xs md:p-12">
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs">
+                                <History size={26} />
+                            </div>
+                            <h3 className="mt-4 text-lg font-bold text-slate-950">
+                                Belum ada riwayat pengerjaan
+                            </h3>
+                            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                                Mulai dari Tes Diagnostik atau pilih Full Tryout untuk membangun peta kesiapan dan riwayat belajarmu.
+                            </p>
+                            <Link
+                                href={`${base}/diagnostic`}
+                                className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition-all hover:bg-indigo-700 active:scale-[0.98]"
+                            >
+                                <span>Mulai Tes Diagnostik</span>
+                                <ArrowRight size={15} />
                             </Link>
                         </div>
                     )}
@@ -223,13 +299,37 @@ export default async function TkaHistoryPage({
     )
 }
 
-function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function SummaryCard({
+    icon,
+    tone,
+    label,
+    value,
+    description,
+}: {
+    icon: React.ReactNode
+    tone: string
+    label: string
+    value: string
+    description: string
+}) {
     return (
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
-                <span className="text-indigo-600">{icon}</span>{label}
+        <div className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md">
+            <div>
+                <div className="flex items-center justify-between">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${tone}`}>
+                        {icon}
+                    </div>
+                </div>
+                <div className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                    {value}
+                </div>
+                <div className="mt-1 text-sm font-bold text-slate-900">
+                    {label}
+                </div>
             </div>
-            <div className="mt-2 text-3xl font-black tracking-tight text-slate-950">{value}</div>
+            <p className="mt-3 border-t border-slate-100 pt-2.5 text-xs font-medium leading-relaxed text-slate-500">
+                {description}
+            </p>
         </div>
     )
 }
