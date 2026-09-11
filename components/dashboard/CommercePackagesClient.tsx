@@ -1,8 +1,22 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { CheckCircle2, Copy, ExternalLink, Package, QrCode, RefreshCw, ShieldCheck, Sparkles, Zap } from 'lucide-react'
+import {
+    CheckCircle2,
+    Coins,
+    Copy,
+    ExternalLink,
+    Loader2,
+    Package,
+    QrCode,
+    RefreshCw,
+    ShieldCheck,
+    Sparkles,
+    Wallet,
+    Zap,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import {
     createPackageTransaction,
@@ -10,8 +24,6 @@ import {
     syncPaymentStatus,
     type CreateQrisQaTransactionResult,
 } from '@/app/actions/payment'
-import { cn } from '@/lib/utils'
-import tkaStyles from './TkaTokenPackages.module.css'
 
 export type CommercePackage = {
     code: string
@@ -36,10 +48,14 @@ export default function CommercePackagesClient({
     packages,
     qaQrisEnabled = false,
     program = 'CPNS',
+    level,
+    tokenBalance,
 }: {
     packages: CommercePackage[]
     qaQrisEnabled?: boolean
     program?: 'CPNS' | 'TKA'
+    level?: string
+    tokenBalance?: number
 }) {
     const router = useRouter()
     const pathname = usePathname()
@@ -186,43 +202,99 @@ export default function CommercePackagesClient({
         }
     }
 
+    const effectiveLevel = level || 'SMP'
+
     return (
-        <div className={cn('st-product mx-auto w-full max-w-7xl space-y-10 font-body text-[var(--st-ink)]', program === 'TKA' && tkaStyles.packages)}>
-            <header className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
-                <div className="max-w-3xl">
-                    <div className="st-kicker"><Package size={15} /> Paket token {program}</div>
-                    <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">{program === 'TKA' ? 'Beli token' : 'Pilih token sesuai ritme tryout-mu.'}</h1>
-                    <p className="st-muted mt-4 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
-                        {program === 'TKA'
-                            ? 'Siapkan token untuk langkah belajar berikutnya. Pilih paket sesuai kebutuhan, lalu gunakan pada sesi yang ingin kamu kerjakan. Jumlah token yang diperlukan selalu terlihat sebelum mulai.'
-                            : 'Token digunakan untuk akses tryout sesuai aturan yang ditampilkan sebelum sesi dimulai. Harga paket berasal dari katalog aktif SiapTempur.'}
-                    </p>
+        <div className="space-y-6 md:space-y-8">
+            {/* Header Section */}
+            <header className="border-b border-slate-200/80 pb-6 text-slate-950">
+                <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 ring-1 ring-indigo-200/50">
+                    <Coins size={14} className="text-indigo-600" aria-hidden="true" />
+                    <span>
+                        {program === 'TKA' ? `Beli Token · TKA ${effectiveLevel}` : 'Beli Paket Token CPNS'}
+                    </span>
                 </div>
-                <div className="st-card bg-blue-50 p-4 sm:min-w-64">
-                    <div className="text-xs font-black uppercase tracking-[0.12em] text-blue-700">{program === 'TKA' ? 'Pilih sesuai rencana belajarmu' : 'Sebelum membayar'}</div>
-                    <p className="mt-2 text-sm font-bold leading-relaxed text-gray-700">{program === 'TKA' ? 'Mulai dengan paket kecil atau siapkan lebih banyak token untuk latihan rutin. Bandingkan harga per token sebelum memilih.' : 'Periksa jumlah token, harga paket, dan total yang tampil di halaman pembayaran.'}</p>
-                </div>
+                <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                    {program === 'TKA' ? 'Beli Paket Token Ujian' : 'Beli Paket Token Tryout SKD CPNS'}
+                </h1>
+                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                    {program === 'TKA'
+                        ? 'Siapkan token untuk mengikuti tryout CAT dan sesi latihan terpandu. Pilih paket sesuai kebutuhan belajarmu, token berlaku selamanya dan tersimpan aman di akunmu.'
+                        : 'Pilih token sesuai ritme tryout-mu. Token digunakan untuk akses simulasi CAT SKD dan drilling materi berstandar nasional.'}
+                </p>
             </header>
 
+            {/* Quick Context & Stat Tiles */}
+            <div className="grid gap-4 sm:grid-cols-3">
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-indigo-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
+                        <Wallet size={20} />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Saldo Akunmu</p>
+                        <p className="text-base font-extrabold text-slate-900">
+                            {tokenBalance !== undefined ? `${tokenBalance} Token Tersedia` : 'Token Terintegrasi'}
+                        </p>
+                        <Link
+                            href={program === 'TKA' ? `/tka/${effectiveLevel.toLowerCase()}/profile?tab=history` : '/cpns/dashboard/profile'}
+                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline"
+                        >
+                            Lihat riwayat transaksi →
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-emerald-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                        <Sparkles size={20} />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Masa Berlaku</p>
+                        <p className="text-base font-extrabold text-slate-900">Aktif Selamanya</p>
+                        <p className="text-xs text-slate-500">Tanpa batas waktu kedaluwarsa</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-sky-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white shadow-xs">
+                        <ShieldCheck size={20} />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Verifikasi Instan</p>
+                        <p className="text-base font-extrabold text-slate-900">Otomatis & Aman</p>
+                        <p className="text-xs text-slate-500">QRIS, VA Bank & E-Wallet via Midtrans</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* QA QRIS Panel (Staging Admin Only) */}
             {qaQrisEnabled && (
-                <section className="border-2 border-amber-800 bg-amber-50 p-4 shadow-[4px_4px_0_#92400e]" aria-label="Staging QRIS QA">
+                <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-xs" aria-label="Staging QRIS QA">
                     <div className="flex items-start gap-3">
-                        <QrCode className="mt-0.5 h-6 w-6 shrink-0 text-amber-800" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
+                            <QrCode size={20} />
+                        </div>
                         <div>
-                            <div className="font-black text-amber-950">Staging Admin · QRIS Sandbox QA</div>
-                            <p className="mt-1 text-sm font-semibold text-amber-900">Panel ini hanya tampil untuk akun berizin di staging. Pembelian user biasa tetap memakai checkout reguler.</p>
+                            <div className="text-sm font-bold text-amber-950">Staging Admin · QRIS Sandbox QA</div>
+                            <p className="mt-0.5 text-xs text-amber-900">
+                                Panel ini hanya tampil untuk akun berizin di staging. Pembelian pengguna biasa tetap menggunakan alur checkout resmi Midtrans.
+                            </p>
                         </div>
                     </div>
                 </section>
             )}
 
+            {/* Empty State */}
             {packages.length === 0 ? (
-                <section className="st-card-md mx-auto max-w-2xl p-8 text-center">
-                    <Package className="mx-auto h-10 w-10" />
-                    <h2 className="st-heading mt-3 text-xl">Belum ada paket token aktif.</h2>
-                    <p className="st-muted mt-2 text-sm font-semibold">Pilihan paket akan muncul di sini setelah tersedia.</p>
+                <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                        <Package size={24} />
+                    </div>
+                    <h2 className="mt-3 text-lg font-bold text-slate-900">Belum ada paket token aktif.</h2>
+                    <p className="mt-1 text-sm text-slate-500">Pilihan paket akan otomatis muncul di sini setelah katalog diperbarui.</p>
                 </section>
             ) : (
+                /* Packages Grid */
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {packages.map((pkg) => {
                         const saving = referenceUnitPrice > 0 && pkg.tokenGrant > 0
@@ -232,101 +304,205 @@ export default function CommercePackagesClient({
                         const isBuying = buying === pkg.code
 
                         return (
-                            <article key={pkg.code} className={cn('st-card-md relative flex flex-col p-6', isBestValue && 'bg-[var(--st-yellow-soft)]')}>
+                            <article
+                                key={pkg.code}
+                                className={`relative flex flex-col justify-between rounded-2xl border bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                                    isBestValue
+                                        ? 'border-indigo-300 bg-gradient-to-b from-indigo-50/40 via-white to-white ring-2 ring-indigo-600/90 ring-offset-2'
+                                        : 'border-slate-200/80 hover:border-slate-300'
+                                }`}
+                            >
+                                {/* Best Value Top Badge */}
                                 {isBestValue && (
-                                    <span className="st-kicker absolute -right-2 -top-3 bg-[var(--st-yellow)]">{program === 'TKA' ? 'Harga per token terendah' : 'Nilai per token terbaik'}</span>
-                                )}
-
-                                <div className="pr-20">
-                                    <h2 className="st-heading text-2xl">{pkg.name}</h2>
-                                    <p className="st-muted mt-2 min-h-10 text-sm font-semibold leading-relaxed">
-                                        {program === 'TKA' ? (pkg.code === unitPackage?.code ? 'Mulai secukupnya, fokus pada sesi yang paling kamu butuhkan.' : 'Siapkan bekal untuk latihan berikutnya dan bangun ritme belajar yang konsisten.') : pkg.description || `${pkg.tokenGrant} token untuk akses tryout CPNS.`}
-                                    </p>
-                                </div>
-
-                                <div className="mt-6 border-y-2 border-[var(--st-ink)] py-4">
-                                    <div className="text-4xl font-black text-blue-700">{rupiah(pkg.price)}</div>
-                                    <div className="mt-1 text-sm font-bold text-gray-600">{pkg.tokenGrant} token · sekitar {rupiah(Math.round(pkg.price / pkg.tokenGrant))}/token</div>
-                                </div>
-
-                                {saving > 0 && (
-                                    <div className="mt-4 inline-flex w-fit items-center gap-2 border-2 border-[var(--st-ink)] bg-green-100 px-3 py-1 text-sm font-black text-green-800">
-                                        <Sparkles size={15} /> Lebih hemat {rupiah(saving)} dibanding harga paket terkecil
+                                    <div className="absolute -top-3 right-5">
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1 text-[11px] font-black tracking-wide text-white shadow-xs">
+                                            <Sparkles size={12} />
+                                            <span>Nilai Terbaik · Paling Hemat</span>
+                                        </span>
                                     </div>
                                 )}
 
-                                <div className="my-6 flex-1 space-y-3 text-sm font-semibold text-gray-700">
-                                    <Benefit text={`${pkg.tokenGrant} token masuk ke akun setelah pembayaran terverifikasi`} />
-                                    <Benefit text={program === 'TKA' ? 'Kamu pilih sesi belajarnya, kebutuhan token jelas sebelum mulai' : 'Gunakan token pada tryout yang menampilkan kebutuhan token'} />
-                                    <Benefit text={program === 'TKA' ? 'Sisa token tersimpan untuk langkah belajar berikutnya' : 'Sisa token tetap tersimpan di akunmu'} />
+                                <div>
+                                    {/* Card Header */}
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-xs ${
+                                                isBestValue
+                                                    ? 'bg-indigo-600 text-white'
+                                                    : 'bg-slate-100 text-slate-700'
+                                            }`}
+                                        >
+                                            <Coins size={22} />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold tracking-tight text-slate-950">
+                                                {pkg.name}
+                                            </h2>
+                                            <span className="text-xs font-semibold text-slate-500">
+                                                {pkg.tokenGrant} Token Siap Pakai
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Description */}
+                                    <p className="mt-3 min-h-10 text-xs font-medium leading-relaxed text-slate-600 sm:text-sm">
+                                        {program === 'TKA'
+                                            ? (pkg.code === unitPackage?.code
+                                                ? 'Mulai secukupnya, fokus pada sesi latihan yang paling kamu perlukan.'
+                                                : 'Siapkan bekal untuk latihan berikutnya dan bangun ritme belajar yang konsisten.')
+                                            : pkg.description || `${pkg.tokenGrant} token untuk akses simulasi tryout.`}
+                                    </p>
+
+                                    {/* Price & Unit Metric */}
+                                    <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Harga</p>
+                                        <p className="mt-1 text-3xl font-extrabold tracking-tight text-slate-950">
+                                            {rupiah(pkg.price)}
+                                        </p>
+                                        <p className="mt-0.5 text-xs font-medium text-slate-600">
+                                            {pkg.tokenGrant} token · sekitar{' '}
+                                            <b className="text-slate-900">{rupiah(Math.round(pkg.price / pkg.tokenGrant))}</b>/token
+                                        </p>
+                                    </div>
+
+                                    {/* Saving Pill */}
+                                    {saving > 0 && (
+                                        <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+                                            <Sparkles size={13} />
+                                            <span>Hemat {rupiah(saving)} dibanding paket satuan</span>
+                                        </div>
+                                    )}
+
+                                    {/* Benefits List */}
+                                    <div className="my-5 flex-1 space-y-2 text-xs font-medium text-slate-700">
+                                        <Benefit text={`${pkg.tokenGrant} token otomatis masuk ke akun setelah pembayaran`} />
+                                        <Benefit text={program === 'TKA' ? 'Digunakan untuk Tryout CAT & modul latihan terpandu' : 'Digunakan untuk simulasi Tryout CAT & drilling materi'} />
+                                        <Benefit text="Sisa token tersimpan aman tanpa masa kedaluwarsa" />
+                                    </div>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => handleBuy(pkg.code)}
-                                    disabled={Boolean(buying)}
-                                    className="st-button inline-flex min-h-12 w-full items-center justify-center gap-2 bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    <Zap size={18} /> {isBuying ? 'Menyiapkan pembayaran...' : `${program === 'TKA' ? 'Beli' : 'Pilih'} ${pkg.tokenGrant} token`}
-                                </button>
-
-                                {qaQrisEnabled && (
+                                {/* Purchase Action Button */}
+                                <div className="space-y-2.5 border-t border-slate-100 pt-4">
                                     <button
                                         type="button"
-                                        onClick={() => handleQaQris(pkg.code)}
-                                        className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 border-2 border-amber-800 bg-amber-100 px-4 py-2 text-sm font-black text-amber-950 shadow-[3px_3px_0_#92400e]"
+                                        onClick={() => handleBuy(pkg.code)}
+                                        disabled={Boolean(buying)}
+                                        aria-busy={isBuying}
+                                        className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+                                            isBestValue
+                                                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow'
+                                                : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
+                                        }`}
                                     >
-                                        <QrCode size={17} /> QRIS QA
+                                        {isBuying ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" />
+                                                <span>Menyiapkan pembayaran...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Zap size={16} />
+                                                <span>Pilih & Beli {pkg.tokenGrant} Token</span>
+                                            </>
+                                        )}
                                     </button>
-                                )}
+
+                                    {qaQrisEnabled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleQaQris(pkg.code)}
+                                            className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-950 transition hover:bg-amber-100"
+                                        >
+                                            <QrCode size={14} />
+                                            <span>QRIS QA Sandbox</span>
+                                        </button>
+                                    )}
+                                </div>
                             </article>
                         )
                     })}
                 </div>
             )}
 
+            {/* Staging Simulator Panel */}
             {qaQrisEnabled && qaQris && (
-                <section className="mx-auto w-full max-w-4xl border-2 border-[var(--st-ink)] bg-white p-5 shadow-[6px_6px_0_var(--st-ink)] sm:p-7">
-                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs sm:p-6">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
                         <div>
-                            <div className="text-xs font-black uppercase tracking-widest text-amber-700">Staging QA only</div>
-                            <h2 className="st-heading text-2xl">QRIS Sandbox siap disimulasikan</h2>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600">Staging QA Simulator</span>
+                            <h2 className="text-xl font-bold text-slate-900">QRIS Sandbox Siap Disimulasikan</h2>
                         </div>
-                        <div className="border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] px-3 py-2 text-sm font-black">{rupiah(qaQris.amount)}</div>
+                        <div className="rounded-xl bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-900 ring-1 ring-amber-200">
+                            {rupiah(qaQris.amount)}
+                        </div>
                     </div>
 
-                    <div className="grid gap-6 md:grid-cols-[280px_1fr]">
-                        <div className="border-2 border-[var(--st-ink)] bg-white p-3">
+                    <div className="grid gap-6 md:grid-cols-[240px_1fr]">
+                        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-xs">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={qaQris.qrImageUrlV2 || qaQris.qrImageUrl} alt="QRIS Sandbox QA" className="h-auto w-full" />
+                            <img src={qaQris.qrImageUrlV2 || qaQris.qrImageUrl} alt="QRIS Sandbox QA" className="h-auto w-full rounded-lg" />
                         </div>
-                        <div className="min-w-0 space-y-4">
+                        <div className="space-y-3.5">
                             <div>
-                                <div className="mb-1 text-sm font-black">Order</div>
-                                <code className="block break-all border-2 border-gray-300 bg-gray-50 p-2 text-xs font-bold">{qaQris.orderNumber}</code>
+                                <span className="text-xs font-bold text-slate-500">Order ID</span>
+                                <code className="mt-1 block break-all rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs font-mono text-slate-800">
+                                    {qaQris.orderNumber}
+                                </code>
                             </div>
                             <div>
-                                <div className="mb-1 text-sm font-black">Code Img URL</div>
-                                <div className="flex gap-2">
-                                    <input readOnly value={qaQris.qrImageUrl} className="st-input min-w-0 flex-1 text-xs" />
-                                    <button type="button" onClick={copyQrisUrl} className="border-2 border-[var(--st-ink)] bg-white px-3 py-2 shadow-[2px_2px_0_var(--st-ink)]" title="Copy Code Img URL"><Copy size={18} /></button>
+                                <span className="text-xs font-bold text-slate-500">QR Code Image URL</span>
+                                <div className="mt-1 flex gap-2">
+                                    <input readOnly value={qaQris.qrImageUrl} className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700" />
+                                    <button
+                                        type="button"
+                                        onClick={copyQrisUrl}
+                                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 shadow-xs"
+                                        title="Salin URL QR"
+                                    >
+                                        <Copy size={14} /> Salin
+                                    </button>
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-3 sm:flex-row">
-                                <button type="button" onClick={openSimulator} className="st-button flex flex-1 items-center justify-center gap-2 bg-emerald-500 px-4 py-3 font-black text-white"><ExternalLink size={18} /> Simulate QRIS</button>
-                                <button type="button" onClick={checkQaStatus} className="st-button flex flex-1 items-center justify-center gap-2 bg-blue-50 px-4 py-3 font-black text-blue-900"><RefreshCw size={18} /> Cek Status</button>
+                            <div className="flex flex-col gap-2.5 sm:flex-row pt-1">
+                                <button
+                                    type="button"
+                                    onClick={openSimulator}
+                                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
+                                >
+                                    <ExternalLink size={14} /> Buka Simulator QRIS
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={checkQaStatus}
+                                    className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                                >
+                                    <RefreshCw size={14} /> Sinkronkan Status
+                                </button>
                             </div>
-                            <div className="border-2 border-amber-700 bg-amber-50 p-3 text-sm font-semibold text-amber-950">Gunakan hanya Sandbox Simulator. Jangan gunakan aplikasi pembayaran nyata untuk QR Sandbox.</div>
+                            <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 border border-amber-200/60">
+                                Gunakan hanya Sandbox Simulator resmi Midtrans. Jangan scan QR Sandbox dengan aplikasi e-wallet nyata.
+                            </p>
                         </div>
                     </div>
                 </section>
             )}
 
-            <section className="st-card mx-auto flex max-w-3xl items-start gap-3 bg-green-50 p-5">
-                <ShieldCheck className="h-6 w-6 shrink-0 text-green-700" />
-                <div>
-                    <h3 className="font-black">{program === 'TKA' ? 'Bayar, cek saldo, lanjut belajar.' : 'Token masuk setelah pembayaran terverifikasi.'}</h3>
-                    <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">{program === 'TKA' ? 'Token masuk setelah pembayaran berhasil diverifikasi. Periksa total di halaman pembayaran, lalu pantau pembelian dan saldo melalui riwayat akunmu.' : 'Jika pembayaran masih menunggu atau ditutup sebelum selesai, saldo token tidak berubah. Status terbaru akan terlihat setelah pembayaran berhasil diverifikasi.'}</p>
+            {/* Reassurance Footer Notice */}
+            <section className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-violet-50/40 p-4 sm:p-5 text-xs text-indigo-950 shadow-xs">
+                <div className="flex items-start gap-3.5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 shadow-xs">
+                        <ShieldCheck size={20} />
+                    </div>
+                    <div className="min-w-0">
+                        <h3 className="font-bold text-slate-900 text-sm">
+                            {program === 'TKA' ? 'Pembayaran Aman & Verifikasi Otomatis' : 'Token Masuk Otomatis Setelah Pembayaran'}
+                        </h3>
+                        <p className="mt-1 text-slate-600 leading-relaxed">
+                            {program === 'TKA'
+                                ? 'Seluruh pembayaran diproses secara resmi melalui payment gateway Midtrans. Token akan otomatis ditambahkan ke saldo akunmu seketika setelah transaksi terverifikasi. Jika proses pembayaran ditutup sebelum selesai, saldo tidak akan berkurang.'
+                                : 'Jika pembayaran masih menunggu atau ditutup sebelum selesai, saldo token tidak berubah. Status terbaru akan otomatis diperbarui setelah pembayaran berhasil diverifikasi.'}
+                        </p>
+                    </div>
                 </div>
             </section>
         </div>
@@ -335,8 +511,8 @@ export default function CommercePackagesClient({
 
 function Benefit({ text }: { text: string }) {
     return (
-        <div className="flex items-start gap-2.5">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+        <div className="flex items-start gap-2">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
             <span>{text}</span>
         </div>
     )

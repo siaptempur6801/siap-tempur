@@ -126,15 +126,30 @@ export default function ProfileClient({
 
     return (
         <div className={cn('st-product space-y-7 font-body text-[var(--st-ink)]', isTka && tkaStyles.profile)}>
-            <header className="max-w-3xl">
-                <div className="st-kicker"><ClipboardList size={15} /> Akun SiapTempur</div>
-                <h1 className={isTka ? 'mt-2 text-2xl font-bold text-slate-950' : 'st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl'}>Profil dan pengaturan akunmu.</h1>
-                <p className="st-muted mt-3 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
-                    Perbarui informasi profil, lihat riwayat transaksi dan penggunaan token, serta kelola pengaturan akun dari satu tempat.
-                </p>
-            </header>
+            {isTka ? (
+                <header className="border-b border-slate-200/80 pb-6 text-slate-950">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 ring-1 ring-indigo-200/50">
+                        <User size={14} className="text-indigo-600" aria-hidden="true" />
+                        <span>Profil Siswa · TKA</span>
+                    </div>
+                    <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                        Profil & Pengaturan Akun
+                    </h1>
+                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                        Kelola data identitas belajarmu, pantau riwayat pemakaian token ujian, dan atur preferensi keamanan akun SiapTempur dalam satu dashboard terpadu.
+                    </p>
+                </header>
+            ) : (
+                <header className="max-w-3xl">
+                    <div className="st-kicker"><ClipboardList size={15} /> Akun SiapTempur</div>
+                    <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">Profil dan pengaturan akunmu.</h1>
+                    <p className="st-muted mt-3 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
+                        Perbarui informasi profil, lihat riwayat transaksi dan penggunaan token, serta kelola pengaturan akun dari satu tempat.
+                    </p>
+                </header>
+            )}
 
-            <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Bagian profil">
+            <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Bagian profil">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
@@ -143,10 +158,14 @@ export default function ProfileClient({
                         onClick={() => handleTabChange(tab.id)}
                         aria-current={activeTab === tab.id ? 'page' : undefined}
                         className={cn(
-                            'inline-flex min-h-11 shrink-0 items-center gap-2 border-2 border-[var(--st-ink)] px-4 py-2.5 text-sm font-black transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2',
-                            isTka ? (activeTab === tab.id ? 'rounded-lg !border-indigo-200 bg-indigo-50 text-indigo-700 shadow-none' : 'rounded-lg !border-slate-200 bg-white text-slate-600 hover:bg-slate-50') : activeTab === tab.id
-                                ? 'bg-[var(--st-yellow)] shadow-[3px_3px_0_var(--st-ink)]'
-                                : 'bg-white text-gray-600 hover:bg-blue-50'
+                            'inline-flex min-h-11 shrink-0 items-center gap-2 px-4 py-2.5 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+                            isTka
+                                ? activeTab === tab.id
+                                    ? 'rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs'
+                                    : 'rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/80 shadow-2xs'
+                                : activeTab === tab.id
+                                    ? 'border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] shadow-[3px_3px_0_var(--st-ink)] font-black text-sm'
+                                    : 'border-2 border-[var(--st-ink)] bg-white text-gray-600 hover:bg-blue-50 font-black text-sm'
                         )}
                     >
                         {tab.icon}

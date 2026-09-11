@@ -47,13 +47,6 @@ function exactDrills(items: TkaHierarchyItem[]) {
     ))
 }
 
-function getSubjectIcon(code: string) {
-    const c = code.toLowerCase()
-    if (c.includes('mat') || c.includes('num')) return <Calculator size={20} />
-    if (c.includes('ind') || c.includes('lit') || c.includes('bhs')) return <BookOpen size={20} />
-    return <School size={20} />
-}
-
 export default async function TkaLearningHierarchy({ activeTrack }: { activeTrack: boolean }) {
     if (!activeTrack) {
         return (
@@ -112,41 +105,48 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
     const masteredCount = allDrills.filter((d) => d.masteryLevel === 'mastered' || d.masteryLevel === 'proficient').length
     const needsFocusCount = allDrills.filter((d) => d.masteryLevel === 'developing' || d.masteryLevel === 'needs_focus' || (d.attemptedQuestions > 0 && d.accuracy < 0.6)).length
     const notStartedCount = allDrills.filter((d) => d.attemptedQuestions === 0).length
+    const totalDrills = allDrills.length || 1
+    const progressPercent = Math.round((masteredCount / totalDrills) * 100)
 
     return (
         <section id="tka-learning-hierarchy" data-testid="tka-learning-hierarchy" className="scroll-mt-6 space-y-8">
             {/* Quick Context & Stats Banner */}
             <div className="grid gap-4 sm:grid-cols-3">
-                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-indigo-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
                         <Clock3 size={20} />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-500">Format Latihan</p>
-                        <p className="text-sm font-bold text-slate-900">10 soal · ±15 menit</p>
-                        <p className="text-[11px] text-slate-400">Pembahasan instan per soal</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Format Latihan</p>
+                        <p className="text-base font-extrabold text-slate-900">10 Soal Fokus</p>
+                        <p className="text-xs text-slate-500">±15 menit · Pembahasan instan</p>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-emerald-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
                         <CheckCircle2 size={20} />
                     </div>
-                    <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-500">Materi Sudah Kuat</p>
-                        <p className="text-sm font-bold text-slate-900">{masteredCount} topik</p>
-                        <p className="text-[11px] text-slate-400">Dari {allDrills.length} topik tersedia</p>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Materi Dikuasai</p>
+                        <p className="text-base font-extrabold text-slate-900">{masteredCount} Topik Kuat</p>
+                        <div className="mt-1 flex items-center gap-2">
+                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                                <div className="h-full rounded-full bg-emerald-500" style={{ width: `${progressPercent}%` }} />
+                            </div>
+                            <span className="text-[11px] font-bold text-emerald-700">{progressPercent}%</span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-amber-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-xs">
                         <Target size={20} />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-xs font-semibold text-slate-500">Prioritas Perbaikan</p>
-                        <p className="text-sm font-bold text-slate-900">{needsFocusCount} topik perlu diasah</p>
-                        <p className="text-[11px] text-slate-400">{notStartedCount} topik belum dicoba</p>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Prioritas Belajar</p>
+                        <p className="text-base font-extrabold text-slate-900">{needsFocusCount} Perlu Diasah</p>
+                        <p className="text-xs text-slate-500">{notStartedCount} topik belum dicoba</p>
                     </div>
                 </div>
             </div>
@@ -167,7 +167,7 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
                 </div>
                 <Link
                     href="/tka/smp/progress"
-                    className="st-focus inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline"
+                    className="st-focus inline-flex items-center gap-1.5 rounded-xl bg-slate-50 px-3 py-1.5 text-xs font-bold text-indigo-700 ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:ring-indigo-200"
                 >
                     <span>Lihat Analisis Perkembangan</span>
                     <BarChart3 size={14} aria-hidden="true" />
@@ -187,25 +187,40 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
                             data-testid={`tka-subject-${subject.code.toLowerCase()}`}
                             className="space-y-4"
                         >
-                            {/* Subject Header */}
-                            <div className="flex items-center justify-between rounded-2xl bg-slate-100/80 px-4 py-3">
-                                <div className="flex items-center gap-3">
-                                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-                                        isMath ? 'bg-violet-100 text-violet-700' : isIndo ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-200 text-slate-700'
+                            {/* Subject Header Banner */}
+                            <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4 sm:p-5 transition-all ${
+                                isMath
+                                    ? 'border-purple-100 bg-gradient-to-r from-purple-50/80 via-white to-violet-50/40 shadow-xs'
+                                    : isIndo
+                                        ? 'border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-sky-50/40 shadow-xs'
+                                        : 'border-slate-200 bg-slate-50'
+                            }`}>
+                                <div className="flex items-center gap-3.5">
+                                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-xs ${
+                                        isMath ? 'bg-purple-600' : isIndo ? 'bg-indigo-600' : 'bg-slate-700'
                                     }`}>
-                                        {getSubjectIcon(subject.code)}
+                                        {isMath ? <Calculator size={22} /> : isIndo ? <BookOpen size={22} /> : <School size={22} />}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <h3 className="text-base font-bold text-slate-950">{subject.name}</h3>
-                                            <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-black tracking-wide text-slate-600 shadow-2xs">
+                                            <h3 className="text-lg font-extrabold text-slate-950">{subject.name}</h3>
+                                            <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-black tracking-wide text-slate-700 ring-1 ring-slate-200/80 shadow-2xs">
                                                 {subject.code}
                                             </span>
                                         </div>
-                                        <p className="text-xs text-slate-500 font-medium">
-                                            {drills.length} materi latihan siap dikerjakan
+                                        <p className="mt-0.5 text-xs text-slate-500 font-medium">
+                                            {isIndo
+                                                ? 'Penguasaan wacana teks, ide pokok, penalaran kontekstual, dan kaidah bahasa.'
+                                                : isMath
+                                                    ? 'Konsep bilangan, aljabar dasar, geometri bangun ruang, dan pemecahan numerik.'
+                                                    : `${drills.length} materi latihan siap dikerjakan.`}
                                         </p>
                                     </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                                    <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-700 ring-1 ring-slate-200/80 shadow-2xs">
+                                        {drills.length} Topik Tersedia
+                                    </span>
                                 </div>
                             </div>
 
@@ -220,38 +235,55 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
                                         return (
                                             <article
                                                 key={item.drill!.examSlug}
-                                                className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all duration-200 hover:border-indigo-200 hover:shadow-md"
+                                                className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-200 hover:border-indigo-300 hover:shadow-md"
                                             >
-                                                <div>
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400">
-                                                            <Dumbbell size={13} className="text-indigo-600" />
-                                                            <span>{item.drill!.questionCount || 10} soal</span>
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-500 ring-1 ring-slate-200/60">
+                                                            <Dumbbell size={12} className="text-indigo-600" />
+                                                            <span>{item.drill!.questionCount || 10} Soal</span>
                                                         </span>
-                                                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-black ring-1 ${badge.className}`}>
+                                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-black ring-1 ${badge.className}`}>
                                                             {badge.label}
                                                         </span>
                                                     </div>
 
-                                                    <h4 className="mt-3 text-base font-bold leading-snug text-slate-950 group-hover:text-indigo-600 transition-colors">
-                                                        {item.name}
-                                                    </h4>
+                                                    <div>
+                                                        <h4 className="text-base font-extrabold text-slate-950 transition-colors group-hover:text-indigo-600 leading-snug">
+                                                            {item.name}
+                                                        </h4>
+                                                    </div>
 
-                                                    <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                                                        {hasAttempt ? (
-                                                            <>
-                                                                <span className="font-semibold">
-                                                                    Akurasi: <b className="text-slate-900">{accuracyPct}%</b>
-                                                                </span>
+                                                    {/* Accuracy & Progress track */}
+                                                    <div className="pt-1">
+                                                        <div className="flex items-center justify-between text-xs">
+                                                            <span className="font-semibold text-slate-600">
+                                                                {hasAttempt ? (
+                                                                    <>Akurasi: <b className="text-slate-900">{accuracyPct}%</b></>
+                                                                ) : (
+                                                                    <span className="text-slate-400 font-normal">Belum dikerjakan</span>
+                                                                )}
+                                                            </span>
+                                                            {hasAttempt && (
                                                                 <span className="text-[11px] text-slate-400">
                                                                     {item.correctQuestions}/{item.attemptedQuestions} dinilai
                                                                 </span>
-                                                            </>
-                                                        ) : (
-                                                            <span className="text-slate-400 text-[11px]">
-                                                                Belum pernah dikerjakan
-                                                            </span>
-                                                        )}
+                                                            )}
+                                                        </div>
+                                                        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                                                            <div
+                                                                className={`h-full rounded-full transition-all duration-300 ${
+                                                                    accuracyPct >= 80
+                                                                        ? 'bg-emerald-500'
+                                                                        : accuracyPct >= 60
+                                                                            ? 'bg-indigo-600'
+                                                                            : accuracyPct > 0
+                                                                                ? 'bg-amber-500'
+                                                                                : 'bg-transparent'
+                                                                }`}
+                                                                style={{ width: `${hasAttempt ? Math.max(accuracyPct, 5) : 0}%` }}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -279,10 +311,13 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
             </div>
 
             {/* Study Hint Footer */}
-            <div className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-4 text-xs text-indigo-900">
-                <p className="font-bold">💡 Tips Latihan Fokus:</p>
+            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-violet-50/40 p-4 text-xs text-indigo-950 shadow-xs">
+                <p className="font-bold flex items-center gap-1.5 text-indigo-900">
+                    <Sparkles size={14} className="text-indigo-600" />
+                    <span>Strategi Latihan Mandiri:</span>
+                </p>
                 <p className="mt-1 text-slate-600 leading-relaxed">
-                    Kerjakan latihan per topik secara berkala. Jika nilai akurasi masih di bawah 70%, pelajari pembahasannya lalu ulangi latihan untuk memperkuat ingatan konsep.
+                    Selesaikan 10 butir soal terarah per materi. Manfaatkan pembahasan instan yang muncul setelah setiap butir soal dijawab untuk memahami konsep secara tuntas sebelum mengulang latihan.
                 </p>
             </div>
         </section>

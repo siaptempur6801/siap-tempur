@@ -5,9 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
     LayoutDashboard,
-    BookOpen,
     CalendarDays,
     Clock3,
+    Compass,
     Ticket,
     Target,
     Shield,
@@ -90,19 +90,20 @@ export default function DashboardShell({
                     <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Utama</p>
                     <div className="space-y-1">
                         <NavItem href="/cpns/dashboard" icon={<LayoutDashboard size={17} />} label="Beranda" />
+                        <NavItem href="/cpns/dashboard/materi" icon={<Library size={17} />} label="Kisi-Kisi" />
                         <NavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={17} />} label="Belajar" />
+                        <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={17} />} label="Mini Tryout" />
                         <NavItem href="/cpns/dashboard/tryout" icon={<Target size={17} />} label="Tryout" />
+                        <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={17} />} label="Event" />
                         <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={17} />} label="Hasil" />
-                        <NavItem href="/cpns/dashboard/profile" icon={<User size={17} />} label="Profil" />
                     </div>
 
                     <div className="my-3.5 border-t-2 border-dashed border-slate-300" />
                     <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Lainnya</p>
                     <div className="space-y-1">
-                        <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={17} />} label="Mini Tryout" />
-                        <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={17} />} label="Event" />
-                        <NavItem href="/cpns/dashboard/materi" icon={<Library size={17} />} label="Kisi-Kisi" />
-                        <NavItem href="/cpns/dashboard/beli-paket" icon={<BookOpen size={17} />} label="Beli Token" />
+                        <NavItem href="/cpns/dashboard/pilih-jalur" icon={<Compass size={17} />} label="Pilih Jalur" />
+                        <NavItem href="/cpns/dashboard/beli-paket" icon={<Ticket size={17} />} label="Beli Token" />
+                        <NavItem href="/cpns/dashboard/profile" icon={<User size={17} />} label="Profil" />
                     </div>
 
                     {isAdmin && (

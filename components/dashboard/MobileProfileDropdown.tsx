@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, Clock3, Library, LogOut, Shield, User, Ticket } from 'lucide-react'
+import { BarChart3, Clock3, Compass, Library, LogOut, Shield, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -133,6 +133,15 @@ export default function MobileProfileDropdown({
                         >
                             <BarChart3 size={18} />
                             Ranking Nasional
+                        </Link>
+
+                        <Link
+                            href="/cpns/dashboard/pilih-jalur"
+                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            <Compass size={18} />
+                            Pilih Jalur
                         </Link>
 
                         <Link

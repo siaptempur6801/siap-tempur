@@ -200,21 +200,39 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600"><BrainCircuit size={15} /> Tes Diagnostik TKA SMP</div>
                             <h1 className="mt-1 text-xl font-black tracking-tight text-slate-950">{activeSection.title}</h1>
                             <p className="mt-1 text-xs font-semibold text-slate-500">Bagian {activeSection.sortOrder} dari {state.sections.length} · {answeredCount}/{questions.length} terjawab</p>
+                            <div className="mt-3 flex flex-wrap gap-2" aria-label="Tahapan tes diagnostik">
+                                {state.sections.map((section) => {
+                                    const current = section.sectionId === activeSection.sectionId
+                                    const completed = section.status.toLowerCase() === 'completed' || section.sortOrder < activeSection.sortOrder
+                                    return (
+                                        <span
+                                            key={section.sectionId}
+                                            className={cn(
+                                                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black',
+                                                current ? 'bg-indigo-600 text-white' : completed ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-slate-100 text-slate-500',
+                                            )}
+                                        >
+                                            {completed && !current ? <Check size={12} /> : <span>{section.sortOrder}</span>}
+                                            {section.title}
+                                        </span>
+                                    )
+                                })}
+                            </div>
                         </div>
-                        <div className={cn('inline-flex min-h-10 items-center gap-2 rounded-xl px-3 font-mono text-sm font-black tabular-nums', remainingMs !== null && remainingMs <= 60_000 ? 'bg-red-50 text-red-700' : 'bg-indigo-50 text-indigo-700')}>
+                        <div aria-label="Waktu tersisa" aria-live="polite" className={cn('inline-flex min-h-10 items-center gap-2 rounded-xl px-3 font-mono text-sm font-black tabular-nums', remainingMs !== null && remainingMs <= 60_000 ? 'bg-red-50 text-red-700' : 'bg-indigo-50 text-indigo-700')}>
                             <Clock3 size={16} /> {remainingMs === null ? '--:--' : formatRemaining(remainingMs)}
                         </div>
                     </div>
                     <ProgressBar
                         value={((currentIndex + 1) / questions.length) * 100}
-                        label="Progres tes diagnostik"
+                        label={`Progres bagian ${activeSection.title}`}
                         size="sm"
                         className="mt-3 border-slate-200"
                         indicatorClassName="bg-indigo-600"
                     />
                 </header>
 
-                <div className="grid gap-3 lg:grid-cols-[1fr_15rem]">
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_16rem]">
                     <article data-testid="diagnostic-question-card" className="rounded-[1.15rem] border border-slate-200 bg-white p-4 shadow-sm md:p-5">
                         <div className="flex items-center justify-between gap-3">
                             <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-indigo-700">Soal {currentIndex + 1} dari {questions.length}</span>
@@ -236,7 +254,7 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                                 </div>
                             )) : currentQuestion.options.map(renderOption)}
                         </div>
-                        <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
                             <button type="button" disabled={currentIndex === 0} onClick={() => { setCurrentIndex((index) => Math.max(0, index - 1)); enteredAtRef.current = Date.now() }} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-black text-slate-600 disabled:opacity-30"><ArrowLeft size={16} /> Sebelumnya</button>
                             {currentIndex < questions.length - 1 ? (
                                 <button type="button" onClick={() => { setCurrentIndex((index) => Math.min(questions.length - 1, index + 1)); enteredAtRef.current = Date.now() }} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white">Berikutnya <ArrowRight size={16} /></button>
@@ -248,33 +266,46 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                         </div>
                     </article>
 
-                    <aside className="rounded-[1.15rem] border border-slate-200 bg-white p-3 shadow-sm" aria-label="Navigasi soal diagnostik">
-                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400"><Grid3X3 size={15} /> Navigasi soal</div>
+                    <aside className="rounded-[1.15rem] border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-3 lg:self-start" aria-label="Navigasi soal diagnostik">
+                        <div className="flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+                            <span className="flex items-center gap-2"><Grid3X3 size={15} /> Navigasi soal</span>
+                            <span className="font-bold text-slate-600">{answeredCount}/{questions.length}</span>
+                        </div>
                         <div className="mt-3 grid grid-cols-4 gap-2 lg:grid-cols-4">
                             {questions.map((question, index) => {
                                 const answered = (selections[question.attemptQuestionId] ?? []).length > 0
+                                const isCurrent = index === currentIndex
                                 return (
                                     <button
                                         key={question.attemptQuestionId}
                                         type="button"
-                                        aria-label={`Buka soal diagnostik ${index + 1}${index === currentIndex ? ', sedang dikerjakan' : ''}`}
-                                        aria-current={index === currentIndex ? 'step' : undefined}
+                                        aria-label={`Buka soal diagnostik ${index + 1}${isCurrent ? ', sedang dikerjakan' : ''}`}
+                                        aria-current={isCurrent ? 'step' : undefined}
                                         onClick={() => { setCurrentIndex(index); enteredAtRef.current = Date.now() }}
-                                        style={index === currentIndex ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
+                                        style={isCurrent ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
                                         className={cn(
-                                            'st-focus relative flex h-9 items-center justify-center rounded-lg text-xs font-black',
-                                            index === currentIndex ? 'z-10 bg-indigo-600 text-white' : answered ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100' : 'bg-slate-50 text-slate-500',
+                                            'st-focus relative flex h-9 items-center justify-center rounded-lg text-xs font-black transition-all',
+                                            isCurrent && answered
+                                                ? 'z-10 bg-emerald-600 text-white shadow-xs ring-2 ring-indigo-600 ring-offset-2 border border-emerald-700'
+                                                : isCurrent
+                                                    ? 'z-10 bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-600 ring-offset-2'
+                                                    : answered
+                                                        ? 'bg-emerald-600 text-white shadow-xs border border-emerald-700'
+                                                        : 'bg-slate-100 text-slate-600 border border-slate-200/80 hover:bg-slate-200 hover:text-slate-900',
                                         )}
                                     >
                                         {index + 1}
-                                        {index === currentIndex && (
+                                        {isCurrent && (
                                             <span aria-hidden="true" className="absolute -right-1.5 -top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-sm" />
                                         )}
                                     </button>
                                 )
                             })}
                         </div>
-                        <div className="mt-3 flex items-center gap-2 text-[11px] font-bold text-slate-500"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Sedang dikerjakan</div>
+                        <div className="mt-3 flex items-center justify-between text-[11px] font-bold text-slate-600">
+                            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-500" /> Sedang dikerjakan</span>
+                            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-600" /> Terjawab</span>
+                        </div>
                     </aside>
                 </div>
             </div>

@@ -6,7 +6,15 @@ import { env } from '@/lib/env'
 
 export const dynamic = 'force-dynamic'
 
-export default async function TokenPackagesPage({ program = 'CPNS' }: { program?: 'CPNS' | 'TKA' }) {
+export default async function TokenPackagesPage({
+    program = 'CPNS',
+    level,
+    tokenBalance,
+}: {
+    program?: 'CPNS' | 'TKA'
+    level?: string
+    tokenBalance?: number
+}) {
     const offers = await commerceService.listActiveProductOffers('CPNS', 'SKD')
     const packages = offers
         .filter((offer) => offer.productType === 'TOKEN_PACK' && offer.tokenGrant > 0)
@@ -23,5 +31,13 @@ export default async function TokenPackagesPage({ program = 'CPNS' }: { program?
     const qaQrisEnabled = env.appEnvironment() === 'staging'
         && await authorizationService.hasPermission(PERMISSIONS.PAYMENT_MANAGE)
 
-    return <CommercePackagesClient packages={packages} qaQrisEnabled={qaQrisEnabled} program={program} />
+    return (
+        <CommercePackagesClient
+            packages={packages}
+            qaQrisEnabled={qaQrisEnabled}
+            program={program}
+            level={level}
+            tokenBalance={tokenBalance}
+        />
+    )
 }

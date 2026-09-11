@@ -329,8 +329,8 @@ export default function TkaFullExamSessionClient({
 
     if (!activeSection || !currentQuestion) {
         return (
-            <main data-experience-mode="exam" data-program="tka-smp" className="st-product min-h-screen p-8 text-center">
-                <div className="st-flat-card mx-auto max-w-xl p-6 font-black">
+            <main data-experience-mode="exam" data-program="tka-smp" className="min-h-screen bg-slate-50/70 p-8 text-center text-slate-900">
+                <div className="mx-auto max-w-xl rounded-2xl border border-slate-200/80 bg-white p-6 font-bold text-slate-900 shadow-xs">
                     Tidak ada bagian aktif. Muat ulang halaman atau kembali ke TKA {level}.
                 </div>
             </main>
@@ -351,18 +351,36 @@ export default function TkaFullExamSessionClient({
                 type="button"
                 onClick={() => handleSelect(currentQuestion, option.id)}
                 data-selected={selected}
-                className="st-option st-focus p-3.5 text-left transition-colors"
+                className={cn(
+                    'group relative w-full rounded-2xl border p-4 text-left transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2',
+                    selected
+                        ? 'border-indigo-600 bg-indigo-50/70 shadow-xs ring-1 ring-indigo-500/20'
+                        : 'border-slate-200/80 bg-white hover:border-indigo-200 hover:bg-slate-50/60 shadow-2xs',
+                )}
             >
-                <div className="flex items-start gap-3">
-                    <span className={cn(
-                        'flex h-8 min-w-8 items-center justify-center border-2 border-slate-900 text-xs font-black',
-                        selected ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-700',
-                    )}>
-                        {selected ? <Check size={15}/> : option.key || String.fromCharCode(65 + index)}
+                <div className="flex items-start gap-3.5">
+                    <span
+                        className={cn(
+                            'flex h-8 min-w-8 items-center justify-center rounded-xl text-xs font-bold transition-colors',
+                            selected
+                                ? 'bg-indigo-600 text-white shadow-2xs'
+                                : 'border border-slate-200 bg-slate-100/80 text-slate-600 group-hover:border-indigo-200 group-hover:bg-indigo-50 group-hover:text-indigo-600',
+                        )}
+                    >
+                        {selected ? <Check size={15} strokeWidth={2.5} /> : option.key || String.fromCharCode(65 + index)}
                     </span>
-                    <div className="min-w-0 flex-1 space-y-2 font-semibold leading-relaxed text-slate-800">
+                    <div className="min-w-0 flex-1 space-y-2 text-sm sm:text-base font-medium leading-relaxed text-slate-800">
                         {option.imageUrl && (
-                            <Image src={option.imageUrl} alt="Pilihan jawaban" width={640} height={360} unoptimized className="max-h-56 w-auto max-w-full object-contain" />
+                            <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white p-2">
+                                <Image
+                                    src={option.imageUrl}
+                                    alt="Pilihan jawaban"
+                                    width={640}
+                                    height={360}
+                                    unoptimized
+                                    className="max-h-56 w-auto max-w-full object-contain"
+                                />
+                            </div>
                         )}
                         <MathRenderer text={option.content} />
                     </div>
@@ -372,33 +390,56 @@ export default function TkaFullExamSessionClient({
     }
 
     return (
-        <main data-experience-mode="exam" data-program="tka-smp" className="st-product min-h-screen p-3 md:p-6">
+        <main data-experience-mode="exam" data-program="tka-smp" className="min-h-screen bg-slate-50/70 p-3 text-slate-900 md:p-6">
             <div className="mx-auto max-w-7xl space-y-4">
-                <header className="st-flat-card p-4">
+                <header className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <div className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">TKA SMP · {examModeLabel}</div>
-                            <h1 className="st-heading mt-1 text-xl">{activeSection.title}</h1>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className={cn(
-                                'inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 px-3 py-2 font-mono font-black tabular-nums',
-                                remainingMs !== null && remainingMs <= 300000 ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-slate-950',
-                            )}>
-                                <Clock3 size={16}/>{remainingMs === null ? '--:--:--' : formatRemaining(remainingMs)}
+                            <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700 ring-1 ring-indigo-200/60 shadow-2xs">
+                                TKA SMP · {examModeLabel}
                             </div>
-                            <button type="button" onClick={() => router.push(returnPath)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-white px-3 py-2 text-sm font-black">
-                                <LogOut size={16}/><span className="hidden sm:inline">Keluar</span>
+                            <h1 className="mt-2 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">{activeSection.title}</h1>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                            <div
+                                aria-label="Waktu tersisa"
+                                className={cn(
+                                    'inline-flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 font-mono text-sm font-bold tabular-nums shadow-2xs transition-colors',
+                                    remainingMs !== null && remainingMs <= 300000
+                                        ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-200/80 animate-pulse'
+                                        : 'bg-indigo-50 text-indigo-900 ring-1 ring-indigo-200/80',
+                                )}
+                            >
+                                <Clock3 size={16} className={remainingMs !== null && remainingMs <= 300000 ? 'text-rose-600' : 'text-indigo-600'} />
+                                {remainingMs === null ? '--:--:--' : formatRemaining(remainingMs)}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => router.push(returnPath)}
+                                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                            >
+                                <LogOut size={16} className="text-slate-500" />
+                                <span className="hidden sm:inline">Keluar</span>
                             </button>
                         </div>
                     </div>
-                    <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
                         {state.sections.map((section) => (
-                            <div key={section.sectionId} className={cn(
-                                'border-2 border-slate-900 px-3 py-2 text-sm font-black',
-                                section.status === 'active' ? 'bg-blue-600 text-white' : section.status === 'completed' ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-100 text-slate-500',
-                            )}>
-                                {section.sortOrder}. {section.title} · {section.questionCount} soal · {Math.round(section.durationSeconds / 60)} menit
+                            <div
+                                key={section.sectionId}
+                                className={cn(
+                                    'flex items-center justify-between rounded-xl px-3.5 py-2.5 text-xs font-bold transition-colors',
+                                    section.status === 'active'
+                                        ? 'bg-indigo-600 text-white shadow-xs'
+                                        : section.status === 'completed'
+                                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
+                                            : 'bg-slate-100 text-slate-500 border border-slate-200/60',
+                                )}
+                            >
+                                <span>{section.sortOrder}. {section.title}</span>
+                                <span className={cn('text-[11px] font-medium', section.status === 'active' ? 'text-indigo-100' : 'text-slate-500')}>
+                                    {section.questionCount} soal · {Math.round(section.durationSeconds / 60)} menit
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -406,39 +447,66 @@ export default function TkaFullExamSessionClient({
 
                 <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
                     <section className="min-w-0 space-y-4">
-                        <div className="st-flat-card flex flex-wrap items-center justify-between gap-3 p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-xs">
                             <div>
-                                <div className="text-xs font-black uppercase tracking-[0.12em] text-blue-700">{activeSection.subjectCode}</div>
-                                <div className="mt-0.5 text-lg font-black">Soal {currentIndex + 1} dari {questions.length}</div>
+                                <div className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200/60 shadow-2xs">
+                                    {activeSection.subjectCode}
+                                </div>
+                                <div className="mt-1 text-base sm:text-lg font-bold text-slate-950">
+                                    Soal {currentIndex + 1} dari {questions.length}
+                                </div>
                             </div>
-                            <button type="button" onClick={toggleFlag} className={cn('st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 px-3 py-2 text-sm font-black', flags[currentQuestion.attemptQuestionId] ? 'bg-yellow-200' : 'bg-white')}>
-                                <Flag size={16}/>{flags[currentQuestion.attemptQuestionId] ? 'Ditandai' : 'Tandai untuk ditinjau'}
+                            <button
+                                type="button"
+                                onClick={toggleFlag}
+                                className={cn(
+                                    'inline-flex min-h-11 items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold shadow-2xs transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+                                    flags[currentQuestion.attemptQuestionId]
+                                        ? 'bg-amber-50 text-amber-800 ring-1 ring-amber-300'
+                                        : 'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700',
+                                )}
+                            >
+                                <Flag size={16} className={flags[currentQuestion.attemptQuestionId] ? 'fill-amber-500 text-amber-600' : 'text-slate-400'} />
+                                {flags[currentQuestion.attemptQuestionId] ? 'Ditandai' : 'Tandai untuk ditinjau'}
                             </button>
                         </div>
 
                         {currentQuestion.stimulus && (
-                            <article className="st-warning p-5">
-                                {currentQuestion.stimulus.title && <h2 className="st-heading mb-3 text-lg">{currentQuestion.stimulus.title}</h2>}
-                                {currentQuestion.stimulus.imageUrl && (
-                                    <Image src={currentQuestion.stimulus.imageUrl} alt="Stimulus soal" width={900} height={500} unoptimized className="mb-4 max-h-80 w-auto max-w-full object-contain" />
+                            <article className="rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/60 via-amber-50/30 to-white p-5 md:p-6 shadow-xs">
+                                {currentQuestion.stimulus.title && (
+                                    <h2 className="mb-3 text-base sm:text-lg font-bold text-amber-950">
+                                        {currentQuestion.stimulus.title}
+                                    </h2>
                                 )}
-                                <div className="whitespace-pre-wrap font-semibold leading-relaxed text-slate-800">
+                                {currentQuestion.stimulus.imageUrl && (
+                                    <div className="mb-4 overflow-hidden rounded-xl border border-amber-200/60 bg-white p-2">
+                                        <Image
+                                            src={currentQuestion.stimulus.imageUrl}
+                                            alt="Stimulus soal"
+                                            width={900}
+                                            height={500}
+                                            unoptimized
+                                            className="max-h-80 w-auto max-w-full object-contain"
+                                        />
+                                    </div>
+                                )}
+                                <div className="whitespace-pre-wrap text-sm sm:text-base font-normal leading-relaxed text-slate-800">
                                     <MathRenderer text={currentQuestion.stimulus.content} />
                                 </div>
                             </article>
                         )}
 
-                        <article className="st-flat-card p-5 md:p-7">
-                            <div className="whitespace-pre-wrap text-lg font-bold leading-relaxed md:text-xl">
+                        <article className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-7 shadow-xs">
+                            <div className="whitespace-pre-wrap text-base sm:text-lg md:text-xl font-medium leading-relaxed text-slate-950">
                                 <MathRenderer text={currentQuestion.stem} />
                             </div>
-                            <p className="mt-4 border-t-2 border-dashed border-slate-200 pt-3 text-sm font-black text-blue-700">
+                            <p className="mt-4 border-t border-slate-100 pt-3 text-xs font-bold uppercase tracking-wider text-indigo-600">
                                 {responseInstruction(currentQuestion.responseType)}
                             </p>
                             <div className="mt-5 space-y-3">
                                 {currentQuestion.responseType === 'category' ? categoryGroups.map((group) => (
-                                    <div key={group} className="space-y-2 border-l-4 border-blue-300 bg-slate-50 p-3">
-                                        <h3 className="text-sm font-black uppercase text-slate-600">{group}</h3>
+                                    <div key={group} className="space-y-2.5 rounded-xl border border-indigo-100 bg-indigo-50/30 p-3.5">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-700">{group}</h3>
                                         {currentQuestion.options
                                             .filter((option) => (option.responseGroup ?? 'Kelompok') === group)
                                             .map((option, index) => renderOption(option, index))}
@@ -448,58 +516,121 @@ export default function TkaFullExamSessionClient({
                         </article>
 
                         <div className="flex items-center justify-between gap-3">
-                            <button type="button" disabled={currentIndex === 0} onClick={() => navigate(currentIndex - 1)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-white px-4 py-2 text-sm font-black disabled:opacity-40">
-                                <ChevronLeft size={18}/> Sebelumnya
+                            <button
+                                type="button"
+                                disabled={currentIndex === 0}
+                                onClick={() => navigate(currentIndex - 1)}
+                                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs sm:text-sm font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                            >
+                                <ChevronLeft size={18} /> Sebelumnya
                             </button>
                             {currentIndex === questions.length - 1 ? (
-                                <button type="button" data-prevent-double="true" disabled={processing} onClick={() => void advanceSection(false)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-blue-600 px-5 py-2 text-sm font-black text-white disabled:opacity-50">
-                                    <CheckCircle2 size={18}/>{processing ? 'Memproses...' : state.sections.some((section) => section.status === 'locked') ? 'Selesaikan bagian' : 'Kirim tryout'}
+                                <button
+                                    type="button"
+                                    data-prevent-double="true"
+                                    disabled={processing}
+                                    onClick={() => void advanceSection(false)}
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-indigo-700 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                                >
+                                    <CheckCircle2 size={18} />
+                                    {processing ? 'Memproses...' : state.sections.some((section) => section.status === 'locked') ? 'Selesaikan bagian' : 'Kirim tryout'}
                                 </button>
                             ) : (
-                                <button type="button" onClick={() => navigate(currentIndex + 1)} className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-slate-900 bg-slate-950 px-4 py-2 text-sm font-black text-white">
-                                    Selanjutnya <ChevronRight size={18}/>
+                                <button
+                                    type="button"
+                                    onClick={() => navigate(currentIndex + 1)}
+                                    className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-slate-800 transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                                >
+                                    Selanjutnya <ChevronRight size={18} />
                                 </button>
                             )}
                         </div>
                     </section>
 
-                    <aside className="st-flat-card h-fit p-4 lg:sticky lg:top-5">
+                    <aside className="h-fit rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs lg:sticky lg:top-5">
                         <div className="flex items-center justify-between gap-2">
-                            <h2 className="inline-flex items-center gap-2 font-black"><MapIcon size={18}/> Navigasi soal</h2>
-                            <span className="text-xs font-black text-slate-500">{answeredCount}/{questions.length}</span>
+                            <h2 className="inline-flex items-center gap-2 font-bold text-sm text-slate-900">
+                                <MapIcon size={16} className="text-indigo-600" /> Navigasi soal
+                            </h2>
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600">
+                                {answeredCount}/{questions.length}
+                            </span>
                         </div>
                         <div className="mt-4 grid grid-cols-5 gap-2">
                             {questions.map((question, index) => {
                                 const answered = (selections[question.attemptQuestionId] ?? []).length > 0
                                 const flagged = flags[question.attemptQuestionId]
+                                const isCurrent = index === currentIndex
                                 return (
                                     <button
                                         key={question.attemptQuestionId}
                                         type="button"
                                         onClick={() => navigate(index)}
-                                        aria-label={`Buka soal ${index + 1}${index === currentIndex ? ', sedang dikerjakan' : ''}`}
-                                        aria-current={index === currentIndex ? 'step' : undefined}
-                                        style={index === currentIndex ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
+                                        aria-label={`Buka soal ${index + 1}${isCurrent ? ', sedang dikerjakan' : ''}`}
+                                        aria-current={isCurrent ? 'step' : undefined}
+                                        style={isCurrent ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
                                         className={cn(
-                                            'st-focus relative aspect-square min-h-10 border-2 border-slate-900 text-sm font-black',
-                                            index === currentIndex ? 'z-10 bg-blue-600 text-white' : answered ? 'bg-emerald-100 text-slate-950' : 'bg-white text-slate-700',
+                                            'relative flex aspect-square min-h-10 items-center justify-center rounded-xl text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+                                            isCurrent && answered
+                                                ? 'z-10 bg-emerald-600 text-white shadow-xs font-black ring-2 ring-indigo-600 ring-offset-2 border border-emerald-700'
+                                                : isCurrent
+                                                    ? 'z-10 bg-indigo-600 text-white shadow-xs font-black ring-2 ring-indigo-600 ring-offset-2'
+                                                    : answered
+                                                        ? 'bg-emerald-600 text-white font-bold shadow-xs hover:bg-emerald-700 border border-emerald-700'
+                                                        : 'border border-slate-200/90 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900',
                                         )}
                                     >
                                         {index + 1}
-                                        {index === currentIndex && (
-                                            <span aria-hidden="true" className="absolute -left-1.5 -top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-sm" />
+                                        {isCurrent && (
+                                            <span aria-hidden="true" className="absolute -left-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-red-500 shadow-2xs" />
                                         )}
-                                        {flagged && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border border-slate-900 bg-yellow-300"/>}
+                                        {flagged && (
+                                            <span aria-label="Ditandai" className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-amber-400 shadow-2xs" />
+                                        )}
                                     </button>
                                 )
                             })}
                         </div>
-                        <div className="st-muted mt-4 space-y-2 border-t-2 border-dashed border-slate-200 pt-4 text-xs font-bold">
-                            <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Sedang dikerjakan</div>
-                            <div>Terjawab bagian ini: <b className="text-slate-900">{answeredCount}/{questions.length}</b></div>
-                            <div>Terjawab total: <b className="text-slate-900">{state.answeredCount}/{state.totalQuestions}</b></div>
-                            <div>Ditandai: <b className="text-slate-900">{markedCount}</b></div>
-                            <div>Pengerjaan: <b className="text-slate-900">#{state.attemptNumber}</b></div>
+                        <div className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 text-xs font-medium text-slate-600">
+                            <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200/70 bg-slate-50/70 p-2.5 text-[11px] font-semibold text-slate-700">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-md bg-emerald-600 text-[9px] font-bold text-white shadow-2xs">✓</span>
+                                    <span className="text-slate-800">Terjawab</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-md border border-slate-300 bg-slate-100 text-[9px] font-bold text-slate-600">-</span>
+                                    <span className="text-slate-600">Belum dijawab</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="relative flex h-4 w-4 items-center justify-center rounded-md bg-indigo-600 text-[9px] font-bold text-white shadow-2xs">
+                                        <span className="absolute -left-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-red-500" />
+                                    </span>
+                                    <span className="text-slate-800">Sedang dibuka</span>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="relative flex h-4 w-4 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-[9px] font-bold text-slate-600">
+                                        <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400" />
+                                    </span>
+                                    <span className="text-slate-800">Ditandai</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-red-500" />
+                                <span>Sedang dikerjakan</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-emerald-600" />
+                                <span>Terjawab bagian ini: <b className="font-bold text-emerald-700">{answeredCount}/{questions.length}</b></span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-indigo-600" />
+                                <span>Terjawab total: <b className="font-bold text-slate-900">{state.answeredCount}/{state.totalQuestions}</b></span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-amber-400" />
+                                <span>Ditandai: <b className="font-bold text-amber-700">{markedCount}</b></span>
+                            </div>
+                            <div>Pengerjaan: <b className="font-bold text-slate-900">#{state.attemptNumber}</b></div>
                         </div>
                     </aside>
                 </div>

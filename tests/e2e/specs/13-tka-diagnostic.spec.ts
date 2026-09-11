@@ -7,7 +7,7 @@ test('TKA SMP diagnostic maps seven competencies and drives the first focused dr
     const learner = await freshDisposableTkaSession(page)
 
     await page.goto('/tka/smp/diagnostic')
-    await expect(page.getByRole('heading', { name: 'Temukan fokus belajar sebelum mulai banyak tryout.', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Tes Diagnostik TKA SMP', exact: true })).toBeVisible()
     const overview = page.locator('section').first()
     await expect(overview.getByText('28', { exact: true })).toBeVisible()
     await expect(overview.getByText('soal', { exact: true })).toBeVisible()

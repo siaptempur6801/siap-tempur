@@ -76,8 +76,8 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await expect(page.getByText('Rp69.500', { exact: true })).toBeVisible()
         await expect(page.getByText(/biaya admin Rp500 satu kali/i)).toBeVisible()
 
-        await assertTouchTarget(page, /Pilih 30 hari · Rp29\.500/i)
-        await assertTouchTarget(page, /Pilih 90 hari · Rp69\.500/i)
+        await assertTouchTarget(page, /Pilih 30 hari/i)
+        await assertTouchTarget(page, /Pilih 90 hari/i)
 
         const snapScript = page.locator('script#midtrans-snap')
         await expect(snapScript).toHaveAttribute('src', 'https://app.sandbox.midtrans.com/snap/snap.js')
@@ -118,7 +118,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await page.goto('/tka/smp/pass')
         await expect(page.getByTestId('tka-pass-status-active')).toContainText('Tempur Pass aktif')
         await expect(page.getByRole('heading', { name: 'Perpanjang akses TKA SMP', exact: true })).toBeVisible()
-        await expect(page.getByRole('button', { name: /Perpanjang 30 hari · Rp29\.500/i })).toBeVisible()
+        await expect(page.getByRole('button', { name: /Perpanjang 30 hari/i })).toBeVisible()
 
         await page.goto('/tka/smp')
         const full = examCard(page, 'Tryout Lengkap TKA SMP')

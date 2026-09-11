@@ -6,7 +6,7 @@ import { createV2Client } from '@/lib/utils/supabase/client'
 import { useProfileNavigation } from './useProfileNavigation'
 
 export function SettingsTab() {
-    const { landingPath } = useProfileNavigation()
+    const { landingPath, isTka } = useProfileNavigation()
     const [showPasswordModal, setShowPasswordModal] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [oldPassword, setOldPassword] = useState('')
@@ -73,13 +73,18 @@ export function SettingsTab() {
 
     return (
         <div className="space-y-6">
-            <section className="st-card-md bg-white p-5 md:p-6">
+            <section className={isTka ? 'rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs' : 'st-card-md bg-white p-5 md:p-6'}>
                 <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[var(--st-ink)] bg-blue-50"><Settings size={21} /></div>
+                    <div className={isTka
+                        ? 'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs'
+                        : 'flex h-11 w-11 shrink-0 items-center justify-center border-2 border-[var(--st-ink)] bg-blue-50'}
+                    >
+                        <Settings size={21} />
+                    </div>
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Keamanan akun</p>
-                        <h2 className="st-heading mt-1 text-2xl">Pengaturan akun</h2>
-                        <p className="st-muted mt-1 text-sm font-semibold">Kelola kata sandi atau tindakan permanen pada akunmu.</p>
+                        <p className={isTka ? 'text-xs font-bold uppercase tracking-wider text-indigo-700' : 'text-xs font-black uppercase tracking-[0.14em] text-blue-700'}>Keamanan akun</p>
+                        <h2 className={isTka ? 'text-xl font-bold text-slate-950' : 'st-heading mt-1 text-2xl'}>Pengaturan akun</h2>
+                        <p className={isTka ? 'mt-1 text-sm font-medium text-slate-600' : 'st-muted mt-1 text-sm font-semibold'}>Kelola kata sandi atau tindakan permanen pada akunmu.</p>
                     </div>
                 </div>
 
@@ -87,21 +92,35 @@ export function SettingsTab() {
                     <button
                         type="button"
                         onClick={() => setShowPasswordModal(true)}
-                        className="st-focus border-2 border-[var(--st-ink)] bg-blue-50 p-5 text-left transition hover:bg-blue-100"
+                        className={isTka
+                            ? 'group rounded-xl border border-slate-200/80 bg-slate-50/50 p-5 text-left transition hover:border-indigo-300 hover:bg-indigo-50/30 shadow-2xs active:scale-[0.99]'
+                            : 'st-focus border-2 border-[var(--st-ink)] bg-blue-50 p-5 text-left transition hover:bg-blue-100'}
                     >
-                        <div className="flex h-10 w-10 items-center justify-center border-2 border-[var(--st-ink)] bg-white"><Lock size={18} /></div>
-                        <h3 className="mt-4 font-black">Ubah kata sandi</h3>
-                        <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">Ganti kata sandi akun dengan memverifikasi kata sandi yang sedang digunakan.</p>
+                        <div className={isTka
+                            ? 'flex h-10 w-10 items-center justify-center rounded-lg bg-white text-indigo-700 ring-1 ring-slate-200 shadow-2xs group-hover:bg-indigo-600 group-hover:text-white transition'
+                            : 'flex h-10 w-10 items-center justify-center border-2 border-[var(--st-ink)] bg-white'}
+                        >
+                            <Lock size={18} />
+                        </div>
+                        <h3 className={isTka ? 'mt-4 text-sm font-bold text-slate-900' : 'mt-4 font-black'}>Ubah kata sandi</h3>
+                        <p className={isTka ? 'mt-1 text-xs text-slate-500 font-medium leading-relaxed' : 'st-muted mt-1 text-sm font-semibold leading-relaxed'}>Ganti kata sandi akun dengan memverifikasi kata sandi yang sedang digunakan.</p>
                     </button>
 
                     <button
                         type="button"
                         onClick={() => setShowDeleteModal(true)}
-                        className="st-focus border-2 border-red-700 bg-red-50 p-5 text-left transition hover:bg-red-100"
+                        className={isTka
+                            ? 'group rounded-xl border border-rose-200/80 bg-rose-50/30 p-5 text-left transition hover:border-rose-300 hover:bg-rose-50/60 shadow-2xs active:scale-[0.99]'
+                            : 'st-focus border-2 border-red-700 bg-red-50 p-5 text-left transition hover:bg-red-100'}
                     >
-                        <div className="flex h-10 w-10 items-center justify-center border-2 border-red-700 bg-white text-red-700"><Trash2 size={18} /></div>
-                        <h3 className="mt-4 font-black text-red-800">Hapus akun</h3>
-                        <p className="mt-1 text-sm font-semibold leading-relaxed text-red-700">Tindakan ini menghapus akun dan data yang terkait secara permanen.</p>
+                        <div className={isTka
+                            ? 'flex h-10 w-10 items-center justify-center rounded-lg bg-white text-rose-600 ring-1 ring-rose-200 shadow-2xs group-hover:bg-rose-600 group-hover:text-white transition'
+                            : 'flex h-10 w-10 items-center justify-center border-2 border-red-700 bg-white text-red-700'}
+                        >
+                            <Trash2 size={18} />
+                        </div>
+                        <h3 className={isTka ? 'mt-4 text-sm font-bold text-rose-800' : 'mt-4 font-black text-red-800'}>Hapus akun</h3>
+                        <p className={isTka ? 'mt-1 text-xs text-rose-700/80 font-medium leading-relaxed' : 'mt-1 text-sm font-semibold leading-relaxed text-red-700'}>Tindakan ini menghapus akun dan data yang terkait secara permanen.</p>
                     </button>
                 </div>
             </section>
@@ -112,26 +131,59 @@ export function SettingsTab() {
                         role="dialog"
                         aria-modal="true"
                         aria-labelledby="change-password-title"
-                        className="st-product st-card-lg relative w-full max-w-md bg-[var(--st-paper)] p-6 md:p-8"
+                        className={isTka
+                            ? 'relative w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-xl'
+                            : 'st-product st-card-lg relative w-full max-w-md bg-[var(--st-paper)] p-6 md:p-8'}
                         onClick={(event) => event.stopPropagation()}
                     >
-                        <button type="button" onClick={closePasswordModal} disabled={isChangingPassword} aria-label="Tutup" className="st-focus absolute right-3 top-3 flex h-11 w-11 items-center justify-center hover:bg-white disabled:opacity-50"><X size={20} /></button>
-                        <div className="flex h-12 w-12 items-center justify-center border-2 border-[var(--st-ink)] bg-[var(--st-yellow)]"><KeyRound size={22} /></div>
-                        <h2 id="change-password-title" className="st-heading mt-4 text-2xl">Ubah kata sandi</h2>
-                        <p className="st-muted mt-1 text-sm font-semibold">Masukkan kata sandi saat ini, lalu buat kata sandi baru.</p>
+                        <button
+                            type="button"
+                            onClick={closePasswordModal}
+                            disabled={isChangingPassword}
+                            aria-label="Tutup"
+                            className={isTka
+                                ? 'absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition disabled:opacity-50'
+                                : 'st-focus absolute right-3 top-3 flex h-11 w-11 items-center justify-center hover:bg-white disabled:opacity-50'}
+                        >
+                            <X size={18} />
+                        </button>
+                        <div className={isTka
+                            ? 'flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs'
+                            : 'flex h-12 w-12 items-center justify-center border-2 border-[var(--st-ink)] bg-[var(--st-yellow)]'}
+                        >
+                            <KeyRound size={20} />
+                        </div>
+                        <h2 id="change-password-title" className={isTka ? 'mt-4 text-xl font-bold text-slate-950' : 'st-heading mt-4 text-2xl'}>Ubah kata sandi</h2>
+                        <p className={isTka ? 'mt-1 text-xs text-slate-500 font-medium' : 'st-muted mt-1 text-sm font-semibold'}>Masukkan kata sandi saat ini, lalu buat kata sandi baru.</p>
 
                         <div className="mt-6 space-y-4">
-                            <PasswordField label="Kata sandi saat ini" value={oldPassword} onChange={setOldPassword} placeholder="Kata sandi saat ini" disabled={isChangingPassword} autoComplete="current-password" />
-                            <PasswordField label="Kata sandi baru" value={newPassword} onChange={setNewPassword} placeholder="Minimal 10 karakter" disabled={isChangingPassword} autoComplete="new-password" />
-                            <PasswordField label="Konfirmasi kata sandi baru" value={confirmPassword} onChange={setConfirmPassword} placeholder="Ketik ulang kata sandi baru" disabled={isChangingPassword} autoComplete="new-password" />
-                            <p className="text-xs font-semibold leading-relaxed text-slate-500">Gunakan minimal 10 karakter dengan huruf besar, huruf kecil, dan angka.</p>
+                            <PasswordField label="Kata sandi saat ini" value={oldPassword} onChange={setOldPassword} placeholder="Kata sandi saat ini" disabled={isChangingPassword} autoComplete="current-password" isTka={isTka} />
+                            <PasswordField label="Kata sandi baru" value={newPassword} onChange={setNewPassword} placeholder="Minimal 10 karakter" disabled={isChangingPassword} autoComplete="new-password" isTka={isTka} />
+                            <PasswordField label="Konfirmasi kata sandi baru" value={confirmPassword} onChange={setConfirmPassword} placeholder="Ketik ulang kata sandi baru" disabled={isChangingPassword} autoComplete="new-password" isTka={isTka} />
+                            <p className={isTka ? 'text-xs text-slate-500 font-medium leading-relaxed' : 'text-xs font-semibold leading-relaxed text-slate-500'}>Gunakan minimal 10 karakter dengan huruf besar, huruf kecil, dan angka.</p>
                         </div>
 
                         <div className="mt-6 flex flex-col gap-3 sm:flex-row-reverse">
-                            <button type="button" onClick={handleChangePassword} disabled={isChangingPassword} className="st-button inline-flex min-h-12 flex-1 items-center justify-center gap-2 bg-blue-600 px-5 py-3 font-black text-white disabled:opacity-50">
-                                {isChangingPassword && <Loader2 size={18} className="animate-spin" />}{isChangingPassword ? 'Mengubah...' : 'Simpan kata sandi'}
+                            <button
+                                type="button"
+                                onClick={handleChangePassword}
+                                disabled={isChangingPassword}
+                                className={isTka
+                                    ? 'inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition active:scale-[0.98] disabled:opacity-50'
+                                    : 'st-button inline-flex min-h-12 flex-1 items-center justify-center gap-2 bg-blue-600 px-5 py-3 font-black text-white disabled:opacity-50'}
+                            >
+                                {isChangingPassword && <Loader2 size={16} className="animate-spin" />}{isChangingPassword ? 'Mengubah...' : 'Simpan kata sandi'}
                             </button>
-                            <button type="button" onClick={closePasswordModal} disabled={isChangingPassword} className="st-button min-h-12 bg-white px-5 py-3 font-black disabled:opacity-50">Batal</button>
+                            <button
+                                type="button"
+                                onClick={closePasswordModal}
+                                disabled={isChangingPassword}
+                                className={isTka
+                                    ? 'inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-bold text-slate-700 transition disabled:opacity-50'
+                                    : 'st-button min-h-12 bg-white px-5 py-3 font-black disabled:opacity-50'}
+                            >
+                                Batal
+                            </button>
                         </div>
                     </section>
                 </div>
@@ -143,17 +195,26 @@ export function SettingsTab() {
                         role="alertdialog"
                         aria-modal="true"
                         aria-labelledby="delete-account-title"
-                        className="st-product st-card-lg relative w-full max-w-md bg-white p-6 md:p-8"
+                        className={isTka
+                            ? 'relative w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-xl'
+                            : 'st-product st-card-lg relative w-full max-w-md bg-white p-6 md:p-8'}
                         onClick={(event) => event.stopPropagation()}
                     >
-                        <div className="flex h-12 w-12 items-center justify-center border-2 border-red-700 bg-red-50 text-red-700"><Trash2 size={23} /></div>
-                        <div className="st-kicker mt-5 bg-red-100 text-red-900">Tindakan permanen</div>
-                        <h2 id="delete-account-title" className="st-heading mt-4 text-3xl">Hapus akun?</h2>
-                        <p className="mt-2 text-sm font-semibold leading-relaxed text-red-800">Tindakan ini tidak dapat dibatalkan. Pastikan kamu benar-benar ingin menghapus akun sebelum melanjutkan.</p>
+                        <div className={isTka
+                            ? 'flex h-11 w-11 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200 shadow-2xs'
+                            : 'flex h-12 w-12 items-center justify-center border-2 border-red-700 bg-red-50 text-red-700'}
+                        >
+                            <Trash2 size={20} />
+                        </div>
+                        <div className={isTka ? 'mt-4 inline-flex items-center rounded-full bg-rose-100/80 px-2.5 py-0.5 text-xs font-bold text-rose-700' : 'st-kicker mt-5 bg-red-100 text-red-900'}>
+                            Tindakan permanen
+                        </div>
+                        <h2 id="delete-account-title" className={isTka ? 'mt-3 text-xl font-bold text-slate-950' : 'st-heading mt-4 text-3xl'}>Hapus akun?</h2>
+                        <p className={isTka ? 'mt-1 text-xs font-medium text-rose-700/90 leading-relaxed' : 'mt-2 text-sm font-semibold leading-relaxed text-red-800'}>Tindakan ini tidak dapat dibatalkan. Pastikan kamu benar-benar ingin menghapus akun sebelum melanjutkan.</p>
 
-                        <div className="mt-5 border-2 border-red-200 bg-red-50 p-4">
-                            <p className="font-black text-red-900">Yang akan terhapus:</p>
-                            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm font-semibold text-red-800">
+                        <div className={isTka ? 'mt-5 rounded-xl border border-rose-200/80 bg-rose-50/50 p-4' : 'mt-5 border-2 border-red-200 bg-red-50 p-4'}>
+                            <p className={isTka ? 'text-xs font-bold text-rose-900' : 'font-black text-red-900'}>Yang akan terhapus:</p>
+                            <ul className={isTka ? 'mt-2 list-disc space-y-1 pl-4 text-xs font-medium text-rose-800' : 'mt-2 list-disc space-y-1 pl-5 text-sm font-semibold text-red-800'}>
                                 <li>Riwayat belajar dan tryout yang terkait dengan akun.</li>
                                 <li>Sisa token pada akun.</li>
                                 <li>Informasi profil dan akses masuk.</li>
@@ -161,12 +222,14 @@ export function SettingsTab() {
                         </div>
 
                         <label className="mt-5 block">
-                            <span className="mb-1.5 block text-sm font-black">Ketik <span className="text-red-700">HAPUS</span> untuk konfirmasi</span>
+                            <span className={isTka ? 'mb-1.5 block text-xs font-bold text-slate-700' : 'mb-1.5 block text-sm font-black'}>Ketik <span className="text-red-700">HAPUS</span> untuk konfirmasi</span>
                             <input
                                 type="text"
                                 value={deleteConfirmText}
                                 onChange={(event) => setDeleteConfirmText(event.target.value.toUpperCase())}
-                                className="st-input text-center font-black tracking-[0.15em] focus:border-red-700"
+                                className={isTka
+                                    ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-center font-bold tracking-widest text-slate-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 shadow-2xs'
+                                    : 'st-input text-center font-black tracking-[0.15em] focus:border-red-700'}
                                 placeholder="HAPUS"
                                 disabled={isDeleting}
                                 autoComplete="off"
@@ -178,15 +241,19 @@ export function SettingsTab() {
                                 type="button"
                                 onClick={handleDeleteAccount}
                                 disabled={isDeleting || deleteConfirmText !== 'HAPUS'}
-                                className="st-button inline-flex min-h-12 w-full items-center justify-center gap-2 bg-red-600 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                className={isTka
+                                    ? 'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40'
+                                    : 'st-button inline-flex min-h-12 w-full items-center justify-center gap-2 bg-red-600 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-40'}
                             >
-                                {isDeleting ? <Loader2 size={18} className="animate-spin" /> : <Shield size={18} />}{isDeleting ? 'Menghapus akun...' : 'Hapus akun permanen'}
+                                {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}{isDeleting ? 'Menghapus akun...' : 'Hapus akun permanen'}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => { setShowDeleteModal(false); setDeleteConfirmText('') }}
                                 disabled={isDeleting}
-                                className="st-button min-h-12 w-full bg-white px-5 py-3 font-black disabled:opacity-50"
+                                className={isTka
+                                    ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-bold text-slate-700 transition disabled:opacity-50'
+                                    : 'st-button min-h-12 w-full bg-white px-5 py-3 font-black disabled:opacity-50'}
                             >
                                 Batal
                             </button>
@@ -198,11 +265,22 @@ export function SettingsTab() {
     )
 }
 
-function PasswordField({ label, value, onChange, placeholder, disabled, autoComplete }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; disabled: boolean; autoComplete: 'current-password' | 'new-password' }) {
+function PasswordField({ label, value, onChange, placeholder, disabled, autoComplete, isTka = false }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; disabled: boolean; autoComplete: 'current-password' | 'new-password'; isTka?: boolean }) {
     return (
         <label>
-            <span className="mb-1.5 block text-sm font-black">{label}</span>
-            <input type="password" value={value} onChange={(event) => onChange(event.target.value)} className="st-input" placeholder={placeholder} disabled={disabled} autoComplete={autoComplete} />
+            <span className={isTka ? 'mb-1.5 block text-xs font-bold text-slate-700' : 'mb-1.5 block text-sm font-black'}>{label}</span>
+            <input
+                type="password"
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                className={isTka
+                    ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
+                    : 'st-input'}
+                placeholder={placeholder}
+                disabled={disabled}
+                autoComplete={autoComplete}
+            />
         </label>
     )
 }
+

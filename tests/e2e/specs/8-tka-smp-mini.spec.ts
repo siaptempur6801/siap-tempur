@@ -47,7 +47,7 @@ async function assertNoDocumentOverflow(page: Page) {
 
 async function assertHistoryOpensResult(page: Page, examTitle: string) {
     const history = page.locator('section').filter({
-        has: page.getByRole('heading', { name: 'Riwayat terbaru', exact: true }),
+        has: page.getByRole('heading', { name: 'Pilih sesi untuk melanjutkan atau melihat hasil', exact: true }),
     })
     await expect(history).toBeVisible()
     const entry = history.getByRole('link').filter({ hasText: examTitle }).first()
@@ -154,6 +154,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await page.goto('/tka/smp')
 
         await expect(page.getByText('Jalur belajar aktif')).toBeVisible()
+        await page.goto('/tka/smp/focus')
         const hierarchy = page.getByTestId('tka-learning-hierarchy')
         await expect(hierarchy).toBeVisible()
         await expect(hierarchy.getByRole('heading', { name: 'Pilih mata pelajaran, lalu materi', exact: true })).toBeVisible()
@@ -162,6 +163,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await expect(hierarchy.getByText('Pemahaman Tekstual', { exact: true })).toBeVisible()
         await expect(hierarchy.getByText('Bilangan', { exact: true })).toBeVisible()
         await expect(hierarchy.getByRole('button', { name: /Latih topik/i }).first()).toBeVisible()
+        await page.goto('/tka/smp/mini-tryout')
         const card = await examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
         await expect(card.getByText('35 menit')).toBeVisible()
         await expect(card.getByText(/Gratis 1x tersisa/)).toBeVisible()
@@ -174,8 +176,9 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await assertMiniProjection(session)
         await assertProgressDashboard(page, session, 'Mini Tryout Bahasa Indonesia TKA SMP')
 
-        await page.goto('/tka/smp')
+        await page.goto('/tka/smp/riwayat')
         await assertHistoryOpensResult(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
+        await page.goto('/tka/smp/mini-tryout')
         const usedCard = await examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
         const locked = usedCard.getByRole('button', { name: 'Kuota gratis habis · Butuh Tempur Pass', exact: true })
         await expect(locked).toBeDisabled()
@@ -192,6 +195,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await page.goto('/tka/smp')
 
         await expect(page.getByText('Jalur belajar aktif')).toBeVisible()
+        await page.goto('/tka/smp/mini-tryout')
         const card = await examCard(page, 'Mini Tryout Matematika TKA SMP')
         await expect(card.getByText('35 menit')).toBeVisible()
         await expect(card.getByText(/Gratis 1x tersisa/)).toBeVisible()
@@ -203,8 +207,9 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await finishMini(page, 'Matematika')
         await assertMiniProjection(session)
 
-        await page.goto('/tka/smp')
+        await page.goto('/tka/smp/riwayat')
         await assertHistoryOpensResult(page, 'Mini Tryout Matematika TKA SMP')
+        await page.goto('/tka/smp/mini-tryout')
         const usedCard = await examCard(page, 'Mini Tryout Matematika TKA SMP')
         const locked = usedCard.getByRole('button', { name: 'Kuota gratis habis · Butuh Tempur Pass', exact: true })
         await expect(locked).toBeDisabled()

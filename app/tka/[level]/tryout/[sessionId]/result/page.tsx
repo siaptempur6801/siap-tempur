@@ -119,7 +119,7 @@ export default async function TkaResultPage({
 
     return (
         <ResultXPWrapper rewardKey={sessionId} xpInfo={xpInfo} showReward={completed === '1'}>
-            <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-8 md:py-8">
+            <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="rounded-full bg-indigo-50 px-3 py-1.5 text-[11px] font-black text-indigo-700 ring-1 ring-indigo-100">{label} · TKA/{level}</span>

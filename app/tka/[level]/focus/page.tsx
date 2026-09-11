@@ -46,7 +46,7 @@ export default async function TkaFocusPage({ params }: { params: Promise<{ level
     const activeTrack = userTrack?.status.toLowerCase() === 'active'
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-5 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 <header className="border-b border-slate-200/80 pb-6 text-slate-950">
                     <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 ring-1 ring-indigo-200/50">

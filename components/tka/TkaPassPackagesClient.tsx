@@ -29,6 +29,8 @@ function analyticsPackageDays(days: number | null): 30 | 90 | undefined {
     return undefined
 }
 
+const ADMIN_FEE = 500
+
 export default function TkaPassPackagesClient({
     level,
     packages,
@@ -202,76 +204,135 @@ export default function TkaPassPackagesClient({
     if (packages.length === 0) return null
 
     return (
-        <section className="space-y-5" aria-labelledby="tka-pass-packages-title">
+        <section className="space-y-6" aria-labelledby="tka-pass-packages-title">
             <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-blue-600">
-                    <Crown size={17} aria-hidden="true"/> Tempur Pass
+                <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600">
+                    <Crown size={15} aria-hidden="true" />
+                    <span>Pilihan Durasi Belajar</span>
                 </div>
-                <h2 id="tka-pass-packages-title" className="mt-2 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
-                    {hasActivePass ? 'Jaga ritme belajar, tambah masa aktifmu' : 'Pilih durasi untuk rencana belajarmu'}
+                <h2 id="tka-pass-packages-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
+                    {hasActivePass ? `Perpanjang akses TKA ${level}` : `Pilih akses belajar TKA ${level}`}
                 </h2>
-                <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-500">
+                <p className="mt-1 text-sm text-slate-600 leading-relaxed">
                     {hasActivePass
                         ? 'Lanjutkan persiapanmu dengan durasi tambahan. Perpanjangan dimulai setelah masa aktif saat ini berakhir, sehingga sisa aksesmu tetap utuh.'
                         : 'Mulai dengan persiapan satu bulan atau beri diri lebih banyak waktu untuk latihan rutin. Mini Tryout dan Full Tryout tersedia sesuai akses paket selama masa aktif.'}
                 </p>
+                <p className="mt-2 text-xs font-bold text-slate-500">
+                    Setiap pembayaran dikenai biaya admin {rupiah(ADMIN_FEE)} satu kali.
+                </p>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2">
                 {packages.map((pkg) => {
                     const days = pkg.durationDays ?? 0
+                    const totalPayment = pkg.price + ADMIN_FEE
                     const isBestValue = pkg.code === bestValueCode
                     const isBuyingThis = buying === pkg.code
 
                     return (
                         <article
                             key={pkg.code}
-                            className={`st-card-md relative flex h-full flex-col overflow-hidden p-5 md:p-6 ${isBestValue ? 'bg-gradient-to-b from-indigo-50/80 to-white' : 'bg-white'}`}
+                            className={`relative flex h-full flex-col justify-between rounded-2xl border bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                                isBestValue
+                                    ? 'border-indigo-300 ring-2 ring-indigo-600/90 ring-offset-2 bg-gradient-to-b from-indigo-50/40 via-white to-white'
+                                    : 'border-slate-200/80 hover:border-slate-300'
+                            }`}
                         >
-                            {isBestValue && <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-violet-500 to-blue-500" />}
+                            {/* Best value badge */}
                             {isBestValue && (
-                                <span className="absolute right-4 top-4 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-100">Hemat per hari</span>
+                                <div className="absolute -top-3 right-5">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1 text-[11px] font-black tracking-wide text-white shadow-xs">
+                                        <Crown size={12} />
+                                        <span>Nilai Terbaik · Rekomendasi</span>
+                                    </span>
+                                </div>
                             )}
 
                             <div>
-                                <h3 className="pr-24 text-xl font-black tracking-tight text-slate-950">{pkg.name}</h3>
-                                <p className="mt-2 min-h-10 text-sm font-semibold leading-relaxed text-slate-500">
-                                    {days === 30 ? 'Satu bulan untuk mulai rutin, mengenali kemampuan, dan menentukan fokus latihan.' : days === 90 ? 'Lebih banyak waktu untuk membangun kebiasaan, mengulang latihan, dan mengevaluasi progres.' : pkg.description || `Siapkan rencana belajarmu dengan akses TKA ${level} selama ${days} hari.`}
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-xs ${
+                                            isBestValue ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'
+                                        }`}
+                                    >
+                                        <Crown size={22} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold tracking-tight text-slate-950">{pkg.name}</h3>
+                                        <span className="text-xs font-semibold text-slate-500">Akses Penuh {days} Hari</span>
+                                    </div>
+                                </div>
+
+                                <p className="mt-3 min-h-10 text-xs font-medium leading-relaxed text-slate-600 sm:text-sm">
+                                    {days === 30
+                                        ? 'Satu bulan untuk mulai rutin, mengenali kemampuan, dan menentukan fokus latihan.'
+                                        : days === 90
+                                            ? 'Lebih banyak waktu untuk membangun kebiasaan, mengulang latihan, dan mengevaluasi progres.'
+                                            : pkg.description || `Siapkan rencana belajarmu dengan akses TKA ${level} selama ${days} hari.`}
                                 </p>
+
+                                <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                                    <div className="flex flex-wrap items-end justify-between gap-3">
+                                        <div>
+                                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Harga paket</div>
+                                            <div className="mt-0.5 text-2xl sm:text-3xl font-black tracking-tight text-indigo-700">{rupiah(pkg.price)}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total dibayar</div>
+                                            <div className="mt-0.5 text-lg sm:text-xl font-bold text-slate-900">{rupiah(totalPayment)}</div>
+                                        </div>
+                                    </div>
+                                    <p className="mt-2 text-xs text-slate-500 font-medium leading-relaxed">
+                                        Harga paket {rupiah(pkg.price)} + biaya admin {rupiah(ADMIN_FEE)}.
+                                    </p>
+                                </div>
+
+                                <div className="my-5 flex-1 space-y-2 text-xs font-medium text-slate-700">
+                                    <Benefit icon={<CheckCircle2 size={16} />} text={`Full Tryout TKA ${level}`} />
+                                    <Benefit icon={<CheckCircle2 size={16} />} text="Mini Tryout selama paket aktif" />
+                                    <Benefit icon={<CheckCircle2 size={16} />} text={`Masa aktif ${days} hari`} />
+                                    <Benefit icon={<ShieldCheck size={16} />} text="Akses aktif setelah pembayaran terverifikasi" blue />
+                                </div>
                             </div>
 
-                            <div className="mt-5 rounded-lg border border-slate-100 bg-slate-50/80 p-4">
-                                <div className="text-xs font-black uppercase tracking-wide text-slate-400">Harga</div>
-                                <div className="mt-1 text-3xl font-black tracking-tight text-blue-700">{rupiah(pkg.price)}</div>
+                            <div className="border-t border-slate-100 pt-4">
+                                <button
+                                    type="button"
+                                    disabled={Boolean(buying)}
+                                    aria-busy={isBuyingThis}
+                                    onClick={() => void buy(pkg.code, pkg.durationDays)}
+                                    className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 ${
+                                        isBestValue
+                                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow'
+                                            : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
+                                    }`}
+                                >
+                                    {isBuyingThis ? (
+                                        <>
+                                            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                                            <span>Menyiapkan pembayaran...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Zap size={16} aria-hidden="true" />
+                                            <span>
+                                                {hasActivePass
+                                                    ? `Perpanjang ${days} hari`
+                                                    : `Pilih ${days} hari`}
+                                            </span>
+                                        </>
+                                    )}
+                                </button>
                             </div>
-
-                            <div className="my-5 flex-1 space-y-2.5 text-sm font-bold text-slate-700">
-                                <Benefit icon={<CheckCircle2 size={17}/>} text={`Ukur kesiapan dengan Full Tryout TKA ${level}`} />
-                                <Benefit icon={<CheckCircle2 size={17}/>} text="Evaluasi per mata pelajaran lewat Mini Tryout" />
-                                <Benefit icon={<CheckCircle2 size={17}/>} text={`${days} hari untuk menjalankan rencana belajarmu`} />
-                                <Benefit icon={<ShieldCheck size={17}/>} text="Akses aktif setelah pembayaran terverifikasi" blue />
-                            </div>
-
-                            <button
-                                type="button"
-                                disabled={Boolean(buying)}
-                                aria-busy={isBuyingThis}
-                                onClick={() => void buy(pkg.code, pkg.durationDays)}
-                                className="st-focus inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-none transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-                            >
-                                {isBuyingThis ? <Loader2 size={17} className="animate-spin" aria-hidden="true"/> : <Zap size={17} aria-hidden="true"/>}
-                                {isBuyingThis
-                                    ? 'Menyiapkan pembayaran...'
-                                    : hasActivePass
-                                        ? `Perpanjang ${days} hari · ${rupiah(pkg.price)}`
-                                        : `Aktifkan ${days} hari · ${rupiah(pkg.price)}`}
-                            </button>
                         </article>
                     )
                 })}
             </div>
 
-            <p className="text-xs font-semibold leading-relaxed text-slate-500">Pembayaran diproses melalui Midtrans. Akses tidak berubah jika pembayaran dibatalkan atau belum terverifikasi.</p>
+            <p className="text-xs font-medium leading-relaxed text-slate-500">
+                Pembayaran diproses melalui Midtrans. Akses tidak berubah jika pembayaran dibatalkan atau belum terverifikasi.
+            </p>
         </section>
     )
 }
@@ -279,7 +340,7 @@ export default function TkaPassPackagesClient({
 function Benefit({ icon, text, blue = false }: { icon: React.ReactNode; text: string; blue?: boolean }) {
     return (
         <div className="flex items-start gap-2.5">
-            <span className={`mt-0.5 shrink-0 ${blue ? 'text-blue-600' : 'text-emerald-600'}`}>{icon}</span>
+            <span className={`mt-0.5 shrink-0 ${blue ? 'text-indigo-600' : 'text-emerald-600'}`}>{icon}</span>
             <span>{text}</span>
         </div>
     )

@@ -52,6 +52,7 @@ describe('TKA navigation selection', () => {
         expect(markup).toContain('href="/tka/smp/tryout"')
         expect(markup).toContain('href="/tka/smp/mini-tryout"')
         expect(markup).toContain('href="/tka/smp/focus"')
+        expect(markup).toContain('href="/tka/smp/riwayat"')
         expect(markup).not.toContain('#tka-tryout')
         expect(markup).not.toContain('>Beranda</span>')
         expect(markup.match(/>Ringkasan<\/span>/g)).toHaveLength(2)
@@ -79,6 +80,7 @@ describe('TKA navigation selection', () => {
             'Latihan Fokus',
             'Mini Tryout',
             'Tryout',
+            'Riwayat',
             'Bank Soal Salah',
             'Perkembangan',
         ].map((label) => markup.indexOf(`>${label}</span>`))
@@ -92,6 +94,27 @@ describe('TKA navigation selection', () => {
         const focus = renderToStaticMarkup(<NavItem href="/tka/smp/focus" label="Latihan Fokus" icon={null} />)
 
         expect(focus).toContain('aria-current="page"')
+    })
+
+    it('keeps the mobile Tryout shortcut active for Mini Tryout', () => {
+        navigation.pathname = '/tka/smp/mini-tryout'
+        const markup = renderToStaticMarkup(
+            <TkaDashboardShell
+                level="SMP"
+                user={{ id: 'user-1', email: 'user@example.com' }}
+                profile={null}
+                tokenBalance={10}
+                signoutAction={async () => ({ success: true })}
+            >
+                <div>Mini Tryout</div>
+            </TkaDashboardShell>,
+        )
+
+        const mobileNav = markup.slice(markup.lastIndexOf('aria-label="Navigasi utama TKA"'))
+        const mobileTryoutHref = mobileNav.indexOf('href="/tka/smp/tryout"')
+        const mobileTryoutLink = mobileNav.slice(mobileNav.lastIndexOf('<a', mobileTryoutHref), mobileTryoutHref + 320)
+        expect(mobileTryoutLink).toContain('aria-current="page"')
+        expect(mobileNav).toContain('href="/tka/smp/riwayat"')
     })
 
     it('does not link levels that are not available yet', () => {

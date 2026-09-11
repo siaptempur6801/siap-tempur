@@ -235,7 +235,7 @@ export default function TkaWrongQuestionModeClient({
 
     return (
         <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
-            <div className="mx-auto max-w-6xl space-y-6">
+            <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 {/* Header Evaluasi Soal Salah */}
                 <header className="rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-sm">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
