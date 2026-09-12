@@ -55,9 +55,10 @@ export default function TkaDashboardShell({
     const levelFromPath = pathname?.match(/^\/tka\/(sd|smp|sma)(?:\/|$)/i)?.[1]
     const level = parseTkaLevel(levelFromPath) ?? initialLevel
     const basePath = `/tka/${level.toLowerCase()}`
-    const isTryoutSession = pathname.includes('/tryout/') && !pathname.endsWith('/result')
+    const isReviewSession = pathname.includes('/review') || pathname.includes('/pembahasan')
+    const isTryoutSession = pathname.includes('/tryout/')
     const isDiagnosticSession = /\/diagnostic\/[0-9a-f-]+$/i.test(pathname)
-    const isFocusedSession = isTryoutSession || isDiagnosticSession || pathname.includes('/remedial/')
+    const isFocusedSession = isTryoutSession || isDiagnosticSession || pathname.includes('/remedial/') || isReviewSession
     const isTryoutArea = pathname.startsWith(`${basePath}/tryout`) || pathname.startsWith(`${basePath}/mini-tryout`)
     const featureHref = (path: string) => level === 'SMP' ? `${basePath}${path}` : basePath
 

@@ -541,7 +541,9 @@ form[data-submit-lock="true"] button[type="submit"] {
   }
 }
 
-main a[href^="/tka/"][href*="/tryout/"] {
+/* TKA attempt cards are grid items; clamp their intrinsic width so status/date
+   content cannot force the mobile document wider than the viewport. */
+main a[href^="/tka/"][href*="/tryout/"]:not([class*="inline-flex"]) {
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
@@ -550,8 +552,9 @@ main a[href^="/tka/"][href*="/tryout/"] {
 }
 
 @media (max-width: 639px) {
-  main a[href^="/tka/"][href*="/tryout/"] > div {
+  main a[href^="/tka/"][href*="/tryout/"]:not([class*="inline-flex"]) > div {
     min-width: 0;
     flex-wrap: wrap;
   }
 }
+
