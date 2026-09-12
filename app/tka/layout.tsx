@@ -5,7 +5,7 @@ import TkaDashboardShell from '@/components/tka/TkaDashboardShell'
 import { env } from '@/lib/env'
 import { createClient } from '@/lib/utils/supabase/server'
 import { parseTkaLevel, type TkaLevel } from '@/src/tka/context'
-import { walletService } from '@/src/services/wallet.service'
+import { hasActiveTempurPass } from '@/src/services/tempur-pass.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -27,13 +27,13 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
     // Public TKA marketing and coming-soon surfaces stay accessible without app chrome.
     if (!user) return <>{children}</>
 
-    const [{ data: profile }, tokenBalance] = await Promise.all([
+    const [{ data: profile }, hasTempurPass] = await Promise.all([
         supabase
             .from('profiles')
             .select('avatar_url, full_name, display_name')
             .eq('id', user.id)
             .maybeSingle(),
-        walletService.getExamTokenBalance(user.id),
+        hasActiveTempurPass(user.id),
     ])
 
     const activeLevel = levelFromPath(requestHeaders.get('x-pathname'))
@@ -52,7 +52,7 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
                 level={activeLevel}
                 user={user}
                 profile={profile}
-                tokenBalance={tokenBalance}
+                hasActiveTempurPass={hasTempurPass}
                 signoutAction={signout}
             >
                 {children}

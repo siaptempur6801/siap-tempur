@@ -42,7 +42,7 @@ describe('TKA navigation selection', () => {
                 level="SMP"
                 user={{ id: 'user-1', email: 'user@example.com' }}
                 profile={null}
-                tokenBalance={10}
+                hasActiveTempurPass={false}
                 signoutAction={async () => ({ success: true })}
             >
                 <div>Dashboard</div>
@@ -67,7 +67,7 @@ describe('TKA navigation selection', () => {
                 level="SMP"
                 user={{ id: 'user-1', email: 'user@example.com' }}
                 profile={null}
-                tokenBalance={10}
+                hasActiveTempurPass={false}
                 signoutAction={async () => ({ success: true })}
             >
                 <div>Dashboard</div>
@@ -103,7 +103,7 @@ describe('TKA navigation selection', () => {
                 level="SMP"
                 user={{ id: 'user-1', email: 'user@example.com' }}
                 profile={null}
-                tokenBalance={10}
+                hasActiveTempurPass={false}
                 signoutAction={async () => ({ success: true })}
             >
                 <div>Mini Tryout</div>

@@ -200,7 +200,13 @@ export default async function TkaLevelPage({
             ? `${Number(latestCompletedAttempt.percentage).toFixed(0)}%`
             : Number(latestCompletedAttempt.total_score ?? 0).toFixed(0)
         : '-'
-    const hasTempurPass = entitledFeatures.size > 0
+    const fullTryoutExam = (exams ?? []).find((exam) => String(exam.slug).toLowerCase() === 'tka-smp-full')
+        ?? (exams ?? []).find((exam) => {
+            const typeCode = String(examTypeById.get(String(exam.exam_type_id))?.code ?? '').toUpperCase()
+            return typeCode === 'FULL_TRYOUT' || typeCode.includes('FULL')
+        })
+    const fullTryoutFeatureId = fullTryoutExam?.required_feature_id ? String(fullTryoutExam.required_feature_id) : null
+    const hasTempurPass = Boolean(fullTryoutFeatureId && entitledFeatures.has(fullTryoutFeatureId))
     const diagnosticExam = (exams ?? []).find((exam) => String(exam.slug).toLowerCase() === 'tka-smp-diagnostic-awal')
     const diagnosticAttempts = diagnosticExam
         ? (attemptRows ?? []).filter((attempt) => String(attempt.exam_id) === String(diagnosticExam.id))

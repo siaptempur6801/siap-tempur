@@ -5,19 +5,11 @@ import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
 import { createClient, createV2Client } from '@/lib/utils/supabase/server'
-import { examAttemptService, PracticeDomainError, type StartAttemptResult } from '@/src/services/exam-attempt.service'
-import { examCompletionService } from '@/src/services/exam-completion.service'
 import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
-import { parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
 const EXAM_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const TKA_DRILL_SUBJECTS = new Set(['BIN', 'MAT'])
-const SMP_SECTION_EXAM_SLUGS = new Set([
-    'tka-smp-full',
-    'tka-smp-mini-bahasa-indonesia',
-    'tka-smp-mini-matematika',
-])
-
 type DrillStartPayload = {
     attempt_id?: string
     resumed?: boolean
@@ -65,24 +57,6 @@ async function hasActiveTrack(
     return userTrack?.status.toLowerCase() === 'active'
 }
 
-function friendlyError(error: PracticeDomainError) {
-    switch (error.code) {
-        case 'EXAM_NOT_CONFIGURED': return 'Tryout ini belum dibuka.'
-        case 'QUESTION_BANK_EMPTY': return 'Bank soal tryout ini masih kosong.'
-        case 'QUESTION_BANK_INCOMPLETE': {
-            const selected = typeof error.details?.selected === 'number' ? error.details.selected : null
-            const required = typeof error.details?.required === 'number' ? error.details.required : null
-            return selected !== null && required !== null
-                ? `Bank soal baru tersedia ${selected}/${required} soal.`
-                : 'Bank soal tryout ini belum lengkap.'
-        }
-        case 'ATTEMPT_LIMIT_REACHED': return 'Batas percobaan tryout sudah tercapai.'
-        case 'ENTITLEMENT_REQUIRED': return 'Paket aktif diperlukan untuk membuka tryout ini.'
-        case 'INSUFFICIENT_TOKEN_BALANCE': return 'Token kamu tidak mencukupi untuk tryout ini.'
-        default: return 'Tryout belum dapat dimulai.'
-    }
-}
-
 function friendlyDrillRpcError(error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     if (message.includes('ENTITLEMENT_REQUIRED')) {
@@ -109,21 +83,6 @@ function friendlySmpRpcError(error: unknown) {
         return 'Konfigurasi soal tryout belum siap.'
     }
     return 'Tryout TKA SMP staging belum dapat dimulai.'
-}
-
-async function startWithExpiredRecovery(userId: string, start: () => Promise<StartAttemptResult>) {
-    try {
-        return await start()
-    } catch (error) {
-        if (error instanceof PracticeDomainError && error.code === 'EXPIRED_ATTEMPT') {
-            const attemptId = typeof error.details?.attemptId === 'string' ? error.details.attemptId : null
-            if (attemptId) {
-                await examCompletionService.completeAttempt(userId, attemptId)
-                return start()
-            }
-        }
-        throw error
-    }
 }
 
 export async function startTkaDrill(levelValue: string, subjectCodeValue: string, knowledgeNodeNameValue: string) {
@@ -186,6 +145,7 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
     const level = parseTkaLevel(levelValue)
     const examSlug = examSlugValue.trim().toLowerCase()
     if (!level || !EXAM_SLUG_PATTERN.test(examSlug)) return { error: 'Konfigurasi tryout tidak valid.' }
+    if (!isTkaLevelAvailable(level)) return { error: `Tryout TKA ${level} belum tersedia.` }
 
     const path = tkaLevelPath(level)
     const { supabase, userId } = await getCurrentUserContext(path)
@@ -195,34 +155,8 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
         return { error: `Aktifkan jalur TKA ${level} terlebih dahulu.` }
     }
 
-    const useSmpSectionRpc = level === 'SMP'
-        && SMP_SECTION_EXAM_SLUGS.has(examSlug)
-
-    if (useSmpSectionRpc) {
-        try {
-            const result = await tkaFullExamRpcService.startSmpExam({ userId, examSlug })
-            revalidatePath(path)
-            return {
-                success: true as const,
-                sessionId: result.attemptId,
-                resumed: result.resumed,
-                level,
-            }
-        } catch (error) {
-            logger.warn('[startTkaExam:rpc] Failed to start staging TKA SMP exam', {
-                error: error instanceof Error ? error.message : String(error),
-                userId,
-                level,
-                examSlug,
-            })
-            return { error: friendlySmpRpcError(error) }
-        }
-    }
-
     try {
-        const result = await startWithExpiredRecovery(userId, () =>
-            examAttemptService.startConfiguredExam({ userId, context, examSlug }),
-        )
+        const result = await tkaFullExamRpcService.startSmpExam({ userId, examSlug })
         revalidatePath(path)
         return {
             success: true as const,
@@ -231,13 +165,12 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
             level,
         }
     } catch (error) {
-        logger.warn('[startTkaExam:v2] Failed to start configured TKA exam', {
+        logger.warn('[startTkaExam:rpc] Failed to start TKA SMP exam', {
             error: error instanceof Error ? error.message : String(error),
             userId,
             level,
             examSlug,
         })
-        if (error instanceof PracticeDomainError) return { error: friendlyError(error) }
-        return { error: 'Gagal memulai tryout TKA.' }
+        return { error: friendlySmpRpcError(error) }
     }
 }

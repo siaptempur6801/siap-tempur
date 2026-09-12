@@ -6,6 +6,7 @@ import AdminShell from '@/components/admin/AdminShell'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
+import { hasActiveTempurPass } from '@/src/services/tempur-pass.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -51,11 +52,14 @@ export default async function AdminRootLayout({
         redirect(canAccessReview ? '/cpns/admin/review' : '/cpns/admin/articles')
     }
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('avatar_url, full_name')
-        .eq('id', user.id)
-        .maybeSingle()
+    const [{ data: profile }, hasTempurPass] = await Promise.all([
+        supabase
+            .from('profiles')
+            .select('avatar_url, full_name')
+            .eq('id', user.id)
+            .maybeSingle(),
+        hasActiveTempurPass(user.id),
+    ])
 
     return (
         <AdminShell
@@ -63,6 +67,7 @@ export default async function AdminRootLayout({
             profile={profile}
             role={authorization.roles[0] || 'user'}
             permissions={authorization.permissions}
+            hasActiveTempurPass={hasTempurPass}
             signoutAction={signout}
         >
             {children}

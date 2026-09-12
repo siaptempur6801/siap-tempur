@@ -14,11 +14,13 @@ import {
     Library,
     ListChecks,
     Dumbbell,
+    Sparkles,
     User,
 } from 'lucide-react'
 
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
+import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
 import styles from '@/components/dashboard/CompactLearning.module.css'
 
@@ -37,6 +39,7 @@ interface DashboardShellProps {
         full_name?: string
     } | null
     tokenBalance: number
+    hasActiveTempurPass: boolean
     signoutAction: () => Promise<{ success: boolean }>
     isAdmin?: boolean
 }
@@ -46,6 +49,7 @@ export default function DashboardShell({
     user,
     profile,
     tokenBalance,
+    hasActiveTempurPass,
     signoutAction,
     isAdmin = false,
 }: DashboardShellProps) {
@@ -103,6 +107,7 @@ export default function DashboardShell({
                     <div className="space-y-1">
                         <NavItem href="/cpns/dashboard/pilih-jalur" icon={<Compass size={17} />} label="Pilih Jalur" />
                         <NavItem href="/cpns/dashboard/beli-paket" icon={<Ticket size={17} />} label="Beli Token" />
+                        {hasActiveTempurPass && <NavItem href="/tka/smp/pass" icon={<Sparkles size={17} />} label="Tempur Pass" badge="Aktif" />}
                         <NavItem href="/cpns/dashboard/profile" icon={<User size={17} />} label="Profil" />
                     </div>
 
@@ -138,6 +143,7 @@ export default function DashboardShell({
                             >
                                 <Ticket size={12} /> {tokenBalance} token tersisa
                             </Link>
+                            {hasActiveTempurPass && <TempurPassIndicator className="mt-1.5" compact />}
                         </div>
                     </div>
                     <div className="mt-1.5 flex justify-end">
@@ -164,10 +170,12 @@ export default function DashboardShell({
                             <span className="tabular-nums">{tokenBalance}</span>
                             <span className="hidden min-[360px]:inline">token</span>
                         </Link>
+                        {hasActiveTempurPass && <TempurPassIndicator compact />}
                         <MobileProfileDropdown
                             user={user}
                             profile={profile}
                             tokenBalance={tokenBalance}
+                            hasActiveTempurPass={hasActiveTempurPass}
                             signoutAction={signoutAction}
                             signoutRedirectTo="/cpns"
                             isAdmin={isAdmin}

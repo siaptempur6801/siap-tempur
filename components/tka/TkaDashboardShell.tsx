@@ -13,12 +13,12 @@ import {
     LayoutDashboard,
     ListChecks,
     Sparkles,
-    Ticket,
     Timer,
     User,
 } from 'lucide-react'
 import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
+import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 import styles from '@/components/tka/TkaLearning.module.css'
 import TkaLevelSwitcher from '@/components/tka/TkaLevelSwitcher'
 import { parseTkaLevel } from '@/src/tka/context'
@@ -39,7 +39,7 @@ interface TkaDashboardShellProps {
         full_name?: string
         display_name?: string
     } | null
-    tokenBalance: number
+    hasActiveTempurPass: boolean
     signoutAction: () => Promise<{ success: boolean }>
 }
 
@@ -48,7 +48,7 @@ export default function TkaDashboardShell({
     level: initialLevel,
     user,
     profile,
-    tokenBalance,
+    hasActiveTempurPass,
     signoutAction,
 }: TkaDashboardShellProps) {
     const pathname = usePathname()
@@ -61,6 +61,7 @@ export default function TkaDashboardShell({
     const isFocusedSession = isTryoutSession || isDiagnosticSession || pathname.includes('/remedial/') || isReviewSession
     const isTryoutArea = pathname.startsWith(`${basePath}/tryout`) || pathname.startsWith(`${basePath}/mini-tryout`)
     const featureHref = (path: string) => level === 'SMP' ? `${basePath}${path}` : basePath
+    const accessHref = level === 'SMP' ? `${basePath}/pass` : basePath
 
     if (isFocusedSession) {
         return (
@@ -136,8 +137,7 @@ export default function TkaDashboardShell({
                     <div>
                         <p className="mb-1.5 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Akun & Akses</p>
                         <div className="space-y-1">
-                            <NavItem active={level === 'SMP' ? undefined : false} href={level === 'SMP' ? `${basePath}/pass` : basePath} icon={<Sparkles size={17} />} label="Tempur Pass" variant="soft" />
-                            <NavItem href={`${basePath}/beli-token`} icon={<Ticket size={17} />} label="Beli Token" variant="soft" />
+                            <NavItem active={level === 'SMP' ? undefined : false} href={accessHref} icon={<Sparkles size={17} />} label="Tempur Pass" badge={hasActiveTempurPass ? 'Aktif' : undefined} variant="soft" />
                             <NavItem href={`${basePath}/pilih-jalur`} icon={<Compass size={17} />} label="Pilih Jalur" variant="soft" />
                             <NavItem href={`${basePath}/profile`} icon={<User size={17} />} label="Profil Siswa" variant="soft" />
                         </div>
@@ -156,15 +156,19 @@ export default function TkaDashboardShell({
                             </Link>
                             <div className="min-w-0 flex-1">
                                 <Link href={`${basePath}/profile`} className="block truncate text-xs font-bold text-slate-900 hover:text-indigo-600 transition-colors">{displayName}</Link>
-                                <Link href={`${basePath}/beli-token`} className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200/60 shadow-2xs hover:bg-indigo-100/70 transition">
-                                    <Ticket size={12} className="text-indigo-600" />
-                                    <span>{tokenBalance} token</span>
-                                </Link>
+                                {hasActiveTempurPass ? (
+                                    <TempurPassIndicator href={accessHref} className="mt-1" compact />
+                                ) : (
+                                    <Link href={accessHref} className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-bold text-indigo-700 ring-1 ring-indigo-200/60 shadow-2xs hover:bg-indigo-100/70 transition">
+                                        <Sparkles size={12} className="text-indigo-600" />
+                                        <span>Tempur Pass</span>
+                                    </Link>
+                                )}
                             </div>
                         </div>
                         <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
-                            <Link href={`${basePath}/beli-token`} className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:text-indigo-700 text-[11px] hover:underline">
-                                + Isi Token
+                            <Link href={accessHref} className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:text-indigo-700 text-[11px] hover:underline">
+                                Kelola akses
                             </Link>
                             <SidebarSignoutButton signoutAction={signoutAction} redirectTo="/tka" variant="soft" />
                         </div>
@@ -179,15 +183,7 @@ export default function TkaDashboardShell({
                             Siap<span className="text-indigo-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </Link>
                         <div className="flex items-center gap-2">
-                            <Link
-                                href={`${basePath}/beli-token`}
-                                aria-label={`${tokenBalance} token tersisa`}
-                                className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border border-indigo-200/80 bg-indigo-50/80 px-2.5 text-[11px] font-bold text-indigo-700 shadow-2xs"
-                            >
-                                <Ticket size={13} aria-hidden="true" />
-                                <span className="tabular-nums">{tokenBalance}</span>
-                                <span className="hidden min-[390px]:inline">token</span>
-                            </Link>
+                            {hasActiveTempurPass && <TempurPassIndicator href={accessHref} compact />}
                             <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 ring-1 ring-indigo-200/60">TKA</span>
                             <Link href={`${basePath}/profile`} aria-label="Buka profil" title="Profil dan pengaturan" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 transition">
                                 <User size={17} />

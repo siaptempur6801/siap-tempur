@@ -7,6 +7,7 @@ import Script from 'next/script'
 import { logger } from '@/lib/logger'
 import { env } from '@/lib/env'
 import { authorizationService } from '@/src/services/authorization.service'
+import { hasActiveTempurPass } from '@/src/services/tempur-pass.service'
 import { walletService } from '@/src/services/wallet.service'
 
 type UserMetadata = {
@@ -56,9 +57,10 @@ export default async function DashboardLayout({
         }
     }
 
-    const [authorization, tokenBalance] = await Promise.all([
+    const [authorization, tokenBalance, hasTempurPass] = await Promise.all([
         authorizationService.getAuthorizationForUser(user.id),
         walletService.getExamTokenBalance(user.id),
+        hasActiveTempurPass(user.id),
     ])
     const permissions = authorization?.permissions ?? []
     const isAdminUser = permissions.includes('admin.access')
@@ -76,6 +78,7 @@ export default async function DashboardLayout({
                 user={user}
                 profile={profile}
                 tokenBalance={tokenBalance}
+                hasActiveTempurPass={hasTempurPass}
                 signoutAction={signout}
                 isAdmin={isAdminUser}
             >

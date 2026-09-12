@@ -15,7 +15,9 @@ export default async function TokenPackagesPage({
     level?: string
     tokenBalance?: number
 }) {
-    const offers = await commerceService.listActiveProductOffers('CPNS', 'SKD')
+    const catalogProgram = program === 'TKA' ? 'TKA' : 'CPNS'
+    const catalogTrack = program === 'TKA' ? (level?.trim().toUpperCase() || 'SMP') : 'SKD'
+    const offers = await commerceService.listActiveProductOffers(catalogProgram, catalogTrack)
     const packages = offers
         .filter((offer) => offer.productType === 'TOKEN_PACK' && offer.tokenGrant > 0)
         .sort((a, b) => a.tokenGrant - b.tokenGrant)

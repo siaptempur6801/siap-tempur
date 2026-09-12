@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
+import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 
 interface UnifiedAdminShellProps {
     children: React.ReactNode
@@ -38,6 +39,7 @@ interface UnifiedAdminShellProps {
     } | null
     roles: string[]
     permissions: string[]
+    hasActiveTempurPass: boolean
     signoutAction: () => Promise<{ success: boolean }>
 }
 
@@ -138,7 +140,7 @@ function MobileNavLink({ item, contextHref }: { item: NavItem; contextHref: stri
     )
 }
 
-export default function UnifiedAdminShell({ children, user, profile, roles, permissions, signoutAction }: UnifiedAdminShellProps) {
+export default function UnifiedAdminShell({ children, user, profile, roles, permissions, hasActiveTempurPass, signoutAction }: UnifiedAdminShellProps) {
     const pathname = usePathname()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -260,6 +262,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
                                 </select>
                             </label>
                             <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-700 xl:inline">Context aktif</span>
+                            {hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" compact />}
                         </div>
 
                         <div className="hidden items-center gap-3 sm:flex">

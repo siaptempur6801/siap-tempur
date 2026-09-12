@@ -51,7 +51,9 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
             await clearM4Artifacts(currentSession).catch(() => undefined)
             await cleanupCiTkaUser(currentSession.userId).catch(() => undefined)
         }
-        await setTkaSmpMonetizationEnforcement(false)
+        // Enforcement is now the staging baseline; cleanup must not reopen
+        // premium access after the suite finishes.
+        await setTkaSmpMonetizationEnforcement(true)
     })
 
     test('authenticated learner can discover active SMP pass catalog with transparent mobile checkout UX', async ({ page }) => {

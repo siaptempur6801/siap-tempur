@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { BarChart3, Clock3, Compass, Library, LogOut, Shield, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 
 interface MobileProfileDropdownProps {
     user: {
@@ -19,6 +20,7 @@ interface MobileProfileDropdownProps {
         full_name?: string
     } | null
     tokenBalance: number
+    hasActiveTempurPass: boolean
 
     signoutAction: (redirectTo?: string) => Promise<{ success: boolean }>
     signoutRedirectTo?: string
@@ -29,6 +31,7 @@ export default function MobileProfileDropdown({
     user,
     profile,
     tokenBalance,
+    hasActiveTempurPass,
     signoutAction,
     signoutRedirectTo = '/',
     isAdmin = false,
@@ -103,6 +106,7 @@ export default function MobileProfileDropdown({
                                 <Ticket size={12} className="fill-current" />
                                 {tokenBalance} Token
                             </span>
+                            {hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" compact theme="paper" />}
 
                         </div>
                     </div>

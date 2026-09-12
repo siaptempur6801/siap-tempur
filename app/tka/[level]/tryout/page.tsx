@@ -11,7 +11,6 @@ import {
     Trophy,
 } from 'lucide-react'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
-import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
@@ -78,7 +77,6 @@ export default async function TkaTryoutPage({
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(pagePath)}`)
 
     const context = tkaContext(level)
-    const stagingSmpPilot = env.appEnvironment() !== 'production'
     const { data: program, error: programError } = await supabase
         .from('programs')
         .select('id')
@@ -183,29 +181,23 @@ export default async function TkaTryoutPage({
         const usedAttempts = attemptCountByExam.get(String(exam.id)) ?? 0
         const access = String(exam.access_type ?? 'FREE').toUpperCase()
         const freeLimit = Number(exam.attempt_limit ?? 1)
-        const stagingFullExam = stagingSmpPilot && slug === 'tka-smp-full'
-        const stagingMiniExam = stagingSmpPilot && slug.startsWith('tka-smp-mini-')
         const freemiumLocked = access === 'FREEMIUM' && !hasEntitlement && usedAttempts >= freeLimit
-        const premiumLocked = !stagingFullExam && access === 'PREMIUM' && !hasEntitlement
+        const premiumLocked = access === 'PREMIUM' && !hasEntitlement
         const accessReason = premiumLocked
             ? 'Butuh Tempur Pass'
             : freemiumLocked
                 ? 'Kuota gratis habis - Butuh Tempur Pass'
                 : null
-        const accessLabel = stagingFullExam
-            ? 'Akses uji coba'
-            : hasEntitlement
-                ? 'Tempur Pass aktif'
-                : access === 'FREEMIUM'
-                    ? `Gratis ${Math.max(0, freeLimit - usedAttempts)}x tersisa`
-                    : access === 'PREMIUM'
-                        ? 'Premium - Tempur Pass'
-                        : 'Gratis'
-        const details = stagingFullExam
+        const accessLabel = hasEntitlement
+            ? 'Tempur Pass aktif'
+            : access === 'FREEMIUM'
+                ? `Gratis ${Math.max(0, freeLimit - usedAttempts)}x tersisa`
+                : access === 'PREMIUM'
+                    ? 'Premium - Tempur Pass'
+                    : 'Gratis'
+        const details = full
             ? ['60 soal - 30 + 30', '75 menit per bagian']
-            : stagingMiniExam
-                ? ['15 soal - 1 mapel']
-                : []
+            : ['15 soal - 1 mapel']
 
         return {
             id: String(exam.id),
