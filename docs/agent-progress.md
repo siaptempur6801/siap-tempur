@@ -57,6 +57,13 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       saldo token, dihapus lagi): pilih materi → konfirmasi token → sesi dimulai → pilih jawaban →
       "Selanjutnya" sampai soal terakhir → "Kumpulkan jawaban" → modal konfirmasi → **halaman hasil tampil
       dengan skor & pembahasan**, 0 critical console error.
+- [x] **RLS lintas-user diverifikasi** (dua user uji staging):
+      (a) di browser — user B membuka URL sesi & hasil milik A → dialihkan ke `/cpns/dashboard/tryout`,
+      tidak ada konten A yang bocor;
+      (b) di database — user simulasi (`authenticated`, uuid acak) melihat **0 baris** untuk
+      `exam_attempts`, `wallets`, dan `profiles` milik user lain, dan 0 baris total di `exam_attempts`.
+      `attempt_questions`/`attempt_answers` bahkan tidak diberi SELECT ke `authenticated`
+      (`permission denied for table attempt_questions`).
 - [x] **Flow mini tryout CPNS diverifikasi end-to-end di browser**: "Mulai TWK" → konfirmasi token → sesi →
       jawab → kumpulkan → **halaman hasil dengan skor & pembahasan**, 0 critical console error.
 - [x] Locator opsi jawaban kini berbasis `data-testid="answer-option-<index>"` (ditambahkan di

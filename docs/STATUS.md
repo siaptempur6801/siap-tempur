@@ -179,6 +179,7 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | CI | `ci.yml` = lint + typecheck + unit + audit + build + E2E. Workflow E2E staging lain menyala via `pull_request`/`workflow_dispatch` |
 | **Riwayat migrasi remote** | ✅ **disamakan 2026-09-16** (staging & produksi → 155 baris = tepat daftar file repo). `supabase db push` kembali normal: *"Remote database is up to date."* Arsip sebelum baseline: `supabase/migration-history-archive/` |
 | CSP | satu sumber: nonce + `strict-dynamic` di `proxy.ts` (CSP statis di `next.config.ts` sudah dihapus) |
+| RLS lintas-user | ✅ diverifikasi 2026-09-16 di browser **dan** database (user lain → 0 baris; `attempt_questions`/`attempt_answers` tanpa SELECT untuk `authenticated`) |
 | Feature flag | `tka.smp.monetization_enforcement` — state staging/produksi perlu dikonfirmasi |
 
 ---
