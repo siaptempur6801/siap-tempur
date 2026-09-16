@@ -53,13 +53,21 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       login → onboarding → dashboard → beli paket, dan seluruh route ber-auth.
 - [x] Audit `Admin flow` dengan user staging disposabel ber-role ADMIN: 9 route `/admin` —
       menemukan 1 route rusak, diperbaiki, kini 9/9 sehat.
+- [x] **Flow drill CPNS diverifikasi end-to-end di browser** (user staging disposabel dengan track SKD aktif +
+      saldo token, dihapus lagi): pilih materi → konfirmasi token → sesi dimulai → pilih jawaban →
+      "Selanjutnya" sampai soal terakhir → "Kumpulkan jawaban" → modal konfirmasi → **halaman hasil tampil
+      dengan skor & pembahasan**, 0 critical console error.
+- [x] Locator opsi jawaban kini berbasis `data-testid="answer-option-<index>"` (ditambahkan di
+      `PracticeSessionClient`); `11-cpns-rc.spec.ts` tidak lagi memakai filter teks `/^A/` yang rapuh.
 - [x] **FIXED** `/admin/assessment/exams` gagal render (error boundary) karena URL PostgREST
       mencapai 22.594 karakter → `HeadersOverflowError`. Filter `.in()` besar kini di-batch
       lewat helper bersama `lib/supabase-batch.ts`.
 
 ## In Progress
 
-- [ ] Audit lanjutan: state loading/empty/error pada route yang datanya kosong vs berisi.
+- [ ] Audit lanjutan: mini tryout → submit → scoring → result → remedial (CPNS) dan TKA setara.
+      Catatan: `11-cpns-rc.spec.ts` sudah mencakup full tryout lifecycle + drill start/token, tetapi
+      hanya berjalan lewat workflow `cpns-staging-e2e.yml` (butuh OIDC + Vercel preview).
 
 ## Remaining
 
@@ -91,6 +99,11 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 8. Ledger migrasi remote tidak sinkron → `db push` menolak jalan — FIXED (baseline).
 9. **P1** `/admin/assessment/exams` gagal render (error boundary) karena URL PostgREST melebihi batas
    header (22.594 karakter, `HeadersOverflowError`) — FIXED (filter `.in()` di-batch).
+10. **Kesiapan staging (bukan bug kode):** di staging **dan** produksi, track CPNS hanya punya exam
+    `[QA]` (0 `exam_question_items`, 0 blueprint rules) plus 3 draft `[Legacy History]`. Soal published
+    per subjek: TWK 60, TIU **35**, TKP **45** — sedangkan section meminta TWK 30, TIU 35, TKP 45,
+    jadi headroom **nol** untuk TIU & TKP (satu soal unpublished → Full/Mini Tryout gagal
+    `QUESTION_BANK_INCOMPLETE`). Dari 9 materi Latihan Fokus, **6 belum bisa dimulai** (<30 soal).
 
 ## Decisions
 
