@@ -8,10 +8,10 @@ CREATE POLICY question_reports_insert_own ON public.question_reports AS PERMISSI
 CREATE POLICY question_reports_select_own ON public.question_reports AS PERMISSIVE FOR SELECT TO authenticated
   USING (((user_id = ( SELECT auth.uid() AS uid)) OR ( SELECT app_private.has_permission('admin.access'::text) AS has_permission)));
 
-CREATE POLICY question_versions_authoring_select ON public.question_versions AS PERMISSIVE FOR SELECT TO authenticated
-  USING ((EXISTS ( SELECT 1
-   FROM questions q
-  WHERE ((q.id = question_versions.question_id) AND ((q.author_id = ( SELECT auth.uid() AS uid)) OR (q.reviewer_id = ( SELECT auth.uid() AS uid)) OR (q.status = ANY (ARRAY['approved'::text, 'published'::text])) OR app_private.current_user_has_permission('content.review'::text) OR app_private.current_user_has_permission('question.manage'::text))))));
+-- P0 fix (20260916213100): policy question_versions_authoring_select DIHAPUS.
+-- Policy lama membuka SELECT bagi authenticated untuk soal approved/published,
+-- sementara question_versions.snapshot memuat is_correct + score (kunci jawaban).
+-- Grant SELECT authenticated pada tabel ini juga dicabut di 18_acl.sql.
 
 CREATE POLICY questions_authoring_insert ON public.questions AS PERMISSIVE FOR INSERT TO authenticated
   WITH CHECK (((author_id = ( SELECT auth.uid() AS uid)) AND (app_private.current_user_has_permission('content.create'::text) OR app_private.current_user_has_permission('question.manage'::text)) AND (status = 'draft'::text)));

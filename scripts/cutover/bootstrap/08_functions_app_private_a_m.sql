@@ -757,10 +757,17 @@ begin
   select * into v_q from public.questions where id=p_question_id;
   if not found then raise exception 'Question not found'; end if;
 
+  -- P0 fix (20260916213000): status approved/published TIDAK boleh menjadi syarat akses.
+  -- Hanya author/reviewer atau pemegang permission workspace konten.
   v_allowed :=
-    v_q.author_id=v_actor or v_q.reviewer_id=v_actor or v_q.status in ('approved','published') or
+    v_q.author_id=v_actor or v_q.reviewer_id=v_actor or
+    app_private.current_user_has_permission('admin.access') or
+    app_private.current_user_has_permission('question.manage') or
+    app_private.current_user_has_permission('content.read') or
+    app_private.current_user_has_permission('content.create') or
+    app_private.current_user_has_permission('content.update') or
     app_private.current_user_has_permission('content.review') or
-    app_private.current_user_has_permission('question.manage');
+    app_private.current_user_has_permission('content.publish');
   if not v_allowed then raise exception 'Question detail access denied'; end if;
 
   select jsonb_build_object(

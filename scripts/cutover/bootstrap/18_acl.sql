@@ -259,7 +259,6 @@ GRANT SELECT ON TABLE
   public.programs,
   public.promotion_redemptions,
   public.promotions,
-  public.question_versions,
   public.remedial_session_items,
   public.remedial_sessions,
   public.session_activity,
