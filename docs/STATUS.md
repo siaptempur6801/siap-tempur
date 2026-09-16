@@ -113,7 +113,9 @@ Keduanya **terkonfirmasi AKTIF** di staging (schema dump read-only) **dan di pro
 - ✅ **`getResult` memeriksa `status === 'completed'` (2026-09-16)** — `src/services/practice-result.service.ts`. Sebelumnya fail-open (hanya bergantung pada halaman pemanggil).
 - ✅ **`fulfill_paid_order` diverifikasi aman (2026-09-16):** ACL di staging **dan** produksi hanya `postgres` + `service_role`; `anon`, `authenticated`, dan `PUBLIC` **tidak** bisa execute. Cek internal `auth.role()` bersifat opsional (defense-in-depth) — belum ditambahkan karena menuntut penulisan ulang fungsi pembayaran ±220 baris dengan risiko regresi lebih besar daripada manfaatnya.
 - ✅ **Validasi zod server-side di auth action (2026-09-16)** — `login`, `signup`, `forgotPassword`, `resetPassword`, `resendVerificationEmail`, `updatePassword`; cast `FormData` yang bisa bernilai `null` juga dihapus. Test: `tests/unit/auth-validation-contract.test.ts`.
-- [ ] Rate-limit aplikasi di auth action belum ada (sementara ini bergantung pada rate limit Supabase Auth).
+- ✅ **Rate limit aplikasi di auth action (2026-09-16)** — `login` 10/5 menit per IP; `signup` 5/15 menit per IP; `forgotPassword` & `resendVerificationEmail` 10/15 menit per IP **dan** 3/15 menit per email (email di-hash, tidak disimpan mentah). Memakai `checkRateLimit` yang sudah ada (Upstash Redis, fallback in-memory, fail-open saat Redis mati). Test: `tests/unit/auth-rate-limit.test.ts`.
+- ⚠️ **Aksi di luar kode:** set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` di Vercel (staging & produksi). Tanpa itu limiter jatuh ke in-memory yang **per-instance** dan mudah ditembus di serverless.
+- ⚠️ **Belum diverifikasi:** urutan header IP di `lib/request-ip.ts` (`x-vercel-forwarded-for` → `x-real-ip` → `x-forwarded-for`) belum diuji terhadap deployment Vercel nyata. Sampai terbukti, anggap ini pertahanan tambahan — rate limit Supabase Auth tetap jaring pengaman otoritatif.
 - [ ] Belum ada regression test untuk replay webhook secara end-to-end (unit webhook sudah ada).
 
 ---
@@ -131,6 +133,8 @@ Domain tidak boleh diaktifkan sebelum **semua** ini hijau:
 - [x] Riwayat migrasi remote disamakan (baseline 2026-09-16, staging & produksi).
 - [ ] Regression test kebocoran kunci jawaban berjalan di CI.
 - [x] Enforcement timer ujian server-side (2026-09-16).
+- [ ] Rate limit efektif lintas instance: env Upstash terpasang di staging & produksi.
+- [ ] Verifikasi header IP tepercaya di deployment nyata (`lib/request-ip.ts`).
 - [ ] (Disarankan) Product Experience V1.1 selesai.
 
 ### Cara verifikasi cepat

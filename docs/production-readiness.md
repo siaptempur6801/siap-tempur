@@ -20,10 +20,13 @@ This project should only be deployed from a clean branch after these gates pass.
 - `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`
 - `NEXT_PUBLIC_SITE_URL`
 
-Optional but recommended for production-grade distributed rate limiting:
+Required for effective distributed rate limiting (auth actions dan payment):
 
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
+
+Tanpa keduanya, rate limiter jatuh ke penyimpanan in-memory yang bersifat
+per-instance, sehingga mudah ditembus pada deployment serverless multi-instance.
 
 ## Supabase Checks Before Deploy
 
