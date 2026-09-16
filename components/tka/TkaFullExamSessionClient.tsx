@@ -15,6 +15,8 @@ import {
     Map as MapIcon,
 } from 'lucide-react'
 import MathRenderer from '@/components/MathRenderer'
+import TkaSectionConfirmModal from '@/components/tka/TkaSectionConfirmModal'
+import { progressStorageKey } from '@/lib/session-progress'
 import { cn } from '@/lib/utils'
 import {
     completeTkaFullExamSection,
@@ -54,10 +56,6 @@ function responseInstruction(type: string) {
     return 'Pilih satu jawaban yang paling tepat.'
 }
 
-function progressStorageKey(attemptId: string, sectionId: string | null) {
-    return `tka-full-progress:${attemptId}:${sectionId ?? 'none'}`
-}
-
 export default function TkaFullExamSessionClient({
     level,
     state,
@@ -83,6 +81,13 @@ export default function TkaFullExamSessionClient({
     const [flags, setFlags] = useState<Record<string, boolean>>(initialFlags)
     const [remainingMs, setRemainingMs] = useState<number | null>(null)
     const [processing, setProcessing] = useState(false)
+    const [sectionConfirmMessage, setSectionConfirmMessage] = useState<string | null>(null)
+
+    // Tutup dialog konfirmasi bila bagian berpindah sendiri (mis. timer habis),
+    // supaya tidak ada dialog basi yang menempel di bagian berikutnya.
+    useEffect(() => {
+        setSectionConfirmMessage(null)
+    }, [activeSection?.sectionId])
     const finishLockRef = useRef(false)
     const syncStateRef = useRef<Record<string, SyncState>>({})
     const questionEnteredAtRef = useRef<number | null>(null)
@@ -257,20 +262,22 @@ export default function TkaFullExamSessionClient({
         await Promise.all(pending.map((question) => syncSelection(question)))
     }, [questions, syncSelection])
 
+    const sectionAdvanceMessage = useCallback(() => {
+        const label = activeSection?.title ?? 'bagian ini'
+        const unanswered = Math.max(0, questions.length - answeredCount)
+        return unanswered > 0
+            ? `Masih ada ${unanswered} soal belum dijawab di ${label}. Setelah berpindah, jawaban bagian ini tidak dapat diubah.`
+            : `Semua soal ${label} sudah dijawab. Setelah berpindah, jawaban tidak dapat diubah.`
+    }, [activeSection, questions.length, answeredCount])
+
+    const requestSectionAdvance = useCallback(() => {
+        if (processing) return
+        setSectionConfirmMessage(sectionAdvanceMessage())
+    }, [processing, sectionAdvanceMessage])
+
     const advanceSection = useCallback(async (automatic = false) => {
         if (!acquireSingleFlightLock(finishLockRef)) return
-        const unanswered = Math.max(0, questions.length - answeredCount)
-        if (!automatic) {
-            const label = activeSection?.title ?? 'bagian ini'
-            const message = unanswered > 0
-                ? `Masih ada ${unanswered} soal belum dijawab di ${label}. Selesaikan bagian ini sekarang? Setelah berpindah, jawaban bagian ini tidak dapat diubah.`
-                : `Semua soal ${label} sudah dijawab. Selesaikan bagian ini sekarang? Setelah berpindah, jawaban tidak dapat diubah.`
-            if (!window.confirm(message)) {
-                releaseSingleFlightLock(finishLockRef)
-                return
-            }
-        }
-
+        setSectionConfirmMessage(null)
         let isNavigating = false
         setProcessing(true)
         try {
@@ -303,7 +310,7 @@ export default function TkaFullExamSessionClient({
                 setProcessing(false)
             }
         }
-    }, [activeSection?.title, answeredCount, flushSelections, questions.length, resultPath, router, state.attemptId])
+    }, [flushSelections, resultPath, router, state.attemptId])
 
     useEffect(() => {
         if (!activeSection || processing) {
@@ -529,7 +536,7 @@ export default function TkaFullExamSessionClient({
                                     type="button"
                                     data-prevent-double="true"
                                     disabled={processing}
-                                    onClick={() => void advanceSection(false)}
+                                    onClick={requestSectionAdvance}
                                     className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-indigo-700 transition active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
                                 >
                                     <CheckCircle2 size={18} />
@@ -635,6 +642,13 @@ export default function TkaFullExamSessionClient({
                     </aside>
                 </div>
             </div>
+
+            <TkaSectionConfirmModal
+                message={sectionConfirmMessage}
+                processing={processing}
+                onCancel={() => setSectionConfirmMessage(null)}
+                onConfirm={() => void advanceSection(false)}
+            />
         </main>
     )
 }

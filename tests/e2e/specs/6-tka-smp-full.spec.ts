@@ -14,6 +14,7 @@ import {
     readOwnStoredTkaReadiness,
     readOwnTkaReadiness,
 } from '../tka-readiness.ci'
+import { confirmTkaSectionIfPresent } from '../pages/TkaExamActions'
 
 function expectedWeakestNodeIds(projection: TkaLearningProjection) {
     return [...projection.knowledge]
@@ -156,8 +157,8 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await expect(page.getByRole('button', { name: 'Ditandai', exact: true })).toBeVisible()
 
     await goToLastQuestion(page)
-    page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Selesaikan bagian', exact: true }).click()
+    await confirmTkaSectionIfPresent(page)
 
     await expect(page.getByRole('heading', { name: 'Matematika' })).toBeVisible({ timeout: 15_000 })
     await expect(page.getByText('Soal 1 dari 30')).toBeVisible()
@@ -166,8 +167,8 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await expect(page.getByText(/Terjawab bagian ini:/)).toContainText('1/30')
     await goToLastQuestion(page)
 
-    page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
+    await confirmTkaSectionIfPresent(page)
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     const resultUrl = page.url()

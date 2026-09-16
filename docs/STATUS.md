@@ -176,7 +176,7 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | Area | Kondisi |
 |---|---|
 | Lint | ✅ **0 error, 0 warning** |
-| Typecheck / Unit / Build | ✅ hijau (214 unit test, 46 file) |
+| Typecheck / Unit / Build | ✅ hijau (234 unit test, 48 file) |
 | E2E publik (`chromium-public`) | ✅ 30/30 lolos (termasuk cek console browser) |
 | E2E ber-auth (`chromium-authenticated`) | ✅ 40/40 lolos (login → onboarding → dashboard, 27 route CPNS/TKA, 10 cek overflow mobile) — opt-in, butuh kredensial staging |
 | E2E staging ber-kredensial lain (TKA, content review, admin, CPNS) | butuh kredensial/OIDC; dijalankan lewat workflow khusus |
@@ -184,7 +184,19 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | **Riwayat migrasi remote** | ✅ **disamakan 2026-09-16** (staging & produksi → 155 baris = tepat daftar file repo). `supabase db push` kembali normal: *"Remote database is up to date."* Arsip sebelum baseline: `supabase/migration-history-archive/` |
 | CSP | satu sumber: nonce + `strict-dynamic` di `proxy.ts` (CSP statis di `next.config.ts` sudah dihapus) |
 | RLS lintas-user | ✅ diverifikasi 2026-09-16 di browser **dan** database (user lain → 0 baris; `attempt_questions`/`attempt_answers` tanpa SELECT untuk `authenticated`) |
-| Feature flag | `tka.smp.monetization_enforcement` — state staging/produksi perlu dikonfirmasi |
+| Feature flag | `tka.smp.monetization_enforcement` — **ON (100%, enforced)** di produksi (keputusan pengguna) |
+| Konfirmasi sesi ujian | ✅ seragam: CPNS & seluruh klien TKA memakai modal (`components/ui/Modal` + `components/tka/TkaSectionConfirmModal.tsx`); tidak ada `window.confirm()` di alur ujian |
+| Progres posisi soal TKA | ✅ dipersistensi per attempt+bagian (`lib/session-progress.ts`) — tidak lagi terlempar ke soal 1 saat jawaban tersimpan |
+
+### Perbaikan P1 2026-09-16 (Round 8)
+
+**Posisi soal TKA terlempar ke soal 1 setiap jawaban tersimpan.** Server Action simpan jawaban membuat
+Next.js me-render ulang RSC tree; prop `state.questions` datang dengan identitas baru sehingga
+`useEffect` sinkronisasi di `TkaDiagnosticSessionClient` menjalankan `setCurrentIndex(0)`.
+Terbukti di browser: pada Soal 12/12, satu klik opsi jawaban → 700 ms kemudian posisi menjadi
+**Soal 1 dari 12**. Diperbaiki dengan mempersistensi posisi per attempt+bagian (pola yang sudah dipakai
+`TkaFullExamSessionClient`) lewat helper bersama `lib/session-progress.ts`.
+Regression test: `tests/unit/session-progress.test.ts`, `tests/unit/tka-section-confirm-contract.test.ts`.
 
 ---
 

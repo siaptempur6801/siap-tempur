@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { freshDisposableTkaSession, readOwnTkaLearningProjection } from '../tka.ci'
 import { readOwnStoredTkaRecommendations } from '../tka-learning-focus.ci'
+import { confirmTkaSectionIfPresent } from '../pages/TkaExamActions'
 
 test('TKA SMP diagnostic maps seven competencies and drives the first focused drill', async ({ page }) => {
     test.setTimeout(300_000)
@@ -23,15 +24,15 @@ test('TKA SMP diagnostic maps seven competencies and drives the first focused dr
 
     await page.getByTestId('diagnostic-option').first().click()
     await page.getByRole('button', { name: 'Buka soal diagnostik 12', exact: true }).click()
-    page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Selesaikan Bahasa Indonesia', exact: true }).click()
+    await confirmTkaSectionIfPresent(page)
 
     await expect(page.getByRole('heading', { name: 'Matematika', exact: true })).toBeVisible({ timeout: 20_000 })
     await expect(page.getByText('Soal 1 dari 16', { exact: true })).toBeVisible()
     await page.getByTestId('diagnostic-option').first().click()
     await page.getByRole('button', { name: 'Buka soal diagnostik 16', exact: true }).click()
-    page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Lihat hasil diagnostik', exact: true }).click()
+    await confirmTkaSectionIfPresent(page)
 
     await page.waitForURL(/\/tka\/smp\/diagnostic\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Peta kemampuan awalmu sudah siap.', exact: true })).toBeVisible()
@@ -80,8 +81,8 @@ test('TKA SMP diagnostic maps seven competencies and drives the first focused dr
         }
     }
 
-    page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
+    await confirmTkaSectionIfPresent(page)
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 30_000 })
 
     await expect(page.getByTestId('tka-learning-focus')).toBeVisible({ timeout: 20_000 })

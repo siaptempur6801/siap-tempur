@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Flag, LogOut, Map as MapIcon } from 'lucide-react'
 import MathRenderer from '@/components/MathRenderer'
+import TkaSectionConfirmModal from '@/components/tka/TkaSectionConfirmModal'
 import { cn } from '@/lib/utils'
 import { finishPractice, submitAnswer, submitAnswerOptions } from '@/app/actions/practice'
 import type { PracticeQuestionView } from '@/src/services/practice-session.service'
@@ -65,6 +66,7 @@ export default function UniversalPracticeSessionClient({
     const [multiAnswers, setMultiAnswers] = useState<Record<string, string[]>>(initialAnswerOptions)
     const [marked, setMarked] = useState<Record<string, boolean>>(initialMarked)
     const [finishing, setFinishing] = useState(false)
+    const [finishConfirmMessage, setFinishConfirmMessage] = useState<string | null>(null)
     const [remainingMs, setRemainingMs] = useState<number | null>(null)
     const syncStateRef = useRef<Record<string, SyncState>>({})
     const finishedRef = useRef(false)
@@ -225,9 +227,8 @@ export default function UniversalPracticeSessionClient({
         const message = unansweredCount > 0
             ? `Masih ada ${unansweredCount} soal belum dijawab. Yakin ingin mengakhiri tryout? Setelah dikirim, jawaban tidak dapat diubah.`
             : 'Semua soal sudah dijawab. Yakin ingin mengakhiri tryout? Setelah dikirim, jawaban tidak dapat diubah.'
-        if (!window.confirm(message)) return
-        void finish(false)
-    }, [answeredQuestionIds.size, finish, finishing, questions.length])
+        setFinishConfirmMessage(message)
+    }, [answeredQuestionIds.size, finishing, questions.length])
 
     useEffect(() => {
         if (!endTime || finishing) return
@@ -510,6 +511,18 @@ export default function UniversalPracticeSessionClient({
                     </button>
                 </aside>
             </div>
+
+            <TkaSectionConfirmModal
+                message={finishConfirmMessage}
+                title="Akhiri tryout ini?"
+                confirmLabel="Ya, kirim jawaban"
+                processing={finishing}
+                onCancel={() => setFinishConfirmMessage(null)}
+                onConfirm={() => {
+                    setFinishConfirmMessage(null)
+                    void finish(false)
+                }}
+            />
         </main>
     )
 }

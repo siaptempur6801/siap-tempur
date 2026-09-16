@@ -6,6 +6,7 @@ import {
     type DisposableTkaSession,
 } from '../tka.ci'
 import { readOwnTkaReadiness } from '../tka-readiness.ci'
+import { confirmTkaSectionIfPresent } from '../pages/TkaExamActions'
 
 async function examCard(page: Page, title: string) {
     const card = page.locator('article').filter({
@@ -124,8 +125,8 @@ async function finishMini(page: Page, expectedSubject: string) {
     await navigator.getByRole('button', { name: 'Buka soal 15', exact: true }).click()
     await expect(page.getByText('Soal 15 dari 15')).toBeVisible()
 
-    page.once('dialog', (dialog) => dialog.accept())
     await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
+    await confirmTkaSectionIfPresent(page)
 
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Sesi selesai. Sekarang lihat apa yang perlu diperbaiki.', exact: true })).toBeVisible()

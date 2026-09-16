@@ -158,6 +158,32 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       (`permission denied for table attempt_questions`).
 - [x] **Flow mini tryout CPNS diverifikasi end-to-end di browser**: "Mulai TWK" → konfirmasi token → sesi →
       jawab → kumpulkan → **halaman hasil dengan skor & pembahasan**, 0 critical console error.
+- [x] **FIXED (Round 8): P1 — posisi soal TKA terlempar ke soal 1 setiap jawaban tersimpan.**
+      Server Action simpan jawaban membuat Next.js me-render ulang RSC tree, sehingga prop
+      `state.questions` datang dengan identitas baru dan `useEffect` sinkronisasi di
+      `TkaDiagnosticSessionClient` menjalankan `setCurrentIndex(0)`. Terbukti di browser:
+      pada Soal 12/12, satu klik opsi jawaban → 700 ms kemudian posisi kembali **Soal 1 dari 12**.
+      Diperbaiki dengan pola yang sudah dipakai `TkaFullExamSessionClient`: posisi dipersistensi
+      per attempt+bagian lewat helper bersama baru `lib/session-progress.ts`
+      (`progressStorageKey`/`readStoredIndex`/`writeStoredIndex`/`clampStoredIndex`).
+      Terverifikasi di browser setelah perbaikan: refresh RSC tetap terjadi, posisi tetap Soal 12/12.
+- [x] **FIXED (Round 8): inkonsistensi TKA `window.confirm()` → modal bersama.**
+      Tiga klien sesi TKA (full exam, practice/mini, diagnostik) kini memakai satu komponen
+      `components/tka/TkaSectionConfirmModal.tsx` di atas `components/ui/Modal` (judul & label
+      tombol dapat disesuaikan: "Selesaikan bagian ini?" vs "Akhiri tryout ini?").
+      Spec `6`/`8`/`13` tidak lagi memakai `page.once('dialog')` dan memanggil helper
+      `confirmTkaSectionIfPresent(page)` dari `tests/e2e/pages/TkaExamActions.ts`.
+      Verifikasi browser nyata (user staging disposabel, dihapus lagi): modal tampil dengan judul
+      dan pesan yang benar, tombol **Batal** menutup modal tanpa memindahkan bagian, konfirmasi
+      memindahkan ke bagian berikutnya, dan **0 dialog native**.
+- [x] **Audit TKA SD/SMA (Round 8) — tidak ada dead-end.** `/tka/sd` & `/tka/sma` menampilkan
+      halaman "segera hadir" dengan CTA jelas ke TKA SMP; seluruh sub-route ujian SD/SMA
+      (`diagnostic`, `focus`, `mini-tryout`, `pass`, `progress`, `riwayat`, `tryout`,
+      `wrong-questions`, `tryout/[sessionId]`, `remedial/[sessionId]`) sudah redirect/notFound
+      ke halaman level. Pengecualian yang **disengaja**: `/tka/{sd,sma}/profile` tetap dapat diakses
+      karena dipakai sebagai `returnPath` pembayaran (`app/actions/payment.ts` memvalidasi
+      `/^\/tka\/(sd|smp|sma)\/profile\?tab=history$/`) — bukan dead-end. Keputusan "ditunda"
+      untuk SD/SMA tetap berlaku (di luar scope Production V1).
 - [x] Locator opsi jawaban kini berbasis `data-testid="answer-option-<index>"` (ditambahkan di
       `PracticeSessionClient`); `11-cpns-rc.spec.ts` tidak lagi memakai filter teks `/^A/` yang rapuh.
 - [x] **FIXED** `/admin/assessment/exams` gagal render (error boundary) karena URL PostgREST
@@ -166,15 +192,17 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 
 ## In Progress
 
-- [ ] Audit lanjutan: mini tryout → submit → scoring → result → remedial (CPNS) dan TKA setara.
-      Catatan: `11-cpns-rc.spec.ts` sudah mencakup full tryout lifecycle + drill start/token, tetapi
-      hanya berjalan lewat workflow `cpns-staging-e2e.yml` (butuh OIDC + Vercel preview).
+- [ ] **Menjalankan 3 gerbang acceptance staging** (Round 8): `tka-staging-e2e.yml`,
+      `cpns-staging-e2e.yml`, `admin-workspace-staging-e2e.yml` — semuanya `ubuntu-24.04` +
+      `workflow_dispatch`. `content-review-staging-e2e.yml` tidak dapat dijalankan karena memakai
+      runner self-hosted macOS ARM64 (`192`) yang offline.
 
 ## Remaining
 
-- [ ] TKA memakai `window.confirm()` native sedangkan CPNS memakai modal custom — inkonsistensi UX
-      kecil (P3); berfungsi dan sudah ditangani spec.
-- [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
+- [ ] `components/admin/ArticleStatusActions.tsx` masih memakai `window.confirm()` native untuk hapus
+      artikel (di luar alur ujian; P3, sengaja tidak diubah tanpa izin).
+- [ ] TKA SD/SMA: "segera hadir" (sesuai scope Production V1) — diputuskan ditunda; audit Round 8
+      memastikan tidak ada dead-end.
 - [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
 
 ## Bugs Found
@@ -202,10 +230,17 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
     `docs/PRODUCTION_V1_SCOPE.md` (remedial CPNS tidak termasuk Production V1). Remedial terimplementasi
     hanya untuk TKA SMP. **Butuh keputusan produk** sebelum dibangun — bukan diimplementasikan
     sepihak oleh agent.
+12. **P1** posisi soal TKA terlempar ke soal 1 setiap jawaban tersimpan (Server Action → refresh RSC
+    tree → `useEffect` mereset indeks di `TkaDiagnosticSessionClient`) — FIXED + terverifikasi browser
+    (Round 8). Klien full-exam tidak terpengaruh karena sudah mempersistensi posisi.
+13. Inkonsistensi UX: alur ujian TKA memakai `window.confirm()` native sementara CPNS memakai modal —
+    FIXED (Round 8) dengan satu komponen modal bersama + helper spec E2E.
 
 ## Decisions
 
-- **Tidak push ke `main`**: push memicu deploy produksi Vercel; butuh konfirmasi eksplisit pengguna.
+- **Push ke `main` diizinkan pengguna** (2026-09-16): deploy produksi Vercel berjalan, tetapi domain
+  publik `siaptempur.id` tetap ditahan. Push lanjutan untuk memicu gerbang staging tetap perlu
+  disebutkan di laporan.
 - **Flag `tka.smp.monetization_enforcement` dibiarkan ON (100%)** di produksi — keputusan pengguna.
 - Rate limit: **Upstash Redis**, fail-open saat Redis mati, login/signup **tidak** dibatasi per-email (cegah lockout DoS).
 - Limiter dipasang **setelah** validasi zod dan **sebelum** Supabase.
@@ -231,15 +266,18 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 ```text
 Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
-Unit        : ✅ 46 file / 217 test (vitest)
-E2E publik  : ✅ 30 test (chromium-public, termasuk 6 test console-health)
-E2E auth    : ✅ 40 test (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
+Unit        : ✅ 48 file / 234 test (vitest)
+E2E publik  : ✅ 30/30 (chromium-public, termasuk 6 test console-health)
+E2E auth    : ✅ 40/40 (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
 Build       : ✅
+Verifikasi browser TKA (Round 8) : ✅ modal konfirmasi (tampil/batal/konfirmasi/0 dialog native)
+                                    + posisi soal bertahan setelah simpan jawaban
 CI GitHub   : ✅ success (main @ d7ca496) — lint/typecheck/unit/audit/build/E2E
 ```
 
 Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attempt-deadline`,
-`auth-validation-contract`, `request-ip`, `auth-rate-limit`, `16-console-health.spec.ts`.
+`auth-validation-contract`, `request-ip`, `auth-rate-limit`, `session-progress`,
+`tka-section-confirm-contract`, `16-console-health.spec.ts`.
 
 ## Important Files
 
@@ -253,16 +291,15 @@ Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attemp
 
 ## Current Blockers
 
-1. **Push ke remote** (butuh konfirmasi; memicu deploy produksi Vercel). CI `main` di GitHub masih merah sampai push.
-2. **Env Upstash** belum ada di Vercel → rate limit masih per-instance.
-3. **Kredensial E2E staging** (`E2E_PARTICIPANT_EMAIL`/`PASSWORD`) kosong di `.env.local` → E2E ber-auth bersifat opt-in; dipakai user disposabel saat verifikasi manual.
-4. **Akses akun Upstash/Vercel** tidak tersedia untuk agent.
+1. **Gerbang staging E2E** (TKA/CPNS/admin-workspace) butuh GitHub OIDC + deployment Vercel Preview;
+   `admin-workspace-staging-e2e.yml` mewajibkan input `preview_url`.
+2. **`content-review-staging-e2e.yml` tidak bisa dijalankan**: runner self-hosted macOS ARM64 (`192`) offline.
+3. **Scope Upstash Preview** belum diverifikasi (Production sudah: `rateLimitStore: "redis"`).
+4. **Kredensial E2E staging** (`E2E_PARTICIPANT_EMAIL`/`PASSWORD`) kosong di `.env.local` → E2E ber-auth
+   bersifat opt-in; verifikasi manual memakai user disposabel staging (selalu dihapus lagi).
 
 ## Next Action
 
-1. **Telusuri submit TKA SMP** yang tidak berpindah ke halaman hasil (cek apakah butuh seluruh bagian
-   selesai, atau tombol kirim butuh alur berbeda). Ini satu-satunya langkah flow inti yang belum tuntas.
-2. Audit jalur **tulis admin** (buat/edit exam & soal) memakai user admin disposabel: selama ini baru
-   diverifikasi render (baca).
-3. Audit **loading state** (`loading.tsx`) pada route ber-auth.
-4. Perbaiki temuan, jalankan lint/typecheck/unit/build/E2E, commit atomic, update dokumen ini.
+1. Commit atomic perubahan Round 8 (modal konfirmasi TKA + perbaikan P1 posisi soal) dan push ke `main`.
+2. Jalankan 3 gerbang acceptance staging lewat `gh workflow run`, pantau hasilnya, perbaiki kegagalan.
+3. Setelah gerbang hijau: perbarui `docs/STATUS.md` + dokumen ini dengan bukti run, lalu tutup round.

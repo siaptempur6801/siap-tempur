@@ -14,6 +14,8 @@ import {
 } from '@/app/actions/tka-full-exam'
 import type { TkaFullExamQuestionView, TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
 import ProgressBar from '@/components/ui/ProgressBar'
+import TkaSectionConfirmModal from '@/components/tka/TkaSectionConfirmModal'
+import { progressStorageKey, readStoredIndex, writeStoredIndex } from '@/lib/session-progress'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
 
 function formatRemaining(milliseconds: number) {
@@ -41,20 +43,35 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
     const [remainingMs, setRemainingMs] = useState<number | null>(null)
     const [savingId, setSavingId] = useState<string | null>(null)
     const [processing, setProcessing] = useState(false)
+    const [sectionConfirmMessage, setSectionConfirmMessage] = useState<string | null>(null)
     const finishLockRef = useRef(false)
     const enteredAtRef = useRef(Date.now())
     const expiredRef = useRef(false)
+    const progressHydratedRef = useRef(false)
 
     const questions = state.questions
     const currentQuestion = questions[currentIndex] ?? null
     const answeredCount = useMemo(() => questions.filter((question) => (selections[question.attemptQuestionId] ?? []).length > 0).length, [questions, selections])
+    const progressKey = progressStorageKey(state.attemptId, state.activeSectionId)
 
+    // Server Action simpan jawaban me-render ulang RSC tree, jadi efek ini berjalan
+    // ulang dengan prop baru. Posisi soal dipulihkan dari progres lokal supaya peserta
+    // tidak terlempar kembali ke soal 1 setiap kali jawaban tersimpan.
     useEffect(() => {
         setSelections(Object.fromEntries(state.questions.map((question) => [question.attemptQuestionId, question.selectedOptionIds])))
-        setCurrentIndex(0)
+        setCurrentIndex(readStoredIndex(progressKey, state.questions.length))
         enteredAtRef.current = Date.now()
         expiredRef.current = false
-    }, [state.activeSectionId, state.questions])
+    }, [progressKey, state.questions])
+
+    useEffect(() => {
+        // Lewati commit pertama: menulis 0 sebelum posisi dipulihkan akan menimpa progres.
+        if (!progressHydratedRef.current) {
+            progressHydratedRef.current = true
+            return
+        }
+        writeStoredIndex(progressKey, currentIndex)
+    }, [progressKey, currentIndex])
 
     const timeSpent = useCallback((question: TkaFullExamQuestionView) => {
         const extra = currentQuestion?.attemptQuestionId === question.attemptQuestionId
@@ -98,14 +115,6 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
 
     const finishSection = useCallback(async (automatic = false) => {
         if (!activeSection || !acquireSingleFlightLock(finishLockRef)) return
-        const unanswered = Math.max(0, questions.length - answeredCount)
-        if (!automatic) {
-            const warning = unanswered > 0 ? `Masih ada ${unanswered} soal belum dijawab. ` : ''
-            if (!window.confirm(`${warning}Selesaikan bagian ${activeSection.title} sekarang? Jawaban bagian ini tidak dapat diubah setelah lanjut.`)) {
-                releaseSingleFlightLock(finishLockRef)
-                return
-            }
-        }
 
         let isNavigating = false
         setProcessing(true)
@@ -136,7 +145,14 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                 setProcessing(false)
             }
         }
-    }, [activeSection, answeredCount, questions.length, router, state.attemptId])
+    }, [activeSection, router, state.attemptId])
+
+    const requestFinishSection = useCallback(() => {
+        if (!activeSection || processing) return
+        const unanswered = Math.max(0, questions.length - answeredCount)
+        const warning = unanswered > 0 ? `Masih ada ${unanswered} soal belum dijawab. ` : ''
+        setSectionConfirmMessage(`${warning}Selesaikan bagian ${activeSection.title} sekarang? Jawaban bagian ini tidak dapat diubah setelah lanjut.`)
+    }, [activeSection, answeredCount, processing, questions.length])
 
     useEffect(() => {
         if (!activeSection) return
@@ -259,7 +275,7 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                             {currentIndex < questions.length - 1 ? (
                                 <button type="button" onClick={() => { setCurrentIndex((index) => Math.min(questions.length - 1, index + 1)); enteredAtRef.current = Date.now() }} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white">Berikutnya <ArrowRight size={16} /></button>
                             ) : (
-                                <button type="button" data-prevent-double="true" disabled={processing || Boolean(savingId)} onClick={() => void finishSection(false)} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white disabled:opacity-50">
+                                <button type="button" data-prevent-double="true" disabled={processing || Boolean(savingId)} onClick={() => void requestFinishSection()} className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white disabled:opacity-50">
                                     {isLastSection ? <Send size={16} /> : <ArrowRight size={16} />}{isLastSection ? 'Lihat hasil diagnostik' : `Selesaikan ${activeSection.title}`}
                                 </button>
                             )}
@@ -309,6 +325,16 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                     </aside>
                 </div>
             </div>
+
+            <TkaSectionConfirmModal
+                message={sectionConfirmMessage}
+                processing={processing}
+                onCancel={() => setSectionConfirmMessage(null)}
+                onConfirm={() => {
+                    setSectionConfirmMessage(null)
+                    void finishSection(false)
+                }}
+            />
         </main>
     )
 }
