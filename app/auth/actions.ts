@@ -8,6 +8,32 @@ import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
 import { env } from '@/lib/env'
 import { resolvePostLogoutRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+import { loginSchema, registerSchema } from '@/lib/validations/auth'
+import * as z from 'zod'
+
+const emailOnlySchema = z.object({
+    email: z.string().min(1, 'Email wajib diisi').email('Format email tidak valid'),
+})
+
+const changePasswordSchema = z.object({
+    oldPassword: z.string().min(1, 'Password lama harus diisi'),
+    password: z.string().min(8, 'Password baru minimal 8 karakter'),
+})
+
+const newPasswordSchema = z.object({
+    password: z.string().min(8, 'Password baru minimal 8 karakter'),
+})
+
+/** Ambil field FormData sebagai string — hindari cast `as string` yang bisa bernilai null. */
+function formString(formData: FormData, key: string) {
+    const value = formData.get(key)
+    return typeof value === 'string' ? value : ''
+}
+
+/** Pesan error pertama dari Zod; form di client menampilkannya apa adanya. */
+function validationMessage(error: z.ZodError) {
+    return error.issues[0]?.message ?? 'Data tidak valid'
+}
 
 function callbackUrl(path = '/auth/callback') {
     return `${env.siteUrl()}${path}`
@@ -38,9 +64,16 @@ async function callbackUrlForReturnTo(returnTo?: string | null) {
 
 export async function login(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    // Validasi server-side: form di client tidak boleh jadi satu-satunya penjaga.
+    const parsed = loginSchema.safeParse({
+        email: formString(formData, 'email'),
+        password: formString(formData, 'password'),
+    })
+    if (!parsed.success) return { error: validationMessage(parsed.error) }
+
     const supabase = await createV2Client()
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
+    const { email, password } = parsed.data
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
@@ -55,11 +88,17 @@ export async function login(formData: FormData) {
 
 export async function signup(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    const parsed = registerSchema.safeParse({
+        email: formString(formData, 'email'),
+        password: formString(formData, 'password'),
+        fullName: formString(formData, 'fullName'),
+    })
+    if (!parsed.success) return { error: validationMessage(parsed.error) }
+
     const supabase = await createV2Client()
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const fullName = formData.get('fullName') as string
-    const returnTo = await resolveAuthReturnTo(formData.get('returnTo') as string | null)
+    const { email, password, fullName } = parsed.data
+    const returnTo = await resolveAuthReturnTo(formString(formData, 'returnTo') || null)
 
     const { error } = await supabase.auth.signUp({
         email,
@@ -89,12 +128,15 @@ export async function signout(redirectTo = '/') {
 
 export async function updatePassword(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
-    const supabase = await createV2Client()
-    const password = formData.get('password') as string
-    const oldPassword = formData.get('oldPassword') as string
 
-    if (!password || password.length < 8) return { error: 'Password baru minimal 8 karakter' }
-    if (!oldPassword) return { error: 'Password lama harus diisi' }
+    const parsed = changePasswordSchema.safeParse({
+        oldPassword: formString(formData, 'oldPassword'),
+        password: formString(formData, 'password'),
+    })
+    if (!parsed.success) return { error: validationMessage(parsed.error) }
+
+    const supabase = await createV2Client()
+    const { password, oldPassword } = parsed.data
 
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user || !user.email) return { error: 'User tidak ditemukan' }
@@ -137,10 +179,14 @@ export async function loginWithGoogle(returnTo?: string | null) {
 
 export async function resendVerificationEmail(email: string, returnTo?: string | null) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    const parsed = emailOnlySchema.safeParse({ email: typeof email === 'string' ? email : '' })
+    if (!parsed.success) return { error: validationMessage(parsed.error) }
+
     const supabase = await createV2Client()
     const { error } = await supabase.auth.resend({
         type: 'signup',
-        email,
+        email: parsed.data.email,
         options: { emailRedirectTo: await callbackUrlForReturnTo(returnTo) },
     })
     if (error) return { error: error.message }
@@ -149,20 +195,24 @@ export async function resendVerificationEmail(email: string, returnTo?: string |
 
 export async function resetPassword(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
-    const supabase = await createV2Client()
-    const password = formData.get('password') as string
-    if (!password || password.length < 8) return { error: 'Password baru minimal 8 karakter' }
 
-    const { error } = await supabase.auth.updateUser({ password })
+    const parsed = newPasswordSchema.safeParse({ password: formString(formData, 'password') })
+    if (!parsed.success) return { error: validationMessage(parsed.error) }
+
+    const supabase = await createV2Client()
+    const { error } = await supabase.auth.updateUser({ password: parsed.data.password })
     if (error) return { error: error.message }
     return { success: true }
 }
 
 export async function forgotPassword(formData: FormData) {
     try { await validateCsrf() } catch { return { error: 'Invalid request' } }
+
+    const parsed = emailOnlySchema.safeParse({ email: formString(formData, 'email') })
+    if (!parsed.success) return { error: validationMessage(parsed.error) }
+
     const supabase = await createV2Client()
-    const email = formData.get('email') as string
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
         redirectTo: callbackUrl('/auth/callback?next=/auth/reset-password'),
     })
     if (error) return { error: error.message }
