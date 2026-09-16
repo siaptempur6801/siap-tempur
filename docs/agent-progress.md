@@ -80,6 +80,10 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       halaman TKA **berasal dari iframe popup Midtrans** (`app.sandbox.midtrans.com/snap/v4/popup`),
       bukan dari CSP kita (proxy.ts tetap nonce + strict-dynamic). Diverifikasi lewat lokasi/frame pesan —
       jangan "diperbaiki" dengan melonggarkan CSP kita.
+- [x] **Push ke `main` + CI hijau (2026-09-16):** 35 commit di-push (`b04e23f..df534a6`). GitHub Actions:
+      **CI success** (lint, typecheck, unit, security audit, build, E2E) dan **Schema V2 CI success**;
+      deployment Vercel Production **success**. Domain `siaptempur.id` tetap sengaja ditahan.
+      Ini menutup blocker yang membuat CI merah sejak awal September.
 - [x] **Audit keamanan kelas-P0 (Round 6, read-only di staging):** seluruh RPC publik yang menyentuh kunci
       jawaban/pembahasan sudah diperiksa:
       `get_exam_attempt_result/review_for_user` → ownership + wajib `completed`;
@@ -147,14 +151,8 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 
 ## Remaining
 
-- [ ] `push` ke `main` (belum dilakukan — push memicu deploy produksi Vercel, butuh konfirmasi eksplisit).
 - [ ] Set `UPSTASH_REDIS_REST_URL`/`_TOKEN` di Vercel (staging & produksi) agar rate limit lintas instance.
 - [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
-- [ ] **CI `main` di GitHub belum hijau** — perbaikan sudah di-commit lokal, tetapi push ke `main`
-      memicu deploy produksi Vercel sehingga menunggu konfirmasi eksplisit pengguna.
-- [x] Rate limit `claim_voucher` → tidak berlaku (fungsi tidak ada di V2); `startTryout`/`startTkaExam` → tidak perlu (lihat Completed).
-- [x] Regression test replay webhook → sudah tercakup (lihat Completed).
-- [x] `loading.tsx` untuk route masuk TKA (`tryout`, `mini-tryout`, `riwayat`) — SELESAI (Round 5), total 29 file.
 - [ ] TKA memakai `window.confirm()` native sedangkan CPNS memakai modal custom — inkonsistensi UX
       kecil (P3); berfungsi dan sudah ditangani spec.
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
@@ -218,6 +216,7 @@ Unit        : ✅ 46 file / 214 test (vitest)
 E2E publik  : ✅ 30 test (chromium-public, termasuk 6 test console-health)
 E2E auth    : ✅ 40 test (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
 Build       : ✅
+CI GitHub   : ✅ success (main @ df534a6) — lint/typecheck/unit/audit/build/E2E
 ```
 
 Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attempt-deadline`,

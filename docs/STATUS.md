@@ -134,7 +134,7 @@ Domain tidak boleh diaktifkan sebelum **semua** ini hijau:
 - [x] Status produksi diverifikasi (fungsi, grant, policy, feature flag) — 2026-09-16.
 - [x] **Admin produksi ditetapkan** — `SUPER_ADMIN` untuk `halimdirga8@gmail.com` (2026-09-16).
 - [x] **Keputusan flag monetisasi TKA SMP** — diputuskan tetap **ON** (2026-09-16).
-- [ ] CI `main` hijau di GitHub.
+- [x] CI `main` hijau di GitHub (2026-09-16) — 35 commit di-push, seluruh job lolos.
 - [x] Riwayat migrasi remote disamakan (baseline 2026-09-16, staging & produksi).
 - [ ] Regression test kebocoran kunci jawaban berjalan di CI.
 - [x] Enforcement timer ujian server-side (2026-09-16).
@@ -177,7 +177,7 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | E2E publik (`chromium-public`) | ✅ 30/30 lolos (termasuk cek console browser) |
 | E2E ber-auth (`chromium-authenticated`) | ✅ 40/40 lolos (login → onboarding → dashboard, 27 route CPNS/TKA, 10 cek overflow mobile) — opt-in, butuh kredensial staging |
 | E2E staging ber-kredensial lain (TKA, content review, admin, CPNS) | butuh kredensial/OIDC; dijalankan lewat workflow khusus |
-| CI | `ci.yml` = lint + typecheck + unit + audit + build + E2E. Workflow E2E staging lain menyala via `pull_request`/`workflow_dispatch` |
+| CI | **hijau di GitHub** (2026-09-16): `main` @ `df534a6` → CI **success** (lint, typecheck, unit, security audit, build, E2E) dan Schema V2 CI **success**; deployment produksi Vercel **success** (domain tetap ditahan). Workflow E2E staging lain menyala via `pull_request`/`workflow_dispatch` |
 | **Riwayat migrasi remote** | ✅ **disamakan 2026-09-16** (staging & produksi → 155 baris = tepat daftar file repo). `supabase db push` kembali normal: *"Remote database is up to date."* Arsip sebelum baseline: `supabase/migration-history-archive/` |
 | CSP | satu sumber: nonce + `strict-dynamic` di `proxy.ts` (CSP statis di `next.config.ts` sudah dihapus) |
 | RLS lintas-user | ✅ diverifikasi 2026-09-16 di browser **dan** database (user lain → 0 baris; `attempt_questions`/`attempt_answers` tanpa SELECT untuk `authenticated`) |
