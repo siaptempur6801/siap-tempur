@@ -1,8 +1,6 @@
-import Script from 'next/script'
 import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import TkaDashboardShell from '@/components/tka/TkaDashboardShell'
-import { env } from '@/lib/env'
 import { createClient } from '@/lib/utils/supabase/server'
 import { parseTkaLevel, type TkaLevel } from '@/src/tka/context'
 import { hasActiveTempurPass } from '@/src/services/tempur-pass.service'
@@ -37,17 +35,13 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
     ])
 
     const activeLevel = levelFromPath(requestHeaders.get('x-pathname'))
-    const nonce = requestHeaders.get('x-nonce') || undefined
 
+    // Script Midtrans Snap sengaja TIDAK dimuat di sini. Satu-satunya halaman TKA
+    // yang memakainya adalah /tka/[level]/pass, dan halaman itu memuatnya sendiri.
+    // Memuatnya di layout berarti skrip pembayaran pihak ketiga (beserta iframe
+    // popup Midtrans) ikut ter-load di dashboard, sesi ujian, dan halaman hasil.
     return (
         <>
-            <Script
-                id="midtrans-snap"
-                src={env.midtransSnapScriptUrl()}
-                data-client-key={env.midtransClientKey()}
-                strategy="afterInteractive"
-                nonce={nonce}
-            />
             <TkaDashboardShell
                 level={activeLevel}
                 user={user}

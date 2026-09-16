@@ -208,7 +208,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
 
     return (
         <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
-            <Script id="midtrans-snap" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key={snapClientKey} strategy="afterInteractive" />
+            <Script id="midtrans-snap" src={env.midtransSnapScriptUrl()} data-client-key={snapClientKey} strategy="afterInteractive" />
 
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 {/* Header */}
