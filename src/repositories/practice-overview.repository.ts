@@ -1,5 +1,6 @@
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { getAttemptXp } from '@/lib/gamification'
+import { chunkValues } from '@/lib/supabase-batch'
 import type { Json } from '@/types/database.types'
 
 export type ActiveAttemptOverview = {
@@ -39,16 +40,6 @@ export type DrillingMaterialOverview = {
 }
 
 type GenericRow = Record<string, unknown>
-
-const SUPABASE_IN_FILTER_BATCH_SIZE = 100
-
-function chunkValues<T>(values: T[], size = SUPABASE_IN_FILTER_BATCH_SIZE) {
-    const chunks: T[][] = []
-    for (let index = 0; index < values.length; index += size) {
-        chunks.push(values.slice(index, index + size))
-    }
-    return chunks
-}
 
 function numberOrZero(value: unknown) {
     return typeof value === 'number' ? value : Number(value ?? 0) || 0

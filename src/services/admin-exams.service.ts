@@ -1,9 +1,16 @@
 import { createAdminClient } from '@/lib/utils/supabase/server'
+import { chunkValues } from '@/lib/supabase-batch'
 import {
   catalogContextService,
   CPNS_SKD_CONTEXT,
   type ProgramTrackContext,
 } from '@/src/services/catalog-context.service'
+
+type AdminExamQuestionRow = {
+  id: string
+  subject_id: string
+  version: number
+}
 
 export type AdminExamRow = {
   id: string
@@ -114,40 +121,55 @@ export class AdminExamsService {
     for (const nodeId of nodeIds) poolCountByNode.set(nodeId, new Set())
 
     if (nodeIds.length) {
-      const { data: pathsData, error: pathsError } = await admin
-        .from('knowledge_node_paths')
-        .select('ancestor_id, descendant_id')
-        .in('ancestor_id', nodeIds)
-      if (pathsError) throw pathsError
+      // Daftar id di sini tumbuh mengikuti jumlah soal, sehingga filter `.in()`
+      // harus di-batch agar URL PostgREST tidak melewati batas header server.
+      const paths: Array<{ ancestor_id: string; descendant_id: string }> = []
+      for (const batch of chunkValues(nodeIds)) {
+        const { data, error } = await admin
+          .from('knowledge_node_paths')
+          .select('ancestor_id, descendant_id')
+          .in('ancestor_id', batch)
+        if (error) throw error
+        paths.push(...((data ?? []) as Array<{ ancestor_id: string; descendant_id: string }>))
+      }
 
-      const paths = pathsData ?? []
       const descendantIds = [...new Set(paths.map((row) => String(row.descendant_id)))]
       if (descendantIds.length) {
-        const { data: mappingsData, error: mappingsError } = await admin
-          .from('question_knowledge_nodes')
-          .select('question_id, knowledge_node_id, relation_type')
-          .in('knowledge_node_id', descendantIds)
-          .eq('relation_type', 'primary')
-        if (mappingsError) throw mappingsError
+        const mappings: Array<{ question_id: string; knowledge_node_id: string }> = []
+        for (const batch of chunkValues(descendantIds)) {
+          const { data, error } = await admin
+            .from('question_knowledge_nodes')
+            .select('question_id, knowledge_node_id, relation_type')
+            .in('knowledge_node_id', batch)
+            .eq('relation_type', 'primary')
+          if (error) throw error
+          mappings.push(...((data ?? []) as Array<{ question_id: string; knowledge_node_id: string }>))
+        }
 
-        const mappings = mappingsData ?? []
         const questionIds = [...new Set(mappings.map((row) => String(row.question_id)))]
         if (questionIds.length) {
-          const { data: questionsData, error: questionsError } = await admin
-            .from('questions')
-            .select('id, subject_id, version, status')
-            .eq('program_id', catalog.program.id)
-            .eq('track_id', catalog.track.id)
-            .in('id', questionIds)
-            .in('status', ['approved', 'published'])
-          if (questionsError) throw questionsError
+          const questions: AdminExamQuestionRow[] = []
+          for (const batch of chunkValues(questionIds)) {
+            const { data, error } = await admin
+              .from('questions')
+              .select('id, subject_id, version, status')
+              .eq('program_id', catalog.program.id)
+              .eq('track_id', catalog.track.id)
+              .in('id', batch)
+              .in('status', ['approved', 'published'])
+            if (error) throw error
+            questions.push(...((data ?? []) as AdminExamQuestionRow[]))
+          }
 
-          const questions = questionsData ?? []
-          const { data: versionsData, error: versionsError } = await admin
-            .from('question_versions')
-            .select('question_id, version')
-            .in('question_id', questions.map((row) => String(row.id)))
-          if (versionsError) throw versionsError
+          const versionsData: Array<{ question_id: string; version: number }> = []
+          for (const batch of chunkValues(questions.map((row) => String(row.id)))) {
+            const { data, error } = await admin
+              .from('question_versions')
+              .select('question_id, version')
+              .in('question_id', batch)
+            if (error) throw error
+            versionsData.push(...((data ?? []) as Array<{ question_id: string; version: number }>))
+          }
 
           const frozen = new Set((versionsData ?? []).map((row) => `${String(row.question_id)}:${Number(row.version)}`))
           const validQuestions = new Map(
