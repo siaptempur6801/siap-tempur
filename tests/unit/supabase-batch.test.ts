@@ -50,3 +50,22 @@ describe('kontrak: filter .in() besar di admin-exams harus di-batch', () => {
         expect(adminExamsSource).not.toMatch(/\.in\(\s*'question_id'\s*,\s*questions\.map/)
     })
 })
+
+describe('kontrak: pemilihan soal drill juga di-batch', () => {
+    const examRepositorySource = readFileSync(resolve(repoRoot, 'src/repositories/exam.repository.ts'), 'utf8')
+    const findQuestionIds = examRepositorySource.slice(
+        examRepositorySource.indexOf('private async findQuestionIdsForKnowledgeNode'),
+        examRepositorySource.indexOf('private async hydrateQuestions'),
+    )
+
+    it('fungsi ditemukan dan memakai chunkValues', () => {
+        expect(findQuestionIds).not.toBe('')
+        expect(findQuestionIds).toMatch(/for \(const batch of chunkValues\(nodeIds\)\)/)
+        expect(findQuestionIds).toMatch(/for \(const batch of chunkValues\(linkedIds\)\)/)
+    })
+
+    it('tidak lagi mengirim nodeIds/linkedIds tanpa batch', () => {
+        expect(findQuestionIds).not.toMatch(/\.in\(\s*'knowledge_node_id'\s*,\s*nodeIds\s*\)/)
+        expect(findQuestionIds).not.toMatch(/\.in\(\s*'id'\s*,\s*linkedIds\s*\)/)
+    })
+})

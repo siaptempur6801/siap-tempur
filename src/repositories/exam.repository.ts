@@ -1,4 +1,5 @@
 import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
+import { chunkValues } from '@/lib/supabase-batch'
 import { calculateMaxScore, type ResponseScoringConfig } from '@/src/domain/question-response'
 import type { Json } from '@/types/database.types'
 
@@ -391,24 +392,35 @@ export class ExamRepository {
 
         const paths = (rawPaths ?? []) as DescendantRow[]
         const nodeIds = Array.from(new Set([node.id, ...paths.map((row) => row.descendant_id)]))
-        const { data: rawLinks, error: linkError } = await admin
-            .from('question_knowledge_nodes')
-            .select('question_id')
-            .in('knowledge_node_id', nodeIds)
-        if (linkError) throw linkError
 
-        const links = (rawLinks ?? []) as QuestionLinkRow[]
+        // Daftar ini tumbuh mengikuti jumlah soal pada submateri (dan turunannya),
+        // jadi filter `.in()` harus di-batch agar URL PostgREST tidak melewati
+        // batas header server (±16KB) — lihat lib/supabase-batch.ts.
+        const links: QuestionLinkRow[] = []
+        for (const batch of chunkValues(nodeIds)) {
+            const { data, error } = await admin
+                .from('question_knowledge_nodes')
+                .select('question_id')
+                .in('knowledge_node_id', batch)
+            if (error) throw error
+            links.push(...((data ?? []) as QuestionLinkRow[]))
+        }
+
         const linkedIds = Array.from(new Set(links.map((row) => row.question_id)))
         if (linkedIds.length === 0) return []
 
-        const { data: rawQuestions, error: questionError } = await admin
-            .from('questions')
-            .select('id')
-            .eq('subject_id', subjectId)
-            .in('id', linkedIds)
-            .in('status', ['PUBLISHED', 'published', 'ACTIVE', 'active'])
-        if (questionError) throw questionError
-        return ((rawQuestions ?? []) as QuestionIdRow[]).map((row) => row.id)
+        const questionIds: string[] = []
+        for (const batch of chunkValues(linkedIds)) {
+            const { data, error } = await admin
+                .from('questions')
+                .select('id')
+                .eq('subject_id', subjectId)
+                .in('id', batch)
+                .in('status', ['PUBLISHED', 'published', 'ACTIVE', 'active'])
+            if (error) throw error
+            questionIds.push(...((data ?? []) as QuestionIdRow[]).map((row) => row.id))
+        }
+        return questionIds
     }
 
     private async hydrateQuestions(
