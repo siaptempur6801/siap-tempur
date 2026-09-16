@@ -80,6 +80,18 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       halaman TKA **berasal dari iframe popup Midtrans** (`app.sandbox.midtrans.com/snap/v4/popup`),
       bukan dari CSP kita (proxy.ts tetap nonce + strict-dynamic). Diverifikasi lewat lokasi/frame pesan —
       jangan "diperbaiki" dengan melonggarkan CSP kita.
+- [x] **Audit akhir (Round 4):**
+      (a) Semua 6 workflow GitHub valid: trigger sudah ke `main`, seluruh referensi file ada, dan nama
+      project Playwright cocok (CPNS memakai `--config=playwright.cpns-rc.config.ts` dengan project
+      `chromium-cpns-rc` — bukan di playwright.config.ts).
+      (b) Tidak ada ekspor yatim: `chunkValues`, `getClientIp`, `isAuthActionRateLimited`,
+      `AUTH_RATE_LIMITS`, `hashRateLimitSubject`, `readAttemptDurationSeconds`,
+      `resolveAnswerDeadlineMs`, `assertAnswerWindowOpen` semuanya dipakai.
+      (c) Loading state sudah luas (26 `loading.tsx`) + 4 error boundary; TODO/FIXME dan `console.log`
+      tetap bersih (0 temuan).
+- [x] **Klarifikasi cakupan:** jalur tulis admin **sudah** tercakup `7-content-review-workflow.spec.ts`
+      (author → editorial → academic → technical QA → published + mobile/tablet) dan submit TKA
+      tercakup spec 6/8/13 — keduanya hanya berjalan lewat workflow staging ber-OIDC.
 - [x] **Audit empty state** untuk user tanpa data (dashboard, riwayat, ranking, profil, TKA progress):
       semua route render dengan pesan/CTA, 0 critical error, tidak ada halaman kosong.
       Ditemukan & diperbaiki: empty state riwayat menampilkan pesan "tidak cocok filter" padahal datanya
@@ -115,11 +127,16 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [ ] Set `UPSTASH_REDIS_REST_URL`/`_TOKEN` di Vercel (staging & produksi) agar rate limit lintas instance.
 - [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
 - [ ] Rate limit untuk `startTryout`/`startTkaExam`/`claim_voucher` (kandidat berikutnya, perlu analisis agar tidak mengganggu alur ujian sah).
-- [ ] Regression test replay webhook end-to-end.
-- [ ] **Flow TKA SMP submit → hasil:** SELESAI diverifikasi lokal (lihat Completed). Spec 6/8/13 di
+- [ ] **CI `main` di GitHub belum hijau** — perbaikan sudah di-commit lokal, tetapi push ke `main`
+      memicu deploy produksi Vercel sehingga menunggu konfirmasi eksplisit pengguna.
+- [ ] `loading.tsx` belum ada untuk sebagian route masuk TKA (`/tka/[level]/tryout`,
+      `/tka/[level]/mini-tryout`, `/tka/[level]/riwayat`) — polish P3, bukan blocker.
+- [ ] TKA memakai `window.confirm()` native sedangkan CPNS memakai modal custom — inkonsistensi UX
+      kecil (P3); berfungsi dan sudah ditangani spec.
+- [ ] **Flow TKA SMP submit → hasil:** sudah diverifikasi lokal (lihat Completed); spec 6/8/13 di
       workflow staging ber-OIDC tetap menjadi gerbang resminya.
+- [ ] Regression test replay webhook end-to-end (unit webhook sudah ada).
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
-- [ ] `components/dashboard/MobileProfileDropdown.tsx` masih berlabel "Riwayat" (label desktop sudah "Hasil") — inkonsistensi copy kecil.
 - [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
 
 ## Bugs Found
