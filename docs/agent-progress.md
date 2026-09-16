@@ -80,6 +80,24 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       halaman TKA **berasal dari iframe popup Midtrans** (`app.sandbox.midtrans.com/snap/v4/popup`),
       bukan dari CSP kita (proxy.ts tetap nonce + strict-dynamic). Diverifikasi lewat lokasi/frame pesan —
       jangan "diperbaiki" dengan melonggarkan CSP kita.
+- [x] **Audit keamanan kelas-P0 (Round 6, read-only di staging):** seluruh RPC publik yang menyentuh kunci
+      jawaban/pembahasan sudah diperiksa:
+      `get_exam_attempt_result/review_for_user` → ownership + wajib `completed`;
+      `get_exam_attempt_state_for_user` → ownership + membuang `is_correct`/`score`;
+      `get_tka_smp_wrong_questions` → `auth.uid()` + `where uwq.user_id = v_user` + membuang
+      `is_correct`/`score`; `import_reviewed_cpns_legacy_question` → service-role saja;
+      `get_content_question_detail` → sudah diperbaiki (Round 1).
+      Hanya 2 fungsi publik yang menyentuh kunci jawaban; **tidak ada kebocoran tersisa**.
+- [x] **Item rate-limit lanjutan ditutup dengan analisis:**
+      `claim_voucher` **tidak ada** di runtime V2 (hanya `pg_promote` milik Postgres yang tidak
+      terekspos) → vektor brute-force voucher tidak berlaku.
+      `startTryout`/`startTkaExam` dibatasi token/kuota + advisory lock + start idempoten, sehingga
+      penyalahgunaan sudah terbatas; menambah rate limit berisiko memblokir "lanjutkan sesi" yang sah →
+      **tidak ditambahkan**, keputusan didokumentasikan.
+- [x] **Regression test replay webhook:** sudah tercakup — `tests/unit/payments-webhook.test.ts`
+      menguji event duplikat idempoten (baris "already processed idempotent webhook event"), dan
+      bukti fulfillment idempoten terhadap staging nyata ada di `docs/TKA_SMP_MONETIZATION_AUDIT.md`
+      (settlement duplikat tetap tepat 10 entitlement).
 - [x] **Audit performa bundel (§22):** total JS client 3,4 MB / 74 chunk. Chunk terbesar: **tiptap 492 KB**
       — hanya diimpor `components/admin/ArticleRichTextEditor.tsx` dan `RichTextBlockEditor.tsx`, jadi
       **tidak bocor ke jalur learner**; `katex` 276 KB memang dibutuhkan untuk soal matematika; sisanya
@@ -132,13 +150,13 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [ ] `push` ke `main` (belum dilakukan — push memicu deploy produksi Vercel, butuh konfirmasi eksplisit).
 - [ ] Set `UPSTASH_REDIS_REST_URL`/`_TOKEN` di Vercel (staging & produksi) agar rate limit lintas instance.
 - [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
-- [ ] Rate limit untuk `startTryout`/`startTkaExam`/`claim_voucher` (kandidat berikutnya, perlu analisis agar tidak mengganggu alur ujian sah).
 - [ ] **CI `main` di GitHub belum hijau** — perbaikan sudah di-commit lokal, tetapi push ke `main`
       memicu deploy produksi Vercel sehingga menunggu konfirmasi eksplisit pengguna.
+- [x] Rate limit `claim_voucher` → tidak berlaku (fungsi tidak ada di V2); `startTryout`/`startTkaExam` → tidak perlu (lihat Completed).
+- [x] Regression test replay webhook → sudah tercakup (lihat Completed).
 - [x] `loading.tsx` untuk route masuk TKA (`tryout`, `mini-tryout`, `riwayat`) — SELESAI (Round 5), total 29 file.
 - [ ] TKA memakai `window.confirm()` native sedangkan CPNS memakai modal custom — inkonsistensi UX
       kecil (P3); berfungsi dan sudah ditangani spec.
-- [ ] Regression test replay webhook end-to-end (unit webhook sudah ada).
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
 - [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
 
