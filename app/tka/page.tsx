@@ -198,7 +198,9 @@ function PublicLevelCard({
     )
 
     if (!available) {
-        return <article aria-disabled="true" className="st-card-md flex min-h-72 flex-col bg-slate-50 p-6 md:p-7">{content}</article>
+        // Kartu non-interaktif: status "Belum tersedia" sudah disampaikan lewat teks,
+        // jadi `aria-disabled` tidak diperlukan (dan tidak valid pada role article).
+        return <article className="st-card-md flex min-h-72 flex-col bg-slate-50 p-6 md:p-7">{content}</article>
     }
 
     return <Link href={href} className="st-card-md st-focus group flex min-h-72 flex-col bg-white p-6 transition-transform hover:-translate-y-1 md:p-7">{content}</Link>

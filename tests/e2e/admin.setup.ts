@@ -1,4 +1,4 @@
-import { expect, test as setup } from '@playwright/test'
+import { test as setup } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
