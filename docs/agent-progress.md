@@ -46,7 +46,8 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       (status < 500, ada `<main>`, tidak kosong, console bersih) + 2 redirect sengaja
       (`/tka`→`/tka/smp`, `/tka/smp/beli-token`→`/tka/smp/pass`) + 10 route inti bebas overflow
       horizontal di viewport mobile 390×844.
-- [x] Audit responsif manual: 18 route × {mobile 390×844, tablet 1024×768} = 36 kombinasi, **0 overflow**.
+- [x] Audit responsif manual: 18 route ber-auth × {mobile 390×844, tablet 1024×768} = 36 kombinasi, **0 overflow**
+      dan 7 halaman publik × {mobile, tablet, desktop 1440×900} = 21 kombinasi, **0 overflow**.
 - [x] `npm run lint` bersih total: 0 error, 0 warning.
 - [x] Verifikasi browser nyata dengan user staging disposabel (dibuat lalu dihapus; 0 sisa):
       login → onboarding → dashboard → beli paket, dan seluruh route ber-auth.
@@ -67,6 +68,13 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
 - [ ] Rate limit untuk `startTryout`/`startTkaExam`/`claim_voucher` (kandidat berikutnya, perlu analisis agar tidak mengganggu alur ujian sah).
 - [ ] Regression test replay webhook end-to-end.
+- [ ] **Risiko laten (terukur, belum diperbaiki):** `findQuestionIdsForKnowledgeNode` di
+      `src/repositories/exam.repository.ts` memakai `.in('id', linkedIds)` tanpa batch. Di staging
+      node terbesar punya 150 soal (≈5,5KB URL) — masih aman di bawah batas 16KB, tapi akan pecah
+      seperti bug admin Exams bila bank soal tumbuh ±3×. Belum disentuh karena jalur exam-start adalah
+      flow paling kritis dan belum ada E2E drill-start untuk memverifikasi perubahannya.
+- [ ] Flow drill/mini/full/remedial CPNS & TKA belum diuji end-to-end di browser (butuh token/track aktif
+      pada user uji).
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
 - [ ] `components/dashboard/MobileProfileDropdown.tsx` masih berlabel "Riwayat" (label desktop sudah "Hasil") — inkonsistensi copy kecil.
 - [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
@@ -140,8 +148,9 @@ Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attemp
 
 ## Next Action
 
-1. Responsivitas route ber-auth: jalankan smoke yang sama pada viewport mobile & tablet
-   (mis. 390×844 dan 1024×768) dan perbaiki overflow/layout yang pecah bila ada.
-2. Audit state loading/empty/error pada route yang datanya kosong (user baru) vs berisi.
-3. Setelah itu: audit `Admin flow` (`/admin` untuk SUPER_ADMIN) di browser dengan user disposabel ber-role.
-4. Perbaiki temuan, jalankan lint/typecheck/unit/build/E2E, lalu commit atomic dan update dokumen ini.
+1. Verifikasi flow drill → jawab → evaluasi CPNS di browser: siapkan user uji dengan track CPNS aktif +
+   saldo token, jalankan lewat UI, lalu hapus kembali (butuh penulisan staging yang reversible).
+2. Tambahkan E2E drill-start sebagai gerbang sebelum menyentuh `findQuestionIdsForKnowledgeNode`,
+   lalu batch query tersebut mengikuti pola `lib/supabase-batch.ts`.
+3. Lanjutkan ke flow mini tryout → submit → scoring → result → remedial.
+4. Perbaiki temuan, jalankan lint/typecheck/unit/build/E2E, commit atomic, update dokumen ini.
