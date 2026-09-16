@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { getClientIp } from '@/lib/request-ip';
 
 /**
  * Standard API Envelope:
@@ -124,16 +125,10 @@ export async function checkRateLimit(identifier: string, limit: number, windowMs
 
 /**
  * Helper to extract IP from request (for rate limiting).
+ *
+ * Logikanya dipusatkan di lib/request-ip.ts supaya API route dan server action
+ * memakai urutan header yang sama (mendahulukan header yang di-set platform).
  */
 export function getIp(req: Request): string {
-    const realIp = req.headers.get('x-real-ip') || req.headers.get('cf-connecting-ip');
-    if (realIp) {
-        return realIp.trim();
-    }
-
-    const forwarded = req.headers.get('x-forwarded-for');
-    if (forwarded) {
-        return forwarded.split(',')[0].trim();
-    }
-    return '127.0.0.1'; // Fallback
+    return getClientIp(req.headers);
 }

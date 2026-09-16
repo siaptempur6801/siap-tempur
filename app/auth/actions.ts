@@ -9,7 +9,10 @@ import { logger } from '@/lib/logger'
 import { env } from '@/lib/env'
 import { resolvePostLogoutRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 import { loginSchema, registerSchema } from '@/lib/validations/auth'
+import { isAuthActionRateLimited } from '@/lib/server-rate-limit'
 import * as z from 'zod'
+
+const AUTH_RATE_LIMIT_MESSAGE = 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.'
 
 const emailOnlySchema = z.object({
     email: z.string().min(1, 'Email wajib diisi').email('Format email tidak valid'),
@@ -72,6 +75,12 @@ export async function login(formData: FormData) {
     })
     if (!parsed.success) return { error: validationMessage(parsed.error) }
 
+    // Rate limit dipasang setelah validasi: hanya permintaan yang benar-benar akan
+    // menyentuh Supabase Auth yang memakai kuota.
+    if (await isAuthActionRateLimited('login')) {
+        return { error: AUTH_RATE_LIMIT_MESSAGE }
+    }
+
     const supabase = await createV2Client()
     const { email, password } = parsed.data
 
@@ -95,6 +104,10 @@ export async function signup(formData: FormData) {
         fullName: formString(formData, 'fullName'),
     })
     if (!parsed.success) return { error: validationMessage(parsed.error) }
+
+    if (await isAuthActionRateLimited('signup')) {
+        return { error: AUTH_RATE_LIMIT_MESSAGE }
+    }
 
     const supabase = await createV2Client()
     const { email, password, fullName } = parsed.data
@@ -183,6 +196,10 @@ export async function resendVerificationEmail(email: string, returnTo?: string |
     const parsed = emailOnlySchema.safeParse({ email: typeof email === 'string' ? email : '' })
     if (!parsed.success) return { error: validationMessage(parsed.error) }
 
+    if (await isAuthActionRateLimited('resendVerification', parsed.data.email)) {
+        return { error: AUTH_RATE_LIMIT_MESSAGE }
+    }
+
     const supabase = await createV2Client()
     const { error } = await supabase.auth.resend({
         type: 'signup',
@@ -210,6 +227,11 @@ export async function forgotPassword(formData: FormData) {
 
     const parsed = emailOnlySchema.safeParse({ email: formString(formData, 'email') })
     if (!parsed.success) return { error: validationMessage(parsed.error) }
+
+    // Dibatasi per IP dan per email: action ini memicu pengiriman email.
+    if (await isAuthActionRateLimited('forgotPassword', parsed.data.email)) {
+        return { error: AUTH_RATE_LIMIT_MESSAGE }
+    }
 
     const supabase = await createV2Client()
     const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
