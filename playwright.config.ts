@@ -40,6 +40,7 @@ export default defineConfig({
         /.*10-admin-workspace-authenticated\.spec\.ts/,
         /.*11-cpns-rc\.spec\.ts/,
         /.*7-content-review-workflow\.spec\.ts/,
+        /.*17-authenticated-route-health\.spec\.ts/,
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -54,7 +55,7 @@ export default defineConfig({
           },
           {
             name: 'chromium-authenticated',
-            testMatch: /.*3-dashboard\.spec\.ts/,
+            testMatch: /.*(?:3-dashboard|17-authenticated-route-health)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
               storageState: 'playwright/.auth/user.json',
