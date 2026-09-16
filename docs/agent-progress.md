@@ -60,10 +60,16 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [x] **Flow full tryout CPNS diverifikasi end-to-end di browser** (110 soal, user uji dengan track+token):
       "Mulai Full Tryout" → konfirmasi token → sesi 110 soal → lompat ke soal terakhir lewat navigator →
       "Kumpulkan jawaban" → modal → **hasil dengan skor + breakdown TWK/TIU/TKP**, 0 critical console error.
+- [x] **Flow TKA SMP tuntas terverifikasi end-to-end di browser** (user uji track SMP, dihapus lagi):
+      Mini Tryout (Bahasa Indonesia) → pilih jawaban → soal terakhir → "Kirim tryout" → konfirmasi →
+      **halaman hasil `/tka/smp/tryout/<id>/result` dengan angka skor**, 0 critical console error.
+      Catatan: TKA memakai `window.confirm()` native (bukan modal custom seperti CPNS) — Playwright
+      otomatis men-dismiss dialog, jadi skrip wajib memasang `page.on('dialog', d => d.accept())`.
+      Spec 6/8/13 sudah menangani ini dengan benar dan menguji submit → result, jadi **bukan bug produk**.
 - [x] **TKA SMP: sesi ujian berjalan** (user uji track SMP aktif, dihapus lagi): `/tka/smp` dashboard,
       Mini Tryout 2 paket (BIN/MAT) bisa dimulai, sesi memuat soal + opsi (`data-selected`) dan jawaban
       tersimpan; **Full Tryout menampilkan "Butuh Tempur Pass"** — gate monetisasi server-side bekerja
-      seperti yang diputuskan. Submit TKA belum tuntas (lihat Remaining).
+      seperti yang diputuskan.
 - [x] **FIXED: Snap dimuat di semua halaman TKA.** `app/tka/layout.tsx` memuat skrip pembayaran Midtrans
       di setiap halaman TKA ber-login (dashboard, sesi ujian, hasil) — beserta iframe popup
       `app.sandbox.midtrans.com`. Kini hanya `/tka/[level]/pass` yang memuatnya (halaman itu sudah punya
@@ -110,12 +116,8 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
 - [ ] Rate limit untuk `startTryout`/`startTkaExam`/`claim_voucher` (kandidat berikutnya, perlu analisis agar tidak mengganggu alur ujian sah).
 - [ ] Regression test replay webhook end-to-end.
-- [ ] **Flow TKA SMP submit → hasil belum tuntas diuji lokal.** Sesi TKA memakai model per-bagian
-      (`TkaFullExamSessionClient`, tombol "Selesaikan bagian"/"Kirim tryout") dan tipe soal grup
-      Benar/Salah; skrip verifikasi berhasil memulai sesi + menjawab + menekan "Kirim tryout" beserta
-      konfirmasinya, tetapi halaman tidak berpindah ke hasil. Belum jelas apakah ini perilaku yang
-      diharapkan (butuh semua bagian selesai) atau bug. Spec 6/8/9/13 menutup ini lewat workflow staging
-      ber-OIDC; perlu dijalankan atau ditelusuri lebih lanjut.
+- [ ] **Flow TKA SMP submit → hasil:** SELESAI diverifikasi lokal (lihat Completed). Spec 6/8/13 di
+      workflow staging ber-OIDC tetap menjadi gerbang resminya.
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
 - [ ] `components/dashboard/MobileProfileDropdown.tsx` masih berlabel "Riwayat" (label desktop sudah "Hasil") — inkonsistensi copy kecil.
 - [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
