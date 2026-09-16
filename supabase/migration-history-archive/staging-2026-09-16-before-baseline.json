@@ -1,0 +1,494 @@
+[
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "core_schema_01",
+    "version": "20260820030912"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "core_schema_02",
+    "version": "20260820030953"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "core_schema_03",
+    "version": "20260820031031"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "core_schema_04",
+    "version": "20260820031108"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "core_schema_05",
+    "version": "20260820031144"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "auth_profile_trigger",
+    "version": "20260820031154"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "rls_policies_01",
+    "version": "20260820031227"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "rls_policies_02",
+    "version": "20260820031258"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "rls_policies_03",
+    "version": "20260820031328"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "rls_policies_04",
+    "version": "20260820031358"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "rls_policies_05",
+    "version": "20260820031425"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "rls_policies_06",
+    "version": "20260820031448"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "final_schema_alignment",
+    "version": "20260820031948"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "data_api_security_boundary",
+    "version": "20260820032026"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "seed_master_catalog",
+    "version": "20260820032055"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "seed_rbac_features_products",
+    "version": "20260820032123"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "rls_server_only_cleanup",
+    "version": "20260820032156"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "advisor_performance_cleanup",
+    "version": "20260820032245"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "schema_v2_exam_token_debit",
+    "version": "20260820054036"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "schema_v2_charge_token_on_attempt_start",
+    "version": "20260820054747"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "schema_v2_event_ranking_recalculation",
+    "version": "20260820060722"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "schema_v2_national_leaderboard_recalculation",
+    "version": "20260820063909"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "schema_v2_commerce_fulfillment",
+    "version": "20260820064439"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "preserve_payment_raw_response_metadata",
+    "version": "20260820085117"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "schema_v2_security_and_fk_hardening",
+    "version": "20260820110702"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "schema_v2_profile_details",
+    "version": "20260820111928"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "add_tka_response_model",
+    "version": "20260820115441"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "add_question_review_workflow_v1",
+    "version": "20260821024731"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "remove_duplicate_question_version_index",
+    "version": "20260821024910"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "reviewer_onboarding_and_pilot_helpers_v1",
+    "version": "20260821025234"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_full_exam_engine_v1",
+    "version": "20260821033027"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_full_exam_engine_perf_index",
+    "version": "20260821033328"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "harden_tka_smp_user_exam_rpc_guards",
+    "version": "20260821040229"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "content_review_workspace_audit_v1",
+    "version": "20260821053649"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "content_review_workspace_access_v1",
+    "version": "20260821054518"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "content_roles_least_privilege_v1",
+    "version": "20260821055028"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "authenticated_authorization_rpc_v1",
+    "version": "20260821055311"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_mini_exam_rpc_v1",
+    "version": "20260821101435"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "authenticated_user_track_activation_v1",
+    "version": "20260821103340"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "harden_user_track_activation_rpc_v1",
+    "version": "20260821103749"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_learning_projection_v1",
+    "version": "20260821115249"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_wrong_question_mode_v1",
+    "version": "20260821121631"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_wrong_question_perf_indexes_v1",
+    "version": "20260821122333"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "harden_tka_smp_wrong_question_read_v1",
+    "version": "20260821122538"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_automatic_remedial_v1",
+    "version": "20260821125152"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_automatic_remedial_perf_cleanup_v1",
+    "version": "20260821130046"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_weakest_topic_recommendation_v1",
+    "version": "20260821135122"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_readiness_score_v1",
+    "version": "20260821142830"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_pass_catalog_v1",
+    "version": "20260823065718"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_monetization_access_contract_v1",
+    "version": "20260823070444"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_pass_renewal_stacking_v1",
+    "version": "20260823071419"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "articles_schema_v2_v1",
+    "version": "20260823081345"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "article_storage_bucket_v1",
+    "version": "20260823082622"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "admin_drill_exam_contract_v1",
+    "version": "20260823085042"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "cpns_skd_legacy_question_versions_v1",
+    "version": "20260823085611"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "admin_drill_exam_contract_section_fix_v1",
+    "version": "20260823085714"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "official_cpns_tka_taxonomy_v1",
+    "version": "20260823093811"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "cpns_skd_paket1_import_stage_v1",
+    "version": "20260823105956"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "cpns_legacy_mapping_review_registry_v1",
+    "version": "20260823114955"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "cpns_legacy_import_stage_v1",
+    "version": "20260823115204"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "cpns_legacy_mapping_review_hardening_v1",
+    "version": "20260823121746"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "cpns_legacy_import_guard_v1",
+    "version": "20260823121937"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "cpns_legacy_asset_and_stage_guard_v1",
+    "version": "20260823122113"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "cpns_legacy_review_registry_sync_v1",
+    "version": "20260823123041"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_monetization_browser_contract_v1",
+    "version": "20260824045102"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "fix_cpns_full_tryout_token_cost",
+    "version": "20260827154427"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "fix_cpns_practice_token_costs",
+    "version": "20260827162035"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_diagnostic_baseline_v1",
+    "version": "20260901175236"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_diagnostic_recommendations_v1",
+    "version": "20260902042643"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_diagnostic_performance_hardening_v1",
+    "version": "20260902042930"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "activate_tka_smp_diagnostic_v1",
+    "version": "20260902051922"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_diagnostic_drill_v1",
+    "version": "20260902060816"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_learning_hierarchy_v1",
+    "version": "20260902082133"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "allow_users_to_update_own_profile",
+    "version": "20260904103645"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "create_profile_avatar_bucket",
+    "version": "20260904103746"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "canonical_event_certificates",
+    "version": "20260904134336"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "canonical_event_flyers",
+    "version": "20260904155758"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "remove_legacy_event_flyer_policies",
+    "version": "20260904161646"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_access_guard_and_token_contract",
+    "version": "20260912064238"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "enable_tka_smp_monetization_enforcement",
+    "version": "20260912074602"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_content_question_detail_answer_key_leak",
+    "version": "20260916213000"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "revoke_authenticated_question_versions_select",
+    "version": "20260916213100"
+  }
+]

@@ -1,0 +1,992 @@
+[
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_materials",
+    "version": "20240129"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_tryouts",
+    "version": "202401290001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "auth_trigger",
+    "version": "202401290002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "profile_extended",
+    "version": "202401290003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "profile_storage",
+    "version": "202401290004"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "secure_tryouts",
+    "version": "202401290005"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_questions",
+    "version": "202401290006"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "streak_trigger",
+    "version": "202401290007"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_rls",
+    "version": "20240130"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_scoring",
+    "version": "202401300001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "practice_functions",
+    "version": "202401300002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "tryout_function",
+    "version": "202401300003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_profile_schema",
+    "version": "20240201"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "cleanup_unused_columns",
+    "version": "20240204"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "reconcile_schema",
+    "version": "202402040001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "split_tickets",
+    "version": "20240205"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_notification_settings",
+    "version": "20240210"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_profile_fields",
+    "version": "20240212"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "cleanup_redundant_columns",
+    "version": "202402120001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "leaderboard_mv_cron",
+    "version": "202402120002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "leaderboard_snapshot",
+    "version": "202402120003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "remove_notification_settings",
+    "version": "202402120004"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "exam_schema_reset",
+    "version": "20240223"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "rework_tryout_rpc",
+    "version": "202402230001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_analitis",
+    "version": "202402230002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_analogi",
+    "version": "202402230003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_analogi_figural",
+    "version": "202402230004"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_berhitung",
+    "version": "202402230005"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_deret_angka",
+    "version": "202402230006"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_ketidaksamaan",
+    "version": "202402230007"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_perbandingan",
+    "version": "202402230008"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_serial",
+    "version": "202402230009"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_silogisme",
+    "version": "202402230010"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tiu_soal_cerita",
+    "version": "202402230011"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tkp_anti_radikalisme",
+    "version": "202402230012"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tkp_jejaring_kerja",
+    "version": "202402230013"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tkp_pelayanan_publik",
+    "version": "202402230014"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tkp_profesionalisme",
+    "version": "202402230015"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tkp_sosial_budaya",
+    "version": "202402230016"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tkp_tik",
+    "version": "202402230017"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_twk_bahasa_negara",
+    "version": "202402230018"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_twk_bela_negara",
+    "version": "202402230019"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_twk_integritas",
+    "version": "202402230020"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_twk_nasionalisme",
+    "version": "202402230021"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_twk_pilar_negara",
+    "version": "202402230022"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_image_to_questions",
+    "version": "20240224"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "tryout_configurations",
+    "version": "20240225"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_voucher_system",
+    "version": "20240228"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "admin_tryout_configs",
+    "version": "202402280001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_leaderboard_view",
+    "version": "202402280002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "index_foreign_keys",
+    "version": "202402280003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "performance_fixes",
+    "version": "202402280004"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "secure_tryout_configs",
+    "version": "202402280005"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "security_fixes",
+    "version": "202402280006"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_voucher_reuse",
+    "version": "20240317"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_options_fk_cascade",
+    "version": "20240318"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "update_leaderboard_cron",
+    "version": "20260304"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "create_generic_exam_schema",
+    "version": "20260316"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "toefl_quota",
+    "version": "20260317"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_cpns_session_progress",
+    "version": "20260408"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_option_image_urls",
+    "version": "202604080001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_question_code",
+    "version": "20260409"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_function_search_paths",
+    "version": "202604090001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_leaderboard_cron_jobs",
+    "version": "202604090002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "update_question_code_format",
+    "version": "202604090003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "drop_unused_legacy_tables",
+    "version": "20260410"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "remove_cpns_instansi_schema",
+    "version": "202604100001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "remove_generic_toefl_schema",
+    "version": "202604100002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "tryout_akbar",
+    "version": "20260422"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_test_answer_option_order",
+    "version": "20260430"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "harden_rpc_and_answer_visibility",
+    "version": "20260529"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "payment_status_idempotency",
+    "version": "202605290001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "event_payment",
+    "version": "20260530"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_event_question_sort_order",
+    "version": "202605300001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "live_leaderboard",
+    "version": "202605300002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "harden_rls_answer_voucher_payment",
+    "version": "20260530023000"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "production_readiness_hardening",
+    "version": "20260603"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "complete_event_session_rpc",
+    "version": "20260603163000"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "realtime_leaderboard_entries",
+    "version": "202606070001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_event_group_link",
+    "version": "202606080001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "live_leaderboard_score_breakdown",
+    "version": "202606140001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "mini_tryout_token_rpc",
+    "version": "202606170001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "start_session_idempotency",
+    "version": "202606170002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_event_flyers",
+    "version": "202606190001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_event_documentation_url",
+    "version": "202606200001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "harden_rls_policies",
+    "version": "202606200002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "audit_logs",
+    "version": "202606200003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "allow_mini_event_question_counts",
+    "version": "202606230001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "start_drilling_materi_session",
+    "version": "202606230002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_articles",
+    "version": "202606240001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "article_writer_storage",
+    "version": "202606240002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "event_leaderboard_bots",
+    "version": "202607050001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "event_leaderboard_bot_seed_bigint",
+    "version": "202607050002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "expand_event_bot_names",
+    "version": "202607050003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "event_certificates",
+    "version": "202607130001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "event_certificate_snapshots",
+    "version": "202607130002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_program_registry",
+    "version": "202608100001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_program_id_to_exam_tables",
+    "version": "202608100002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "program_scoped_quota",
+    "version": "202608100003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "add_subjects_and_score_breakdown",
+    "version": "202608100004"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_question_code_uniqueness",
+    "version": "202608100005"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tka_placeholder_content",
+    "version": "202608100006"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "program_session_rpcs",
+    "version": "202608100007"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "program_access_and_class_codes",
+    "version": "202608100008"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "scope_leaderboard_to_cpns",
+    "version": "202608100009"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "harden_tka_access_and_answers",
+    "version": "202608100010"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "disable_tka_package_sales",
+    "version": "202608100011"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "program_aware_admin_questions",
+    "version": "202608100012"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "reconcile_tka_sd_smp_subjects",
+    "version": "202608100013"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "expand_program_and_question_governance",
+    "version": "202608100014"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "capability_rbac_and_audit_context",
+    "version": "202608100015"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "shared_exam_and_learning_foundation",
+    "version": "202608100016"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "school_and_product_foundation",
+    "version": "202608100017"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_platform_roles_and_capabilities",
+    "version": "202608100018"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "learning_content_and_shared_exam_runtime",
+    "version": "202608110001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "adaptive_program_drill",
+    "version": "202608110002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "notifications_and_difficulty_aggregate",
+    "version": "202608110003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "atomic_drill_learning_state",
+    "version": "202608110004"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "atomic_cpns_learning_state",
+    "version": "202608110005"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_learning_recommendation_expiry",
+    "version": "202608110006"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "backfill_learning_state",
+    "version": "202608110007"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "atomic_in_app_campaign_delivery",
+    "version": "202608110008"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "question_authoring_workflow",
+    "version": "202608110009"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "harden_legacy_question_eligibility",
+    "version": "202608110010"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "atomic_platform_content_workflow",
+    "version": "202608110011"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "platform_content_editor_transactions",
+    "version": "202608110012"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "atomic_admin_user_program_and_token_ledger",
+    "version": "202608110013"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "admin_commerce_and_school_workflows",
+    "version": "202608110014"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "validate_legacy_constraints",
+    "version": "202608110015"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "atomic_platform_role_assignment_lifecycle",
+    "version": "202608110016"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "atomic_platform_admin_creation",
+    "version": "202608110017"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "exam_deadline_and_finish_locking",
+    "version": "202608110018"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "atomic_event_payment_and_admin_lifecycle",
+    "version": "202608110019"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "organization_exam_group_naming",
+    "version": "202608110020"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "archive_exam_groups",
+    "version": "202608180001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "remove_exam_group_capabilities",
+    "version": "202608180002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "global_and_custom_events",
+    "version": "202608180003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_event_capabilities",
+    "version": "202608180004"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "count_only_answered_learning_state",
+    "version": "202608190001"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "rebuild_answered_learning_state",
+    "version": "202608190002"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tka_sd_math_question_bank",
+    "version": "202608190003"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "remove_tka_placeholders",
+    "version": "202608190004"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tka_sd_indonesian_question_bank",
+    "version": "202608190005"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "exam_response_types_and_shared_stimuli",
+    "version": "202608190006"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "align_tka_sd_indonesian_response_forms",
+    "version": "202608190007"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "seed_tka_sd_english_enrichment_bank",
+    "version": "202608190008"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "expand_tka_sd_question_banks",
+    "version": "202608190009"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "label_non_tka_enrichment_subjects",
+    "version": "202608190010"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_shared_exam_session_mode_cast",
+    "version": "202608190011"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_diagnostic_baseline_v1",
+    "version": "20260902043347"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_diagnostic_recommendations_v1",
+    "version": "20260902043439"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_diagnostic_performance_hardening_v1",
+    "version": "20260902043452"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "activate_tka_smp_diagnostic_v1",
+    "version": "20260902055548"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_diagnostic_drill_v1",
+    "version": "20260902072722"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "lock_tka_smp_drill_trigger_function",
+    "version": "20260902072749"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_drill_rpc_v1",
+    "version": "20260902072821"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "allow_users_to_update_own_profile",
+    "version": "20260904110604"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "create_profile_avatar_bucket",
+    "version": "20260904110612"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "canonical_event_certificates",
+    "version": "20260904161534"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "canonical_event_flyers",
+    "version": "20260904161548"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "remove_legacy_event_flyer_policies",
+    "version": "20260904161652"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "tka_smp_access_guard_and_token_contract",
+    "version": "20260912064358"
+  },
+  {
+    "created_by": "halimdirga8@gmail.com",
+    "idempotency_key": null,
+    "name": "enable_tka_smp_monetization_enforcement",
+    "version": "20260912074625"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "fix_content_question_detail_answer_key_leak",
+    "version": "20260916213000"
+  },
+  {
+    "created_by": null,
+    "idempotency_key": null,
+    "name": "revoke_authenticated_question_versions_select",
+    "version": "20260916213100"
+  }
+]
