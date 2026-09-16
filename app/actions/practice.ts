@@ -43,6 +43,8 @@ function practiceErrorMessage(error: PracticeDomainError) {
             return 'Akun ini belum memiliki akses untuk ujian tersebut.'
         case 'INSUFFICIENT_TOKEN_BALANCE':
             return 'Token tryout kamu tidak mencukupi untuk ujian ini.'
+        case 'ATTEMPT_TIME_EXPIRED':
+            return 'Waktu ujian sudah berakhir. Jawaban tidak dapat disimpan lagi — kumpulkan jawabanmu.'
         case 'EXAM_CONFIGURATION_ERROR':
             return 'Konfigurasi ujian Schema V2 belum lengkap.'
         default:

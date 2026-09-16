@@ -979,24 +979,15 @@ export async function updateTryoutEventCertificateRelease(id: string, enabled: b
 export async function updateEventCertificateName(certificateId: string, rawCertificateName: string) {
     try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
 
-    const actor = await (async () => {
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return null
+    // Otorisasi memakai permission service (Schema V2). Kolom legacy `profiles.role`
+    // sudah tidak ada di Schema V2, sehingga pengecekan lama error tanpa dicek dan
+    // membuat aksi ini selalu gagal — bahkan untuk admin asli.
+    const isUserAdmin = await isAdmin()
+    if (!isUserAdmin) return { success: false, message: 'Unauthorized' }
 
-        const admin = await createAdminClient()
-        const { data: profile } = await admin
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle()
-
-        return profile && ['admin', 'superadmin'].includes(String(profile.role))
-            ? { userId: user.id, role: String(profile.role) }
-            : null
-    })()
-
-    if (!actor) return { success: false, message: 'Unauthorized' }
+    const { data: { user } } = await (await createClient()).auth.getUser()
+    if (!user) return { success: false, message: 'Unauthorized' }
+    const actor = { userId: user.id }
 
     const nameResult = normalizeCertificateName(rawCertificateName)
     if (!nameResult.success) return { success: false, message: nameResult.message }

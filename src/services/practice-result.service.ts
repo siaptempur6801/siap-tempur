@@ -132,6 +132,11 @@ export class PracticeResultService {
         const bundle = await attemptRepository.getAttemptBundle(userId, attemptId)
         if (!bundle) return null
 
+        // Defense-in-depth: hasil (termasuk kunci jawaban & pembahasan) hanya untuk
+        // attempt yang sudah dikumpulkan. Halaman pemanggil sudah memeriksa status,
+        // tetapi service ini tidak boleh bergantung pada pemanggil saja.
+        if (bundle.attempt.status !== 'completed') return null
+
         const admin = await createV2AdminClient()
         const extensionAdmin = await createAdminClient()
         const questionIds = bundle.questions.map((question) => question.question_id)

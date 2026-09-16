@@ -14,6 +14,7 @@ export type PracticeErrorCode =
     | 'INSUFFICIENT_TOKEN_BALANCE'
     | 'ENTITLEMENT_REQUIRED'
     | 'EXPIRED_ATTEMPT'
+    | 'ATTEMPT_TIME_EXPIRED'
     | 'EXAM_CONFIGURATION_ERROR'
 
 type ContextualPracticeInput = {

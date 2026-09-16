@@ -1,5 +1,49 @@
-import { attemptRepository } from '@/src/repositories/attempt.repository'
+import { attemptRepository, type AttemptRow } from '@/src/repositories/attempt.repository'
 import { PracticeDomainError } from '@/src/services/exam-attempt.service'
+
+/**
+ * Toleransi kecil untuk latensi jaringan saat jawaban terakhir dikirim tepat di
+ * detik terakhir. Tidak mengubah integritas skor secara berarti.
+ */
+const ANSWER_SAVE_GRACE_SECONDS = 30
+
+export function readAttemptDurationSeconds(metadata: AttemptRow['metadata']): number | null {
+    if (!metadata || Array.isArray(metadata) || typeof metadata !== 'object') return null
+    const value = (metadata as Record<string, unknown>).durationSeconds
+    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null
+}
+
+/**
+ * Deadline penyimpanan jawaban (ms). `null` berarti attempt tidak dibatasi waktu
+ * (drill/latihan bebas atau durasi tidak diketahui).
+ */
+export function resolveAnswerDeadlineMs(
+    attempt: Pick<AttemptRow, 'metadata' | 'started_at'>,
+): number | null {
+    const durationSeconds = readAttemptDurationSeconds(attempt.metadata)
+    if (!durationSeconds || !attempt.started_at) return null
+
+    const deadlineMs = Date.parse(attempt.started_at) + (durationSeconds + ANSWER_SAVE_GRACE_SECONDS) * 1000
+    return Number.isFinite(deadlineMs) ? deadlineMs : null
+}
+
+/**
+ * Timer di browser hanya alat bantu; batas waktu ujian wajib ditegakkan di server.
+ * Tanpa ini, jawaban masih bisa dikirim setelah waktu habis dan skor/leaderboard
+ * menjadi tidak sah.
+ */
+export function assertAnswerWindowOpen(attempt: AttemptRow) {
+    const deadlineMs = resolveAnswerDeadlineMs(attempt)
+    if (deadlineMs === null) return
+
+    if (Date.now() > deadlineMs) {
+        throw new PracticeDomainError(
+            'ATTEMPT_TIME_EXPIRED',
+            'Waktu ujian sudah berakhir',
+            { deadline: new Date(deadlineMs).toISOString() },
+        )
+    }
+}
 
 export class AttemptAnswerService {
     async saveAnswer(input: {
@@ -12,6 +56,7 @@ export class AttemptAnswerService {
         if (!attempt) {
             throw new PracticeDomainError('EXAM_CONFIGURATION_ERROR', 'Attempt is not active or does not belong to user')
         }
+        assertAnswerWindowOpen(attempt)
 
         const attemptQuestion = await attemptRepository.getAttemptQuestion(input.attemptId, input.questionId)
         if (!attemptQuestion) {
@@ -42,6 +87,7 @@ export class AttemptAnswerService {
         if (!attempt) {
             throw new PracticeDomainError('EXAM_CONFIGURATION_ERROR', 'Attempt is not active or does not belong to user')
         }
+        assertAnswerWindowOpen(attempt)
 
         const attemptQuestion = await attemptRepository.getAttemptQuestion(input.attemptId, input.questionId)
         if (!attemptQuestion) {
