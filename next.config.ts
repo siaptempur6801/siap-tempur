@@ -45,10 +45,10 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in; connect-src 'self' https://*.supabase.co https://*.supabase.in https://app.midtrans.com https://app.sandbox.midtrans.com https://api.midtrans.com https://api.sandbox.midtrans.com; frame-src https://app.midtrans.com https://app.sandbox.midtrans.com;",
-          },
+          // Content-Security-Policy sengaja TIDAK diatur di sini.
+          // Satu-satunya sumber CSP adalah proxy.ts (nonce + strict-dynamic).
+          // Dua header CSP sekaligus membuat kebijakan saling bertabrakan dan
+          // menyulitkan audit.
         ],
       },
     ];
