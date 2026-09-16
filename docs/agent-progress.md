@@ -80,6 +80,17 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       halaman TKA **berasal dari iframe popup Midtrans** (`app.sandbox.midtrans.com/snap/v4/popup`),
       bukan dari CSP kita (proxy.ts tetap nonce + strict-dynamic). Diverifikasi lewat lokasi/frame pesan —
       jangan "diperbaiki" dengan melonggarkan CSP kita.
+- [x] **Backfill snapshot versi CPNS (2026-09-16, staging):** 30 soal TWK berstatus `published` tidak punya
+      baris `question_versions` (dibuat 2026-08-23, kemungkinan masuk setelah migration backfill
+      `20260823085200_cpns_skd_legacy_question_versions_v1.sql` dijalankan). Dampak: admin workspace
+      hanya menghitung soal yang punya versi beku sehingga kapasitas TWK ter-under-report (30 dari 60).
+      Diperbaiki dengan **menjalankan ulang migration idempoten tersebut** di staging → TWK kini 60/60
+      (TIU 35/35, TKP 45/45). **Produksi masih 30/60 — menunggu GO eksplisit.**
+- [x] **Analisis kesiapan konten CPNS (2026-09-16):** gap-nya adalah **gap publish, bukan gap konten**.
+      Published: TWK 60, TIU 35, TKP 45. Draft tersedia: TWK **207**, TIU **113**, TKP **113** — semuanya
+      sudah punya opsi + pembahasan, tetapi **belum pernah masuk alur review** (`content_reviews` hanya
+      mencakup 300 soal TKA) sehingga sesuai kebijakan Production V1 tidak boleh dipublikasikan otomatis.
+      Headroom efektif setelah backfill: TWK +30, **TIU 0, TKP 0**.
 - [x] **Push ke `main` + CI hijau (2026-09-16):** 35 commit di-push (`b04e23f..df534a6`). GitHub Actions:
       **CI success** (lint, typecheck, unit, security audit, build, E2E) dan **Schema V2 CI success**;
       deployment Vercel Production **success**. Domain `siaptempur.id` tetap sengaja ditahan.
