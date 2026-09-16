@@ -41,12 +41,18 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [x] `docs/STATUS.md` sebagai satu sumber kebenaran + banner HISTORIS pada dokumen usang.
 - [x] E2E: `auth.setup.ts` mengikuti alur nyata login → `/onboarding` → dashboard; `3-dashboard.spec.ts`
       memakai locator href (label "Riwayat" sudah berganti jadi "Hasil").
-- [x] E2E baru `16-console-health.spec.ts`: memastikan tidak ada hydration/uncaught error di halaman publik.
-- [x] Verifikasi browser nyata (user staging disposabel, dihapus lagi): login → onboarding → dashboard → beli paket.
+- [x] E2E `16-console-health.spec.ts`: halaman publik bebas hydration/uncaught error.
+- [x] E2E `17-authenticated-route-health.spec.ts`: 27 route CPNS/TKA ber-auth merender halaman nyata
+      (status < 500, ada `<main>`, tidak kosong, console bersih) + 2 redirect sengaja
+      (`/tka`→`/tka/smp`, `/tka/smp/beli-token`→`/tka/smp/pass`).
+- [x] `npm run lint` bersih total: 0 error, 0 warning.
+- [x] Verifikasi browser nyata dengan user staging disposabel (dibuat lalu dihapus; 0 sisa):
+      login → onboarding → dashboard → beli paket, dan seluruh route ber-auth.
 
 ## In Progress
 
-- [ ] Audit lanjutan core flow: drill → mini → full → submit → scoring → result → remedial (CPNS) dan TKA setara.
+- [ ] Audit lanjutan: state loading/empty/error dan responsivitas pada route ber-auth (smoke sudah hijau,
+      belum ada pengecekan viewport mobile/tablet untuk route ber-auth).
 
 ## Remaining
 
@@ -96,11 +102,11 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 ## Tests
 
 ```text
-Lint        : ✅ 0 error, 2 warning lama (app/tka/page.tsx aria-disabled, tests/e2e/admin.setup.ts unused expect)
+Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
 Unit        : ✅ 45 file / 205 test (vitest)
-E2E publik  : ✅ 24 test + 6 test console-health (project chromium-public)
-E2E auth    : ✅ 3 test (setup + 2 dashboard) — butuh kredensial staging, opt-in
+E2E publik  : ✅ 30 test (chromium-public, termasuk 6 test console-health)
+E2E auth    : ✅ 30 test (setup + 2 dashboard + 27 route-health) — opt-in, butuh kredensial staging
 Build       : ✅
 ```
 
@@ -126,8 +132,8 @@ Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attemp
 
 ## Next Action
 
-Lanjutkan audit core flow CPNS & TKA yang belum diverifikasi browser-nya:
-1. petakan route drill/mini/full/result/remedial CPNS dan TKA,
-2. cek dead-end, loading/empty/error state, dan responsivitas pada route tersebut,
-3. tambahkan cakupan E2E/console-health untuk route ber-auth yang bisa diuji dengan user disposabel,
-4. perbaiki temuan, lalu jalankan lint/typecheck/unit/build/E2E dan commit atomic.
+1. Responsivitas route ber-auth: jalankan smoke yang sama pada viewport mobile & tablet
+   (mis. 390×844 dan 1024×768) dan perbaiki overflow/layout yang pecah bila ada.
+2. Audit state loading/empty/error pada route yang datanya kosong (user baru) vs berisi.
+3. Setelah itu: audit `Admin flow` (`/admin` untuk SUPER_ADMIN) di browser dengan user disposabel ber-role.
+4. Perbaiki temuan, jalankan lint/typecheck/unit/build/E2E, lalu commit atomic dan update dokumen ini.

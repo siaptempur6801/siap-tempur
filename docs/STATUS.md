@@ -133,6 +133,7 @@ Domain tidak boleh diaktifkan sebelum **semua** ini hijau:
 - [x] Riwayat migrasi remote disamakan (baseline 2026-09-16, staging & produksi).
 - [ ] Regression test kebocoran kunci jawaban berjalan di CI.
 - [x] Enforcement timer ujian server-side (2026-09-16).
+- [x] Critical user journey diverifikasi di browser: publik (30 test) + ber-auth (30 test: login → onboarding → dashboard, seluruh route CPNS/TKA).
 - [ ] Rate limit efektif lintas instance: env Upstash terpasang di staging & produksi.
 - [ ] Verifikasi header IP tepercaya di deployment nyata (`lib/request-ip.ts`).
 - [ ] (Disarankan) Product Experience V1.1 selesai.
@@ -166,9 +167,11 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 
 | Area | Kondisi |
 |---|---|
-| Lint / Typecheck / Unit / Build | ✅ hijau (189 unit test, 43 file) |
-| E2E publik (`chromium-public`) | ✅ 24/24 lolos |
-| E2E staging ber-kredensial (TKA, content review, admin, CPNS) | butuh kredensial/OIDC; dijalankan lewat workflow khusus |
+| Lint | ✅ **0 error, 0 warning** |
+| Typecheck / Unit / Build | ✅ hijau (205 unit test, 45 file) |
+| E2E publik (`chromium-public`) | ✅ 30/30 lolos (termasuk cek console browser) |
+| E2E ber-auth (`chromium-authenticated`) | ✅ 30/30 lolos (login → onboarding → dashboard, 27 route CPNS/TKA) — opt-in, butuh kredensial staging |
+| E2E staging ber-kredensial lain (TKA, content review, admin, CPNS) | butuh kredensial/OIDC; dijalankan lewat workflow khusus |
 | CI | `ci.yml` = lint + typecheck + unit + audit + build + E2E. Workflow E2E staging lain menyala via `pull_request`/`workflow_dispatch` |
 | **Riwayat migrasi remote** | ✅ **disamakan 2026-09-16** (staging & produksi → 155 baris = tepat daftar file repo). `supabase db push` kembali normal: *"Remote database is up to date."* Arsip sebelum baseline: `supabase/migration-history-archive/` |
 | CSP | satu sumber: nonce + `strict-dynamic` di `proxy.ts` (CSP statis di `next.config.ts` sudah dihapus) |
