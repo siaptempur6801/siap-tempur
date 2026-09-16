@@ -1,5 +1,8 @@
 # Production Cutover Completion — Schema V2
 
+> ℹ️ **Catatan status:** cutover database selesai. **Eksposur publik (domain `siaptempur.id`) sengaja ditahan** karena project belum dinilai siap.
+> Status terkini & blocker: [`docs/STATUS.md`](./STATUS.md).
+
 Status: **COMPLETE / ACCEPTED**
 
 Cutover completion date: **2026-09-01**

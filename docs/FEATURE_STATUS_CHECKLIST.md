@@ -1,5 +1,9 @@
 # Siap Tempur — Feature Status Checklist
 
+> ⚠️ **HISTORIS — bukan sumber kebenaran status.**
+> Audit terakhir dokumen ini 2026-08-21; beberapa milestone sudah selesai setelahnya.
+> Status terkini: [`docs/STATUS.md`](./STATUS.md).
+
 > **Branch target:** `feat/schema-v2`  
 > **Last audited:** 2026-08-21  
 > **Primary staging Supabase:** `lpgrivowdcepcxradavu`  

@@ -1,5 +1,9 @@
 # Siap Tempur — Production V1 Scope Freeze
 
+> ⚠️ **HISTORIS — bukan sumber kebenaran status.**
+> Scope freeze ini disusun 2026-08-26 ("cutover remains NO-GO"); cutover sudah selesai 2026-09-01 dan eksposur publik kini sengaja ditahan.
+> Status terkini: [`docs/STATUS.md`](./STATUS.md).
+
 > Frozen: 2026-08-26
 > Target integration branch: `feat/schema-v2`
 > Production cutover remains NO-GO until every release gate below is green.

@@ -2,7 +2,7 @@
 
 ## Project Context
 
-Siap Tempur adalah platform tryout CPNS/SKD/SKB berbasis web. Fokus utama project:
+Siap Tempur adalah platform tryout/latihan ujian berbasis web: **CPNS/SKD/SKB** dan **TKA** (jenjang SD/SMP/SMA). Fokus utama project:
 - sistem ujian/tryout
 - token ujian
 - ranking/leaderboard
@@ -11,6 +11,28 @@ Siap Tempur adalah platform tryout CPNS/SKD/SKB berbasis web. Fokus utama projec
 - admin panel
 - keamanan data peserta
 - kestabilan saat banyak user mengerjakan tryout
+
+## Status Terkini — WAJIB dibaca lebih dulu
+
+**Sumber kebenaran status: [`docs/STATUS.md`](docs/STATUS.md).** Dokumen roadmap/checklist lain bersifat historis dan tidak boleh dijadikan acuan status.
+
+Ringkas per 2026-09-16:
+- Production V1 / Schema V2 sudah live di database (cutover 2026-09-01), tetapi **domain publik sengaja tidak diaktifkan** (dark launch).
+- **Blocker P0 terbuka:** kebocoran kunci jawaban lewat RPC `get_content_question_detail` dan tabel `question_versions`. Migration perbaikan sudah ada, **belum di-apply ke DB**.
+- **Riwayat migrasi remote tidak sinkron** → `supabase db push` tidak bisa dipakai sebelum baseline/repair.
+- CI `main` sempat merah karena locator E2E basi; perbaikannya sudah ada dan terverifikasi lokal.
+
+## Peta Dokumentasi
+
+| Kebutuhan | Baca |
+|---|---|
+| Status & blocker terkini | `docs/STATUS.md` |
+| Gate deploy | `docs/production-readiness.md` |
+| Runbook cutover DB | `docs/schema-v2-cutover-runbook.md` |
+| Standar UI admin | `docs/ADMIN_UI_UX_STANDARD.md` |
+| Backlog goal aktif | `docs/PRODUCT_EXPERIENCE_V1_1_IMPLEMENTATION_BACKLOG.md` |
+| Catatan migrasi | `supabase/migrations/README.md` |
+| Riwayat cutover & monetisasi | `docs/PRODUCTION_CUTOVER_COMPLETION.md`, `docs/TKA_SMP_MONETIZATION_AUDIT.md` |
 
 ## Working Rules for Codex
 

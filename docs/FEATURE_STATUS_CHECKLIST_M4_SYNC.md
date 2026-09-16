@@ -1,5 +1,9 @@
 # Feature Status Delta — Milestone 4 Start
 
+> ⚠️ **HISTORIS — bukan sumber kebenaran status.**
+> Delta ini menggambarkan awal Milestone 4; M4 sudah ditutup (lihat `TKA_SMP_MONETIZATION_AUDIT.md`).
+> Status terkini: [`docs/STATUS.md`](./STATUS.md).
+
 Dokumen ini mencatat delta status yang harus direkonsiliasi kembali ke `docs/FEATURE_STATUS_CHECKLIST.md` pada closure Milestone 4 tanpa menghapus detail historis tracker utama.
 
 ## Completed milestones

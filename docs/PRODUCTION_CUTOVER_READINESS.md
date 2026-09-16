@@ -1,5 +1,9 @@
 # Production Cutover Readiness — Schema V2
 
+> ⚠️ **HISTORIS — dokumen pra-cutover.**
+> Dipertahankan sebagai bukti kesiapan sebelum eksekusi. Hasil akhirnya ada di `PRODUCTION_CUTOVER_COMPLETION.md`.
+> Status terkini: [`docs/STATUS.md`](./STATUS.md).
+
 Status: **READINESS ONLY — NO PRODUCTION MUTATION AUTHORIZED**
 
 Milestone: **⑦ Schema V2 production cutover**

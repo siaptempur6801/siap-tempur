@@ -1,5 +1,9 @@
 # TKA SMP — Production Rollout Plan
 
+> ⚠️ **HISTORIS — bukan sumber kebenaran status.**
+> Rencana ini ditulis pra-rollout; TKA SMP sudah termasuk Production V1 (cutover 2026-09-01).
+> Status terkini: [`docs/STATUS.md`](./STATUS.md).
+
 Status: **PRE-PRODUCTION / NO-GO by default**  
 Scope: promote the validated TKA SMP Schema V2 flow from staging to production **without touching production until every gate below is explicitly approved**.
 

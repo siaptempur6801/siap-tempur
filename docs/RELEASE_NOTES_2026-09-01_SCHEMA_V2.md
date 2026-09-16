@@ -1,5 +1,9 @@
 # Release Notes — Production V1 / Schema V2
 
+> ℹ️ **Catatan status:** "Production accepted" di sini berarti cutover database/runtime Schema V2 selesai.
+> **Domain publik sengaja tidak diaktifkan** (dark launch).
+> Status terkini & blocker: [`docs/STATUS.md`](./STATUS.md).
+
 Release date: **2026-09-01**
 
 Status: **Production accepted**

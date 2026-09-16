@@ -1,5 +1,9 @@
 # Siap Tempur — Execution Roadmap
 
+> ⚠️ **HISTORIS — bukan sumber kebenaran status.**
+> Dokumen ini berhenti diperbarui pada Agustus 2026 (target branch `feat/schema-v2` sudah tidak ada; cutover produksi sudah selesai 2026-09-01).
+> Status terkini: [`docs/STATUS.md`](./STATUS.md).
+
 > **Branch target:** `feat/schema-v2`  
 > **Working mode:** satu milestone harus **COMPLETE** sebelum milestone berikutnya dimulai.  
 > **Production status:** **NO-GO** sampai production cutover gates selesai dan ada approval eksplisit.  
