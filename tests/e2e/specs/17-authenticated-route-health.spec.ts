@@ -91,3 +91,36 @@ test.describe('Route ber-autentikasi tetap sehat', () => {
     });
   }
 });
+
+/**
+ * Halaman inti dipakai banyak siswa dari ponsel; overflow horizontal membuat
+ * konten terpotong dan CTA tidak terjangkau.
+ */
+test.describe('Tanpa overflow horizontal di mobile', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  const MOBILE_ROUTES = [
+    '/cpns/dashboard',
+    '/cpns/dashboard/drilling-materi',
+    '/cpns/dashboard/mini-tryout',
+    '/cpns/dashboard/tryout',
+    '/cpns/dashboard/riwayat',
+    '/cpns/dashboard/beli-paket',
+    '/tka/smp',
+    '/tka/smp/progress',
+    '/tka/smp/pass',
+    '/tka/smp/focus',
+  ];
+
+  for (const route of MOBILE_ROUTES) {
+    test(`${route} muat di 390x844`, async ({ page }) => {
+      await page.goto(route, { waitUntil: 'networkidle' });
+      await page.waitForTimeout(150);
+
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow, `overflow horizontal ${overflow}px di ${route}`).toBeLessThanOrEqual(1);
+    });
+  }
+});
