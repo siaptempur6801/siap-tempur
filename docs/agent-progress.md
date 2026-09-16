@@ -57,6 +57,17 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       saldo token, dihapus lagi): pilih materi → konfirmasi token → sesi dimulai → pilih jawaban →
       "Selanjutnya" sampai soal terakhir → "Kumpulkan jawaban" → modal konfirmasi → **halaman hasil tampil
       dengan skor & pembahasan**, 0 critical console error.
+- [x] **Flow full tryout CPNS diverifikasi end-to-end di browser** (110 soal, user uji dengan track+token):
+      "Mulai Full Tryout" → konfirmasi token → sesi 110 soal → lompat ke soal terakhir lewat navigator →
+      "Kumpulkan jawaban" → modal → **hasil dengan skor + breakdown TWK/TIU/TKP**, 0 critical console error.
+- [x] **Audit empty state** untuk user tanpa data (dashboard, riwayat, ranking, profil, TKA progress):
+      semua route render dengan pesan/CTA, 0 critical error, tidak ada halaman kosong.
+      Ditemukan & diperbaiki: empty state riwayat menampilkan pesan "tidak cocok filter" padahal datanya
+      belum ada → kini dibedakan + CTA "Mulai mini tryout".
+- [x] **Risiko laten jalur drill ditutup:** `findQuestionIdsForKnowledgeNode` kini memakai `chunkValues`
+      untuk kedua filter `.in()` (node + turunannya, dan daftar soal ter-map). Diverifikasi ulang lewat
+      flow drill end-to-end di browser (mulai → jawab → kumpulkan → hasil, 0 critical error) +
+      kontrak test baru.
 - [x] **RLS lintas-user diverifikasi** (dua user uji staging):
       (a) di browser — user B membuka URL sesi & hasil milik A → dialihkan ke `/cpns/dashboard/tryout`,
       tidak ada konten A yang bocor;
@@ -85,13 +96,8 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
 - [ ] Rate limit untuk `startTryout`/`startTkaExam`/`claim_voucher` (kandidat berikutnya, perlu analisis agar tidak mengganggu alur ujian sah).
 - [ ] Regression test replay webhook end-to-end.
-- [ ] **Risiko laten (terukur, belum diperbaiki):** `findQuestionIdsForKnowledgeNode` di
-      `src/repositories/exam.repository.ts` memakai `.in('id', linkedIds)` tanpa batch. Di staging
-      node terbesar punya 150 soal (≈5,5KB URL) — masih aman di bawah batas 16KB, tapi akan pecah
-      seperti bug admin Exams bila bank soal tumbuh ±3×. Belum disentuh karena jalur exam-start adalah
-      flow paling kritis dan belum ada E2E drill-start untuk memverifikasi perubahannya.
-- [ ] Flow drill/mini/full/remedial CPNS & TKA belum diuji end-to-end di browser (butuh token/track aktif
-      pada user uji).
+- [ ] **Flow TKA SMP belum diuji end-to-end di browser** (butuh track TKA aktif + Tempur Pass karena
+      flag monetisasi ON; spec 6/8/9/13 ada tetapi hanya jalan lewat workflow staging ber-OIDC).
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
 - [ ] `components/dashboard/MobileProfileDropdown.tsx` masih berlabel "Riwayat" (label desktop sudah "Hasil") — inkonsistensi copy kecil.
 - [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
@@ -150,7 +156,7 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 ```text
 Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
-Unit        : ✅ 46 file / 212 test (vitest)
+Unit        : ✅ 46 file / 214 test (vitest)
 E2E publik  : ✅ 30 test (chromium-public, termasuk 6 test console-health)
 E2E auth    : ✅ 40 test (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
 Build       : ✅
@@ -178,9 +184,9 @@ Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attemp
 
 ## Next Action
 
-1. Verifikasi flow **full tryout** (110 soal) sampai submit → hasil, lalu bandingkan dengan
-   `11-cpns-rc.spec.ts` yang sudah mencakup start/answer/reload/debit token tetapi belum submit.
-2. Audit loading/empty/error state pada route ber-auth untuk user **tanpa data** (riwayat kosong,
-   ranking kosong, belum ada attempt) — sudah pernah ter-render, belum diperiksa isinya.
-3. Audit RLS lintas-user pada jalur baru yang disentuh (attempt/result) memakai dua user uji.
+1. Verifikasi flow **TKA SMP** end-to-end di browser: user uji dengan track TKA SMP aktif + entitlement
+   Tempur Pass (monetisasi ON), jalankan diagnostic/mini/full → submit → hasil, lalu hapus kembali.
+2. Audit jalur **tulis admin** (buat/edit exam & soal) memakai user admin disposabel: verifikasi bahwa
+   aksi benar-benar tersimpan dan bisa dibersihkan — selama ini baru diverifikasi render (baca).
+3. Audit **loading state** (`loading.tsx`) pada route ber-auth dan halaman publik.
 4. Perbaiki temuan, jalankan lint/typecheck/unit/build/E2E, commit atomic, update dokumen ini.
