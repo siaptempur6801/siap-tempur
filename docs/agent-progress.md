@@ -50,11 +50,15 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [x] `npm run lint` bersih total: 0 error, 0 warning.
 - [x] Verifikasi browser nyata dengan user staging disposabel (dibuat lalu dihapus; 0 sisa):
       login → onboarding → dashboard → beli paket, dan seluruh route ber-auth.
+- [x] Audit `Admin flow` dengan user staging disposabel ber-role ADMIN: 9 route `/admin` —
+      menemukan 1 route rusak, diperbaiki, kini 9/9 sehat.
+- [x] **FIXED** `/admin/assessment/exams` gagal render (error boundary) karena URL PostgREST
+      mencapai 22.594 karakter → `HeadersOverflowError`. Filter `.in()` besar kini di-batch
+      lewat helper bersama `lib/supabase-batch.ts`.
 
 ## In Progress
 
-- [ ] Audit `Admin flow` (`/admin` + modul content/assessment/commerce) di browser memakai user
-      staging disposabel ber-role, lalu hapus role & user-nya.
+- [ ] Audit lanjutan: state loading/empty/error pada route yang datanya kosong vs berisi.
 
 ## Remaining
 
@@ -77,6 +81,8 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 6. Locator landing `HomePage.ts` basi ("SiapTempur TKA SMP") — FIXED (CI merah ±12 hari).
 7. `user_roles` produksi kosong → `/admin` tak bisa diakses — FIXED (admin ditetapkan).
 8. Ledger migrasi remote tidak sinkron → `db push` menolak jalan — FIXED (baseline).
+9. **P1** `/admin/assessment/exams` gagal render (error boundary) karena URL PostgREST melebihi batas
+   header (22.594 karakter, `HeadersOverflowError`) — FIXED (filter `.in()` di-batch).
 
 ## Decisions
 
@@ -106,7 +112,7 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 ```text
 Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
-Unit        : ✅ 45 file / 205 test (vitest)
+Unit        : ✅ 46 file / 212 test (vitest)
 E2E publik  : ✅ 30 test (chromium-public, termasuk 6 test console-health)
 E2E auth    : ✅ 40 test (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
 Build       : ✅
