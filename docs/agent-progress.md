@@ -90,6 +90,12 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       Fakta pendukung: gap-nya **gap publish, bukan gap konten** — draft tersedia TWK 207 / TIU 113 /
       TKP 113, semuanya sudah punya opsi + pembahasan tetapi belum pernah direview (kebijakan
       Production V1 melarang publikasi otomatis soal unreviewed).
+- [x] **Verifikasi header IP di Vercel Production (2026-09-16, Round 7):** `/api/health` melaporkan
+      `clientIpSource` (nama header, bukan IP). Diuji dengan header palsu — `x-real-ip`,
+      `x-forwarded-for`, bahkan `x-vercel-forwarded-for` — sumbernya **tetap** `x-vercel-forwarded-for`,
+      jadi presedensi di kode kita aman dan header kiriman client tidak pernah menang.
+      Cakupan: penimpaan *nilai* oleh Vercel adalah kontrak platform, tidak dibuktikan dari repo.
+      Sisa yang belum dicek: scope **Preview** belum terverifikasi (belum ada deployment Preview).
 - [x] **Upstash dikonfigurasi & diverifikasi (2026-09-16):** kredensial di `.env.local` diuji langsung
       ke Upstash REST (PING → PONG, INCR berhasil, key uji dibersihkan). `/api/health` kini
       mengembalikan `rateLimitStore`. **Terverifikasi di Vercel Production**: deployment `589b824`
@@ -166,8 +172,6 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 
 ## Remaining
 
-- [x] Set `UPSTASH_REDIS_REST_URL`/`_TOKEN` di Vercel — SELESAI & terverifikasi di Production (Round 7); scope Preview belum dicek.
-- [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
 - [ ] TKA memakai `window.confirm()` native sedangkan CPNS memakai modal custom — inkonsistensi UX
       kecil (P3); berfungsi dan sudah ditangani spec.
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
@@ -227,11 +231,11 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 ```text
 Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
-Unit        : ✅ 46 file / 214 test (vitest)
+Unit        : ✅ 46 file / 217 test (vitest)
 E2E publik  : ✅ 30 test (chromium-public, termasuk 6 test console-health)
 E2E auth    : ✅ 40 test (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
 Build       : ✅
-CI GitHub   : ✅ success (main @ df534a6) — lint/typecheck/unit/audit/build/E2E
+CI GitHub   : ✅ success (main @ d7ca496) — lint/typecheck/unit/audit/build/E2E
 ```
 
 Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attempt-deadline`,

@@ -123,7 +123,7 @@ Keduanya **terkonfirmasi AKTIF** di staging (schema dump read-only) **dan di pro
 - ✅ **Validasi zod server-side di auth action (2026-09-16)** — `login`, `signup`, `forgotPassword`, `resetPassword`, `resendVerificationEmail`, `updatePassword`; cast `FormData` yang bisa bernilai `null` juga dihapus. Test: `tests/unit/auth-validation-contract.test.ts`.
 - ✅ **Rate limit aplikasi di auth action (2026-09-16)** — `login` 10/5 menit per IP; `signup` 5/15 menit per IP; `forgotPassword` & `resendVerificationEmail` 10/15 menit per IP **dan** 3/15 menit per email (email di-hash, tidak disimpan mentah). Memakai `checkRateLimit` yang sudah ada (Upstash Redis, fallback in-memory, fail-open saat Redis mati). Test: `tests/unit/auth-rate-limit.test.ts`.
 - ⚠️ **Aksi di luar kode:** set `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` di Vercel (staging & produksi). Tanpa itu limiter jatuh ke in-memory yang **per-instance** dan mudah ditembus di serverless.
-- ⚠️ **Belum diverifikasi:** urutan header IP di `lib/request-ip.ts` (`x-vercel-forwarded-for` → `x-real-ip` → `x-forwarded-for`) belum diuji terhadap deployment Vercel nyata. Sampai terbukti, anggap ini pertahanan tambahan — rate limit Supabase Auth tetap jaring pengaman otoritatif.
+- ✅ **Urutan header IP terverifikasi di produksi (2026-09-16):** `/api/health` kini melaporkan `clientIpSource` (nama header, bukan IP). Diuji dengan mengirim header palsu — `x-real-ip` palsu, `x-forwarded-for` palsu, bahkan `x-vercel-forwarded-for` palsu — sumbernya **tetap** `x-vercel-forwarded-for`, jadi header kiriman client tidak pernah menang. Catatan cakupan: yang terbukti adalah **prioritas nama header** di kode kita; jaminan bahwa Vercel menimpa *nilai* `x-vercel-forwarded-for` adalah kontrak platform Vercel, bukan sesuatu yang bisa dibuktikan dari repo ini. Rate limit Supabase Auth tetap jaring pengaman otoritatif.
 - [ ] Belum ada regression test untuk replay webhook secara end-to-end (unit webhook sudah ada).
 
 ---
@@ -143,7 +143,7 @@ Domain tidak boleh diaktifkan sebelum **semua** ini hijau:
 - [x] Enforcement timer ujian server-side (2026-09-16).
 - [x] Critical user journey diverifikasi di browser: publik (30 test) + ber-auth (30 test: login → onboarding → dashboard, seluruh route CPNS/TKA).
 - [ ] Rate limit efektif lintas instance: env Upstash terpasang di staging & produksi.
-- [ ] Verifikasi header IP tepercaya di deployment nyata (`lib/request-ip.ts`).
+- [x] Verifikasi header IP tepercaya di deployment nyata (2026-09-16) — header palsu tidak menang.
 - [ ] (Disarankan) Product Experience V1.1 selesai.
 
 ### Cara verifikasi cepat
