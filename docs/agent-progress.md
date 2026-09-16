@@ -60,6 +60,20 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [x] **Flow full tryout CPNS diverifikasi end-to-end di browser** (110 soal, user uji dengan track+token):
       "Mulai Full Tryout" → konfirmasi token → sesi 110 soal → lompat ke soal terakhir lewat navigator →
       "Kumpulkan jawaban" → modal → **hasil dengan skor + breakdown TWK/TIU/TKP**, 0 critical console error.
+- [x] **TKA SMP: sesi ujian berjalan** (user uji track SMP aktif, dihapus lagi): `/tka/smp` dashboard,
+      Mini Tryout 2 paket (BIN/MAT) bisa dimulai, sesi memuat soal + opsi (`data-selected`) dan jawaban
+      tersimpan; **Full Tryout menampilkan "Butuh Tempur Pass"** — gate monetisasi server-side bekerja
+      seperti yang diputuskan. Submit TKA belum tuntas (lihat Remaining).
+- [x] **FIXED: Snap dimuat di semua halaman TKA.** `app/tka/layout.tsx` memuat skrip pembayaran Midtrans
+      di setiap halaman TKA ber-login (dashboard, sesi ujian, hasil) — beserta iframe popup
+      `app.sandbox.midtrans.com`. Kini hanya `/tka/[level]/pass` yang memuatnya (halaman itu sudah punya
+      loader sendiri), dan URL sandbox yang di-hardcode diganti `env.midtransSnapScriptUrl()`.
+      Terverifikasi: `/tka/smp` & `/tka/smp/mini-tryout` → 0 skrip Snap, 0 iframe pihak ketiga, 0 pesan CSP;
+      `/tka/smp/pass` → Snap tetap tersedia.
+- [x] **Klarifikasi penting:** pesan "Executing inline script violates Content Security Policy" di console
+      halaman TKA **berasal dari iframe popup Midtrans** (`app.sandbox.midtrans.com/snap/v4/popup`),
+      bukan dari CSP kita (proxy.ts tetap nonce + strict-dynamic). Diverifikasi lewat lokasi/frame pesan —
+      jangan "diperbaiki" dengan melonggarkan CSP kita.
 - [x] **Audit empty state** untuk user tanpa data (dashboard, riwayat, ranking, profil, TKA progress):
       semua route render dengan pesan/CTA, 0 critical error, tidak ada halaman kosong.
       Ditemukan & diperbaiki: empty state riwayat menampilkan pesan "tidak cocok filter" padahal datanya
@@ -96,8 +110,12 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
 - [ ] Rate limit untuk `startTryout`/`startTkaExam`/`claim_voucher` (kandidat berikutnya, perlu analisis agar tidak mengganggu alur ujian sah).
 - [ ] Regression test replay webhook end-to-end.
-- [ ] **Flow TKA SMP belum diuji end-to-end di browser** (butuh track TKA aktif + Tempur Pass karena
-      flag monetisasi ON; spec 6/8/9/13 ada tetapi hanya jalan lewat workflow staging ber-OIDC).
+- [ ] **Flow TKA SMP submit → hasil belum tuntas diuji lokal.** Sesi TKA memakai model per-bagian
+      (`TkaFullExamSessionClient`, tombol "Selesaikan bagian"/"Kirim tryout") dan tipe soal grup
+      Benar/Salah; skrip verifikasi berhasil memulai sesi + menjawab + menekan "Kirim tryout" beserta
+      konfirmasinya, tetapi halaman tidak berpindah ke hasil. Belum jelas apakah ini perilaku yang
+      diharapkan (butuh semua bagian selesai) atau bug. Spec 6/8/9/13 menutup ini lewat workflow staging
+      ber-OIDC; perlu dijalankan atau ditelusuri lebih lanjut.
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
 - [ ] `components/dashboard/MobileProfileDropdown.tsx` masih berlabel "Riwayat" (label desktop sudah "Hasil") — inkonsistensi copy kecil.
 - [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
@@ -184,9 +202,9 @@ Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attemp
 
 ## Next Action
 
-1. Verifikasi flow **TKA SMP** end-to-end di browser: user uji dengan track TKA SMP aktif + entitlement
-   Tempur Pass (monetisasi ON), jalankan diagnostic/mini/full → submit → hasil, lalu hapus kembali.
-2. Audit jalur **tulis admin** (buat/edit exam & soal) memakai user admin disposabel: verifikasi bahwa
-   aksi benar-benar tersimpan dan bisa dibersihkan — selama ini baru diverifikasi render (baca).
-3. Audit **loading state** (`loading.tsx`) pada route ber-auth dan halaman publik.
+1. **Telusuri submit TKA SMP** yang tidak berpindah ke halaman hasil (cek apakah butuh seluruh bagian
+   selesai, atau tombol kirim butuh alur berbeda). Ini satu-satunya langkah flow inti yang belum tuntas.
+2. Audit jalur **tulis admin** (buat/edit exam & soal) memakai user admin disposabel: selama ini baru
+   diverifikasi render (baca).
+3. Audit **loading state** (`loading.tsx`) pada route ber-auth.
 4. Perbaiki temuan, jalankan lint/typecheck/unit/build/E2E, commit atomic, update dokumen ini.
