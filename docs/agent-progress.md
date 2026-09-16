@@ -57,6 +57,8 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       saldo token, dihapus lagi): pilih materi → konfirmasi token → sesi dimulai → pilih jawaban →
       "Selanjutnya" sampai soal terakhir → "Kumpulkan jawaban" → modal konfirmasi → **halaman hasil tampil
       dengan skor & pembahasan**, 0 critical console error.
+- [x] **Flow mini tryout CPNS diverifikasi end-to-end di browser**: "Mulai TWK" → konfirmasi token → sesi →
+      jawab → kumpulkan → **halaman hasil dengan skor & pembahasan**, 0 critical console error.
 - [x] Locator opsi jawaban kini berbasis `data-testid="answer-option-<index>"` (ditambahkan di
       `PracticeSessionClient`); `11-cpns-rc.spec.ts` tidak lagi memakai filter teks `/^A/` yang rapuh.
 - [x] **FIXED** `/admin/assessment/exams` gagal render (error boundary) karena URL PostgREST
@@ -104,6 +106,14 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
     per subjek: TWK 60, TIU **35**, TKP **45** — sedangkan section meminta TWK 30, TIU 35, TKP 45,
     jadi headroom **nol** untuk TIU & TKP (satu soal unpublished → Full/Mini Tryout gagal
     `QUESTION_BANK_INCOMPLETE`). Dari 9 materi Latihan Fokus, **6 belum bisa dimulai** (<30 soal).
+11. **Gap scope (bukan regresi): CPNS tidak punya flow "ulang soal salah"/remedial.** Tidak ada route
+    `app/cpns/**/wrong*` maupun `**/remedial*`, dan `app/actions/tka-remedial.ts` /
+    `tka-wrong-questions.ts` tidak dipakai di `app/cpns`. Yang ada di halaman hasil CPNS hanya
+    "Latihan fokus" (→ drilling-materi), "Lihat semua hasil", dan pembahasan inline. Ini konsisten
+    dengan `docs/FEATURE_STATUS_CHECKLIST.md` (CPNS learning loop belum selesai) dan
+    `docs/PRODUCTION_V1_SCOPE.md` (remedial CPNS tidak termasuk Production V1). Remedial terimplementasi
+    hanya untuk TKA SMP. **Butuh keputusan produk** sebelum dibangun — bukan diimplementasikan
+    sepihak oleh agent.
 
 ## Decisions
 
@@ -161,9 +171,9 @@ Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attemp
 
 ## Next Action
 
-1. Verifikasi flow drill → jawab → evaluasi CPNS di browser: siapkan user uji dengan track CPNS aktif +
-   saldo token, jalankan lewat UI, lalu hapus kembali (butuh penulisan staging yang reversible).
-2. Tambahkan E2E drill-start sebagai gerbang sebelum menyentuh `findQuestionIdsForKnowledgeNode`,
-   lalu batch query tersebut mengikuti pola `lib/supabase-batch.ts`.
-3. Lanjutkan ke flow mini tryout → submit → scoring → result → remedial.
+1. Verifikasi flow **full tryout** (110 soal) sampai submit → hasil, lalu bandingkan dengan
+   `11-cpns-rc.spec.ts` yang sudah mencakup start/answer/reload/debit token tetapi belum submit.
+2. Audit loading/empty/error state pada route ber-auth untuk user **tanpa data** (riwayat kosong,
+   ranking kosong, belum ada attempt) — sudah pernah ter-render, belum diperiksa isinya.
+3. Audit RLS lintas-user pada jalur baru yang disentuh (attempt/result) memakai dua user uji.
 4. Perbaiki temuan, jalankan lint/typecheck/unit/build/E2E, commit atomic, update dokumen ini.
