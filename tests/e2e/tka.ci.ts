@@ -295,7 +295,7 @@ export async function freshDisposableTkaSession(page: Page): Promise<DisposableT
         await page.locator('input[type="password"]').fill(password)
         await page.getByRole('button', { name: 'Masuk', exact: true }).click()
         await page.waitForURL(/\/tka\/smp(?:\?.*)?$/)
-        await expect(page.getByText('Jalur belajar aktif', { exact: true })).toBeVisible()
+        await expect(page.getByTestId('tka-track-active')).toBeVisible()
         await page.context().storageState({ path: authFile })
         return { userId, email, password }
     } catch (error) {

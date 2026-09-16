@@ -154,7 +154,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await page.setViewportSize({ width: 390, height: 844 })
         await page.goto('/tka/smp')
 
-        await expect(page.getByText('Jalur belajar aktif')).toBeVisible()
+        await expect(page.getByTestId('tka-track-active')).toBeVisible()
         await page.goto('/tka/smp/focus')
         const hierarchy = page.getByTestId('tka-learning-hierarchy')
         await expect(hierarchy).toBeVisible()
@@ -195,7 +195,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
         await page.setViewportSize({ width: 1024, height: 768 })
         await page.goto('/tka/smp')
 
-        await expect(page.getByText('Jalur belajar aktif')).toBeVisible()
+        await expect(page.getByTestId('tka-track-active')).toBeVisible()
         await page.goto('/tka/smp/mini-tryout')
         const card = await examCard(page, 'Mini Tryout Matematika TKA SMP')
         await expect(card.getByText('35 menit')).toBeVisible()

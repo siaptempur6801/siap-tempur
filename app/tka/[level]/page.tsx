@@ -293,7 +293,10 @@ export default async function TkaLevelPage({
                 <section className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,0.65fr)]" aria-label="Langkah berikutnya TKA">
                     <TkaNextStep recommendation={recommendation} />
 
-                    <article className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md md:p-6">
+                    <article
+                        data-testid={activeTrack ? 'tka-track-active' : 'tka-track-inactive'}
+                        className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all duration-200 hover:shadow-md md:p-6"
+                    >
                         <div>
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">Status Akses</span>

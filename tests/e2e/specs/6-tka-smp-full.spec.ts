@@ -130,7 +130,7 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await page.goto('/tka/smp')
 
     await expect(page.getByRole('heading', { name: /Apa yang sebaiknya kamu kerjakan hari ini/i })).toBeVisible()
-    await expect(page.getByText('Jalur belajar aktif')).toBeVisible()
+    await expect(page.getByTestId('tka-track-active')).toBeVisible()
 
     const fullCard = page.locator('article').filter({
         has: page.getByRole('heading', { name: 'Tryout Lengkap TKA SMP', exact: true }),

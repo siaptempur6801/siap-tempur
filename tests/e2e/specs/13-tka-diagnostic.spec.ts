@@ -55,7 +55,7 @@ test('TKA SMP diagnostic maps seven competencies and drives the first focused dr
 
     await expect(page.getByText('Baseline tersimpan', { exact: true })).toBeVisible()
     await expect(page.getByText(/28 soal dipetakan/i)).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Mulai dari tiga prioritas ini', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Mulai dari prioritas utama', exact: true })).toBeVisible()
 
     const baselineProjection = await readOwnTkaLearningProjection(learner)
     expect(baselineProjection.knowledge).toHaveLength(0)
