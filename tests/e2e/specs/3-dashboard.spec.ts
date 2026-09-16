@@ -10,10 +10,14 @@ test.describe('Dashboard Flow', () => {
   });
 
   test('menampilkan profil dan statistik ujian', async ({ page }) => {
-    // Verifikasi ada link ke profil dan menu latihan
-    await expect(page.getByRole('link', { name: /Profil/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Tryout/i }).first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /Riwayat/i }).first()).toBeVisible();
+    // Dashboard siap dirender dengan data user.
+    await expect(page.getByTestId('cpns-dashboard-ready')).toBeVisible();
+
+    // Locator berbasis href, bukan label: label navigasi berubah ("Riwayat" -> "Hasil")
+    // dan sebelumnya membuat test ini gagal padahal produknya benar.
+    await expect(page.locator('a[href="/cpns/dashboard/profile"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/cpns/dashboard/tryout"]').first()).toBeVisible();
+    await expect(page.locator('a[href="/cpns/dashboard/riwayat"]').first()).toBeVisible();
   });
 
   test('alur Beli Paket memuat paket yang tersedia', async ({ page }) => {
