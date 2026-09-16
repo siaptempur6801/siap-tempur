@@ -170,7 +170,7 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | Lint | ✅ **0 error, 0 warning** |
 | Typecheck / Unit / Build | ✅ hijau (205 unit test, 45 file) |
 | E2E publik (`chromium-public`) | ✅ 30/30 lolos (termasuk cek console browser) |
-| E2E ber-auth (`chromium-authenticated`) | ✅ 30/30 lolos (login → onboarding → dashboard, 27 route CPNS/TKA) — opt-in, butuh kredensial staging |
+| E2E ber-auth (`chromium-authenticated`) | ✅ 40/40 lolos (login → onboarding → dashboard, 27 route CPNS/TKA, 10 cek overflow mobile) — opt-in, butuh kredensial staging |
 | E2E staging ber-kredensial lain (TKA, content review, admin, CPNS) | butuh kredensial/OIDC; dijalankan lewat workflow khusus |
 | CI | `ci.yml` = lint + typecheck + unit + audit + build + E2E. Workflow E2E staging lain menyala via `pull_request`/`workflow_dispatch` |
 | **Riwayat migrasi remote** | ✅ **disamakan 2026-09-16** (staging & produksi → 155 baris = tepat daftar file repo). `supabase db push` kembali normal: *"Remote database is up to date."* Arsip sebelum baseline: `supabase/migration-history-archive/` |

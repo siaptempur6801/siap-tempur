@@ -44,15 +44,17 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [x] E2E `16-console-health.spec.ts`: halaman publik bebas hydration/uncaught error.
 - [x] E2E `17-authenticated-route-health.spec.ts`: 27 route CPNS/TKA ber-auth merender halaman nyata
       (status < 500, ada `<main>`, tidak kosong, console bersih) + 2 redirect sengaja
-      (`/tka`→`/tka/smp`, `/tka/smp/beli-token`→`/tka/smp/pass`).
+      (`/tka`→`/tka/smp`, `/tka/smp/beli-token`→`/tka/smp/pass`) + 10 route inti bebas overflow
+      horizontal di viewport mobile 390×844.
+- [x] Audit responsif manual: 18 route × {mobile 390×844, tablet 1024×768} = 36 kombinasi, **0 overflow**.
 - [x] `npm run lint` bersih total: 0 error, 0 warning.
 - [x] Verifikasi browser nyata dengan user staging disposabel (dibuat lalu dihapus; 0 sisa):
       login → onboarding → dashboard → beli paket, dan seluruh route ber-auth.
 
 ## In Progress
 
-- [ ] Audit lanjutan: state loading/empty/error dan responsivitas pada route ber-auth (smoke sudah hijau,
-      belum ada pengecekan viewport mobile/tablet untuk route ber-auth).
+- [ ] Audit `Admin flow` (`/admin` + modul content/assessment/commerce) di browser memakai user
+      staging disposabel ber-role, lalu hapus role & user-nya.
 
 ## Remaining
 
@@ -106,7 +108,7 @@ Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
 Unit        : ✅ 45 file / 205 test (vitest)
 E2E publik  : ✅ 30 test (chromium-public, termasuk 6 test console-health)
-E2E auth    : ✅ 30 test (setup + 2 dashboard + 27 route-health) — opt-in, butuh kredensial staging
+E2E auth    : ✅ 40 test (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
 Build       : ✅
 ```
 
