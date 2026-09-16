@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { env } from '@/lib/env'
+import { resolveClientIp, type ClientIpSource } from '@/lib/request-ip'
 import { createAdminClient } from '@/lib/utils/supabase/server'
 import { logger } from '@/lib/logger'
 
@@ -13,7 +14,7 @@ type HealthChecks = {
     leaderboard: boolean
 }
 
-function healthResponse(statusCode: number, checks: HealthChecks) {
+function healthResponse(statusCode: number, checks: HealthChecks, clientIpSource: ClientIpSource) {
     const isOk = Object.values(checks).every(Boolean)
     const deploymentCommitSha = process.env.VERCEL_GIT_COMMIT_SHA ?? null
     const deploymentEnvironment = process.env.VERCEL_ENV ?? null
@@ -27,6 +28,9 @@ function healthResponse(statusCode: number, checks: HealthChecks) {
             status: isOk ? 'ok' : 'degraded',
             checks,
             rateLimitStore,
+            // Nama header yang dipakai sebagai IP client — berguna untuk membuktikan
+            // urutan header aman (header kiriman client tidak boleh menang).
+            clientIpSource,
             timestamp: new Date().toISOString(),
             deploymentCommitSha,
             deploymentEnvironment,
@@ -45,12 +49,13 @@ function healthResponse(statusCode: number, checks: HealthChecks) {
     )
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     const checks: HealthChecks = {
         env: false,
         database: false,
         leaderboard: false,
     }
+    const clientIpSource = resolveClientIp(request.headers).source
 
     try {
         env.supabaseUrl()
@@ -80,5 +85,5 @@ export async function GET() {
         })
     }
 
-    return healthResponse(Object.values(checks).every(Boolean) ? 200 : 503, checks)
+    return healthResponse(Object.values(checks).every(Boolean) ? 200 : 503, checks, clientIpSource)
 }

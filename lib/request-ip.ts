@@ -6,30 +6,37 @@
  * `x-forwarded-for` ditaruh paling akhir dan hanya sebagai fallback: nilai kiriman
  * client bisa ikut terbawa di entri pertama.
  *
- * PENTING — belum diverifikasi terhadap deployment nyata. Sebelum mengandalkan
- * fungsi ini sebagai kontrol keamanan, buktikan dulu di staging:
- *
- *   curl -H 'x-real-ip: 1.2.3.4' \
- *        -H 'x-vercel-forwarded-for: 1.2.3.4' \
- *        -H 'x-forwarded-for: 5.6.7.8' \
- *        https://<staging>/api/health
- *
- * lalu catat nilai yang dibaca aplikasi. Selama belum terbukti, anggap lapis ini
- * sebagai pertahanan tambahan — rate limit bawaan Supabase Auth (per-IP, dihitung
- * dari koneksi TCP, bukan header) tetap menjadi jaring pengaman yang otoritatif.
+ * Untuk memverifikasi urutan ini terhadap deployment nyata, `/api/health`
+ * melaporkan `clientIpSource` (nama header yang dipakai, bukan IP-nya) sehingga
+ * bisa diuji dengan mengirim header palsu dan melihat apakah sumbernya berubah.
  */
-export function getClientIp(headers: Headers): string {
-    const candidates = [
-        headers.get('x-vercel-forwarded-for'),
-        headers.get('x-real-ip'),
-        headers.get('x-forwarded-for'),
-    ]
+export type ClientIpSource =
+    | 'x-vercel-forwarded-for'
+    | 'x-real-ip'
+    | 'x-forwarded-for'
+    | 'fallback'
 
-    for (const candidate of candidates) {
-        if (!candidate) continue
-        const value = candidate.split(',')[0]?.trim()
-        if (value) return value
+const CLIENT_IP_CANDIDATES: readonly Exclude<ClientIpSource, 'fallback'>[] = [
+    'x-vercel-forwarded-for',
+    'x-real-ip',
+    'x-forwarded-for',
+]
+
+export const CLIENT_IP_FALLBACK = '0.0.0.0'
+
+/** Header mana yang dipakai sebagai IP client, beserta nilainya. */
+export function resolveClientIp(headers: Headers): { ip: string; source: ClientIpSource } {
+    for (const candidate of CLIENT_IP_CANDIDATES) {
+        const value = headers.get(candidate)
+        if (!value) continue
+        const ip = value.split(',')[0]?.trim()
+        if (ip) return { ip, source: candidate }
     }
 
-    return '0.0.0.0'
+    return { ip: CLIENT_IP_FALLBACK, source: 'fallback' }
+}
+
+/** IP client untuk rate limiting. */
+export function getClientIp(headers: Headers): string {
+    return resolveClientIp(headers).ip
 }

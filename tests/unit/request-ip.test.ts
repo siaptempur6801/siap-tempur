@@ -1,9 +1,37 @@
 import { describe, expect, it } from 'vitest'
-import { getClientIp } from '../../lib/request-ip'
+import { resolveClientIp, getClientIp } from '../../lib/request-ip'
 
 function headersOf(record: Record<string, string>) {
     return new Headers(record)
 }
+
+describe('resolveClientIp — sumber header', () => {
+    it('melaporkan header platform sebagai sumber saat tersedia', () => {
+        expect(resolveClientIp(headersOf({
+            'x-vercel-forwarded-for': '203.0.113.10',
+            'x-real-ip': '198.51.100.7',
+        }))).toEqual({ ip: '203.0.113.10', source: 'x-vercel-forwarded-for' })
+    })
+
+    it('header palsu kiriman client TIDAK boleh menang atas header platform', () => {
+        const resolved = resolveClientIp(headersOf({
+            'x-real-ip': '10.0.0.1',
+            'x-forwarded-for': '10.0.0.2',
+            'x-vercel-forwarded-for': '203.0.113.10',
+        }))
+        expect(resolved.ip).toBe('203.0.113.10')
+        expect(resolved.source).toBe('x-vercel-forwarded-for')
+    })
+
+    it('jatuh ke x-real-ip lalu x-forwarded-for lalu fallback', () => {
+        expect(resolveClientIp(headersOf({ 'x-real-ip': '198.51.100.7' })))
+            .toEqual({ ip: '198.51.100.7', source: 'x-real-ip' })
+        expect(resolveClientIp(headersOf({ 'x-forwarded-for': '192.0.2.1, 10.0.0.1' })))
+            .toEqual({ ip: '192.0.2.1', source: 'x-forwarded-for' })
+        expect(resolveClientIp(headersOf({})))
+            .toEqual({ ip: '0.0.0.0', source: 'fallback' })
+    })
+})
 
 describe('getClientIp', () => {
     it('mendahulukan header yang di-set platform (x-vercel-forwarded-for)', () => {
