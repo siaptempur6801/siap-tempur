@@ -9,8 +9,9 @@ export class HomePage {
   constructor(page: Page) {
     this.page = page;
     this.loginLink = page.getByRole('link', { name: /^Masuk$/i }).first();
-    this.cpnsCard = page.getByRole('link', { name: /SiapTempur CPNS/i }).first();
-    this.tkaCard = page.getByRole('link', { name: /SiapTempur TKA SMP/i }).first();
+    // Locator berbasis data-testid supaya tidak rapuh terhadap perubahan copywriting.
+    this.cpnsCard = page.getByTestId('program-card-cpns').first();
+    this.tkaCard = page.getByTestId('program-card-tka').first();
   }
 
   async goto() {

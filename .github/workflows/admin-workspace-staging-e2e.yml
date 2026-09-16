@@ -3,7 +3,7 @@ name: Admin Workspace Staging E2E
 on:
   pull_request:
     branches:
-      - feat/schema-v2
+      - main
     paths:
       - 'app/admin/**'
       - 'app/cpns/admin/**'

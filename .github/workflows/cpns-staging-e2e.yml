@@ -9,7 +9,7 @@ on:
         type: string
   pull_request:
     branches:
-      - feat/schema-v2
+      - main
     paths:
       - 'app/actions/practice.ts'
       - 'app/api/practice-sessions/**'

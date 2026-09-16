@@ -348,7 +348,7 @@ export default async function Index() {
                         {productCards.map((product) => {
                             const Icon = product.icon
                             return (
-                                <Link key={product.code} href={product.href} className="st-card-lg st-focus group relative overflow-hidden bg-white p-6 transition-transform hover:-translate-y-1 md:p-8">
+                                <Link key={product.code} href={product.href} data-testid={`program-card-${product.href.replace('/', '')}`} className="st-card-lg st-focus group relative overflow-hidden bg-white p-6 transition-transform hover:-translate-y-1 md:p-8">
                                     <div className={`absolute right-0 top-0 h-40 w-40 translate-x-14 -translate-y-14 rounded-full border-2 border-dashed border-[var(--st-ink)]/25 ${product.surface}`} aria-hidden="true" />
                                     <div className="relative">
                                         <div className="flex flex-wrap items-center justify-between gap-4">

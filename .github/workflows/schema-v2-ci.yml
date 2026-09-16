@@ -3,7 +3,7 @@ name: Schema V2 CI
 on:
   push:
     branches:
-      - feat/schema-v2
+      - main
   pull_request:
     branches:
       - main

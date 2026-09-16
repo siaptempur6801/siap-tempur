@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
   pull_request:
     branches:
-      - feat/schema-v2
       - main
     paths:
       - 'app/actions/tka-**'
