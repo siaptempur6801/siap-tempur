@@ -127,7 +127,7 @@ export default function MobileProfileDropdown({
                             onClick={() => setIsOpen(false)}
                         >
                             <Clock3 size={18} />
-                            Riwayat
+                            Hasil
                         </Link>
 
                         <Link
