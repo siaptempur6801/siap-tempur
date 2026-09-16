@@ -92,7 +92,9 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       Production V1 melarang publikasi otomatis soal unreviewed).
 - [x] **Upstash dikonfigurasi & diverifikasi (2026-09-16):** kredensial di `.env.local` diuji langsung
       ke Upstash REST (PING → PONG, INCR berhasil, key uji dibersihkan). `/api/health` kini
-      mengembalikan `rateLimitStore` sehingga status redis-vs-memory bisa diverifikasi dari luar.
+      mengembalikan `rateLimitStore`. **Terverifikasi di Vercel Production**: deployment `589b824`
+      → `{"status":"ok","rateLimitStore":"redis",...}` (diakses memakai `VERCEL_AUTOMATION_BYPASS_SECRET`).
+      Scope Preview/staging belum diverifikasi.
 - [x] **Push ke `main` + CI hijau (2026-09-16):** 35 commit di-push (`b04e23f..df534a6`). GitHub Actions:
       **CI success** (lint, typecheck, unit, security audit, build, E2E) dan **Schema V2 CI success**;
       deployment Vercel Production **success**. Domain `siaptempur.id` tetap sengaja ditahan.
@@ -164,7 +166,7 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 
 ## Remaining
 
-- [ ] Set `UPSTASH_REDIS_REST_URL`/`_TOKEN` di Vercel (staging & produksi) agar rate limit lintas instance.
+- [x] Set `UPSTASH_REDIS_REST_URL`/`_TOKEN` di Vercel — SELESAI & terverifikasi di Production (Round 7); scope Preview belum dicek.
 - [ ] Verifikasi empiris header IP (`lib/request-ip.ts`) terhadap deployment Vercel nyata.
 - [ ] TKA memakai `window.confirm()` native sedangkan CPNS memakai modal custom — inkonsistensi UX
       kecil (P3); berfungsi dan sudah ditangani spec.
