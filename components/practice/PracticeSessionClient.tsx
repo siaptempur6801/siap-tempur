@@ -240,6 +240,7 @@ const QuestionOptionCard = memo(function QuestionOptionCard({
         <>
             <button
                 type="button"
+                data-testid={`answer-option-${index}`}
                 onClick={() => onSelect(option.id)}
                 className={cn(
                     "w-full px-3 py-1.5 md:px-4 md:py-2 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-4 group relative overflow-hidden text-left touch-manipulation",

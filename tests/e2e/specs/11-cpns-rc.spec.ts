@@ -86,7 +86,9 @@ test.describe('CPNS SKD release-candidate', () => {
     await expect(page.getByText('dari 110', { exact: true })).toBeVisible()
 
     // Answer question 1 and wait for the Next.js server action response.
-    const firstOption = page.locator('button').filter({ hasText: /^A/ }).first()
+    // Locator berbasis data-testid, bukan teks tombol: filter teks /^A/ cocok
+    // dengan tombol apa pun yang diawali "A" dan rapuh terhadap perubahan copy.
+    const firstOption = page.getByTestId('answer-option-0').first()
     await expect(firstOption).toBeVisible()
     const answerSaved = page.waitForResponse((response) => {
       const request = response.request()
@@ -103,7 +105,7 @@ test.describe('CPNS SKD release-candidate', () => {
     // from client state/localStorage.
     await page.reload(NAVIGATION_OPTIONS)
     await expect(page).toHaveURL(fullSessionUrl)
-    const persistedFirstOption = page.locator('button').filter({ hasText: /^A/ }).first()
+    const persistedFirstOption = page.getByTestId('answer-option-0').first()
     await expect(persistedFirstOption).toHaveClass(/border-blue-600/)
 
     // Returning to listing shows the one-token debit and active resume state.
