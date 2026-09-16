@@ -80,6 +80,12 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       halaman TKA **berasal dari iframe popup Midtrans** (`app.sandbox.midtrans.com/snap/v4/popup`),
       bukan dari CSP kita (proxy.ts tetap nonce + strict-dynamic). Diverifikasi lewat lokasi/frame pesan —
       jangan "diperbaiki" dengan melonggarkan CSP kita.
+- [x] **Audit performa bundel (§22):** total JS client 3,4 MB / 74 chunk. Chunk terbesar: **tiptap 492 KB**
+      — hanya diimpor `components/admin/ArticleRichTextEditor.tsx` dan `RichTextBlockEditor.tsx`, jadi
+      **tidak bocor ke jalur learner**; `katex` 276 KB memang dibutuhkan untuk soal matematika; sisanya
+      vendor inti. Tidak ditemukan kebocoran pustaka berat ke halaman ujian.
+- [x] **Loading state dilengkapi:** `loading.tsx` untuk `/tka/[level]/tryout`, `/mini-tryout`, dan `/riwayat`
+      (sebelumnya hanya CPNS yang punya padanannya). Total 29 `loading.tsx`.
 - [x] **Audit akhir (Round 4):**
       (a) Semua 6 workflow GitHub valid: trigger sudah ke `main`, seluruh referensi file ada, dan nama
       project Playwright cocok (CPNS memakai `--config=playwright.cpns-rc.config.ts` dengan project
@@ -129,12 +135,9 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [ ] Rate limit untuk `startTryout`/`startTkaExam`/`claim_voucher` (kandidat berikutnya, perlu analisis agar tidak mengganggu alur ujian sah).
 - [ ] **CI `main` di GitHub belum hijau** — perbaikan sudah di-commit lokal, tetapi push ke `main`
       memicu deploy produksi Vercel sehingga menunggu konfirmasi eksplisit pengguna.
-- [ ] `loading.tsx` belum ada untuk sebagian route masuk TKA (`/tka/[level]/tryout`,
-      `/tka/[level]/mini-tryout`, `/tka/[level]/riwayat`) — polish P3, bukan blocker.
+- [x] `loading.tsx` untuk route masuk TKA (`tryout`, `mini-tryout`, `riwayat`) — SELESAI (Round 5), total 29 file.
 - [ ] TKA memakai `window.confirm()` native sedangkan CPNS memakai modal custom — inkonsistensi UX
       kecil (P3); berfungsi dan sudah ditangani spec.
-- [ ] **Flow TKA SMP submit → hasil:** sudah diverifikasi lokal (lihat Completed); spec 6/8/13 di
-      workflow staging ber-OIDC tetap menjadi gerbang resminya.
 - [ ] Regression test replay webhook end-to-end (unit webhook sudah ada).
 - [ ] TKA SD/SMA: saat ini menampilkan "segera hadir" (sesuai scope Production V1) — diputuskan ditunda.
 - [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
