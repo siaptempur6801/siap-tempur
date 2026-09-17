@@ -21,6 +21,8 @@ import ArticlePreviewCard from '@/components/articles/ArticlePreviewCard'
 import TrackedLink from '@/components/analytics/TrackedLink'
 import CpnsLandingInteractions, { CpnsEventCountdown } from '@/components/home/CpnsLandingInteractions'
 import ProgressBar from '@/components/ui/ProgressBar'
+import { Mascot, MascotPair } from '@/components/brand/Mascot'
+import { Doodle, MascotBubble, Sticker, WashiTape } from '@/components/brand/playful'
 
 export type CpnsLandingUser = { id: string } | null
 
@@ -269,10 +271,14 @@ export default function CpnsProductLandingV12({
 
                 <div className="px-container-marketing relative grid items-center gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14">
                     <div>
-                        <div className="st-kicker"><Sparkles size={15} /> Persiapan SKD · TWK · TIU · TKP</div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="st-kicker"><Sparkles size={15} /> Persiapan SKD · TWK · TIU · TKP</div>
+                            <Sticker tone="amber" rotate="right" className="hover-wiggle">Gratis buat mulai</Sticker>
+                        </div>
                         <h1 className="st-heading-display mt-5 max-w-4xl text-[2.7rem] sm:text-6xl md:text-7xl">
                             Bukan cuma latihan SKD. <span className="text-blue-600">Tahu bagian mana yang harus kamu kejar.</span>
                         </h1>
+                        <Doodle variant="squiggle" className="mt-4 hidden md:block" />
                         <p className="st-muted mt-5 max-w-2xl text-base font-semibold leading-relaxed sm:text-lg md:text-xl">
                             Ukur kemampuan lewat Drill, Mini Tryout, atau Full Tryout. Baca hasilnya, pelajari pembahasan, lalu kembali ke materi yang memang masih lemah.
                         </p>
@@ -286,6 +292,7 @@ export default function CpnsProductLandingV12({
                             <Button size="lg" variant="outline" asChild>
                                 <a href="#mulai-dari-mana">Aku mulai dari mana?</a>
                             </Button>
+                            <Doodle variant="star" className="hidden -rotate-12 md:block" />
                         </div>
 
                         <div className="mt-7 grid grid-cols-2 gap-x-4 gap-y-3 text-sm font-bold text-gray-600 sm:flex sm:flex-wrap sm:gap-x-5">
@@ -295,10 +302,17 @@ export default function CpnsProductLandingV12({
                                 </span>
                             ))}
                         </div>
+
+                        <div className="mt-8 hidden items-end gap-4 sm:flex">
+                            <MascotBubble name="tama" size="sm" bubbleTone="blue" priority className="flex-1">
+                                Hai! Aku <b>Tama</b>. Kita cek dulu bagian mana yang paling perlu dikejar, ya — biar latihannya nggak acak.
+                            </MascotBubble>
+                            <Mascot name="tara" size="sm" tone="plain" priority className="hidden shrink-0 md:inline-flex animate-bob" />
+                        </div>
                     </div>
 
                     <div className="st-card-lg relative bg-white p-4 sm:p-5 md:p-7">
-                        <div className="absolute -top-3 left-1/2 h-7 w-24 -translate-x-1/2 -rotate-2 border-x border-white/60 bg-[var(--st-yellow)]/80" aria-hidden="true" />
+                        <WashiTape className="-top-3 left-1/2 -translate-x-1/2" />
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <p className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-700 sm:text-xs">Contoh tampilan evaluasi</p>
@@ -363,7 +377,10 @@ export default function CpnsProductLandingV12({
             <section id="peta-skd" className="scroll-mt-24 px-4 py-14 md:px-8 md:py-20 lg:py-24">
                 <div className="px-container-marketing">
                     <div className="max-w-3xl">
-                        <div className="st-kicker">Peta SKD</div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="st-kicker">Peta SKD</div>
+                            <Sticker tone="blue" rotate="left" className="hover-wiggle">TWK · TIU · TKP</Sticker>
+                        </div>
                         <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Masuk dari TWK, TIU, atau TKP. Turun sampai bagian yang memang ingin kamu latih.</h2>
                         <p className="st-muted mt-4 text-base font-semibold leading-relaxed sm:text-lg">Drill mengikuti struktur materi agar latihan terasa fokus, bukan sekadar mengambil soal acak dari satu bank besar.</p>
                     </div>
@@ -434,7 +451,10 @@ export default function CpnsProductLandingV12({
             <section id="latihan" className="scroll-mt-24 px-4 py-14 md:px-8 md:py-20 lg:py-24">
                 <div className="px-container-marketing">
                     <div className="max-w-3xl">
-                        <div className="st-kicker">Pilih sesuai kebutuhan</div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="st-kicker">Pilih sesuai kebutuhan</div>
+                            <Sticker tone="green" rotate="right" className="hover-wiggle">3 mode latihan</Sticker>
+                        </div>
                         <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Mengukur, memperdalam, dan menguji kesiapan adalah kebutuhan yang berbeda.</h2>
                     </div>
                     <div className="mt-8 grid gap-4 lg:grid-cols-3 lg:gap-5">
@@ -595,21 +615,28 @@ export default function CpnsProductLandingV12({
             </section>
 
             <section id="final-cta" className="px-4 pb-16 pt-6 md:px-8 md:pb-24 lg:pb-28">
-                <div className="px-container-marketing rounded-st-2xl border-2 border-[var(--st-ink)] bg-blue-600 px-5 py-8 text-white st-shadow-md sm:px-6 sm:py-10 md:px-10 md:py-14">
+                <div className="px-container-marketing relative rounded-st-2xl border-2 border-[var(--st-ink)] bg-blue-600 px-5 py-8 text-white st-shadow-md sm:px-6 sm:py-10 md:px-10 md:py-14">
+                    <Doodle variant="dots" className="absolute right-8 top-6 hidden opacity-40 md:block" />
                     <div className="grid items-center gap-7 lg:grid-cols-[1fr_auto] lg:gap-8">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border-2 border-white/70 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.1em]"><Sparkles size={14} /> Persiapan SKD yang lebih terarah</div>
                             <h2 className="mt-5 max-w-3xl font-display text-4xl font-black leading-tight md:text-6xl">Jangan mulai lagi dari nol setiap selesai tryout.</h2>
                             <p className="mt-4 max-w-2xl text-sm font-semibold leading-relaxed text-blue-100 sm:text-base">Ukur kemampuan, baca hasilnya, lalu fokus memperbaiki TWK, TIU, atau TKP yang masih perlu dikejar.</p>
                         </div>
-                        <Button variant="white" size="lg" asChild><TrackedLink href={primaryAccountHref} eventName="px_landing_cta" eventProperties={{ program: 'cpns', surface: 'landing', cta: 'final_start' }}>{user ? 'Lanjutkan belajar' : 'Mulai belajar CPNS'} <ArrowRight size={18} /></TrackedLink></Button>
+                        <div className="flex flex-wrap items-center gap-3 lg:flex-col lg:items-stretch">
+                            <MascotPair size="xs" tone="plain" className="mb-1 hidden justify-center lg:flex" />
+                            <Button variant="white" size="lg" asChild><TrackedLink href={primaryAccountHref} eventName="px_landing_cta" eventProperties={{ program: 'cpns', surface: 'landing', cta: 'final_start' }}>{user ? 'Lanjutkan belajar' : 'Mulai belajar CPNS'} <ArrowRight size={18} /></TrackedLink></Button>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <footer className="border-t border-gray-200 bg-white px-4 py-8 md:px-8">
                 <div className="px-container-marketing flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                    <div><Link href="/" className="font-script text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link><p className="st-muted mt-1 text-sm font-semibold">Persiapan SKD CPNS dengan latihan yang lebih terarah.</p></div>
+                    <div className="flex items-center gap-3">
+                        <MascotPair size="xs" tone="plain" className="hidden shrink-0 sm:inline-flex" />
+                        <div><Link href="/" className="font-script text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link><p className="st-muted mt-1 text-sm font-semibold">Persiapan SKD CPNS dengan latihan yang lebih terarah.</p></div>
+                    </div>
                     <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600"><Link href="/" className="hover:text-blue-700">Beranda</Link><Link href="/tka" className="hover:text-green-700">TKA</Link><Link href="/blog" className="hover:text-blue-700">Artikel</Link><Link href="/syarat-ketentuan" className="hover:text-blue-700">Syarat & Ketentuan</Link><Link href="/kebijakan-privasi" className="hover:text-blue-700">Privasi</Link></div>
                 </div>
                 <div className="px-container-marketing mt-6 border-t border-gray-200 pt-5 text-xs font-semibold text-gray-500">© SiapTempur Indonesia</div>
