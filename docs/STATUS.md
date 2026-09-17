@@ -179,8 +179,8 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | Typecheck / Unit / Build | ✅ hijau (234 unit test, 48 file) |
 | E2E publik (`chromium-public`) | ✅ 30/30 lolos (termasuk cek console browser) |
 | E2E ber-auth (`chromium-authenticated`) | ✅ 40/40 lolos (login → onboarding → dashboard, 27 route CPNS/TKA, 10 cek overflow mobile) — opt-in, butuh kredensial staging |
-| E2E staging ber-kredensial lain (TKA, content review, admin, CPNS) | butuh kredensial/OIDC; dijalankan lewat workflow khusus |
-| CI | **hijau di GitHub** (2026-09-16): `main` @ `df534a6` → CI **success** (lint, typecheck, unit, security audit, build, E2E) dan Schema V2 CI **success**; deployment produksi Vercel **success** (domain tetap ditahan). Workflow E2E staging lain menyala via `pull_request`/`workflow_dispatch` |
+| E2E staging ber-kredensial lain (TKA, content review, admin, CPNS) | dijalankan lewat workflow khusus berbasis GitHub OIDC. **Hasil Round 8:** CPNS Staging E2E ✅, Admin Workspace Staging E2E ✅ (keduanya di deployment Vercel **Preview** ber-env staging), TKA SMP Staging E2E diperbaiki bertahap (detail di `docs/agent-progress.md`) |
+| CI | **hijau di GitHub** (`22057ac`, `34bb466`): CI **success** (lint, typecheck, unit, security audit, build, E2E) dan Schema V2 CI **success**; deployment produksi Vercel sukses (domain tetap ditahan) |
 | **Riwayat migrasi remote** | ✅ **disamakan 2026-09-16** (staging & produksi → 155 baris = tepat daftar file repo). `supabase db push` kembali normal: *"Remote database is up to date."* Arsip sebelum baseline: `supabase/migration-history-archive/` |
 | CSP | satu sumber: nonce + `strict-dynamic` di `proxy.ts` (CSP statis di `next.config.ts` sudah dihapus) |
 | RLS lintas-user | ✅ diverifikasi 2026-09-16 di browser **dan** database (user lain → 0 baris; `attempt_questions`/`attempt_answers` tanpa SELECT untuk `authenticated`) |
@@ -197,6 +197,28 @@ Terbukti di browser: pada Soal 12/12, satu klik opsi jawaban → 700 ms kemudian
 **Soal 1 dari 12**. Diperbaiki dengan mempersistensi posisi per attempt+bagian (pola yang sudah dipakai
 `TkaFullExamSessionClient`) lewat helper bersama `lib/session-progress.ts`.
 Regression test: `tests/unit/session-progress.test.ts`, `tests/unit/tka-section-confirm-contract.test.ts`.
+
+**Halaman hasil TKA bisa terputus di tengah stream.** `gamificationService.getAttemptReward` dipanggil
+tanpa penanganan error; lookup itu memakai klien privileged sedangkan workflow E2E staging sengaja
+tidak memegang service role asli. Akibatnya render terputus dan panel "Fokus belajar berikutnya" tidak
+pernah sampai ke browser (hanya sebagian halaman yang terlihat). Dibuktikan lokal dengan env identik CI:
+`/result?completed=1` → panel 0; `/result` (lookup dilewati) → panel 1.
+Kini lookup dibungkus `try/catch` + `logger.warn` seperti lookup opsional lain di halaman itu, sehingga
+gangguan modul gamifikasi tidak lagi merusak halaman hasil ujian.
+
+### Temuan operasional Round 8
+
+- **Gate CPNS/Admin butuh deployment Preview, bukan Production.** Push ke `main` membuat deployment
+  Production yang memakai Supabase **produksi**, sehingga user staging disposabel ditolak
+  (`Email atau password salah`). Solusi: PR → Vercel membuat deployment **Preview** ber-env staging;
+  resolver `scripts/resolve_vercel_preview.mjs` memverifikasi `deploymentCommitSha === expectedSha`.
+- **Upstash juga aktif di scope Preview** — `/api/health` pada deployment Preview mengembalikan
+  `rateLimitStore: "redis"` dengan `deploymentEnvironment: "preview"` (item terbuka ini tertutup).
+- **Gate TKA kini hermetis:** flag `tka.smp.monetization_enforcement` adalah state global staging;
+  workflow me-resetnya ke OFF **sebelum** E2E agar sisa run gagal tidak meracuni run berikutnya.
+- **Hygiene staging:** 17 user CI tertinggal (`ci-*`, sejak 2026-09-01) dan seluruh user disposabel
+  `dsh-*` sudah dihapus; sisa 0.
+- `content-review-staging-e2e.yml` belum bisa dijalankan: runner self-hosted macOS ARM64 (`192`) offline.
 
 ---
 

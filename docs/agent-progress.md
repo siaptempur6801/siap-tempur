@@ -192,28 +192,47 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 
 ## In Progress
 
-- [ ] **Gerbang acceptance staging (Round 8) — run pertama `workflow_dispatch` di `777203b`:**
+- [x] **Gerbang acceptance staging (Round 8) — HIJAU ketiganya pada `746484a`:**
 
-  | Gate | Hasil | Akar masalah |
+  | Gate | Hasil | Bukti |
   |---|---|---|
-  | TKA SMP Staging E2E (`35138490726`) | ❌ gagal di **setup** | Assertion memakai teks `Jalur belajar aktif` yang sudah tidak ada; UI merender `Jalur belajar SMP aktif. …` → **FIXED di `3f4e667`** |
-  | CPNS Staging E2E (`35138586647`) | ❌ gagal di **setup** | Login user staging disposabel ditolak di deployment yang dipakai (toast `Email atau password salah`) |
-  | Admin Workspace Staging E2E (`35138597772`) | ❌ gagal di **setup** | Sebab sama dengan CPNS |
-  | CI + Schema V2 CI (`777203b`, `3f4e667`) | ✅ success | — |
+  | TKA SMP Staging E2E | ✅ **success 16/16** | run `35178413012` @ `746484a` |
+  | CPNS Staging E2E | ✅ **success** | run `35178859433` @ `746484a` |
+  | Admin Workspace Staging E2E | ✅ **success** | run `35178865618` @ `746484a` |
+  | CI + Schema V2 CI | ✅ success | setiap commit Round 8 |
+  | `content-review-staging-e2e.yml` | ⛔ tidak bisa dijalankan | runner self-hosted macOS ARM64 (`192`) offline |
 
-  **Akar masalah CPNS/Admin:** deployment yang saya pakai sebagai `preview_url` adalah deployment
-  **Production** (dibuat otomatis oleh push ke `main`), yang memakai Supabase **produksi** — bukan
-  staging. Dibuktikan: kredensial yang sama **berhasil** login langsung ke staging Supabase, tetapi
-  **ditolak** di deployment tersebut (toast `Email atau password salah`).
-  Gate CPNS/Admin memang memerlukan deployment **Preview** (env staging) dan resolver
-  `scripts/resolve_vercel_preview.mjs` memverifikasi `deploymentCommitSha === expectedSha`.
-  Vercel **tidak** membuat deployment Preview untuk push branch biasa (`rc/staging-gates`), hanya
-  Production untuk `main` → jalan yang disetujui pengguna: buka **PR** agar Vercel membuat Preview
-  (env staging) dan workflow `pull_request` meng-auto-resolve URL-nya.
+  **Kunci agar gate CPNS/Admin bisa berjalan:** `main` hanya menghasilkan deployment **Production**
+  (Supabase produksi) sehingga user staging disposabel ditolak (`Email atau password salah`).
+  Solusinya **PR #35** (`rc/staging-gates`) → Vercel membuat deployment **Preview** ber-env staging;
+  resolver `scripts/resolve_vercel_preview.mjs` memverifikasi `deploymentCommitSha === expectedSha`.
+  Bonus temuan: **Upstash aktif juga di scope Preview** (`rateLimitStore: redis`).
 
-  **Hygiene:** 17 user CI tertinggal (`ci-tka-*`, `ci-admin-*`, `ci-cpns-*`, sejak 2026-09-01) sudah
-  dihapus dari staging; sisa `ci-*` = 0. Penyebabnya cleanup Edge Function `ci-e2e-*` pernah gagal
-  (`CI_E2E_CPNS_FAILED` 500) — perlu ditelusuri bila terulang.
+  **Akar masalah TKA yang sudah diperbaiki:**
+  1. Assertion basi: teks `Jalur belajar aktif` (UI kini `Jalur belajar SMP aktif. …`), heading
+     dashboard, `diagnostic-recommendation-card` (hanya kartu sekunder → maks 2), navigator CPNS
+     (`aria-label="Buka soal 110"`), link `Tempur Pass` di mobile. → marker stabil + copy benar.
+  2. URL hasil kini `…/result?completed=1` sehingga regex `/result$` tidak pernah cocok.
+  3. **Bug produk (P1)**: `gamificationService.getAttemptReward` di halaman hasil dipanggil tanpa
+     try/catch; lookup itu memakai klien privileged sedangkan workflow CI sengaja tanpa service role
+     asli → render **terputus di tengah stream** dan panel "Fokus belajar berikutnya" tidak pernah
+     sampai ke browser. Dibuktikan lokal dengan env identik CI: `?completed=1` → panel 0,
+     tanpa query → panel 1. Kini dibungkus try/catch + `logger.warn` (degradasi rapi).
+  4. Gate tidak hermetis: flag `tka.smp.monetization_enforcement` adalah state global staging; sisa
+     run yang gagal membuat spec 6/8 gagal karena tombol berubah jadi `Butuh Tempur Pass`.
+     Workflow kini me-reset flag ke OFF **sebelum** E2E (sebelumnya hanya sesudah).
+  5. **Flaky sistematis karena rate limiter kita sendiri:** suite staging membuat belasan user
+     disposabel dan login berkali-kali dari satu alamat runner, sedangkan limiter auth membatasi
+     login 10x/5 menit per IP → sebagian login ditolak dan halaman berakhir di `/login`.
+     Ditambahkan bypass eksplisit `E2E_DISABLE_AUTH_RATE_LIMIT=1` yang **hanya** diset di tiga
+     workflow gate staging; default tanpa env tetap ketat (ada unit test untuk keduanya).
+  6. Assertion basi lanjutan: kartu exam pindah dari dashboard ke `/tka/smp/tryout` (dan
+     `/mini-tryout`), Full Tryout ber-`access_type = PREMIUM` sehingga spec 6 perlu Tempur Pass,
+     label CTA remedial `Mulai Remedial (10 Soal)`, dan link bank soal salah tidak dirender saat
+     antrean remedial otomatis aktif (diverifikasi lewat deep link).
+
+  **Hygiene:** 17 user CI tertinggal (`ci-*`, sejak 2026-09-01) + seluruh user disposabel `dsh-*`
+  sudah dihapus dari staging; sisa = 0.
 
   Catatan: `content-review-staging-e2e.yml` tidak dapat dijalankan karena memakai runner self-hosted
   macOS ARM64 (`192`) yang offline.
@@ -256,6 +275,11 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
     (Round 8). Klien full-exam tidak terpengaruh karena sudah mempersistensi posisi.
 13. Inkonsistensi UX: alur ujian TKA memakai `window.confirm()` native sementara CPNS memakai modal —
     FIXED (Round 8) dengan satu komponen modal bersama + helper spec E2E.
+14. **P1** halaman hasil TKA terputus di tengah stream karena `getAttemptReward` (klien privileged)
+    dipanggil tanpa try/catch; panel "Fokus belajar berikutnya" tidak pernah sampai ke browser —
+    FIXED + dibuktikan lokal dengan env identik CI.
+15. **Flaky gate** karena rate limiter auth kita sendiri memblokir login ke-11+ dari satu alamat
+    runner — FIXED dengan bypass eksplisit khusus gate staging (default tetap ketat).
 
 ## Decisions
 
@@ -287,7 +311,7 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 ```text
 Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
-Unit        : ✅ 48 file / 234 test (vitest)
+Unit        : ✅ 48 file / 236 test (vitest)
 E2E publik  : ✅ 30/30 (chromium-public, termasuk 6 test console-health)
 E2E auth    : ✅ 40/40 (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
 Build       : ✅
