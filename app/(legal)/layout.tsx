@@ -2,6 +2,11 @@ import PaperBackground from '@/components/PaperBackground'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
+// CSP memakai nonce per-request (lihat `proxy.ts`), jadi halaman ini harus dirender dinamis.
+// Sebelumnya halaman statis memakai nonce hasil build sehingga script-nya diblokir CSP.
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default function LegalLayout({
     children,
 }: {
@@ -11,7 +16,7 @@ export default function LegalLayout({
         <div className="min-h-screen bg-[#fdfbf7] font-sans relative">
             <PaperBackground variant="light" />
 
-            <div className="relative z-10 max-w-4xl mx-auto px-6 py-12">
+            <main className="relative z-10 max-w-4xl mx-auto px-6 py-12">
                 <Link href="/" className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-8 font-display text-xl font-bold transition-colors">
                     <ArrowLeft className="w-5 h-5 mr-2" />
                     Kembali ke Beranda
@@ -29,7 +34,7 @@ export default function LegalLayout({
                 <div className="mt-8 text-center text-gray-500 font-display text-sm">
                     &copy; {new Date().getFullYear()} SiapTempur. Hak Cipta Dilindungi.
                 </div>
-            </div>
+            </main>
         </div>
     )
 }

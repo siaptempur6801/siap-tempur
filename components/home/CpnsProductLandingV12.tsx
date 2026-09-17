@@ -393,7 +393,13 @@ export default function CpnsProductLandingV12({
                                 <div className="mt-4 space-y-2">
                                     {item.items.map((detail) => <div key={detail} className="flex items-center gap-2 text-sm font-bold text-gray-700"><CheckCircle2 size={16} className="text-green-600" />{detail}</div>)}
                                 </div>
-                                <TrackedLink href={drillHref} eventName="px_landing_cta" eventProperties={{ program: 'cpns', surface: 'landing', cta: `skd_map_${item.code.toLowerCase()}`, mode: 'latihan_fokus' }} className="st-focus mt-5 inline-flex min-h-11 items-center gap-2 font-black text-blue-700">
+                                <TrackedLink
+                                    href={drillHref}
+                                    aria-label={`Buka peta Drill ${item.code}`}
+                                    eventName="px_landing_cta"
+                                    eventProperties={{ program: 'cpns', surface: 'landing', cta: `skd_map_${item.code.toLowerCase()}`, mode: 'latihan_fokus' }}
+                                    className="st-focus mt-5 inline-flex min-h-11 items-center gap-2 font-black text-blue-700"
+                                >
                                     Buka peta Drill <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
                                 </TrackedLink>
                             </article>

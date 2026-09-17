@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { ArrowLeft, Home } from 'lucide-react'
 import { MascotBubble } from '@/components/brand/playful'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default function NotFound() {
     return (
         <main className="st-product flex min-h-screen items-center justify-center bg-[#fbfaf7] px-4 py-12 font-body">

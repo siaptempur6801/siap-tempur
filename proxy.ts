@@ -93,7 +93,10 @@ export async function proxy(request: NextRequest) {
     const nonce = crypto.randomUUID().replace(/-/g, '')
     const csrfToken = crypto.randomUUID()
 
-    const upgradeInsecureRequests = process.env.NODE_ENV === 'production'
+    // `upgrade-insecure-requests` hanya untuk host non-loopback: pada `next start` lokal
+    // (NODE_ENV=production) flag ini membuat browser meng-upgrade request http ke https
+    // sehingga memunculkan ERR_SSL_PROTOCOL_ERROR di dev/E2E.
+    const upgradeInsecureRequests = process.env.NODE_ENV === 'production' && !isLoopbackHostname(request.nextUrl.hostname)
         ? 'upgrade-insecure-requests;'
         : ''
 

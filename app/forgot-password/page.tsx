@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default function ForgotPasswordPage() {
     return (
         <main className="st-product relative min-h-screen overflow-hidden bg-[var(--st-paper)] px-4 py-6 font-body md:px-8">

@@ -25,11 +25,20 @@ export default async function DashboardLayout({
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    const nonce = (await headers()).get('x-nonce') || undefined
+    const requestHeaders = await headers()
+    const nonce = requestHeaders.get('x-nonce') || undefined
+    const pathname = requestHeaders.get('x-pathname') ?? ''
 
     if (!user) {
         redirect('/login')
     }
+
+    // Sesi pengerjaan tryout punya layout full-screen sendiri
+    // (`tryout/[sessionId]/layout.tsx`) yang menyatakan "tanpa sidebar".
+    // Karena layout bersarang tidak menggantikan layout induk, shell di sini harus dilewati
+    // agar soal tidak dirender di dalam kerangka dashboard.
+    const isSessionSurface = /^\/cpns\/dashboard\/tryout\/[^/]+/.test(pathname)
+    if (isSessionSurface) return <>{children}</>
 
     let { data: profile } = await supabase
         .from('profiles')

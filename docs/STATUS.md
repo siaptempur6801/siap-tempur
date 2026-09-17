@@ -296,3 +296,35 @@ di mobile & desktop (0 overflow, 0 page error).
 2. Migration ke staging boleh dijalankan setelah project ref diverifikasi; **produksi wajib GO eksplisit**.
 3. Jangan deploy, jangan ubah env produksi, jangan commit otomatis tanpa diminta.
 4. Detail aturan kerja: `AGENTS.md`.
+
+## Audit UI/UX menyeluruh (2026-09-17)
+
+Audit dijalankan dengan harness otomatis: 122 pemuatan halaman (20 rute publik × 3 viewport +
+32 rute ber-autentikasi × 2 viewport, peran TKA/CPNS/Admin) yang memeriksa status HTTP, error
+console, pelanggaran CSP, overflow horizontal, jumlah `<h1>`/landmark, tautan login yang bocor ke
+pengguna login, nama tautan duplikat, dan target sentuh kecil.
+
+**Diperbaiki (P1/P2):**
+
+| Temuan | Dampak | Perbaikan |
+|---|---|---|
+| Pelanggaran CSP di `/syarat-ketentuan`, `/kebijakan-privasi`, `/kebijakan-pengembalian`, `/forgot-password`, `/auth/reset-password`, halaman 404 | Halaman statis memakai nonce hasil build, sehingga script diblokir CSP (hidrasi/interaksi rusak) | Semua halaman yang butuh script kini `force-dynamic`; rute statis tersisa hanya manifest/robots/sitemap |
+| CSP `upgrade-insecure-requests` saat `next start` lokal | Browser meng-upgrade request http lokal ke https → `ERR_SSL_PROTOCOL_ERROR` di dev/E2E | Flag hanya dipasang untuk host non-loopback |
+| Sesi tryout CPNS dirender di dalam sidebar | Soal tampil di kerangka dashboard, padahal layout sesi menyatakan "full-screen tanpa sidebar" | Layout dashboard melewati shell untuk `/cpns/dashboard/tryout/<sessionId>` (pola `x-pathname`, sama seperti perbaikan chrome TKA) |
+| Dua landmark `<main>` di `/cpns/dashboard/pilih-jalur` | Struktur landmark ganda, membingungkan screen reader | `<main>` halaman → `<div>` (shell sudah menyediakan `<main>`) |
+| Halaman legal tanpa landmark `<main>` | Navigasi screen reader tidak menemukan konten utama | Layout `(legal)` memakai `<main>` |
+| Skrip Vercel Analytics dimuat di lokal | 404 + error MIME di console setiap halaman, mengotori audit/E2E | Dimuat hanya saat `VERCEL === '1'` |
+| Tiga tautan "Buka peta Drill" bertujuan berbeda dengan nama sama di `/cpns` | Pelanggaran WCAG 2.4.4 (tujuan tautan tidak dapat dibedakan) | Diberi `aria-label` per mata pelajaran (TWK/TIU/TKP) |
+
+**Tidak diubah (sengaja):**
+
+- **Pelanggaran CSP di `/cpns/dashboard/*` dan `/tka/smp/profile`** berasal dari **iframe pihak ketiga
+  Midtrans Snap**, bukan kode kita: listener `securitypolicyviolation` milik halaman mencatat 0
+  pelanggaran, sedangkan console meneruskan pesan dari frame Snap. CSP kita sudah mengizinkan
+  `app.midtrans.com` + nonce.
+- **Nama tautan duplikat** mayoritas berasal dari chrome responsif (sidebar desktop + bottom nav
+  mobile) yang salah satunya `display:none`, sehingga tidak ada di accessibility tree.
+- `/admin/product` bukan rute yang ada — itu kesalahan daftar rute di harness, bukan tautan mati.
+- Sisa P3: tabel admin memakai banyak tautan "Edit" per baris (lazim, konteks dari baris) dan
+  `skdMap`/kartu fitur punya label berulang yang sudah diberi `aria-label`.
+

@@ -130,7 +130,8 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <LogoutSuccessToast />
         </Suspense>
-        <Analytics />
+        {/* Skrip analytics hanya ada di runtime Vercel; di lokal/dev selalu 404. */}
+        {process.env.VERCEL === '1' ? <Analytics /> : null}
         <Toaster
           position="top-center"
           richColors
