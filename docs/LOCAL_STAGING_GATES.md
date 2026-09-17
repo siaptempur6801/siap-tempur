@@ -82,6 +82,12 @@ scripts/local-gates/docker-run.sh tka
 scripts/local-gates/docker-run.sh cpns admin
 ```
 
+> **Status Docker:** jalur ini sudah disiapkan (Dockerfile + script) tetapi **belum dijalankan
+> end-to-end** — atas permintaan pengguna proses tersebut dilewati. Verifikasi gate di atas
+> dilakukan lewat jalur **native** (Node + Chromium di host), yang memakai emulator, project
+> Playwright, dan orkestrasi yang sama. Docker Desktop/Colima perlu dalam keadaan sehat
+> (`colima restart` bila socket tidak merespons).
+
 `docker-run.sh` membangun image `siap-tempur-local-gates` (Node 24 + Chromium) sekali, lalu
 menjalankan gate di dalam container dengan repo di-mount. `node_modules` container disimpan di
 named volume `siap-tempur-gate-node-modules` supaya **tidak** menimpa `node_modules` host
