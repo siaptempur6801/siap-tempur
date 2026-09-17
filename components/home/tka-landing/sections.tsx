@@ -108,7 +108,7 @@ export function TkaHero({ primaryHref, primaryLabel }: TkaCtaProps) {
 
 export function TkaBenefits() {
     return (
-        <section className="px-4 pb-8 md:px-8">
+        <section id="manfaat-tka" className="scroll-mt-28 px-4 pb-8 md:px-8">
             <div className="relative mx-auto max-w-7xl overflow-hidden rounded-st-2xl border-2 border-[var(--st-ink)] bg-white p-6 st-shadow-md md:p-8">
                 <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full border-2 border-dashed border-blue-200 bg-[var(--st-blue-soft)]" aria-hidden="true" />
                 <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -164,7 +164,7 @@ export function TkaLevels() {
 
 export function TkaFlow({ primaryHref }: TkaCtaProps) {
     return (
-        <section className="px-4 py-16 md:px-8 md:py-24">
+        <section id="alur-tka" className="scroll-mt-28 px-4 py-16 md:px-8 md:py-24">
             <div className="mx-auto max-w-7xl">
                 <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
                     <div className="lg:sticky lg:top-28 lg:self-start">
@@ -201,7 +201,7 @@ export function TkaFlow({ primaryHref }: TkaCtaProps) {
 
 export function TkaSubjects() {
     return (
-        <section className="px-4 py-16 md:px-8 md:py-24">
+        <section id="kompetensi-tka" className="scroll-mt-28 px-4 py-16 md:px-8 md:py-24">
             <div className="mx-auto max-w-7xl rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-6 md:p-10 lg:p-12">
                 <div className="max-w-3xl">
                     <div className="st-kicker bg-white">Yang dilatih</div>

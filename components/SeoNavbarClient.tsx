@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { sectionIdFromHref, useActiveSection, type SectionNavItem } from "@/lib/use-active-section";
 
 const navItems = [
     { href: "/#produk", label: "Program" },
@@ -21,10 +22,21 @@ const programItems = [
     { href: "/cpns/drilling-materi", label: "Drilling Materi" },
 ] as const;
 
-function NavLink({ href, label, active }: { href: string; label: string; active?: boolean }) {
+function NavLink({
+    href,
+    label,
+    active,
+    ariaCurrent = 'page',
+}: {
+    href: string;
+    label: string;
+    active?: boolean;
+    ariaCurrent?: 'page' | 'location';
+}) {
     return (
         <Link
             href={href}
+            aria-current={active ? ariaCurrent : undefined}
             className={cn(
                 "st-focus rounded-xl px-3 py-2 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-700",
                 active && "bg-blue-50 text-blue-700"
@@ -40,12 +52,16 @@ type ProgramLabel = "CPNS" | "TKA";
 export default function SeoNavbarClient({
     isAuthenticated,
     programLabel,
+    navItems: customNavItems,
 }: {
     isAuthenticated: boolean;
     programLabel?: ProgramLabel;
+    /** Item navigasi khusus halaman ini (mis. anchor section landing TKA). */
+    navItems?: readonly { href: string; label: string }[];
 }) {
     const pathname = usePathname();
     const currentPath = pathname || "/";
+    const items = customNavItems && customNavItems.length > 0 ? customNavItems : navItems;
     // Tujuan untuk pengguna yang sudah login mengikuti program halaman ini:
     // `/tka` akan mengarahkan ke jenjang TKA aktif, sehingga tidak dilempar ke dashboard CPNS.
     const authedHref = programLabel === "TKA" ? "/tka" : "/cpns/dashboard";
@@ -53,6 +69,13 @@ export default function SeoNavbarClient({
     const authLabel = isAuthenticated ? "Dashboard" : "Masuk";
     const primaryHref = isAuthenticated ? authedHref : `/register?returnTo=${encodeURIComponent(currentPath)}`;
     const primaryLabel = isAuthenticated ? "Lanjut belajar" : "Mulai belajar gratis";
+
+    // Penanda section aktif hanya berlaku untuk tautan anchor (`#...`) di halaman ini.
+    const sectionItems: SectionNavItem[] = items
+        .map((item) => ({ item, id: sectionIdFromHref(item.href) }))
+        .filter((entry): entry is { item: { href: string; label: string }; id: string } => entry.id !== null)
+        .map((entry) => ({ id: entry.id, label: entry.item.label }));
+    const { activeId } = useActiveSection(sectionItems);
 
     return (
         <header className="st-product fixed left-0 right-0 top-0 z-50 !bg-transparent px-4 py-3 md:px-8 md:py-4">
@@ -76,9 +99,19 @@ export default function SeoNavbarClient({
                 </div>
 
                 <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigasi utama">
-                    {navItems.map((item) => (
-                        <NavLink key={item.href} href={item.href} label={item.label} active={item.href === currentPath} />
-                    ))}
+                    {items.map((item) => {
+                        const targetId = sectionIdFromHref(item.href);
+                        const active = targetId !== null ? targetId === activeId : item.href === currentPath;
+                        return (
+                            <NavLink
+                                key={item.href}
+                                href={item.href}
+                                label={item.label}
+                                active={active}
+                                ariaCurrent={targetId !== null ? 'location' : 'page'}
+                            />
+                        );
+                    })}
                 </nav>
 
                 <div className="flex items-center gap-2">
@@ -96,11 +129,23 @@ export default function SeoNavbarClient({
                         </summary>
                         <div className="absolute right-0 top-full mt-3 w-[min(21rem,calc(100vw-2rem))] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-3 st-shadow-md">
                             <nav className="grid gap-1 text-sm font-black" aria-label="Navigasi mobile">
-                                {navItems.map((item) => (
-                                    <Link key={item.href} href={item.href} className="st-focus rounded-xl px-3 py-3 hover:bg-blue-50">
-                                        {item.label}
-                                    </Link>
-                                ))}
+                                {items.map((item) => {
+                                    const targetId = sectionIdFromHref(item.href);
+                                    const active = targetId !== null && targetId === activeId;
+                                    return (
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            aria-current={active ? 'location' : undefined}
+                                            className={cn(
+                                                'st-focus rounded-xl px-3 py-3',
+                                                active ? 'bg-blue-50 font-black text-blue-700' : 'hover:bg-blue-50',
+                                            )}
+                                        >
+                                            {item.label}
+                                        </Link>
+                                    );
+                                })}
                             </nav>
                             <div className="mt-2 grid gap-1 border-t border-gray-200 pt-3 text-sm font-black">
                                 {programItems.map((item) => (

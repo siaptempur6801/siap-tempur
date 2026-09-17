@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import SeoNavbarClient from '@/components/SeoNavbarClient'
+import { tkaNavItems } from '@/components/home/tka-landing/content'
 import {
     TkaBenefits,
     TkaCta,
@@ -99,7 +100,7 @@ function PublicTkaLanding({ loggedIn = false }: { loggedIn?: boolean }) {
 
     return (
         <main data-experience-mode="marketing" data-program="tka" className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
-            <SeoNavbarClient isAuthenticated={loggedIn} programLabel="TKA" />
+            <SeoNavbarClient isAuthenticated={loggedIn} programLabel="TKA" navItems={tkaNavItems} />
             <TkaHero {...cta} />
             <TkaBenefits />
             <TkaLevels />

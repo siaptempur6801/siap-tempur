@@ -143,3 +143,13 @@ export const tkaChecks = [
     'Progres belajar tersimpan',
     'Belajar dari hasil',
 ] as const
+
+/** Navigasi in-page landing TKA (dipakai navbar dengan penanda section aktif). */
+export const tkaNavItems = [
+    { href: '#jenjang-tka', label: 'Pilih jenjang' },
+    { href: '#manfaat-tka', label: 'Kenapa di sini' },
+    { href: '#alur-tka', label: 'Cara kerja' },
+    { href: '#kompetensi-tka', label: 'Yang dilatih' },
+    { href: '#tanya-tka', label: 'Tanya jawab' },
+    { href: '/blog', label: 'Artikel' },
+] as const

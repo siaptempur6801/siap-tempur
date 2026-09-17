@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ArrowRight, CheckCircle2, ChevronDown, Menu, Sparkles } from 'lucide-react'
 import { Mascot, MascotPair } from '@/components/brand/Mascot'
 import { Doodle, MascotBubble, Sticker, WashiTape } from '@/components/brand/playful'
+import LandingNav from '@/components/home/landing/LandingNav'
 import {
     accountPoints,
     audienceCards,
@@ -34,11 +35,7 @@ export function LandingHeader({ user, primaryHref, primaryLabel }: CtaProps & { 
                 </Link>
 
                 <nav className="hidden items-center gap-1 text-sm font-black lg:flex" aria-label="Navigasi utama">
-                    {navItems.map((item) => (
-                        <Link key={item.href} href={item.href} className="st-focus rounded-xl px-3 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-700">
-                            {item.label}
-                        </Link>
-                    ))}
+                    <LandingNav items={navItems} />
                 </nav>
 
                 <div className="flex items-center gap-2">
@@ -62,11 +59,7 @@ export function LandingHeader({ user, primaryHref, primaryLabel }: CtaProps & { 
                         </summary>
                         <div className="absolute right-0 top-full mt-3 w-[min(19rem,calc(100vw-2rem))] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-3 st-shadow-md">
                             <nav className="grid gap-1 text-sm font-black" aria-label="Navigasi mobile">
-                                {navItems.map((item) => (
-                                    <Link key={item.href} href={item.href} className="st-focus rounded-xl px-3 py-3 hover:bg-blue-50">
-                                        {item.label}
-                                    </Link>
-                                ))}
+                                <LandingNav items={navItems} variant="mobile" />
                             </nav>
                             <div className="mt-2 grid gap-2 border-t border-gray-200 pt-3 sm:hidden">
                                 {!user && <Link href="/login?returnTo=%2F" className="st-focus flex min-h-11 items-center justify-center rounded-xl font-black hover:bg-gray-100">Masuk</Link>}
