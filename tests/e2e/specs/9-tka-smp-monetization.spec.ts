@@ -91,13 +91,13 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
 
     test('Full Tryout is denied without a usable Tempur Pass when enforcement is enabled', async ({ page }) => {
         await fresh(page)
-        await page.goto('/tka/smp')
+        await page.goto('/tka/smp/tryout')
 
         const full = examCard(page, 'Tryout Lengkap TKA SMP')
         await expect(full).toBeVisible()
         await full.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
         await expect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
-        await expect(page).toHaveURL(/\/tka\/smp$/)
+        await expect(page).toHaveURL(/\/tka\/smp\/tryout$/)
     })
 
     test('expired Tempur Pass stays inactive and cannot unlock Full Tryout', async ({ page }) => {
@@ -108,7 +108,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await page.goto('/tka/smp/pass')
         await expect(page.getByTestId('tka-pass-status-inactive')).toContainText('Belum ada Tempur Pass aktif.')
 
-        await page.goto('/tka/smp')
+        await page.goto('/tka/smp/tryout')
         const full = examCard(page, 'Tryout Lengkap TKA SMP')
         await full.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
         await expect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
@@ -124,7 +124,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await expect(page.getByRole('heading', { name: 'Perpanjang akses TKA SMP', exact: true })).toBeVisible()
         await expect(page.getByRole('button', { name: /Perpanjang 30 hari/i })).toBeVisible()
 
-        await page.goto('/tka/smp')
+        await page.goto('/tka/smp/tryout')
         const full = examCard(page, 'Tryout Lengkap TKA SMP')
         await full.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
         await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
@@ -136,7 +136,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         const seeded = await consumeM4MiniQuota(session, 'tka-smp-mini-bahasa-indonesia')
         expect(seeded.attemptNumber).toBe(1)
 
-        await page.goto('/tka/smp')
+        await page.goto('/tka/smp/mini-tryout')
         const mini = examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
         const locked = mini.getByRole('button', { name: 'Kuota gratis habis · Butuh Tempur Pass', exact: true })
         await expect(locked).toBeVisible()
@@ -148,7 +148,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await consumeM4MiniQuota(session, 'tka-smp-mini-matematika')
         await grantM4Pass(session, 'active')
 
-        await page.goto('/tka/smp')
+        await page.goto('/tka/smp/mini-tryout')
         const mini = examCard(page, 'Mini Tryout Matematika TKA SMP')
         await expect(mini.getByText('Tempur Pass aktif', { exact: true })).toBeVisible()
         await mini.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()

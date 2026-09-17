@@ -132,6 +132,8 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await expect(page.getByTestId('tka-next-step')).toBeVisible()
     await expect(page.getByTestId('tka-track-active')).toBeVisible()
 
+    // Kartu ujian tidak lagi dirender di dashboard; daftar tryout ada di /tka/smp/tryout.
+    await page.goto('/tka/smp/tryout')
     const fullCard = page.locator('article').filter({
         has: page.getByRole('heading', { name: 'Tryout Lengkap TKA SMP', exact: true }),
     })
