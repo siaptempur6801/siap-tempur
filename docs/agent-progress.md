@@ -365,6 +365,14 @@ Test baru: `answer-key-access-contract`, `admin-authorization-contract`, `attemp
 
 ## Current Blockers
 
+1. **GitHub Actions diblokir billing akun** (2026-09-17): semua run berhenti tanpa step
+   ("recent account payments have failed or your spending limit needs to be increased").
+   Menghalangi CI, Schema V2 CI, dan gate staging TKA/CPNS/Admin. Perlu tindakan pengguna.
+2. **Bug P1 event `tryout_events`** (tabel warisan tidak ada di Schema V2) — butuh keputusan skema.
+3. `content-review-staging-e2e.yml` ditunda (runner self-hosted macOS ARM64 `192` offline).
+
+## Current Blockers
+
 1. **Gerbang staging E2E** (TKA/CPNS/admin-workspace) butuh GitHub OIDC + deployment Vercel Preview;
    `admin-workspace-staging-e2e.yml` mewajibkan input `preview_url`.
 2. **`content-review-staging-e2e.yml` tidak bisa dijalankan**: runner self-hosted macOS ARM64 (`192`) offline.

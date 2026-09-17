@@ -218,6 +218,19 @@ memuat field yang dipakai kode (`start_grace_minutes`, `duration_minutes`, `max_
 gagal, section event di landing `/cpns` kosong, cron auto-close hanya menghasilkan warning.
 Perbaikan menyentuh skema → butuh keputusan (migrasi `events` atau tulis ulang fitur terhadap `events` V2).
 
+### Blocker eksternal — GitHub Actions (2026-09-17)
+
+Seluruh workflow GitHub Actions berhenti berjalan dengan anotasi resmi:
+
+> "The job was not started because recent account payments have failed or your spending limit
+> needs to be increased. Please check the 'Billing & plans' section in your settings"
+
+- Dampak: CI, Schema V2 CI, dan gate staging TKA/CPNS/Admin tidak bisa dijalankan sampai billing
+  GitHub diperbaiki. Job berhenti < 10 detik tanpa satu pun step berjalan (`steps: 0`).
+- Status terakhir sebelum blokir: **CI + Schema V2 CI success** dan **CPNS + Admin Workspace
+  Staging E2E success** pada commit `32767f7`; gate TKA terakhir hijau 16/16 pada `746484a`.
+- Bukan bug kode dan bukan flake test — perlu tindakan pemilik akun di GitHub Billing.
+
 ### Design system Round 9 (2026-09-17)
 
 Konsistensi UI disatukan di atas brand sheet resmi (`#0D2B45` ink · `#1976D2` blue · `#F9A825` amber ·
