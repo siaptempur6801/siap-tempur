@@ -178,7 +178,7 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | Lint | ✅ **0 error, 0 warning** |
 | Typecheck / Unit / Build | ✅ hijau (234 unit test, 47 file) |
 | E2E publik (`chromium-public`) | ✅ 30/30 lolos (termasuk cek console browser) |
-| E2E ber-auth (`chromium-authenticated`) | ✅ 40/40 lolos (login → onboarding → dashboard, 27 route CPNS/TKA, 10 cek overflow mobile) — opt-in, butuh kredensial staging |
+| E2E ber-auth (`chromium-authenticated`) | ✅ **62/62 lolos** (2026-09-17, dijalankan lokal di build terkini): login → onboarding → dashboard, 27 route CPNS/TKA sehat + 2 redirect sengaja, dan **32 cek overflow** (16 permukaan inti × mobile 390×844 & tablet 1024×768) tanpa critical console error |
 | E2E staging ber-kredensial lain (TKA, content review, admin, CPNS) | dijalankan lewat workflow khusus berbasis GitHub OIDC. **Hasil Round 8:** CPNS Staging E2E ✅, Admin Workspace Staging E2E ✅ (keduanya di deployment Vercel **Preview** ber-env staging), TKA SMP Staging E2E diperbaiki bertahap (detail di `docs/agent-progress.md`) |
 | CI | **hijau di GitHub** (`22057ac`, `34bb466`): CI **success** (lint, typecheck, unit, security audit, build, E2E) dan Schema V2 CI **success**; deployment produksi Vercel sukses (domain tetap ditahan) |
 | **Riwayat migrasi remote** | ✅ **disamakan 2026-09-16** (staging & produksi → 155 baris = tepat daftar file repo). `supabase db push` kembali normal: *"Remote database is up to date."* Arsip sebelum baseline: `supabase/migration-history-archive/` |
@@ -187,6 +187,9 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | Feature flag | `tka.smp.monetization_enforcement` — **ON (100%, enforced)** di produksi (keputusan pengguna) |
 | Konfirmasi sesi ujian | ✅ seragam: CPNS & seluruh klien TKA memakai modal (`components/ui/Modal` + `components/tka/TkaSectionConfirmModal.tsx`); tidak ada `window.confirm()` di alur ujian |
 | Progres posisi soal TKA | ✅ dipersistensi per attempt+bagian (`lib/session-progress.ts`) — tidak lagi terlempar ke soal 1 saat jawaban tersimpan |
+| Audit dead link internal | ✅ 90 route vs 75 target (`href` + `router.push`/`replace` + `redirect`) — **0 target tanpa route/aset**, termasuk aset `public/` |
+| Higiene kode | ✅ 0 `TODO`/`FIXME`/`HACK`, 0 `console.log`/`debugger`, 0 mock/dummy pada `app/`, `components/`, `src/`, `lib/` |
+| RLS (audit katalog + fungsional, staging 2026-09-17) | ✅ **semua tabel `public` ber-RLS**; `authenticated` tanpa SELECT di `attempt_questions`/`attempt_answers`/`question_versions`; `user_roles` tanpa policy (deny-all non-service); uji lintas-user: attempt/profil/wallet milik orang lain → **0 baris**, `attempt_answers` → *permission denied* |
 
 ### Perbaikan P1 2026-09-16 (Round 8)
 

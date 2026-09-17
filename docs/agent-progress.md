@@ -176,6 +176,18 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       Verifikasi browser nyata (user staging disposabel, dihapus lagi): modal tampil dengan judul
       dan pesan yang benar, tombol **Batal** menutup modal tanpa memindahkan bagian, konfirmasi
       memindahkan ke bagian berikutnya, dan **0 dialog native**.
+- [x] **Audit akhir Round 8 (2026-09-17):**
+      (a) **Dead link:** 90 route vs 75 target internal (`href`, `router.push/replace`, `redirect`,
+      termasuk aset `public/`) → **0 target tanpa route**.
+      (b) **Responsif:** spec 17 diperluas ke 16 permukaan inti × {mobile 390×844, tablet 1024×768};
+      hasil lokal **62/62 lolos**, 0 overflow, 0 critical console error — kini juga menjaga permukaan
+      ujian TKA (tryout/mini-tryout/diagnostik/riwayat/bank soal salah) yang sebelumnya tak tercakup.
+      (c) **Higiene:** 0 `TODO`/`FIXME`/`HACK`, 0 `console.log`/`debugger`, 0 mock pada kode aplikasi.
+      (d) **RLS:** katalog → seluruh tabel `public` ber-RLS, tanpa SELECT `authenticated` untuk
+      `attempt_questions`/`attempt_answers`/`question_versions`, `user_roles` tanpa policy;
+      fungsional lintas-user → attempt/profil/wallet milik orang lain 0 baris, `attempt_answers`
+      *permission denied*.
+      (e) Staging dibersihkan lagi setelah verifikasi: sisa user `ci-*`/`dsh-*` = **0**.
 - [x] **Audit TKA SD/SMA (Round 8) — tidak ada dead-end.** `/tka/sd` & `/tka/sma` menampilkan
       halaman "segera hadir" dengan CTA jelas ke TKA SMP; seluruh sub-route ujian SD/SMA
       (`diagnostic`, `focus`, `mini-tryout`, `pass`, `progress`, `riwayat`, `tryout`,
@@ -317,7 +329,7 @@ Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
 Unit        : ✅ 47 file / 234 test (vitest)
 E2E publik  : ✅ 30/30 (chromium-public, termasuk 6 test console-health)
-E2E auth    : ✅ 40/40 (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
+E2E auth    : ✅ 62/62 lokal di build terkini (setup + 2 dashboard + 27 route-health + 2 redirect + 32 overflow: 16 permukaan × mobile & tablet)
 Build       : ✅
 Verifikasi browser TKA (Round 8) : ✅ modal konfirmasi (tampil/batal/konfirmasi/0 dialog native)
                                     + posisi soal bertahan setelah simpan jawaban
