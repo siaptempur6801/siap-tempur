@@ -93,34 +93,49 @@ test.describe('Route ber-autentikasi tetap sehat', () => {
 });
 
 /**
- * Halaman inti dipakai banyak siswa dari ponsel; overflow horizontal membuat
- * konten terpotong dan CTA tidak terjangkau.
+ * Halaman inti dipakai banyak siswa dari ponsel/tablet; overflow horizontal membuat
+ * konten terpotong dan CTA tidak terjangkau. Daftar route sengaja memuat seluruh
+ * permukaan ujian TKA (tryout/mini-tryout/diagnostik/riwayat) karena di sanalah
+ * kartu ujian dan navigator soal dirender.
  */
-test.describe('Tanpa overflow horizontal di mobile', () => {
-  test.use({ viewport: { width: 390, height: 844 } });
+const OVERFLOW_ROUTES = [
+  '/cpns/dashboard',
+  '/cpns/dashboard/drilling-materi',
+  '/cpns/dashboard/mini-tryout',
+  '/cpns/dashboard/tryout',
+  '/cpns/dashboard/riwayat',
+  '/cpns/dashboard/beli-paket',
+  '/tka/smp',
+  '/tka/smp/tryout',
+  '/tka/smp/mini-tryout',
+  '/tka/smp/diagnostic',
+  '/tka/smp/riwayat',
+  '/tka/smp/wrong-questions',
+  '/tka/smp/progress',
+  '/tka/smp/pass',
+  '/tka/smp/focus',
+  '/tka/smp/pilih-jalur',
+];
 
-  const MOBILE_ROUTES = [
-    '/cpns/dashboard',
-    '/cpns/dashboard/drilling-materi',
-    '/cpns/dashboard/mini-tryout',
-    '/cpns/dashboard/tryout',
-    '/cpns/dashboard/riwayat',
-    '/cpns/dashboard/beli-paket',
-    '/tka/smp',
-    '/tka/smp/progress',
-    '/tka/smp/pass',
-    '/tka/smp/focus',
-  ];
+const VIEWPORTS: Array<{ label: string; width: number; height: number }> = [
+  { label: 'mobile 390x844', width: 390, height: 844 },
+  { label: 'tablet 1024x768', width: 1024, height: 768 },
+];
 
-  for (const route of MOBILE_ROUTES) {
-    test(`${route} muat di 390x844`, async ({ page }) => {
-      await page.goto(route, { waitUntil: 'networkidle' });
-      await page.waitForTimeout(150);
+for (const viewport of VIEWPORTS) {
+  test.describe(`Tanpa overflow horizontal di ${viewport.label}`, () => {
+    test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      );
-      expect(overflow, `overflow horizontal ${overflow}px di ${route}`).toBeLessThanOrEqual(1);
-    });
-  }
-});
+    for (const route of OVERFLOW_ROUTES) {
+      test(`${route} muat di ${viewport.label}`, async ({ page }) => {
+        await page.goto(route, { waitUntil: 'networkidle' });
+        await page.waitForTimeout(150);
+
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow, `overflow horizontal ${overflow}px di ${route} (${viewport.label})`).toBeLessThanOrEqual(1);
+      });
+    }
+  });
+}
