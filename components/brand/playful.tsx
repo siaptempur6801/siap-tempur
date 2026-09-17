@@ -137,10 +137,13 @@ export function MascotBubble({
     className?: string
     bubbleClassName?: string
 }) {
+    // Warna bubble & ekor WAJIB memakai token yang sama supaya sambungannya mulus.
+    // Catatan: `--brand-*-soft` bukan nama token yang valid (yang ada `--color-brand-*-soft`),
+    // jadi pakai primitif skalanya langsung.
     const tones = {
         paper: 'bg-white',
-        blue: 'bg-[var(--brand-blue-soft)]',
-        amber: 'bg-[var(--brand-amber-soft)]',
+        blue: 'bg-[var(--brand-blue-50)]',
+        amber: 'bg-[var(--brand-amber-100)]',
         peach: 'bg-[var(--brand-peach-100)]',
     }
     const tailFills = {
@@ -152,16 +155,22 @@ export function MascotBubble({
     return (
         <div className={cn('flex items-end gap-3', side === 'right' && 'flex-row-reverse', className)}>
             <Mascot name={name} size={size} tone="plain" priority={priority} className="animate-bob" />
-            <div
-                className={cn(
-                    'relative max-w-sm rounded-2xl border-2 border-[var(--st-ink)] px-4 py-3 text-sm font-semibold leading-relaxed st-shadow-sm',
-                    tones[bubbleTone],
-                    bubbleClassName,
-                )}
-            >
-                {children}
-                {/* Ekor gelembung: digambar sebagai SVG supaya sambungannya rapi —
-                    isi tail menutup garis border bubble tepat di titik tempelnya. */}
+            {/* Pembungkus: bubble + ekor sebagai dua saudara, sehingga ekor dicat SETELAH bubble
+                dan bisa menutup garis border tepat di titik tempelnya (kalau ekor jadi anak bubble,
+                border bubble tetap terlihat menembus ekor). */}
+            <div className="relative">
+                <div
+                    className={cn(
+                        'relative max-w-sm rounded-2xl border-2 border-[var(--st-ink)] px-4 py-3 text-sm font-semibold leading-relaxed st-shadow-sm',
+                        tones[bubbleTone],
+                        bubbleClassName,
+                    )}
+                >
+                    {children}
+                </div>
+                {/* Ekor gelembung: satu path melengkung untuk outline + bidang isi yang
+                    menutup garis border bubble sampai ke bagian dalam, sehingga sambungannya
+                    mulus (tanpa garis sisa) dan ujungnya membulat. */}
                 <span
                     aria-hidden="true"
                     className={cn(
@@ -170,19 +179,23 @@ export function MascotBubble({
                     )}
                 >
                     <svg
-                        width="14"
-                        height="18"
-                        viewBox="0 0 14 18"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
                         className={cn('block', side === 'right' && '-scale-x-100')}
                     >
                         <path
-                            d="M14 1.2 L3.6 7.4 A 2.4 2.4 0 0 0 3.6 10.6 L14 16.8"
+                            d="M15 2.2 C13.2 3.2 9.4 5.9 7.9 7.1 A 3.3 3.3 0 0 0 7.9 12.9 C9.4 14.1 13.2 16.8 15 17.8"
                             fill="none"
                             stroke="var(--st-ink)"
                             strokeWidth="2"
-                            strokeLinecap="round"
+                            strokeLinecap="butt"
+                            strokeLinejoin="round"
                         />
-                        <path d="M14 3.4 L4.6 8.6 A 0.8 0.8 0 0 0 4.6 9.4 L14 14.6 Z" fill={tailFills[bubbleTone]} />
+                        <path
+                            d="M15 3.6 C13.6 4.5 10.1 6.9 8.6 8.1 A 2.2 2.2 0 0 0 8.6 11.9 C10.1 13.1 13.6 15.5 15 16.4 Z"
+                            fill={tailFills[bubbleTone]}
+                        />
                     </svg>
                 </span>
             </div>

@@ -215,7 +215,7 @@ export function LandingBenefits() {
                                 </article>
                             ))}
                         </div>
-                        <MascotBubble name="tara" size="sm" bubbleTone="peach" className="hidden lg:flex" bubbleClassName="max-w-[13rem]">
+                        <MascotBubble name="tara" size="sm" side="right" bubbleTone="peach" className="hidden lg:flex" bubbleClassName="max-w-[13rem]">
                             Nggak harus langsung panjang, kok. Cukup mulai.
                         </MascotBubble>
                     </div>
@@ -492,7 +492,7 @@ export function LandingFaq({ primaryHref, primaryLabel }: CtaProps) {
                 </div>
 
                 <div className="mt-8 flex flex-col items-center gap-4">
-                    <MascotBubble name="tara" size="sm" bubbleTone="peach" className="mx-auto w-fit" bubbleClassName="max-w-md">
+                    <MascotBubble name="tara" size="sm" side="right" bubbleTone="peach" className="mx-auto w-fit" bubbleClassName="max-w-md">
                         Masih ada yang mau ditanyakan? Mulai dari akun dulu — nanti kamu bisa pilih jalurnya sambil jalan.
                     </MascotBubble>
                     <Link href={primaryHref} className="st-focus inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
