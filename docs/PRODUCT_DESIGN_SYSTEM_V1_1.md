@@ -216,6 +216,44 @@ Icon-only controls:
 
 ## 6. Color roles
 
+### 6.0 Brand tokens (implementasi — sumber: brand sheet resmi)
+
+Nilai primitif brand:
+
+| Token | Hex | Peran |
+|---|---|---|
+| `--brand-ink` | `#0D2B45` | teks utama, border neo-brutalist, hard shadow |
+| `--brand-blue` | `#1976D2` | aksi primer, state aktif, link, fokus |
+| `--brand-amber` | `#F9A825` | aksen brand, sorotan non-kritis, peringatan |
+| `--brand-peach` | `#FDDCCA` | permukaan hangat / aksen lembut |
+| `--brand-white` | `#FFFFFF` | permukaan utama |
+| `--brand-paper` | `#FBFAF7` | kanvas hangat produk |
+
+Skala turunan (`--brand-ink-50…950`, `--brand-blue-50…950`, `--brand-amber-50…950`,
+`--brand-peach-50…950`) memakai **tangga lightness yang sama dengan palet Tailwind bawaan**, hanya
+hue/chroma-nya dipindah ke brand. Karena itu kontras teks tetap terjaga saat palet dipetakan ulang.
+
+**Pemetaan palet Tailwind → brand** (dilakukan sekali di `app/globals.css` `@theme`, sehingga seluruh
+utility lama otomatis on-brand):
+
+| Palette lama | Dipetakan ke |
+|---|---|
+| `gray-*`, `slate-*` | `--brand-ink-*` (netral navy) |
+| `blue-*`, `indigo-*`, `violet-*`, `purple-*`, `sky-*`, `cyan-*`, `teal-*`, `fuchsia-*` | `--brand-blue-*` |
+| `amber-*`, `yellow-*`, `orange-*` | `--brand-amber-*` |
+| `pink-*` | `--brand-peach-*` |
+| `green-*` | `--color-emerald-*` (hue kembar disatukan) |
+| `rose-*` | `--color-red-*` (hue kembar disatukan) |
+
+Utility brand eksplisit untuk kode baru: `bg-brand-ink`, `text-brand-blue`, `bg-brand-amber`,
+`bg-brand-peach`, `bg-brand-paper`.
+
+**Tipografi:** Poppins (400/500/600/700/800) adalah font brand untuk **display dan body**
+(`--font-display`, `--font-sans`, `--font-body`). Patrick Hand hanya untuk aksen tulisan tangan yang
+disengaja (`--font-script`); Geist Mono tetap untuk kode/angka. Kelas lama `font-handwriting`
+dipertahankan sebagai alias Poppins agar tidak ada kelas yatim.
+
+
 Do not treat colors merely as decoration. Define semantic roles.
 
 ### Brand

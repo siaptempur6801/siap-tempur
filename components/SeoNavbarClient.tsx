@@ -55,7 +55,7 @@ export default function SeoNavbarClient({
         <header className="st-product fixed left-0 right-0 top-0 z-50 !bg-transparent px-4 py-3 md:px-8 md:py-4">
             <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                    <Link href="/" className="st-focus shrink-0 font-handwriting text-2xl font-black tracking-tight md:text-3xl">
+                    <Link href="/" className="st-focus shrink-0 font-display text-2xl font-black tracking-tight md:text-3xl">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>
                     {programLabel ? (

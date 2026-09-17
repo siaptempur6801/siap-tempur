@@ -408,7 +408,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
 
                     <div className="sticky top-0 z-10 flex flex-col gap-3 border-b-2 border-gray-900 bg-gray-100/90 p-6 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
                         <div>
-                            <h2 className="font-handwriting text-2xl font-black text-gray-900">Struktur Materi</h2>
+                            <h2 className="font-display text-2xl font-black text-gray-900">Struktur Materi</h2>
                             <p className="mt-1 text-sm font-medium text-gray-600">Urutan ini dipakai saat paket soal tryout dibuat.</p>
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -555,7 +555,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                 <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10">
-                        <h3 className="mb-3 border-b-2 border-gray-900 pb-2 font-handwriting text-2xl font-black text-gray-900">Preset Struktur</h3>
+                        <h3 className="mb-3 border-b-2 border-gray-900 pb-2 font-display text-2xl font-black text-gray-900">Preset Struktur</h3>
                         <p className="mb-4 text-sm font-medium text-gray-600">Pola blok materi: section, topik, jumlah soal, dan urutan.</p>
                         <button
                             type="button"
@@ -572,7 +572,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                 <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10">
-                        <h3 className="mb-4 border-b-2 border-gray-900 pb-2 font-handwriting text-2xl font-black text-gray-900">Tambah Kategori</h3>
+                        <h3 className="mb-4 border-b-2 border-gray-900 pb-2 font-display text-2xl font-black text-gray-900">Tambah Kategori</h3>
 
                         <form onSubmit={handleAddNew} className="space-y-4">
                             <div className="space-y-2">
@@ -623,7 +623,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                 <div className="relative overflow-hidden border-2 border-gray-900 bg-gray-100 p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10 text-gray-800 space-y-3">
-                        <h4 className="font-handwriting text-xl font-black mb-2 flex items-center gap-2">
+                        <h4 className="font-display text-xl font-black mb-2 flex items-center gap-2">
                             <GripVertical size={20} className="text-gray-400" /> Aturan SKD CPNS
                         </h4>
                         <ul className="text-sm font-medium space-y-2 list-disc list-inside">
@@ -647,7 +647,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                 <AlertTriangle size={32} />
                             </div>
                             <div>
-                                <h3 className="font-handwriting font-black text-2xl text-gray-900 leading-tight">Hapus Kategori?</h3>
+                                <h3 className="font-display font-black text-2xl text-gray-900 leading-tight">Hapus Kategori?</h3>
                                 <p className="mt-2 font-medium text-gray-600">Anda yakin ingin menghapus <strong className="text-gray-900">{itemToDelete.name}</strong>? Aksi ini akan mempengaruhi pembuatan tryout selanjutnya.</p>
                             </div>
                             <div className="flex gap-3 w-full mt-4">
@@ -683,7 +683,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
 
-                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                            <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
                                 {confirmDialog.title}
                             </h3>
                             <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">

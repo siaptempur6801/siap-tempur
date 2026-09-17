@@ -410,7 +410,7 @@ export default function CpnsProductLandingV11({
                     <div className="mt-10 grid gap-5 lg:grid-cols-3">
                         {skdMap.map((item) => (
                             <article key={item.code} className={`group rounded-[1.5rem] border-2 border-[var(--st-ink)] p-6 transition-transform hover:-translate-y-1 ${item.tone}`}>
-                                <span className="inline-flex rounded-xl border-2 border-[var(--st-ink)] bg-white px-3 py-1 font-handwriting text-2xl font-black">{item.code}</span>
+                                <span className="inline-flex rounded-xl border-2 border-[var(--st-ink)] bg-white px-3 py-1 font-display text-2xl font-black">{item.code}</span>
                                 <h3 className="mt-5 text-2xl font-black tracking-tight">{item.title}</h3>
                                 <p className="st-muted mt-3 font-semibold leading-relaxed">{item.text}</p>
                                 <div className="mt-5 space-y-2">
@@ -442,7 +442,7 @@ export default function CpnsProductLandingV11({
                             {learningLoop.map(({ icon: Icon, step, title, text }) => (
                                 <article key={step} className="group rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-transform hover:translate-x-1 md:p-6">
                                     <div className="flex gap-4 md:gap-6">
-                                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] font-handwriting text-xl font-black">{step}</div>
+                                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] font-display text-xl font-black">{step}</div>
                                         <div className="pt-1">
                                             <div className="flex items-center gap-2"><Icon size={20} /><h3 className="text-xl font-black md:text-2xl">{title}</h3></div>
                                             <p className="st-muted mt-2 font-semibold leading-relaxed">{text}</p>
@@ -468,7 +468,7 @@ export default function CpnsProductLandingV11({
                                 <article key={title} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--st-blue-soft)] text-blue-700"><Icon size={21} /></div>
-                                        <span className="font-handwriting text-2xl font-black text-gray-300">0{index + 1}</span>
+                                        <span className="font-display text-2xl font-black text-gray-300">0{index + 1}</span>
                                     </div>
                                     <h3 className="mt-4 text-lg font-black">{title}</h3>
                                     <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">{text}</p>
@@ -633,7 +633,7 @@ export default function CpnsProductLandingV11({
                                     { step: '03', title: 'Isi token bila perlu', text: 'Pilih paket dengan harga dan manfaat yang terlihat sebelum bayar.' },
                                 ].map((item) => (
                                     <div key={item.step} className="rounded-2xl bg-gray-50 p-4">
-                                        <div className="flex items-center gap-3"><span className="font-handwriting text-2xl font-black text-blue-600">{item.step}</span><p className="font-black">{item.title}</p></div>
+                                        <div className="flex items-center gap-3"><span className="font-display text-2xl font-black text-blue-600">{item.step}</span><p className="font-black">{item.title}</p></div>
                                         <p className="st-muted mt-2 text-sm font-semibold leading-relaxed">{item.text}</p>
                                     </div>
                                 ))}
@@ -698,7 +698,7 @@ export default function CpnsProductLandingV11({
                     <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border-2 border-white/70 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.1em]"><Sparkles size={14} /> Persiapan SKD yang lebih terarah</div>
-                            <h2 className="mt-5 max-w-3xl font-handwriting text-4xl font-black leading-tight md:text-6xl">Jangan mulai lagi dari nol setiap selesai tryout.</h2>
+                            <h2 className="mt-5 max-w-3xl font-display text-4xl font-black leading-tight md:text-6xl">Jangan mulai lagi dari nol setiap selesai tryout.</h2>
                             <p className="mt-4 max-w-2xl font-semibold leading-relaxed text-blue-100">Ukur kemampuanmu, baca hasilnya, lalu fokus memperbaiki TWK, TIU, atau TKP yang masih perlu dikejar.</p>
                         </div>
                         <Button variant="white" size="lg" asChild>
@@ -713,7 +713,7 @@ export default function CpnsProductLandingV11({
             <footer className="border-t border-gray-200 bg-white px-4 py-8 md:px-8">
                 <div className="px-container-marketing flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <Link href="/" className="font-handwriting text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link>
+                        <Link href="/" className="font-display text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link>
                         <p className="st-muted mt-1 text-sm font-semibold">Persiapan SKD CPNS dengan latihan yang lebih terarah.</p>
                     </div>
                     <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600">

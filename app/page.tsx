@@ -186,7 +186,7 @@ export default async function Index() {
         <main className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
             <header className="sticky top-0 z-50 px-4 py-3 md:px-8 md:py-4">
                 <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
-                    <Link href="/" className="st-focus shrink-0 font-handwriting text-2xl font-black tracking-tight md:text-3xl">
+                    <Link href="/" className="st-focus shrink-0 font-display text-2xl font-black tracking-tight md:text-3xl">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>
 
@@ -444,7 +444,7 @@ export default async function Index() {
                             {learningSteps.map(({ number, title, text, icon: Icon, surface }, index) => (
                                 <article key={number} className={`relative rounded-2xl border-2 border-[var(--st-ink)] p-5 md:p-6 ${surface} ${index === 0 || index === learningSteps.length - 1 ? 'shadow-[3px_3px_0_var(--st-ink)]' : ''}`}>
                                     <div className="flex gap-4 md:gap-6">
-                                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--st-ink)] bg-white font-handwriting text-2xl font-black">{number}</div>
+                                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--st-ink)] bg-white font-display text-2xl font-black">{number}</div>
                                         <div className="pt-1">
                                             <div className="flex items-center gap-2"><Icon size={21} /><h3 className="text-xl font-black md:text-2xl">{title}</h3></div>
                                             <p className="st-muted mt-2 font-semibold leading-relaxed">{text}</p>
@@ -529,7 +529,7 @@ export default async function Index() {
                     <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border-2 border-white/70 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.1em]"><Sparkles size={14} /> Mulai dari targetmu</div>
-                            <h2 className="mt-5 max-w-3xl font-handwriting text-4xl font-black leading-tight md:text-6xl">Ujianmu boleh berat. Cara belajarnya jangan dibuat lebih rumit.</h2>
+                            <h2 className="mt-5 max-w-3xl font-display text-4xl font-black leading-tight md:text-6xl">Ujianmu boleh berat. Cara belajarnya jangan dibuat lebih rumit.</h2>
                             <p className="mt-4 max-w-2xl font-semibold leading-relaxed text-blue-100">Buat akun, pilih CPNS atau TKA, lalu gunakan setiap hasil untuk menentukan apa yang harus dipelajari berikutnya.</p>
                         </div>
                         <div className="flex flex-wrap gap-3 lg:flex-col">
@@ -543,7 +543,7 @@ export default async function Index() {
             <footer className="border-t border-gray-200 bg-white px-4 py-8 md:px-8">
                 <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <Link href="/" className="font-handwriting text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link>
+                        <Link href="/" className="font-display text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link>
                         <p className="st-muted mt-1 text-sm font-semibold">Belajar lebih terarah untuk menghadapi ujian dengan lebih siap.</p>
                     </div>
                     <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600">

@@ -60,8 +60,8 @@ export default function ResetPasswordForm() {
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-green-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
             <div className="text-center">
-                <h2 className="font-handwriting text-4xl font-bold tracking-tight text-gray-900">Buat Password Baru</h2>
-                <p className="mt-2 text-gray-600 font-handwriting text-xl">Masukkan password baru untuk akun Anda.</p>
+                <h2 className="font-display text-4xl font-bold tracking-tight text-gray-900">Buat Password Baru</h2>
+                <p className="mt-2 text-gray-600 font-display text-xl">Masukkan password baru untuk akun Anda.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
@@ -75,7 +75,7 @@ export default function ResetPasswordForm() {
                         autoComplete="new-password"
                         required
                         minLength={8}
-                        className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
+                        className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-display"
                         placeholder="Password Baru (Min. 8 karakter)"
                     />
                     <button
@@ -97,7 +97,7 @@ export default function ResetPasswordForm() {
                         autoComplete="new-password"
                         required
                         minLength={8}
-                        className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-handwriting"
+                        className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-display"
                         placeholder="Ulangi Password Baru"
                     />
                     <button
@@ -113,7 +113,7 @@ export default function ResetPasswordForm() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-xl font-bold font-handwriting text-white hover:bg-blue-600 hover:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all border-2 border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-xl font-bold font-display text-white hover:bg-blue-600 hover:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all border-2 border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {loading && <Loader2 className="animate-spin" size={24} />}
                         {loading ? 'Menyimpan...' : 'Simpan Password'}

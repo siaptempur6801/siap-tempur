@@ -42,7 +42,7 @@ export default async function CertificatePreviewPage({
     const downloadUrl = `/api/certificates/${encodeURIComponent(row.certificate_number)}/download`
 
     return (
-        <div className="space-y-6 font-handwriting">
+        <div className="space-y-6 font-display">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="inline-flex items-center gap-2 border-2 border-gray-900 bg-emerald-100 px-3 py-1 text-xs font-black uppercase text-emerald-700 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">

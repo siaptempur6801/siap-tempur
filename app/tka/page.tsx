@@ -117,7 +117,7 @@ function PublicTkaLanding() {
                                 { number: '03', title: 'Belajar dari hasil', text: 'Buka pembahasan dan ulangi bagian yang perlu diperkuat.' },
                             ].map((step) => (
                                 <div key={step.number} className="flex gap-4 py-4 first:pt-0 last:pb-0">
-                                    <span className="font-handwriting text-3xl font-black text-blue-600">{step.number}</span>
+                                    <span className="font-display text-3xl font-black text-blue-600">{step.number}</span>
                                     <div>
                                         <p className="font-black">{step.title}</p>
                                         <p className="st-muted mt-1 text-sm font-semibold leading-relaxed">{step.text}</p>
@@ -147,7 +147,7 @@ function PublicTkaLanding() {
             <section className="px-4 py-16 md:px-8 md:py-24">
                 <div className="mx-auto grid max-w-7xl items-center gap-8 rounded-[2rem] border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white shadow-[6px_6px_0_var(--st-ink)] md:grid-cols-[1fr_auto] md:px-10 md:py-12">
                     <div>
-                        <h2 className="font-handwriting text-4xl font-black leading-tight md:text-5xl">Mulai dari jenjangmu hari ini.</h2>
+                        <h2 className="font-display text-4xl font-black leading-tight md:text-5xl">Mulai dari jenjangmu hari ini.</h2>
                         <p className="mt-3 max-w-2xl font-semibold leading-relaxed text-blue-100">Satu akun menyimpan perjalanan belajar TKA dari SD, SMP, hingga SMA.</p>
                     </div>
                     <Link href="/register?returnTo=%2Ftka" className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">

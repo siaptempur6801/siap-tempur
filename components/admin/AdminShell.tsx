@@ -42,7 +42,7 @@ function AdminNavLink({ href, label, icon: Icon }: { href: string; label: string
         <Link
             href={href}
             className={cn(
-                'group flex items-center justify-between rounded-md border-2 px-3 py-2.5 font-handwriting text-xl transition-all duration-200',
+                'group flex items-center justify-between rounded-md border-2 px-3 py-2.5 font-display text-xl transition-all duration-200',
                 isActive
                     ? 'translate-x-1 -translate-y-1 border-gray-900 bg-gray-900 font-bold text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.25)]'
                     : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-white hover:text-gray-900'
@@ -62,7 +62,7 @@ function AdminMobileNavLink({ href, label, mobileLabel, icon: Icon }: { href: st
     return (
         <Link href={href} className={cn('flex flex-col items-center justify-center gap-1 rounded-md px-1 py-2 transition-all active:scale-95', isActive ? 'font-bold text-gray-900' : 'text-gray-500 hover:text-gray-900')}>
             <div className={cn('rounded-md p-1 transition-all', isActive ? 'border-2 border-gray-900 bg-gray-900 text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.25)]' : '')}><Icon size={20} /></div>
-            <span className={cn('mt-1 text-[10px] font-handwriting text-lg leading-none', isActive && 'font-bold text-gray-900')}>{mobileLabel || label}</span>
+            <span className={cn('mt-1 text-[10px] font-display text-lg leading-none', isActive && 'font-bold text-gray-900')}>{mobileLabel || label}</span>
         </Link>
     )
 }
@@ -87,8 +87,8 @@ export default function AdminShell({ children, user, profile, role, permissions,
                     <div className="pointer-events-none absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '10px 10px' }} />
                     <div className="relative z-10 shrink-0 p-6">
                         <Link href={isFullAdmin ? '/cpns/admin' : canReviewWorkspace ? '/cpns/admin/review' : '/cpns/admin/articles'} className="group flex flex-col items-start">
-                            <span className="text-xl font-handwriting font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span>
-                            <span className="ml-1 -mt-1 text-xs font-handwriting font-bold text-gray-500">Schema V2 · Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span></span>
+                            <span className="text-xl font-display font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span>
+                            <span className="ml-1 -mt-1 text-xs font-display font-bold text-gray-500">Schema V2 · Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span></span>
                         </Link>
                     </div>
                     <nav className="relative z-10 min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pb-4">
@@ -101,7 +101,7 @@ export default function AdminShell({ children, user, profile, role, permissions,
                                 {profile?.avatar_url ? <Image src={profile.avatar_url} alt="Avatar admin" fill className="object-cover" sizes="40px" /> : <span>{user.email?.[0]?.toUpperCase() || 'A'}</span>}
                             </div>
                             <div className="min-w-0 flex-1">
-                                <p className="truncate font-handwriting text-sm font-bold text-gray-900">{displayName}</p>
+                                <p className="truncate font-display text-sm font-bold text-gray-900">{displayName}</p>
                                 <span className="mt-0.5 inline-flex items-center gap-1 border border-gray-900 bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"><Shield size={12} />{roleLabel}</span>
                                 {hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" className="mt-1" compact theme="paper" />}
                             </div>
@@ -112,7 +112,7 @@ export default function AdminShell({ children, user, profile, role, permissions,
 
                 <main className="relative min-h-0 flex-1 overflow-y-auto pb-24 md:pb-0">
                     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b-2 border-gray-900 bg-[#f8f8f6]/90 px-6 shadow-sm backdrop-blur-md md:hidden">
-                        <Link href={isFullAdmin ? '/cpns/admin' : canReviewWorkspace ? '/cpns/admin/review' : '/cpns/admin/articles'} className="group flex flex-col items-start"><span className="text-lg font-handwriting font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span><span className="text-[10px] font-bold text-gray-500">Schema V2</span></Link>
+                        <Link href={isFullAdmin ? '/cpns/admin' : canReviewWorkspace ? '/cpns/admin/review' : '/cpns/admin/articles'} className="group flex flex-col items-start"><span className="text-lg font-display font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span><span className="text-[10px] font-bold text-gray-500">Schema V2</span></Link>
                         <div className="flex items-center gap-2">{hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" compact theme="paper" />}<Link href="/cpns/dashboard" className="rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-xs font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">User</Link><SidebarSignoutButton signoutAction={signoutAction} /></div>
                     </header>
                     <div className="mx-auto max-w-7xl p-6 md:p-8">{children}</div>

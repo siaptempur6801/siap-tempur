@@ -163,7 +163,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-300 shadow-[3px_3px_0_0_#0f172a]">
                         <RefreshCw className="animate-spin text-slate-900" size={24} />
                     </div>
-                    <h2 className="font-handwriting text-2xl font-black text-slate-950">Memuat leaderboard...</h2>
+                    <h2 className="font-display text-2xl font-black text-slate-950">Memuat leaderboard...</h2>
                 </div>
             </div>
         )
@@ -174,7 +174,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
             <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
                 <div className="max-w-lg border-2 border-slate-900 bg-white p-6 text-center shadow-[4px_4px_0_0_#0f172a]">
                     <Trophy className="mx-auto mb-4 text-blue-600" size={36} />
-                    <h2 className="font-handwriting text-2xl font-black sm:text-3xl">Leaderboard tidak tersedia</h2>
+                    <h2 className="font-display text-2xl font-black sm:text-3xl">Leaderboard tidak tersedia</h2>
                     <p className="mt-2 text-sm font-semibold text-slate-600">{errorMessage}</p>
                 </div>
             </div>
@@ -190,9 +190,9 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     </div>
                     <div className="min-w-0">
                         <div className="flex min-w-0 items-baseline gap-2">
-                            <span className="hidden shrink-0 font-handwriting text-lg font-black text-slate-950 sm:inline">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</span>
+                            <span className="hidden shrink-0 font-display text-lg font-black text-slate-950 sm:inline">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</span>
                             <span className="hidden text-slate-300 sm:inline">/</span>
-                            <h1 className="truncate font-handwriting text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
+                            <h1 className="truncate font-display text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
                             {isFinalLeaderboard ? 'Leaderboard Event' : 'Live Leaderboard'}
                             </h1>
                         </div>
@@ -234,7 +234,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                     section.key === 'passed' ? 'bg-emerald-100' : 'bg-yellow-100'
                                 )}>
                                     <div>
-                                        <h2 className="font-handwriting text-xl font-black text-slate-950 sm:text-2xl">{section.title}</h2>
+                                        <h2 className="font-display text-xl font-black text-slate-950 sm:text-2xl">{section.title}</h2>
                                         <p className="mt-0.5 text-xs font-semibold text-slate-600">{section.description}</p>
                                     </div>
                                     <div className="inline-flex w-fit items-center gap-1.5 border-2 border-slate-900 bg-white px-2.5 py-1.5 text-xs font-black text-slate-900 shadow-[2px_2px_0_0_#0f172a]">

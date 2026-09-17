@@ -33,7 +33,7 @@ export default function TokenUsageConfirmModal({
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm font-handwriting">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-sm font-display">
                     <motion.div
                         initial={{ scale: 0.92, opacity: 0, y: 16 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}

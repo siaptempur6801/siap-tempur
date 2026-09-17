@@ -50,7 +50,7 @@ export default async function OnboardingPage() {
             <div className="pointer-events-none absolute -right-16 bottom-20 h-52 w-44 rotate-6 border-2 border-dashed border-emerald-300 bg-[var(--st-green-soft)]" aria-hidden="true" />
 
             <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] max-w-5xl flex-col">
-                <Link href="/" className="st-focus w-fit font-handwriting text-2xl font-black tracking-tight md:text-3xl">
+                <Link href="/" className="st-focus w-fit font-display text-2xl font-black tracking-tight md:text-3xl">
                     Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                 </Link>
 

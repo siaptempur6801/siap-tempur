@@ -94,7 +94,7 @@ export default async function BlogIndexPage() {
                                                 {estimateReadTime(featured.content)}
                                             </span>
                                         </div>
-                                        <h2 className="mt-6 font-handwriting text-4xl font-black leading-tight text-gray-950 md:text-5xl">
+                                        <h2 className="mt-6 font-display text-4xl font-black leading-tight text-gray-950 md:text-5xl">
                                             <Link href={`/blog/${featured.slug}`} className="st-focus transition-colors hover:text-blue-700">
                                                 {featured.title}
                                             </Link>

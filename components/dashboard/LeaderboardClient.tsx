@@ -77,8 +77,8 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                             <BarChart3 className="w-4 h-4 text-gray-900" />
                             <span className="text-xs font-bold uppercase tracking-wider">{periodText}</span>
                         </div>
-                        <h1 className="font-handwriting text-5xl md:text-7xl font-bold text-gray-900">Ranking Nasional</h1>
-                        <p className="font-handwriting text-xl md:text-2xl text-gray-600 mt-2 italic">
+                        <h1 className="font-display text-5xl md:text-7xl font-bold text-gray-900">Ranking Nasional</h1>
+                        <p className="font-display text-xl md:text-2xl text-gray-600 mt-2 italic">
                             Top 100 pejuang CPNS nasional all-time.
                         </p>
                         {lastUpdatedAt && (

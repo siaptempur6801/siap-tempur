@@ -220,7 +220,7 @@ export default function QuestionEditorForm({
             <div className="relative mt-6 overflow-hidden border-2 border-gray-900 bg-white shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
                 <PaperBackground />
                 <div className="relative z-10 border-b-2 border-gray-900 bg-gray-100/90 px-6 py-5 sm:px-8">
-                    <h1 className="font-handwriting text-4xl font-black text-gray-900">
+                    <h1 className="font-display text-4xl font-black text-gray-900">
                         {isEditMode ? 'Edit Soal' : 'Buat Soal Baru'}
                     </h1>
                     <p className="mt-1 text-sm font-medium text-gray-600">

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 export default function SyaratKetentuanPage() {
     return (
         <>
-            <h1 className="font-handwriting font-bold text-4xl mb-6 text-gray-900 text-center">Syarat & Ketentuan</h1>
+            <h1 className="font-display font-bold text-4xl mb-6 text-gray-900 text-center">Syarat & Ketentuan</h1>
 
             <h3>1. Pendahuluan</h3>
             <p>

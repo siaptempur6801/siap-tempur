@@ -125,7 +125,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
                                 }`}
                             >
                                 <FileSpreadsheet className="mb-4 h-7 w-7" />
-                                <h3 className="font-handwriting text-2xl font-black">{item.label}</h3>
+                                <h3 className="font-display text-2xl font-black">{item.label}</h3>
                                 <p className={`mt-2 text-sm font-medium ${isActive ? 'text-gray-200' : 'text-gray-600'}`}>
                                     {item.description}
                                 </p>
@@ -135,7 +135,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
                 </div>
 
                 <div className="border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
-                    <h2 className="font-handwriting text-3xl font-black text-gray-900">Filter Export</h2>
+                    <h2 className="font-display text-3xl font-black text-gray-900">Filter Export</h2>
                     <p className="mt-1 text-sm font-medium text-gray-600">
                         Pilih filter data sebelum mengunduh file CSV.
                     </p>
@@ -234,7 +234,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
             </div>
 
             <aside className="h-fit border-2 border-gray-900 bg-gray-100 p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
-                <h2 className="font-handwriting text-3xl font-black text-gray-900">Ringkasan</h2>
+                <h2 className="font-display text-3xl font-black text-gray-900">Ringkasan</h2>
                 <div className="mt-5 space-y-4 text-sm">
                     <div className="border-b-2 border-gray-900 pb-3">
                         <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Jenis Data</p>

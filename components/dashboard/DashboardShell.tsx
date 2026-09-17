@@ -83,7 +83,7 @@ export default function DashboardShell({
                         href="/cpns"
                         className="st-focus inline-flex items-center focus-visible:outline-none"
                     >
-                        <span className="font-handwriting text-[1.65rem] font-black leading-tight text-slate-950">
+                        <span className="font-display text-[1.65rem] font-black leading-tight text-slate-950">
                             Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </span>
                     </Link>
@@ -156,7 +156,7 @@ export default function DashboardShell({
                 <div className="sticky top-0 z-30 flex h-14 items-center justify-between border-b-2 border-slate-900 bg-[#fbfaf7]/95 px-4 backdrop-blur-xl md:hidden">
                     <Link
                         href="/cpns"
-                        className="st-focus font-handwriting text-xl font-black text-slate-950"
+                        className="st-focus font-display text-xl font-black text-slate-950"
                     >
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>

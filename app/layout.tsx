@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { cn } from "@/lib/utils";
-import { Geist, Geist_Mono, Patrick_Hand, Work_Sans } from "next/font/google";
+import { Geist, Geist_Mono, Patrick_Hand, Poppins } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import LogoutSuccessToast from "@/components/auth/LogoutSuccessToast";
@@ -20,16 +20,19 @@ const geistMono = Geist_Mono({
   display: "swap",
 });
 
-const handwriting = Patrick_Hand({
+// Poppins = tipografi brand (brand sheet: Poppins Bold/Regular) untuk display + body.
+const poppins = Poppins({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-handwriting",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-poppins",
   display: "swap",
 });
 
-const bodyFont = Work_Sans({
+// Patrick Hand disimpan hanya untuk aksen "handwriting" yang memang disengaja.
+const handwriting = Patrick_Hand({
   subsets: ["latin"],
-  variable: "--font-body",
+  weight: "400",
+  variable: "--font-patrick",
   display: "swap",
 });
 
@@ -114,8 +117,8 @@ export default function RootLayout({
         className={cn(
           geistSans.variable,
           geistMono.variable,
+          poppins.variable,
           handwriting.variable,
-          bodyFont.variable,
           "antialiased"
         )}
       >
@@ -133,11 +136,11 @@ export default function RootLayout({
           richColors
           theme="light"
           toastOptions={{
-            className: 'font-handwriting border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-[#fdfbf7]',
+            className: 'font-display border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-[#fdfbf7]',
             style: {
               background: 'var(--background)',
               color: 'var(--foreground)',
-              fontFamily: 'var(--font-handwriting)',
+              fontFamily: 'var(--font-display)',
             }
           }}
         />

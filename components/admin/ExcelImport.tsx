@@ -241,7 +241,7 @@ export default function ExcelImport() {
                     <div className="bg-white rounded-2xl border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 space-y-5 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between">
-                            <h2 className="font-handwriting text-2xl font-bold text-gray-900">
+                            <h2 className="font-display text-2xl font-bold text-gray-900">
                                 📊 Import Soal dari CSV
                             </h2>
                             <button

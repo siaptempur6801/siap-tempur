@@ -59,7 +59,7 @@ export default function DrillingMateriPage() {
                         <Badge variant="blue" className="mb-5 inline-flex items-center gap-2">
                             <Target className="w-4 h-4" /> Latihan fokus
                         </Badge>
-                        <h1 className="text-4xl md:text-6xl font-handwriting font-bold mb-5 leading-tight">
+                        <h1 className="text-4xl md:text-6xl font-display font-bold mb-5 leading-tight">
                             Perbaiki satu bagian sebelum mencoba semuanya lagi.
                         </h1>
                         <p className="text-lg md:text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto">
@@ -72,7 +72,7 @@ export default function DrillingMateriPage() {
 
                     <Section dashedBorder="both" className="bg-white rounded-2xl border-2 border-gray-900 mb-14">
                         <div className="max-w-4xl mx-auto text-center px-4">
-                            <h2 className="font-handwriting text-3xl md:text-4xl font-bold mb-4">Kapan latihan fokus paling berguna?</h2>
+                            <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">Kapan latihan fokus paling berguna?</h2>
                             <p className="text-gray-600 text-lg leading-relaxed">
                                 Gunakan latihan fokus setelah kamu menemukan bagian yang masih lemah, saat ingin mempelajari satu jenis materi lebih dalam, atau sebelum mengukur diri lagi lewat mini/full tryout.
                             </p>
@@ -94,7 +94,7 @@ export default function DrillingMateriPage() {
                     <section className="mb-16">
                         <div className="text-center mb-9">
                             <p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700 mb-2">Pilih bagian</p>
-                            <h2 className="text-4xl md:text-5xl font-handwriting font-bold">Fokus pada kebutuhanmu hari ini.</h2>
+                            <h2 className="text-4xl md:text-5xl font-display font-bold">Fokus pada kebutuhanmu hari ini.</h2>
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-6">
@@ -114,7 +114,7 @@ export default function DrillingMateriPage() {
                     <Section dashedBorder="top" pattern="dots" className="text-center rounded-2xl bg-blue-50 border-2 border-gray-900">
                         <div className="max-w-3xl mx-auto px-4">
                             <Target className="w-10 h-10 text-blue-700 mx-auto mb-4" />
-                            <h2 className="text-3xl md:text-4xl font-handwriting font-bold mb-4">Mulai dari bagian yang paling membutuhkan perhatian.</h2>
+                            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Mulai dari bagian yang paling membutuhkan perhatian.</h2>
                             <p className="text-gray-600 text-lg mb-8 leading-relaxed">
                                 Masuk ke akunmu untuk melihat materi latihan yang tersedia. Detail akses atau kebutuhan token akan ditampilkan sebelum kamu memulai sesi.
                             </p>

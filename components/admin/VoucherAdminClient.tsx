@@ -85,7 +85,7 @@ export function VoucherCreateModal({
                 >
                     <X size={16} />
                 </button>
-                <h2 className="pr-12 font-handwriting text-3xl font-black text-gray-900">Buat Voucher</h2>
+                <h2 className="pr-12 font-display text-3xl font-black text-gray-900">Buat Voucher</h2>
                 <p className="mt-1 text-sm font-medium text-gray-600">
                     Buat kode baru untuk menambahkan token tryout ke user.
                 </p>
@@ -224,7 +224,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                 ].map(([label, value]) => (
                     <div key={label} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                         <p className="text-sm font-bold uppercase tracking-wide text-gray-500">{label}</p>
-                        <p className="mt-2 font-handwriting text-4xl font-black text-gray-900">{value}</p>
+                        <p className="mt-2 font-display text-4xl font-black text-gray-900">{value}</p>
                     </div>
                 ))}
             </div>
@@ -234,7 +234,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                     {vouchers.length === 0 ? (
                         <div className="border-2 border-dashed border-gray-900 bg-white p-12 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,0.12)]">
                             <Ticket className="mx-auto h-12 w-12 text-gray-500" />
-                            <h2 className="mt-4 font-handwriting text-3xl font-black text-gray-900">Belum ada voucher</h2>
+                            <h2 className="mt-4 font-display text-3xl font-black text-gray-900">Belum ada voucher</h2>
                             <p className="mt-2 text-sm font-medium text-gray-600">Klik tombol Buat Voucher di kanan atas untuk menambahkan kode baru.</p>
                         </div>
                     ) : (
@@ -292,7 +292,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                         <div className="border-2 border-gray-900 bg-gray-100 p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
-                                    <h2 className="font-handwriting text-3xl font-black text-gray-900">
+                                    <h2 className="font-display text-3xl font-black text-gray-900">
                                         {isEditing ? 'Edit Voucher' : 'Detail Klaim'}
                                     </h2>
                                     <p className="mt-1 font-mono text-sm font-black text-gray-700">{selectedVoucher.code}</p>
@@ -387,7 +387,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
             {voucherToDelete ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
                     <div className="relative w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                        <h2 className="font-handwriting text-3xl font-black text-gray-900">Hapus Voucher?</h2>
+                        <h2 className="font-display text-3xl font-black text-gray-900">Hapus Voucher?</h2>
                         <p className="mt-3 text-sm font-medium leading-relaxed text-gray-700">
                             Voucher <strong className="font-mono text-gray-900">{voucherToDelete.code}</strong> akan dihapus permanen.
                             {voucherToDelete.used_count > 0

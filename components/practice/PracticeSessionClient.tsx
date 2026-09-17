@@ -170,7 +170,7 @@ const QuestionPrompt = memo(function QuestionPrompt({ question }: { question: Qu
                             unoptimized
                         />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="bg-white px-3 py-1.5 rounded-lg border-2 border-gray-900 font-bold font-handwriting text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2">
+                            <div className="bg-white px-3 py-1.5 rounded-lg border-2 border-gray-900 font-bold font-display text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2">
                                 <ZoomIn size={16} /> Perbesar Gambar
                             </div>
                         </div>
@@ -214,7 +214,7 @@ const QuestionPrompt = memo(function QuestionPrompt({ question }: { question: Qu
                     </AnimatePresence>
                 </>
             )}
-            <div className="prose dark:prose-invert max-w-none font-handwriting text-gray-900">
+            <div className="prose dark:prose-invert max-w-none font-display text-gray-900">
                 <div className="text-xl md:text-2xl leading-relaxed font-bold whitespace-pre-wrap">
                     <MathRenderer text={question.content} />
                 </div>
@@ -254,7 +254,7 @@ const QuestionOptionCard = memo(function QuestionOptionCard({
                 )}
 
                 <div className={cn(
-                    "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-handwriting font-bold text-lg transition-colors",
+                    "w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 font-display font-bold text-lg transition-colors",
                     isSelected
                         ? 'border-blue-600 bg-blue-600 text-white'
                         : 'border-gray-400 text-gray-400 group-hover:border-blue-400 group-hover:text-blue-400'
@@ -262,7 +262,7 @@ const QuestionOptionCard = memo(function QuestionOptionCard({
                     {String.fromCharCode(65 + index)}
                 </div>
                 <div className={cn(
-                    "flex-1 space-y-2 text-base md:text-lg leading-relaxed font-handwriting",
+                    "flex-1 space-y-2 text-base md:text-lg leading-relaxed font-display",
                     isSelected ? 'font-bold text-blue-900' : 'text-gray-600 font-medium'
                 )}>
                     {option.image_url && (
@@ -822,7 +822,7 @@ export default function PracticeSessionClient({
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-dashed border-gray-300">
-                                <h2 className="font-bold text-xl flex items-center gap-2 font-handwriting text-gray-800">
+                                <h2 className="font-bold text-xl flex items-center gap-2 font-display text-gray-800">
                                     <Map size={20} /> Navigasi Soal
                                 </h2>
                                 <button onClick={() => setShowMobileNav(false)} className="p-2 hover:bg-secondary rounded-full">
@@ -843,7 +843,7 @@ export default function PracticeSessionClient({
                                             aria-current={currentIndex === idx ? 'step' : undefined}
                                             style={currentIndex === idx ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
                                             className={cn(
-                                                "relative aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
+                                                "relative aspect-square rounded-lg font-display font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
                                                 currentIndex === idx ? 'z-10' : '',
                                                 marked[q.id]
                                                     ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
@@ -865,12 +865,12 @@ export default function PracticeSessionClient({
                             <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-300 bg-gray-50/50 rounded-lg p-4">
                                 <button
                                     onClick={() => setShowExitModal(true)}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-handwriting font-bold transition-all"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-display font-bold transition-all"
                                 >
                                     <LogOut size={18} /> Keluar {sessionKindLabel}
                                 </button>
 
-                                <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
+                                <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-display font-bold shadow-sm">
                                     <div className="flex items-center gap-2"><div className="relative h-3 w-3 rounded-full border-2 border-slate-950 bg-white"><span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-red-500" /></div><span>Sedang dikerjakan</span></div>
                                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
                                     <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ditandai</span></div>
@@ -887,7 +887,7 @@ export default function PracticeSessionClient({
                 <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                         <PaperBackground />
-                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
+                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-display">
                             <div className="w-16 h-16 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mb-2 rotate-3 shadow-sm">
                                 <LogOut size={32} className="text-red-600" />
                             </div>
@@ -945,7 +945,7 @@ export default function PracticeSessionClient({
                             onClick={(e) => e.stopPropagation()}
                         >
                             <PaperBackground />
-                            <div className="relative z-10 font-handwriting">
+                            <div className="relative z-10 font-display">
                                 <div className="w-20 h-20 bg-orange-50 border-2 border-orange-300 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <Clock className="w-12 h-12 text-orange-500" />
                                 </div>
@@ -981,7 +981,7 @@ export default function PracticeSessionClient({
                             onClick={(e) => e.stopPropagation()}
                         >
                             <PaperBackground />
-                            <div className="relative z-10 font-handwriting">
+                            <div className="relative z-10 font-display">
                                 <div className="w-20 h-20 bg-red-50 border-2 border-red-300 rounded-full flex items-center justify-center mx-auto mb-6">
                                     <Clock className="w-14 h-14 text-red-600" />
                                 </div>
@@ -1007,7 +1007,7 @@ export default function PracticeSessionClient({
                         {/* Tape effect on modal */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-white/40 border border-gray-200 shadow-sm -rotate-2 z-20 pointer-events-none"></div>
 
-                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
+                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-display">
                             <div className="w-16 h-16 bg-blue-100 border-2 border-blue-600 rounded-full flex items-center justify-center mb-2 rotate-2 shadow-md">
                                 <CheckCircle2 size={32} className="text-blue-600" />
                             </div>
@@ -1075,15 +1075,15 @@ export default function PracticeSessionClient({
                             <div className="flex items-center gap-2 overflow-hidden min-w-0">
                                 <div className="flex flex-col gap-0.5 md:gap-1 overflow-hidden">
                                     <div className="flex items-baseline gap-1">
-                                        <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900 leading-tight">Soal {currentIndex + 1}</span>
-                                        <span className="font-handwriting text-sm text-gray-500 md:text-lg">dari {sortedQuestions.length}</span>
+                                        <span className="font-display font-bold text-xl md:text-2xl text-gray-900 leading-tight">Soal {currentIndex + 1}</span>
+                                        <span className="font-display text-sm text-gray-500 md:text-lg">dari {sortedQuestions.length}</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[9px] md:text-[11px] font-bold rounded uppercase tracking-wider">
                                             {currentQuestion.type}
                                         </span>
                                         {currentQuestion.category && (
-                                            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[9px] md:text-xs font-bold font-handwriting rounded md:shadow-sm">
+                                            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[9px] md:text-xs font-bold font-display rounded md:shadow-sm">
                                                 {formatSubjectName(currentQuestion.category)}
                                             </span>
                                         )}
@@ -1097,7 +1097,7 @@ export default function PracticeSessionClient({
                                     onClick={toggleMark}
                                     className={cn(
                                         "flex items-center justify-center rounded-full border transition-colors",
-                                        "w-7 h-7 md:w-auto md:h-auto md:px-4 md:py-1 text-[10px] md:text-sm gap-1 md:gap-1.5 font-handwriting font-bold shadow-none", // Circle on mobile, Pill on desktop
+                                        "w-7 h-7 md:w-auto md:h-auto md:px-4 md:py-1 text-[10px] md:text-sm gap-1 md:gap-1.5 font-display font-bold shadow-none", // Circle on mobile, Pill on desktop
                                         marked[currentQuestion.id]
                                             ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-400 rotate-1 md:shadow-[2px_2px_0px_0px_rgba(202,138,4,1)]'
                                             : 'bg-white border-2 border-gray-300 text-gray-500 hover:bg-gray-50 hover:border-gray-400 md:shadow-[2px_2px_0px_0px_rgba(156,163,175,1)]'
@@ -1117,7 +1117,7 @@ export default function PracticeSessionClient({
                                         onTimeExpired={handleTimeExpired}
                                     />
                                 ) : (
-                                    <div className="hidden md:flex px-4 py-1.5 bg-white border-2 border-gray-900 rounded-full text-xs md:text-sm font-handwriting font-bold items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="hidden md:flex px-4 py-1.5 bg-white border-2 border-gray-900 rounded-full text-xs md:text-sm font-display font-bold items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                         <Clock size={14} />
                                         <span>{sessionKindLabel}</span>
                                     </div>
@@ -1191,7 +1191,7 @@ export default function PracticeSessionClient({
                                     data-prevent-double="true"
                                     onClick={onFinishClick}
                                     disabled={finishing}
-                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-display font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {finishing ? '...' : 'Kumpulkan'}
                                     <CheckCircle2 size={20} />
@@ -1212,7 +1212,7 @@ export default function PracticeSessionClient({
                         <button
                             onClick={handlePreviousQuestion}
                             disabled={currentIndex === 0}
-                            className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-handwriting font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                            className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-display font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
                         >
                             <ChevronLeft size={20} />
                             Sebelumnya
@@ -1223,7 +1223,7 @@ export default function PracticeSessionClient({
                                 data-prevent-double="true"
                                 onClick={onFinishClick}
                                 disabled={finishing}
-                                className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-handwriting font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)] disabled:cursor-not-allowed disabled:opacity-60"
+                                className="flex items-center gap-2 px-8 py-2 bg-blue-600 text-white border-2 border-blue-800 rounded-lg hover:bg-blue-700 transition font-display font-bold text-lg shadow-[3px_3px_0px_0px_rgba(30,58,138,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(30,58,138,1)] disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 {finishing ? 'Mengumpulkan...' : 'Kumpulkan jawaban'}
                                 <CheckCircle2 size={20} />
@@ -1231,7 +1231,7 @@ export default function PracticeSessionClient({
                         ) : (
                             <button
                                 onClick={handleNextQuestion}
-                                className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg hover:bg-gray-800 transition font-handwriting font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg hover:bg-gray-800 transition font-display font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] active:translate-x-px active:translate-y-px active:shadow-none"
                             >
                                 Selanjutnya
                                 <ChevronRight size={20} />
@@ -1253,7 +1253,7 @@ export default function PracticeSessionClient({
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/60 border border-white/40 shadow-sm rotate-2 z-20 pointer-events-none"></div>
 
-                        <div className="p-4 border-b-2 border-dashed border-gray-300 font-handwriting font-bold text-xl flex items-center gap-2 text-gray-800">
+                        <div className="p-4 border-b-2 border-dashed border-gray-300 font-display font-bold text-xl flex items-center gap-2 text-gray-800">
                             <Map size={20} />
                             Navigasi Soal
                         </div>
@@ -1267,7 +1267,7 @@ export default function PracticeSessionClient({
                                         aria-current={currentIndex === idx ? 'step' : undefined}
                                         style={currentIndex === idx ? { outline: '3px solid #ef4444', outlineOffset: '2px' } : undefined}
                                         className={cn(
-                                            "relative aspect-square rounded-lg font-handwriting font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
+                                            "relative aspect-square rounded-lg font-display font-bold text-lg flex items-center justify-center transition-all border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-px hover:translate-y-px",
                                             currentIndex === idx ? 'z-10' : '',
                                             marked[q.id]
                                                 ? 'bg-yellow-400 text-yellow-900 border-yellow-600'
@@ -1287,11 +1287,11 @@ export default function PracticeSessionClient({
                         <div className="p-4 border-t-2 border-dashed border-gray-300 bg-gray-50/50 rounded-b-lg">
                             <button
                                 onClick={() => setShowExitModal(true)}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-handwriting font-bold transition-all text-base dashed"
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border-2 border-red-200 text-red-600 bg-red-50 hover:bg-red-100 hover:border-red-300 font-display font-bold transition-all text-base dashed"
                             >
                                 <LogOut size={18} /> Keluar {sessionKindLabel}
                             </button>
-                            <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-handwriting font-bold shadow-sm">
+                            <div className="mt-4 p-3 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1.5 rounded-lg font-display font-bold shadow-sm">
                                 <div className="flex items-center gap-2"><div className="relative h-3 w-3 rounded-full border-2 border-slate-950 bg-white"><span className="absolute -right-1.5 -top-1.5 h-2 w-2 rounded-full bg-red-500" /></div><span>Sedang dikerjakan</span></div>
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
                                 <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ditandai</span></div>

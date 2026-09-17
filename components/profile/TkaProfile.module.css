@@ -37,7 +37,7 @@
 }
 
 .profile.profile :is(h2, h3),
-.profile.profile :global(.font-handwriting) {
+.profile.profile :global(.font-display) {
   font-family: var(--font-body), sans-serif;
 }
 

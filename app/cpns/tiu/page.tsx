@@ -31,11 +31,11 @@ export default function TIUPage() {
                     {/* Hero Section */}
                     <div className="mb-12">
                         <Badge variant="blue" className="mb-4">SKD Subtes 2</Badge>
-                        <h1 className="text-4xl md:text-5xl font-handwriting font-bold mb-4 leading-tight">
+                        <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 leading-tight">
                             Latihan Soal TIU CPNS <br className="hidden md:block" />
                             <span className="text-blue-600">Tes Intelegensia Umum</span>
                         </h1>
-                        <p className="text-xl text-gray-600 font-handwriting max-w-2xl">
+                        <p className="text-xl text-gray-600 font-display max-w-2xl">
                             Tes yang menguras paling banyak waktu. Kuasai kemampuan verbal, numerik, dan figural dengan trik hitung cepat agar tidak kehabisan waktu di ujian CAT sebenarnya.
                         </p>
                     </div>
@@ -47,7 +47,7 @@ export default function TIUPage() {
                                 <Calculator className="w-12 h-12 text-blue-600" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold font-handwriting mb-2">Passing Grade TIU: 80 Poin</h2>
+                                <h2 className="text-2xl font-bold font-display mb-2">Passing Grade TIU: 80 Poin</h2>
                                 <p className="text-gray-700 font-body mb-4">
                                     Dari total 35 soal TIU, Anda wajib menjawab benar minimal <strong>16 soal</strong> (masing-masing bernilai 5 poin). Skor salah adalah 0. TIU sering menjadi <i>killer subtest</i> bagi peserta CPNS!
                                 </p>
@@ -67,7 +67,7 @@ export default function TIUPage() {
 
                     {/* Materi Section */}
                     <div className="mb-12">
-                        <h2 className="text-3xl font-handwriting font-bold mb-6">Materi Uji TIU (Sesuai Permenpan RB)</h2>
+                        <h2 className="text-3xl font-display font-bold mb-6">Materi Uji TIU (Sesuai Permenpan RB)</h2>
                         <div className="grid md:grid-cols-3 gap-4">
                             {[
                                 { title: "Kemampuan Verbal", desc: "Analogi (perbandingan dua konsep), Silogisme (penarikan kesimpulan), dan Analitis (analisa informasi kompleks)." },
@@ -76,7 +76,7 @@ export default function TIUPage() {
                             ].map((item, i) => (
                                 <Card key={i} variant="standard" className="p-5">
                                     <CheckCircle2 className="w-6 h-6 text-blue-500 mb-3" />
-                                    <h3 className="font-bold font-handwriting text-xl mb-2">{item.title}</h3>
+                                    <h3 className="font-bold font-display text-xl mb-2">{item.title}</h3>
                                     <p className="text-gray-600 font-body text-sm leading-relaxed">{item.desc}</p>
                                 </Card>
                             ))}
@@ -85,7 +85,7 @@ export default function TIUPage() {
 
                     {/* CTA Section */}
                     <Section dashedBorder="top" pattern="dots" className="text-center rounded-3xl mt-16 bg-white border-4 border-gray-900">
-                        <h2 className="text-3xl font-handwriting font-bold mb-4">Latih Kecepatan Hitungmu!</h2>
+                        <h2 className="text-3xl font-display font-bold mb-4">Latih Kecepatan Hitungmu!</h2>
                         <p className="text-gray-600 font-body mb-8 max-w-lg mx-auto">
                             Rata-rata Anda hanya punya <strong>54 detik</strong> untuk menjawab 1 soal TIU. Tes kecepatan dan ketepatanmu menggunakan sistem CAT BKN kami.
                         </p>

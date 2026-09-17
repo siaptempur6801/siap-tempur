@@ -23,7 +23,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
         ref={ref}
         style={{ transform: rotate ? `rotate(${rotate}deg)` : undefined }}
         className={cn(
-          "inline-flex items-center gap-2 px-4 py-1.5 font-handwriting text-lg font-bold border-2 rounded-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
+          "inline-flex items-center gap-2 px-4 py-1.5 font-display text-lg font-bold border-2 rounded-sm shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
           animated && "animate-pulse",
           variants[variant],
           className

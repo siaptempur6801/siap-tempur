@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 export default function KebijakanPengembalianPage() {
     return (
         <>
-            <h1 className="font-handwriting font-bold text-4xl mb-6 text-gray-900 text-center">Kebijakan Pengembalian Dana</h1>
+            <h1 className="font-display font-bold text-4xl mb-6 text-gray-900 text-center">Kebijakan Pengembalian Dana</h1>
 
             <h3>1. Produk Digital</h3>
             <p>

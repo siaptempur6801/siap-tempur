@@ -189,7 +189,7 @@ function ConfirmModal({ event, onConfirm, onCancel, isLoading }: {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-md border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] font-handwriting"
+                className="w-full max-w-md border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] font-display"
             >
                 <div className="border-b-4 border-gray-900 bg-orange-400 px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ function EventCard({
 
                     {/* Title & Desc */}
                     <div>
-                        <h2 className="font-handwriting text-2xl font-black leading-tight text-gray-900 sm:text-3xl">{event.title}</h2>
+                        <h2 className="font-display text-2xl font-black leading-tight text-gray-900 sm:text-3xl">{event.title}</h2>
                         <p className="mt-2 max-w-3xl text-sm font-medium leading-relaxed text-gray-600">{event.description || 'Tryout Akbar SKD CPNS nasional.'}</p>
                     </div>
 
@@ -562,7 +562,7 @@ function CertificateModal({
             >
                 <div className="flex items-center gap-3 border-b-4 border-gray-900 bg-emerald-400 px-6 py-4">
                     <Award className="h-7 w-7 text-gray-900" />
-                    <h2 className="font-handwriting text-2xl font-black text-gray-900">Nama Sertifikat</h2>
+                    <h2 className="font-display text-2xl font-black text-gray-900">Nama Sertifikat</h2>
                 </div>
                 <div className="space-y-5 p-6">
                     <div>
@@ -734,7 +734,7 @@ function EventPaymentModal({
             >
                 <div className="border-b-4 border-gray-900 bg-amber-400 px-6 py-4 flex items-center gap-3">
                     <Ticket className="h-7 w-7 text-gray-900" />
-                    <h2 className="font-handwriting text-2xl font-black text-gray-900">Beli Tiket Event</h2>
+                    <h2 className="font-display text-2xl font-black text-gray-900">Beli Tiket Event</h2>
                 </div>
                 <div className="p-6 space-y-5">
                     <div>
@@ -930,7 +930,7 @@ export default function EventClient({ events }: EventClientProps) {
     ]
 
     return (
-        <div className="space-y-8 font-handwriting">
+        <div className="space-y-8 font-display">
             {/* Header */}
             <div className="relative z-10">
                 <div className="mb-4 inline-flex -rotate-1 items-center gap-2 border-2 border-gray-900 bg-blue-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-blue-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">

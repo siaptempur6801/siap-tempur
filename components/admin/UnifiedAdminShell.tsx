@@ -200,7 +200,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
         <div className="flex h-full flex-col bg-[#08172f] text-white">
             <div className={cn('flex h-16 shrink-0 items-center border-b border-white/10', collapsed ? 'justify-center px-2' : 'justify-between px-4')}>
                 <Link href={homeHref} onClick={() => setMobileOpen(false)} className={cn('min-w-0', collapsed && 'sr-only')}>
-                    <div className="font-handwriting text-lg font-black text-white">Siap<span className="text-cyan-300 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</div>
+                    <div className="font-display text-lg font-black text-white">Siap<span className="text-cyan-300 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</div>
                     <div className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-cyan-300">Admin Workspace</div>
                 </Link>
                 <button type="button" onClick={() => setCollapsed((value) => !value)} className="hidden h-9 w-9 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white lg:inline-flex" aria-label={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}>

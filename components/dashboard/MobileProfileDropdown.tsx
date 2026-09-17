@@ -88,12 +88,12 @@ export default function MobileProfileDropdown({
                         sizes="40px"
                     />
                 ) : (
-                    <span className="text-sm font-bold font-handwriting text-gray-900">{user.email?.[0]?.toUpperCase() || '?'}</span>
+                    <span className="text-sm font-bold font-display text-gray-900">{user.email?.[0]?.toUpperCase() || '?'}</span>
                 )}
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden font-handwriting">
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden font-display">
                     {/* Pattern Overlay */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
 
@@ -190,7 +190,7 @@ export default function MobileProfileDropdown({
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-red-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
-                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
+                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-display">
                             <div className="w-16 h-16 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mb-2 rotate-3 shadow-sm">
                                 <LogOut size={32} className="text-red-600" />
                             </div>

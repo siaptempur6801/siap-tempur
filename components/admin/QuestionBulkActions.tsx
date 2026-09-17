@@ -128,7 +128,7 @@ export default function QuestionBulkActions({
                         <div className="mb-4 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-gray-100">
                             <Trash2 className="h-7 w-7 text-gray-900" />
                         </div>
-                        <h3 className="font-handwriting text-3xl font-black text-gray-900">
+                        <h3 className="font-display text-3xl font-black text-gray-900">
                             Hapus {selectedCount} soal?
                         </h3>
                         <p className="mt-2 text-sm font-medium text-gray-600">

@@ -240,7 +240,7 @@ export default function QuestionCard({
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-black/10 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
-                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
+                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-display">
                             <div className="mb-2 flex h-16 w-16 rotate-3 items-center justify-center border-2 border-gray-900 bg-gray-100 shadow-md">
                                 <Trash2 size={32} className="text-gray-900" />
                             </div>

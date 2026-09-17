@@ -59,7 +59,7 @@ export default function Modal({ isOpen, onClose, title, children, className = ''
                         {/* Header */}
                         {title && (
                             <div className="px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between bg-gray-50 shrink-0">
-                                <h3 className="font-handwriting text-2xl font-bold text-gray-900">{title}</h3>
+                                <h3 className="font-display text-2xl font-bold text-gray-900">{title}</h3>
                                 <button
                                     onClick={onClose}
                                     className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"

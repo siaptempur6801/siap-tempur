@@ -53,7 +53,7 @@ export default function EventPage() {
                         <Badge variant="yellow" className="mb-6 inline-flex items-center gap-2">
                             <Trophy className="w-4 h-4" /> Event tryout
                         </Badge>
-                        <h1 className="text-4xl md:text-6xl font-handwriting font-bold mb-6 leading-tight max-w-4xl mx-auto">
+                        <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 leading-tight max-w-4xl mx-auto">
                             Ikuti tryout bersama dalam sesi terjadwal.
                         </h1>
                         <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
@@ -81,7 +81,7 @@ export default function EventPage() {
                     <Section dashedBorder="both" className="rounded-2xl bg-blue-50 border-2 border-gray-900">
                         <div className="max-w-3xl mx-auto text-center px-4">
                             <CalendarDays className="w-10 h-10 text-blue-700 mx-auto mb-4" />
-                            <h2 className="text-3xl md:text-4xl font-handwriting font-bold mb-4">
+                            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
                                 Belum ada event yang cocok?
                             </h2>
                             <p className="text-gray-600 mb-7 leading-relaxed">

@@ -331,7 +331,7 @@ function CertificateNameEditModal({
                 <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-emerald-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                     <Award size={28} strokeWidth={3} />
                 </div>
-                <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">Koreksi Nama Sertifikat</h3>
+                <h3 className="font-display text-3xl font-black leading-tight text-gray-900">Koreksi Nama Sertifikat</h3>
                 <p className="mt-2 text-sm font-medium text-gray-600">
                     Koreksi ini hanya bisa dilakukan admin. PDF lama akan dibatalkan dan file baru dibuat saat sertifikat di-download lagi.
                 </p>
@@ -398,7 +398,7 @@ function CertificatePreviewModal({
                         <p className="inline-flex items-center gap-2 border-2 border-gray-900 bg-blue-50 px-3 py-1 text-xs font-black uppercase text-blue-700">
                             <Eye size={14} /> Preview Admin
                         </p>
-                        <h3 className="mt-2 font-handwriting text-3xl font-black text-gray-900">Cek Sertifikat Peserta</h3>
+                        <h3 className="mt-2 font-display text-3xl font-black text-gray-900">Cek Sertifikat Peserta</h3>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <button
@@ -752,7 +752,7 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                             <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-blue-100 text-blue-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
-                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                            <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
                                 Simpan Perubahan Event?
                             </h3>
                             <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
@@ -795,7 +795,7 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                             <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
-                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                            <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
                                 Perubahan Belum Disimpan
                             </h3>
                             <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
@@ -1176,7 +1176,7 @@ function DetailPanel({
                     <div className="space-y-4">
                         <div className="flex flex-col gap-3 border-2 border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h4 className="font-handwriting text-2xl font-black text-gray-900">Daftar Soal Event</h4>
+                                <h4 className="font-display text-2xl font-black text-gray-900">Daftar Soal Event</h4>
                                 <p className="text-sm font-medium text-gray-500">
                                     {event.questions.length} soal tersusun sesuai urutan paket event.
                                 </p>
@@ -1427,7 +1427,7 @@ function DetailPanel({
 
                         <div className="flex flex-col gap-3 border-2 border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <h4 className="font-handwriting text-2xl font-black text-gray-900">Monitoring Peserta</h4>
+                                <h4 className="font-display text-2xl font-black text-gray-900">Monitoring Peserta</h4>
                                 <p className="text-sm font-medium text-gray-500">
                                     Pantau status daftar, pengerjaan, skor, dan kelulusan peserta event.
                                 </p>
@@ -1603,7 +1603,7 @@ function DetailPanel({
                             <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
-                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                            <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
                                 {statusToConfirm.confirmTitle}
                             </h3>
                             <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
@@ -1640,7 +1640,7 @@ function DetailPanel({
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                         <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
                             className="w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-                            <h3 className="font-handwriting text-2xl font-black text-gray-900">Hapus Kode?</h3>
+                            <h3 className="font-display text-2xl font-black text-gray-900">Hapus Kode?</h3>
                             <p className="mt-2 text-sm font-medium text-gray-600">Kode <strong>{codeToDelete.code}</strong> akan dihapus permanen.</p>
                             <div className="mt-4 flex gap-3">
                                 <button onClick={() => setCodeToDelete(null)} className="flex-1 border-2 border-gray-900 bg-white py-2 font-black text-gray-900">Batal</button>
@@ -1664,7 +1664,7 @@ function DetailPanel({
                             <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
-                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                            <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
                                 Perubahan Belum Disimpan
                             </h3>
                             <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
@@ -1777,7 +1777,7 @@ export function EventCreateController() {
                             <button type="button" onClick={() => setIsOpen(false)} className="absolute right-4 top-4 border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                 <X size={16} />
                             </button>
-                            <h2 className="pr-12 font-handwriting text-3xl font-black text-gray-900">Buat Event Baru</h2>
+                            <h2 className="pr-12 font-display text-3xl font-black text-gray-900">Buat Event Baru</h2>
                             <p className="mb-5 mt-1 text-sm font-medium text-gray-600">Siapkan jadwal dan aturan dasar Tryout Akbar.</p>
                             <EventForm action={handleCreate} isPending={isPending} />
                         </motion.div>
@@ -1875,7 +1875,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                             <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{label}</p>
                             {icon}
                         </div>
-                        <p className="mt-2 font-handwriting text-4xl font-black text-gray-900">{value}</p>
+                        <p className="mt-2 font-display text-4xl font-black text-gray-900">{value}</p>
                     </div>
                 ))}
             </div>
@@ -1885,7 +1885,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                 {events.length === 0 ? (
                     <div className="border-2 border-dashed border-gray-900 bg-white p-12 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,0.12)]">
                         <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
-                        <h2 className="mt-4 font-handwriting text-3xl font-black text-gray-900">Belum ada event</h2>
+                        <h2 className="mt-4 font-display text-3xl font-black text-gray-900">Belum ada event</h2>
                         <p className="mt-2 text-sm font-medium text-gray-600">Klik Buat Event untuk menyiapkan Tryout Akbar.</p>
                     </div>
                 ) : (
@@ -1925,7 +1925,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                                             {/* Info */}
                                             <div className="min-w-0 flex-1">
                                                 <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                                                    <h3 className="font-handwriting text-xl font-black text-gray-900 truncate">{event.title}</h3>
+                                                    <h3 className="font-display text-xl font-black text-gray-900 truncate">{event.title}</h3>
                                                     <StatusBadge status={event.status} />
                                                     {event.requires_code && (
                                                         <span className="border border-gray-300 px-1.5 py-0.5 text-[10px] font-black uppercase text-gray-500">
@@ -1997,7 +1997,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                             <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
-                            <h3 className="font-handwriting text-3xl font-black leading-tight text-gray-900">
+                            <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
                                 Perubahan Belum Disimpan
                             </h3>
                             <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
@@ -2029,7 +2029,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                             className="w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                             <div className="flex items-center gap-2 mb-3">
                                 <AlertTriangle size={20} className="text-red-500" />
-                                <h2 className="font-handwriting text-2xl font-black text-gray-900">Hapus Event?</h2>
+                                <h2 className="font-display text-2xl font-black text-gray-900">Hapus Event?</h2>
                             </div>
                             <p className="text-sm font-medium leading-relaxed text-gray-700">
                                 Event <strong>{eventToDelete.title}</strong> akan dihapus permanen, termasuk semua pendaftaran, kode masuk, dan sesi pengerjaan.

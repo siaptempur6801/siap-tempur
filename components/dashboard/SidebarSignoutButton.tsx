@@ -47,7 +47,7 @@ export default function SidebarSignoutButton({
                         : 'st-focus flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100'
                     : soft
                         ? 'inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition'
-                        : 'flex min-h-9 w-full items-center gap-2 rounded-md border-2 border-transparent px-3 py-1.5 font-handwriting text-sm font-bold text-red-600 transition hover:border-red-200 hover:bg-red-50 hover:shadow-sm'}
+                        : 'flex min-h-9 w-full items-center gap-2 rounded-md border-2 border-transparent px-3 py-1.5 font-display text-sm font-bold text-red-600 transition hover:border-red-200 hover:bg-red-50 hover:shadow-sm'}
             >
                 <LogOut size={soft ? 14 : 16} />
                 {compact ? null : 'Keluar'}
@@ -89,7 +89,7 @@ export default function SidebarSignoutButton({
                             {/* Tape Effect */}
                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-red-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
-                            <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-handwriting">
+                            <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-display">
                                 <div className="w-16 h-16 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mb-2 rotate-3 shadow-sm">
                                     <LogOut size={32} className="text-red-600" />
                                 </div>

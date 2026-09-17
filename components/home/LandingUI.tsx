@@ -154,13 +154,13 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 <nav className="container mx-auto px-4 md:px-6 lg:px-8 h-20 flex items-center justify-between relative">
 
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="flex items-center group cursor-pointer">
-                        <span className="text-3xl font-handwriting font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
+                        <span className="text-3xl font-display font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
                             Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </span>
                     </button>
 
                     {/* Desktop Navigation */}
-                    <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 font-handwriting text-xl text-gray-700">
+                    <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-6 font-display text-xl text-gray-700">
                         <button onClick={() => scrollToSection("features")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Fitur</button>
                         <button onClick={() => scrollToSection("products")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Harga</button>
                         <button onClick={() => scrollToSection("active-event")} className="hover:text-black hover:underline decoration-wavy decoration-2 cursor-pointer">Event</button>
@@ -175,13 +175,13 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                     {/* Jembatan transparan agar dropdown tidak nutup saat hover ke menu */}
                                     <div className="absolute top-full left-0 w-full h-3" />
                                     <div className="absolute top-[calc(100%+0.5rem)] left-1/2 -translate-x-1/2 w-52 bg-[#fdfbf7] border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-md overflow-hidden z-50">
-                                        <Link href="/cpns/mini-tryout" className="flex items-center gap-2 px-4 py-3 hover:bg-yellow-50 border-b border-gray-200 font-handwriting text-lg text-gray-800 hover:text-blue-600 transition-colors">
+                                        <Link href="/cpns/mini-tryout" className="flex items-center gap-2 px-4 py-3 hover:bg-yellow-50 border-b border-gray-200 font-display text-lg text-gray-800 hover:text-blue-600 transition-colors">
                                             <Zap size={16} className="text-yellow-500" /> Mini Tryout
                                         </Link>
-                                        <Link href="/cpns/full-tryout" className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 border-b border-gray-200 font-handwriting text-lg text-gray-800 hover:text-blue-600 transition-colors">
+                                        <Link href="/cpns/full-tryout" className="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 border-b border-gray-200 font-display text-lg text-gray-800 hover:text-blue-600 transition-colors">
                                             <Monitor size={16} className="text-blue-500" /> Full Tryout
                                         </Link>
-                                        <Link href="/cpns/drilling-materi" className="flex items-center gap-2 px-4 py-3 hover:bg-red-50 border-b border-gray-200 font-handwriting text-lg text-gray-800 hover:text-blue-600 transition-colors">
+                                        <Link href="/cpns/drilling-materi" className="flex items-center gap-2 px-4 py-3 hover:bg-red-50 border-b border-gray-200 font-display text-lg text-gray-800 hover:text-blue-600 transition-colors">
                                             <Target size={16} className="text-red-500" /> Drilling Materi
                                         </Link>
                                     </div>
@@ -224,13 +224,13 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     {/* Mobile Menu Dropdown */}
                     {isMenuOpen && (
                         <div className="absolute top-20 left-0 w-full bg-[#fdfbf7] border-b-4 border-gray-800/10 shadow-lg p-6 flex flex-col gap-4 md:hidden z-40">
-                            <button onClick={() => { scrollToSection("features"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Fitur</button>
-                            <button onClick={() => { scrollToSection("products"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Harga</button>
-                            <button onClick={() => { scrollToSection("active-event"); setIsMenuOpen(false); }} className="font-handwriting text-2xl text-gray-700 hover:text-red-600 text-left py-2 border-b border-gray-200">Event</button>
-                            <Link href="/cpns/mini-tryout" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Mini Tryout</Link>
-                            <Link href="/cpns/full-tryout" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Full Tryout</Link>
-                            <Link href="/cpns/drilling-materi" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Drilling Materi</Link>
-                            <Link href="/blog" onClick={() => setIsMenuOpen(false)} className="font-handwriting text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Artikel</Link>
+                            <button onClick={() => { scrollToSection("features"); setIsMenuOpen(false); }} className="font-display text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Fitur</button>
+                            <button onClick={() => { scrollToSection("products"); setIsMenuOpen(false); }} className="font-display text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Harga</button>
+                            <button onClick={() => { scrollToSection("active-event"); setIsMenuOpen(false); }} className="font-display text-2xl text-gray-700 hover:text-red-600 text-left py-2 border-b border-gray-200">Event</button>
+                            <Link href="/cpns/mini-tryout" onClick={() => setIsMenuOpen(false)} className="font-display text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Mini Tryout</Link>
+                            <Link href="/cpns/full-tryout" onClick={() => setIsMenuOpen(false)} className="font-display text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Full Tryout</Link>
+                            <Link href="/cpns/drilling-materi" onClick={() => setIsMenuOpen(false)} className="font-display text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Drilling Materi</Link>
+                            <Link href="/blog" onClick={() => setIsMenuOpen(false)} className="font-display text-2xl text-gray-700 hover:text-blue-600 text-left py-2 border-b border-gray-200">Artikel</Link>
                             {user ? (
                                 <Button
                                     onClick={() => { router.push("/cpns/dashboard"); setIsMenuOpen(false); }}
@@ -267,7 +267,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         🎯 Persiapan CPNS 2026 Dimulai!
                     </Badge>
 
-                    <h1 className="font-handwriting text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+                    <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
                         Jangan Kaget di Hari H.<br />
                         <span className="text-blue-600">Simulasikan SKD-mu Sekarang</span><br />
                         <span className="relative inline-block mt-2">
@@ -279,7 +279,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         </span>
                     </h1>
 
-                    <p className="text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto mb-10 font-handwriting leading-relaxed px-4">
+                    <p className="text-xl md:text-2xl text-gray-700 max-w-4xl mx-auto mb-10 font-display leading-relaxed px-4">
                         Latih manajemen waktumu dalam 100 menit. Dilengkapi soal akurat TWK, TIU, TKP, pembahasan tuntas, dan perankingan nasional. Cuma 
                         <span className="bg-green-200 px-1 mx-1 font-bold">Rp 10.000</span>
                         bayar per tryout tanpa langganan.
@@ -293,7 +293,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         >
                             Buat Akun & Mulai Tryout <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                         </Button>
-                        <span className="text-sm font-handwriting font-bold text-gray-500 bg-white/80 px-3 py-1 rounded-full border border-gray-200">
+                        <span className="text-sm font-display font-bold text-gray-500 bg-white/80 px-3 py-1 rounded-full border border-gray-200">
                             ⭐ 1 Token = 1x Tryout Full/Mini/Drilling. Tidak ada biaya langganan bulanan.
                         </span>
                     </div>
@@ -310,7 +310,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                             return (
                                 <div key={i} className="flex items-center gap-2 bg-gray-100 px-4 py-2.5 rounded-full border-2 border-gray-200 shrink-0 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-default">
                                     <IconComponent className="w-5 h-5 text-blue-600" />
-                                    <span className="font-handwriting font-bold text-gray-700 whitespace-nowrap text-sm md:text-base">{badge.label}</span>
+                                    <span className="font-display font-bold text-gray-700 whitespace-nowrap text-sm md:text-base">{badge.label}</span>
                                 </div>
                             );
                         })}
@@ -321,8 +321,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
             {/* --- KEUNGGULAN (Doodle Icons) --- */}
             <Section id="features" dashedBorder="both" pattern="grid" className="bg-white">
                 <div className="text-center max-w-3xl mx-auto mb-16">
-                    <h2 className="font-handwriting text-5xl font-bold mb-4">Kenapa Ribuan Peserta Pilih Sini?</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">Karena yang kaget di hari H itu yang gak pernah tryout serius.</p>
+                    <h2 className="font-display text-5xl font-bold mb-4">Kenapa Ribuan Peserta Pilih Sini?</h2>
+                    <p className="font-display text-2xl text-gray-600">Karena yang kaget di hari H itu yang gak pernah tryout serius.</p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8">
@@ -331,7 +331,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
                             <Target className="w-12 h-12 text-blue-600 -rotate-6" strokeWidth={2.5} />
                         </div>
-                        <h3 className="font-handwriting text-2xl font-bold mb-2">Penilaian Standar BKN</h3>
+                        <h3 className="font-display text-2xl font-bold mb-2">Penilaian Standar BKN</h3>
                         <p className="text-gray-700">Bobot skor & passing grade <strong>100% sesuai aturan BKN</strong>. Kamu bisa tahu persis posisimu: lulus atau belum — sebelum hari H tiba.</p>
                     </Card>
 
@@ -340,7 +340,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
                             <Timer className="w-12 h-12 text-red-500 rotate-6" strokeWidth={2.5} />
                         </div>
-                        <h3 className="font-handwriting text-2xl font-bold mb-2">Timer 100 Menit Berjalan</h3>
+                        <h3 className="font-display text-2xl font-bold mb-2">Timer 100 Menit Berjalan</h3>
                         <p className="text-gray-700">110 soal, 100 menit. Tryout di sini = simulasi manajemen waktu yang menentukan lolos atau gagal di CAT BKN nanti.</p>
                     </Card>
 
@@ -349,7 +349,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <div className="mb-4 group-hover:scale-110 transition-transform duration-300">
                             <BarChart3 className="w-12 h-12 text-green-600 -rotate-3" strokeWidth={2.5} />
                         </div>
-                        <h3 className="font-handwriting text-2xl font-bold mb-2">Tahu Kelemahanmu</h3>
+                        <h3 className="font-display text-2xl font-bold mb-2">Tahu Kelemahanmu</h3>
                         <p className="text-gray-700">Analisis skor TWK, TIU, TKP + ranking nasional. Langsung tahu bagian mana yang harus diperbaiki sebelum tes sesungguhnya.</p>
                     </Card>
                 </div>
@@ -361,8 +361,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     <Badge variant="blue" className="mb-4">
                         <Eye className="w-5 h-5" /> Sneak Peek!
                     </Badge>
-                    <h2 className="font-handwriting text-5xl font-bold mb-4">Begini Rasanya Tryout di Sini</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">Sistem penilaian sama persis dengan CAT BKN. Bedanya, ini tryout — salah di sini gratis, salah di sana hilang kursi ASN.</p>
+                    <h2 className="font-display text-5xl font-bold mb-4">Begini Rasanya Tryout di Sini</h2>
+                    <p className="font-display text-2xl text-gray-600">Sistem penilaian sama persis dengan CAT BKN. Bedanya, ini tryout — salah di sini gratis, salah di sana hilang kursi ASN.</p>
                 </div>
 
                 {/* Exam Mockup Container */}
@@ -370,21 +370,21 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                     {/* Floating Annotations */}
                     <div className="hidden md:block absolute -top-6 -right-4 lg:-right-16 z-30">
-                        <div className="bg-yellow-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm -rotate-3 animate-float-annotation">
+                        <div className="bg-yellow-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-display font-bold text-sm -rotate-3 animate-float-annotation">
                             <Clock className="w-4 h-4 inline -mt-0.5 mr-1 text-red-500" />
                             Timer real-time persis CAT BKN!
                         </div>
                     </div>
 
                     <div className="hidden md:block absolute bottom-24 -left-4 lg:-left-24 z-30">
-                        <div className="bg-green-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm rotate-2 animate-float-annotation" style={{ animationDelay: '1s' }}>
+                        <div className="bg-green-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-display font-bold text-sm rotate-2 animate-float-annotation" style={{ animationDelay: '1s' }}>
                             <Flag className="w-4 h-4 inline -mt-0.5 mr-1 text-orange-500" />
                             Tandai soal ragu-ragu!
                         </div>
                     </div>
 
                     <div className="hidden md:block absolute -bottom-4 -right-4 lg:-right-12 z-30">
-                        <div className="bg-pink-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-handwriting font-bold text-sm rotate-1 animate-float-annotation" style={{ animationDelay: '2s' }}>
+                        <div className="bg-pink-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-display font-bold text-sm rotate-1 animate-float-annotation" style={{ animationDelay: '2s' }}>
                             <Monitor className="w-4 h-4 inline -mt-0.5 mr-1 text-blue-600" />
                             Navigasi soal satu layar!
                         </div>
@@ -399,12 +399,12 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                 <div className="flex items-center gap-2">
                                     <div className="flex flex-col gap-0.5">
                                         <div className="flex items-baseline gap-1">
-                                            <span className="font-handwriting font-bold text-xl md:text-2xl text-gray-900">Soal #15</span>
-                                            <span className="font-handwriting text-sm text-gray-500 md:text-lg">/ 110</span>
+                                            <span className="font-display font-bold text-xl md:text-2xl text-gray-900">Soal #15</span>
+                                            <span className="font-display text-sm text-gray-500 md:text-lg">/ 110</span>
                                         </div>
                                         <div className="flex items-center gap-1.5">
                                             <span className="px-1.5 py-0.5 bg-gray-900 text-white text-[10px] md:text-[11px] font-bold rounded uppercase tracking-wider">TWK</span>
-                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] md:text-xs font-bold font-handwriting rounded shadow-sm">Pancasila</span>
+                                            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 text-[10px] md:text-xs font-bold font-display rounded shadow-sm">Pancasila</span>
                                         </div>
                                     </div>
                                 </div>
@@ -423,7 +423,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                             {/* Question Panel */}
                             <div className="flex-1 p-4 md:p-6">
                                 <div className="mb-6">
-                                    <p className="text-lg md:text-2xl leading-relaxed font-handwriting font-bold text-gray-900">
+                                    <p className="text-lg md:text-2xl leading-relaxed font-display font-bold text-gray-900">
                                         Pancasila sebagai dasar negara mengandung nilai-nilai yang menjadi pedoman dalam kehidupan bermasyarakat, berbangsa, dan bernegara. Sila ke-3 Pancasila berbunyi...
                                     </p>
                                 </div>
@@ -448,11 +448,11 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                                     }`}
                                             >
                                                 {isSelected && <div className="absolute inset-x-0 bottom-2 top-2 bg-blue-400/20 -z-10" />}
-                                                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 font-handwriting font-bold text-lg transition-all duration-200 ${isSelected
+                                                <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 font-display font-bold text-lg transition-all duration-200 ${isSelected
                                                     ? 'border-blue-600 bg-blue-600 text-white scale-110'
                                                     : 'border-gray-400 text-gray-400'
                                                     }`}>{opt.key}</div>
-                                                <span className={`text-base md:text-lg leading-relaxed font-handwriting transition-colors duration-200 ${isSelected
+                                                <span className={`text-base md:text-lg leading-relaxed font-display transition-colors duration-200 ${isSelected
                                                     ? 'text-blue-900 font-bold'
                                                     : 'text-gray-600 font-medium'
                                                     }`}>{opt.text}</span>
@@ -464,7 +464,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                             {/* Navigation Panel (visible on md+) */}
                             <div className="hidden lg:flex w-72 shrink-0 flex-col bg-white/90 border-l-2 border-gray-900">
-                                <div className="p-4 border-b-2 border-dashed border-gray-300 font-handwriting font-bold text-lg flex items-center gap-2 text-gray-800">
+                                <div className="p-4 border-b-2 border-dashed border-gray-300 font-display font-bold text-lg flex items-center gap-2 text-gray-800">
                                     Navigasi Soal
                                 </div>
                                 <div className="p-4 flex-1 overflow-y-auto">
@@ -478,7 +478,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                             return (
                                                 <div
                                                     key={num}
-                                                    className={`aspect-square rounded-lg font-handwriting font-bold text-sm flex items-center justify-center border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] ${isActive ? 'ring-2 ring-blue-400 ring-offset-1 border-blue-600 z-10' : ''
+                                                    className={`aspect-square rounded-lg font-display font-bold text-sm flex items-center justify-center border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] ${isActive ? 'ring-2 ring-blue-400 ring-offset-1 border-blue-600 z-10' : ''
                                                         } ${isMarked
                                                             ? 'bg-yellow-500 text-yellow-950 border-yellow-700'
                                                             : isAnswered
@@ -491,11 +491,11 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                             );
                                         })}
                                         {/* More indicator */}
-                                        <div className="col-span-5 text-center font-handwriting text-gray-400 text-sm mt-1">... sampai 110</div>
+                                        <div className="col-span-5 text-center font-display text-gray-400 text-sm mt-1">... sampai 110</div>
                                     </div>
                                 </div>
                                 <div className="p-3 border-t-2 border-dashed border-gray-300 bg-gray-50/50">
-                                    <div className="p-2 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1 rounded-lg font-handwriting font-bold shadow-sm">
+                                    <div className="p-2 bg-white border-2 border-gray-200 text-xs text-gray-600 space-y-1 rounded-lg font-display font-bold shadow-sm">
                                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-700"></div><span>Dijawab</span></div>
                                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-600"></div><span>Ragu-ragu</span></div>
                                         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white border-2 border-gray-300"></div><span>Belum dijawab</span></div>
@@ -506,17 +506,17 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                         {/* Mock Footer Nav */}
                         <div className="hidden sm:flex p-4 border-t-2 border-dashed border-gray-300 justify-between items-center bg-white/50">
-                            <div className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-handwriting font-bold bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-display font-bold bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                                 ← Sebelumnya
                             </div>
-                            <div className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg font-handwriting font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]">
+                            <div className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg font-display font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]">
                                 Selanjutnya →
                             </div>
                         </div>
                     </div>
 
                     {/* Decorative "DEMO" Label */}
-                    <div className="absolute top-4 left-4 bg-red-700 text-white font-handwriting text-xs font-bold px-3 py-1 rounded-full -rotate-12 shadow-lg z-30 border-2 border-red-900">
+                    <div className="absolute top-4 left-4 bg-red-700 text-white font-display text-xs font-bold px-3 py-1 rounded-full -rotate-12 shadow-lg z-30 border-2 border-red-900">
                         DEMO
                     </div>
                 </div>
@@ -525,11 +525,11 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 <div className="text-center mt-12">
                     <button
                         onClick={() => user ? router.push("/cpns/dashboard") : router.push("/login?returnTo=/cpns")}
-                        className="group px-8 py-4 font-handwriting text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
+                        className="group px-8 py-4 font-display text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
                     >
                         Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     </button>
-                    <p className="font-handwriting text-lg text-gray-500 mt-4">Mulai dari Rp 7.500/token. Lebih murah dari kopi, tapi bisa ubah masa depanmu.</p>
+                    <p className="font-display text-lg text-gray-500 mt-4">Mulai dari Rp 7.500/token. Lebih murah dari kopi, tapi bisa ubah masa depanmu.</p>
                 </div>
             </Section>
 
@@ -537,8 +537,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
             <Section id="tryout-types" dashedBorder="both" className="bg-[#f0f4f8]">
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <Badge variant="blue" className="mb-4">Pilih Cara Belajarmu</Badge>
-                    <h2 className="font-handwriting text-5xl font-bold mb-4">Satu Token, Tiga Pilihan Tempur</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">Sesuaikan dengan waktu dan target belajarmu hari ini.</p>
+                    <h2 className="font-display text-5xl font-bold mb-4">Satu Token, Tiga Pilihan Tempur</h2>
+                    <p className="font-display text-2xl text-gray-600">Sesuaikan dengan waktu dan target belajarmu hari ini.</p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
@@ -547,10 +547,10 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
                             <Layers className="w-8 h-8 text-red-600" />
                         </div>
-                        <h3 className="font-handwriting text-3xl font-bold mb-4">Drilling Materi</h3>
+                        <h3 className="font-display text-3xl font-bold mb-4">Drilling Materi</h3>
                         <p className="text-gray-600 mb-6 min-h-[80px]">Fokus latihan ke 1 materi spesifik (misal: hanya materi Analogi TIU atau Nasionalisme TWK) untuk memperbaiki titik lemahmu.</p>
 
-                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
+                        <ul className="space-y-3 mb-8 font-display text-lg text-gray-700 flex-1">
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> 30 Soal spesifik per sub-materi</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Evaluasi detail kelemahan</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Cepat tingkatkan skor spesifik</li>
@@ -566,10 +566,10 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <div className="w-16 h-16 bg-yellow-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
                             <Target className="w-8 h-8 text-yellow-600" />
                         </div>
-                        <h3 className="font-handwriting text-3xl font-bold mb-4">Mini Tryout</h3>
+                        <h3 className="font-display text-3xl font-bold mb-4">Mini Tryout</h3>
                         <p className="text-gray-600 mb-6 min-h-[80px]">Latihan cepat dan fokus per bagian tes. Cocok buat kamu yang lagi sibuk tapi tetap mau nyicil belajar setiap hari.</p>
 
-                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
+                        <ul className="space-y-3 mb-8 font-display text-lg text-gray-700 flex-1">
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Fokus 1 subtes (TWK/TIU/TKP)</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu pengerjaan singkat</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Pembahasan per soal</li>
@@ -586,10 +586,10 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 border-2 border-gray-900">
                             <Monitor className="w-8 h-8 text-blue-600" />
                         </div>
-                        <h3 className="font-handwriting text-3xl font-bold mb-4">Full Tryout SKD</h3>
+                        <h3 className="font-display text-3xl font-bold mb-4">Full Tryout SKD</h3>
                         <p className="text-gray-600 mb-6 min-h-[80px]">Simulasi ujian SKD CPNS yang sesungguhnya. Latih manajemen waktu dan mentalmu sebelum hari H tiba.</p>
 
-                        <ul className="space-y-3 mb-8 font-handwriting text-lg text-gray-700 flex-1">
+                        <ul className="space-y-3 mb-8 font-display text-lg text-gray-700 flex-1">
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> 110 Soal (TWK + TIU + TKP)</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Waktu 100 menit berjalan</li>
                             <li className="flex items-center gap-3"><span className="text-green-500 font-bold">✓</span> Perankingan Nasional</li>
@@ -609,7 +609,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <div className="w-2 h-2 rounded-full bg-red-600" />
                         {activeEvent ? "Event Aktif Sekarang" : "Belum Ada Event Aktif"}
                     </div>
-                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-3 text-gray-950">Event Tryout Aktif</h2>
+                    <h2 className="font-display text-4xl md:text-5xl font-bold mb-3 text-gray-950">Event Tryout Aktif</h2>
                     <p className="font-body text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
                         Ikuti tryout terjadwal untuk mengukur kesiapanmu, melihat ranking nasional, dan mendapatkan evaluasi hasil secara lebih realistis.
                     </p>
@@ -641,7 +641,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                         <div className="flex flex-col gap-4">
                                             <div>
                                                 <p className="font-body text-sm font-extrabold uppercase tracking-[0.12em] text-blue-600">Event Aktif</p>
-                                                <h4 className="mt-1 font-handwriting text-3xl font-bold leading-tight text-gray-950">{activeEvent.title.replace(/\s*-?\s*Sesi\s*\d+/i, '').trim()}</h4>
+                                                <h4 className="mt-1 font-display text-3xl font-bold leading-tight text-gray-950">{activeEvent.title.replace(/\s*-?\s*Sesi\s*\d+/i, '').trim()}</h4>
                                                 <p className="mt-2 font-body text-sm leading-6 text-gray-600">
                                                     Simulasi Full SKD dengan sistem CAT, analisis nilai, ranking nasional, sertifikat, dan hadiah untuk Top 3.
                                                 </p>
@@ -736,7 +736,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                         >
                                             <ChevronLeft className="h-6 w-6" />
                                         </button>
-                                        <div className="min-w-24 rounded-full border-2 border-gray-900 bg-white px-4 py-2 text-center font-handwriting text-lg font-bold">
+                                        <div className="min-w-24 rounded-full border-2 border-gray-900 bg-white px-4 py-2 text-center font-display text-lg font-bold">
                                             {activeEventIndex + 1} / {activeEvents.length}
                                         </div>
                                         <button
@@ -753,7 +753,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         ) : (
                             <Card className="mx-auto max-w-3xl border-4 border-gray-900 bg-white p-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                                 <Clock className="mx-auto mb-4 h-12 w-12 text-blue-600" />
-                                <h3 className="font-handwriting text-3xl font-bold text-gray-950">Belum Ada Event Aktif</h3>
+                                <h3 className="font-display text-3xl font-bold text-gray-950">Belum Ada Event Aktif</h3>
                                 <p className="mx-auto mt-3 max-w-xl font-body text-base leading-relaxed text-gray-600">
                                     Saat admin membuka event baru, jadwal dan tombol pendaftaran akan otomatis tampil di landing page ini.
                                 </p>
@@ -766,8 +766,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
             {/* --- HISTORI EVENT --- */}
             <Section id="event-history" dashedBorder="both" className="bg-white">
                 <div className="text-center mb-12">
-                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Jejak Event SiapTempur</h2>
-                    <p className="font-handwriting text-xl md:text-2xl text-gray-600">Terbukti selalu ramai dan jadi ajang pemanasan nasional.</p>
+                    <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Jejak Event SiapTempur</h2>
+                    <p className="font-display text-xl md:text-2xl text-gray-600">Terbukti selalu ramai dan jadi ajang pemanasan nasional.</p>
                 </div>
 
                 {completedEvents.length > 0 ? (
@@ -807,12 +807,12 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                             <div className="flex aspect-4/3 w-full items-center justify-center border-b-2 border-gray-900 bg-blue-50 px-6 text-center">
                                                 <div>
                                                     <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
-                                                    <p className="font-handwriting text-2xl font-bold text-gray-900">Dokumentasi Event</p>
+                                                    <p className="font-display text-2xl font-bold text-gray-900">Dokumentasi Event</p>
                                                 </div>
                                             </div>
                                         )}
                                         <div className="flex flex-1 flex-col p-6">
-                                            <h3 className="mb-6 flex-1 font-handwriting text-2xl font-bold leading-tight text-gray-900">{event.title}</h3>
+                                            <h3 className="mb-6 flex-1 font-display text-2xl font-bold leading-tight text-gray-900">{event.title}</h3>
                                             <Button variant="outline" className="w-full border-2 border-gray-900 text-sm font-bold text-gray-800 hover:bg-gray-100" asChild>
                                                 <a href={getEventDocumentationUrl(event)} target="_blank" rel="noopener noreferrer">
                                                     Lihat Dokumentasi
@@ -836,7 +836,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 ) : (
                     <Card className="mx-auto max-w-2xl border-2 border-dashed border-gray-300 bg-[#fdfbf7] p-8 text-center">
                         <Trophy className="mx-auto mb-3 h-10 w-10 text-blue-600" />
-                        <h3 className="font-handwriting text-2xl font-bold text-gray-900">Belum Ada Event Selesai</h3>
+                        <h3 className="font-display text-2xl font-bold text-gray-900">Belum Ada Event Selesai</h3>
                         <p className="mt-2 font-body text-sm text-gray-600">Event yang sudah selesai akan otomatis tampil di sini.</p>
                     </Card>
                 )}
@@ -846,22 +846,22 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
             <Section id="products" pattern="dots" dashedBorder="both" className="bg-[#f0f4f8]">
                 <div className="text-center mb-16 relative z-10">
                     <Badge variant="red" className="mb-4">BISA SCAN QRIS</Badge>
-                    <h2 className="font-handwriting text-5xl font-bold mb-4">Investasi ASN Sekali Bayar</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">1 Token = 1x Tryout. Tanpa batas masa berlaku.</p>
+                    <h2 className="font-display text-5xl font-bold mb-4">Investasi ASN Sekali Bayar</h2>
+                    <p className="font-display text-2xl text-gray-600">1 Token = 1x Tryout. Tanpa batas masa berlaku.</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
                     {/* Paket 1 */}
                     <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] flex flex-col">
-                        <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PERINTIS</span>
+                        <span className="font-display font-bold text-gray-500 mb-2 block">PAKET PERINTIS</span>
                         <div className="flex items-end gap-1 mb-2">
                             <span className="text-2xl font-bold mb-2">Rp</span>
                             <span className="text-6xl font-bold text-gray-900">10.000</span>
                             <span className="text-xl text-gray-500 mb-2">/token</span>
                         </div>
-                        <div className="text-gray-700 font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 10.000 (Dapat 1 Token)</div>
+                        <div className="text-gray-700 font-display text-lg mb-6 font-bold">Total Bayar: Rp 10.000 (Dapat 1 Token)</div>
                         <Badge variant="pink" className="mb-8 w-max">1x TOKEN TRYOUT</Badge>
-                        <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
+                        <ul className="space-y-4 mb-8 w-full font-display text-lg text-gray-700">
                             <li className="flex items-center gap-3"><Flag size={20} className="text-blue-600" /> 110 Soal Prediksi</li>
                             <li className="flex items-center gap-3"><Clock size={20} className="text-blue-600" /> Waktu 100 Menit</li>
                             <li className="flex items-center gap-3"><Monitor size={20} className="text-blue-600" /> CAT BKN Interface</li>
@@ -881,15 +881,15 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     {/* Paket 2 (Featured) */}
                     <Card variant="standard" interactive className="p-10 bg-blue-600 border-4 border-gray-900 relative overflow-hidden group scale-105 z-20 flex flex-col">
                         <div className="absolute top-4 right-4 bg-yellow-400 text-gray-900 font-bold px-4 py-1 rounded-full text-sm shadow-md z-10 animate-pulse">PALING LARIS!</div>
-                        <span className="font-handwriting font-bold text-blue-100 mb-2 block">PAKET PEJUANG</span>
+                        <span className="font-display font-bold text-blue-100 mb-2 block">PAKET PEJUANG</span>
                         <div className="flex items-end gap-1 mb-2">
                             <span className="text-2xl font-bold mb-2 text-white">Rp</span>
                             <span className="text-6xl font-bold text-yellow-400">8.000</span>
                             <span className="text-xl text-blue-200 mb-2">/token</span>
                         </div>
-                        <div className="text-white font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 40.000 (Dapat 5 Token)</div>
+                        <div className="text-white font-display text-lg mb-6 font-bold">Total Bayar: Rp 40.000 (Dapat 5 Token)</div>
                         <Badge variant="yellow" className="mb-8 w-max">5x TOKEN TRYOUT</Badge>
-                        <ul className="space-y-4 mb-8 w-full font-handwriting text-xl font-bold text-white">
+                        <ul className="space-y-4 mb-8 w-full font-display text-xl font-bold text-white">
                             <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Semua Fitur Tryout</li>
                             <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Lebih Hemat Rp 10rb</li>
                             <li className="flex items-center gap-3"><Sparkles size={24} className="text-yellow-400" /> Ranking Nasional</li>
@@ -909,15 +909,15 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                     {/* Paket 3 */}
                     <Card variant="standard" interactive className="p-8 bg-white border-4 border-gray-900 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] bg-size-[20px_20px] flex flex-col">
-                        <span className="font-handwriting font-bold text-gray-500 mb-2 block">PAKET PASUKAN</span>
+                        <span className="font-display font-bold text-gray-500 mb-2 block">PAKET PASUKAN</span>
                         <div className="flex items-end gap-1 mb-2">
                             <span className="text-2xl font-bold mb-2">Rp</span>
                             <span className="text-6xl font-bold text-gray-900">7.500</span>
                             <span className="text-xl text-gray-500 mb-2">/token</span>
                         </div>
-                        <div className="text-gray-700 font-handwriting text-lg mb-6 font-bold">Total Bayar: Rp 75.000 (Dapat 10 Token)</div>
+                        <div className="text-gray-700 font-display text-lg mb-6 font-bold">Total Bayar: Rp 75.000 (Dapat 10 Token)</div>
                         <Badge variant="green" className="mb-8 w-max">10x TOKEN TRYOUT</Badge>
-                        <ul className="space-y-4 mb-8 w-full font-handwriting text-lg text-gray-700">
+                        <ul className="space-y-4 mb-8 w-full font-display text-lg text-gray-700">
                             <li className="flex items-center gap-3 text-green-600 font-bold"><Sparkles size={20} /> Persiapan Maksimal</li>
                             <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Tryout Tiap Minggu</li>
                             <li className="flex items-center gap-3"><Sparkles size={20} className="text-green-600" /> Ranking Terupdate</li>
@@ -941,8 +941,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 <Section id="articles" dashedBorder="both" className="bg-[#fffdf0]">
                     <div className="text-center mb-12">
                         <Badge variant="yellow" className="mb-4">Info Penting & Tips</Badge>
-                        <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Artikel & Update Terbaru</h2>
-                        <p className="font-handwriting text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">Jangan ketinggalan info seputar CPNS, tips lulus, dan update kebijakan dari BKN.</p>
+                        <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Artikel & Update Terbaru</h2>
+                        <p className="font-display text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">Jangan ketinggalan info seputar CPNS, tips lulus, dan update kebijakan dari BKN.</p>
                     </div>
 
                     <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -979,7 +979,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                                 })}
                                             </div>
                                         )}
-                                        <h3 className="font-handwriting text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                        <h3 className="font-display text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
                                             {article.title}
                                         </h3>
                                         <p className="text-gray-600 line-clamp-3 mb-4 flex-1">
@@ -1005,30 +1005,30 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
             {/* --- LEADERBOARD --- */}
             <Section id="leaderboard" dashedBorder="both" className="bg-[#f0f4f8]" pattern="grid">
                 <div className="text-center mb-12">
-                    <h2 className="font-handwriting text-4xl md:text-5xl font-bold mb-4">Pemenang dan Ranking Terbaik</h2>
-                    <p className="font-handwriting text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">Ranking membantu peserta membandingkan kemampuan secara sehat dan mengetahui posisi mereka secara nasional.</p>
+                    <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">Pemenang dan Ranking Terbaik</h2>
+                    <p className="font-display text-xl md:text-2xl text-gray-600 max-w-2xl mx-auto">Ranking membantu peserta membandingkan kemampuan secara sehat dan mengetahui posisi mereka secara nasional.</p>
                 </div>
 
                 <div className="max-w-4xl mx-auto">
                     <Card className="p-0 overflow-hidden border-4 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
-                        <div className="bg-blue-600 p-4 text-white font-handwriting text-xl font-bold flex items-center gap-2">
+                        <div className="bg-blue-600 p-4 text-white font-display text-xl font-bold flex items-center gap-2">
                             <Trophy className="text-yellow-400" /> Top 5 Simulasi Terakhir
                         </div>
                         <div className="flex flex-col">
                             {leaderboardWinners.map((winner, i) => (
                                 <div key={i} className={`flex items-center p-4 md:p-5 border-b-2 border-dashed border-gray-200 last:border-b-0 hover:bg-blue-50 transition-colors ${i < 3 ? 'bg-yellow-50/30' : ''}`}>
-                                    <div className="w-12 font-handwriting font-bold text-2xl text-center">
+                                    <div className="w-12 font-display font-bold text-2xl text-center">
                                         {i === 0 ? <span className="text-yellow-500 text-3xl">🥇</span> :
                                             i === 1 ? <span className="text-gray-400 text-3xl">🥈</span> :
                                                 i === 2 ? <span className="text-orange-600 text-3xl">🥉</span> :
                                                     <span className="text-gray-400">#{winner.rank}</span>}
                                     </div>
                                     <div className="flex-1 ml-4">
-                                        <div className="font-handwriting font-bold text-lg md:text-xl text-gray-900">{winner.name}</div>
+                                        <div className="font-display font-bold text-lg md:text-xl text-gray-900">{winner.name}</div>
                                         <div className="text-sm text-gray-500 flex items-center gap-1"><MapPin size={12} /> {winner.region}</div>
                                     </div>
                                     <div className="text-right">
-                                        <div className="font-handwriting font-bold text-3xl text-blue-600">{winner.score}</div>
+                                        <div className="font-display font-bold text-3xl text-blue-600">{winner.score}</div>
                                         <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Skor Akhir</div>
                                     </div>
                                 </div>
@@ -1041,8 +1041,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
             {/* --- TESTIMONIALS (Sketsa Orang) --- */}
             <Section id="memorials" className="bg-white" dashedBorder="top" pattern="dots">
                 <div className="text-center max-w-4xl mx-auto mb-16">
-                    <h2 className="font-handwriting text-5xl font-bold mb-4">Apa Kata Peserta?</h2>
-                    <p className="font-handwriting text-2xl text-gray-600">Kata mereka yang udah "tempur" duluan dan merasakan manfaatnya secara langsung.</p>
+                    <h2 className="font-display text-5xl font-bold mb-4">Apa Kata Peserta?</h2>
+                    <p className="font-display text-2xl text-gray-600">Kata mereka yang udah "tempur" duluan dan merasakan manfaatnya secara langsung.</p>
                 </div>
 
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -1053,22 +1053,22 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                     {testi.avatar}
                                 </div>
                                 <div>
-                                    <h4 className="font-handwriting text-xl font-bold leading-none mb-1">{testi.name}</h4>
-                                    <span className="text-sm text-gray-500 font-handwriting">{testi.region} • {testi.event}</span>
+                                    <h4 className="font-display text-xl font-bold leading-none mb-1">{testi.name}</h4>
+                                    <span className="text-sm text-gray-500 font-display">{testi.region} • {testi.event}</span>
                                 </div>
                             </div>
                             <div className="mb-4 flex items-center justify-center gap-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
                                 <div className="text-center">
                                     <span className="text-xs text-gray-500 block">Sebelumnya</span>
-                                    <span className="font-handwriting font-bold text-red-500">{testi.scoreBefore}</span>
+                                    <span className="font-display font-bold text-red-500">{testi.scoreBefore}</span>
                                 </div>
                                 <ArrowRight size={16} className="text-gray-300" />
                                 <div className="text-center">
                                     <span className="text-xs text-gray-500 block">Sesudahnya</span>
-                                    <span className="font-handwriting font-bold text-green-600 text-xl">{testi.scoreAfter}</span>
+                                    <span className="font-display font-bold text-green-600 text-xl">{testi.scoreAfter}</span>
                                 </div>
                             </div>
-                            <p className="font-handwriting text-lg text-gray-700 italic leading-relaxed flex-1">
+                            <p className="font-display text-lg text-gray-700 italic leading-relaxed flex-1">
                                 {testi.text}
                             </p>
                             <div className="flex text-yellow-500 mt-4">
@@ -1086,7 +1086,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 <div className="max-w-3xl mx-auto">
                     <div className="text-center mb-12">
                         <Badge variant="blue" className="mb-4">Tanya Jawab</Badge>
-                        <h2 className="font-handwriting text-5xl font-bold">Bingung Soal Tempur?</h2>
+                        <h2 className="font-display text-5xl font-bold">Bingung Soal Tempur?</h2>
                     </div>
 
                     <div className="space-y-4">
@@ -1096,7 +1096,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
                                     className="w-full flex items-center justify-between p-6 text-left cursor-pointer group"
                                 >
-                                    <span className="font-handwriting text-2xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
+                                    <span className="font-display text-2xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
                                         {item.q}
                                     </span>
                                     <ChevronDown className={cn("w-6 h-6 transition-transform text-gray-400", openFaq === i && "rotate-180 text-blue-600")} />
@@ -1104,7 +1104,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                 {openFaq === i && (
                                     <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-200">
                                         <div className="h-0.5 w-full bg-gray-100 mb-4" />
-                                        <p className="font-handwriting text-xl text-gray-600 leading-relaxed italic">
+                                        <p className="font-display text-xl text-gray-600 leading-relaxed italic">
                                             {item.a}
                                         </p>
                                     </div>
@@ -1123,8 +1123,8 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 </div>
 
                 <div className="max-w-4xl mx-auto text-center relative z-10 px-4 md:px-6 lg:px-8">
-                    <h2 className="font-handwriting text-4xl font-bold mb-6 italic">"Jangan Tempur Tanpa Amunisi."</h2>
-                    <p className="text-gray-400 mb-8 max-w-lg mx-auto font-handwriting text-xl">Lolos CPNS bukan soal pintar saja, tapi soal siapa yang paling siap menghadapi sistem CAT yang aslinya.</p>
+                    <h2 className="font-display text-4xl font-bold mb-6 italic">"Jangan Tempur Tanpa Amunisi."</h2>
+                    <p className="text-gray-400 mb-8 max-w-lg mx-auto font-display text-xl">Lolos CPNS bukan soal pintar saja, tapi soal siapa yang paling siap menghadapi sistem CAT yang aslinya.</p>
 
                     <Button
                         variant="white"
@@ -1173,7 +1173,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         </div>
                     </div>
 
-                    <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-6 font-handwriting text-lg text-gray-500">
+                    <div className="pt-8 border-t border-gray-800 flex flex-col md:flex-row items-center justify-between gap-6 font-display text-lg text-gray-500">
                         <div className="flex items-center gap-2">
                             <span className="font-bold text-white">Siap <span className="text-blue-400 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span></span> © 2026
                         </div>

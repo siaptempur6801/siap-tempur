@@ -29,7 +29,7 @@ export default async function UserEventPage() {
     }))
 
     return (
-        <div className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 font-body sm:px-6 lg:px-8 lg:py-9 [&_.font-handwriting]:font-body">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 pb-24 font-body sm:px-6 lg:px-8 lg:py-9 [&_.font-display]:font-body">
             <EventClient events={learnerEvents} />
         </div>
     )

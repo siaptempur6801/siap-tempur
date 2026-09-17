@@ -41,7 +41,7 @@ export default function AdminOverview({
                     className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-transform hover:-translate-y-0.5"
                 >
                     <p className="text-sm font-bold uppercase tracking-wide text-gray-500">{card.label}</p>
-                    <p className="mt-2 font-handwriting text-4xl font-black text-gray-900">{card.value}</p>
+                    <p className="mt-2 font-display text-4xl font-black text-gray-900">{card.value}</p>
                     <p className="mt-2 text-sm font-medium text-gray-600">{card.description}</p>
                 </div>
             ))}
