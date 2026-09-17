@@ -286,7 +286,7 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await page.goto(resultUrl)
     await expect(page.getByRole('heading', { name: 'Kesiapan TKA SMP' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya' })).toBeVisible()
-    const repeatWrongLink = page.getByRole('link', { name: /Ulangi soal \(\d+\)/i })
+    const repeatWrongLink = page.getByRole('link', { name: 'Ulangi Soal Salah', exact: true })
     await expect(repeatWrongLink).toBeVisible()
     await repeatWrongLink.click()
     await page.waitForURL(/\/tka\/smp\/wrong-questions$/i)
