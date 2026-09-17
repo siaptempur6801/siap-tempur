@@ -14,6 +14,7 @@ import {
     Target,
 } from 'lucide-react'
 import TkaStartDrillButton from '@/components/tka/TkaStartDrillButton'
+import type { TkaLevel } from '@/src/tka/context'
 import {
     tkaLearningHierarchyService,
     type TkaHierarchyItem,
@@ -47,7 +48,7 @@ function exactDrills(items: TkaHierarchyItem[]) {
     ))
 }
 
-export default async function TkaLearningHierarchy({ activeTrack }: { activeTrack: boolean }) {
+export default async function TkaLearningHierarchy({ activeTrack, level }: { activeTrack: boolean; level: TkaLevel }) {
     if (!activeTrack) {
         return (
             <section id="tka-learning-hierarchy" data-testid="tka-learning-hierarchy" className="scroll-mt-6 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-6 shadow-sm">
@@ -58,7 +59,7 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
                     <div className="min-w-0">
                         <h2 className="text-xl font-bold text-slate-950">Jalur Belajar Belum Aktif</h2>
                         <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
-                            Aktifkan jalur belajar TKA SMP di halaman Ringkasan agar progres latihan, riwayat pengerjaan, dan penguasaan materi tersimpan rapi di akunmu.
+                            Aktifkan jalur belajar TKA {level} di halaman Ringkasan agar progres latihan, riwayat pengerjaan, dan penguasaan materi tersimpan rapi di akunmu.
                         </p>
                         <Link href="/tka/smp" className="st-focus mt-4 inline-flex min-h-10 items-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 active:scale-[0.98]">
                             Aktifkan di Halaman Ringkasan
@@ -289,7 +290,7 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
 
                                                 <div className="mt-5 border-t border-slate-100 pt-3">
                                                     <TkaStartDrillButton
-                                                        level="SMP"
+                                                        level={level}
                                                         subjectCode={subject.code}
                                                         knowledgeNodeName={item.drill!.knowledgeNodeName}
                                                         compact

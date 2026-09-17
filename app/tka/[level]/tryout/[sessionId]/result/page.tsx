@@ -436,7 +436,7 @@ export default async function TkaResultPage({
                     </section>
 
                     {/* Diagnostic / Readiness Card */}
-                    {readiness && <TkaReadinessCard readiness={readiness} />}
+                    {readiness && <TkaReadinessCard readiness={readiness} level={level} />}
 
                     {/* Learning Focus Panel */}
                     <TkaLearningFocusPanel items={learningFocus?.items ?? []} />

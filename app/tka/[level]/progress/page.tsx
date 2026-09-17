@@ -46,7 +46,7 @@ export default async function TkaProgressPage({
                     </div>
                 </header>
 
-                <TkaProgressDashboard dashboard={dashboard} />
+                <TkaProgressDashboard dashboard={dashboard} level={level} />
             </div>
         </main>
     )

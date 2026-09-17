@@ -61,7 +61,7 @@ export default async function TkaFocusPage({ params }: { params: Promise<{ level
                     </p>
                 </header>
 
-                <TkaLearningHierarchy activeTrack={activeTrack} />
+                <TkaLearningHierarchy activeTrack={activeTrack} level={level} />
             </div>
         </main>
     )

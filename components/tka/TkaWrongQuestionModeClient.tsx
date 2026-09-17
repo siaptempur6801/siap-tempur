@@ -21,6 +21,8 @@ import MathRenderer from '@/components/MathRenderer'
 import { cn } from '@/lib/utils'
 import { reviewTkaWrongQuestion } from '@/app/actions/tka-wrong-questions'
 import type { TkaWrongQuestionItem } from '@/src/services/tka-wrong-question.service'
+import { TKA_AVAILABLE_LEVELS, tkaLevelFromPathname } from '@/src/tka/context'
+import { usePathname } from 'next/navigation'
 
 type Feedback = {
     isCorrect: boolean
@@ -45,6 +47,9 @@ export default function TkaWrongQuestionModeClient({
 }: {
     initialItems: TkaWrongQuestionItem[]
 }) {
+    const pathname = usePathname()
+    const level = tkaLevelFromPathname(pathname) ?? TKA_AVAILABLE_LEVELS[0]
+
     const [items, setItems] = useState(initialItems)
     const [currentIndex, setCurrentIndex] = useState(0)
     const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -144,7 +149,7 @@ export default function TkaWrongQuestionModeClient({
 
     if (!current) {
         return (
-            <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-12 md:py-16">
+            <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-12 md:py-16">
                 <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-xs md:p-8">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/50">
                         <CheckCircle2 size={36} />
@@ -163,13 +168,13 @@ export default function TkaWrongQuestionModeClient({
 
                     <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                         <Link
-                            href="/tka/smp/progress"
+                            href={`/tka/${level.toLowerCase()}/progress`}
                             className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-md shadow-blue-600/20 transition hover:bg-indigo-700"
                         >
                             <BarChart3 size={18} /> Cek Kesiapan Belajar
                         </Link>
                         <Link
-                            href="/tka/smp/tryout"
+                            href={`/tka/${level.toLowerCase()}/tryout`}
                             className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
                         >
                             <ListChecks size={18} /> Coba Tryout Baru
@@ -178,10 +183,10 @@ export default function TkaWrongQuestionModeClient({
 
                     <div className="mt-6 border-t border-slate-100 pt-5">
                         <Link
-                            href="/tka/smp"
+                            href={`/tka/${level.toLowerCase()}`}
                             className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-800"
                         >
-                            <ArrowLeft size={16} /> Kembali ke TKA SMP
+                            <ArrowLeft size={16} /> Kembali ke TKA {level}
                         </Link>
                     </div>
                 </section>
@@ -234,14 +239,14 @@ export default function TkaWrongQuestionModeClient({
     }
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 {/* Header Evaluasi Soal Salah */}
                 <header className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                             <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-rose-600">
-                                <RotateCcw size={16} /> TKA SMP · Soal yang perlu diulang
+                                <RotateCcw size={16} /> TKA {level} · Soal yang perlu diulang
                             </div>
                             <h1 className="mt-2 text-xl md:text-2xl font-black tracking-tight text-slate-950">
                                 Kuasai kembali soal yang belum tepat, satu per satu.
@@ -318,7 +323,7 @@ export default function TkaWrongQuestionModeClient({
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
-                                    {current.subjectCode === 'BIN' ? 'Bahasa Indonesia' : current.subjectCode === 'MAT' ? 'Matematika' : (current.subjectCode || 'TKA SMP')}
+                                    {current.subjectCode === 'BIN' ? 'Bahasa Indonesia' : current.subjectCode === 'MAT' ? 'Matematika' : (current.subjectCode || `TKA ${level}`)}
                                 </span>
                                 <span className={cn(
                                     'rounded-full border px-3 py-1 text-xs font-black',
@@ -430,10 +435,10 @@ export default function TkaWrongQuestionModeClient({
                         {/* Tombol Aksi di Bawah Soal */}
                         <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-5">
                             <Link
-                                href="/tka/smp"
+                                href={`/tka/${level.toLowerCase()}`}
                                 className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                             >
-                                <ArrowLeft size={16} /> Kembali ke TKA SMP
+                                <ArrowLeft size={16} /> Kembali ke TKA {level}
                             </Link>
 
                             {feedback?.isCorrect ? (

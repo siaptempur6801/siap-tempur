@@ -336,7 +336,7 @@ export default function TkaFullExamSessionClient({
 
     if (!activeSection || !currentQuestion) {
         return (
-            <main data-experience-mode="exam" data-program="tka-smp" className="min-h-screen bg-slate-50/70 p-6 text-center text-slate-900">
+            <main data-experience-mode="exam" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen bg-slate-50/70 p-6 text-center text-slate-900">
                 <div className="mx-auto max-w-xl rounded-2xl border border-slate-200/80 bg-white p-6 font-bold text-slate-900 shadow-xs">
                     Tidak ada bagian aktif. Muat ulang halaman atau kembali ke TKA {level}.
                 </div>
@@ -397,13 +397,13 @@ export default function TkaFullExamSessionClient({
     }
 
     return (
-        <main data-experience-mode="exam" data-program="tka-smp" className="min-h-screen bg-slate-50/70 p-3 text-slate-900 md:p-6">
+        <main data-experience-mode="exam" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen bg-slate-50/70 p-3 text-slate-900 md:p-6">
             <div className="mx-auto max-w-7xl space-y-4">
                 <header className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700 ring-1 ring-indigo-200/60 shadow-2xs">
-                                TKA SMP · {examModeLabel}
+                                TKA {level} · {examModeLabel}
                             </div>
                             <h1 className="mt-2 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">{activeSection.title}</h1>
                         </div>

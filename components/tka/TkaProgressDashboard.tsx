@@ -22,7 +22,7 @@ function formatAttemptDate(value: string) {
     }).format(date)
 }
 
-export default function TkaProgressDashboard({ dashboard }: { dashboard: TkaProgressDashboardView }) {
+export default function TkaProgressDashboard({ dashboard, level }: { dashboard: TkaProgressDashboardView; level?: string }) {
     const wrongLabel = dashboard.openWrongQuestionsIsLowerBound
         ? `${dashboard.openWrongQuestions}+`
         : String(dashboard.openWrongQuestions)
@@ -61,7 +61,7 @@ export default function TkaProgressDashboard({ dashboard }: { dashboard: TkaProg
             </section>
 
             {dashboard.readiness ? (
-                <TkaReadinessCard readiness={dashboard.readiness} showDashboardLink={false} />
+                <TkaReadinessCard readiness={dashboard.readiness} level={level} showDashboardLink={false} />
             ) : (
                 <section className="rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-xs md:p-8">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs">

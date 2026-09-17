@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { ArrowLeft, ArrowRight, BrainCircuit, Check, Clock3, Grid3X3, Send } from 'lucide-react'
 import MathRenderer from '@/components/MathRenderer'
@@ -17,6 +17,7 @@ import ProgressBar from '@/components/ui/ProgressBar'
 import TkaSectionConfirmModal from '@/components/tka/TkaSectionConfirmModal'
 import { progressStorageKey, readStoredIndex, writeStoredIndex } from '@/lib/session-progress'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
+import { TKA_AVAILABLE_LEVELS, tkaLevelFromPathname } from '@/src/tka/context'
 
 function formatRemaining(milliseconds: number) {
     const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
@@ -32,6 +33,8 @@ function instruction(type: string) {
 }
 
 export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullExamState }) {
+    const pathname = usePathname()
+    const level = tkaLevelFromPathname(pathname) ?? TKA_AVAILABLE_LEVELS[0]
     const router = useRouter()
     const activeSection = state.sections.find((section) => section.sectionId === state.activeSectionId) ?? null
     const maxSortOrder = Math.max(...state.sections.map((section) => section.sortOrder), 0)
@@ -208,12 +211,12 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
     }
 
     return (
-        <main data-experience-mode="exam" data-program="tka-smp" className="st-product min-h-screen bg-[#f8f9fd] p-3 md:p-5">
+        <main data-experience-mode="exam" data-program={`tka-${level.toLowerCase()}`} className="st-product min-h-screen bg-[#f8f9fd] p-3 md:p-5">
             <div className="mx-auto max-w-6xl space-y-3">
                 <header className="rounded-[1.15rem] border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600"><BrainCircuit size={15} /> Tes Diagnostik TKA SMP</div>
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600"><BrainCircuit size={15} /> Tes Diagnostik TKA {level}</div>
                             <h1 className="mt-1 text-xl font-black tracking-tight text-slate-950">{activeSection.title}</h1>
                             <p className="mt-1 text-xs font-semibold text-slate-500">Bagian {activeSection.sortOrder} dari {state.sections.length} · {answeredCount}/{questions.length} terjawab</p>
                             <div className="mt-3 flex flex-wrap gap-2" aria-label="Tahapan tes diagnostik">

@@ -187,7 +187,7 @@ export default async function TkaDiagnosticResultPage({
                                     <div>
                                         <div className="flex items-start justify-between gap-3">
                                             <div>
-                                                <p className="text-xs font-black uppercase tracking-wide text-slate-400">{subject?.name ?? subject?.code ?? 'TKA SMP'}</p>
+                                                <p className="text-xs font-black uppercase tracking-wide text-slate-400">{subject?.name ?? subject?.code ?? `TKA ${level}`}</p>
                                                 <h3 className="mt-1 text-base font-black text-slate-900">{node?.name ?? 'Kompetensi'}</h3>
                                             </div>
                                             <Strength label={row.strength_label} />
@@ -234,7 +234,7 @@ export default async function TkaDiagnosticResultPage({
                                     Prioritas utama
                                 </div>
                                 <h3 className="mt-3 text-xl font-black text-slate-900">{primaryNode?.name ?? 'Fokus belajar'}</h3>
-                                <p className="mt-1 text-sm font-bold text-slate-500">{primarySubject?.name ?? 'TKA SMP'} · 10 soal fokus · sekitar 15 menit</p>
+                                <p className="mt-1 text-sm font-bold text-slate-500">{primarySubject?.name ?? `TKA ${level}`} · 10 soal fokus · sekitar 15 menit</p>
                             </div>
                             <div className="shrink-0 md:w-56">
                                 <TkaStartDrillButton
@@ -276,7 +276,7 @@ export default async function TkaDiagnosticResultPage({
                                             )}
                                         </div>
                                         <h3 className="mt-3 text-lg font-black text-slate-900">{node?.name ?? 'Fokus belajar'}</h3>
-                                        <p className="mt-1 text-xs font-bold text-slate-500">{subject?.name ?? 'TKA SMP'}</p>
+                                        <p className="mt-1 text-xs font-bold text-slate-500">{subject?.name ?? `TKA ${level}`}</p>
                                         {resource?.title && (
                                             <p className="mt-2 text-xs font-medium leading-relaxed text-slate-400">
                                                 Jalur terkait: {resource.title}

@@ -71,7 +71,7 @@ export default async function TkaDiagnosticPage({
     const inProgress = (attempts ?? []).find((attempt) => String(attempt.status).toLowerCase() === 'in_progress')
     const completed = (attempts ?? []).find((attempt) => ['completed', 'submitted'].includes(String(attempt.status).toLowerCase()))
     const disabledReason = !activeTrack
-        ? 'Aktifkan jalur TKA SMP dulu'
+        ? `Aktifkan jalur TKA ${level} dulu`
         : !examActive
             ? 'Tes diagnostik belum dibuka'
             : null
@@ -85,10 +85,10 @@ export default async function TkaDiagnosticPage({
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black tracking-wide text-indigo-700 ring-1 ring-indigo-200/50">
                                 <BrainCircuit size={14} className="text-indigo-600" />
-                                <span>Baseline Kemampuan · TKA SMP</span>
+                                <span>Baseline Kemampuan · TKA {level}</span>
                             </div>
                             <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
-                                Tes Diagnostik TKA SMP
+                                Tes Diagnostik TKA {level}
                             </h1>
                             <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base">
                                 Kerjakan 28 soal untuk memetakan kemampuan awalmu. Hasilnya membantu menentukan materi yang perlu diperkuat sebelum masuk ke latihan dan tryout.
@@ -143,7 +143,7 @@ export default async function TkaDiagnosticPage({
 
                 {!activeTrack && (
                     <section className="flex flex-col gap-2 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/70 to-orange-50/40 p-5 text-sm font-semibold text-amber-900 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-                        <span>Jalur belajar TKA SMP belum aktif. Aktifkan dulu agar hasil pemetaan tersimpan di profilmu.</span>
+                        <span>Jalur belajar TKA {level} belum aktif. Aktifkan dulu agar hasil pemetaan tersimpan di profilmu.</span>
                         <Link href={base} className="st-focus inline-flex min-h-9 shrink-0 items-center font-bold underline text-amber-950 hover:text-indigo-700">Aktifkan jalur</Link>
                     </section>
                 )}
@@ -188,7 +188,7 @@ export default async function TkaDiagnosticPage({
                             7 kompetensi utama yang dipetakan
                         </h2>
                         <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                            Mencakup seluruh standar kompetensi dasar TKA SMP:
+                            Mencakup seluruh standar kompetensi dasar TKA {level}:
                         </p>
 
                         <div className="mt-5 grid gap-3 sm:grid-cols-2">

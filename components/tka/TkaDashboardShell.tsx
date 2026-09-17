@@ -61,8 +61,9 @@ export default function TkaDashboardShell({
     const isDiagnosticSession = /\/diagnostic\/[0-9a-f-]+$/i.test(pathname)
     const isFocusedSession = isTryoutSession || isDiagnosticSession || pathname.includes('/remedial/') || isReviewSession
     const isTryoutArea = pathname.startsWith(`${basePath}/tryout`) || pathname.startsWith(`${basePath}/mini-tryout`)
-    const featureHref = (path: string) => level === 'SMP' ? `${basePath}${path}` : basePath
-    const accessHref = level === 'SMP' ? `${basePath}/pass` : basePath
+    // Semua jenjang (SD/SMP/SMA) sudah punya halaman fitur & halaman pass sendiri.
+    const featureHref = (path: string) => `${basePath}${path}`
+    const accessHref = `${basePath}/pass`
 
     if (isFocusedSession) {
         return (
@@ -119,26 +120,26 @@ export default function TkaDashboardShell({
                         <p className="mb-1 px-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Pusat Belajar</p>
                         <div className="space-y-1">
                             <NavItem variant="soft" href={basePath} icon={<LayoutDashboard size={17} />} label="Ringkasan" exact />
-                            <NavItem variant="soft" active={level === "SMP" ? undefined : false} href={featureHref('/diagnostic')} icon={<BrainCircuit size={17} />} label="Tes Diagnostik" />
-                            <NavItem variant="soft" active={level === 'SMP' ? undefined : false} href={featureHref('/focus')} icon={<Dumbbell size={17} />} label="Latihan Fokus" />
-                            <NavItem variant="soft" active={level === 'SMP' ? undefined : false} href={featureHref('/mini-tryout')} icon={<Timer size={17} />} label="Mini Tryout" />
-                            <NavItem variant="soft" active={level === 'SMP' ? undefined : false} href={featureHref('/tryout')} icon={<ListChecks size={17} />} label="Tryout" />
+                            <NavItem variant="soft" href={featureHref('/diagnostic')} icon={<BrainCircuit size={17} />} label="Tes Diagnostik" />
+                            <NavItem variant="soft" href={featureHref('/focus')} icon={<Dumbbell size={17} />} label="Latihan Fokus" />
+                            <NavItem variant="soft" href={featureHref('/mini-tryout')} icon={<Timer size={17} />} label="Mini Tryout" />
+                            <NavItem variant="soft" href={featureHref('/tryout')} icon={<ListChecks size={17} />} label="Tryout" />
                         </div>
                     </div>
 
                     <div className="border-t border-dashed border-slate-200 pt-2.5">
                         <p className="mb-1 px-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Evaluasi</p>
                         <div className="space-y-1">
-                            <NavItem variant="soft" active={level === "SMP" ? undefined : false} href={featureHref('/riwayat')} icon={<History size={17} />} label="Riwayat" />
-                            <NavItem variant="soft" active={level === "SMP" ? undefined : false} href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={17} />} label="Bank Soal Salah" />
-                            <NavItem variant="soft" active={level === "SMP" ? undefined : false} href={featureHref('/progress')} icon={<BarChart3 size={17} />} label="Perkembangan" />
+                            <NavItem variant="soft" href={featureHref('/riwayat')} icon={<History size={17} />} label="Riwayat" />
+                            <NavItem variant="soft" href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={17} />} label="Bank Soal Salah" />
+                            <NavItem variant="soft" href={featureHref('/progress')} icon={<BarChart3 size={17} />} label="Perkembangan" />
                         </div>
                     </div>
 
                     <div className="border-t border-dashed border-slate-200 pt-2.5">
                         <p className="mb-1 px-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Akun & Akses</p>
                         <div className="space-y-1">
-                            <NavItem variant="soft" active={level === 'SMP' ? undefined : false} href={accessHref} icon={<Sparkles size={17} />} label="Tempur Pass" badge={hasActiveTempurPass ? 'Aktif' : undefined} />
+                            <NavItem variant="soft" href={accessHref} icon={<Sparkles size={17} />} label="Tempur Pass" badge={hasActiveTempurPass ? 'Aktif' : undefined} />
                             <NavItem variant="soft" href={`${basePath}/pilih-jalur`} icon={<Compass size={17} />} label="Pilih Jalur" />
                             <NavItem variant="soft" href={`${basePath}/profile`} icon={<User size={17} />} label="Profil Siswa" />
                         </div>
@@ -210,11 +211,11 @@ export default function TkaDashboardShell({
             >
                 <div className="grid grid-cols-6 gap-1 px-2 py-1.5">
                     <MobileNavItem variant="soft" href={basePath} icon={<LayoutDashboard size={20} />} label="Ringkasan" exact />
-                    <MobileNavItem variant="soft" active={level === "SMP" ? undefined : false} href={featureHref('/diagnostic')} icon={<BrainCircuit size={20} />} label="Diagnostik" />
-                    <MobileNavItem variant="soft" active={level === 'SMP' ? undefined : false} href={featureHref('/focus')} icon={<Dumbbell size={20} />} label="Latihan" />
-                    <MobileNavItem variant="soft" active={level === 'SMP' ? isTryoutArea : false} href={featureHref('/tryout')} icon={<ListChecks size={20} />} label="Tryout" />
-                    <MobileNavItem variant="soft" active={level === "SMP" ? undefined : false} href={featureHref('/riwayat')} icon={<History size={20} />} label="Riwayat" />
-                    <MobileNavItem variant="soft" active={level === "SMP" ? undefined : false} href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={20} />} label="Soal Salah" />
+                    <MobileNavItem variant="soft" href={featureHref('/diagnostic')} icon={<BrainCircuit size={20} />} label="Diagnostik" />
+                    <MobileNavItem variant="soft" href={featureHref('/focus')} icon={<Dumbbell size={20} />} label="Latihan" />
+                    <MobileNavItem variant="soft" active={isTryoutArea} href={featureHref('/tryout')} icon={<ListChecks size={20} />} label="Tryout" />
+                    <MobileNavItem variant="soft" href={featureHref('/riwayat')} icon={<History size={20} />} label="Riwayat" />
+                    <MobileNavItem variant="soft" href={featureHref('/wrong-questions')} icon={<BookOpenCheck size={20} />} label="Soal Salah" />
                 </div>
             </nav>
         </div>

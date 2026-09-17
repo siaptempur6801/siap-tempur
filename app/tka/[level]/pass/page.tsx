@@ -276,7 +276,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
                                     <span>Tempur Pass aktif</span>
                                 </div>
                                 <h2 className="mt-2.5 text-xl font-bold text-slate-950 sm:text-2xl">
-                                    Akses Premium TKA SMP Kamu Sedang Aktif
+                                    Akses Premium TKA {level} Kamu Sedang Aktif
                                 </h2>
                                 <p className="mt-1 text-sm font-medium text-slate-600 leading-relaxed">
                                     {passAccess.accessThrough
@@ -322,8 +322,8 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
                 ) : (
                     <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center" role="status">
                         <p className="text-lg font-bold text-slate-900">Paket Tempur Pass belum tersedia.</p>
-                        <p className="mt-1 text-sm text-slate-500">Kamu tetap bisa kembali ke TKA SMP dan memakai fitur gratis yang tersedia.</p>
-                        <Button className="mt-4" variant="secondary" asChild><Link href={base}>Kembali ke TKA SMP</Link></Button>
+                        <p className="mt-1 text-sm text-slate-500">Kamu tetap bisa kembali ke TKA {level} dan memakai fitur gratis yang tersedia.</p>
+                        <Button className="mt-4" variant="secondary" asChild><Link href={base}>Kembali ke TKA {level}</Link></Button>
                     </section>
                 )}
             </div>

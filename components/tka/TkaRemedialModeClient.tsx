@@ -8,6 +8,8 @@ import { reviewTkaRemedialItem } from '@/app/actions/tka-remedial'
 import type { TkaRemedialItem, TkaRemedialSession } from '@/src/services/tka-remedial.service'
 import { cn } from '@/lib/utils'
 import ProgressBar from '@/components/ui/ProgressBar'
+import { TKA_AVAILABLE_LEVELS, tkaLevelFromPathname } from '@/src/tka/context'
+import { usePathname } from 'next/navigation'
 
 type Feedback = {
     isCorrect: boolean
@@ -22,6 +24,9 @@ export default function TkaRemedialModeClient({
     initialSession: TkaRemedialSession
     initialItems: TkaRemedialItem[]
 }) {
+    const pathname = usePathname()
+    const level = tkaLevelFromPathname(pathname) ?? TKA_AVAILABLE_LEVELS[0]
+
     const [items, setItems] = useState(initialItems)
     const firstPending = Math.max(0, initialItems.findIndex((item) => item.status === 'pending'))
     const [activeIndex, setActiveIndex] = useState(firstPending)
@@ -97,7 +102,7 @@ export default function TkaRemedialModeClient({
 
     if (!current || totalItems === 0) {
         return (
-            <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-12 md:py-16">
+            <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-12 md:py-16">
                 <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-xs md:p-8">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/50">
                         <CheckCircle2 size={36} />
@@ -106,13 +111,13 @@ export default function TkaRemedialModeClient({
                         Tidak ada latihan perbaikan aktif.
                     </h1>
                     <p className="mx-auto mt-3 max-w-lg font-medium leading-relaxed text-slate-600">
-                        Kamu bisa kembali ke TKA SMP untuk melanjutkan latihan atau melihat perkembangan belajar.
+                        Kamu bisa kembali ke TKA {level} untuk melanjutkan latihan atau melihat perkembangan belajar.
                     </p>
                     <Link
-                        href="/tka/smp"
+                        href={`/tka/${level.toLowerCase()}`}
                         className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-black text-white hover:bg-slate-800 transition"
                     >
-                        Kembali ke TKA SMP
+                        Kembali ke TKA {level}
                     </Link>
                 </div>
             </main>
@@ -127,14 +132,14 @@ export default function TkaRemedialModeClient({
             : 'Pasangkan pilihan sesuai kategori yang diminta.'
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <Link
-                        href="/tka/smp"
+                        href={`/tka/${level.toLowerCase()}`}
                         className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                     >
-                        <ArrowLeft size={16} /> Kembali ke TKA SMP
+                        <ArrowLeft size={16} /> Kembali ke TKA {level}
                     </Link>
                     <span className="rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1 text-xs font-black text-amber-800">
                         Latihan perbaikan
@@ -184,16 +189,16 @@ export default function TkaRemedialModeClient({
                         </p>
                         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                             <Link
-                                href="/tka/smp/progress"
+                                href={`/tka/${level.toLowerCase()}/progress`}
                                 className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-md shadow-blue-600/20 transition hover:bg-indigo-700"
                             >
                                 Lihat Perkembangan
                             </Link>
                             <Link
-                                href="/tka/smp"
+                                href={`/tka/${level.toLowerCase()}`}
                                 className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
                             >
-                                Kembali ke TKA SMP
+                                Kembali ke TKA {level}
                             </Link>
                         </div>
                     </section>

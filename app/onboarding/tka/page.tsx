@@ -5,8 +5,6 @@ import { ArrowLeft, Layers3 } from 'lucide-react'
 import TkaLevelChooser from '@/components/onboarding/TkaLevelChooser'
 import { MascotBubble } from '@/components/brand/playful'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { cookies } from 'next/headers'
-import { TKA_AVAILABLE_LEVELS, isTkaLevelAvailable, parseTkaLevel, type TkaLevel } from '@/src/tka/context'
 
 export const metadata: Metadata = {
     title: 'Pilih jenjang TKA — Siap Tempur',
@@ -28,51 +26,6 @@ export default async function OnboardingTkaPage() {
     const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) redirect(`/login?returnTo=${encodeURIComponent('/onboarding/tka')}`)
-
-    const cookieStore = await cookies()
-    let activeLevel: TkaLevel | null = null
-
-    const preferredLevel = parseTkaLevel(cookieStore.get('tka-level')?.value)
-    if (preferredLevel && isTkaLevelAvailable(preferredLevel)) {
-        activeLevel = preferredLevel
-    } else {
-        // Belum ada pilihan di perangkat ini: pakai jejak belajar terakhir bila ada.
-        const { data: program } = await supabase
-            .from('programs')
-            .select('id')
-            .eq('code', 'TKA')
-            .maybeSingle()
-
-        if (program?.id) {
-            const { data: tracks } = await supabase
-                .from('tracks')
-                .select('id, code')
-                .eq('program_id', program.id)
-                .in('code', [...TKA_AVAILABLE_LEVELS])
-
-            const levelByTrackId = new Map(
-                (tracks ?? [])
-                    .map((track) => [String(track.id), parseTkaLevel(String(track.code))] as const)
-                    .filter((entry): entry is [string, TkaLevel] => entry[1] !== null && isTkaLevelAvailable(entry[1])),
-            )
-
-            if (levelByTrackId.size > 0) {
-                const { data: activeTrack } = await supabase
-                    .from('user_tracks')
-                    .select('track_id')
-                    .eq('user_id', user.id)
-                    .in('track_id', [...levelByTrackId.keys()])
-                    .in('status', ['active', 'ACTIVE'])
-                    .order('updated_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle()
-
-                if (activeTrack?.track_id) {
-                    activeLevel = levelByTrackId.get(String(activeTrack.track_id)) ?? null
-                }
-            }
-        }
-    }
 
     return (
         <main className="st-product relative min-h-screen overflow-hidden bg-[var(--st-paper)] px-4 py-6 font-body text-[var(--st-ink)] md:px-8 md:py-8">
@@ -104,7 +57,7 @@ export default async function OnboardingTkaPage() {
                     </div>
 
                     <div className="mt-8">
-                        <TkaLevelChooser activeLevel={activeLevel} />
+                        <TkaLevelChooser />
                     </div>
 
                     <MascotBubble name="tama" size="sm" soft bubbleTone="blue" className="mx-auto mt-8 w-fit" bubbleClassName="max-w-md">

@@ -22,3 +22,18 @@ export function tkaLevelPath(level: TkaLevel) {
 export function isTkaLevelAvailable(level: TkaLevel) {
     return TKA_AVAILABLE_LEVELS.includes(level)
 }
+
+/**
+ * Ambil jenjang dari pathname `/tka/<jenjang>` atau `/tka/<jenjang>/...`.
+ * Dipakai komponen yang perlu menampilkan jenjang tanpa menerima prop (mis. komponen klien).
+ */
+export function tkaLevelFromPathname(pathname: string | null | undefined): TkaLevel | null {
+    if (!pathname) return null
+    const match = pathname.match(/^\/tka\/([^/]+)(?:\/|$)/i)
+    return match ? parseTkaLevel(match[1]) : null
+}
+
+/** Label jenjang untuk teks UI. */
+export function tkaLevelLabel(level: TkaLevel | string) {
+    return `TKA ${String(level).toUpperCase()}`
+}

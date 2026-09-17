@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
-import { isTkaLevelAvailable, type TkaLevel } from '@/src/tka/context'
+import { isTkaLevelAvailable } from '@/src/tka/context'
 import { TKA_LEVEL_OPTIONS } from '@/components/onboarding/tka-level-options'
 import { BookOpenCheck, GraduationCap, School } from 'lucide-react'
 
@@ -25,20 +25,12 @@ const TONES = {
     SMA: 'bg-[var(--st-green-soft)]',
 } as const
 
-export default function TkaLevelChooser({
-    activeLevel,
-    className,
-}: {
-    /** Jenjang yang sedang aktif menurut cookie/jejak belajar, bila ada. */
-    activeLevel?: TkaLevel | null
-    className?: string
-}) {
+export default function TkaLevelChooser({ className }: { className?: string }) {
     return (
         <div className={cn('mx-auto grid w-full max-w-4xl gap-5 md:grid-cols-3', className)}>
             {TKA_LEVEL_OPTIONS.map((option) => {
                 const Icon = ICONS[option.level]
                 const available = isTkaLevelAvailable(option.level)
-                const active = option.level === activeLevel
                 const href = `/tka/${option.level.toLowerCase()}`
 
                 if (!available) {
@@ -65,18 +57,10 @@ export default function TkaLevelChooser({
                             document.cookie = `tka-level=${option.level}; Path=/; Max-Age=31536000; SameSite=Lax`
                         }}
                         className="st-card-md st-focus group flex flex-col bg-white p-5 transition-transform hover:-translate-y-1 sm:p-6"
-                        aria-current={active ? 'true' : undefined}
                     >
-                        <div className="flex items-start justify-between gap-3">
-                            <span className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--st-ink)]', TONES[option.level])}>
-                                <Icon size={24} />
-                            </span>
-                            {active ? (
-                                <span className="inline-flex rounded-full border-2 border-[var(--st-ink)] bg-emerald-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.1em] text-emerald-800">
-                                    Sedang aktif
-                                </span>
-                            ) : null}
-                        </div>
+                        <span className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--st-ink)]', TONES[option.level])}>
+                            <Icon size={24} />
+                        </span>
 
                         <h2 className="st-heading-display mt-5 text-3xl">{option.title}</h2>
                         <p className="st-muted mt-3 font-semibold leading-relaxed">{option.description}</p>

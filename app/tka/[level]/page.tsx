@@ -485,17 +485,17 @@ function TkaComingSoonPage({ level }: { level: TkaLevel }) {
                                         Pilot Aktif SiapTempur
                                     </div>
                                     <h2 className="text-base font-black tracking-tight text-slate-950">
-                                        Coba ekosistem TKA sekarang melalui jalur TKA SMP
+                                        Coba ekosistem TKA sekarang melalui jalur TKA {level}
                                     </h2>
                                     <p className="text-xs text-slate-600">
                                         Modul Tes Diagnostik, Latihan Fokus, Mini Tryout, dan Tryout Lengkap sudah aktif dan siap digunakan.
                                     </p>
                                 </div>
                                 <TkaSurfaceLink
-                                    href="/tka/smp"
+                                    href={tkaLevelPath(level)}
                                     className="st-focus inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-[0.98]"
                                 >
-                                    <span>Buka TKA SMP</span>
+                                    <span>Buka TKA {level}</span>
                                     <ArrowRight size={15} />
                                 </TkaSurfaceLink>
                             </div>

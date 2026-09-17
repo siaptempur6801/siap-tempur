@@ -22,9 +22,12 @@ function percent(value: number) {
 
 export default function TkaReadinessCard({
     readiness,
+    level,
     showDashboardLink = true,
 }: {
     readiness: TkaReadinessView
+    /** Jenjang yang sedang dibuka (mis. `SMP`) untuk label kartu. */
+    level?: string
     showDashboardLink?: boolean
 }) {
     const readinessPercent = percent(readiness.readinessPercent)
@@ -39,7 +42,7 @@ export default function TkaReadinessCard({
                         <span>Tingkat Kesiapan</span>
                     </div>
                     <h2 className="mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-                        Kesiapan TKA SMP
+                        {level ? `Kesiapan TKA ${level}` : 'Kesiapan belajar'}
                     </h2>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600">
                         Indikator kesiapan berbasis akumulasi akurasi tryout, latihan bab materi, dan konsistensi perbaikan soal salah.

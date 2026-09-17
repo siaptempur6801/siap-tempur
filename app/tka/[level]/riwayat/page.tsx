@@ -163,7 +163,7 @@ export default async function TkaHistoryPage({
     const activeCount = history.filter(({ attempt }) => String(attempt.status ?? '').toLowerCase() === 'in_progress').length
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 <header className="relative overflow-hidden rounded-3xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/80 via-white to-blue-50/40 p-6 sm:p-8 md:p-10 shadow-xs">
                     {/* Decorative blur aura */}
