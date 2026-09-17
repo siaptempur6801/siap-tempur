@@ -23,6 +23,7 @@ import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 import styles from '@/components/tka/TkaLearning.module.css'
 import TkaLevelSwitcher from '@/components/tka/TkaLevelSwitcher'
 import { parseTkaLevel } from '@/src/tka/context'
+import { PASS_SCOPES, passScopeForTkaLevel, tkaLevelFromPassScope, type PassScope } from '@/src/tka/pass-scope'
 
 interface TkaDashboardShellProps {
     children: React.ReactNode
@@ -40,7 +41,8 @@ interface TkaDashboardShellProps {
         full_name?: string
         display_name?: string
     } | null
-    hasActiveTempurPass: boolean
+    /** Scope pass yang sedang aktif untuk pengguna ini (mis. `['tka:sd', 'cpns']`). */
+    activePassScopes: readonly PassScope[]
     signoutAction: () => Promise<{ success: boolean }>
 }
 
@@ -49,13 +51,21 @@ export default function TkaDashboardShell({
     level: initialLevel,
     user,
     profile,
-    hasActiveTempurPass,
+    activePassScopes,
     signoutAction,
 }: TkaDashboardShellProps) {
     const pathname = usePathname()
     const levelFromPath = pathname?.match(/^\/tka\/(sd|smp|sma)(?:\/|$)/i)?.[1]
     const level = parseTkaLevel(levelFromPath) ?? initialLevel
     const basePath = `/tka/${level.toLowerCase()}`
+    const currentPassScope = passScopeForTkaLevel(level)
+    const hasActiveTempurPass = activePassScopes.includes(currentPassScope)
+    // Jenjang lain yang punya pass aktif: dipakai untuk menjelaskan cakupan di kartu profil supaya
+    // badge yang tidak muncul di jenjang ini tidak terkesan "pass hilang".
+    const otherPassedLevels = PASS_SCOPES
+        .filter((scope) => scope !== currentPassScope && activePassScopes.includes(scope))
+        .map((scope) => tkaLevelFromPassScope(scope))
+        .filter((value): value is string => value !== null)
     const isReviewSession = pathname.includes('/review') || pathname.includes('/pembahasan')
     const isTryoutSession = pathname.includes('/tryout/')
     const isDiagnosticSession = /\/diagnostic\/[0-9a-f-]+$/i.test(pathname)
@@ -139,7 +149,7 @@ export default function TkaDashboardShell({
                     <div className="border-t border-dashed border-slate-200 pt-2.5">
                         <p className="mb-1 px-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">Akun & Akses</p>
                         <div className="space-y-1">
-                            <NavItem variant="soft" href={accessHref} icon={<Sparkles size={17} />} label="Tempur Pass" badge={hasActiveTempurPass ? 'Aktif' : undefined} />
+                            <NavItem variant="soft" href={accessHref} icon={<Sparkles size={17} />} label={`Tempur Pass ${level}`} badge={hasActiveTempurPass ? 'Aktif' : undefined} />
                             <NavItem variant="soft" href={`${basePath}/pilih-jalur`} icon={<Compass size={17} />} label="Pilih Jalur" />
                             <NavItem variant="soft" href={`${basePath}/profile`} icon={<User size={17} />} label="Profil Siswa" />
                         </div>
@@ -161,9 +171,18 @@ export default function TkaDashboardShell({
                                 {/* Kartu profil hanya menampilkan identitas. Penawaran "Tempur Pass"
                                     tidak ditampilkan untuk pengguna yang belum memilikinya; status
                                     pass tetap muncul bagi yang sudah punya (badge aktif). */}
-                                {hasActiveTempurPass && (
+                                {hasActiveTempurPass ? (
                                     <TempurPassIndicator href={accessHref} className="mt-1" compact />
-                                )}
+                                ) : otherPassedLevels.length > 0 ? (
+                                    <Link
+                                        href={`/tka/${otherPassedLevels[0].toLowerCase()}/pass`}
+                                        className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200/70 transition hover:bg-emerald-100"
+                                        title={`Tempur Pass aktif untuk TKA ${otherPassedLevels.join(', ')}`}
+                                    >
+                                        <Sparkles size={12} className="text-emerald-600" />
+                                        <span>Pass aktif · {otherPassedLevels.join(', ')}</span>
+                                    </Link>
+                                ) : null}
                             </div>
                         </div>
                         <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">

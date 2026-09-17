@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, Crown, Loader2, ShieldCheck, Zap } from 'lucide-react'
 import { toast } from 'sonner'
-import { createTkaPassTransaction, syncPaymentStatus } from '@/app/actions/payment'
+import { createPackageTransaction, createTkaPassTransaction, syncPaymentStatus } from '@/app/actions/payment'
 import { trackProductEvent } from '@/lib/product-analytics'
 
-export type TkaPassPackage = {
+export type PassPackageOption = {
     code: string
     name: string
     description: string | null
@@ -31,25 +31,40 @@ function analyticsPackageDays(days: number | null): 30 | 90 | undefined {
 
 const ADMIN_FEE = 500
 
-export default function TkaPassPackagesClient({
+export default function PassPackagesClient({
     level,
     packages,
     hasActivePass = false,
+    program = 'tka',
+    scopeLabel,
 }: {
-    level: string
-    packages: TkaPassPackage[]
+    /** Jenjang TKA (hanya dipakai bila `program = 'tka'`). */
+    level?: string
+    packages: PassPackageOption[]
     hasActivePass?: boolean
+    /** Program pemilik paket ini; menentukan aksi pembelian & label. */
+    program?: 'tka' | 'cpns'
+    /** Label cakupan yang ditampilkan, mis. `TKA SMP` atau `CPNS`. */
+    scopeLabel?: string
 }) {
+    const levelLabel = scopeLabel ?? (level ? `TKA ${level}` : 'CPNS')
+    const analyticsProgram: 'cpns' | 'tka_sd' | 'tka_smp' | 'tka_sma' = program === 'cpns'
+        ? 'cpns'
+        : (String(level ?? '').toLowerCase() === 'sd'
+            ? 'tka_sd'
+            : String(level ?? '').toLowerCase() === 'sma'
+                ? 'tka_sma'
+                : 'tka_smp')
     const router = useRouter()
     const [buying, setBuying] = useState<string | null>(null)
 
     useEffect(() => {
         if (packages.length === 0) return
         trackProductEvent('px_package_view', {
-            program: 'tka_smp',
+            program: analyticsProgram,
             surface: 'pass',
         })
-    }, [packages.length])
+    }, [packages.length, analyticsProgram])
 
     const bestValueCode = useMemo(() => {
         const pricedByDay = packages
@@ -69,7 +84,7 @@ export default function TkaPassPackagesClient({
         const packageDays = analyticsPackageDays(durationDays)
 
         trackProductEvent('px_package_select', {
-            program: 'tka_smp',
+            program: analyticsProgram,
             surface: 'pass',
             package_days: packageDays,
         })
@@ -77,14 +92,16 @@ export default function TkaPassPackagesClient({
         setBuying(productCode)
         const loadingToast = toast.loading(hasActivePass ? 'Menyiapkan perpanjangan akses...' : 'Menyiapkan pembayaran...')
         try {
-            const transaction = await createTkaPassTransaction(productCode, level)
+            const transaction = program === 'cpns'
+                ? await createPackageTransaction(productCode, '/cpns/dashboard/profile')
+                : await createTkaPassTransaction(productCode, String(level))
             if (!transaction.success) {
                 toast.error('Pembayaran belum bisa dimulai', {
                     id: loadingToast,
                     description: transaction.message,
                 })
                 trackProductEvent('px_checkout_state', {
-                    program: 'tka_smp',
+                    program: analyticsProgram,
                     surface: 'pass',
                     package_days: packageDays,
                     payment_state: 'error',
@@ -98,7 +115,7 @@ export default function TkaPassPackagesClient({
                     description: 'Muat ulang halaman lalu coba lagi.',
                 })
                 trackProductEvent('px_checkout_state', {
-                    program: 'tka_smp',
+                    program: analyticsProgram,
                     surface: 'pass',
                     package_days: packageDays,
                     payment_state: 'error',
@@ -107,7 +124,7 @@ export default function TkaPassPackagesClient({
             }
 
             trackProductEvent('px_checkout_state', {
-                program: 'tka_smp',
+                program: analyticsProgram,
                 surface: 'pass',
                 package_days: packageDays,
                 payment_state: 'opened',
@@ -116,7 +133,7 @@ export default function TkaPassPackagesClient({
             window.snap.pay(transaction.token, {
                 onSuccess: async () => {
                     trackProductEvent('px_checkout_state', {
-                        program: 'tka_smp',
+                        program: analyticsProgram,
                         surface: 'pass',
                         package_days: packageDays,
                         payment_state: 'success',
@@ -133,7 +150,7 @@ export default function TkaPassPackagesClient({
                         router.refresh()
                     } else {
                         trackProductEvent('px_checkout_state', {
-                            program: 'tka_smp',
+                            program: analyticsProgram,
                             surface: 'pass',
                             package_days: packageDays,
                             payment_state: 'verifying',
@@ -146,7 +163,7 @@ export default function TkaPassPackagesClient({
                 },
                 onPending: async () => {
                     trackProductEvent('px_checkout_state', {
-                        program: 'tka_smp',
+                        program: analyticsProgram,
                         surface: 'pass',
                         package_days: packageDays,
                         payment_state: 'pending',
@@ -160,7 +177,7 @@ export default function TkaPassPackagesClient({
                 },
                 onError: () => {
                     trackProductEvent('px_checkout_state', {
-                        program: 'tka_smp',
+                        program: analyticsProgram,
                         surface: 'pass',
                         package_days: packageDays,
                         payment_state: 'error',
@@ -171,7 +188,7 @@ export default function TkaPassPackagesClient({
                 },
                 onClose: async () => {
                     trackProductEvent('px_checkout_state', {
-                        program: 'tka_smp',
+                        program: analyticsProgram,
                         surface: 'pass',
                         package_days: packageDays,
                         payment_state: 'closed',
@@ -188,7 +205,7 @@ export default function TkaPassPackagesClient({
         } catch (error) {
             toast.dismiss(loadingToast)
             trackProductEvent('px_checkout_state', {
-                program: 'tka_smp',
+                program: analyticsProgram,
                 surface: 'pass',
                 package_days: packageDays,
                 payment_state: 'error',
@@ -211,7 +228,7 @@ export default function TkaPassPackagesClient({
                     <span>Pilihan Durasi Belajar</span>
                 </div>
                 <h2 id="tka-pass-packages-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-                    {hasActivePass ? `Perpanjang akses TKA ${level}` : `Pilih akses belajar TKA ${level}`}
+                    {hasActivePass ? `Perpanjang akses ${levelLabel}` : `Pilih akses belajar ${levelLabel}`}
                 </h2>
                 <p className="mt-1 text-sm text-slate-600 leading-relaxed">
                     {hasActivePass
@@ -269,7 +286,7 @@ export default function TkaPassPackagesClient({
                                         ? 'Satu bulan untuk mulai rutin, mengenali kemampuan, dan menentukan fokus latihan.'
                                         : days === 90
                                             ? 'Lebih banyak waktu untuk membangun kebiasaan, mengulang latihan, dan mengevaluasi progres.'
-                                            : pkg.description || `Siapkan rencana belajarmu dengan akses TKA ${level} selama ${days} hari.`}
+                                            : pkg.description || `Siapkan rencana belajarmu dengan akses ${levelLabel} selama ${days} hari.`}
                                 </p>
 
                                 <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/80 p-4">
@@ -289,7 +306,7 @@ export default function TkaPassPackagesClient({
                                 </div>
 
                                 <div className="my-5 flex-1 space-y-2 text-xs font-medium text-slate-700">
-                                    <Benefit icon={<CheckCircle2 size={16} />} text={`Full Tryout TKA ${level}`} />
+                                    <Benefit icon={<CheckCircle2 size={16} />} text={`Full Tryout ${levelLabel}`} />
                                     <Benefit icon={<CheckCircle2 size={16} />} text="Mini Tryout selama paket aktif" />
                                     <Benefit icon={<CheckCircle2 size={16} />} text={`Masa aktif ${days} hari`} />
                                     <Benefit icon={<ShieldCheck size={16} />} text="Akses aktif setelah pembayaran terverifikasi" blue />

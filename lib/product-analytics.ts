@@ -17,7 +17,7 @@ export type ProductEventName =
     | 'px_checkout_state'
 
 export type ProductAnalyticsProperties = Partial<{
-    program: 'cpns' | 'tka_smp'
+    program: 'cpns' | 'tka_sd' | 'tka_smp' | 'tka_sma'
     surface: 'landing' | 'auth' | 'dashboard' | 'exam' | 'diagnostic' | 'result' | 'pass'
     cta: string
     mode: 'latihan_fokus' | 'mini_tryout' | 'full_tryout' | 'diagnostic' | 'event'

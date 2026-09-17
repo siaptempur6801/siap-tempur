@@ -2,12 +2,13 @@ import Link from 'next/link'
 import Script from 'next/script'
 import { notFound, redirect } from 'next/navigation'
 import { CalendarDays, CheckCircle2, Sparkles } from 'lucide-react'
-import TkaPassPackagesClient, { type TkaPassPackage } from '@/components/tka/TkaPassPackagesClient'
+import PassPackagesClient from '@/components/pass/PassPackagesClient'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { TkaLevel, isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
-import { PASS_FEATURE_BY_SCOPE, passScopeForTkaLevel } from '@/src/services/tempur-pass.service'
+import { passScopeForTkaLevel } from '@/src/tka/pass-scope'
+import { getPassAccess, listActivePassPackages as listActivePassPackagesService, type PassPackage } from '@/src/services/pass-catalog.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,32 +19,6 @@ type LearnerPassAccess = {
     hasActivePass: boolean
     accessThrough: string | null
     scheduledExtensions: number
-}
-
-function stringValue(value: unknown) {
-    return typeof value === 'string' ? value : String(value ?? '')
-}
-
-function nullableString(value: unknown) {
-    return typeof value === 'string' ? value : null
-}
-
-function nullableNumber(value: unknown) {
-    if (value === null || value === undefined || value === '') return null
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-}
-
-function numberValue(value: unknown) {
-    const parsed = Number(value ?? 0)
-    return Number.isFinite(parsed) ? parsed : 0
-}
-
-function timestampValue(value: unknown) {
-    const raw = nullableString(value)
-    if (!raw) return null
-    const timestamp = Date.parse(raw)
-    return Number.isFinite(timestamp) ? timestamp : null
 }
 
 function formatAccessDate(value: string) {
@@ -57,74 +32,10 @@ function formatAccessDate(value: string) {
 
 async function listActivePassPackages(
     supabase: AuthenticatedV2Client,
-    trackCode: TkaLevel
-): Promise<TkaPassPackage[]> {
-    const now = new Date().toISOString()
-
-    const { data: program, error: programError } = await supabase
-        .from('programs')
-        .select('id')
-        .eq('code', 'TKA')
-        .maybeSingle()
-    if (programError) throw programError
-    if (!program) return []
-
-    const programId = stringValue(program.id)
-    const { data: track, error: trackError } = await supabase
-        .from('tracks')
-        .select('id')
-        .eq('program_id', programId)
-        .eq('code', trackCode)
-        .maybeSingle()
-    if (trackError) throw trackError
-    if (!track) return []
-
-    const trackId = stringValue(track.id)
-    const { data: products, error: productError } = await supabase
-        .from('products')
-        .select('id, code, name, description, duration_days')
-        .eq('program_id', programId)
-        .eq('track_id', trackId)
-        .in('status', ['active', 'ACTIVE'])
-        .order('duration_days', { ascending: true })
-    if (productError) throw productError
-    if (!products?.length) return []
-
-    const productIds = products
-        .map((product) => stringValue(product.id))
-        .filter(Boolean)
-    if (productIds.length === 0) return []
-
-    const { data: prices, error: priceError } = await supabase
-        .from('product_prices')
-        .select('product_id, currency, amount, starts_at, ends_at')
-        .in('product_id', productIds)
-        .in('status', ['active', 'ACTIVE'])
-        .lte('starts_at', now)
-        .order('starts_at', { ascending: false })
-    if (priceError) throw priceError
-
-    const activePriceByProduct = new Map<string, NonNullable<typeof prices>[number]>()
-    for (const price of prices ?? []) {
-        const productId = stringValue(price.product_id)
-        const endsAt = nullableString(price.ends_at)
-        if (!productId || (endsAt && endsAt < now)) continue
-        if (!activePriceByProduct.has(productId)) activePriceByProduct.set(productId, price)
-    }
-
-    return products.flatMap((product) => {
-        const productId = stringValue(product.id)
-        const price = activePriceByProduct.get(productId)
-        if (!price) return []
-        return [{
-            code: stringValue(product.code),
-            name: stringValue(product.name),
-            description: nullableString(product.description),
-            durationDays: nullableNumber(product.duration_days),
-            price: numberValue(price.amount),
-            currency: stringValue(price.currency) || 'IDR',
-        }]
-    })
+    level: TkaLevel
+): Promise<PassPackage[]> {
+    // Katalog paket memakai service bersama supaya halaman CPNS memakai aturan yang sama.
+    return listActivePassPackagesService(supabase, { programCode: 'TKA', trackCode: level })
 }
 
 async function getLearnerPassAccess(
@@ -132,64 +43,8 @@ async function getLearnerPassAccess(
     userId: string,
     level: TkaLevel
 ): Promise<LearnerPassAccess> {
-    // Fitur penanda pass mengikuti jenjang halaman ini. Sebelumnya di-hardcode ke TKA SMP,
-    // sehingga pass SD/SMA tidak pernah terdeteksi di halaman pass-nya sendiri.
-    const { data: feature, error: featureError } = await supabase
-        .from('features')
-        .select('id')
-        .eq('code', PASS_FEATURE_BY_SCOPE[passScopeForTkaLevel(level)])
-        .maybeSingle()
-    if (featureError) throw featureError
-    if (!feature) return { hasActivePass: false, accessThrough: null, scheduledExtensions: 0 }
-
-    const featureId = stringValue(feature.id)
-    const { data: entitlements, error: entitlementError } = await supabase
-        .from('entitlements')
-        .select('starts_at, expires_at, usage_limit, usage_count, status')
-        .eq('user_id', userId)
-        .eq('feature_id', featureId)
-        .in('status', ['active', 'ACTIVE'])
-        .order('starts_at', { ascending: true })
-    if (entitlementError) throw entitlementError
-
-    const now = Date.now()
-    const rows = (entitlements ?? []).map((entitlement) => ({
-        startsAt: timestampValue(entitlement.starts_at),
-        expiresAt: timestampValue(entitlement.expires_at),
-        expiresAtRaw: nullableString(entitlement.expires_at),
-        usageLimit: nullableNumber(entitlement.usage_limit),
-        usageCount: numberValue(entitlement.usage_count),
-    })).filter((entitlement) => (
-        entitlement.startsAt !== null
-        && (entitlement.usageLimit === null || entitlement.usageCount < entitlement.usageLimit)
-    ))
-
-    const activeNow = rows.filter((entitlement) => (
-        entitlement.startsAt !== null
-        && entitlement.startsAt <= now
-        && (entitlement.expiresAt === null || entitlement.expiresAt > now)
-    ))
-
-    if (activeNow.length === 0) return { hasActivePass: false, accessThrough: null, scheduledExtensions: 0 }
-    if (activeNow.some((entitlement) => entitlement.expiresAt === null)) return { hasActivePass: true, accessThrough: null, scheduledExtensions: 0 }
-
-    let accessThroughMs = Math.max(...activeNow.map((entitlement) => entitlement.expiresAt ?? now))
-    let scheduledExtensions = 0
-
-    for (const entitlement of rows) {
-        if (entitlement.startsAt === null || entitlement.expiresAt === null) continue
-        if (entitlement.startsAt <= now) continue
-        if (entitlement.startsAt <= accessThroughMs + 1000 && entitlement.expiresAt > accessThroughMs) {
-            accessThroughMs = entitlement.expiresAt
-            scheduledExtensions += 1
-        }
-    }
-
-    return {
-        hasActivePass: true,
-        accessThrough: new Date(accessThroughMs).toISOString(),
-        scheduledExtensions,
-    }
+    // Fitur penanda pass mengikuti jenjang halaman ini (sebelumnya di-hardcode ke TKA SMP).
+    return getPassAccess(supabase, userId, passScopeForTkaLevel(level))
 }
 
 export default async function TkaPassPage({ params }: { params: Promise<{ level: string }> }) {
@@ -322,7 +177,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
 
                 {/* Packages */}
                 {packages.length > 0 ? (
-                    <TkaPassPackagesClient packages={packages} level={level} hasActivePass={passAccess.hasActivePass} />
+                    <PassPackagesClient packages={packages} level={level} scopeLabel={`TKA ${level}`} hasActivePass={passAccess.hasActivePass} />
                 ) : (
                     <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center" role="status">
                         <p className="text-lg font-bold text-slate-900">Paket Tempur Pass belum tersedia.</p>

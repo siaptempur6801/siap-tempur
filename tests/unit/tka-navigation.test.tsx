@@ -43,7 +43,7 @@ describe('TKA navigation selection', () => {
                 level="SMP"
                 user={{ id: 'user-1', email: 'user@example.com' }}
                 profile={null}
-                hasActiveTempurPass={false}
+                activePassScopes={[]}
                 signoutAction={async () => ({ success: true })}
             >
                 <div>Dashboard</div>
@@ -68,7 +68,7 @@ describe('TKA navigation selection', () => {
                 level="SMP"
                 user={{ id: 'user-1', email: 'user@example.com' }}
                 profile={null}
-                hasActiveTempurPass={false}
+                activePassScopes={[]}
                 signoutAction={async () => ({ success: true })}
             >
                 <div>Dashboard</div>
@@ -104,7 +104,7 @@ describe('TKA navigation selection', () => {
                 level="SMP"
                 user={{ id: 'user-1', email: 'user@example.com' }}
                 profile={null}
-                hasActiveTempurPass={false}
+                activePassScopes={[]}
                 signoutAction={async () => ({ success: true })}
             >
                 <div>Mini Tryout</div>
@@ -126,4 +126,25 @@ describe('TKA navigation selection', () => {
         expect(markup).toContain('href="/tka/sma"')
         expect(markup).toContain('aria-current="page"')
     })
+
+    it('menjelaskan cakupan pass saat pass aktif ada di jenjang lain', () => {
+        navigation.pathname = '/tka/smp'
+        const markup = renderToStaticMarkup(
+            <TkaDashboardShell
+                level="SMP"
+                user={{ id: 'user-1', email: 'user@example.com' }}
+                profile={null}
+                activePassScopes={['tka:sd']}
+                signoutAction={async () => ({ success: true })}
+            >
+                <div>Dashboard</div>
+            </TkaDashboardShell>,
+        )
+
+        // Pass aktif untuk jenjang lain dijelaskan, dan nav menyebut jenjang yang sedang dibuka.
+        expect(markup).toContain('Pass aktif · SD')
+        expect(markup).toContain('Tempur Pass SMP')
+        expect(markup).toContain('href="/tka/smp/pass"')
+    })
+
 })

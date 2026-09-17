@@ -107,7 +107,7 @@ export default function DashboardShell({
                     <div className="space-y-1">
                         <NavItem href="/cpns/dashboard/pilih-jalur" icon={<Compass size={17} />} label="Pilih Jalur" />
                         <NavItem href="/cpns/dashboard/beli-paket" icon={<Ticket size={17} />} label="Beli Token" />
-                        {hasActiveTempurPass && <NavItem href="/tka/smp/pass" icon={<Sparkles size={17} />} label="Tempur Pass" badge="Aktif" />}
+                        {hasActiveTempurPass && <NavItem href="/cpns/dashboard/pass" icon={<Sparkles size={17} />} label="Tempur Pass CPNS" badge="Aktif" />}
                         <NavItem href="/cpns/dashboard/profile" icon={<User size={17} />} label="Profil" />
                     </div>
 
@@ -143,7 +143,7 @@ export default function DashboardShell({
                             >
                                 <Ticket size={12} /> {tokenBalance} token tersisa
                             </Link>
-                            {hasActiveTempurPass && <TempurPassIndicator className="mt-1.5" compact />}
+                            {hasActiveTempurPass && <TempurPassIndicator href="/cpns/dashboard/pass" label="Tempur Pass CPNS aktif" className="mt-1.5" compact />}
                         </div>
                     </div>
                     <div className="mt-1.5 flex justify-end">
@@ -170,7 +170,7 @@ export default function DashboardShell({
                             <span className="tabular-nums">{tokenBalance}</span>
                             <span className="hidden min-[360px]:inline">token</span>
                         </Link>
-                        {hasActiveTempurPass && <TempurPassIndicator compact />}
+                        {hasActiveTempurPass && <TempurPassIndicator href="/cpns/dashboard/pass" label="Tempur Pass CPNS aktif" compact />}
                         <MobileProfileDropdown
                             user={user}
                             profile={profile}

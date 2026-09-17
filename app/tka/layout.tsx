@@ -3,7 +3,7 @@ import { signout } from '@/app/auth/actions'
 import TkaDashboardShell from '@/components/tka/TkaDashboardShell'
 import { createClient } from '@/lib/utils/supabase/server'
 import { isTkaLevelAvailable, parseTkaLevel, type TkaLevel } from '@/src/tka/context'
-import { hasActivePass, passScopeForTkaLevel } from '@/src/services/tempur-pass.service'
+import { getActivePassScopes } from '@/src/services/tempur-pass.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -36,14 +36,16 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
 
     const activeLevel = levelFromPath(pathname)
 
-    const [{ data: profile }, hasTempurPass] = await Promise.all([
+    const [{ data: profile }, activePassScopes] = await Promise.all([
         supabase
             .from('profiles')
             .select('avatar_url, full_name, display_name')
             .eq('id', user.id)
             .maybeSingle(),
         // Pass dinilai per jenjang: user dengan pass TKA SD tidak dianggap ber-pass di SMP.
-        hasActivePass(user.id, passScopeForTkaLevel(activeLevel)),
+        // Semua scope diambil sekaligus supaya kartu profil bisa menjelaskan cakupan pass-nya
+        // (mis. "Pass aktif · SD" saat pengguna membuka jenjang lain).
+        getActivePassScopes(user.id),
     ])
 
     // Script Midtrans Snap sengaja TIDAK dimuat di sini. Satu-satunya halaman TKA
@@ -53,10 +55,10 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
     return (
         <>
             <TkaDashboardShell
-                level={activeLevel}
                 user={user}
                 profile={profile}
-                hasActiveTempurPass={hasTempurPass}
+                activePassScopes={activePassScopes}
+                level={activeLevel}
                 signoutAction={signout}
             >
                 {children}

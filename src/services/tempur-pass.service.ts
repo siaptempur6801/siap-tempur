@@ -1,4 +1,5 @@
 import { createV2Client } from '@/lib/utils/supabase/server'
+import { PASS_FEATURE_BY_SCOPE, PASS_SCOPES, type PassScope } from '@/src/tka/pass-scope'
 
 /**
  * Tempur Pass per program + jenjang.
@@ -9,31 +10,17 @@ import { createV2Client } from '@/lib/utils/supabase/server'
  * (bug lama: `hasActiveTempurPass()` selalu memeriksa fitur TKA SMP, sehingga pass TKA SD/SMA dan
  * pass CPNS tidak terdeteksi dengan benar).
  */
-export type PassScope = 'cpns' | 'tka:sd' | 'tka:smp' | 'tka:sma'
-
-export const PASS_SCOPES: readonly PassScope[] = ['cpns', 'tka:sd', 'tka:smp', 'tka:sma'] as const
-
-/** Fitur penanda pass per scope (dipakai untuk cek aktif/tidak). */
-export const PASS_FEATURE_BY_SCOPE: Record<PassScope, string> = {
-    cpns: 'cpns.full_tryout.regular',
-    'tka:sd': 'tka.sd.full_tryout.regular',
-    'tka:smp': 'tka.smp.full_tryout.regular',
-    'tka:sma': 'tka.sma.full_tryout.regular',
-}
+export {
+    PASS_SCOPES,
+    PASS_FEATURE_BY_SCOPE,
+    passScopeForTkaLevel,
+    tkaLevelFromPassScope,
+    passScopeLabel,
+} from '@/src/tka/pass-scope'
+export type { PassScope } from '@/src/tka/pass-scope'
 
 /** @deprecated Gunakan `PASS_FEATURE_BY_SCOPE`. Dipertahankan untuk kompatibilitas. */
 export const TEMPUR_PASS_FEATURE_CODE = PASS_FEATURE_BY_SCOPE['tka:smp']
-
-const TKA_LEVEL_SCOPE: Record<string, PassScope> = {
-    SD: 'tka:sd',
-    SMP: 'tka:smp',
-    SMA: 'tka:sma',
-}
-
-/** Scope pass untuk jenjang TKA ('SD' | 'SMP' | 'SMA'). */
-export function passScopeForTkaLevel(level: string): PassScope {
-    return TKA_LEVEL_SCOPE[level.toUpperCase()] ?? 'tka:smp'
-}
 
 function isUsableEntitlement(input: {
     startsAt: string | null

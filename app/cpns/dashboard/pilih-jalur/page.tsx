@@ -1,18 +1,31 @@
 import type { Metadata } from 'next'
-import PilihJalurContent from '@/components/dashboard/PilihJalurContent'
+import CpnsPilihJalurContent from '@/components/cpns/CpnsPilihJalurContent'
+import { createV2Client } from '@/lib/utils/supabase/server'
+import { getPassAccess } from '@/src/services/pass-catalog.service'
 
 export const metadata: Metadata = {
-    title: 'Pilih Jalur Belajar — SIAP TEMPUR',
-    description: 'Pilih jalur persiapan belajar SKD CPNS atau jenjang TKA (SD, SMP, SMA) dalam satu akun SiapTempur.',
+    title: 'Pilih Jalur CPNS — SIAP TEMPUR',
+    description: 'Pilih fokus SKD (TWK, TIU, TKP) dan tangga latihan CPNS: drilling materi, mini tryout, lalu full tryout.',
 }
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
-export default function PilihJalurPage() {
+/**
+ * Pilih Jalur **CPNS** — halaman tersendiri, fokus ke subtes SKD dan tangga latihan.
+ * Sebelumnya halaman ini memakai komponen bersama dengan TKA sehingga tampilannya sama.
+ */
+export default async function CpnsPilihJalurPage() {
+    const supabase = await createV2Client()
+    const { data: { user } } = await supabase.auth.getUser()
+    const passAccess = user
+        ? await getPassAccess(supabase, user.id, 'cpns')
+        : { hasActivePass: false, accessThrough: null, scheduledExtensions: 0 }
+
     return (
         <div className="min-h-screen px-4 py-6 md:px-8 md:py-8">
-            <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
-                <PilihJalurContent currentTrack="cpns" />
+            <div className="mx-auto max-w-6xl">
+                <CpnsPilihJalurContent hasActivePass={passAccess.hasActivePass} />
             </div>
         </div>
     )

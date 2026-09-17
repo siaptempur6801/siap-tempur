@@ -5,14 +5,18 @@ import { BadgeCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface TempurPassIndicatorProps {
-    href?: string
+    /** Tujuan halaman pass. Wajib eksplisit supaya area CPNS tidak diarahkan ke pass TKA. */
+    href: string
+    /** Label cakupan, mis. `Tempur Pass CPNS`. */
+    label?: string
     compact?: boolean
     theme?: 'light' | 'dark' | 'paper'
     className?: string
 }
 
 export default function TempurPassIndicator({
-    href = '/tka/smp/pass',
+    href,
+    label = 'Tempur Pass aktif',
     compact = false,
     theme = 'light',
     className,
@@ -20,8 +24,8 @@ export default function TempurPassIndicator({
     return (
         <Link
             href={href}
-            aria-label="Tempur Pass aktif"
-            title="Tempur Pass aktif"
+            aria-label={label}
+            title={label}
             className={cn(
                 'inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-extrabold transition',
                 theme === 'dark'
