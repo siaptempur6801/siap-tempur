@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import SeoNavbarClient from '@/components/SeoNavbarClient'
 import { tkaNavItems } from '@/components/home/tka-landing/content'
 import ReadingProgress from '@/components/blog/ReadingProgress'
+import FullPageRedirect from '@/components/tka/FullPageRedirect'
 import {
     TkaBenefits,
     TkaCta,
@@ -39,11 +39,31 @@ export default async function TkaHomePage({
     // walau pengguna sudah login; tanpa itu perilaku lama tetap: redirect ke jenjang aktif.
     if (!user || landing === '1') return <PublicTkaLanding loggedIn={Boolean(user)} />
 
+    // Halaman pengenalan (`/tka`) dan halaman jenjang memakai segmen layout yang sama, tetapi
+    // chrome-nya berbeda (tanpa sidebar vs dengan sidebar). Pada navigasi klien, router memakai
+    // ulang layout yang sudah ter-mount sehingga sidebar hilang bila redirect diterapkan sebagai
+    // navigasi lunak. Karena itu: permintaan dokumen memakai `redirect()` (307), sedangkan
+    // navigasi klien dipaksa memuat dokumen penuh lewat `FullPageRedirect`.
+    /**
+     * Alihkan ke halaman jenjang dengan **memuat dokumen penuh**.
+     *
+     * Redirect server (`redirect()`) memicu navigasi lunak: router memakai ulang layout `/tka`
+     * yang sudah ter-mount — padahal layout itu dirender tanpa chrome untuk halaman pengenalan —
+     * sehingga sidebar hilang setelah masuk dari onboarding/tautan lain. Memuat dokumen penuh
+     * membuat server merender layout sesuai path tujuan.
+     *
+     * Catatan: deteksi "ini navigasi klien?" lewat header `rsc` tidak bisa dipakai karena Next
+     * tidak meneruskan header internal itu ke `headers()`.
+     */
+    function goToLevel(target: string) {
+        return <FullPageRedirect href={target} />
+    }
+
     const fallbackLevel = TKA_AVAILABLE_LEVELS[0] ?? 'SMP'
     const cookieStore = await cookies()
     const preferredLevel = parseTkaLevel(cookieStore.get('tka-level')?.value)
     if (preferredLevel && isTkaLevelAvailable(preferredLevel)) {
-        redirect(tkaLevelPath(preferredLevel))
+        return goToLevel(tkaLevelPath(preferredLevel))
     }
 
     const { data: program, error: programError } = await supabase
@@ -52,7 +72,7 @@ export default async function TkaHomePage({
         .eq('code', 'TKA')
         .maybeSingle()
     if (programError) throw programError
-    if (!program) redirect(tkaLevelPath(fallbackLevel))
+    if (!program) return goToLevel(tkaLevelPath(fallbackLevel))
 
     const { data: tracks, error: trackError } = await supabase
         .from('tracks')
@@ -80,7 +100,7 @@ export default async function TkaHomePage({
         : null
     const activeLevel = parseTkaLevel(activeTrack?.code)
 
-    redirect(tkaLevelPath(activeLevel ?? fallbackLevel))
+    return goToLevel(tkaLevelPath(activeLevel ?? fallbackLevel))
 }
 
 function PublicTkaLanding({ loggedIn = false }: { loggedIn?: boolean }) {
