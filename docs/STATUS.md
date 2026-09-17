@@ -239,6 +239,7 @@ Konsistensi UI disatukan di atas brand sheet resmi (`#0D2B45` ink · `#1976D2` b
 | Area | Kondisi |
 |---|---|
 | Token warna | ✅ satu lapisan di `app/globals.css`: primitif brand + skala 50–950 (oklch, tangga lightness sama dengan Tailwind) + pemetaan palet Tailwind → brand di `@theme` (gray/slate→ink, blue/indigo/violet/purple/sky/cyan/teal/fuchsia→brand blue, amber/yellow/orange→brand amber, pink→peach, green=emerald, rose=red) |
+| Shadow & radius | ✅ token terpusat: `.st-shadow-sm/md/lg` = 3/5/8px `var(--brand-ink)` (global, termasuk admin) dan skala `rounded-st-sm…2xl` (12/16/20/24/32px); **297 shadow arbitrer** (6 offset + hex warisan) dihapus |
 | Warna arbitrer | ✅ 0 sisa: 10 varian off-white (`#fdfbf7`, `#fbfaf7`, …) → `var(--brand-paper)`; `#fff9c4`/`#fffdeb` → `var(--brand-amber-100)`; `#08172f` → `var(--brand-ink-950)`; shadow indigo → tint brand blue |
 | Tone kategori | ✅ terpusat (doc §6.2): blue = diagnostik/aksi, amber = mini tryout/premium, peach = drill, ink = full tryout/event, emerald = selesai, red = gagal |
 | Tipografi | ✅ Poppins (400–800) untuk display + body; Patrick Hand hanya aksen (`--font-script`); 47 file `font-handwriting` → `font-display` |
