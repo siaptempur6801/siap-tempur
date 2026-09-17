@@ -297,6 +297,19 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 15. **Flaky gate** karena rate limiter auth kita sendiri memblokir login ke-11+ dari satu alamat
     runner — FIXED dengan bypass eksplisit khusus gate staging (default tetap ketat).
 
+16. **P1 (ditemukan 2026-09-17 saat verifikasi design system): fitur Event Tryout Akbar menunjuk tabel warisan `tryout_events` yang tidak ada di Schema V2.**
+    Bukti: log server `[auto-close-expired-events]` → `PGRST205 Could not find the table 'public.tryout_events'`
+    (Supabase menyarankan `attempt_events`); katalog staging hanya punya `public.events` (1 baris) dan
+    `public.attempt_events`. Bentuk `public.events` juga **tidak cocok** dengan yang dipakai kode:
+    tidak ada `start_grace_minutes`, `duration_minutes`, `max_participants`, `requires_code`, `is_paid`,
+    `price`, `documentation_url`, maupun `updated_at`.
+    Dampak: aksi admin event (`app/actions/admin.ts` ×8) gagal dengan pesan error, section event di
+    landing `/cpns` kosong, dan cron auto-close selalu warning.
+    Titik pemakaian: `app/cpns/page.tsx` (2×), `app/actions/admin.ts` (8×), `lib/tryout-event-status.ts`.
+    **Butuh keputusan produk/skema**: (a) migrasi `events` agar memuat field event tryout, atau
+    (b) tulis ulang fitur event admin terhadap bentuk `events` V2 (sebagian field dihapus/dipetakan).
+    Belum diperbaiki karena menyentuh skema — di luar scope goal design system saat ini.
+
 ## Decisions
 
 - **Push ke `main` diizinkan pengguna** (2026-09-16): deploy produksi Vercel berjalan, tetapi domain

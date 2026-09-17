@@ -209,6 +209,15 @@ pernah sampai ke browser (hanya sebagian halaman yang terlihat). Dibuktikan loka
 Kini lookup dibungkus `try/catch` + `logger.warn` seperti lookup opsional lain di halaman itu, sehingga
 gangguan modul gamifikasi tidak lagi merusak halaman hasil ujian.
 
+### Bug terbuka (ditemukan 2026-09-17)
+
+**P1 — Event Tryout Akbar menunjuk tabel warisan `tryout_events`.** Tabel itu tidak ada di Schema V2
+(staging hanya punya `public.events` dan `public.attempt_events`), dan bentuk `public.events` tidak
+memuat field yang dipakai kode (`start_grace_minutes`, `duration_minutes`, `max_participants`,
+`requires_code`, `is_paid`, `price`, `documentation_url`, `updated_at`). Dampak: CRUD event di admin
+gagal, section event di landing `/cpns` kosong, cron auto-close hanya menghasilkan warning.
+Perbaikan menyentuh skema → butuh keputusan (migrasi `events` atau tulis ulang fitur terhadap `events` V2).
+
 ### Temuan operasional Round 8
 
 - **Gate CPNS/Admin butuh deployment Preview, bukan Production.** Push ke `main` membuat deployment
