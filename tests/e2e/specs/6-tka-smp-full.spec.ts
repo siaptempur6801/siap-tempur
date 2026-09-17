@@ -246,7 +246,8 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     const singleChoiceRemedial = remedialBefore.items.find((item) => item.status === 'pending' && item.response_type === 'single_choice')
     expect(singleChoiceRemedial).toBeDefined()
 
-    const remedialLink = page.getByRole('link', { name: 'Mulai latihan (10)', exact: true })
+    // CTA remedial di halaman hasil berlabel "Mulai Remedial (N Soal)".
+    const remedialLink = page.getByRole('link', { name: 'Mulai Remedial (10 Soal)', exact: true })
     await expect(remedialLink).toBeVisible()
     await remedialLink.click()
     await page.waitForURL(/\/tka\/smp\/remedial\/[0-9a-f-]+$/i)
