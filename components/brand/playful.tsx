@@ -121,7 +121,7 @@ export function Doodle({
 export function MascotBubble({
     name = 'tama',
     size = 'sm',
-    side = 'left',
+    side,
     bubbleTone = 'paper',
     priority = false,
     soft = false,
@@ -131,6 +131,10 @@ export function MascotBubble({
 }: {
     name?: MascotName
     size?: MascotSize
+    /**
+     * Sisi maskot terhadap gelembung. Default mengikuti konvensi brand:
+     * **Tara di kanan** (dia yang bersuara menghadap kiri) dan Tama di kiri.
+     */
     side?: 'left' | 'right'
     bubbleTone?: 'paper' | 'blue' | 'amber' | 'peach'
     priority?: boolean
@@ -140,6 +144,8 @@ export function MascotBubble({
     className?: string
     bubbleClassName?: string
 }) {
+    const resolvedSide = side ?? (name === 'tara' ? 'right' : 'left')
+
     // Warna bubble & ekor WAJIB memakai token yang sama supaya sambungannya mulus.
     // Catatan: `--brand-*-soft` bukan nama token yang valid (yang ada `--color-brand-*-soft`),
     // jadi pakai primitif skalanya langsung.
@@ -156,7 +162,7 @@ export function MascotBubble({
         peach: 'var(--brand-peach-100)',
     }
     return (
-        <div className={cn('flex items-end gap-3', side === 'right' && 'flex-row-reverse', className)}>
+        <div className={cn('flex items-end gap-3', resolvedSide === 'right' && 'flex-row-reverse', className)}>
             <Mascot name={name} size={size} tone="plain" priority={priority} className="animate-bob" />
             {/* Pembungkus: bubble + ekor sebagai dua saudara, sehingga ekor dicat SETELAH bubble
                 dan bisa menutup garis border tepat di titik tempelnya (kalau ekor jadi anak bubble,
@@ -181,14 +187,14 @@ export function MascotBubble({
                     aria-hidden="true"
                     className={cn(
                         'pointer-events-none absolute top-1/2 z-[1] -translate-y-1/2',
-                        side === 'left' ? 'left-[-13px]' : 'right-[-13px]',
+                        resolvedSide === 'left' ? 'left-[-13px]' : 'right-[-13px]',
                     )}
                 >
                     <svg
                         width="20"
                         height="20"
                         viewBox="0 0 20 20"
-                        className={cn('block', side === 'right' && '-scale-x-100')}
+                        className={cn('block', resolvedSide === 'right' && '-scale-x-100')}
                     >
                         <path
                             d="M15 2 C14.2 2.6 9.6 5.8 7.9 7.1 A 3.3 3.3 0 0 0 7.9 12.9 C9.6 14.2 14.2 17.4 15 18"
