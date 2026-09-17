@@ -6,7 +6,9 @@ test.describe('Admin Workspace canonical routing', () => {
     test('legacy tab route resolves to canonical Product workspace before authentication', async ({ page }) => {
         await page.goto('/cpns/admin?tab=products&program=TKA&track=SMP')
         await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fcommerce%2Fproducts$/)
-        await expect(page.getByRole('link', { name: 'Kembali' })).toHaveAttribute('href', '/admin/commerce/products')
+        // Kebijakan: tautan "Kembali" hanya menuju halaman publik. `returnTo` di sini butuh login
+        // (admin), jadi Kembali diarahkan ke beranda supaya pengguna tidak terpantul balik ke login.
+        await expect(page.getByRole('link', { name: 'Kembali' })).toHaveAttribute('href', '/')
     })
 
     test('legacy assessment routes resolve to canonical modules', async ({ page }) => {

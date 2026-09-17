@@ -2,10 +2,13 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import LoginForm from '@/components/auth/LoginForm'
 import { MascotBubble } from '@/components/brand/playful'
-import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+import { resolveAuthBackHref, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
     const returnTo = sanitizeAuthReturnTo((await searchParams).returnTo)
+    // Tautan Kembali hanya ke halaman publik; bila returnTo butuh login, kembali ke beranda
+    // supaya pengguna tidak terpantul balik ke halaman login.
+    const backHref = resolveAuthBackHref(returnTo)
 
     return (
         <main className="st-product relative min-h-screen overflow-hidden bg-[var(--st-paper)] px-4 py-6 font-body md:px-8">
@@ -13,7 +16,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <div className="pointer-events-none absolute -right-12 top-20 h-52 w-40 rotate-12 border-2 border-dashed border-blue-300 bg-[var(--st-blue-soft)]" aria-hidden="true" />
 
             <div className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col">
-                <Link href={returnTo} className="st-focus inline-flex min-h-11 w-fit items-center gap-2 font-black text-gray-700 hover:text-blue-700">
+                <Link href={backHref} className="st-focus inline-flex min-h-11 w-fit items-center gap-2 font-black text-gray-700 hover:text-blue-700">
                     <ArrowLeft size={18} /> Kembali
                 </Link>
 
