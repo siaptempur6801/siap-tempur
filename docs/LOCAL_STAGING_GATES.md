@@ -4,7 +4,17 @@ Dokumen ini menjelaskan cara menjalankan **gate acceptance staging** SiapTempur 
 atau di dalam Docker, sebagai pengganti `*-staging-e2e.yml` di GitHub Actions (mis. ketika menit
 Actions dibatasi/billing akun bermasalah).
 
-Status: dipakai sejak 2026-09-17. Hasil terakhir ada di `docs/STATUS.md`.
+Status: dipakai sejak 2026-09-17 (setelah GitHub Actions akun terblokir billing).
+
+**Hasil verifikasi lokal terakhir (commit `5646eda`):**
+
+| Gate | Hasil |
+|---|---|
+| TKA | ✅ **16/16 passed** (`node scripts/local-gates/run-gate.mjs tka`) |
+| CPNS | ✅ **4/4 passed** (`node scripts/local-gates/run-gate.mjs cpns`) |
+| Admin | ✅ **exit 0** — 5 passed + 2 flaky (lolos pada retry), target Vercel Preview `5646eda` |
+
+Semua run membersihkan sisa user `ci-*` (0 tersisa) dan mengembalikan flag monetisasi ke OFF.
 
 ---
 
