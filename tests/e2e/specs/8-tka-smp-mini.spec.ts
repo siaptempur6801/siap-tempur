@@ -128,7 +128,7 @@ async function finishMini(page: Page, expectedSubject: string) {
     await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
     await confirmTkaSectionIfPresent(page)
 
-    await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
+    await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result(?:\?.*)?$/i, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Sesi selesai. Sekarang lihat apa yang perlu diperbaiki.', exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Tinjau jawaban satu per satu', exact: true })).toBeVisible()
     await expect(page.getByText('Mini Tryout · TKA/SMP')).toBeVisible()

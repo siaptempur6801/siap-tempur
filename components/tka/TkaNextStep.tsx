@@ -5,7 +5,7 @@ export default function TkaNextStep({ recommendation }: {
     recommendation: { title: string; description: string; href: string; action: string }
 }) {
     return (
-        <article className="group relative flex min-w-0 flex-col justify-between overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/90 via-white to-blue-50/60 p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:border-indigo-200">
+        <article data-testid="tka-next-step" className="group relative flex min-w-0 flex-col justify-between overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/90 via-white to-blue-50/60 p-6 shadow-sm transition-all duration-200 hover:shadow-md hover:border-indigo-200">
             <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-indigo-200/25 blur-2xl transition-all group-hover:scale-110" aria-hidden="true" />
 
             <div className="relative">

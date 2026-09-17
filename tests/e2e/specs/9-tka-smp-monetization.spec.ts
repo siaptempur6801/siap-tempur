@@ -61,8 +61,10 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await fresh(page)
         await page.setViewportSize({ width: 390, height: 844 })
 
-        await page.goto('/tka/smp/progress')
-        const passLink = page.getByRole('link', { name: 'Tempur Pass', exact: true })
+        // Di mobile, sidebar `Tempur Pass` tersembunyi; jalur discovery nyata adalah
+        // kartu akses di dashboard `/tka/smp`.
+        await page.goto('/tka/smp')
+        const passLink = page.getByRole('link', { name: /Tempur Pass/i })
         await expect(passLink).toBeVisible()
         await passLink.click()
         await page.waitForURL(/\/tka\/smp\/pass$/i)

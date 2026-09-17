@@ -126,7 +126,8 @@ test.describe('CPNS SKD release-candidate', () => {
     await page.waitForURL(SESSION_URL, NAVIGATION_OPTIONS)
 
     // Finish with unanswered questions allowed, then verify result + review.
-    await page.getByRole('button', { name: '110', exact: true }).click()
+    // Navigator punya aria-label eksplisit (`Buka soal <n>`), bukan hanya angka.
+    await page.getByRole('button', { name: 'Buka soal 110', exact: true }).click()
     await expect(page.getByText('Soal 110', { exact: true })).toBeVisible()
     await page.getByRole('button', { name: 'Kumpulkan jawaban', exact: true }).click()
 
