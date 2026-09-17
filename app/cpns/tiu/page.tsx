@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ArrowLeft, CheckCircle2, Calculator } from "lucide-react";
 import SeoNavbar from "@/components/SeoNavbar";
+import { appHref } from '@/lib/protected-href'
+import { createClient } from '@/lib/utils/supabase/server'
 
 export const metadata: Metadata = {
     title: "Latihan Soal TIU CPNS 2026 - Trik Cepat & Pembahasan",
@@ -17,7 +19,11 @@ export const metadata: Metadata = {
     },
 };
 
-export default function TIUPage() {
+export default async function TIUPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const authed = Boolean(user)
+
     return (
         <div className="min-h-screen bg-[#fdfbf7]">
             <SeoNavbar />
@@ -91,10 +97,10 @@ export default function TIUPage() {
                         </p>
                         <div className="flex flex-col sm:flex-row justify-center gap-4">
                             <Button asChild size="lg" variant="primary">
-                                <Link href="/cpns/mini-tryout">Coba Mini Tryout (TIU)</Link>
+                                <Link href={appHref('/cpns/mini-tryout', '/cpns/dashboard/mini-tryout', authed)}>Coba Mini Tryout (TIU)</Link>
                             </Button>
                             <Button asChild size="lg" variant="white">
-                                <Link href="/cpns/full-tryout">Mulai Tryout Full</Link>
+                                <Link href={appHref('/cpns/full-tryout', '/cpns/dashboard/tryout', authed)}>Mulai Tryout Full</Link>
                             </Button>
                         </div>
                     </Section>

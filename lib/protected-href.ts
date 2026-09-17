@@ -8,3 +8,14 @@
 export function protectedHref(href: string, isLoggedIn: boolean) {
     return isLoggedIn ? href : `/login?returnTo=${href}`
 }
+
+/**
+ * Untuk CTA di halaman publik yang punya padanan di dalam aplikasi:
+ * pengguna yang sudah login diarahkan langsung ke area aplikasi, pengguna anonim tetap
+ * ke halaman publik (yang di dalamnya sudah menawarkan masuk).
+ *
+ * Contoh: `appHref('/cpns/mini-tryout', '/cpns/dashboard/mini-tryout', authed)`.
+ */
+export function appHref(publicHref: string, appRouteHref: string, isLoggedIn: boolean) {
+    return isLoggedIn ? appRouteHref : publicHref
+}

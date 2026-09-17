@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ArrowLeft, CheckCircle2, UserCheck } from "lucide-react";
 import SeoNavbar from "@/components/SeoNavbar";
+import { appHref } from '@/lib/protected-href'
+import { createClient } from '@/lib/utils/supabase/server'
 
 export const metadata: Metadata = {
     title: "Latihan Soal TKP CPNS 2026 - Trik Dapat Poin 5",
@@ -17,7 +19,11 @@ export const metadata: Metadata = {
     },
 };
 
-export default function TKPPage() {
+export default async function TKPPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const authed = Boolean(user)
+
     return (
         <div className="min-h-screen bg-[#fdfbf7]">
             <SeoNavbar />
@@ -96,10 +102,10 @@ export default function TKPPage() {
                         </p>
                         <div className="flex flex-col sm:flex-row justify-center gap-4">
                             <Button asChild size="lg" variant="primary">
-                                <Link href="/cpns/mini-tryout">Tryout Pendek (TKP)</Link>
+                                <Link href={appHref('/cpns/mini-tryout', '/cpns/dashboard/mini-tryout', authed)}>Tryout Pendek (TKP)</Link>
                             </Button>
                             <Button asChild size="lg" variant="white">
-                                <Link href="/cpns/full-tryout">Simulasi 110 Soal Lengkap</Link>
+                                <Link href={appHref('/cpns/full-tryout', '/cpns/dashboard/tryout', authed)}>Simulasi 110 Soal Lengkap</Link>
                             </Button>
                         </div>
                     </Section>
