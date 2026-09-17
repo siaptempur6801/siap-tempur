@@ -1,12 +1,14 @@
 import Link from 'next/link'
 import { ArrowLeft, Home } from 'lucide-react'
-import { Mascot } from '@/components/brand/Mascot'
+import { MascotBubble } from '@/components/brand/playful'
 
 export default function NotFound() {
     return (
         <main className="st-product flex min-h-screen items-center justify-center bg-[#fbfaf7] px-4 py-12 font-body">
             <section className="w-full max-w-lg border-2 border-slate-900 bg-white p-6 text-center sm:p-8">
-                <Mascot name="tara" size="sm" tone="soft" className="mx-auto" />
+                <MascotBubble name="tara" size="sm" bubbleTone="peach" className="mx-auto w-fit">
+                    Halamannya nggak ketemu, tapi tenang — kamu nggak kehilangan progres apa pun.
+                </MascotBubble>
                 <p className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-slate-500">404 · Halaman tidak ditemukan</p>
                 <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Halaman yang kamu cari tidak tersedia.</h1>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600 sm:text-base">

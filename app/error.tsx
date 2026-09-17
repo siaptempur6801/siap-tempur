@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
-import { Mascot } from '@/components/brand/Mascot'
+import { MascotBubble } from '@/components/brand/playful'
 
 export default function Error({
     error,
@@ -19,7 +19,9 @@ export default function Error({
     return (
         <main className="st-product flex min-h-screen items-center justify-center bg-[#fbfaf7] px-4 py-12 font-body">
             <section className="w-full max-w-lg border-2 border-slate-900 bg-white p-6 text-center sm:p-8">
-                <Mascot name="tara" size="xs" tone="soft" className="mx-auto" />
+                <MascotBubble name="tara" size="sm" bubbleTone="peach" className="mx-auto w-fit">
+                    Ada gangguan kecil di halaman ini. Coba lagi, ya — kalau masih, kembali ke dashboard.
+                </MascotBubble>
                 <p className="mt-5 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                     <AlertTriangle className="h-3.5 w-3.5 text-red-700" /> Terjadi gangguan
                 </p>
