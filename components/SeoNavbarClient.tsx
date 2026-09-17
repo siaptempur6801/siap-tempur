@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sectionIdFromHref, useActiveSection, type SectionNavItem } from "@/lib/use-active-section";
+import InPageLink from '@/components/marketing/InPageLink'
 
 const navItems = [
     { href: "/#produk", label: "Program" },
@@ -35,7 +36,7 @@ function NavLink({
     ariaCurrent?: 'page' | 'location';
 }) {
     return (
-        <Link
+        <InPageLink
             href={href}
             aria-current={active ? ariaCurrent : undefined}
             className={cn(
@@ -44,7 +45,7 @@ function NavLink({
             )}
         >
             {label}
-        </Link>
+        </InPageLink>
     );
 }
 
@@ -137,7 +138,7 @@ export default function SeoNavbarClient({
                                     const targetId = sectionIdFromHref(item.href);
                                     const active = targetId !== null && targetId === activeId;
                                     return (
-                                        <Link
+                                        <InPageLink
                                             key={item.href}
                                             href={item.href}
                                             aria-current={active ? 'location' : undefined}
@@ -147,7 +148,7 @@ export default function SeoNavbarClient({
                                             )}
                                         >
                                             {item.label}
-                                        </Link>
+                                        </InPageLink>
                                     );
                                 })}
                             </nav>

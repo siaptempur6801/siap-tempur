@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
-import Link from 'next/link'
 import { useActiveSection, type SectionNavItem } from '@/lib/use-active-section'
 import { cn } from '@/lib/utils'
+import InPageLink from '@/components/marketing/InPageLink'
 
 /**
  * Navigasi landing yang menandai section sedang aktif.
@@ -34,7 +34,7 @@ export default function LandingNav({
                 const active = targetId !== null && targetId === activeId
 
                 return (
-                    <Link
+                    <InPageLink
                         key={item.href}
                         href={item.href}
                         aria-current={active ? 'location' : undefined}
@@ -49,7 +49,7 @@ export default function LandingNav({
                         )}
                     >
                         {item.label}
-                    </Link>
+                    </InPageLink>
                 )
             })}
         </>

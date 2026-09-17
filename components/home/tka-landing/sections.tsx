@@ -6,6 +6,7 @@ import { LandingFooter } from '@/components/home/landing/sections'
 import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
 import { isTkaLevelAvailable } from '@/src/tka/context'
 import { tkaBenefitCards, tkaChecks, tkaCycleSteps, tkaFaqs, tkaSubjectCards } from './content'
+import InPageLink from '@/components/marketing/InPageLink'
 
 /**
  * Seksi landing publik `/tka`.
@@ -63,9 +64,9 @@ export function TkaHero({ primaryHref, primaryLabel }: TkaCtaProps) {
                         <CtaLink href={primaryHref} className="st-button inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
                             {primaryLabel} <ArrowRight size={18} />
                         </CtaLink>
-                        <Link href="#jenjang-tka" className="st-focus inline-flex min-h-12 items-center rounded-xl px-4 py-3 font-black text-gray-700 hover:bg-white">
+                        <InPageLink href="#jenjang-tka" className="st-focus inline-flex min-h-12 items-center rounded-xl px-4 py-3 font-black text-gray-700 hover:bg-white">
                             Pilih jenjang
-                        </Link>
+                        </InPageLink>
                         <Doodle variant="star" className="hidden -rotate-12 md:block" />
                     </div>
                     <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-gray-600">
@@ -278,9 +279,9 @@ export function TkaCta({ primaryHref, finalLabel }: TkaCtaProps) {
                     <CtaLink href={primaryHref} className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">
                         {finalLabel} <ArrowRight size={18} />
                     </CtaLink>
-                    <Link href="#jenjang-tka" className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-white bg-blue-700 px-5 py-3 font-black text-white hover:bg-blue-800">
+                    <InPageLink href="#jenjang-tka" className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-white bg-blue-700 px-5 py-3 font-black text-white hover:bg-blue-800">
                         Lihat jenjang
-                    </Link>
+                    </InPageLink>
                 </div>
             </div>
         </section>

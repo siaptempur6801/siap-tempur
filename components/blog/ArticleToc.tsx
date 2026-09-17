@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { useActiveSection, type SectionNavItem } from '@/lib/use-active-section'
 import type { ArticleTocItem } from '@/lib/article-toc'
 import { cn } from '@/lib/utils'
+import InPageLink from '@/components/marketing/InPageLink'
 
 /**
  * Daftar isi artikel blog dengan penanda bagian yang sedang dibaca.
@@ -31,7 +32,7 @@ export default function ArticleToc({ items }: { items: ArticleTocItem[] }) {
                     const active = item.id === activeId
                     return (
                         <li key={item.id}>
-                            <a
+                            <InPageLink
                                 href={`#${item.id}`}
                                 aria-current={active ? 'location' : undefined}
                                 className={cn(
@@ -52,7 +53,7 @@ export default function ArticleToc({ items }: { items: ArticleTocItem[] }) {
                                     {index + 1}
                                 </span>
                                 <span className="leading-snug">{item.label}</span>
-                            </a>
+                            </InPageLink>
                         </li>
                     )
                 })}

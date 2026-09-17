@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Menu, X } from 'lucide-react'
 import TrackedLink from '@/components/analytics/TrackedLink'
 import { trackProductEvent } from '@/lib/product-analytics'
+import InPageLink from '@/components/marketing/InPageLink'
 
 const baseSections = [
     { id: 'peta-skd', label: 'Peta SKD' },
@@ -138,7 +139,7 @@ export default function CpnsLandingInteractions({
 
                     <nav className="hidden items-center gap-0.5 text-[13px] font-black xl:flex" aria-label="Navigasi CPNS">
                         {desktopNav.map((item) => (
-                            <a
+                            <InPageLink
                                 key={item.id}
                                 href={`#${item.id}`}
                                 onClick={() => trackNav(item.id)}
@@ -146,7 +147,7 @@ export default function CpnsLandingInteractions({
                                 aria-current={activeNavId === item.id ? 'location' : undefined}
                             >
                                 {item.label}
-                            </a>
+                            </InPageLink>
                         ))}
                         <Link href="/tka" className="st-focus rounded-xl px-2.5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">TKA</Link>
                     </nav>
@@ -179,14 +180,14 @@ export default function CpnsLandingInteractions({
                     {menuOpen && (
                         <div data-testid="cpns-mobile-menu" className="absolute left-0 right-0 top-[4.15rem] max-h-[72vh] overflow-y-auto rounded-2xl border-2 border-[var(--st-ink)] bg-white p-2 st-shadow-md md:left-auto md:right-0 md:top-[4.75rem] md:w-72">
                             {sections.map((section) => (
-                                <a
+                                <InPageLink
                                     key={section.id}
                                     href={`#${section.id}`}
                                     onClick={() => trackNav(section.id)}
                                     className={`st-focus flex min-h-11 items-center rounded-xl px-3 text-sm font-black ${activeSection === section.id ? 'bg-blue-100 text-blue-800' : 'text-gray-700 hover:bg-blue-50 hover:text-blue-700'}`}
                                 >
                                     {section.label}
-                                </a>
+                                </InPageLink>
                             ))}
                             <Link href="/tka" className="st-focus flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-green-700 hover:bg-green-50">Buka SiapTempur TKA</Link>
                             {!isLoggedIn && (

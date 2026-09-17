@@ -24,6 +24,7 @@ import ProgressBar from '@/components/ui/ProgressBar'
 import { Mascot, MascotPair } from '@/components/brand/Mascot'
 import { Doodle, MascotBubble, Sticker, WashiTape } from '@/components/brand/playful'
 import ReadingProgress from '@/components/blog/ReadingProgress'
+import InPageLink from '@/components/marketing/InPageLink'
 
 export type CpnsLandingUser = { id: string } | null
 
@@ -292,7 +293,7 @@ export default function CpnsProductLandingV12({
                                 </TrackedLink>
                             </Button>
                             <Button size="lg" variant="outline" asChild>
-                                <a href="#mulai-dari-mana">Aku mulai dari mana?</a>
+                                <InPageLink href="#mulai-dari-mana">Aku mulai dari mana?</InPageLink>
                             </Button>
                             <Doodle variant="star" className="hidden -rotate-12 md:block" />
                         </div>

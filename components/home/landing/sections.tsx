@@ -15,6 +15,7 @@ import {
     productCards,
     quickStartSteps,
 } from './content'
+import InPageLink from '@/components/marketing/InPageLink'
 
 /**
  * Seksi landing page utama (`/`).
@@ -49,9 +50,9 @@ export function LandingHeader({ user, primaryHref, primaryLabel }: CtaProps & { 
                         </Link>
                     )}
 
-                    <Link href={primaryHref} className="st-button hidden min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white sm:inline-flex">
+                    <InPageLink href={primaryHref} className="st-button hidden min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white sm:inline-flex">
                         {primaryLabel}
-                    </Link>
+                    </InPageLink>
 
                     <details className="group relative lg:hidden">
                         <summary className="st-focus flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border-2 border-[var(--st-ink)] bg-white marker:hidden" aria-label="Buka navigasi">
@@ -63,9 +64,9 @@ export function LandingHeader({ user, primaryHref, primaryLabel }: CtaProps & { 
                             </nav>
                             <div className="mt-2 grid gap-2 border-t border-gray-200 pt-3 sm:hidden">
                                 {!user && <Link href="/login?returnTo=%2F" className="st-focus flex min-h-11 items-center justify-center rounded-xl font-black hover:bg-gray-100">Masuk</Link>}
-                                <Link href={primaryHref} className="st-button flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white">
+                                <InPageLink href={primaryHref} className="st-button flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white">
                                     {primaryLabel}
-                                </Link>
+                                </InPageLink>
                             </div>
                         </div>
                     </details>
@@ -96,12 +97,12 @@ export function LandingHero({ primaryHref, primaryLabel }: CtaProps) {
                     </p>
 
                     <div className="mt-8 flex flex-wrap gap-3">
-                        <Link href={primaryHref} className="st-button inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
+                        <InPageLink href={primaryHref} className="st-button inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
                             {primaryLabel} <ArrowRight size={18} />
-                        </Link>
-                        <Link href="#produk" className="st-focus inline-flex min-h-12 items-center gap-2 rounded-xl px-4 py-3 font-black text-gray-700 hover:bg-white">
+                        </InPageLink>
+                        <InPageLink href="#produk" className="st-focus inline-flex min-h-12 items-center gap-2 rounded-xl px-4 py-3 font-black text-gray-700 hover:bg-white">
                             Lihat program <ChevronDown size={18} />
-                        </Link>
+                        </InPageLink>
                         <Doodle variant="star" className="hidden -rotate-12 md:block" />
                     </div>
 
@@ -234,9 +235,9 @@ export function LandingQuickStart({ primaryHref, primaryLabel }: CtaProps) {
                             <p className="st-muted mt-4 max-w-xl font-semibold leading-relaxed">
                                 Tidak perlu menyiapkan apa pun dulu. Bikin akun, pilih jalur, dan kerjakan satu sesi pendek untuk melihat titik mulai.
                             </p>
-                            <Link href={primaryHref} className="st-button mt-6 inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
+                            <InPageLink href={primaryHref} className="st-button mt-6 inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
                                 {primaryLabel} <ArrowRight size={18} />
-                            </Link>
+                            </InPageLink>
                         </div>
 
                         <div className="space-y-3">
@@ -390,7 +391,7 @@ export function LandingSteps({ primaryHref, primaryLabel }: CtaProps) {
                         </div>
                         <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Belajar → ukur → perbaiki → ukur lagi.</h2>
                         <p className="st-muted mt-4 max-w-xl text-lg font-semibold leading-relaxed">Empat langkah ini menjadi cerita utama produk. Kamu tidak harus menebak apa yang harus dilakukan setelah selesai mengerjakan soal.</p>
-                        <Link href={primaryHref} className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">{primaryLabel} <ArrowRight size={17} /></Link>
+                        <InPageLink href={primaryHref} className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">{primaryLabel} <ArrowRight size={17} /></InPageLink>
                     </div>
 
                     <div className="relative space-y-4">
@@ -488,9 +489,9 @@ export function LandingFaq({ primaryHref, primaryLabel }: CtaProps) {
                     <MascotBubble name="tara" size="sm" side="right" bubbleTone="peach" className="mx-auto w-fit" bubbleClassName="max-w-md">
                         Masih ada yang mau ditanyakan? Mulai dari akun dulu — nanti kamu bisa pilih jalurnya sambil jalan.
                     </MascotBubble>
-                    <Link href={primaryHref} className="st-focus inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
+                    <InPageLink href={primaryHref} className="st-focus inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
                         {primaryLabel} <ArrowRight size={17} />
-                    </Link>
+                    </InPageLink>
                 </div>
             </div>
         </section>
@@ -510,8 +511,8 @@ export function LandingCta({ primaryHref, primaryLabel }: CtaProps) {
                     </div>
                     <div className="flex flex-wrap items-center gap-3 lg:flex-col lg:items-stretch">
                         <MascotPair size="xs" tone="plain" className="mb-1 hidden justify-center lg:flex" />
-                        <Link href={primaryHref} className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">{primaryLabel} <ArrowRight size={18} /></Link>
-                        <Link href="#produk" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-white bg-blue-700 px-5 py-3 font-black text-white hover:bg-blue-800">Lihat program</Link>
+                        <InPageLink href={primaryHref} className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">{primaryLabel} <ArrowRight size={18} /></InPageLink>
+                        <InPageLink href="#produk" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-white bg-blue-700 px-5 py-3 font-black text-white hover:bg-blue-800">Lihat program</InPageLink>
                     </div>
                 </div>
             </div>
