@@ -13,6 +13,7 @@
 /test-results
 /test-results-*/
 /playwright-report
+/playwright-report-*/
 /playwright/.auth
 /blob-report
 
