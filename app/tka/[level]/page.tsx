@@ -16,6 +16,7 @@ import {
 import { activateTkaTrackAction } from '@/app/actions/user-track'
 import TkaNextStep from '@/components/tka/TkaNextStep'
 import { Mascot } from '@/components/brand/Mascot'
+import { MascotBubble } from '@/components/brand/playful'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
@@ -276,7 +277,10 @@ export default async function TkaLevelPage({
                             Halo, {studentName}. Pantau langkah belajar, status jalur, dan capaian terakhirmu dari sini.
                         </p>
                     </div>
-                    <Mascot name="tama" size="sm" tone="soft" className="hidden shrink-0 sm:inline-flex" />
+                    <Mascot name="tama" size="sm" tone="soft" className="hidden shrink-0 sm:inline-flex xl:hidden" />
+                    <MascotBubble name="tama" size="sm" bubbleTone="blue" className="hidden shrink-0 xl:flex" bubbleClassName="max-w-[15rem]">
+                        Kita latih pelan-pelan, ya. Pilih satu langkah dulu, sisanya nanti mengikuti.
+                    </MascotBubble>
                 </header>
 
                 {query.activated === '1' && (

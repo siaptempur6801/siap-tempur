@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MascotPair } from '@/components/brand/Mascot'
+import { MascotBubble } from '@/components/brand/playful'
 import { ArrowLeft } from 'lucide-react'
 import RegisterForm from '@/components/auth/RegisterForm'
 import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
@@ -24,7 +24,9 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
                         <p className="st-muted mt-5 max-w-xl text-lg font-semibold leading-relaxed">
                             Akun SiapTempur menyimpan sesi, hasil, token, dan perkembangan belajar untuk produk yang tersedia. Kamu tidak perlu membuat akun terpisah untuk CPNS dan TKA.
                         </p>
-                        <MascotPair size="md" tone="soft" priority className="mt-8" />
+                        <MascotBubble name="tama" size="sm" bubbleTone="blue" priority className="mt-8">
+                            Satu akun untuk CPNS dan TKA. Bikin akun, pilih jalur, lalu mulai dari latihan singkat dulu.
+                        </MascotBubble>
                     </section>
 
                     <RegisterForm returnTo={returnTo} />

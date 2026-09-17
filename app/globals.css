@@ -826,6 +826,26 @@ form[data-submit-lock="true"] button[type="submit"] {
   animation: float-annotation 3s ease-in-out infinite;
 }
 
+/* Maskot mengambang lembut (marketing/learning). Blok prefers-reduced-motion di bawah
+   otomatis menonaktifkannya. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-bob {
+  animation: bob 4s ease-in-out infinite;
+}
+
+/* Sticker/aksen boleh "goyang" halus saat hover — hanya di marketing. */
+.hover-wiggle {
+  transition: transform 200ms ease;
+}
+
+.hover-wiggle:hover {
+  transform: rotate(-3deg) scale(1.03);
+}
+
 .blink-timer {
   animation: blink-colon 1s step-end infinite;
 }

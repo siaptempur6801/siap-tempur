@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import TrackedLink from '@/components/analytics/TrackedLink'
 import ProgressBar from '@/components/ui/ProgressBar'
 import { Mascot } from '@/components/brand/Mascot'
+import { MascotBubble } from '@/components/brand/playful'
 
 interface DashboardData {
     user: {
@@ -165,7 +166,10 @@ export default function DashboardClient({ data, greeting }: Props) {
                         Gunakan hasil belajarmu untuk memilih langkah berikutnya, bukan sekadar mengulang tryout.
                     </p>
                 </div>
-                <Mascot name="tama" size="sm" tone="soft" className="hidden shrink-0 sm:inline-flex" />
+                <Mascot name="tama" size="sm" tone="soft" className="hidden shrink-0 sm:inline-flex xl:hidden" />
+                <MascotBubble name="tama" size="sm" bubbleTone="blue" className="hidden shrink-0 xl:flex" bubbleClassName="max-w-[15rem]">
+                    Semangat! Satu langkah kecil hari ini sudah bikin progresmu naik.
+                </MascotBubble>
             </header>
 
             <section className="grid gap-5 lg:grid-cols-[1.7fr_0.8fr]" aria-label="Langkah berikutnya">

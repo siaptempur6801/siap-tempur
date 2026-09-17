@@ -19,7 +19,8 @@ import {
     Zap,
 } from 'lucide-react'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { MascotPair } from '@/components/brand/Mascot'
+import { Mascot, MascotPair } from '@/components/brand/Mascot'
+import { Doodle, MascotBubble, Sticker, WashiTape } from '@/components/brand/playful'
 
 export const metadata: Metadata = {
     title: 'SiapTempur - Persiapan CPNS & TKA SD, SMP, SMA',
@@ -242,12 +243,17 @@ export default async function Index() {
                 <div className="pointer-events-none absolute -left-24 top-24 h-56 w-56 rounded-full border-2 border-dashed border-amber-400 bg-[var(--st-yellow-soft)]" aria-hidden="true" />
                 <div className="pointer-events-none absolute -right-16 top-6 h-52 w-44 rotate-12 rounded-st-2xl border-2 border-dashed border-blue-300 bg-[var(--st-blue-soft)]" aria-hidden="true" />
 
+
                 <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
                     <div>
-                        <div className="st-kicker"><Sparkles size={15} /> Satu akun · CPNS & TKA</div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="st-kicker"><Sparkles size={15} /> Satu akun · CPNS & TKA</div>
+                            <Sticker tone="amber" rotate="right" className="hover-wiggle">Gratis buat mulai</Sticker>
+                        </div>
                         <h1 className="st-heading-display mt-6 max-w-4xl text-5xl sm:text-6xl md:text-7xl">
                             Jangan cuma tahu skormu. <span className="text-blue-600">Tahu apa yang harus diperbaiki.</span>
                         </h1>
+                        <Doodle variant="squiggle" className="mt-4 hidden md:block" />
                         <p className="st-muted mt-6 max-w-2xl text-lg font-semibold leading-relaxed md:text-xl">
                             Untuk CPNS maupun TKA SD, SMP, dan SMA, SiapTempur menghubungkan latihan, tryout, pembahasan, analisis hasil, dan latihan ulang menjadi satu siklus belajar yang lebih terarah.
                         </p>
@@ -259,6 +265,7 @@ export default async function Index() {
                             <Link href="#produk" className="st-focus inline-flex min-h-12 items-center gap-2 rounded-xl px-4 py-3 font-black text-gray-700 hover:bg-white">
                                 Lihat program <ChevronDown size={18} />
                             </Link>
+                            <Doodle variant="star" className="hidden -rotate-12 md:block" />
                         </div>
 
                         <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-gray-600">
@@ -269,12 +276,17 @@ export default async function Index() {
                             ))}
                         </div>
 
-                        {/* Maskot brand: hadir di layar ≥ tablet agar hero mobile tetap fokus ke CTA. */}
-                        <MascotPair size="md" tone="soft" priority className="mt-9 hidden sm:inline-flex" />
+                        {/* Maskot brand menyapa langsung — hanya di layar ≥ tablet agar hero mobile fokus ke CTA. */}
+                        <div className="mt-9 hidden items-end gap-4 sm:flex">
+                            <MascotBubble name="tama" size="sm" bubbleTone="blue" priority className="flex-1">
+                                Hai, aku <b>Tama</b> — ini <b>Tara</b>. Mulai dari latihan singkat dulu, ya. Nanti kita lihat bareng bagian mana yang paling perlu diperkuat.
+                            </MascotBubble>
+                            <Mascot name="tara" size="sm" tone="soft" priority className="hidden shrink-0 md:inline-flex animate-bob" />
+                        </div>
                     </div>
 
                     <div className="st-card-lg relative bg-white p-5 md:p-7">
-                        <div className="absolute -top-3 left-1/2 h-7 w-28 -translate-x-1/2 -rotate-2 border-x border-white/60 bg-[var(--st-yellow)]/80" aria-hidden="true" />
+                        <WashiTape className="-top-3 left-1/2 -translate-x-1/2" />
                         <div className="flex flex-wrap items-center justify-between gap-3">
                             <div>
                                 <p className="text-xs font-black uppercase tracking-[0.12em] text-blue-700">Contoh tampilan produk</p>
@@ -438,7 +450,10 @@ export default async function Index() {
                 <div className="mx-auto max-w-7xl">
                     <div className="grid gap-10 lg:grid-cols-[0.78fr_1.22fr] lg:gap-16">
                         <div className="lg:sticky lg:top-28 lg:self-start">
-                            <div className="st-kicker">Lihat cara kerjanya</div>
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="st-kicker">Lihat cara kerjanya</div>
+                                <Sticker tone="blue" rotate="left" className="hover-wiggle">4 langkah</Sticker>
+                            </div>
                             <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Belajar → ukur → perbaiki → ukur lagi.</h2>
                             <p className="st-muted mt-4 max-w-xl text-lg font-semibold leading-relaxed">Empat langkah ini menjadi cerita utama produk. Kamu tidak harus menebak apa yang harus dilakukan setelah selesai mengerjakan soal.</p>
                             <Link href={primaryHref} className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">{primaryLabel} <ArrowRight size={17} /></Link>
@@ -536,7 +551,8 @@ export default async function Index() {
                             <h2 className="mt-5 max-w-3xl font-display text-4xl font-black leading-tight md:text-6xl">Ujianmu boleh berat. Cara belajarnya jangan dibuat lebih rumit.</h2>
                             <p className="mt-4 max-w-2xl font-semibold leading-relaxed text-blue-100">Buat akun, pilih CPNS atau TKA, lalu gunakan setiap hasil untuk menentukan apa yang harus dipelajari berikutnya.</p>
                         </div>
-                        <div className="flex flex-wrap gap-3 lg:flex-col">
+                        <div className="flex flex-wrap items-center gap-3 lg:flex-col lg:items-stretch">
+                            <MascotPair size="xs" tone="plain" className="mb-1 hidden justify-center lg:flex" />
                             <Link href={primaryHref} className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">{primaryLabel} <ArrowRight size={18} /></Link>
                             <Link href="#produk" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-white bg-blue-700 px-5 py-3 font-black text-white hover:bg-blue-800">Lihat program</Link>
                         </div>
@@ -546,9 +562,12 @@ export default async function Index() {
 
             <footer className="border-t border-gray-200 bg-white px-4 py-8 md:px-8">
                 <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <Link href="/" className="font-display text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link>
-                        <p className="st-muted mt-1 text-sm font-semibold">Belajar lebih terarah untuk menghadapi ujian dengan lebih siap.</p>
+                    <div className="flex items-center gap-3">
+                        <MascotPair size="xs" tone="plain" className="hidden shrink-0 sm:inline-flex" />
+                        <div>
+                            <Link href="/" className="font-script text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link>
+                            <p className="st-muted mt-1 text-sm font-semibold">Belajar lebih terarah untuk menghadapi ujian dengan lebih siap.</p>
+                        </div>
                     </div>
                     <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600">
                         <Link href="/cpns" className="hover:text-blue-700">CPNS</Link>

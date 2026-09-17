@@ -88,6 +88,33 @@ Primary objective:
 
 ---
 
+### 2.4 Skala playfulness per mode (2026-09-17)
+
+Fungsi playful dipakai **secara sengaja**, bukan merata. Skalanya:
+
+| Mode | Intensitas | Yang boleh | Yang tidak boleh |
+|---|---|---|---|
+| Marketing | 3/3 | sticker miring, washi tape, doodle (squiggle/star/blob), gelembung maskot, animasi mengambang, copy menyapa | klaim hasil/kelulusan; ornamen yang menutupi CTA |
+| Learning | 1/3 | satu gelembung maskot atau sticker per layar; bahasa hangat | ornamen di dalam tabel/form; animasi yang mengalihkan perhatian |
+| Exam | 0/3 | — | semua ornamen playful, maskot, dan animasi dekoratif |
+
+### 2.5 Primitif playful
+
+Semua di `components/brand/playful.tsx` (server-safe, animasi CSS-only sehingga otomatis
+menghormati `prefers-reduced-motion`):
+
+| Primitif | Kegunaan |
+|---|---|
+| `<Sticker tone rotate>` | label miring ber-border + hard shadow untuk penanda singkat ("Gratis buat mulai", "4 langkah") |
+| `<WashiTape tone>` | strip selotip untuk "menempelkan" kartu ke kanvas |
+| `<Doodle variant="squiggle\|star\|blob\|dots">` | ornamen dekoratif (selalu `aria-hidden`) |
+| `<MascotBubble name size bubbleTone>` | maskot + gelembung bicara untuk sapaan/empty state |
+| `.animate-bob` | maskot mengambang lembut (4s) |
+| `.hover-wiggle` | sticker sedikit miring & membesar saat hover |
+
+Aturan: maksimal **satu** aksen playful per layar di learning mode, dua–tiga di marketing,
+nol di exam. Nada bahasa mengikuti `docs/PRODUCT_LANGUAGE_GUIDE_V1_1.md` §13.
+
 ## 3. Typography
 
 ### 3.1 Font roles
