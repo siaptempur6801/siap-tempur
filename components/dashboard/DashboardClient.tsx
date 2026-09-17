@@ -167,7 +167,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                     </p>
                 </div>
                 <Mascot name="tama" size="sm" tone="plain" className="hidden shrink-0 sm:inline-flex xl:hidden" />
-                <MascotBubble name="tama" size="sm" bubbleTone="blue" className="hidden shrink-0 xl:flex" bubbleClassName="max-w-[15rem]">
+                <MascotBubble name="tama" size="sm" soft bubbleTone="blue" className="hidden shrink-0 xl:flex" bubbleClassName="max-w-[15rem]">
                     Semangat! Satu langkah kecil hari ini sudah bikin progresmu naik.
                 </MascotBubble>
             </header>

@@ -124,6 +124,7 @@ export function MascotBubble({
     side = 'left',
     bubbleTone = 'paper',
     priority = false,
+    soft = false,
     children,
     className,
     bubbleClassName,
@@ -133,6 +134,8 @@ export function MascotBubble({
     side?: 'left' | 'right'
     bubbleTone?: 'paper' | 'blue' | 'amber' | 'peach'
     priority?: boolean
+    /** Varian ringkas & lembut untuk area belajar (tanpa border ink/hard shadow). */
+    soft?: boolean
     children: React.ReactNode
     className?: string
     bubbleClassName?: string
@@ -161,7 +164,10 @@ export function MascotBubble({
             <div className="relative">
                 <div
                     className={cn(
-                        'relative max-w-sm rounded-2xl border-2 border-[var(--st-ink)] px-4 py-3 text-sm font-semibold leading-relaxed st-shadow-sm',
+                        'relative max-w-sm px-4 py-3 text-sm leading-relaxed',
+                        soft
+                            ? 'rounded-2xl border border-slate-200/80 font-medium text-slate-700 shadow-xs'
+                            : 'rounded-2xl border-2 border-[var(--st-ink)] font-semibold st-shadow-sm',
                         tones[bubbleTone],
                         bubbleClassName,
                     )}
@@ -187,8 +193,8 @@ export function MascotBubble({
                         <path
                             d="M15 2.2 C13.2 3.2 9.4 5.9 7.9 7.1 A 3.3 3.3 0 0 0 7.9 12.9 C9.4 14.1 13.2 16.8 15 17.8"
                             fill="none"
-                            stroke="var(--st-ink)"
-                            strokeWidth="2"
+                            stroke={soft ? 'rgb(226 232 240)' : 'var(--st-ink)'}
+                            strokeWidth={soft ? 1 : 2}
                             strokeLinecap="butt"
                             strokeLinejoin="round"
                         />

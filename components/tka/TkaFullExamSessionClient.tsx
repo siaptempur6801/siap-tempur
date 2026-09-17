@@ -336,7 +336,7 @@ export default function TkaFullExamSessionClient({
 
     if (!activeSection || !currentQuestion) {
         return (
-            <main data-experience-mode="exam" data-program="tka-smp" className="min-h-screen bg-slate-50/70 p-8 text-center text-slate-900">
+            <main data-experience-mode="exam" data-program="tka-smp" className="min-h-screen bg-slate-50/70 p-6 text-center text-slate-900">
                 <div className="mx-auto max-w-xl rounded-2xl border border-slate-200/80 bg-white p-6 font-bold text-slate-900 shadow-xs">
                     Tidak ada bagian aktif. Muat ulang halaman atau kembali ke TKA {level}.
                 </div>

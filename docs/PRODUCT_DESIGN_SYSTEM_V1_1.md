@@ -115,6 +115,26 @@ menghormati `prefers-reduced-motion`):
 Aturan: maksimal **satu** aksen playful per layar di learning mode, dua–tiga di marketing,
 nol di exam. Nada bahasa mengikuti `docs/PRODUCT_LANGUAGE_GUIDE_V1_1.md` §13.
 
+### 2.6 Skala ringkas & rounded untuk area belajar (TKA & dashboard)
+
+Area belajar (TKA, dashboard CPNS) memakai skala yang **lebih ringkas dan rounded** daripada
+halaman marketing, supaya nyaman dipakai lama dan tidak terasa "besar-besar":
+
+| Aspek | Marketing | Area belajar |
+|---|---|---|
+| Sudut | `rounded-2xl`/`rounded-st-2xl` + `rounded-3xl` untuk band | maksimal `rounded-2xl`; hindari `rounded-3xl` di kartu |
+| Border | `border-2` ink (`--st-ink`) | `border` 1px `slate-200/80` |
+| Shadow | `st-shadow-sm/md` (hard, ink) | `shadow-xs`/`shadow-sm` (soft) |
+| Padding kartu | `p-6`–`p-8` | `p-4`/`p-5` (hero `p-6 md:p-8`) |
+| Judul halaman | `text-4xl`–`text-7xl` | `text-xl sm:text-2xl` |
+| Judul kartu | `text-4xl`+ | `text-lg`/`text-xl` |
+| Angka metrik | — | `text-2xl sm:text-3xl` |
+| Item navigasi | — | `min-h-10`, `text-[13px]`, aktif = pill rounded lembut |
+| Gelembung maskot | `<MascotBubble>` (border ink) | `<MascotBubble soft>` |
+
+Aturan ini yang membuat sidebar, halaman jenjang, dan halaman sesi TKA terasa satu bahasa.
+**Exam mode tetap tanpa ornamen** dan tanpa maskot.
+
 ## 3. Typography
 
 ### 3.1 Font roles

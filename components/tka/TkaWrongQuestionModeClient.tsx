@@ -145,7 +145,7 @@ export default function TkaWrongQuestionModeClient({
     if (!current) {
         return (
             <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-12 md:py-16">
-                <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-lg md:p-12">
+                <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-xs md:p-8">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/50">
                         <CheckCircle2 size={36} />
                     </div>
@@ -237,13 +237,13 @@ export default function TkaWrongQuestionModeClient({
         <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 {/* Header Evaluasi Soal Salah */}
-                <header className="rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-sm">
+                <header className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                             <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-rose-600">
                                 <RotateCcw size={16} /> TKA SMP · Soal yang perlu diulang
                             </div>
-                            <h1 className="mt-2 text-2xl md:text-3xl font-black tracking-tight text-slate-950">
+                            <h1 className="mt-2 text-xl md:text-2xl font-black tracking-tight text-slate-950">
                                 Kuasai kembali soal yang belum tepat, satu per satu.
                             </h1>
                             <p className="mt-1.5 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
@@ -313,7 +313,7 @@ export default function TkaWrongQuestionModeClient({
                 </header>
 
                 <section className="grid gap-6 lg:grid-cols-[1fr_18rem]">
-                    <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-sm">
+                    <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
                         {/* Meta Soal */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                             <div className="flex flex-wrap items-center gap-2">

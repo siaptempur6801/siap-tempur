@@ -112,7 +112,7 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
         <section id="tka-learning-hierarchy" data-testid="tka-learning-hierarchy" className="scroll-mt-6 space-y-8">
             {/* Quick Context & Stats Banner */}
             <div className="grid gap-4 sm:grid-cols-3">
-                <div className="flex items-center gap-3.5 rounded-st-2xl border-2 border-[var(--st-ink)] bg-white p-4 st-shadow-sm transition hover:border-indigo-200">
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-indigo-200">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
                         <Clock3 size={20} />
                     </div>
@@ -123,7 +123,7 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3.5 rounded-st-2xl border-2 border-[var(--st-ink)] bg-white p-4 st-shadow-sm transition hover:border-emerald-200">
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-emerald-200">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
                         <CheckCircle2 size={20} />
                     </div>
@@ -139,7 +139,7 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3.5 rounded-st-2xl border-2 border-[var(--st-ink)] bg-white p-4 st-shadow-sm transition hover:border-amber-200">
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-amber-200">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-xs">
                         <Target size={20} />
                     </div>
@@ -336,7 +336,7 @@ function LearningState({
     action?: string
 }) {
     return (
-        <section id="tka-learning-hierarchy" data-testid="tka-learning-hierarchy" className="scroll-mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+        <section id="tka-learning-hierarchy" data-testid="tka-learning-hierarchy" className="scroll-mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">{icon}</div>
             <h2 className="mt-3 text-lg font-bold text-slate-950">{title}</h2>
             <p className="mx-auto mt-1 max-w-lg text-sm text-slate-600">{description}</p>

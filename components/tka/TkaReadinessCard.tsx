@@ -31,14 +31,14 @@ export default function TkaReadinessCard({
     const confidencePercent = percent(readiness.confidencePercent)
 
     return (
-        <section className="group rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7 md:p-8 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md">
+        <section className="group rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md">
             <div className="flex flex-wrap items-start justify-between gap-6">
                 <div className="max-w-2xl">
                     <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700 ring-1 ring-indigo-200/70 shadow-2xs">
                         <Gauge size={14} className="text-indigo-600" />
                         <span>Tingkat Kesiapan</span>
                     </div>
-                    <h2 className="mt-3.5 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                    <h2 className="mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
                         Kesiapan TKA SMP
                     </h2>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600">
@@ -59,7 +59,7 @@ export default function TkaReadinessCard({
                     <div className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">
                         Kesiapan Ujian
                     </div>
-                    <div className="mt-1 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                    <div className="mt-1 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
                         {readinessPercent.toFixed(1)}%
                     </div>
                     <div className="mt-2">
@@ -118,7 +118,7 @@ export default function TkaReadinessCard({
                             <ShieldCheck size={16} className="text-amber-600" />
                             <span>Kekuatan data belajar</span>
                         </div>
-                        <div className="mt-3 text-3xl font-black tracking-tight text-slate-950">
+                        <div className="mt-3 text-2xl font-black tracking-tight text-slate-950">
                             {confidencePercent.toFixed(1)}%
                         </div>
                         <div className="mt-1">

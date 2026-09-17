@@ -173,7 +173,7 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
     }, [activeSection, finishSection])
 
     if (!activeSection || !currentQuestion) {
-        return <main className="min-h-screen bg-white p-8 text-center font-bold text-slate-600">Sesi diagnostik tidak memiliki bagian aktif.</main>
+        return <main className="min-h-screen bg-white p-6 text-center font-bold text-slate-600">Sesi diagnostik tidak memiliki bagian aktif.</main>
     }
 
     const selectedIds = selections[currentQuestion.attemptQuestionId] ?? []

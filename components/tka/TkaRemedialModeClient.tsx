@@ -98,11 +98,11 @@ export default function TkaRemedialModeClient({
     if (!current || totalItems === 0) {
         return (
             <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-12 md:py-16">
-                <div className="mx-auto max-w-2xl rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-lg md:p-12">
+                <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-xs md:p-8">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/50">
                         <CheckCircle2 size={36} />
                     </div>
-                    <h1 className="mt-6 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                    <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
                         Tidak ada latihan perbaikan aktif.
                     </h1>
                     <p className="mx-auto mt-3 max-w-lg font-medium leading-relaxed text-slate-600">
@@ -142,13 +142,13 @@ export default function TkaRemedialModeClient({
                 </div>
 
                 {/* Header Sesi Remedial */}
-                <section className="rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-sm">
+                <section className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="max-w-3xl">
                             <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-amber-700">
                                 <Sparkles size={16} /> Fokus pada bagian yang perlu diperbaiki
                             </div>
-                            <h1 className="mt-2 text-2xl md:text-3xl font-black tracking-tight text-slate-950">
+                            <h1 className="mt-2 text-xl md:text-2xl font-black tracking-tight text-slate-950">
                                 Latihan perbaikan
                             </h1>
                             <p className="mt-1.5 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
@@ -176,7 +176,7 @@ export default function TkaRemedialModeClient({
                         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 ring-8 ring-emerald-100/50">
                             <CheckCircle2 size={36} />
                         </div>
-                        <h2 className="mt-6 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
+                        <h2 className="mt-5 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
                             Latihan perbaikan selesai.
                         </h2>
                         <p className="mx-auto mt-3 max-w-xl text-base font-medium leading-relaxed text-slate-600">
@@ -233,7 +233,7 @@ export default function TkaRemedialModeClient({
                         </aside>
 
                         {/* Question Card */}
-                        <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-sm">
+                        <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
                             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                                 <div className="flex flex-wrap gap-2 text-xs font-black">
                                     <span className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-800">

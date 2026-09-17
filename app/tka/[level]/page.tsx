@@ -16,7 +16,7 @@ import {
 import { activateTkaTrackAction } from '@/app/actions/user-track'
 import TkaNextStep from '@/components/tka/TkaNextStep'
 import { Mascot } from '@/components/brand/Mascot'
-import { MascotBubble, Sticker, WashiTape } from '@/components/brand/playful'
+import { MascotBubble } from '@/components/brand/playful'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
@@ -270,7 +270,7 @@ export default async function TkaLevelPage({
                             <span className="opacity-40">•</span>
                             <span>{LEVEL_LABEL[level]}</span>
                         </div>
-                        <h1 className="st-heading-display mt-3 text-2xl sm:text-3xl">
+                        <h1 className="st-heading-display mt-2.5 text-xl sm:text-2xl">
                             Ringkasan TKA {level}
                         </h1>
                         <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
@@ -278,7 +278,7 @@ export default async function TkaLevelPage({
                         </p>
                     </div>
                     <Mascot name="tama" size="sm" tone="plain" className="hidden shrink-0 sm:inline-flex xl:hidden" />
-                    <MascotBubble name="tama" size="sm" bubbleTone="blue" className="hidden shrink-0 xl:flex" bubbleClassName="max-w-[15rem]">
+                    <MascotBubble name="tama" size="sm" soft bubbleTone="blue" className="hidden shrink-0 xl:flex" bubbleClassName="max-w-[15rem]">
                         Kita latih pelan-pelan, ya. Pilih satu langkah dulu, sisanya nanti mengikuti.
                     </MascotBubble>
                 </header>
@@ -301,7 +301,7 @@ export default async function TkaLevelPage({
 
                     <article
                         data-testid={activeTrack ? 'tka-track-active' : 'tka-track-inactive'}
-                        className="relative flex flex-col justify-between overflow-hidden rounded-st-2xl border-2 border-[var(--st-ink)] bg-white p-5 st-shadow-sm transition-transform duration-200 hover:-translate-y-1 md:p-6"
+                        className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition-shadow duration-200 hover:shadow-sm md:p-5"
                     >
                         <div>
                             <div className="flex items-center justify-between">
@@ -336,12 +336,12 @@ export default async function TkaLevelPage({
 
                 {/* Form Aktivasi Jalur (jika belum aktif) */}
                 {!activeTrack && (
-                    <section className="rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-5 st-shadow-sm md:p-6">
+                    <section className="rounded-2xl border border-amber-200/80 bg-amber-50/60 p-4 shadow-xs md:p-5">
                         <div className="max-w-2xl">
                             <div className="st-kicker bg-white">
                                 <Sparkles size={13} /> Aktivasi Jalur
                             </div>
-                            <h2 className="st-heading-display mt-2 text-xl">Aktifkan Jalur TKA {level}</h2>
+                            <h2 className="mt-2 text-lg font-black tracking-tight text-slate-950">Aktifkan Jalur TKA {level}</h2>
                             <p className="mt-1 text-sm leading-relaxed text-slate-600">
                                 Aktifkan jalur ini agar hasil latihan, tryout, dan riwayat remedial tersimpan di akunmu. Data sekolah bersifat opsional.
                             </p>
@@ -360,7 +360,7 @@ export default async function TkaLevelPage({
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
                         <div>
                             <div className="st-kicker">Ringkasan</div>
-                            <h2 id="tka-learning-summary" className="st-heading-display mt-2 text-xl">Ringkasan Belajar</h2>
+                            <h2 id="tka-learning-summary" className="mt-1.5 text-lg font-black tracking-tight text-slate-950">Ringkasan Belajar</h2>
                             <p className="mt-1 text-sm text-slate-500">Angka penting dan capaian terakhir dalam satu tampilan.</p>
                         </div>
                         <div className="flex items-center gap-3">
@@ -382,7 +382,7 @@ export default async function TkaLevelPage({
                     </div>
 
                     {latestCompletedAttempt ? (
-                        <article className="grid gap-4 rounded-st-2xl border-2 border-[var(--st-ink)] bg-white p-5 st-shadow-sm sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+                        <article className="grid gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
                             <div className="min-w-0">
                                 <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-200">
                                     <CheckCircle2 size={13} /> Capaian terakhir
@@ -401,8 +401,8 @@ export default async function TkaLevelPage({
                             </Link>
                         </article>
                     ) : (
-                        <article className="rounded-st-2xl border-2 border-dashed border-[var(--st-ink)]/40 bg-white p-6 text-center">
-                            <h3 className="st-heading-display text-base">Belum ada capaian</h3>
+                        <article className="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-center">
+                            <h3 className="text-base font-black tracking-tight text-slate-950">Belum ada capaian</h3>
                             <p className="st-muted mx-auto mt-1 max-w-md text-sm font-semibold">Mulai Tes Diagnostik atau Mini Tryout untuk mengisi ringkasan belajarmu.</p>
                             <Link href={`${path}/diagnostic`} className="st-focus mt-4 inline-flex min-h-10 items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700">
                                 Mulai Tes Diagnostik <ArrowRight size={14} />
@@ -418,13 +418,13 @@ export default async function TkaLevelPage({
 
 function SummaryMetric({ icon, label, value, detail }: { icon: React.ReactNode; label: string; value: string; detail: string }) {
     return (
-        <article className="rounded-st-2xl border-2 border-[var(--st-ink)] bg-white p-4 st-shadow-sm">
-            <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-slate-500">
+        <article className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-xs">
+            <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
                 <span className="text-blue-700">{icon}</span>{label}
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-2xl font-black tracking-tight text-slate-950">{value}</span>
-                <span className="text-xs font-semibold text-slate-500">{detail}</span>
+            <div className="mt-1.5 flex items-baseline gap-1.5">
+                <span className="text-xl font-black tracking-tight text-slate-950">{value}</span>
+                <span className="text-[11px] font-semibold text-slate-500">{detail}</span>
             </div>
         </article>
     )
@@ -443,8 +443,7 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
         >
             <div className="mx-auto max-w-4xl space-y-6 md:space-y-8">
                 {/* Hero Section */}
-                <section className="relative rounded-st-2xl border-2 border-[var(--st-ink)] bg-white p-6 st-shadow-md sm:p-10 md:p-14">
-                    <WashiTape className="-top-3 left-10" />
+                <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs sm:p-9 md:p-12">
                     <div
                         className={`pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full border-2 border-dashed ${
                             isSd ? 'border-amber-300 bg-[var(--st-yellow-soft)]' : 'border-blue-300 bg-[var(--st-blue-soft)]'
@@ -465,26 +464,26 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
                             </div>
                         </div>
 
-                        <h1 className="st-heading-display mt-6 text-3xl leading-tight sm:text-4xl md:text-5xl">
+                        <h1 className="st-heading-display mt-4 text-xl leading-tight sm:text-2xl md:text-3xl">
                             Pengalaman belajar TKA {level} sedang kami siapkan.
                         </h1>
 
-                        <div className="mt-4 flex flex-wrap items-center gap-3">
-                            <Sticker tone={isSd ? 'amber' : 'blue'} rotate="left" className="hover-wiggle">Segera hadir</Sticker>
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-slate-500">Tahap penyiapan</span>
+                        <div className="mt-3.5 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-[var(--brand-blue-50)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-blue-700">Segera hadir</span>
+                            <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-400">Tahap penyiapan</span>
                         </div>
                         <p className="st-muted mt-4 max-w-2xl text-base font-semibold leading-relaxed sm:text-lg">
                             Saat tersedia nanti, jalur ini akan mengikuti pola SiapTempur yang sama: latihan, tryout, pembahasan, perkembangan belajar, dan rekomendasi langkah berikutnya.
                         </p>
 
                         {/* Pilot recommendation card */}
-                        <div className="mt-8 rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--st-blue-soft)] p-5 st-shadow-sm sm:p-6">
+                        <div className="mt-6 rounded-2xl border border-blue-200/70 bg-blue-50/60 p-4 shadow-xs sm:p-5">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="space-y-1">
                                     <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
                                         Pilot Aktif SiapTempur
                                     </div>
-                                    <h2 className="st-heading-display text-base">
+                                    <h2 className="text-base font-black tracking-tight text-slate-950">
                                         Coba ekosistem TKA sekarang melalui jalur TKA SMP
                                     </h2>
                                     <p className="text-xs text-slate-600">
@@ -493,7 +492,7 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
                                 </div>
                                 <Link
                                     href="/tka/smp"
-                                    className="st-button st-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 bg-blue-600 px-5 py-3 text-xs font-black text-white"
+                                    className="st-focus inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-[0.98]"
                                 >
                                     <span>Buka TKA SMP</span>
                                     <ArrowRight size={15} />
@@ -531,8 +530,8 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
 
                 {/* Features preview cards */}
                 <section className="space-y-4">
-                    <div className="st-kicker">
-                        <Sparkles size={14} />
+                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                        <Sparkles size={14} className="text-blue-700" />
                         <span>Fitur yang sedang disiapkan untuk TKA {level}</span>
                     </div>
 

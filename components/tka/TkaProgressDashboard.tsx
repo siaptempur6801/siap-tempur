@@ -63,7 +63,7 @@ export default function TkaProgressDashboard({ dashboard }: { dashboard: TkaProg
             {dashboard.readiness ? (
                 <TkaReadinessCard readiness={dashboard.readiness} showDashboardLink={false} />
             ) : (
-                <section className="rounded-3xl border border-slate-200/80 bg-white p-8 text-center shadow-xs md:p-12">
+                <section className="rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-xs md:p-8">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs">
                         <TrendingUp size={24} />
                     </div>
@@ -88,7 +88,7 @@ export default function TkaProgressDashboard({ dashboard }: { dashboard: TkaProg
                         <TrendingUp size={14} className="text-indigo-600" />
                         <span>Perkembangan per Mapel</span>
                     </div>
-                    <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                    <h2 className="mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
                         Lihat kekuatan tiap mata pelajaran
                     </h2>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600">
@@ -274,7 +274,7 @@ function MetricCard({
                         {icon}
                     </div>
                 </div>
-                <div className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                <div className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
                     {value}
                 </div>
                 <div className="mt-1 text-sm font-bold text-slate-900">

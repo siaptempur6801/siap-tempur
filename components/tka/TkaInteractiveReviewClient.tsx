@@ -148,7 +148,7 @@ export default function TkaInteractiveReviewClient({
     if (!currentItem) {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center">
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm max-w-md">
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs max-w-md">
                     <BookOpen className="mx-auto text-indigo-600 mb-3" size={36} />
                     <h2 className="text-xl font-black text-slate-900">Belum ada soal untuk ditinjau</h2>
                     <p className="mt-2 text-sm text-slate-500 font-semibold">Hasil evaluasi sesi ini belum memuat butir soal yang dapat dibuka.</p>

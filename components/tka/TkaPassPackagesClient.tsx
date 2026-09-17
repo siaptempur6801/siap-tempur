@@ -276,7 +276,7 @@ export default function TkaPassPackagesClient({
                                     <div className="flex flex-wrap items-end justify-between gap-3">
                                         <div>
                                             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Harga paket</div>
-                                            <div className="mt-0.5 text-2xl sm:text-3xl font-black tracking-tight text-indigo-700">{rupiah(pkg.price)}</div>
+                                            <div className="mt-0.5 text-xl sm:text-2xl font-black tracking-tight text-indigo-700">{rupiah(pkg.price)}</div>
                                         </div>
                                         <div className="text-right">
                                             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total dibayar</div>

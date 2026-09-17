@@ -28,7 +28,7 @@ export default async function TkaLearningFocusPanel({ items }: { items?: TkaLear
     return (
         <section
             data-testid="tka-learning-focus"
-            className="rounded-3xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 p-6 sm:p-7 md:p-8 shadow-xs"
+            className="rounded-2xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 p-5 sm:p-6 shadow-xs"
         >
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-3xl">
@@ -36,7 +36,7 @@ export default async function TkaLearningFocusPanel({ items }: { items?: TkaLear
                         <Lightbulb size={14} className="text-indigo-600" />
                         <span>Rekomendasi Belajar</span>
                     </div>
-                    <h2 className="mt-3.5 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                    <h2 className="mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
                         Fokus belajar berikutnya
                     </h2>
                     <p className="mt-2 text-sm leading-relaxed text-slate-600">
