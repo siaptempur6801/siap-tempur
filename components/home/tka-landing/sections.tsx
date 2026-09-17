@@ -12,9 +12,21 @@ import { tkaBenefitCards, tkaChecks, tkaCycleSteps, tkaFaqs, tkaSubjectCards } f
  * Tama & Tara, dan primitif playful — dengan isi yang khusus TKA.
  */
 
-const REGISTER_HREF = '/register?returnTo=%2Ftka'
+/**
+ * CTA landing TKA. Label tiap seksi sengaja BERBEDA supaya locator spec
+ * (`getByRole('link', { name: /Mulai persiapan TKA/i })`) tetap tunggal.
+ */
+type TkaCtaProps = {
+    primaryHref: string
+    /** Label utama — hanya dipakai hero. */
+    primaryLabel: string
+    /** Label untuk seksi tanya jawab. */
+    altLabel: string
+    /** Label untuk kartu CTA penutup. */
+    finalLabel: string
+}
 
-export function TkaHero() {
+export function TkaHero({ primaryHref, primaryLabel }: TkaCtaProps) {
     return (
         <section className="relative px-4 pb-16 pt-32 md:px-8 md:pb-24 md:pt-36">
             <div className="pointer-events-none absolute -left-24 top-40 h-52 w-52 rounded-full border-2 border-dashed border-amber-400 bg-[var(--st-yellow-soft)]" aria-hidden="true" />
@@ -34,8 +46,8 @@ export function TkaHero() {
                         Mulai dari SD, lanjut ke SMP, hingga SMA dalam satu lingkungan belajar. Kerjakan latihan dan tryout, pahami hasilnya, lalu perbaiki bagian yang masih lemah.
                     </p>
                     <div className="mt-8 flex flex-wrap gap-3">
-                        <Link href={REGISTER_HREF} className="st-button inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
-                            Mulai persiapan TKA <ArrowRight size={18} />
+                        <Link href={primaryHref} className="st-button inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
+                            {primaryLabel} <ArrowRight size={18} />
                         </Link>
                         <Link href="#jenjang-tka" className="st-focus inline-flex min-h-12 items-center rounded-xl px-4 py-3 font-black text-gray-700 hover:bg-white">
                             Pilih jenjang
@@ -136,7 +148,7 @@ export function TkaLevels() {
     )
 }
 
-export function TkaFlow() {
+export function TkaFlow({ primaryHref }: TkaCtaProps) {
     return (
         <section className="px-4 py-16 md:px-8 md:py-24">
             <div className="mx-auto max-w-7xl">
@@ -148,7 +160,7 @@ export function TkaFlow() {
                         </div>
                         <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Dari latihan pertama sampai perbaikan.</h2>
                         <p className="st-muted mt-4 max-w-xl text-lg font-semibold leading-relaxed">Kamu tidak perlu menebak harus mulai dari mana, dan tidak berhenti bingung setelah melihat hasil.</p>
-                        <Link href={REGISTER_HREF} className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
+                        <Link href={primaryHref} className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
                             Mulai dari langkah pertama <ArrowRight size={17} />
                         </Link>
                     </div>
@@ -203,7 +215,7 @@ export function TkaSubjects() {
     )
 }
 
-export function TkaFaq() {
+export function TkaFaq({ primaryHref, altLabel }: TkaCtaProps) {
     return (
         <section id="tanya-tka" className="scroll-mt-28 px-4 py-16 md:px-8 md:py-24">
             <div className="mx-auto max-w-4xl">
@@ -228,8 +240,8 @@ export function TkaFaq() {
                     <MascotBubble name="tara" size="sm" side="right" bubbleTone="peach" className="mx-auto w-fit" bubbleClassName="max-w-md">
                         Masih ragu pilih jenjang? Mulai dari akun dulu — jenjangnya bisa dipilih sambil jalan.
                     </MascotBubble>
-                    <Link href={REGISTER_HREF} className="st-focus inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
-                        Buat akun gratis <ArrowRight size={17} />
+                    <Link href={primaryHref} className="st-focus inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
+                        {altLabel} <ArrowRight size={17} />
                     </Link>
                 </div>
             </div>
@@ -237,7 +249,7 @@ export function TkaFaq() {
     )
 }
 
-export function TkaCta() {
+export function TkaCta({ primaryHref, finalLabel }: TkaCtaProps) {
     return (
         <section className="px-4 pb-20 pt-6 md:px-8 md:pb-28">
             <div className="relative mx-auto grid max-w-7xl items-center gap-8 rounded-st-2xl border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white st-shadow-md md:grid-cols-[1fr_auto] md:px-10 md:py-12">
@@ -249,8 +261,8 @@ export function TkaCta() {
                 </div>
                 <div className="flex flex-wrap items-center gap-3 md:flex-col md:items-stretch">
                     <MascotPair size="xs" tone="plain" className="mb-1 hidden justify-center md:flex" />
-                    <Link href={REGISTER_HREF} className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">
-                        Buat akun gratis <ArrowRight size={18} />
+                    <Link href={primaryHref} className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">
+                        {finalLabel} <ArrowRight size={18} />
                     </Link>
                     <Link href="#jenjang-tka" className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-white bg-blue-700 px-5 py-3 font-black text-white hover:bg-blue-800">
                         Lihat jenjang

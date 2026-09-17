@@ -24,11 +24,18 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export default async function TkaHomePage() {
+export default async function TkaHomePage({
+    searchParams,
+}: {
+    searchParams: Promise<{ landing?: string }>
+}) {
+    const { landing } = await searchParams
     const supabase = await createV2Client()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) return <PublicTkaLanding />
+    // `?landing=1` (dari tautan logo di shell TKA) memaksa halaman pengenalan tampil
+    // walau pengguna sudah login; tanpa itu perilaku lama tetap: redirect ke jenjang aktif.
+    if (!user || landing === '1') return <PublicTkaLanding loggedIn={Boolean(user)} />
 
     const fallbackLevel = TKA_AVAILABLE_LEVELS[0] ?? 'SMP'
     const cookieStore = await cookies()
@@ -74,17 +81,32 @@ export default async function TkaHomePage() {
     redirect(tkaLevelPath(activeLevel ?? fallbackLevel))
 }
 
-function PublicTkaLanding() {
+function PublicTkaLanding({ loggedIn = false }: { loggedIn?: boolean }) {
+    // Saat sudah login, CTA diarahkan ke pemilih jalur — bukan lagi ke /register.
+    const cta = loggedIn
+        ? {
+            primaryHref: '/tka',
+            primaryLabel: 'Buka dashboard TKA',
+            altLabel: 'Lanjutkan belajar',
+            finalLabel: 'Lanjutkan di TKA',
+        }
+        : {
+            primaryHref: '/register?returnTo=%2Ftka',
+            primaryLabel: 'Mulai persiapan TKA',
+            altLabel: 'Buat akun gratis',
+            finalLabel: 'Mulai belajar TKA gratis',
+        }
+
     return (
         <main data-experience-mode="marketing" data-program="tka" className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
-            <SeoNavbarClient isAuthenticated={false} programLabel="TKA" />
-            <TkaHero />
+            <SeoNavbarClient isAuthenticated={loggedIn} programLabel="TKA" />
+            <TkaHero {...cta} />
             <TkaBenefits />
             <TkaLevels />
-            <TkaFlow />
+            <TkaFlow {...cta} />
             <TkaSubjects />
-            <TkaFaq />
-            <TkaCta />
+            <TkaFaq {...cta} />
+            <TkaCta {...cta} />
             <TkaFooter />
         </main>
     )

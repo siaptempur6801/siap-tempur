@@ -99,7 +99,7 @@ export default function TkaDashboardShell({
             <aside className="relative z-20 hidden w-[16rem] min-h-0 flex-col border-r border-slate-200/80 bg-white md:flex">
                 <div className="shrink-0 border-b border-slate-100 px-4 pb-3.5 pt-4">
                     <div className="flex items-center justify-between">
-                        <Link href="/tka" className="inline-flex items-center focus-visible:outline-none">
+                        <Link href="/tka?landing=1" aria-label="Buka halaman TKA" className="inline-flex items-center focus-visible:outline-none">
                             <span className="font-script text-2xl font-black leading-tight text-slate-950">
                                 Siap<span className="text-indigo-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                             </span>
@@ -166,11 +166,15 @@ export default function TkaDashboardShell({
                                 )}
                             </div>
                         </div>
-                        <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs">
-                            <Link href={accessHref} className="inline-flex items-center gap-1 font-bold text-indigo-600 hover:text-indigo-700 text-[11px] hover:underline">
-                                Kelola akses
+                        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+                            <Link
+                                href={accessHref}
+                                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1 text-[11px] font-bold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+                            >
+                                <Sparkles size={13} className="text-blue-700" />
+                                <span>Kelola akses</span>
                             </Link>
-                            <SidebarSignoutButton signoutAction={signoutAction} redirectTo="/tka" />
+                            <SidebarSignoutButton signoutAction={signoutAction} redirectTo="/tka" variant="soft" />
                         </div>
                     </div>
                 </div>
@@ -179,7 +183,7 @@ export default function TkaDashboardShell({
             <div className="relative min-w-0 flex-1 overflow-y-auto pb-24 md:pb-0">
                 <div className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl md:hidden">
                     <div className="flex h-14 items-center justify-between px-4">
-                        <Link href="/tka" className="font-script text-xl font-black text-slate-950">
+                        <Link href="/tka?landing=1" aria-label="Buka halaman TKA" className="font-script text-xl font-black text-slate-950">
                             Siap<span className="text-indigo-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </Link>
                         <div className="flex items-center gap-2">

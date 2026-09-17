@@ -46,9 +46,12 @@ export default function SeoNavbarClient({
 }) {
     const pathname = usePathname();
     const currentPath = pathname || "/";
-    const authHref = isAuthenticated ? "/cpns/dashboard" : `/login?returnTo=${encodeURIComponent(currentPath)}`;
+    // Tujuan untuk pengguna yang sudah login mengikuti program halaman ini:
+    // `/tka` akan mengarahkan ke jenjang TKA aktif, sehingga tidak dilempar ke dashboard CPNS.
+    const authedHref = programLabel === "TKA" ? "/tka" : "/cpns/dashboard";
+    const authHref = isAuthenticated ? authedHref : `/login?returnTo=${encodeURIComponent(currentPath)}`;
     const authLabel = isAuthenticated ? "Dashboard" : "Masuk";
-    const primaryHref = isAuthenticated ? "/cpns/dashboard" : `/register?returnTo=${encodeURIComponent(currentPath)}`;
+    const primaryHref = isAuthenticated ? authedHref : `/register?returnTo=${encodeURIComponent(currentPath)}`;
     const primaryLabel = isAuthenticated ? "Lanjut belajar" : "Mulai belajar gratis";
 
     return (
