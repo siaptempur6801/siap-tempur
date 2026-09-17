@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
+import { Mascot } from '@/components/brand/Mascot'
 
 export default function Error({
     error,
@@ -18,10 +19,10 @@ export default function Error({
     return (
         <main className="st-product flex min-h-screen items-center justify-center bg-[#fbfaf7] px-4 py-12 font-body">
             <section className="w-full max-w-lg border-2 border-slate-900 bg-white p-6 text-center sm:p-8">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-red-50">
-                    <AlertTriangle className="h-6 w-6 text-red-700" />
-                </div>
-                <p className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-slate-500">Terjadi gangguan</p>
+                <Mascot name="tara" size="xs" tone="soft" className="mx-auto" />
+                <p className="mt-5 inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+                    <AlertTriangle className="h-3.5 w-3.5 text-red-700" /> Terjadi gangguan
+                </p>
                 <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Halaman ini belum bisa dimuat.</h1>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-600 sm:text-base">
                     Coba lagi. Jika gangguan masih muncul, kamu bisa kembali ke dashboard dan melanjutkan dari sana.

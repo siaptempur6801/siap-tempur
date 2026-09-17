@@ -296,8 +296,9 @@ Komponen: `components/brand/Mascot.tsx`
 **Aksesibilitas:** default dekoratif (`alt=""` + `aria-hidden`). Isi `alt` hanya bila maskot menyampaikan
 informasi yang tidak ada di teks.
 
-**Pemakaian saat ini:** hero landing `/`, halaman `/login`, halaman 404, header dashboard CPNS, dan empty
-state riwayat CPNS.
+**Pemakaian saat ini (9 permukaan):** hero landing `/`, `/login`, `/register`, halaman 404, error boundary
+aplikasi (`app/error.tsx`), header dashboard CPNS, header dashboard TKA, empty state riwayat CPNS, dan
+kartu skor hasil ujian TKA + CPNS. Sesi ujian (exam mode) tetap **tanpa** maskot.
 
 **Tipografi:** Poppins (400/500/600/700/800) adalah font brand untuk **display dan body**
 (`--font-display`, `--font-sans`, `--font-body`). Patrick Hand hanya untuk aksen tulisan tangan yang

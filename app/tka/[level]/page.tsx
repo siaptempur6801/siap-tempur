@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { activateTkaTrackAction } from '@/app/actions/user-track'
 import TkaNextStep from '@/components/tka/TkaNextStep'
+import { Mascot } from '@/components/brand/Mascot'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
@@ -260,7 +261,7 @@ export default async function TkaLevelPage({
         <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div data-testid="tka-level-ready" className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 {/* Welcoming Learner Header */}
-                <header className="border-b border-slate-200/80 pb-6">
+                <header className="flex items-start justify-between gap-6 border-b border-slate-200/80 pb-6">
                     <div className="max-w-3xl">
                         <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black tracking-wide text-indigo-700 ring-1 ring-indigo-200/50">
                             <Sparkles size={13} className="text-indigo-600" />
@@ -275,6 +276,7 @@ export default async function TkaLevelPage({
                             Halo, {studentName}. Pantau langkah belajar, status jalur, dan capaian terakhirmu dari sini.
                         </p>
                     </div>
+                    <Mascot name="tama" size="sm" tone="soft" className="hidden shrink-0 sm:inline-flex" />
                 </header>
 
                 {query.activated === '1' && (
