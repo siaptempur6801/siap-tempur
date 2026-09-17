@@ -163,7 +163,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                 </div>
 
                 {isDrill ? (
-                  <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-3 text-sm font-medium leading-6 text-violet-900">
+                  <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3 text-sm font-medium leading-6 text-blue-900">
                     <div className="flex items-start gap-2"><Layers3 size={16} className="mt-1 shrink-0"/><span><strong>Section Drill dikelola otomatis.</strong> Fokus exam mengikuti knowledge node <strong>{drillNode?.name ?? '—'}</strong>; soal di-materialize dari node tersebut dan turunannya.</span></div>
                   </div>
                 ) : (

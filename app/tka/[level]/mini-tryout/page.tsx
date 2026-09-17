@@ -68,7 +68,7 @@ function getSubjectConfig(slug: string, title: string) {
             subjectName: 'Bahasa Indonesia',
             badgeBg: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/60',
             cardBorder: 'border-2 border-indigo-100/90 hover:border-indigo-300',
-            glowColor: 'from-indigo-100/40 via-sky-50/20 to-transparent',
+            glowColor: 'from-indigo-100/40 via-blue-50/20 to-transparent',
             iconBg: 'bg-indigo-50 text-indigo-600',
             icon: <BookOpen size={18} />,
             chipIcon: <BookOpen size={12} className="text-indigo-600" />,
@@ -79,12 +79,12 @@ function getSubjectConfig(slug: string, title: string) {
     if (s.includes('matematika') || s.includes('mat')) {
         return {
             subjectName: 'Matematika',
-            badgeBg: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200/60',
-            cardBorder: 'border-2 border-purple-100/90 hover:border-purple-300',
-            glowColor: 'from-purple-100/40 via-violet-50/20 to-transparent',
-            iconBg: 'bg-purple-50 text-purple-600',
+            badgeBg: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/60',
+            cardBorder: 'border-2 border-blue-100/90 hover:border-blue-300',
+            glowColor: 'from-blue-100/40 via-blue-50/20 to-transparent',
+            iconBg: 'bg-blue-50 text-blue-600',
             icon: <Calculator size={18} />,
-            chipIcon: <Calculator size={12} className="text-purple-600" />,
+            chipIcon: <Calculator size={12} className="text-blue-600" />,
             topics: ['Aritmetika & Aljabar', 'Geometri Bangun', 'Logika Numerik'],
             description: 'Latihan 15 butir soal untuk melatih kecepatan berhitung, pemecahan masalah numerik, dan analisis pola.',
         }
@@ -408,7 +408,7 @@ export default async function TkaMiniTryoutPage({
                 </section>
 
                 {/* Sleek Banner Bridge to Full Tryout */}
-                <section className="flex flex-col justify-between gap-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-violet-50/50 p-5 shadow-xs transition hover:border-indigo-200 sm:flex-row sm:items-center">
+                <section className="flex flex-col justify-between gap-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-blue-50/50 p-5 shadow-xs transition hover:border-indigo-200 sm:flex-row sm:items-center">
                     <div className="flex items-start gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
                             <Sparkles size={18} className="text-amber-300" />

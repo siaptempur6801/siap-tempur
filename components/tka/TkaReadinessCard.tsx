@@ -55,7 +55,7 @@ export default function TkaReadinessCard({
                     )}
                 </div>
 
-                <div className="min-w-48 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-emerald-100/30 p-5 text-center shadow-xs ring-1 ring-emerald-200/50">
+                <div className="min-w-48 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 via-blue-50/40 to-emerald-100/30 p-5 text-center shadow-xs ring-1 ring-emerald-200/50">
                     <div className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">
                         Kesiapan Ujian
                     </div>

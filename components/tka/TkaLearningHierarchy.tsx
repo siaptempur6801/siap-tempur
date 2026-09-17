@@ -190,14 +190,14 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
                             {/* Subject Header Banner */}
                             <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border p-4 sm:p-5 transition-all ${
                                 isMath
-                                    ? 'border-purple-100 bg-gradient-to-r from-purple-50/80 via-white to-violet-50/40 shadow-xs'
+                                    ? 'border-blue-100 bg-gradient-to-r from-blue-50/80 via-white to-blue-50/40 shadow-xs'
                                     : isIndo
-                                        ? 'border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-sky-50/40 shadow-xs'
+                                        ? 'border-indigo-100 bg-gradient-to-r from-indigo-50/80 via-white to-blue-50/40 shadow-xs'
                                         : 'border-slate-200 bg-slate-50'
                             }`}>
                                 <div className="flex items-center gap-3.5">
                                     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-xs ${
-                                        isMath ? 'bg-purple-600' : isIndo ? 'bg-indigo-600' : 'bg-slate-700'
+                                        isMath ? 'bg-blue-600' : isIndo ? 'bg-indigo-600' : 'bg-slate-700'
                                     }`}>
                                         {isMath ? <Calculator size={22} /> : isIndo ? <BookOpen size={22} /> : <School size={22} />}
                                     </div>
@@ -311,7 +311,7 @@ export default async function TkaLearningHierarchy({ activeTrack }: { activeTrac
             </div>
 
             {/* Study Hint Footer */}
-            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-violet-50/40 p-4 text-xs text-indigo-950 shadow-xs">
+            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-blue-50/40 p-4 text-xs text-indigo-950 shadow-xs">
                 <p className="font-bold flex items-center gap-1.5 text-indigo-900">
                     <Sparkles size={14} className="text-indigo-600" />
                     <span>Strategi Latihan Mandiri:</span>

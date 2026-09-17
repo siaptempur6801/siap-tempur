@@ -63,7 +63,7 @@ const badgeVariants = {
     yellow: 'border-amber-200 bg-amber-50 text-amber-700',
     orange: 'border-orange-200 bg-orange-50 text-orange-700',
     red: 'border-red-200 bg-red-50 text-red-700',
-    violet: 'border-violet-200 bg-violet-50 text-violet-700',
+    violet: 'border-blue-200 bg-blue-50 text-blue-700',
 } as const
 
 export function AdminBadge({
@@ -102,7 +102,7 @@ export function AdminMetric({
         yellow: 'bg-amber-50 text-amber-700',
         orange: 'bg-orange-50 text-orange-700',
         red: 'bg-red-50 text-red-700',
-        violet: 'bg-violet-50 text-violet-700',
+        violet: 'bg-blue-50 text-blue-700',
     }
     return (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

@@ -434,7 +434,7 @@ export default function ExcelImportDialog() {
                                                                 question.type === 'TWK'
                                                                     ? 'bg-blue-100 text-blue-700'
                                                                     : question.type === 'TIU'
-                                                                        ? 'bg-purple-100 text-purple-700'
+                                                                        ? 'bg-blue-100 text-blue-700'
                                                                         : 'bg-amber-100 text-amber-700'
                                                             }`}
                                                         >

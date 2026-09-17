@@ -57,7 +57,7 @@ function kindLabel(kind: HistorySession['kind']) {
 }
 
 function kindTone(kind: HistorySession['kind']) {
-    if (kind === 'drilling-materi') return 'bg-purple-100 text-purple-800'
+    if (kind === 'drilling-materi') return 'bg-brand-peach-100 text-brand-peach-800'
     if (kind === 'mini-tryout') return 'bg-green-100 text-green-800'
     if (kind === 'full-tryout') return 'bg-yellow-100 text-yellow-900'
     return 'bg-blue-100 text-blue-800'
@@ -156,7 +156,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                                         )}
                                     </div>
                                     <h2 className="st-heading mt-3 truncate text-xl md:text-2xl">{session.title}</h2>
-                                    {session.subCategory && session.kind === 'drilling-materi' && <p className="mt-1 text-sm font-bold text-purple-700">{session.subCategory}</p>}
+                                    {session.subCategory && session.kind === 'drilling-materi' && <p className="mt-1 text-sm font-bold text-brand-peach-800">{session.subCategory}</p>}
                                     <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500"><Clock3 size={14} /> {session.completedAtLabel}</p>
                                 </div>
 

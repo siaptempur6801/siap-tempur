@@ -12,7 +12,7 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     const variants = {
       yellow: "bg-yellow-200 border-gray-800",
       blue: "bg-blue-100 text-blue-700 border-blue-200",
-      pink: "bg-pink-100 text-pink-700 border-pink-200",
+      pink: "bg-brand-peach-100 text-brand-peach-800 border-brand-peach-100",
       green: "bg-green-200 border-gray-800",
       white: "bg-white border-gray-800",
       red: "bg-red-600 text-white border-red-700 shadow-lg",

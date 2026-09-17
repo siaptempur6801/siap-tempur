@@ -212,6 +212,19 @@
   --color-brand-amber: var(--brand-amber);
   --color-brand-peach: var(--brand-peach);
   --color-brand-paper: var(--brand-paper);
+  --color-brand-paper-strong: var(--brand-paper-strong);
+  --color-brand-ink-soft: var(--brand-ink-100);
+  --color-brand-ink-line: var(--brand-ink-200);
+  --color-brand-ink-muted: var(--brand-ink-500);
+  --color-brand-blue-soft: var(--brand-blue-50);
+  --color-brand-blue-100: var(--brand-blue-100);
+  --color-brand-blue-700: var(--brand-blue-700);
+  --color-brand-blue-800: var(--brand-blue-800);
+  --color-brand-amber-soft: var(--brand-amber-100);
+  --color-brand-amber-200: var(--brand-amber-200);
+  --color-brand-peach-50: var(--brand-peach-50);
+  --color-brand-peach-100: var(--brand-peach-100);
+  --color-brand-peach-800: var(--brand-peach-800);
 
   /* Tipografi brand: Poppins sebagai display + body, Patrick Hand hanya aksen. */
   --font-display: var(--font-poppins);

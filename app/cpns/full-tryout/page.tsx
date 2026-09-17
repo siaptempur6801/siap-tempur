@@ -65,7 +65,7 @@ const benefits = [
         icon: BookOpenCheck,
         title: "Belajar dari pembahasan",
         text: "Tinjau jawaban dan pembahasan untuk memahami bagian yang masih perlu kamu perbaiki.",
-        tone: "bg-cyan-100 text-cyan-800",
+        tone: "bg-blue-100 text-blue-800",
     },
 ] as const;
 

@@ -168,7 +168,7 @@ export default async function TkaDiagnosticPage({
                                 description="12 butir soal · 15 menit · 3 kompetensi literasi"
                             />
                             <Step
-                                icon={<Sigma size={18} className="text-violet-600" />}
+                                icon={<Sigma size={18} className="text-blue-600" />}
                                 title="Bagian 2: Matematika"
                                 description="16 butir soal · 20 menit · 4 elemen numerasi"
                             />

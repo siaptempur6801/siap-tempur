@@ -344,7 +344,7 @@ export default function ExcelImport() {
                                                     <td className="p-2 text-gray-500">{i + 1}</td>
                                                     <td className="p-2">
                                                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${q.type === 'TWK' ? 'bg-blue-100 text-blue-700' :
-                                                            q.type === 'TIU' ? 'bg-purple-100 text-purple-700' :
+                                                            q.type === 'TIU' ? 'bg-blue-100 text-blue-700' :
                                                                 'bg-amber-100 text-amber-700'
                                                             }`}>{q.type}</span>
                                                     </td>

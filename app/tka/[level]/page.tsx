@@ -429,10 +429,10 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
     const Icon = isSd ? School : GraduationCap
     const badgeTone = isSd
         ? 'bg-amber-50 text-amber-800 ring-1 ring-amber-200/80'
-        : 'bg-violet-50 text-violet-700 ring-1 ring-violet-200/80'
+        : 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/80'
     const iconTone = isSd
         ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white ring-2 ring-amber-200/60 shadow-xs'
-        : 'bg-gradient-to-br from-violet-600 to-indigo-600 text-white ring-2 ring-violet-200/60 shadow-xs'
+        : 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white ring-2 ring-blue-200/60 shadow-xs'
 
     return (
         <main
@@ -446,7 +446,7 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
                     {/* Decorative aura */}
                     <div
                         className={`pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full blur-3xl ${
-                            isSd ? 'bg-amber-200/20' : 'bg-violet-200/20'
+                            isSd ? 'bg-amber-200/20' : 'bg-blue-200/20'
                         }`}
                         aria-hidden="true"
                     />
@@ -477,7 +477,7 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
                         </p>
 
                         {/* Pilot recommendation card */}
-                        <div className="mt-8 rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/90 via-white to-violet-50/40 p-5 sm:p-6 shadow-2xs">
+                        <div className="mt-8 rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/90 via-white to-blue-50/40 p-5 sm:p-6 shadow-2xs">
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="space-y-1">
                                     <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-2xs">
@@ -534,13 +534,13 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
                     <div className="grid gap-4 sm:grid-cols-2">
                         <FeaturePreviewCard
                             icon={<BrainCircuit size={20} />}
-                            tone="bg-violet-50 text-violet-700 ring-1 ring-violet-200/70"
+                            tone="bg-blue-50 text-blue-700 ring-1 ring-blue-200/70"
                             title="Tes Diagnostik Cerdas"
                             description="Identifikasi penguasaan konsep awal siswa untuk menentukan materi mana yang perlu dipelajari terlebih dahulu."
                         />
                         <FeaturePreviewCard
                             icon={<RotateCcw size={20} />}
-                            tone="bg-sky-50 text-sky-700 ring-1 ring-sky-200/70"
+                            tone="bg-blue-50 text-blue-700 ring-1 ring-blue-200/70"
                             title="Latihan Fokus per Bab"
                             description="Drilling butir soal bertingkat per topik materi dengan pembahasan komprehensif dan latihan remedial terarah."
                         />

@@ -28,7 +28,7 @@ export default async function TkaLearningFocusPanel({ items }: { items?: TkaLear
     return (
         <section
             data-testid="tka-learning-focus"
-            className="rounded-3xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/70 via-white to-violet-50/40 p-6 sm:p-7 md:p-8 shadow-xs"
+            className="rounded-3xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 p-6 sm:p-7 md:p-8 shadow-xs"
         >
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-3xl">

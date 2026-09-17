@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
+import { Mascot } from '@/components/brand/Mascot'
 import TkaReadinessCard from '@/components/tka/TkaReadinessCard'
 import TkaInteractiveReviewClient from '@/components/tka/TkaInteractiveReviewClient'
 import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
@@ -177,7 +178,7 @@ export default async function TkaResultPage({
                     </div>
 
                     {/* Hero Result Banner */}
-                    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-blue-700 p-6 text-white shadow-[0_24px_60px_rgba(79,70,229,0.25)] md:p-10">
+                    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-blue-600 to-blue-700 p-6 text-white shadow-[0_24px_60px_rgba(25,118,210,0.28)] md:p-10">
                         {/* Background Subtle Accent */}
                         <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
                         <div className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" />
@@ -216,6 +217,7 @@ export default async function TkaResultPage({
 
                             {/* Score Card Tile */}
                             <div className="flex flex-col items-center justify-center rounded-2xl border border-white/20 bg-white/15 p-6 text-center backdrop-blur-md shadow-inner md:p-8">
+                                <Mascot name="tama" size="xs" tone="plain" className="mb-3" />
                                 <span className="text-xs font-black uppercase tracking-widest text-indigo-200">Total Skor</span>
                                 <div className="mt-2 text-5xl font-black tracking-tight text-white md:text-6xl">
                                     {result.totalScore}
@@ -349,7 +351,7 @@ export default async function TkaResultPage({
 
                     {/* Remedial & Next Action Recommendation */}
                     {(automaticRemedialEnabled || (repeatWrongEnabled && !automaticRemedialEnabled)) && (
-                        <section className="flex flex-col gap-4 rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/60 p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+                        <section className="flex flex-col gap-4 rounded-3xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50/80 via-white to-blue-50/60 p-6 shadow-sm md:flex-row md:items-center md:justify-between">
                             <div className="space-y-1">
                                 <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-wider text-indigo-700">
                                     {automaticRemedialEnabled ? <BookOpenCheck size={16} /> : <RotateCcw size={16} />}

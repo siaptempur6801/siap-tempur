@@ -52,7 +52,7 @@ const TRACK_DEFINITIONS: TrackDefinition[] = [
             accentText: 'text-blue-700',
             badgeClass: 'bg-blue-50 text-blue-700 ring-blue-200',
             iconBg: 'bg-blue-600 text-white',
-            cardHeaderBg: 'border-blue-100 bg-gradient-to-r from-blue-50/70 via-white to-sky-50/30',
+            cardHeaderBg: 'border-blue-100 bg-gradient-to-r from-blue-50/70 via-white to-blue-50/30',
             topicPill: 'bg-blue-50/80 text-blue-800 ring-1 ring-blue-200/60',
             checkmarkColor: 'text-blue-600',
             actionButton: 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs hover:shadow',
@@ -79,7 +79,7 @@ const TRACK_DEFINITIONS: TrackDefinition[] = [
             accentText: 'text-indigo-700',
             badgeClass: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
             iconBg: 'bg-indigo-600 text-white',
-            cardHeaderBg: 'border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-violet-50/30',
+            cardHeaderBg: 'border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-blue-50/30',
             topicPill: 'bg-indigo-50/80 text-indigo-800 ring-1 ring-indigo-200/60',
             checkmarkColor: 'text-indigo-600',
             actionButton: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow',
@@ -129,14 +129,14 @@ const TRACK_DEFINITIONS: TrackDefinition[] = [
         href: '/tka/sma',
         icon: Sparkles,
         theme: {
-            accentBg: 'bg-purple-50',
-            accentText: 'text-purple-700',
-            badgeClass: 'bg-purple-50 text-purple-700 ring-purple-200',
-            iconBg: 'bg-purple-600 text-white',
-            cardHeaderBg: 'border-purple-100 bg-gradient-to-r from-purple-50/70 via-white to-fuchsia-50/30',
-            topicPill: 'bg-purple-50/80 text-purple-800 ring-1 ring-purple-200/60',
-            checkmarkColor: 'text-purple-600',
-            actionButton: 'bg-white hover:bg-purple-50/70 text-slate-800 border border-slate-200 hover:border-purple-300 shadow-2xs',
+            accentBg: 'bg-blue-50',
+            accentText: 'text-blue-700',
+            badgeClass: 'bg-blue-50 text-blue-700 ring-blue-200',
+            iconBg: 'bg-blue-600 text-white',
+            cardHeaderBg: 'border-blue-100 bg-gradient-to-r from-blue-50/70 via-white to-blue-50/30',
+            topicPill: 'bg-blue-50/80 text-blue-800 ring-1 ring-blue-200/60',
+            checkmarkColor: 'text-blue-600',
+            actionButton: 'bg-white hover:bg-blue-50/70 text-slate-800 border border-slate-200 hover:border-blue-300 shadow-2xs',
         },
         topics: ['Matematika Lanjut', 'Literasi Analitis', 'Sains Terpadu'],
         features: [
@@ -189,7 +189,7 @@ export default function PilihJalurContent({ currentTrack }: { currentTrack: Trac
                 </div>
 
                 <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700 ring-1 ring-sky-200/60">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 ring-1 ring-blue-200/60">
                         <CheckCircle2 size={18} />
                     </div>
                     <div>
@@ -309,7 +309,7 @@ export default function PilihJalurContent({ currentTrack }: { currentTrack: Trac
             </div>
 
             {/* Reassurance Footer Notice */}
-            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-violet-50/40 p-4 text-xs text-indigo-950 shadow-xs sm:p-5">
+            <div className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-blue-50/40 p-4 text-xs text-indigo-950 shadow-xs sm:p-5">
                 <div className="flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
                         <Sparkles size={16} />

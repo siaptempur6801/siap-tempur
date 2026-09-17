@@ -224,10 +224,10 @@ export default function TkaProgressDashboard({ dashboard }: { dashboard: TkaProg
                     )}
                 </div>
 
-                <aside className="relative flex flex-col justify-between overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-6 md:p-7 text-white shadow-md">
+                <aside className="relative flex flex-col justify-between overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-800 p-6 md:p-7 text-white shadow-md">
                     {/* Decorative aura */}
                     <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-                    <div className="pointer-events-none absolute -bottom-10 left-10 h-32 w-32 rounded-full bg-violet-400/20 blur-xl" />
+                    <div className="pointer-events-none absolute -bottom-10 left-10 h-32 w-32 rounded-full bg-blue-400/20 blur-xl" />
 
                     <div className="relative z-10">
                         <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-100 backdrop-blur-xs">

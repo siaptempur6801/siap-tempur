@@ -314,8 +314,8 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                     <InfoCard icon={<Mail size={17} />} label="Email" value={user.email || '-'} tone="bg-blue-50" isTka={isTka} />
                                     <InfoCard icon={<Calendar size={17} />} label="Bergabung" value={createdAt} tone="bg-green-50" isTka={isTka} />
                                     <InfoCard label="No. handphone" value={profile.phone_number || '-'} tone="bg-yellow-50" isTka={isTka} />
-                                    {!isTka && <InfoCard icon={<Target size={17} />} label="Target instansi" value={profile.target_instance || '-'} tone="bg-cyan-50" isTka={isTka} />}
-                                    <InfoCard label={isTka ? 'Jenjang belajar' : 'Pendidikan'} value={isTka ? tkaLevel || '-' : profile.education_level || '-'} tone="bg-purple-50" isTka={isTka} />
+                                    {!isTka && <InfoCard icon={<Target size={17} />} label="Target instansi" value={profile.target_instance || '-'} tone="bg-blue-50" isTka={isTka} />}
+                                    <InfoCard label={isTka ? 'Jenjang belajar' : 'Pendidikan'} value={isTka ? tkaLevel || '-' : profile.education_level || '-'} tone="bg-blue-50" isTka={isTka} />
                                     <InfoCard label="Tanggal lahir" value={profile.birth_date ? new Date(profile.birth_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) : '-'} tone="bg-orange-50" isTka={isTka} />
                                 </div>
                             </div>
@@ -326,7 +326,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
 
             {/* Token Balance Card */}
             <section className={isTka
-                ? 'rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-violet-50/30 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'
+                ? 'rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-blue-50/30 p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4'
                 : 'st-card flex flex-col gap-4 bg-green-50 p-5 sm:flex-row sm:items-center sm:justify-between'}
             >
                 <div className="flex items-center gap-4">

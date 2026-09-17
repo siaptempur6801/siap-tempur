@@ -55,9 +55,9 @@ export default function StatOverview({ data, streak, type }: { data: StatsSummar
             value: data.summary.avgScore,
             subValue: avgScoreSub,
             icon: TrendingUp,
-            color: "text-purple-700",
-            bg: "bg-purple-200",
-            borderColor: "border-purple-400"
+            color: "text-blue-700",
+            bg: "bg-blue-200",
+            borderColor: "border-blue-400"
         },
         {
             label: "Skor Tertinggi",

@@ -255,8 +255,8 @@ export default function CommercePackagesClient({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-sky-200">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white shadow-xs">
+                <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-blue-200">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
                         <ShieldCheck size={20} />
                     </div>
                     <div className="min-w-0">
@@ -315,7 +315,7 @@ export default function CommercePackagesClient({
                                 {/* Best Value Top Badge */}
                                 {isBestValue && (
                                     <div className="absolute -top-3 right-5">
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1 text-[11px] font-black tracking-wide text-white shadow-xs">
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-1 text-[11px] font-black tracking-wide text-white shadow-xs">
                                             <Sparkles size={12} />
                                             <span>Nilai Terbaik · Paling Hemat</span>
                                         </span>
@@ -488,7 +488,7 @@ export default function CommercePackagesClient({
             )}
 
             {/* Reassurance Footer Notice */}
-            <section className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-violet-50/40 p-4 sm:p-5 text-xs text-indigo-950 shadow-xs">
+            <section className="rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-blue-50/40 p-4 sm:p-5 text-xs text-indigo-950 shadow-xs">
                 <div className="flex items-start gap-3.5">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700 shadow-xs">
                         <ShieldCheck size={20} />

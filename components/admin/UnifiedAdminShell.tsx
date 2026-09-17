@@ -121,8 +121,8 @@ function AdminNavLink({ item, collapsed, contextHref, onNavigate }: { item: NavI
                     : 'text-slate-300 hover:bg-white/7 hover:text-white',
             )}
         >
-            {active ? <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-cyan-400"/> : null}
-            <Icon size={18} className={cn('shrink-0', active ? 'text-cyan-300' : 'text-slate-400 group-hover:text-slate-200')}/>
+            {active ? <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-blue-400"/> : null}
+            <Icon size={18} className={cn('shrink-0', active ? 'text-blue-300' : 'text-slate-400 group-hover:text-slate-200')}/>
             {collapsed ? null : <span className="truncate">{item.label}</span>}
         </Link>
     )
@@ -197,11 +197,11 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
     }
 
     const sidebar = (
-        <div className="flex h-full flex-col bg-[#08172f] text-white">
+        <div className="flex h-full flex-col bg-[var(--brand-ink-950)] text-white">
             <div className={cn('flex h-16 shrink-0 items-center border-b border-white/10', collapsed ? 'justify-center px-2' : 'justify-between px-4')}>
                 <Link href={homeHref} onClick={() => setMobileOpen(false)} className={cn('min-w-0', collapsed && 'sr-only')}>
-                    <div className="font-display text-lg font-black text-white">Siap<span className="text-cyan-300 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</div>
-                    <div className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-cyan-300">Admin Workspace</div>
+                    <div className="font-display text-lg font-black text-white">Siap<span className="text-blue-300 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</div>
+                    <div className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-300">Admin Workspace</div>
                 </Link>
                 <button type="button" onClick={() => setCollapsed((value) => !value)} className="hidden h-9 w-9 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white lg:inline-flex" aria-label={collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'}>
                     {collapsed ? <ChevronRight size={18}/> : <ChevronLeft size={18}/>} 

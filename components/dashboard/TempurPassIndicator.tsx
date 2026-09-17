@@ -25,7 +25,7 @@ export default function TempurPassIndicator({
             className={cn(
                 'inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-extrabold transition',
                 theme === 'dark'
-                    ? 'border-cyan-300/40 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20'
+                    ? 'border-blue-300/40 bg-blue-300/10 text-blue-100 hover:bg-blue-300/20'
                     : theme === 'paper'
                         ? 'rounded-md border-gray-900 bg-green-100 text-gray-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:bg-green-200'
                         : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',

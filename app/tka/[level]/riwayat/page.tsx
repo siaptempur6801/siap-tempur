@@ -59,14 +59,14 @@ function modeView(exam: ExamRow, typeCode: string, typeName: string) {
         return {
             label: 'Tes Diagnostik',
             icon: <BrainCircuit size={14} />,
-            tone: 'bg-violet-50 text-violet-700 ring-1 ring-violet-200/70',
+            tone: 'bg-brand-blue-soft text-brand-blue-700 ring-1 ring-brand-blue-100',
         }
     }
     if (typeCode.includes('DRILL') || slug.includes('drill')) {
         return {
             label: 'Latihan Fokus',
             icon: <RotateCcw size={14} />,
-            tone: 'bg-sky-50 text-sky-700 ring-1 ring-sky-200/70',
+            tone: 'bg-brand-peach-100 text-brand-peach-800 ring-1 ring-brand-peach-100',
         }
     }
     if (typeCode.includes('MINI') || slug.includes('mini')) {
@@ -79,7 +79,7 @@ function modeView(exam: ExamRow, typeCode: string, typeName: string) {
     return {
         label: typeName || 'Full Tryout',
         icon: <ListChecks size={14} />,
-        tone: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/70',
+        tone: 'bg-brand-ink-soft text-slate-700 ring-1 ring-brand-ink-line',
     }
 }
 
@@ -165,10 +165,10 @@ export default async function TkaHistoryPage({
     return (
         <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
-                <header className="relative overflow-hidden rounded-3xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/40 p-6 sm:p-8 md:p-10 shadow-xs">
+                <header className="relative overflow-hidden rounded-3xl border border-indigo-100/90 bg-gradient-to-br from-indigo-50/80 via-white to-blue-50/40 p-6 sm:p-8 md:p-10 shadow-xs">
                     {/* Decorative blur aura */}
                     <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-indigo-200/25 blur-3xl" />
-                    <div className="pointer-events-none absolute -bottom-16 right-20 h-48 w-48 rounded-full bg-violet-200/20 blur-2xl" />
+                    <div className="pointer-events-none absolute -bottom-16 right-20 h-48 w-48 rounded-full bg-blue-200/20 blur-2xl" />
 
                     <div className="relative z-10 max-w-3xl">
                         <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3.5 py-1 text-xs font-bold tracking-wide text-indigo-700 ring-1 ring-indigo-200/70 shadow-2xs">

@@ -248,6 +248,24 @@ utility lama otomatis on-brand):
 Utility brand eksplisit untuk kode baru: `bg-brand-ink`, `text-brand-blue`, `bg-brand-amber`,
 `bg-brand-peach`, `bg-brand-paper`.
 
+### 6.2 Tone kategori (label, badge, status)
+
+Kategori **tidak boleh** memakai hue di luar brand. Empat tone ini yang dipakai:
+
+| Tone | Kelas | Dipakai untuk |
+|---|---|---|
+| Brand blue | `bg-brand-blue-soft text-brand-blue-700 ring-brand-blue-100` | tes diagnostik/asesmen, aksi utama |
+| Brand amber | `bg-brand-amber-100 text-amber-900` | mini tryout, sorotan premium |
+| Brand peach | `bg-brand-peach-100 text-brand-peach-800` | latihan fokus / drill |
+| Ink netral | `bg-brand-ink-soft text-slate-700 ring-brand-ink-line` | full tryout, event, status netral |
+
+Semantik tetap: **emerald** = selesai/sukses, **red** = gagal/bahaya, **amber** = peringatan.
+
+Hue `violet`, `purple`, `sky`, `cyan`, `teal`, `fuchsia`, dan `pink` **sudah tidak dipakai** di kode;
+sejak pemetaan token semua nama itu jatuh ke brand blue sehingga kategori kehilangan pembeda — karena
+itu tone di atas menggantikannya. Nilai warna arbitrer (`[#fdfbf7]`, `rgba(...)`) juga sudah diganti
+token (`var(--brand-paper)`, dst.) agar tidak ada lagi 7+ varian off-white yang hampir sama.
+
 ### 6.1 Maskot — Tama & Tara
 
 Maskot resmi brand: **Tama** (laki-laki) dan **Tara** (perempuan), keduanya memakai hoodie SiapTempur.

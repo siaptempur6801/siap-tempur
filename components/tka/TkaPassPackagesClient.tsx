@@ -242,7 +242,7 @@ export default function TkaPassPackagesClient({
                             {/* Best value badge */}
                             {isBestValue && (
                                 <div className="absolute -top-3 right-5">
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 px-3 py-1 text-[11px] font-black tracking-wide text-white shadow-xs">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 px-3 py-1 text-[11px] font-black tracking-wide text-white shadow-xs">
                                         <Crown size={12} />
                                         <span>Nilai Terbaik · Rekomendasi</span>
                                     </span>

@@ -249,8 +249,8 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-sky-200">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-white shadow-xs">
+                    <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-blue-200">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
                             <CheckCircle2 size={20} />
                         </div>
                         <div className="min-w-0">
@@ -267,7 +267,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
                         data-testid="tka-pass-status-active"
                         role="status"
                         aria-live="polite"
-                        className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/40 p-5 shadow-xs"
+                        className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50/80 via-white to-blue-50/40 p-5 shadow-xs"
                     >
                         <div className="flex flex-wrap items-start justify-between gap-4">
                             <div className="max-w-3xl">

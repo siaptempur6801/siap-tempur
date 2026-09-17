@@ -145,7 +145,7 @@ export default async function TkaDiagnosticResultPage({
                     </Link>
                 </div>
 
-                <section className="grid gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 p-6 text-white shadow-xl shadow-indigo-600/15 lg:grid-cols-[1.4fr_0.6fr] lg:items-center md:p-8">
+                <section className="grid gap-6 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-700 p-6 text-white shadow-xl shadow-indigo-600/15 lg:grid-cols-[1.4fr_0.6fr] lg:items-center md:p-8">
                     <div>
                         <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-black uppercase tracking-wider text-indigo-100 backdrop-blur-sm">
                             <Sparkles size={14} /> Hasil Diagnostik

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Target, Trophy, XCircle } from 'lucide-react'
 import ResultReviewClient from '@/components/practice/ResultReviewClient'
+import { Mascot } from '@/components/brand/Mascot'
 import ResultXPWrapper from '@/components/practice/ResultXPWrapper'
 import { practiceResultService } from '@/src/services/practice-result.service'
 import { gamificationService } from '@/src/services/gamification.service'
@@ -76,6 +77,7 @@ export default async function PracticeResultPage({
                         <p className="st-muted mt-4 max-w-2xl font-semibold leading-relaxed">
                             Lihat skor, rincian tiap bagian, lalu buka pembahasan. Tujuannya bukan berhenti di angka, tetapi memahami apa yang perlu kamu lanjutkan setelah sesi ini.
                         </p>
+                        <Mascot name="tama" size="xs" tone="soft" className="mt-6 hidden sm:inline-flex" />
                     </div>
                     <div className="border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] p-5 text-center shadow-[4px_4px_0_var(--st-ink)]">
                         <div className="text-xs font-black uppercase tracking-[0.16em] text-gray-600">Total skor</div>

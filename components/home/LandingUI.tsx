@@ -384,7 +384,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     </div>
 
                     <div className="hidden md:block absolute -bottom-4 -right-4 lg:-right-12 z-30">
-                        <div className="bg-pink-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-display font-bold text-sm rotate-1 animate-float-annotation" style={{ animationDelay: '2s' }}>
+                        <div className="bg-brand-amber-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-display font-bold text-sm rotate-1 animate-float-annotation" style={{ animationDelay: '2s' }}>
                             <Monitor className="w-4 h-4 inline -mt-0.5 mr-1 text-blue-600" />
                             Navigasi soal satu layar!
                         </div>

@@ -43,7 +43,7 @@ export default function TKPPage() {
                     {/* Passing Grade Card */}
                     <Card variant="binder" className="p-8 mb-12">
                         <div className="flex flex-col md:flex-row items-center gap-8">
-                            <div className="bg-purple-100 p-6 rounded-full border-4 border-purple-600 shrink-0">
+                            <div className="bg-blue-100 p-6 rounded-full border-4 border-blue-600 shrink-0">
                                 <UserCheck className="w-12 h-12 text-green-600" />
                             </div>
                             <div>

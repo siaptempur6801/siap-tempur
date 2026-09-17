@@ -252,8 +252,8 @@ export default async function TkaTryoutPage({
                 {featuredTryout ? (
                     <article className="relative overflow-hidden rounded-3xl border-2 border-indigo-200/90 bg-white p-5 shadow-lg shadow-indigo-950/5 ring-1 ring-indigo-500/10 transition-all hover:border-indigo-300 sm:p-7">
                         {/* Ambient decorative background glow */}
-                        <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-200/40 via-purple-100/20 to-transparent blur-3xl" />
-                        <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-gradient-to-tr from-sky-100/30 via-indigo-50/20 to-transparent blur-2xl" />
+                        <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-200/40 via-blue-100/20 to-transparent blur-3xl" />
+                        <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-gradient-to-tr from-blue-100/30 via-indigo-50/20 to-transparent blur-2xl" />
 
                         <div className="relative z-10 grid gap-6 lg:grid-cols-12 lg:gap-8 items-stretch">
                             {/* Left Column (Main Focus, Structure & Action Button) */}
@@ -296,9 +296,9 @@ export default async function TkaTryoutPage({
                                             <p className="text-[11px] text-slate-500">30 butir · Wacana &amp; Penalaran</p>
                                         </div>
 
-                                        <div className="rounded-xl border border-purple-100 bg-purple-50/40 p-3">
+                                        <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3">
                                             <div className="flex items-center justify-between text-[11px]">
-                                                <span className="font-bold text-purple-700">Bagian 2</span>
+                                                <span className="font-bold text-blue-700">Bagian 2</span>
                                                 <span className="font-medium text-slate-500">75 Menit</span>
                                             </div>
                                             <p className="mt-1 text-sm font-bold text-slate-900">Matematika</p>
