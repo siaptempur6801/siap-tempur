@@ -143,6 +143,12 @@ export function MascotBubble({
         amber: 'bg-[var(--brand-amber-soft)]',
         peach: 'bg-[var(--brand-peach-100)]',
     }
+    const tailFills = {
+        paper: '#ffffff',
+        blue: 'var(--brand-blue-50)',
+        amber: 'var(--brand-amber-100)',
+        peach: 'var(--brand-peach-100)',
+    }
     return (
         <div className={cn('flex items-end gap-3', side === 'right' && 'flex-row-reverse', className)}>
             <Mascot name={name} size={size} tone="plain" priority={priority} className="animate-bob" />
@@ -154,16 +160,31 @@ export function MascotBubble({
                 )}
             >
                 {children}
+                {/* Ekor gelembung: digambar sebagai SVG supaya sambungannya rapi —
+                    isi tail menutup garis border bubble tepat di titik tempelnya. */}
                 <span
                     aria-hidden="true"
                     className={cn(
-                        'absolute top-1/2 h-3 w-3 -translate-y-1/2 rotate-45',
-                        tones[bubbleTone],
-                        side === 'left'
-                            ? '-left-[7px] border-b-2 border-l-2 border-[var(--st-ink)]'
-                            : '-right-[7px] border-r-2 border-t-2 border-[var(--st-ink)]',
+                        'pointer-events-none absolute top-1/2 z-[1] -translate-y-1/2',
+                        side === 'left' ? 'left-[-13px]' : 'right-[-13px]',
                     )}
-                />
+                >
+                    <svg
+                        width="14"
+                        height="18"
+                        viewBox="0 0 14 18"
+                        className={cn('block', side === 'right' && '-scale-x-100')}
+                    >
+                        <path
+                            d="M14 1.2 L3.6 7.4 A 2.4 2.4 0 0 0 3.6 10.6 L14 16.8"
+                            fill="none"
+                            stroke="var(--st-ink)"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                        />
+                        <path d="M14 3.4 L4.6 8.6 A 0.8 0.8 0 0 0 4.6 9.4 L14 14.6 Z" fill={tailFills[bubbleTone]} />
+                    </svg>
+                </span>
             </div>
         </div>
     )

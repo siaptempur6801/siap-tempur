@@ -125,7 +125,7 @@ export function LandingHero({ primaryHref, primaryLabel }: CtaProps) {
                         <MascotBubble name="tama" size="sm" bubbleTone="blue" priority className="flex-1">
                             Hai, aku <b>Tama</b> — ini <b>Tara</b>. Mulai dari latihan singkat dulu, ya. Nanti kita lihat bareng bagian mana yang paling perlu diperkuat.
                         </MascotBubble>
-                        <Mascot name="tara" size="sm" tone="soft" priority className="hidden shrink-0 md:inline-flex animate-bob" />
+                        <Mascot name="tara" size="sm" tone="plain" priority className="hidden shrink-0 md:inline-flex animate-bob" />
                     </div>
                 </div>
 

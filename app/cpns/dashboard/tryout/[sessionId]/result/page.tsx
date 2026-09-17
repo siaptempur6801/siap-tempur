@@ -80,7 +80,7 @@ export default async function PracticeResultPage({
                         <p className="mt-4 text-sm font-bold text-slate-700">
                             Santai — hasil ini titik awal, bukan garis akhir. Satu perbaikan kecil hari ini sudah berarti.
                         </p>
-                        <Mascot name="tama" size="xs" tone="soft" className="mt-6 hidden sm:inline-flex" />
+                        <Mascot name="tama" size="xs" tone="plain" className="mt-6 hidden sm:inline-flex" />
                     </div>
                     <div className="border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] p-5 text-center st-shadow-md">
                         <div className="text-xs font-black uppercase tracking-[0.16em] text-gray-600">Total skor</div>
