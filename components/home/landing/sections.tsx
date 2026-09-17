@@ -230,7 +230,7 @@ export function LandingQuickStart({ primaryHref, primaryLabel }: CtaProps) {
     return (
         <section className="px-4 py-14 md:px-8 md:py-20">
             <div className="mx-auto max-w-7xl">
-                <div className="relative overflow-hidden rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--brand-amber-soft)] p-6 st-shadow-md md:p-10">
+                <div className="relative overflow-hidden rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-6 st-shadow-md md:p-10">
                     <div className="relative grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
                         <div>
                             <div className="flex flex-wrap items-center gap-3">
