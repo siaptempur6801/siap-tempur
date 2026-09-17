@@ -5,6 +5,7 @@ import type { Json } from '@/types/database.types'
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { walletService, WalletDomainError } from '@/src/services/wallet.service'
 import { CPNS_SKD_CONTEXT, type ProgramTrackContext } from '@/src/services/catalog-context.service'
+import { decideExamAccess } from '@/src/services/exam-access-policy'
 
 export type PracticeErrorCode =
     | 'EXAM_NOT_CONFIGURED'
@@ -284,41 +285,28 @@ export class ExamAttemptService {
         exam: ResolvedExam,
         usedAttempts: number | null = null,
     ): Promise<{ coveredByPass: boolean }> {
-        let coveredByPass = false
+        const hasActiveEntitlement = exam.requiredFeatureId
+            ? Boolean(await this.findUsableEntitlement(userId, exam.requiredFeatureId))
+            : false
 
-        if (accessType(exam) === 'FREEMIUM') {
-            if (!exam.requiredFeatureId) {
-                throw new PracticeDomainError(
-                    'EXAM_CONFIGURATION_ERROR',
-                    'Freemium exam must define required_feature_id',
-                )
-            }
+        // FREEMIUM butuh jumlah attempt terpakai; hitung di sini bila pemanggil belum menyiapkan.
+        const effectiveUsedAttempts = usedAttempts
+            ?? (accessType(exam) === 'FREEMIUM' ? await attemptRepository.countAttempts(userId, exam.id) : null)
 
-            const activeEntitlement = await this.findUsableEntitlement(userId, exam.requiredFeatureId)
-            coveredByPass = Boolean(activeEntitlement)
-            if (!activeEntitlement) {
-                const freeAttemptLimit = exam.attemptLimit ?? 1
-                const used = usedAttempts ?? await attemptRepository.countAttempts(userId, exam.id)
-                if (used >= freeAttemptLimit) {
-                    throw new PracticeDomainError(
-                        'ENTITLEMENT_REQUIRED',
-                        'Tempur Pass is required after the free attempt quota is used',
-                        { freeAttemptLimit, usedAttempts: used },
-                    )
-                }
-            }
-        } else if (exam.requiredFeatureId) {
-            const activeEntitlement = await this.findUsableEntitlement(userId, exam.requiredFeatureId)
-            coveredByPass = Boolean(activeEntitlement)
+        const decision = decideExamAccess({
+            accessType: accessType(exam),
+            requiredFeatureId: exam.requiredFeatureId,
+            tokenCost: exam.tokenCost,
+            attemptLimit: exam.attemptLimit,
+            usedAttempts: effectiveUsedAttempts,
+            hasActiveEntitlement,
+        })
 
-            // Pass lebih dulu; kalau tidak ada pass dan exam memang berbayar token, pengguna
-            // tetap boleh lanjut dan tokennya dipotong (pass = bypass token, bukan syarat mati).
-            if (!activeEntitlement && exam.tokenCost <= 0) {
-                throw new PracticeDomainError('ENTITLEMENT_REQUIRED', 'Active entitlement is required for this exam')
-            }
+        if (!decision.allow) {
+            throw new PracticeDomainError(decision.code, decision.message, decision.details)
         }
 
-        if (exam.tokenCost > 0 && !coveredByPass) {
+        if (exam.tokenCost > 0 && !decision.coveredByPass) {
             try {
                 await walletService.assertCanAfford(userId, exam.tokenCost, exam.programId)
             } catch (error) {
@@ -333,7 +321,7 @@ export class ExamAttemptService {
             }
         }
 
-        return { coveredByPass }
+        return { coveredByPass: decision.coveredByPass }
     }
 
     private async chargeAttempt(userId: string, attemptId: string, tokenCost: number) {

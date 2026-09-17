@@ -22,8 +22,17 @@ function assertStagingUrl(url: string) {
     }
 }
 
+/**
+ * Mode gate lokal (emulator Edge Function aktif): app boleh berjalan di localhost sehingga gate
+ * Admin bisa dijalankan tanpa menunggu deployment Vercel Preview. Di CI, penjaga Preview tetap
+ * berlaku penuh.
+ */
+const localGateMode = Boolean(process.env.CI_E2E_HELPER_BASE_URL?.trim())
+const LOCAL_HOSTNAMES = new Set(['127.0.0.1', 'localhost', '::1'])
+
 function assertPreviewUrl(url: string) {
     const parsed = new URL(url)
+    if (localGateMode && LOCAL_HOSTNAMES.has(parsed.hostname)) return
     if (parsed.protocol !== 'https:' || !parsed.hostname.endsWith('.vercel.app')) {
         throw new Error(`Admin E2E hanya boleh berjalan ke Vercel Preview, received ${parsed.hostname || 'unknown'}.`)
     }
@@ -70,7 +79,7 @@ setup('provision disposable ADMIN staging user', async ({ page }) => {
 
     const shareUrl = process.env.VERCEL_SHARE_URL
     const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-    if (!shareUrl && !bypassSecret) {
+    if (!localGateMode && !shareUrl && !bypassSecret) {
         throw new Error('Admin Preview dilindungi Vercel Authentication: VERCEL_SHARE_URL atau VERCEL_AUTOMATION_BYPASS_SECRET wajib tersedia.')
     }
 
@@ -89,7 +98,9 @@ setup('provision disposable ADMIN staging user', async ({ page }) => {
     }
     const health = await healthResponse.json() as { deploymentCommitSha?: string | null }
     const expectedSha = process.env.E2E_EXPECTED_HEAD_SHA || process.env.PR_HEAD_SHA || process.env.GITHUB_SHA
-    if (!expectedSha || health.deploymentCommitSha !== expectedSha) {
+    // App lokal tidak punya `deploymentCommitSha`, jadi perbandingan exact-head dilewati
+    // hanya pada mode gate lokal (di CI tetap wajib).
+    if (!localGateMode && (!expectedSha || health.deploymentCommitSha !== expectedSha)) {
         throw new Error(`Admin E2E exact-head mismatch: expected ${expectedSha || 'missing'}, received ${health.deploymentCommitSha || 'missing'}.`)
     }
 

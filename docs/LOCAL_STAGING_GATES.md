@@ -26,7 +26,7 @@ Tiga gate yang tersedia:
 |---|---|---|
 | TKA | `node scripts/local-gates/run-gate.mjs tka` | 16 test: diagnostik, drill fokus, mini tryout, full tryout, remedial, monetisasi |
 | CPNS | `node scripts/local-gates/run-gate.mjs cpns` | 4 test: full lifecycle, mini tryout, drill, state & charge |
-| Admin | `GATE_BASE_URL=<preview> E2E_EXPECTED_HEAD_SHA=<sha> node scripts/local-gates/run-gate.mjs admin` | 6 test: workspace admin ber-autentikasi |
+| Admin | `node scripts/local-gates/run-gate.mjs admin` (lokal) atau `GATE_BASE_URL=<preview> E2E_EXPECTED_HEAD_SHA=<sha> …` | 7 test: workspace admin ber-autentikasi |
 
 Semua gate:
 
@@ -124,8 +124,10 @@ Spec E2E memakai helper `tests/e2e/ci-helper.ts` untuk menentukan base URL:
 - **Staging saja.** Emulator menolak jalan bila `NEXT_PUBLIC_SUPABASE_URL` bukan staging.
 - **Lokal saja.** Emulator tidak memverifikasi OIDC dan memakai service-role key; jangan pernah
   diekspos ke jaringan publik atau dipakai di produksi.
-- **Gate Admin tetap butuh Vercel Preview.** Spec-nya memverifikasi `deploymentCommitSha` sama
-  dengan commit yang diuji, jadi arahkan `GATE_BASE_URL` ke Preview commit tersebut.
+- **Gate Admin bisa lokal.** Sejak 2026-09-17 spec admin mendeteksi mode gate lokal
+  (`CI_E2E_HELPER_BASE_URL` aktif) sehingga app boleh berjalan di `127.0.0.1` dan pengecekan
+  `deploymentCommitSha` dilewati — jalankan `node scripts/local-gates/run-gate.mjs admin`.
+  Di CI, penjaga Vercel Preview + exact-head tetap berlaku penuh (mis. dengan `GATE_BASE_URL`).
 - Gate TKA sengaja berjalan **tanpa** service role asli (`SUPABASE_SERVICE_ROLE_KEY=ci-no-service-role`)
   seperti workflow aslinya, supaya jalur RLS/RPC tetap teruji. Halaman hasil sudah tahan terhadap
   kegagalan lookup XP (lihat design doc / `docs/STATUS.md`).
