@@ -157,13 +157,11 @@ export default function TkaDashboardShell({
                             </Link>
                             <div className="min-w-0 flex-1">
                                 <Link href={`${basePath}/profile`} className="block truncate text-xs font-bold text-slate-900 hover:text-indigo-600 transition-colors">{displayName}</Link>
-                                {hasActiveTempurPass ? (
+                                {/* Kartu profil hanya menampilkan identitas. Penawaran "Tempur Pass"
+                                    tidak ditampilkan untuk pengguna yang belum memilikinya; status
+                                    pass tetap muncul bagi yang sudah punya (badge aktif). */}
+                                {hasActiveTempurPass && (
                                     <TempurPassIndicator href={accessHref} className="mt-1" compact />
-                                ) : (
-                                    <Link href={accessHref} className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-[var(--brand-blue-50)] px-2.5 py-0.5 text-[11px] font-bold text-blue-700 hover:bg-[var(--brand-blue-100)] transition">
-                                        <Sparkles size={12} className="text-indigo-600" />
-                                        <span>Tempur Pass</span>
-                                    </Link>
                                 )}
                             </div>
                         </div>
