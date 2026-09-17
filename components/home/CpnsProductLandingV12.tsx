@@ -23,6 +23,7 @@ import CpnsLandingInteractions, { CpnsEventCountdown } from '@/components/home/C
 import ProgressBar from '@/components/ui/ProgressBar'
 import { Mascot, MascotPair } from '@/components/brand/Mascot'
 import { Doodle, MascotBubble, Sticker, WashiTape } from '@/components/brand/playful'
+import ReadingProgress from '@/components/blog/ReadingProgress'
 
 export type CpnsLandingUser = { id: string } | null
 
@@ -257,6 +258,7 @@ export default function CpnsProductLandingV12({
 
     return (
         <main data-experience-mode="marketing" data-program="cpns" className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
+            <ReadingProgress />
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
 
             <CpnsLandingInteractions

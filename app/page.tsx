@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import ReadingProgress from '@/components/blog/ReadingProgress'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import {
     LandingAccount,
@@ -44,6 +45,7 @@ export default async function Index() {
 
     return (
         <main className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
+            <ReadingProgress />
             <LandingHeader user={Boolean(user)} {...cta} />
             <LandingHero {...cta} />
             <LandingBenefits />

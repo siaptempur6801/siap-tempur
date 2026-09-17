@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 
 /**
- * Menandai section yang sedang dilihat pengguna pada navigasi landing page.
+ * Menandai section yang sedang dilihat pengguna pada navigasi landing/artikel.
  *
- * Dipakai bersama oleh landing `/`, `/tka`, dan `/cpns` supaya perilakunya sama:
- * section yang paling banyak menutupi area pandang dianggap aktif (heuristik ini bekerja untuk
- * halaman panjang maupun halaman pendek yang hanya bisa digulir sedikit). Bila tidak ada section
- * yang cukup dominan — mis. pengguna masih di hero — tidak ada menu yang ditandai.
+ * Dipakai bersama oleh landing `/`, `/tka`, `/cpns`, daftar `/blog`, dan daftar isi artikel supaya
+ * perilakunya sama. Aturannya sederhana dan bekerja untuk halaman panjang maupun pendek:
+ *
+ * 1. Section yang "membungkus garis baca" (112px dari atas viewport) menang.
+ * 2. Kalau tidak ada, section terdekat dengan garis baca yang dipilih.
+ * 3. Kalau tidak ada section yang terlihat (mis. pengguna di hero), penanda dikosongkan.
  */
 export type SectionNavItem = {
     /** Id elemen section di halaman (tanpa `#`). */
@@ -18,57 +20,86 @@ export type SectionNavItem = {
     matches?: readonly string[]
 }
 
-/** Bagian layar minimum yang harus ditutupi sebuah section agar dianggap sedang dilihat. */
-const MIN_COVERAGE = 0.12
+/** Jarak garis baca dari atas viewport. Disamakan dengan `scroll-mt-28` (7rem = 112px) yang
+ *  dipakai section, supaya setelah klik tautan anchor section itu langsung dianggap aktif. */
+const READING_LINE = 112
+
+/** Toleransi di sekitar garis baca (sub-pixel & pembulatan `scroll-margin-top`). */
+const READING_TOLERANCE = 6
+
+/** Bagian layar minimum agar sebuah section dianggap sedang dilihat saat belum melewati garis baca. */
+const MIN_VISIBLE_FRACTION = 0.25
 
 export function useActiveSection(items: readonly SectionNavItem[]) {
     const [activeSection, setActiveSection] = useState('')
 
-    // Kunci berupa string supaya identitas array baru dari pemanggil tidak memicu
-    // pembuatan ulang IntersectionObserver pada setiap render.
+    // Kunci berupa string supaya identitas array baru dari pemanggil tidak memicu ulang listener.
     const observedKey = items
         .flatMap((item) => (item.matches && item.matches.length > 0 ? [...item.matches] : [item.id]))
         .join('|')
     const observedIds = useMemo(() => (observedKey ? observedKey.split('|') : []), [observedKey])
 
     useEffect(() => {
-        const targets = observedIds
-            .map((id) => document.getElementById(id))
-            .filter((element): element is HTMLElement => Boolean(element))
-        if (targets.length === 0) return
+        if (observedIds.length === 0) return
 
-        // Simpan penutupan layar terakhir per section: callback observer hanya memuat target yang
-        // berubah, jadi keputusan "section mana yang dominan" diambil dari peta ini.
-        const coverage = new Map<string, number>()
+        let frame = 0
 
-        const pickActive = () => {
-            const best = [...coverage.entries()].sort((a, b) => b[1] - a[1])[0]
-            if (best && best[1] >= MIN_COVERAGE) {
-                setActiveSection(best[0])
-                return
+        const compute = () => {
+            frame = 0
+            const viewportHeight = window.innerHeight
+            // Section terakhir yang sudah dimulai (top paling besar yang masih di atas garis baca).
+            let startedId = ''
+            let startedTop = Number.NEGATIVE_INFINITY
+            // Cadangan untuk halaman pendek: section yang paling banyak terlihat di layar.
+            let fallbackId = ''
+            let fallbackFraction = 0
+
+            for (const id of observedIds) {
+                const element = document.getElementById(id)
+                if (!element) continue
+
+                const rect = element.getBoundingClientRect()
+                if (rect.bottom <= 0) continue
+
+                if (rect.top <= READING_LINE + READING_TOLERANCE && rect.top > startedTop) {
+                    startedTop = rect.top
+                    startedId = id
+                }
+
+                const visible = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0)
+                const fraction = visible / viewportHeight
+                if (fraction > fallbackFraction) {
+                    fallbackFraction = fraction
+                    fallbackId = id
+                }
             }
-            // Tidak ada section yang cukup dominan (mis. masih di hero).
-            setActiveSection('')
+
+            // Pada halaman yang praktis muat dalam satu layar, gulir tidak bisa menempatkan section
+            // di garis baca, jadi tandai saja section yang paling terlihat.
+            const scrollable = document.documentElement.scrollHeight - viewportHeight
+            const pageFitsOneScreen = scrollable < viewportHeight * 0.5
+
+            // Utamakan section yang sudah melewati garis baca. Kalau belum ada (mis. pengguna masih
+            // di hero), tandai section yang benar-benar menutupi layar — ini yang membuat halaman
+            // pendek seperti daftar blog tetap punya penanda; kalau tidak ada, penanda dikosongkan.
+            setActiveSection(
+                startedId || ((pageFitsOneScreen || fallbackFraction >= MIN_VISIBLE_FRACTION) ? fallbackId : ''),
+            )
         }
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const viewportHeight = window.innerHeight || 1
-                for (const entry of entries) {
-                    // Bagian layar yang ditutupi section ini (0–1), bukan rasio terhadap tinggi section:
-                    // section panjang tetap dihitung "sedang dibaca" walau rasionya kecil.
-                    const covered = entry.isIntersecting
-                        ? (entry.intersectionRatio * entry.boundingClientRect.height) / viewportHeight
-                        : 0
-                    coverage.set(entry.target.id, covered)
-                }
-                pickActive()
-            },
-            { rootMargin: '-96px 0px 0px 0px', threshold: [0, 0.05, 0.15, 0.3, 0.5, 0.75, 1] },
-        )
+        const schedule = () => {
+            if (frame !== 0) return
+            frame = window.requestAnimationFrame(compute)
+        }
 
-        targets.forEach((target) => observer.observe(target))
-        return () => observer.disconnect()
+        schedule()
+        window.addEventListener('scroll', schedule, { passive: true })
+        window.addEventListener('resize', schedule)
+        return () => {
+            if (frame !== 0) window.cancelAnimationFrame(frame)
+            window.removeEventListener('scroll', schedule)
+            window.removeEventListener('resize', schedule)
+        }
     }, [observedIds])
 
     const activeId = useMemo(

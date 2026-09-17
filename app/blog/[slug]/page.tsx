@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, Clock, Newspaper } from 'lucide-react'
 import SeoNavbar from '@/components/SeoNavbar'
 import ReadingProgress from '@/components/blog/ReadingProgress'
+import ArticleToc from '@/components/blog/ArticleToc'
+import { buildArticleToc } from '@/lib/article-toc'
 import { createClient } from '@/lib/utils/supabase/server'
 import { estimateReadTime, formatArticleDate } from '@/lib/articles'
 import { escapeHtml, sanitizeArticleHtml } from '@/lib/article-sanitize'
@@ -94,7 +96,9 @@ export default async function BlogDetailPage({
 
     if (!article) notFound()
     const articleContent = getSafeArticleContent(article)
-    const articleHtml = getSafeArticleHtml(article)
+    // `articleHtml` dipakai untuk render; daftar isi dibangun dari HTML yang sama agar
+    // `id` heading dan tautan daftar isi selalu sinkron.
+    const { html: articleHtml, items: tocItems } = buildArticleToc(getSafeArticleHtml(article))
 
     return (
         <div className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body">
@@ -136,7 +140,9 @@ export default async function BlogDetailPage({
                         />
                     )}
 
-                    <div className="st-card-lg bg-white p-5 md:p-8">
+                    <ArticleToc items={tocItems} />
+
+                    <div className="st-card-lg mt-8 bg-white p-5 md:p-8">
                         <div
                             className="font-body text-base font-medium leading-8 text-gray-800 md:text-lg [&_a]:font-black [&_a]:text-blue-700 [&_a]:underline [&_a]:decoration-wavy [&_a]:decoration-2 [&_blockquote]:my-7 [&_blockquote]:rounded-2xl [&_blockquote]:border-2 [&_blockquote]:border-[var(--st-ink)] [&_blockquote]:bg-[var(--st-yellow-soft)] [&_blockquote]:px-5 [&_blockquote]:py-4 [&_blockquote]:font-semibold [&_blockquote]:italic [&_code]:rounded-lg [&_code]:bg-gray-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-sm [&_h2]:mb-4 [&_h2]:mt-10 [&_h2]:font-display [&_h2]:text-3xl [&_h2]:font-black [&_h2]:leading-tight [&_h2]:text-gray-950 md:[&_h2]:text-4xl [&_h3]:mb-3 [&_h3]:mt-8 [&_h3]:text-2xl [&_h3]:font-black [&_h3]:leading-tight [&_h3]:text-gray-950 [&_h4]:mb-2 [&_h4]:mt-6 [&_h4]:text-xl [&_h4]:font-black [&_img]:mx-auto [&_img]:my-8 [&_img]:rounded-2xl [&_img]:border-2 [&_img]:border-[var(--st-ink)] [&_img]:st-shadow-md [&_li]:mb-2 [&_mark]:bg-[var(--st-yellow)] [&_mark]:px-1 [&_ol]:my-5 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-5 [&_pre]:my-6 [&_pre]:overflow-x-auto [&_pre]:rounded-2xl [&_pre]:border-2 [&_pre]:border-[var(--st-ink)] [&_pre]:bg-slate-950 [&_pre]:p-5 [&_pre]:text-gray-100 [&_strong]:font-black [&_ul]:my-5 [&_ul]:list-disc [&_ul]:pl-6"
                             dangerouslySetInnerHTML={{ __html: articleHtml }}
