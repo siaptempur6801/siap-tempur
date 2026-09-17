@@ -501,7 +501,7 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
                             </div>
                         </div>
 
-                        <MascotBubble name="tama" size="sm" bubbleTone="blue" className="mt-8 hidden sm:flex" bubbleClassName="max-w-xl">
+                        <MascotBubble name="tama" size="sm" soft bubbleTone="blue" className="mt-8 hidden sm:flex" bubbleClassName="max-w-xl">
                             Jenjang ini belum dibuka, tapi kamu bisa coba ekosistem TKA-nya lewat jalur SMP dulu — alurnya sama.
                         </MascotBubble>
 

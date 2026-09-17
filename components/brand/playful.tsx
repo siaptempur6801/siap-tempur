@@ -191,9 +191,10 @@ export function MascotBubble({
                         className={cn('block', side === 'right' && '-scale-x-100')}
                     >
                         <path
-                            d="M15 2.2 C13.2 3.2 9.4 5.9 7.9 7.1 A 3.3 3.3 0 0 0 7.9 12.9 C9.4 14.1 13.2 16.8 15 17.8"
+                            d="M15 2 C14.2 2.6 9.6 5.8 7.9 7.1 A 3.3 3.3 0 0 0 7.9 12.9 C9.6 14.2 14.2 17.4 15 18"
                             fill="none"
                             stroke={soft ? 'rgb(226 232 240)' : 'var(--st-ink)'}
+                            strokeOpacity={soft ? 0.8 : 1}
                             strokeWidth={soft ? 1 : 2}
                             strokeLinecap="butt"
                             strokeLinejoin="round"
