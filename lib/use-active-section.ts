@@ -79,6 +79,28 @@ export function useActiveSection(items: readonly SectionNavItem[]) {
             const scrollable = document.documentElement.scrollHeight - viewportHeight
             const pageFitsOneScreen = scrollable < viewportHeight * 0.5
 
+            // Di dasar halaman (mis. bagian terakhir artikel panjang), garis baca tidak akan pernah
+            // terlewati. Tandai section terakhir yang masih terlihat supaya pembaca tahu posisinya.
+            const atBottom = scrollable > 0 && window.scrollY + viewportHeight >= document.documentElement.scrollHeight - 8
+            if (atBottom) {
+                let lastVisibleId = ''
+                let lastVisibleTop = Number.NEGATIVE_INFINITY
+                for (const id of observedIds) {
+                    const element = document.getElementById(id)
+                    if (!element) continue
+                    const rect = element.getBoundingClientRect()
+                    if (rect.bottom <= 0 || rect.top >= viewportHeight) continue
+                    if (rect.top > lastVisibleTop) {
+                        lastVisibleTop = rect.top
+                        lastVisibleId = id
+                    }
+                }
+                if (lastVisibleId) {
+                    setActiveSection(lastVisibleId)
+                    return
+                }
+            }
+
             // Utamakan section yang sudah melewati garis baca. Kalau belum ada (mis. pengguna masih
             // di hero), tandai section yang benar-benar menutupi layar — ini yang membuat halaman
             // pendek seperti daftar blog tetap punya penanda; kalau tidak ada, penanda dikosongkan.
