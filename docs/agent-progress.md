@@ -234,8 +234,8 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
   **Hygiene:** 17 user CI tertinggal (`ci-*`, sejak 2026-09-01) + seluruh user disposabel `dsh-*`
   sudah dihapus dari staging; sisa = 0.
 
-  Catatan: `content-review-staging-e2e.yml` tidak dapat dijalankan karena memakai runner self-hosted
-  macOS ARM64 (`192`) yang offline.
+  Catatan: `content-review-staging-e2e.yml` ditunda atas keputusan pengguna (runner self-hosted
+  macOS ARM64 `192` offline).
 
 ## Remaining
 
@@ -243,7 +243,11 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
       artikel (di luar alur ujian; P3, sengaja tidak diubah tanpa izin).
 - [ ] TKA SD/SMA: "segera hadir" (sesuai scope Production V1) — diputuskan ditunda; audit Round 8
       memastikan tidak ada dead-end.
-- [ ] WIP manusia yang belum di-commit: `PilihJalurContent` (surface CPNS/TKA) — **jangan diubah tanpa izin**.
+- [ ] `content-review-staging-e2e.yml` **ditunda atas keputusan pengguna** (runner self-hosted macOS
+      ARM64 `192` offline) — dikerjakan nanti, bukan blocker rilis staging.
+- Catatan (2026-09-17): WIP manusia (`PilihJalurContent` + testnya) **dibuang atas permintaan pengguna**
+      sehingga working tree bersih; salinan README `siaptempur-autonomous-agent/` disimpan di
+      `/tmp/siaptempur-autonomous-agent-README.md` (file itu untracked, jadi tidak bisa dipulihkan dari git).
 
 ## Bugs Found
 
@@ -311,7 +315,7 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 ```text
 Lint        : ✅ 0 error, 0 warning
 Typecheck   : ✅
-Unit        : ✅ 48 file / 236 test (vitest)
+Unit        : ✅ 47 file / 234 test (vitest)
 E2E publik  : ✅ 30/30 (chromium-public, termasuk 6 test console-health)
 E2E auth    : ✅ 40/40 (setup + 2 dashboard + 27 route-health + 10 mobile overflow) — opt-in
 Build       : ✅

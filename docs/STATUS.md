@@ -176,7 +176,7 @@ where n.nspname = 'app_private' and p.proname = 'get_content_question_detail';
 | Area | Kondisi |
 |---|---|
 | Lint | ✅ **0 error, 0 warning** |
-| Typecheck / Unit / Build | ✅ hijau (234 unit test, 48 file) |
+| Typecheck / Unit / Build | ✅ hijau (234 unit test, 47 file) |
 | E2E publik (`chromium-public`) | ✅ 30/30 lolos (termasuk cek console browser) |
 | E2E ber-auth (`chromium-authenticated`) | ✅ 40/40 lolos (login → onboarding → dashboard, 27 route CPNS/TKA, 10 cek overflow mobile) — opt-in, butuh kredensial staging |
 | E2E staging ber-kredensial lain (TKA, content review, admin, CPNS) | dijalankan lewat workflow khusus berbasis GitHub OIDC. **Hasil Round 8:** CPNS Staging E2E ✅, Admin Workspace Staging E2E ✅ (keduanya di deployment Vercel **Preview** ber-env staging), TKA SMP Staging E2E diperbaiki bertahap (detail di `docs/agent-progress.md`) |
