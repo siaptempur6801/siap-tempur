@@ -337,3 +337,26 @@ Direction:
 
 > **Aktifkan jalur belajar TKA SMP**  
 > Simpan perkembangan latihan dan hasil tryout kamu dalam satu tempat.
+
+---
+
+## 13. Maskot — Tama & Tara
+
+Maskot brand: **Tama** (laki-laki) dan **Tara** (perempuan). Keduanya siswa SiapTempur, bukan guru
+dan bukan juru bicara resmi.
+
+**Penamaan:** selalu tulis "Tama" dan "Tara" (kapital di awal). Jangan memberi gelar, jangan
+menjadikannya "kak" atau "coach" kecuali produk memang menambahkannya secara resmi.
+
+**Peran dalam copy:** menemani dan menyemangati, bukan menjanjikan hasil.
+
+| Konteks | Boleh | Hindari |
+|---|---|---|
+| Marketing | "Tama dan Tara siap menemanimu latihan." | klaim kelulusan/nilai |
+| Learning (sapaan, empty state, sukses) | "Tara bantu ingatkan: satu latihan dulu, yuk." | nada menggurui |
+| Error / gagal | tetap tenang & solutif; maskot tidak menyalahkan pengguna | bercanda pada kegagalan serius |
+| Exam mode | tidak dipakai sama sekali | menambah distraksi saat ujian |
+
+**Aturan teknis** (lihat `docs/PRODUCT_DESIGN_SYSTEM_V1_1.md` §6.1): komponen `Mascot`/`MascotPair`,
+maksimal 1–2 maskot per layar, dan default dekoratif (`alt=""`) kecuali maskot benar-benar
+menyampaikan informasi.

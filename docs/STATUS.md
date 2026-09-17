@@ -239,10 +239,11 @@ Konsistensi UI disatukan di atas brand sheet resmi (`#0D2B45` ink · `#1976D2` b
 | Area | Kondisi |
 |---|---|
 | Token warna | ✅ satu lapisan di `app/globals.css`: primitif brand + skala 50–950 (oklch, tangga lightness sama dengan Tailwind) + pemetaan palet Tailwind → brand di `@theme` (gray/slate→ink, blue/indigo/violet/purple/sky/cyan/teal/fuchsia→brand blue, amber/yellow/orange→brand amber, pink→peach, green=emerald, rose=red) |
+| Spacing | ✅ 6.232 pemakaian hanya memakai skala Tailwind/doc (gap-2/3, px-4, p-4/5/6, mt-1/4, py-3); hanya **4 nilai arbitrer** (2 di antaranya `env(safe-area-inset-bottom)` yang memang diperlukan) |
 | Shadow & radius | ✅ token terpusat: `.st-shadow-sm/md/lg` = 3/5/8px `var(--brand-ink)` (global, termasuk admin) dan skala `rounded-st-sm…2xl` (12/16/20/24/32px); **297 shadow arbitrer** (6 offset + hex warisan) dihapus |
 | Warna arbitrer | ✅ 0 sisa: 10 varian off-white (`#fdfbf7`, `#fbfaf7`, …) → `var(--brand-paper)`; `#fff9c4`/`#fffdeb` → `var(--brand-amber-100)`; `#08172f` → `var(--brand-ink-950)`; shadow indigo → tint brand blue |
 | Tone kategori | ✅ terpusat (doc §6.2): blue = diagnostik/aksi, amber = mini tryout/premium, peach = drill, ink = full tryout/event, emerald = selesai, red = gagal |
-| Tipografi | ✅ Poppins (400–800) untuk display + body; Patrick Hand hanya aksen (`--font-script`); 47 file `font-handwriting` → `font-display` |
+| Tipografi | ✅ **terverifikasi di browser**: 16 face Poppins loaded, `fonts.check('16px Poppins')` = true, computed body/h1 = `Poppins` (bug resolusi var `:root` ditemukan & diperbaiki — lihat design doc §3.1.1); Poppins (400–800) untuk display + body; Patrick Hand hanya aksen (`--font-script`); 47 file `font-handwriting` → `font-display` |
 | Maskot | ✅ `components/brand/Mascot.tsx` (`<Mascot>` + `<MascotPair>`) dengan aturan per mode; terpasang di landing, login, 404, dashboard CPNS, empty state riwayat, hasil TKA & CPNS; **exam mode bebas maskot** |
 | Dokumentasi | ✅ `docs/PRODUCT_DESIGN_SYSTEM_V1_1.md` §6.0–6.2 (token konkret, tipografi, aturan maskot, peta tone) |
 
