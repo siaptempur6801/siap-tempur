@@ -151,5 +151,6 @@ export const tkaNavItems = [
     { href: '#alur-tka', label: 'Cara kerja' },
     { href: '#kompetensi-tka', label: 'Yang dilatih' },
     { href: '#tanya-tka', label: 'Tanya jawab' },
-    { href: '/blog', label: 'Artikel' },
+    // Tautan lintas program: landing CPNS sudah punya tautan ke TKA, jadi di sini sebaliknya.
+    { href: '/cpns', label: 'CPNS' },
 ] as const

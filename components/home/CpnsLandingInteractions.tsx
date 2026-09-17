@@ -22,25 +22,16 @@ const baseSections = [
 type CpnsLandingInteractionsProps = {
     primaryAccountHref: string
     isLoggedIn: boolean
-    hasArticles: boolean
 }
 
 export default function CpnsLandingInteractions({
     primaryAccountHref,
     isLoggedIn,
-    hasArticles,
 }: CpnsLandingInteractionsProps) {
     const [activeSection, setActiveSection] = useState('')
     const [menuOpen, setMenuOpen] = useState(false)
     const [heroPassed, setHeroPassed] = useState(false)
     const [finalCtaVisible, setFinalCtaVisible] = useState(false)
-
-    const sections = useMemo(
-        () => hasArticles
-            ? [...baseSections.slice(0, -1), { id: 'artikel', label: 'Artikel CPNS' }, baseSections[baseSections.length - 1]]
-            : [...baseSections],
-        [hasArticles],
-    )
 
     const desktopNav = useMemo(() => [
         { id: 'peta-skd', label: 'Peta SKD', matches: ['peta-skd'] },
@@ -48,8 +39,10 @@ export default function CpnsLandingInteractions({
         { id: 'mulai-dari-mana', label: 'Mulai', matches: ['mulai-dari-mana'] },
         { id: 'latihan', label: 'Latihan', matches: ['latihan', 'event'] },
         { id: 'paket', label: 'Paket', matches: ['paket'] },
-        { id: 'faq', label: 'FAQ', matches: hasArticles ? ['artikel', 'faq'] : ['faq'] },
-    ], [hasArticles])
+        { id: 'faq', label: 'FAQ', matches: ['faq'] },
+    ], [])
+
+    const sections = baseSections
 
     const activeNavId = desktopNav.find((item) => item.matches.includes(activeSection))?.id ?? ''
 

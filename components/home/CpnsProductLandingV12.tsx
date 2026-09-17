@@ -265,7 +265,6 @@ export default function CpnsProductLandingV12({
             <CpnsLandingInteractions
                 primaryAccountHref={primaryAccountHref}
                 isLoggedIn={Boolean(user)}
-                hasArticles={latestArticles.length > 0}
             />
 
             <section id="hero-cpns" className="relative px-4 pb-12 pt-8 md:px-8 md:pb-20 md:pt-14 lg:pb-24">
