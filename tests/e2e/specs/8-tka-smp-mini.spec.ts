@@ -56,8 +56,8 @@ async function assertHistoryOpensResult(page: Page, examTitle: string) {
     await entry.click()
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i)
     await expect(page.getByRole('heading', { name: 'Sesi selesai. Sekarang lihat apa yang perlu diperbaiki.', exact: true })).toBeVisible()
-    await page.getByRole('link', { name: 'Kembali ke TKA SMP', exact: true }).click()
-    await page.waitForURL(/\/tka\/smp(?:\?.*)?$/)
+    await page.getByRole('link', { name: 'Kembali ke Tryout', exact: true }).click()
+    await page.waitForURL(/\/tka\/smp\/tryout(?:\?.*)?$/)
 }
 
 async function assertMiniProjection(session: DisposableTkaSession) {

@@ -15,6 +15,7 @@ import {
     readOwnTkaReadiness,
 } from '../tka-readiness.ci'
 import { confirmTkaSectionIfPresent } from '../pages/TkaExamActions'
+import { grantM4Pass } from '../tka.m4'
 
 function expectedWeakestNodeIds(projection: TkaLearningProjection) {
     return [...projection.knowledge]
@@ -127,6 +128,9 @@ async function resolveSingleChoiceRemedialAtPosition(
 test('TKA SMP full tryout creates automatic remedial and closes the learning loop', async ({ page }) => {
     test.setTimeout(240_000)
     const session = await freshDisposableTkaSession(page)
+    // Full Tryout ber-`access_type = PREMIUM`, jadi wajib punya Tempur Pass aktif
+    // sebelum tombol "Mulai Tryout" bisa dipakai (label lain: "Butuh Tempur Pass").
+    await grantM4Pass(session, 'active')
     await page.goto('/tka/smp')
 
     await expect(page.getByTestId('tka-next-step')).toBeVisible()
