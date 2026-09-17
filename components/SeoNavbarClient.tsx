@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -71,10 +72,13 @@ export default function SeoNavbarClient({
     const primaryLabel = isAuthenticated ? "Lanjut belajar" : "Mulai belajar gratis";
 
     // Penanda section aktif hanya berlaku untuk tautan anchor (`#...`) di halaman ini.
-    const sectionItems: SectionNavItem[] = items
-        .map((item) => ({ item, id: sectionIdFromHref(item.href) }))
-        .filter((entry): entry is { item: { href: string; label: string }; id: string } => entry.id !== null)
-        .map((entry) => ({ id: entry.id, label: entry.item.label }));
+    const sectionItems: SectionNavItem[] = useMemo(
+        () => items
+            .map((item) => ({ item, id: sectionIdFromHref(item.href) }))
+            .filter((entry): entry is { item: { href: string; label: string }; id: string } => entry.id !== null)
+            .map((entry) => ({ id: entry.id, label: entry.item.label })),
+        [items],
+    );
     const { activeId } = useActiveSection(sectionItems);
 
     return (

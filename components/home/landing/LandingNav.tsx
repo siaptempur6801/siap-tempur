@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { useActiveSection, type SectionNavItem } from '@/lib/use-active-section'
 import { cn } from '@/lib/utils'
@@ -17,9 +18,12 @@ export default function LandingNav({
     items: readonly { href: string; label: string }[]
     variant?: 'desktop' | 'mobile'
 }) {
-    const sections: SectionNavItem[] = items
-        .filter((item) => item.href.startsWith('#'))
-        .map((item) => ({ id: item.href.slice(1), label: item.label }))
+    const sections: SectionNavItem[] = useMemo(
+        () => items
+            .filter((item) => item.href.startsWith('#'))
+            .map((item) => ({ id: item.href.slice(1), label: item.label })),
+        [items],
+    )
 
     const { activeId } = useActiveSection(sections)
 

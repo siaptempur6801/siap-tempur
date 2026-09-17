@@ -52,9 +52,17 @@ export default async function BlogIndexPage() {
     const featured = rows[0]
     const rest = rows.slice(1)
 
+    // Navigasi halaman blog: anchor section yang benar-benar ada + tautan lintas halaman.
+    const navItems = [
+        ...(featured ? [{ href: '#artikel-pilihan', label: 'Pilihan editor' }] : []),
+        ...(rest.length > 0 ? [{ href: '#artikel-terbaru', label: 'Artikel terbaru' }] : []),
+        { href: '/tka', label: 'Program TKA' },
+        { href: '/cpns', label: 'Program CPNS' },
+    ] as const
+
     return (
         <div className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body">
-            <SeoNavbar />
+            <SeoNavbar navItems={navItems} />
             <main className="px-4 pb-20 pt-28 md:px-8 md:pb-28">
                 <div className="mx-auto max-w-7xl">
                     <section className="relative grid gap-8 border-b-2 border-dashed border-[var(--st-ink)] pb-12 lg:grid-cols-[1fr_0.72fr] lg:items-end">
@@ -81,7 +89,7 @@ export default async function BlogIndexPage() {
                     </section>
 
                     {featured ? (
-                        <section className="py-10">
+                        <section id="artikel-pilihan" className="scroll-mt-28 py-10">
                             <article className="st-card-lg group grid min-h-[24rem] overflow-hidden bg-white lg:grid-cols-[0.86fr_1.14fr]">
                                 <ArticleCover article={featured} featured />
                                 <div className="flex flex-col justify-between p-6 md:p-8 lg:p-10">
@@ -113,7 +121,7 @@ export default async function BlogIndexPage() {
                     ) : null}
 
                     {rest.length ? (
-                        <section className="grid gap-5 border-t border-gray-200 pt-8 md:grid-cols-2 xl:grid-cols-3">
+                        <section id="artikel-terbaru" className="scroll-mt-28 grid gap-5 border-t border-gray-200 pt-8 md:grid-cols-2 xl:grid-cols-3">
                             {rest.map((article) => (
                                 <ArticlePreviewCard key={article.slug} article={article} />
                             ))}

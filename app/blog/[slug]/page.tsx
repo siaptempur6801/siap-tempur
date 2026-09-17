@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Clock, Newspaper } from 'lucide-react'
 import SeoNavbar from '@/components/SeoNavbar'
+import ReadingProgress from '@/components/blog/ReadingProgress'
 import { createClient } from '@/lib/utils/supabase/server'
 import { estimateReadTime, formatArticleDate } from '@/lib/articles'
 import { escapeHtml, sanitizeArticleHtml } from '@/lib/article-sanitize'
@@ -98,6 +99,7 @@ export default async function BlogDetailPage({
     return (
         <div className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body">
             <SeoNavbar />
+            <ReadingProgress />
             <main className="px-4 pb-20 pt-28 md:px-8 md:pb-28">
                 <article className="mx-auto max-w-4xl">
                     <Link href="/blog" className="st-focus inline-flex min-h-11 items-center gap-2 rounded-xl px-1 font-black text-gray-600 transition-colors hover:text-blue-700">
