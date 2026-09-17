@@ -1,6 +1,7 @@
 import { test as teardown } from '@playwright/test'
 import { readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
+import { ciHelperUrl } from './ci-helper'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
 const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
@@ -31,7 +32,7 @@ async function callHelper(
     body: Record<string, unknown>,
     options: { allowMissingUser?: boolean } = {},
 ) {
-    const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
+    const response = await fetch(ciHelperUrl(supabaseUrl, functionName), {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${oidcToken}`,

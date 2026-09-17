@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { ciHelperUrl } from './ci-helper'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
 const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
@@ -93,7 +94,7 @@ async function githubOidcToken() {
 
 async function callCiUserHelper(supabaseUrl: string, body: Record<string, unknown>) {
     const oidcToken = await githubOidcToken()
-    const response = await fetch(`${supabaseUrl}/functions/v1/ci-e2e-user`, {
+    const response = await fetch(ciHelperUrl(supabaseUrl, 'ci-e2e-user'), {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${oidcToken}`,

@@ -1,6 +1,7 @@
 import { test as teardown } from '@playwright/test'
 import { readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
+import { ciHelperUrl } from './ci-helper'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
 const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
@@ -41,7 +42,7 @@ teardown('remove disposable CPNS SKD staging user', async () => {
   if (userId) {
     const oidcToken = await githubOidcToken()
     if (!oidcToken) throw new Error('GitHub OIDC token tidak tersedia untuk cleanup CPNS staging user.')
-    const response = await fetch(`${supabaseUrl}/functions/v1/ci-e2e-cpns`, {
+    const response = await fetch(ciHelperUrl(supabaseUrl, 'ci-e2e-cpns'), {
       method: 'POST',
       headers: { Authorization: `Bearer ${oidcToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'cleanup', userId }),

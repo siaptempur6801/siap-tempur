@@ -2,6 +2,7 @@ import { test as setup } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { ciHelperUrl } from './ci-helper'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
 const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
@@ -46,7 +47,7 @@ async function githubOidcToken() {
 
 async function callAdminHelper(supabaseUrl: string, body: Record<string, unknown>) {
     const oidcToken = await githubOidcToken()
-    const response = await fetch(`${supabaseUrl}/functions/v1/ci-e2e-admin`, {
+    const response = await fetch(ciHelperUrl(supabaseUrl, 'ci-e2e-admin'), {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${oidcToken}`,

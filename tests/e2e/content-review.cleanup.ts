@@ -1,6 +1,7 @@
 import { test as teardown } from '@playwright/test'
 import { readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
+import { ciHelperUrl } from './ci-helper'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
 const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
@@ -22,7 +23,7 @@ async function githubOidcToken() {
 }
 
 async function cleanupUser(supabaseUrl: string, oidcToken: string, userId: string) {
-    const response = await fetch(`${supabaseUrl}/functions/v1/ci-e2e-user`, {
+    const response = await fetch(ciHelperUrl(supabaseUrl, 'ci-e2e-user'), {
         method: 'POST',
         headers: { Authorization: `Bearer ${oidcToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'cleanup', userId }),

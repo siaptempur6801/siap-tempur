@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'node:crypto'
 import type { DisposableTkaSession } from './tka.ci'
+import { ciHelperUrl } from './ci-helper'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
 const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
@@ -50,7 +51,7 @@ async function githubOidcToken() {
 }
 
 async function callHelper<T>(functionName: 'ci-e2e-m4' | 'ci-e2e-user', body: Record<string, unknown>): Promise<T> {
-    const response = await fetch(`${stagingUrl()}/functions/v1/${functionName}`, {
+    const response = await fetch(ciHelperUrl(stagingUrl(), functionName), {
         method: 'POST',
         headers: {
             Authorization: `Bearer ${await githubOidcToken()}`,

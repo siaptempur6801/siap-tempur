@@ -1,6 +1,7 @@
 import { test as teardown } from '@playwright/test'
 import { readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
+import { ciHelperUrl } from './ci-helper'
 
 const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
 const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
@@ -46,7 +47,7 @@ teardown('remove disposable ADMIN staging user', async () => {
         const oidcToken = await githubOidcToken()
         if (!oidcToken) throw new Error('GitHub OIDC token tidak tersedia untuk cleanup Admin staging user.')
 
-        const response = await fetch(`${supabaseUrl}/functions/v1/ci-e2e-admin`, {
+        const response = await fetch(ciHelperUrl(supabaseUrl, 'ci-e2e-admin'), {
             method: 'POST',
             headers: {
                 Authorization: `Bearer ${oidcToken}`,
