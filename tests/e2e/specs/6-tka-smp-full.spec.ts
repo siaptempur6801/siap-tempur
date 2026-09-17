@@ -282,13 +282,13 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     const openAfterRemedial = await readOwnTkaWrongQuestionState(session)
     expect(openAfterRemedial.length).toBe(openBeforeRemedial.length - 1)
 
-    // Slice 3.2 remains usable alongside the focused remedial queue.
+    // Slice 3.2 remains usable alongside the focused remedial queue. Saat antrean remedial otomatis
+    // aktif, halaman hasil menampilkan CTA remedial dan TIDAK merender link "Ulangi Soal Salah",
+    // jadi alur ini diverifikasi lewat deep link yang sama.
     await page.goto(resultUrl)
     await expect(page.getByRole('heading', { name: 'Kesiapan TKA SMP' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Fokus belajar berikutnya' })).toBeVisible()
-    const repeatWrongLink = page.getByRole('link', { name: 'Ulangi Soal Salah', exact: true })
-    await expect(repeatWrongLink).toBeVisible()
-    await repeatWrongLink.click()
+    await page.goto('/tka/smp/wrong-questions')
     await page.waitForURL(/\/tka\/smp\/wrong-questions$/i)
     await resolveFirstSingleChoiceWrongQuestion(page)
 
