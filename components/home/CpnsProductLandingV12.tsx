@@ -307,7 +307,7 @@ export default function CpnsProductLandingV12({
 
                         <div className="mt-8 hidden items-end gap-4 sm:flex">
                             <MascotBubble name="tama" size="sm" bubbleTone="blue" priority className="flex-1">
-                                Hai! Aku <b>Tama</b>. Kita cek dulu bagian mana yang paling perlu dikejar, ya — biar latihannya nggak acak.
+                                Hai! Aku <b>Tama</b> — ini <b>Tara</b>. Kita cek dulu bagian mana yang paling perlu dikejar, ya, biar latihannya nggak acak.
                             </MascotBubble>
                             <Mascot name="tara" size="sm" tone="plain" priority className="hidden shrink-0 md:inline-flex animate-bob" />
                         </div>

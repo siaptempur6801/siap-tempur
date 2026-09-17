@@ -79,7 +79,7 @@ export function TkaHero({ primaryHref, primaryLabel }: TkaCtaProps) {
 
                     <div className="mt-9 hidden items-end gap-4 sm:flex">
                         <MascotBubble name="tama" size="sm" bubbleTone="blue" priority className="flex-1">
-                            Hai! Aku <b>Tama</b>. Kita latih bagian yang paling perlu dulu, ya — pelan-pelan tapi konsisten.
+                            Hai! Aku <b>Tama</b> — ini <b>Tara</b>. Kita latih bagian yang paling perlu dulu, ya: pelan-pelan tapi konsisten.
                         </MascotBubble>
                         <Mascot name="tara" size="sm" tone="plain" priority className="hidden shrink-0 md:inline-flex animate-bob" />
                     </div>
