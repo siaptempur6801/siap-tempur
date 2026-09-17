@@ -77,6 +77,9 @@ export default async function PracticeResultPage({
                         <p className="st-muted mt-4 max-w-2xl font-semibold leading-relaxed">
                             Lihat skor, rincian tiap bagian, lalu buka pembahasan. Tujuannya bukan berhenti di angka, tetapi memahami apa yang perlu kamu lanjutkan setelah sesi ini.
                         </p>
+                        <p className="mt-4 text-sm font-bold text-slate-700">
+                            Santai — hasil ini titik awal, bukan garis akhir. Satu perbaikan kecil hari ini sudah berarti.
+                        </p>
                         <Mascot name="tama" size="xs" tone="soft" className="mt-6 hidden sm:inline-flex" />
                     </div>
                     <div className="border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] p-5 text-center st-shadow-md">

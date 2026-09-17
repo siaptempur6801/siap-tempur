@@ -215,6 +215,10 @@ export default async function TkaResultPage({
                                 </div>
                             </div>
 
+                            <p className="text-sm font-bold text-white/85">
+                                Santai — hasil ini titik awal, bukan garis akhir. Pilih satu langkah perbaikan dulu, sisanya nanti mengikuti.
+                            </p>
+
                             {/* Score Card Tile */}
                             <div className="flex flex-col items-center justify-center rounded-2xl border border-white/20 bg-white/15 p-6 text-center backdrop-blur-md shadow-inner md:p-8">
                                 <Mascot name="tama" size="xs" tone="plain" className="mb-3" />
