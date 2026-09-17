@@ -176,9 +176,9 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     await page.getByRole('button', { name: 'Kirim tryout', exact: true }).click()
     await confirmTkaSectionIfPresent(page)
 
-    await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result$/i, { timeout: 20_000 })
+    await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result(?:\?.*)?$/i, { timeout: 20_000 })
     const resultUrl = page.url()
-    const attemptMatch = resultUrl.match(/\/tryout\/([0-9a-f-]+)\/result$/i)
+    const attemptMatch = resultUrl.match(/\/tryout\/([0-9a-f-]+)\/result(?:\?.*)?$/i)
     expect(attemptMatch).not.toBeNull()
     const attemptId = attemptMatch?.[1] ?? ''
 
