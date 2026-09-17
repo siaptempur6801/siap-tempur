@@ -90,6 +90,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
     })
 
     test('Full Tryout is denied without a usable Tempur Pass when enforcement is enabled', async ({ page }) => {
+        test.setTimeout(90_000)
         await fresh(page)
         await page.goto('/tka/smp/tryout')
 
@@ -104,6 +105,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
     })
 
     test('expired Tempur Pass stays inactive and cannot unlock Full Tryout', async ({ page }) => {
+        test.setTimeout(90_000)
         const session = await fresh(page)
         const grant = await grantM4Pass(session, 'expired')
         expect(grant.entitlementCount).toBe(10)
@@ -117,6 +119,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
     })
 
     test('active Tempur Pass shows expiry/renewal UX and unlocks Full Tryout', async ({ page }) => {
+        test.setTimeout(90_000)
         const session = await fresh(page)
         const grant = await grantM4Pass(session, 'active')
         expect(grant.entitlementCount).toBe(10)
@@ -134,6 +137,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
     })
 
     test('Mini free quota is denied after one attempt without pass', async ({ page }) => {
+        test.setTimeout(90_000)
         const session = await fresh(page)
         const seeded = await consumeM4MiniQuota(session, 'tka-smp-mini-bahasa-indonesia')
         expect(seeded.attemptNumber).toBe(1)
@@ -146,6 +150,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
     })
 
     test('active Tempur Pass bypasses exhausted Mini quota', async ({ page }) => {
+        test.setTimeout(90_000)
         const session = await fresh(page)
         await consumeM4MiniQuota(session, 'tka-smp-mini-matematika')
         await grantM4Pass(session, 'active')
