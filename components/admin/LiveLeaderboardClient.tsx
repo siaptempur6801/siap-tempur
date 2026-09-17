@@ -160,7 +160,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
         return (
             <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
                 <div className="flex flex-col items-center gap-4 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-300 shadow-[3px_3px_0_0_#0f172a]">
+                    <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-300 st-shadow-sm">
                         <RefreshCw className="animate-spin text-slate-900" size={24} />
                     </div>
                     <h2 className="font-display text-2xl font-black text-slate-950">Memuat leaderboard...</h2>
@@ -172,7 +172,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
     if (errorMessage && entries.length === 0) {
         return (
             <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
-                <div className="max-w-lg border-2 border-slate-900 bg-white p-6 text-center shadow-[4px_4px_0_0_#0f172a]">
+                <div className="max-w-lg border-2 border-slate-900 bg-white p-6 text-center st-shadow-md">
                     <Trophy className="mx-auto mb-4 text-blue-600" size={36} />
                     <h2 className="font-display text-2xl font-black sm:text-3xl">Leaderboard tidak tersedia</h2>
                     <p className="mt-2 text-sm font-semibold text-slate-600">{errorMessage}</p>
@@ -185,7 +185,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
         <div data-experience-mode="event-leaderboard" data-program="cpns" className="st-product flex h-screen flex-col overflow-hidden bg-[#fbfaf7] font-body text-slate-950">
             <header className="relative z-10 flex flex-col gap-3 border-b-2 border-slate-900 bg-[#fbfaf7]/95 px-4 py-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
                 <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-slate-900 bg-yellow-300 shadow-[2px_2px_0_0_#0f172a]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-slate-900 bg-yellow-300 st-shadow-sm">
                         <Trophy className="text-slate-900" size={20} />
                     </div>
                     <div className="min-w-0">
@@ -201,7 +201,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 </div>
                 
                 <div className="flex items-center">
-                    <div className="flex w-full items-center justify-between gap-3 border-2 border-slate-900 bg-white px-3 py-2 shadow-[2px_2px_0_0_#0f172a] sm:w-auto">
+                    <div className="flex w-full items-center justify-between gap-3 border-2 border-slate-900 bg-white px-3 py-2 st-shadow-sm sm:w-auto">
                         <div className="flex items-center gap-1.5 text-slate-500">
                             <Clock size={14} />
                             <span className="text-[10px] font-black uppercase tracking-[0.1em]">Update</span>
@@ -230,14 +230,14 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                         {entries.length > 0 ? leaderboardSections.map((section) => (
                             <section key={section.key} className="flex flex-col gap-3">
                                 <div className={cn(
-                                    'flex flex-col gap-2 border-2 border-slate-900 px-4 py-3 shadow-[3px_3px_0_0_#0f172a] sm:flex-row sm:items-center sm:justify-between',
+                                    'flex flex-col gap-2 border-2 border-slate-900 px-4 py-3 st-shadow-sm sm:flex-row sm:items-center sm:justify-between',
                                     section.key === 'passed' ? 'bg-emerald-100' : 'bg-yellow-100'
                                 )}>
                                     <div>
                                         <h2 className="font-display text-xl font-black text-slate-950 sm:text-2xl">{section.title}</h2>
                                         <p className="mt-0.5 text-xs font-semibold text-slate-600">{section.description}</p>
                                     </div>
-                                    <div className="inline-flex w-fit items-center gap-1.5 border-2 border-slate-900 bg-white px-2.5 py-1.5 text-xs font-black text-slate-900 shadow-[2px_2px_0_0_#0f172a]">
+                                    <div className="inline-flex w-fit items-center gap-1.5 border-2 border-slate-900 bg-white px-2.5 py-1.5 text-xs font-black text-slate-900 st-shadow-sm">
                                         <Users size={14} strokeWidth={3} />
                                         {section.entries.length} Peserta
                                     </div>
@@ -281,7 +281,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                                 ? 'border-emerald-500 shadow-[3px_3px_0_0_#10b981]'
                                                 : isRankDown
                                                     ? 'border-red-500 shadow-[3px_3px_0_0_#ef4444]'
-                                                    : 'border-slate-900 shadow-[2px_2px_0_0_#0f172a] hover:shadow-[3px_3px_0_0_#0f172a]'
+                                                    : 'border-slate-900 st-shadow-sm hover:st-shadow-sm'
                                         )}
                                     >
                                         <AnimatePresence>
@@ -314,7 +314,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                                     <motion.div
                                                         key={`badge-${entry.entry_id}-${entry.live_rank}`}
                                                         className={cn(
-                                                            'pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 border-2 border-slate-900 px-2 py-1 text-[10px] font-black uppercase tracking-wide shadow-[2px_2px_0_0_#0f172a] sm:right-4 sm:top-4',
+                                                            'pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 border-2 border-slate-900 px-2 py-1 text-[10px] font-black uppercase tracking-wide st-shadow-sm sm:right-4 sm:top-4',
                                                             isRankUp
                                                                 ? 'bg-green-400 text-gray-950'
                                                                 : 'bg-red-500 text-white'
@@ -334,7 +334,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                                         {/* Rank Column */}
                                         <div className="relative z-10 flex flex-col items-center justify-center gap-1 border-r-2 border-slate-200 pr-3 sm:pr-4">
                                             <div className={cn(
-                                                "flex h-9 w-9 items-center justify-center border-2 border-slate-900 text-sm font-black shadow-[2px_2px_0_0_#0f172a] sm:h-10 sm:w-10 sm:text-base",
+                                                "flex h-9 w-9 items-center justify-center border-2 border-slate-900 text-sm font-black st-shadow-sm sm:h-10 sm:w-10 sm:text-base",
                                                 entry.live_rank === 1 ? 'bg-yellow-300 text-slate-900' :
                                                 entry.live_rank === 2 ? 'bg-slate-200 text-slate-900' :
                                                 entry.live_rank === 3 ? 'bg-orange-300 text-slate-900' :
@@ -363,7 +363,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
 
                                         {/* User Info Column */}
                                         <div className="relative z-10 flex min-w-0 items-center gap-3 sm:gap-4">
-                                            <div className="relative h-11 w-11 shrink-0 overflow-hidden border-2 border-slate-900 bg-slate-100 shadow-[2px_2px_0_0_#0f172a] sm:h-12 sm:w-12">
+                                            <div className="relative h-11 w-11 shrink-0 overflow-hidden border-2 border-slate-900 bg-slate-100 st-shadow-sm sm:h-12 sm:w-12">
                                                 {entry.avatar_url ? (
                                                     <Image 
                                                         src={entry.avatar_url} 
@@ -451,7 +451,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
             </main>
 
             <div className="fixed bottom-3 right-3 z-30 flex w-44 flex-col gap-1.5 sm:bottom-4 sm:right-4">
-                <div className="overflow-hidden border-2 border-slate-900 bg-white shadow-[2px_2px_0_0_#0f172a]">
+                <div className="overflow-hidden border-2 border-slate-900 bg-white st-shadow-sm">
                     <div className="border-b-2 border-slate-900 bg-slate-50 px-2 py-0.5 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">
                         Speed
                     </div>
@@ -487,7 +487,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     aria-pressed={isAutoScrollEnabled}
                     onClick={() => setIsAutoScrollEnabled((current) => !current)}
                     className={cn(
-                        'flex h-10 w-full items-center justify-center gap-1.5 border-2 border-slate-900 px-2 text-[10px] font-black uppercase tracking-wide shadow-[2px_2px_0_0_#0f172a] transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none active:shadow-none',
+                        'flex h-10 w-full items-center justify-center gap-1.5 border-2 border-slate-900 px-2 text-[10px] font-black uppercase tracking-wide st-shadow-sm transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none active:shadow-none',
                         isAutoScrollEnabled
                             ? 'bg-blue-500 text-white'
                             : 'bg-white text-slate-900'
@@ -504,10 +504,10 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 }
                 .custom-scrollbar::-webkit-scrollbar-track {
                     background: #fbfaf7;
-                    border-left: 2px solid #0f172a;
+                    border-left: 2px solid var(--brand-ink);
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #0f172a;
+                    background: var(--brand-ink);
                     border: 2px solid #fbfaf7;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {

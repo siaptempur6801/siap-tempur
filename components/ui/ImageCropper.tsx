@@ -88,7 +88,7 @@ export default function ImageCropper({ imageSrc, onCancel, onCropComplete }: Ima
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-4">
-            <div role="dialog" aria-modal="true" aria-labelledby="avatar-crop-title" className="relative flex h-[min(600px,calc(100dvh-2rem))] w-full max-w-xl flex-col overflow-hidden rounded-xl border-4 border-gray-900 bg-white shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
+            <div role="dialog" aria-modal="true" aria-labelledby="avatar-crop-title" className="relative flex h-[min(600px,calc(100dvh-2rem))] w-full max-w-xl flex-col overflow-hidden rounded-xl border-4 border-gray-900 bg-white st-shadow-lg">
 
                 {/* Header */}
                 <div className="p-4 bg-yellow-300 border-b-4 border-gray-900 flex justify-between items-center">
@@ -133,14 +133,14 @@ export default function ImageCropper({ imageSrc, onCancel, onCropComplete }: Ima
                         <button
                             onClick={handleSave}
                             disabled={isProcessing}
-                            className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-blue-500 text-white font-black border-4 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
+                            className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-blue-500 text-white font-black border-4 border-gray-900 st-shadow-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
                         >
                             {isProcessing ? 'PROSES...' : 'SIMPAN FOTO'}
                         </button>
                         <button
                             onClick={onCancel}
                             disabled={isProcessing}
-                            className="px-6 py-4 bg-white text-gray-900 font-black border-4 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
+                            className="px-6 py-4 bg-white text-gray-900 font-black border-4 border-gray-900 st-shadow-md active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
                         >
                             BATAL
                         </button>

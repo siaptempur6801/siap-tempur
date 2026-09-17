@@ -307,7 +307,7 @@ export default function ExcelImportDialog() {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 rounded-md border-2 border-gray-900 bg-white px-5 py-3 font-bold text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 active:translate-y-0"
+                className="flex items-center gap-2 rounded-md border-2 border-gray-900 bg-white px-5 py-3 font-bold text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 active:translate-y-0"
             >
                 <FileSpreadsheet size={20} />
                 Import CSV

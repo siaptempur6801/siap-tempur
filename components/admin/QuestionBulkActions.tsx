@@ -124,7 +124,7 @@ export default function QuestionBulkActions({
 
             {showConfirm && (
                 <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-                    <div className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="w-full max-w-md border-2 border-gray-900 bg-white p-6 st-shadow-lg">
                         <div className="mb-4 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-gray-100">
                             <Trash2 className="h-7 w-7 text-gray-900" />
                         </div>

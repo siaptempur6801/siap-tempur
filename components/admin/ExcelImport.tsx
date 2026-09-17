@@ -238,7 +238,7 @@ export default function ExcelImport() {
 
             {isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 space-y-5 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <div className="bg-white rounded-2xl border-2 border-gray-900 st-shadow-lg p-6 space-y-5 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                         {/* Header */}
                         <div className="flex items-center justify-between">
                             <h2 className="font-display text-2xl font-bold text-gray-900">

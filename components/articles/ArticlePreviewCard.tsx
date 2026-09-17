@@ -28,7 +28,7 @@ export default function ArticlePreviewCard({
         )}>
             <Link
                 href={`/blog/${article.slug}`}
-                className="absolute inset-0 z-10 rounded-[1.25rem] focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="absolute inset-0 z-10 rounded-st-lg focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
                 aria-label={`Baca artikel ${article.title}`}
             />
 

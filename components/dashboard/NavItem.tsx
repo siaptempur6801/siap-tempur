@@ -37,7 +37,7 @@ export function NavItem({ href, icon, label, badge, exact = false, variant = 'br
                         : 'rounded-xl border border-transparent text-slate-600 hover:bg-slate-100/70 hover:text-slate-950'
                 ) : (
                     isActive
-                        ? 'border-2 border-slate-900 bg-blue-600 text-white shadow-[2px_2px_0_0_#111827]'
+                        ? 'border-2 border-slate-900 bg-blue-600 text-white st-shadow-sm'
                         : 'border-2 border-transparent text-slate-700 hover:border-slate-900 hover:bg-white hover:text-slate-950'
                 )
             )}
@@ -105,7 +105,7 @@ export function MobileNavItem({ href, icon, label, exact = false, variant = 'bra
                         : 'rounded-xl bg-transparent text-slate-500'
                 ) : (
                     isActive
-                        ? 'border-2 border-slate-900 bg-yellow-100 text-blue-700 shadow-[2px_2px_0_0_#111827]'
+                        ? 'border-2 border-slate-900 bg-yellow-100 text-blue-700 st-shadow-sm'
                         : 'border-2 border-transparent text-slate-500'
                 )
             )}>

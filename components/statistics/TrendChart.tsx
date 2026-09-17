@@ -63,7 +63,7 @@ export default function TrendChart({
                         <button
                             onClick={() => setViewMode('long')}
                             className={`px-3 py-1 text-sm font-bold transition-all ${viewMode === 'long'
-                                ? 'bg-blue-300 text-gray-900 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                ? 'bg-blue-300 text-gray-900 border-2 border-gray-900 st-shadow-sm'
                                 : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
@@ -72,7 +72,7 @@ export default function TrendChart({
                         <button
                             onClick={() => setViewMode('short')}
                             className={`px-3 py-1 text-sm font-bold transition-all ${viewMode === 'short'
-                                ? 'bg-blue-300 text-gray-900 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'
+                                ? 'bg-blue-300 text-gray-900 border-2 border-gray-900 st-shadow-sm'
                                 : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
@@ -128,7 +128,7 @@ export default function TrendChart({
                                 backgroundColor: '#fff',
                                 borderRadius: '0',
                                 border: '2px solid #1f2937',
-                                boxShadow: '3px 3px 0px 0px rgba(0,0,0,1)'
+                                boxShadow: '3px 3px 0px 0px rgb(13 43 69)'
                             }}
                             labelStyle={{ color: '#374151', marginBottom: '4px', fontWeight: 'bold' }}
                             itemStyle={{ color: '#1f2937', fontWeight: 'bold' }}

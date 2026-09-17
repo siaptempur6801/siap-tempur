@@ -102,7 +102,7 @@ export default async function TkaDiagnosticPage({
                                             <p className="mb-3 text-sm font-semibold leading-relaxed text-slate-600">Tesmu belum selesai. Lanjutkan dari bagian dan jawaban terakhir yang tersimpan.</p>
                                             <Link
                                                 href={`${base}/diagnostic/${inProgress.id}`}
-                                                className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.98] sm:w-auto"
+                                                className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.98] sm:w-auto"
                                             >
                                                 <BrainCircuit size={17} />
                                                 <span>Lanjutkan Tes Diagnostik</span>
@@ -112,7 +112,7 @@ export default async function TkaDiagnosticPage({
                                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                                             <Link
                                                 href={`${base}/diagnostic/${completed.id}/result`}
-                                                className="st-focus inline-flex min-h-11 items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.98]"
+                                                className="st-focus inline-flex min-h-11 items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all hover:bg-indigo-700 hover:shadow-md active:scale-[0.98]"
                                             >
                                                 <BarChart3 size={17} />
                                                 <span>Lihat Hasil & Rekomendasi Diagnostik</span>

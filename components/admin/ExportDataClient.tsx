@@ -121,7 +121,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
                                 className={`border-2 p-5 text-left transition-all ${
                                     isActive
                                         ? 'translate-x-1 -translate-y-1 border-gray-900 bg-gray-900 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.25)]'
-                                        : 'border-gray-900 bg-white text-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
+                                        : 'border-gray-900 bg-white text-gray-900 st-shadow-md hover:-translate-y-0.5'
                                 }`}
                             >
                                 <FileSpreadsheet className="mb-4 h-7 w-7" />
@@ -134,7 +134,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
                     })}
                 </div>
 
-                <div className="border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                <div className="border-2 border-gray-900 bg-white p-6 st-shadow-md">
                     <h2 className="font-display text-3xl font-black text-gray-900">Filter Export</h2>
                     <p className="mt-1 text-sm font-medium text-gray-600">
                         Pilih filter data sebelum mengunduh file CSV.
@@ -233,7 +233,7 @@ export default function ExportDataClient({ events }: ExportDataClientProps) {
                 </div>
             </div>
 
-            <aside className="h-fit border-2 border-gray-900 bg-gray-100 p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+            <aside className="h-fit border-2 border-gray-900 bg-gray-100 p-6 st-shadow-md">
                 <h2 className="font-display text-3xl font-black text-gray-900">Ringkasan</h2>
                 <div className="mt-5 space-y-4 text-sm">
                     <div className="border-b-2 border-gray-900 pb-3">

@@ -77,11 +77,11 @@ export function VoucherCreateModal({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-            <div className="relative w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <div className="relative w-full max-w-md border-2 border-gray-900 bg-white p-6 st-shadow-lg">
                 <button
                     type="button"
                     onClick={onClose}
-                    className="absolute right-4 top-4 border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5"
+                    className="absolute right-4 top-4 border-2 border-gray-900 bg-white p-2 st-shadow-sm transition hover:-translate-y-0.5"
                 >
                     <X size={16} />
                 </button>
@@ -222,7 +222,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                     ['Total Klaim', summary.claims],
                     ['Token Diberikan', summary.tokens],
                 ].map(([label, value]) => (
-                    <div key={label} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <div key={label} className="border-2 border-gray-900 bg-white p-5 st-shadow-md">
                         <p className="text-sm font-bold uppercase tracking-wide text-gray-500">{label}</p>
                         <p className="mt-2 font-display text-4xl font-black text-gray-900">{value}</p>
                     </div>
@@ -252,7 +252,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                                     className={`w-full border-2 p-5 text-left transition-all ${
                                         isSelected
                                             ? 'translate-x-1 -translate-y-1 border-gray-900 bg-gray-900 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,0.25)]'
-                                            : 'border-gray-900 bg-white text-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
+                                            : 'border-gray-900 bg-white text-gray-900 st-shadow-md hover:-translate-y-0.5'
                                     }`}
                                 >
                                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -289,7 +289,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
 
                 <aside className="space-y-6">
                     {selectedVoucher ? (
-                        <div className="border-2 border-gray-900 bg-gray-100 p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="border-2 border-gray-900 bg-gray-100 p-6 st-shadow-md">
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <h2 className="font-display text-3xl font-black text-gray-900">
@@ -298,10 +298,10 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                                     <p className="mt-1 font-mono text-sm font-black text-gray-700">{selectedVoucher.code}</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button onClick={() => setIsEditing(!isEditing)} className="border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <button onClick={() => setIsEditing(!isEditing)} className="border-2 border-gray-900 bg-white p-2 st-shadow-sm">
                                         {isEditing ? <X size={16} /> : <Edit size={16} />}
                                     </button>
-                                    <button onClick={() => copyCode(selectedVoucher.code)} className="border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <button onClick={() => copyCode(selectedVoucher.code)} className="border-2 border-gray-900 bg-white p-2 st-shadow-sm">
                                         <Copy size={16} />
                                     </button>
                                 </div>
@@ -347,7 +347,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                                         <button
                                             onClick={() => handleToggle(selectedVoucher.id, !selectedVoucher.is_active)}
                                             disabled={isPending}
-                                            className="flex flex-1 items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-white px-4 py-2 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60"
+                                            className="flex flex-1 items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-white px-4 py-2 font-bold text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60"
                                         >
                                             {selectedVoucher.is_active ? <X size={16} /> : <Check size={16} />}
                                             {selectedVoucher.is_active ? 'Nonaktifkan' : 'Aktifkan'}
@@ -355,7 +355,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                                         <button
                                             onClick={() => setVoucherToDelete(selectedVoucher)}
                                             disabled={isPending}
-                                            className="flex flex-1 items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-white px-4 py-2 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60"
+                                            className="flex flex-1 items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-white px-4 py-2 font-bold text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60"
                                         >
                                             <Trash2 size={16} />
                                             Hapus
@@ -386,7 +386,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
 
             {voucherToDelete ? (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-                    <div className="relative w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="relative w-full max-w-sm border-2 border-gray-900 bg-white p-6 st-shadow-lg">
                         <h2 className="font-display text-3xl font-black text-gray-900">Hapus Voucher?</h2>
                         <p className="mt-3 text-sm font-medium leading-relaxed text-gray-700">
                             Voucher <strong className="font-mono text-gray-900">{voucherToDelete.code}</strong> akan dihapus permanen.
@@ -399,7 +399,7 @@ export default function VoucherAdminClient({ vouchers }: VoucherAdminClientProps
                                 type="button"
                                 onClick={() => setVoucherToDelete(null)}
                                 disabled={isPending}
-                                className="rounded-md border-2 border-gray-900 bg-white px-4 py-2.5 font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 disabled:opacity-60"
+                                className="rounded-md border-2 border-gray-900 bg-white px-4 py-2.5 font-bold text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60"
                             >
                                 Batal
                             </button>

@@ -301,7 +301,7 @@ export default async function TkaMiniTryoutPage({
                                 return (
                                     <article
                                         key={exam.id}
-                                        className={`relative flex flex-col justify-between overflow-hidden rounded-3xl ${config.cardBorder} bg-white p-6 shadow-md shadow-indigo-950/5 ring-1 ring-indigo-500/5 transition-all duration-200 hover:shadow-lg sm:p-7`}
+                                        className={`relative flex flex-col justify-between overflow-hidden rounded-3xl ${config.cardBorder} bg-white p-6 shadow-md shadow-blue-950/5 ring-1 ring-indigo-500/5 transition-all duration-200 hover:shadow-lg sm:p-7`}
                                     >
                                         {/* Ambient decorative glow in card corner */}
                                         <div className={`pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br ${config.glowColor} blur-2xl`} />

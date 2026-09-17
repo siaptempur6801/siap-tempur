@@ -84,10 +84,10 @@ export default function StatOverview({ data, streak, type }: { data: StatsSummar
             {stats.map((stat, idx) => (
                 <div
                     key={idx}
-                    className={`${stat.bg} border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col justify-between hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] transition-all ${idx % 2 === 0 ? 'rotate-[0.5deg]' : '-rotate-[0.5deg]'}`}
+                    className={`${stat.bg} border-2 border-gray-900 st-shadow-sm p-4 flex flex-col justify-between hover:translate-x-[-2px] hover:translate-y-[-2px] hover:st-shadow-md transition-all ${idx % 2 === 0 ? 'rotate-[0.5deg]' : '-rotate-[0.5deg]'}`}
                 >
                     <div className="flex justify-between items-start mb-3">
-                        <div className={`p-2 bg-white border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}>
+                        <div className={`p-2 bg-white border-2 border-gray-900 st-shadow-sm`}>
                             <stat.icon className={`w-5 h-5 ${stat.color}`} />
                         </div>
                     </div>

@@ -72,7 +72,7 @@ export default function XPRewardPopup({
                         animate={{ scale: 1, y: 0 }}
                         exit={{ scale: 0.96, y: 18 }}
                         transition={{ type: 'spring', damping: 22, stiffness: 260 }}
-                        className="relative w-full max-w-md overflow-hidden border-2 border-slate-950 bg-white p-6 shadow-[8px_8px_0_#111827] md:p-7"
+                        className="relative w-full max-w-md overflow-hidden border-2 border-slate-950 bg-white p-6 st-shadow-lg md:p-7"
                     >
                         <button
                             type="button"
@@ -83,7 +83,7 @@ export default function XPRewardPopup({
                             <X size={19} />
                         </button>
 
-                        <div className="flex h-14 w-14 items-center justify-center border-2 border-slate-950 bg-yellow-300 shadow-[3px_3px_0_#111827]">
+                        <div className="flex h-14 w-14 items-center justify-center border-2 border-slate-950 bg-yellow-300 st-shadow-sm">
                             {leveledUp ? <Trophy size={27} aria-hidden="true" /> : <Zap size={27} aria-hidden="true" />}
                         </div>
 

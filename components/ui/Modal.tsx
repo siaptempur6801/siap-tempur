@@ -52,7 +52,7 @@ export default function Modal({ isOpen, onClose, title, children, className = ''
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 20 }}
                         className={cn(
-                            "relative w-full bg-white rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] border-2 border-gray-900 overflow-hidden flex flex-col max-h-[90vh]",
+                            "relative w-full bg-white rounded-xl st-shadow-lg border-2 border-gray-900 overflow-hidden flex flex-col max-h-[90vh]",
                             className
                         )}
                     >

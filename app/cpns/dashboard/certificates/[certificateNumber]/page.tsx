@@ -45,17 +45,17 @@ export default async function CertificatePreviewPage({
         <div className="space-y-6 font-display">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <p className="inline-flex items-center gap-2 border-2 border-gray-900 bg-emerald-100 px-3 py-1 text-xs font-black uppercase text-emerald-700 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <p className="inline-flex items-center gap-2 border-2 border-gray-900 bg-emerald-100 px-3 py-1 text-xs font-black uppercase text-emerald-700 st-shadow-sm">
                         <ShieldCheck size={14} /> Preview Sertifikat
                     </p>
                     <h1 className="mt-3 text-3xl font-black text-gray-900">Cek Nama Sebelum Download</h1>
                     <p className="mt-1 text-sm font-medium text-gray-600">Kalau ada kesalahan nama, hubungi admin untuk koreksi sebelum memakai file PDF.</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <Link href="/cpns/dashboard/event" className="border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Link href="/cpns/dashboard/event" className="border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black text-gray-900 st-shadow-sm">
                         Kembali
                     </Link>
-                    <a href={downloadUrl} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <a href={downloadUrl} className="inline-flex items-center gap-2 border-2 border-gray-900 bg-emerald-600 px-4 py-2 text-sm font-black text-white st-shadow-sm">
                         <Download size={16} /> Download PDF
                     </a>
                 </div>

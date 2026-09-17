@@ -96,13 +96,13 @@ export default function AdminShell({ children, user, profile, role, permissions,
                         <div className="mt-4 border-t-2 border-dashed border-gray-300 pt-4"><AdminNavLink {...userDashboardItem} /></div>
                     </nav>
                     <div className="relative z-10 shrink-0 border-t-2 border-gray-900 p-4">
-                        <div className="mb-4 flex items-center gap-3 border-2 border-gray-900 bg-white p-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="mb-4 flex items-center gap-3 border-2 border-gray-900 bg-white p-3 st-shadow-sm">
                             <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden border-2 border-gray-900 bg-gray-100 font-bold text-gray-900">
                                 {profile?.avatar_url ? <Image src={profile.avatar_url} alt="Avatar admin" fill className="object-cover" sizes="40px" /> : <span>{user.email?.[0]?.toUpperCase() || 'A'}</span>}
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="truncate font-display text-sm font-bold text-gray-900">{displayName}</p>
-                                <span className="mt-0.5 inline-flex items-center gap-1 border border-gray-900 bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"><Shield size={12} />{roleLabel}</span>
+                                <span className="mt-0.5 inline-flex items-center gap-1 border border-gray-900 bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-gray-900 st-shadow-sm"><Shield size={12} />{roleLabel}</span>
                                 {hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" className="mt-1" compact theme="paper" />}
                             </div>
                         </div>
@@ -113,7 +113,7 @@ export default function AdminShell({ children, user, profile, role, permissions,
                 <main className="relative min-h-0 flex-1 overflow-y-auto pb-24 md:pb-0">
                     <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between border-b-2 border-gray-900 bg-[#f8f8f6]/90 px-6 shadow-sm backdrop-blur-md md:hidden">
                         <Link href={isFullAdmin ? '/cpns/admin' : canReviewWorkspace ? '/cpns/admin/review' : '/cpns/admin/articles'} className="group flex flex-col items-start"><span className="text-lg font-display font-bold uppercase leading-tight text-gray-900">ADMIN CPNS</span><span className="text-[10px] font-bold text-gray-500">Schema V2</span></Link>
-                        <div className="flex items-center gap-2">{hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" compact theme="paper" />}<Link href="/cpns/dashboard" className="rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-xs font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">User</Link><SidebarSignoutButton signoutAction={signoutAction} /></div>
+                        <div className="flex items-center gap-2">{hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" compact theme="paper" />}<Link href="/cpns/dashboard" className="rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-xs font-bold text-gray-900 st-shadow-sm">User</Link><SidebarSignoutButton signoutAction={signoutAction} /></div>
                     </header>
                     <div className="mx-auto max-w-7xl p-6 md:p-8">{children}</div>
                 </main>

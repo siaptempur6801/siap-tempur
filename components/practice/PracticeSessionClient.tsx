@@ -155,7 +155,7 @@ const QuestionPrompt = memo(function QuestionPrompt({ question }: { question: Qu
             {question.image_url && (
                 <>
                     <div 
-                        className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-900 overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white relative cursor-pointer group"
+                        className="w-full max-w-sm mx-auto rounded-xl border-2 border-gray-900 overflow-hidden st-shadow-md bg-white relative cursor-pointer group"
                         onClick={() => setPreviewImage(question.image_url!)}
                     >
                         <div className="absolute top-2 left-2 z-10 p-1.5 bg-yellow-300 border-2 border-gray-900 rounded shadow-sm transform -rotate-2">
@@ -170,7 +170,7 @@ const QuestionPrompt = memo(function QuestionPrompt({ question }: { question: Qu
                             unoptimized
                         />
                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div className="bg-white px-3 py-1.5 rounded-lg border-2 border-gray-900 font-bold font-display text-sm shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center gap-2">
+                            <div className="bg-white px-3 py-1.5 rounded-lg border-2 border-gray-900 font-bold font-display text-sm st-shadow-sm flex items-center gap-2">
                                 <ZoomIn size={16} /> Perbesar Gambar
                             </div>
                         </div>
@@ -189,12 +189,12 @@ const QuestionPrompt = memo(function QuestionPrompt({ question }: { question: Qu
                                     initial={{ scale: 0.95 }}
                                     animate={{ scale: 1 }}
                                     exit={{ scale: 0.95 }}
-                                    className="relative max-w-5xl w-full max-h-[90vh] bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col" 
+                                    className="relative max-w-5xl w-full max-h-[90vh] bg-[#fff9c4] border-2 border-gray-900 rounded-xl st-shadow-lg p-4 flex flex-col" 
                                     onClick={e => e.stopPropagation()}
                                 >
                                      <button 
                                         onClick={() => setPreviewImage(null)}
-                                        className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 transition-transform hover:scale-110 active:scale-95"
+                                        className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full border-2 border-gray-900 flex items-center justify-center st-shadow-sm z-10 transition-transform hover:scale-110 active:scale-95"
                                      >
                                          <X size={20} />
                                      </button>
@@ -282,7 +282,7 @@ const QuestionOptionCard = memo(function QuestionOptionCard({
                                 className="w-full h-full object-contain max-h-44"
                             />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
-                                <div className="bg-white p-2 rounded-full border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] text-gray-900">
+                                <div className="bg-white p-2 rounded-full border-2 border-gray-900 st-shadow-sm text-gray-900">
                                     <ZoomIn size={18} />
                                 </div>
                             </div>
@@ -305,12 +305,12 @@ const QuestionOptionCard = memo(function QuestionOptionCard({
                             initial={{ scale: 0.95 }}
                             animate={{ scale: 1 }}
                             exit={{ scale: 0.95 }}
-                            className="relative max-w-5xl w-full max-h-[90vh] bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col" 
+                            className="relative max-w-5xl w-full max-h-[90vh] bg-[#fff9c4] border-2 border-gray-900 rounded-xl st-shadow-lg p-4 flex flex-col" 
                             onClick={e => e.stopPropagation()}
                         >
                              <button 
                                 onClick={() => setPreviewImage(null)}
-                                className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full border-2 border-gray-900 flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10 transition-transform hover:scale-110 active:scale-95"
+                                className="absolute -top-4 -right-4 w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-full border-2 border-gray-900 flex items-center justify-center st-shadow-sm z-10 transition-transform hover:scale-110 active:scale-95"
                              >
                                  <X size={20} />
                              </button>
@@ -885,7 +885,7 @@ export default function PracticeSessionClient({
             {/* Exit Confirmation Modal */}
             {showExitModal && (
                 <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl st-shadow-lg max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                         <PaperBackground />
                         <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-display">
                             <div className="w-16 h-16 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mb-2 rotate-3 shadow-sm">
@@ -905,7 +905,7 @@ export default function PracticeSessionClient({
                                     }}
                                     disabled={exiting}
                                     className={cn(
-                                        "px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none",
+                                        "px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold st-shadow-sm active:translate-x-px active:translate-y-px active:shadow-none",
                                         exiting && "cursor-not-allowed opacity-60 hover:bg-white"
                                     )}
                                 >
@@ -915,7 +915,7 @@ export default function PracticeSessionClient({
                                     onClick={handleExit}
                                     disabled={exiting}
                                     className={cn(
-                                        "px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none",
+                                        "px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold st-shadow-sm active:translate-x-px active:translate-y-px active:shadow-none",
                                         exiting && "cursor-wait opacity-80 hover:bg-red-600"
                                     )}
                                 >
@@ -941,7 +941,7 @@ export default function PracticeSessionClient({
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
-                            className="bg-[#fff9c4] border-2 border-gray-900 p-10 rounded-2xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] max-w-md w-full text-center relative overflow-hidden"
+                            className="bg-[#fff9c4] border-2 border-gray-900 p-10 rounded-2xl st-shadow-lg max-w-md w-full text-center relative overflow-hidden"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <PaperBackground />
@@ -953,7 +953,7 @@ export default function PracticeSessionClient({
                                 <p className="text-xl mb-8 text-gray-700 font-medium leading-relaxed">Periksa soal yang belum dijawab atau masih kamu tandai. Gunakan waktu tersisa dengan tenang.</p>
                                 <button
                                     onClick={() => setShowWarning5Min(false)}
-                                    className="bg-orange-500 text-white px-10 py-3 rounded-lg border-2 border-gray-900 font-bold text-xl hover:bg-orange-600 transition shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                    className="bg-orange-500 text-white px-10 py-3 rounded-lg border-2 border-gray-900 font-bold text-xl hover:bg-orange-600 transition st-shadow-md active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Lanjutkan mengerjakan
                                 </button>
@@ -989,7 +989,7 @@ export default function PracticeSessionClient({
                                 <p className="text-2xl mb-8 text-gray-800 font-bold leading-tight">Pastikan jawaban yang ingin kamu kumpulkan sudah terisi. Saat waktu habis, sesi akan dikumpulkan otomatis.</p>
                                 <button
                                     onClick={() => setShowWarning1Min(false)}
-                                    className="bg-red-600 text-white px-10 py-4 rounded-lg border-2 border-gray-900 font-bold text-2xl hover:bg-red-700 transition shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                    className="bg-red-600 text-white px-10 py-4 rounded-lg border-2 border-gray-900 font-bold text-2xl hover:bg-red-700 transition st-shadow-md active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Lanjutkan mengerjakan
                                 </button>
@@ -1002,7 +1002,7 @@ export default function PracticeSessionClient({
             {/* Custom Confirmation Modal */}
             {showConfirmModal && (
                 <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm p-4 py-6 animate-in fade-in duration-200 sm:items-center">
-                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] max-w-md w-full p-5 sm:p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl st-shadow-lg max-w-md w-full p-5 sm:p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                         <PaperBackground />
                         {/* Tape effect on modal */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-white/40 border border-gray-200 shadow-sm -rotate-2 z-20 pointer-events-none"></div>
@@ -1043,7 +1043,7 @@ export default function PracticeSessionClient({
                                     type="button"
                                     onClick={() => setShowConfirmModal(false)}
                                     disabled={finishing}
-                                    className="px-4 py-3 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                    className="px-4 py-3 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold text-xl st-shadow-md active:translate-x-px active:translate-y-px active:shadow-none"
                                 >
                                     Batal
                                 </button>
@@ -1052,7 +1052,7 @@ export default function PracticeSessionClient({
                                     data-prevent-double="true"
                                     onClick={handleConfirmFinish}
                                     disabled={finishing}
-                                    className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="px-4 py-3 rounded-xl bg-blue-600 text-white border-2 border-gray-900 hover:bg-blue-700 transition font-bold text-xl st-shadow-md active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {finishing ? 'Mengumpulkan...' : 'Kumpulkan jawaban'}
                                 </button>
@@ -1067,7 +1067,7 @@ export default function PracticeSessionClient({
                 "flex-1 min-w-0 flex flex-col md:h-full relative transition-all duration-500",
                 showNav ? "" : "lg:max-w-6xl lg:mx-auto"
             )}>
-                <div className="flex-1 flex flex-col bg-white/80 backdrop-blur-sm border-2 border-gray-900 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] md:overflow-hidden relative">
+                <div className="flex-1 flex flex-col bg-white/80 backdrop-blur-sm border-2 border-gray-900 rounded-xl st-shadow-md md:overflow-hidden relative">
                     {/* Header - Optimized for Mobile */}
                     <div className="border-b-2 border-dashed border-gray-300 bg-yellow-50/50 p-2 md:p-4">
                         <div className="flex items-center justify-between gap-2">
@@ -1117,7 +1117,7 @@ export default function PracticeSessionClient({
                                         onTimeExpired={handleTimeExpired}
                                     />
                                 ) : (
-                                    <div className="hidden md:flex px-4 py-1.5 bg-white border-2 border-gray-900 rounded-full text-xs md:text-sm font-display font-bold items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                    <div className="hidden md:flex px-4 py-1.5 bg-white border-2 border-gray-900 rounded-full text-xs md:text-sm font-display font-bold items-center gap-2 st-shadow-sm">
                                         <Clock size={14} />
                                         <span>{sessionKindLabel}</span>
                                     </div>
@@ -1126,7 +1126,7 @@ export default function PracticeSessionClient({
                                 <button
                                     onClick={() => setShowNav(!showNav)}
                                     className={cn(
-                                        "hidden lg:flex px-2.5 md:px-3 h-7 md:h-8 rounded-full border-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all items-center justify-center",
+                                        "hidden lg:flex px-2.5 md:px-3 h-7 md:h-8 rounded-full border-2 st-shadow-sm transition-all items-center justify-center",
                                         showNav
                                             ? "bg-blue-50 text-blue-700 border-blue-900 hover:bg-blue-100"
                                             : "bg-white text-gray-500 border-gray-300 hover:bg-gray-50 hover:border-gray-400"
@@ -1181,7 +1181,7 @@ export default function PracticeSessionClient({
                             <button
                                 onClick={handlePreviousQuestion}
                                 disabled={currentIndex === 0}
-                                className="flex items-center justify-center w-12 h-12 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 disabled:opacity-50 transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                                className="flex items-center justify-center w-12 h-12 rounded-xl border-2 border-gray-900 bg-white hover:bg-gray-50 disabled:opacity-50 transition st-shadow-sm active:translate-x-px active:translate-y-px active:shadow-none"
                             >
                                 <ChevronLeft size={24} />
                             </button>
@@ -1191,7 +1191,7 @@ export default function PracticeSessionClient({
                                     data-prevent-double="true"
                                     onClick={onFinishClick}
                                     disabled={finishing}
-                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-display font-bold text-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="flex-1 flex items-center justify-center gap-2 h-12 bg-blue-600 text-white rounded-xl border-2 border-gray-900 font-display font-bold text-lg st-shadow-sm active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
                                 >
                                     {finishing ? '...' : 'Kumpulkan'}
                                     <CheckCircle2 size={20} />
@@ -1212,7 +1212,7 @@ export default function PracticeSessionClient({
                         <button
                             onClick={handlePreviousQuestion}
                             disabled={currentIndex === 0}
-                            className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-display font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-px active:translate-y-px active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]"
+                            className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-display font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition st-shadow-sm active:translate-x-px active:translate-y-px active:st-shadow-sm"
                         >
                             <ChevronLeft size={20} />
                             Sebelumnya
@@ -1248,7 +1248,7 @@ export default function PracticeSessionClient({
                         initial={{ x: 300, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: 300, opacity: 0 }}
-                        className="hidden lg:flex w-full lg:w-80 xl:w-88 2xl:w-96 shrink-0 flex-col bg-white/90 border-2 border-gray-900 rounded-xl h-full shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] z-10 relative"
+                        className="hidden lg:flex w-full lg:w-80 xl:w-88 2xl:w-96 shrink-0 flex-col bg-white/90 border-2 border-gray-900 rounded-xl h-full st-shadow-md z-10 relative"
                     >
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/60 border border-white/40 shadow-sm rotate-2 z-20 pointer-events-none"></div>

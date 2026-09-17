@@ -296,7 +296,7 @@ export default function CpnsProductLandingV11({
 
             <section className="relative px-4 pb-16 pt-12 md:px-8 md:pb-24 md:pt-18 lg:pb-28">
                 <div className="pointer-events-none absolute -left-28 top-28 h-56 w-56 rounded-full border-2 border-dashed border-amber-400 bg-[var(--st-yellow-soft)]" aria-hidden="true" />
-                <div className="pointer-events-none absolute -right-16 top-6 h-56 w-48 rotate-12 rounded-[2rem] border-2 border-dashed border-blue-300 bg-[var(--st-blue-soft)]" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-16 top-6 h-56 w-48 rotate-12 rounded-st-2xl border-2 border-dashed border-blue-300 bg-[var(--st-blue-soft)]" aria-hidden="true" />
 
                 <div className="px-container-marketing relative grid items-center gap-12 lg:grid-cols-[1.04fr_0.96fr] lg:gap-16">
                     <div>
@@ -409,7 +409,7 @@ export default function CpnsProductLandingV11({
                     </div>
                     <div className="mt-10 grid gap-5 lg:grid-cols-3">
                         {skdMap.map((item) => (
-                            <article key={item.code} className={`group rounded-[1.5rem] border-2 border-[var(--st-ink)] p-6 transition-transform hover:-translate-y-1 ${item.tone}`}>
+                            <article key={item.code} className={`group rounded-3xl border-2 border-[var(--st-ink)] p-6 transition-transform hover:-translate-y-1 ${item.tone}`}>
                                 <span className="inline-flex rounded-xl border-2 border-[var(--st-ink)] bg-white px-3 py-1 font-display text-2xl font-black">{item.code}</span>
                                 <h3 className="mt-5 text-2xl font-black tracking-tight">{item.title}</h3>
                                 <p className="st-muted mt-3 font-semibold leading-relaxed">{item.text}</p>
@@ -456,7 +456,7 @@ export default function CpnsProductLandingV11({
             </section>
 
             <section id="pemulihan" className="scroll-mt-28 px-4 py-16 md:px-8 md:py-24">
-                <div className="px-container-marketing rounded-[2rem] border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-6 shadow-[5px_5px_0_var(--st-ink)] md:p-10 lg:p-12">
+                <div className="px-container-marketing rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-6 st-shadow-md md:p-10 lg:p-12">
                     <div className="grid gap-10 lg:grid-cols-[0.78fr_1.22fr]">
                         <div>
                             <div className="st-kicker bg-white">Setelah salah, lalu apa?</div>
@@ -485,7 +485,7 @@ export default function CpnsProductLandingV11({
                         <div className="st-kicker">Bukan sekadar bank soal</div>
                         <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Bedanya ada pada apa yang terjadi setelah kamu menekan “Selesai”.</h2>
                     </div>
-                    <div className="mt-10 overflow-hidden rounded-[1.5rem] border-2 border-[var(--st-ink)] bg-white">
+                    <div className="mt-10 overflow-hidden rounded-3xl border-2 border-[var(--st-ink)] bg-white">
                         <div className="hidden grid-cols-[0.55fr_1fr_1.15fr] border-b-2 border-[var(--st-ink)] bg-gray-50 text-sm font-black md:grid">
                             <div className="p-4">Perbandingan</div><div className="border-l-2 border-[var(--st-ink)] p-4">Bank soal biasa</div><div className="border-l-2 border-[var(--st-ink)] bg-[var(--st-blue-soft)] p-4 text-blue-800">SiapTempur CPNS</div>
                         </div>
@@ -501,7 +501,7 @@ export default function CpnsProductLandingV11({
             </section>
 
             <section className="px-4 py-16 md:px-8 md:py-24">
-                <div className="px-container-marketing rounded-[2rem] border-2 border-[var(--st-ink)] bg-[var(--st-blue-soft)] p-6 shadow-[5px_5px_0_var(--st-ink)] md:p-10 lg:p-12">
+                <div className="px-container-marketing rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--st-blue-soft)] p-6 st-shadow-md md:p-10 lg:p-12">
                     <div className="max-w-3xl">
                         <div className="st-kicker bg-white">Cocok untuk kamu kalau...</div>
                         <h2 className="st-heading-display mt-5 text-4xl md:text-5xl">Masalahnya bukan kurang banyak soal. Kadang kamu cuma butuh arah yang lebih jelas.</h2>
@@ -529,7 +529,7 @@ export default function CpnsProductLandingV11({
                         {decisionCards.map((card) => {
                             const href = resolveProtectedHref(card.href)
                             return (
-                                <article key={card.title} className={`group rounded-[1.5rem] border border-gray-200 p-6 shadow-sm transition-transform hover:-translate-y-1 ${card.tone}`}>
+                                <article key={card.title} className={`group rounded-3xl border border-gray-200 p-6 shadow-sm transition-transform hover:-translate-y-1 ${card.tone}`}>
                                     <h3 className="text-2xl font-black tracking-tight">{card.title}</h3>
                                     <p className="st-muted mt-3 font-semibold leading-relaxed">{card.text}</p>
                                     <TrackedLink
@@ -589,7 +589,7 @@ export default function CpnsProductLandingV11({
                     </div>
 
                     {activeEvent && (
-                        <article className="rounded-[1.5rem] border-2 border-[var(--st-ink)] bg-white p-6 shadow-[4px_4px_0_var(--st-ink)] md:p-8">
+                        <article className="rounded-3xl border-2 border-[var(--st-ink)] bg-white p-6 st-shadow-md md:p-8">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex flex-wrap gap-2">
                                     <span className="st-pill bg-[var(--st-green-soft)] text-green-800">{activeEvent.status === 'live' ? 'Live' : 'Terjadwal'}</span>
@@ -613,7 +613,7 @@ export default function CpnsProductLandingV11({
             </section>
 
             <section id="paket" className="scroll-mt-28 px-4 py-16 md:px-8 md:py-24">
-                <div className="px-container-marketing overflow-hidden rounded-[2rem] border-2 border-[var(--st-ink)] bg-white">
+                <div className="px-container-marketing overflow-hidden rounded-st-2xl border-2 border-[var(--st-ink)] bg-white">
                     <div className="grid lg:grid-cols-[1.06fr_0.94fr]">
                         <div className="bg-[var(--st-yellow-soft)] p-6 md:p-10 lg:p-12">
                             <div className="st-kicker bg-white"><Ticket size={15} /> Cara kerja token</div>
@@ -694,7 +694,7 @@ export default function CpnsProductLandingV11({
             </section>
 
             <section className="px-4 pb-20 pt-8 md:px-8 md:pb-28">
-                <div className="px-container-marketing rounded-[2rem] border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white shadow-[6px_6px_0_var(--st-ink)] md:px-10 md:py-14">
+                <div className="px-container-marketing rounded-st-2xl border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white st-shadow-md md:px-10 md:py-14">
                     <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border-2 border-white/70 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.1em]"><Sparkles size={14} /> Persiapan SKD yang lebih terarah</div>

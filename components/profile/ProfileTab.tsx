@@ -191,7 +191,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                     'st-focus relative flex h-full w-full items-center justify-center overflow-hidden rounded-full',
                                     isTka
                                         ? 'border-2 border-indigo-100 bg-indigo-50/80 text-3xl font-bold text-indigo-700 shadow-xs'
-                                        : 'border-2 border-[var(--st-ink)] bg-blue-50 text-4xl font-black shadow-[3px_3px_0_var(--st-ink)]'
+                                        : 'border-2 border-[var(--st-ink)] bg-blue-50 text-4xl font-black st-shadow-sm'
                                 )}
                             >
                                 {profile.avatar_url ? (
@@ -211,7 +211,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                                     'st-focus absolute -bottom-1 -right-1 flex h-10 w-10 items-center justify-center rounded-full transition disabled:opacity-50',
                                     isTka
                                         ? 'bg-indigo-600 text-white shadow-xs hover:bg-indigo-700'
-                                        : 'border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] shadow-[2px_2px_0_var(--st-ink)]'
+                                        : 'border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] st-shadow-sm'
                                 )}
                             >
                                 {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}

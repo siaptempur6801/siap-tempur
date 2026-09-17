@@ -73,7 +73,7 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                 {/* Header */}
                 <PageAnimateItem className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
                     <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-200 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] -rotate-1 mb-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-200 border-2 border-gray-900 st-shadow-sm -rotate-1 mb-4">
                             <BarChart3 className="w-4 h-4 text-gray-900" />
                             <span className="text-xs font-bold uppercase tracking-wider">{periodText}</span>
                         </div>
@@ -103,13 +103,13 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                             placeholder="Cari namamu..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none transition-all outline-none font-bold italic"
+                            className="w-full pl-10 pr-4 py-3 bg-white border-2 border-gray-900 st-shadow-md focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none transition-all outline-none font-bold italic"
                         />
                     </div>
                 </PageAnimateItem>
 
                 {/* Table Layout */}
-                <PageAnimateItem className="bg-white border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative">
+                <PageAnimateItem className="bg-white border-2 border-gray-900 st-shadow-lg relative">
                     {/* Header Row */}
                     <div className="hidden xl:grid grid-cols-12 bg-gray-900 text-white p-4 font-black text-sm uppercase tracking-widest border-b-2 border-gray-900">
                         <div className="col-span-1 text-center">Pos</div>
@@ -154,7 +154,7 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
                                         <div className="flex-1 min-w-0">
                                             {/* Header: Avatar, Name & Total */}
                                             <div className="flex items-start gap-3 mb-3">
-                                                <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
+                                                <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 st-shadow-sm overflow-hidden relative">
                                                     {entry.avatar_url ? (
                                                         <Image
                                                             src={entry.avatar_url}
@@ -209,7 +209,7 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
 
                                         {/* Profile Column */}
                                         <div className="col-span-5 px-4 flex items-center gap-3 py-4">
-                                            <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] overflow-hidden relative">
+                                            <div className="w-12 h-12 border-2 border-gray-900 bg-yellow-50 flex items-center justify-center flex-shrink-0 st-shadow-sm overflow-hidden relative">
                                                 {entry.avatar_url ? (
                                                     <Image
                                                         src={entry.avatar_url}
@@ -256,7 +256,7 @@ export default function LeaderboardClient({ data, currentUserId, periodText = 'E
 
                         {filteredData.length === 0 && (
                             <div className="p-12 text-center flex flex-col items-center gap-4">
-                                <div className="w-16 h-16 bg-gray-50 border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-gray-400">
+                                <div className="w-16 h-16 bg-gray-50 border-2 border-gray-900 st-shadow-md flex items-center justify-center text-gray-400">
                                     <SearchX size={32} />
                                 </div>
                                 <div>

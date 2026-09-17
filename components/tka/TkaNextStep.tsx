@@ -26,7 +26,7 @@ export default function TkaNextStep({ recommendation }: {
             <div className="relative mt-6 pt-2">
                 <Link
                     href={recommendation.href}
-                    className="st-focus inline-flex min-h-11 items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-all duration-150 hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-600/25 active:scale-[0.98]"
+                    className="st-focus inline-flex min-h-11 items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:bg-indigo-700 hover:shadow-md hover:shadow-blue-600/25 active:scale-[0.98]"
                 >
                     <span>{recommendation.action}</span>
                     <ArrowRight size={16} className="transition-transform duration-150 group-hover:translate-x-1" aria-hidden="true" />

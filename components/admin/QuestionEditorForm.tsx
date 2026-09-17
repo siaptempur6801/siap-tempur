@@ -211,13 +211,13 @@ export default function QuestionEditorForm({
         <div className="w-full pb-10">
             <Link
                 href={returnHref}
-                className="inline-flex items-center rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-sm font-bold text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5"
+                className="inline-flex items-center rounded-md border-2 border-gray-900 bg-white px-3 py-2 text-sm font-bold text-gray-900 st-shadow-sm transition hover:-translate-y-0.5"
             >
                 <ArrowLeft size={18} className="mr-2" />
                 Kembali ke dashboard admin
             </Link>
 
-            <div className="relative mt-6 overflow-hidden border-2 border-gray-900 bg-white shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+            <div className="relative mt-6 overflow-hidden border-2 border-gray-900 bg-white st-shadow-md">
                 <PaperBackground />
                 <div className="relative z-10 border-b-2 border-gray-900 bg-gray-100/90 px-6 py-5 sm:px-8">
                     <h1 className="font-display text-4xl font-black text-gray-900">
@@ -231,7 +231,7 @@ export default function QuestionEditorForm({
                 </div>
 
                 <form onSubmit={handleSubmit} className="relative z-10 divide-y-2 divide-gray-200">
-                    <div className="mx-4 mt-4 flex gap-3 border-2 border-gray-900 bg-gray-100 p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] sm:mx-8">
+                    <div className="mx-4 mt-4 flex gap-3 border-2 border-gray-900 bg-gray-100 p-4 st-shadow-sm sm:mx-8">
                         <Info className="mt-0.5 shrink-0 text-gray-900" size={18} />
                         <div className="space-y-1 text-sm">
                             <p className="font-bold text-gray-900">

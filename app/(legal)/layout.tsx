@@ -17,7 +17,7 @@ export default function LegalLayout({
                     Kembali ke Beranda
                 </Link>
 
-                <div className="bg-white p-8 md:p-12 border-2 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-xl relative">
+                <div className="bg-white p-8 md:p-12 border-2 border-gray-900 st-shadow-lg rounded-xl relative">
                     {/* Tape Effect */}
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-yellow-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 

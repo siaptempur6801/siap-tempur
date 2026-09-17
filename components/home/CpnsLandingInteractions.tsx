@@ -128,7 +128,7 @@ export default function CpnsLandingInteractions({
     return (
         <>
             <header className="sticky top-0 z-50 px-4 py-2.5 md:px-8 md:py-3.5">
-                <div className="px-container-marketing relative flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:min-h-16 md:px-5">
+                <div className="px-container-marketing relative flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 st-shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:min-h-16 md:px-5">
                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                         <Link href="/" className="st-focus shrink-0 font-display text-2xl font-black tracking-tight md:text-3xl">
                             Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
@@ -177,7 +177,7 @@ export default function CpnsLandingInteractions({
                     </div>
 
                     {menuOpen && (
-                        <div data-testid="cpns-mobile-menu" className="absolute left-0 right-0 top-[4.15rem] max-h-[72vh] overflow-y-auto rounded-2xl border-2 border-[var(--st-ink)] bg-white p-2 shadow-[4px_4px_0_var(--st-ink)] md:left-auto md:right-0 md:top-[4.75rem] md:w-72">
+                        <div data-testid="cpns-mobile-menu" className="absolute left-0 right-0 top-[4.15rem] max-h-[72vh] overflow-y-auto rounded-2xl border-2 border-[var(--st-ink)] bg-white p-2 st-shadow-md md:left-auto md:right-0 md:top-[4.75rem] md:w-72">
                             {sections.map((section) => (
                                 <a
                                     key={section.id}
@@ -211,7 +211,7 @@ export default function CpnsLandingInteractions({
 
             {heroPassed && !finalCtaVisible && activeSection !== 'artikel' && (
                 <div data-testid="cpns-mobile-sticky-cta" className="fixed inset-x-3 bottom-3 z-40 md:hidden">
-                    <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/95 p-2 shadow-[4px_4px_0_var(--st-ink)] backdrop-blur">
+                    <div className="flex items-center gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/95 p-2 st-shadow-md backdrop-blur">
                         <div className="min-w-0 flex-1 pl-2">
                             <p className="truncate text-xs font-black uppercase tracking-[0.08em] text-blue-700">Siap<span className="underline decoration-wavy decoration-2 underline-offset-2">Tempur</span> CPNS</p>
                             <p className="truncate text-sm font-bold text-gray-700">TWK · TIU · TKP</p>

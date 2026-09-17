@@ -174,7 +174,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                 <>
                                     {/* Jembatan transparan agar dropdown tidak nutup saat hover ke menu */}
                                     <div className="absolute top-full left-0 w-full h-3" />
-                                    <div className="absolute top-[calc(100%+0.5rem)] left-1/2 -translate-x-1/2 w-52 bg-[#fdfbf7] border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-md overflow-hidden z-50">
+                                    <div className="absolute top-[calc(100%+0.5rem)] left-1/2 -translate-x-1/2 w-52 bg-[#fdfbf7] border-2 border-gray-900 st-shadow-md rounded-md overflow-hidden z-50">
                                         <Link href="/cpns/mini-tryout" className="flex items-center gap-2 px-4 py-3 hover:bg-yellow-50 border-b border-gray-200 font-display text-lg text-gray-800 hover:text-blue-600 transition-colors">
                                             <Zap size={16} className="text-yellow-500" /> Mini Tryout
                                         </Link>
@@ -370,28 +370,28 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                     {/* Floating Annotations */}
                     <div className="hidden md:block absolute -top-6 -right-4 lg:-right-16 z-30">
-                        <div className="bg-yellow-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-display font-bold text-sm -rotate-3 animate-float-annotation">
+                        <div className="bg-yellow-200 border-2 border-gray-900 px-4 py-2 rounded-lg st-shadow-sm font-display font-bold text-sm -rotate-3 animate-float-annotation">
                             <Clock className="w-4 h-4 inline -mt-0.5 mr-1 text-red-500" />
                             Timer real-time persis CAT BKN!
                         </div>
                     </div>
 
                     <div className="hidden md:block absolute bottom-24 -left-4 lg:-left-24 z-30">
-                        <div className="bg-green-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-display font-bold text-sm rotate-2 animate-float-annotation" style={{ animationDelay: '1s' }}>
+                        <div className="bg-green-200 border-2 border-gray-900 px-4 py-2 rounded-lg st-shadow-sm font-display font-bold text-sm rotate-2 animate-float-annotation" style={{ animationDelay: '1s' }}>
                             <Flag className="w-4 h-4 inline -mt-0.5 mr-1 text-orange-500" />
                             Tandai soal ragu-ragu!
                         </div>
                     </div>
 
                     <div className="hidden md:block absolute -bottom-4 -right-4 lg:-right-12 z-30">
-                        <div className="bg-brand-amber-200 border-2 border-gray-900 px-4 py-2 rounded-lg shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] font-display font-bold text-sm rotate-1 animate-float-annotation" style={{ animationDelay: '2s' }}>
+                        <div className="bg-brand-amber-200 border-2 border-gray-900 px-4 py-2 rounded-lg st-shadow-sm font-display font-bold text-sm rotate-1 animate-float-annotation" style={{ animationDelay: '2s' }}>
                             <Monitor className="w-4 h-4 inline -mt-0.5 mr-1 text-blue-600" />
                             Navigasi soal satu layar!
                         </div>
                     </div>
 
                     {/* Main Mockup Card */}
-                    <div className="bg-white/90 backdrop-blur-sm border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                    <div className="bg-white/90 backdrop-blur-sm border-2 border-gray-900 rounded-xl st-shadow-lg overflow-hidden">
 
                         {/* Mock Header */}
                         <div className="border-b-2 border-dashed border-gray-300 bg-yellow-50/50 p-3 md:p-4">
@@ -506,7 +506,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
 
                         {/* Mock Footer Nav */}
                         <div className="hidden sm:flex p-4 border-t-2 border-dashed border-gray-300 justify-between items-center bg-white/50">
-                            <div className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-display font-bold bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-900 font-display font-bold bg-white st-shadow-sm">
                                 ← Sebelumnya
                             </div>
                             <div className="flex items-center gap-2 px-5 py-2 bg-gray-900 text-white border-2 border-gray-900 rounded-lg font-display font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)]">
@@ -525,7 +525,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 <div className="text-center mt-12">
                     <button
                         onClick={() => user ? router.push("/cpns/dashboard") : router.push("/login?returnTo=/cpns")}
-                        className="group px-8 py-4 font-display text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
+                        className="group px-8 py-4 font-display text-2xl font-bold bg-blue-600 text-white rounded-lg border-2 border-gray-900 st-shadow-md hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all cursor-pointer inline-flex items-center gap-3"
                     >
                         Coba Sekarang! <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                     </button>
@@ -619,7 +619,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                     <div className="relative">
                         {activeEvent ? (
                             <>
-                                <Card className="p-0 overflow-hidden border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] grid grid-cols-1 md:grid-cols-[0.92fr_1.08fr]">
+                                <Card className="p-0 overflow-hidden border-4 border-gray-900 bg-white st-shadow-lg grid grid-cols-1 md:grid-cols-[0.92fr_1.08fr]">
                                     <div className="bg-blue-600 p-4 md:p-5 text-white flex items-center justify-center">
                                         <div className="flex h-full w-full max-w-md flex-col items-center justify-center">
                                             {activeEventFlyerUrl ? (
@@ -661,7 +661,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                                                     className={cn(
                                                                         "rounded-lg border-2 px-4 py-3 text-left font-body transition-all",
                                                                         isSelected
-                                                                            ? "border-blue-700 bg-blue-600 text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]"
+                                                                            ? "border-blue-700 bg-blue-600 text-white st-shadow-sm"
                                                                             : "border-gray-200 bg-[#fdfbf7] text-gray-800 hover:border-blue-500"
                                                                     )}
                                                                 >
@@ -731,7 +731,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                         <button
                                             type="button"
                                             onClick={showPreviousEvent}
-                                            className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+                                            className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white st-shadow-sm transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
                                             aria-label="Lihat event sebelumnya"
                                         >
                                             <ChevronLeft className="h-6 w-6" />
@@ -742,7 +742,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                         <button
                                             type="button"
                                             onClick={showNextEvent}
-                                            className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
+                                            className="inline-flex h-11 w-11 items-center justify-center rounded-md border-2 border-gray-900 bg-white st-shadow-sm transition-all hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none"
                                             aria-label="Lihat event berikutnya"
                                         >
                                             <ChevronRight className="h-6 w-6" />
@@ -751,7 +751,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                 )}
                             </>
                         ) : (
-                            <Card className="mx-auto max-w-3xl border-4 border-gray-900 bg-white p-8 text-center shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                            <Card className="mx-auto max-w-3xl border-4 border-gray-900 bg-white p-8 text-center st-shadow-lg">
                                 <Clock className="mx-auto mb-4 h-12 w-12 text-blue-600" />
                                 <h3 className="font-display text-3xl font-bold text-gray-950">Belum Ada Event Aktif</h3>
                                 <p className="mx-auto mt-3 max-w-xl font-body text-base leading-relaxed text-gray-600">
@@ -775,7 +775,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <button
                             type="button"
                             onClick={() => scrollEventHistory("left")}
-                            className="absolute left-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-colors hover:bg-yellow-100 md:inline-flex"
+                            className="absolute left-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center border-2 border-gray-900 bg-white st-shadow-md transition-colors hover:bg-yellow-100 md:inline-flex"
                             aria-label="Geser jejak event ke kiri"
                         >
                             <ChevronLeft className="h-7 w-7" />
@@ -827,7 +827,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                         <button
                             type="button"
                             onClick={() => scrollEventHistory("right")}
-                            className="absolute right-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-colors hover:bg-yellow-100 md:inline-flex"
+                            className="absolute right-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center border-2 border-gray-900 bg-white st-shadow-md transition-colors hover:bg-yellow-100 md:inline-flex"
                             aria-label="Geser jejak event ke kanan"
                         >
                             <ChevronRight className="h-7 w-7" />
@@ -953,7 +953,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                                     className="absolute inset-0 z-10"
                                     aria-label={`Baca artikel ${article.title}`}
                                 />
-                                <Card className="p-0 overflow-hidden h-full flex flex-col hover:-translate-y-2 transition-transform border-4 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
+                                <Card className="p-0 overflow-hidden h-full flex flex-col hover:-translate-y-2 transition-transform border-4 border-gray-900 st-shadow-lg bg-white">
                                     {article.cover_image_url ? (
                                         <div className="relative aspect-video w-full border-b-4 border-gray-900 bg-gray-100 overflow-hidden">
                                             <Image 
@@ -1010,7 +1010,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 </div>
 
                 <div className="max-w-4xl mx-auto">
-                    <Card className="p-0 overflow-hidden border-4 border-gray-900 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] bg-white">
+                    <Card className="p-0 overflow-hidden border-4 border-gray-900 st-shadow-lg bg-white">
                         <div className="bg-blue-600 p-4 text-white font-display text-xl font-bold flex items-center gap-2">
                             <Trophy className="text-yellow-400" /> Top 5 Simulasi Terakhir
                         </div>

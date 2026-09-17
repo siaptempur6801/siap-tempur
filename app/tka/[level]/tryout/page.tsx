@@ -250,7 +250,7 @@ export default async function TkaTryoutPage({
 
                 {/* Dominant Featured Tryout - Single Screen Split Card */}
                 {featuredTryout ? (
-                    <article className="relative overflow-hidden rounded-3xl border-2 border-indigo-200/90 bg-white p-5 shadow-lg shadow-indigo-950/5 ring-1 ring-indigo-500/10 transition-all hover:border-indigo-300 sm:p-7">
+                    <article className="relative overflow-hidden rounded-3xl border-2 border-indigo-200/90 bg-white p-5 shadow-lg shadow-blue-950/5 ring-1 ring-indigo-500/10 transition-all hover:border-indigo-300 sm:p-7">
                         {/* Ambient decorative background glow */}
                         <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-gradient-to-br from-indigo-200/40 via-blue-100/20 to-transparent blur-3xl" />
                         <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-gradient-to-tr from-blue-100/30 via-indigo-50/20 to-transparent blur-2xl" />

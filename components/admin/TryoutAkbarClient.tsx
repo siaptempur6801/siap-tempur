@@ -326,9 +326,9 @@ function CertificateNameEditModal({
                 initial={{ scale: 0.92, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.92, opacity: 0 }}
-                className="w-full max-w-lg border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full max-w-lg border-2 border-gray-900 bg-white p-6 st-shadow-lg"
             >
-                <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-emerald-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-emerald-300 text-gray-900 st-shadow-sm">
                     <Award size={28} strokeWidth={3} />
                 </div>
                 <h3 className="font-display text-3xl font-black leading-tight text-gray-900">Koreksi Nama Sertifikat</h3>
@@ -358,14 +358,14 @@ function CertificateNameEditModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:bg-gray-100"
+                        className="border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 st-shadow-sm transition hover:bg-gray-100"
                     >
                         Batal
                     </button>
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="inline-flex items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-600 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:bg-emerald-700 disabled:opacity-60"
+                        className="inline-flex items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-600 px-5 py-2.5 font-black text-white st-shadow-sm transition hover:bg-emerald-700 disabled:opacity-60"
                     >
                         {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                         Simpan Koreksi
@@ -391,7 +391,7 @@ function CertificatePreviewModal({
                 initial={{ scale: 0.94, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.94, opacity: 0 }}
-                className="max-h-[92vh] w-full max-w-5xl overflow-y-auto border-2 border-gray-900 bg-white p-5 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                className="max-h-[92vh] w-full max-w-5xl overflow-y-auto border-2 border-gray-900 bg-white p-5 st-shadow-lg"
             >
                 <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -404,14 +404,14 @@ function CertificatePreviewModal({
                         <button
                             type="button"
                             onClick={onEdit}
-                            className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            className="inline-flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black text-gray-900 st-shadow-sm"
                         >
                             <Save size={15} /> Edit Nama
                         </button>
                         {participant.certificate_number && participant.certificate_name_locked_at && (
                             <a
                                 href={`/api/certificates/${encodeURIComponent(participant.certificate_number)}/download`}
-                                className="inline-flex items-center gap-2 border-2 border-gray-900 bg-emerald-600 px-4 py-2 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                                className="inline-flex items-center gap-2 border-2 border-gray-900 bg-emerald-600 px-4 py-2 text-sm font-black text-white st-shadow-sm"
                             >
                                 <Download size={15} /> Download PDF
                             </a>
@@ -419,7 +419,7 @@ function CertificatePreviewModal({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="border-2 border-gray-900 bg-gray-900 px-4 py-2 text-sm font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+                            className="border-2 border-gray-900 bg-gray-900 px-4 py-2 text-sm font-black text-white st-shadow-sm"
                         >
                             Tutup
                         </button>
@@ -747,9 +747,9 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                             initial={{ scale: 0.92, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.92, opacity: 0 }}
-                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 st-shadow-lg"
                         >
-                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-blue-100 text-blue-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-blue-100 text-blue-900 st-shadow-sm">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
                             <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
@@ -763,7 +763,7 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                                     type="button"
                                     onClick={() => setPendingFormData(null)}
                                     disabled={isPending}
-                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-60"
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-60"
                                 >
                                     Cek Lagi
                                 </button>
@@ -774,7 +774,7 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                                         action(pendingFormData)
                                         setPendingFormData(null)
                                     }}
-                                    className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-blue-600 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:opacity-60"
+                                    className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-blue-600 px-5 py-2.5 font-black text-white st-shadow-sm transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:opacity-60"
                                 >
                                     {isPending && <Loader2 className="animate-spin" size={16} />}
                                     Simpan
@@ -790,9 +790,9 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                             initial={{ scale: 0.92, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.92, opacity: 0 }}
-                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 st-shadow-lg"
                         >
-                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 st-shadow-sm">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
                             <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
@@ -805,7 +805,7 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                                 <button
                                     type="button"
                                     onClick={() => setPendingNavigationHref(null)}
-                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100"
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-100"
                                 >
                                     Tetap di Sini
                                 </button>
@@ -815,7 +815,7 @@ function EventForm({ event, action, isPending, onDirtyChange }: {
                                         allowNextNavigationRef.current = true
                                         window.location.href = pendingNavigationHref
                                     }}
-                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-800"
+                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-800"
                                 >
                                     Tinggalkan
                                 </button>
@@ -1199,7 +1199,7 @@ function DetailPanel({
                                     return (
                                         <div key={question.id} className="border-2 border-gray-200 bg-white">
                                             <div className="grid gap-3 p-4 sm:grid-cols-[64px_1fr]">
-                                                <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-gray-50 font-mono text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                                <div className="flex h-12 w-12 items-center justify-center border-2 border-gray-900 bg-gray-50 font-mono text-sm font-black text-gray-900 st-shadow-sm">
                                                     #{question.display_order}
                                                 </div>
                                                 <div className="min-w-0 space-y-3">
@@ -1234,7 +1234,7 @@ function DetailPanel({
                                                         <button
                                                             type="button"
                                                             onClick={() => toggleQuestionDetail(question.id)}
-                                                            className="ml-auto inline-flex items-center gap-1.5 border-2 border-gray-900 bg-white px-3 py-1.5 text-xs font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:translate-y-px hover:shadow-none"
+                                                            className="ml-auto inline-flex items-center gap-1.5 border-2 border-gray-900 bg-white px-3 py-1.5 text-xs font-black text-gray-900 st-shadow-sm transition hover:translate-y-px hover:shadow-none"
                                                         >
                                                             {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                                                             {isExpanded ? 'Tutup Detail' : 'Lihat Detail'}
@@ -1598,9 +1598,9 @@ function DetailPanel({
                             initial={{ scale: 0.92, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.92, opacity: 0 }}
-                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 st-shadow-lg"
                         >
-                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 st-shadow-sm">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
                             <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
@@ -1614,7 +1614,7 @@ function DetailPanel({
                                     type="button"
                                     onClick={() => setStatusToConfirm(null)}
                                     disabled={isPending}
-                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-60"
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-60"
                                 >
                                     Batal
                                 </button>
@@ -1626,7 +1626,7 @@ function DetailPanel({
                                         setStatusToConfirm(null)
                                         onRunAction(() => updateTryoutEventStatus(event.id, targetStatus))
                                     }}
-                                    className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-800 disabled:opacity-60"
+                                    className="flex items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-800 disabled:opacity-60"
                                 >
                                     {isPending && <Loader2 className="animate-spin" size={16} />}
                                     {statusToConfirm.confirmLabel}
@@ -1639,7 +1639,7 @@ function DetailPanel({
                 {codeToDelete && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                         <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-                            className="w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                            className="w-full max-w-sm border-2 border-gray-900 bg-white p-6 st-shadow-md">
                             <h3 className="font-display text-2xl font-black text-gray-900">Hapus Kode?</h3>
                             <p className="mt-2 text-sm font-medium text-gray-600">Kode <strong>{codeToDelete.code}</strong> akan dihapus permanen.</p>
                             <div className="mt-4 flex gap-3">
@@ -1659,9 +1659,9 @@ function DetailPanel({
                             initial={{ scale: 0.92, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.92, opacity: 0 }}
-                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 st-shadow-lg"
                         >
-                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 st-shadow-sm">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
                             <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
@@ -1677,14 +1677,14 @@ function DetailPanel({
                                         setPendingTab(null)
                                         setPendingClose(false)
                                     }}
-                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100"
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-100"
                                 >
                                     Tetap di Pengaturan
                                 </button>
                                 <button
                                     type="button"
                                     onClick={confirmLeaveSettings}
-                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-800"
+                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-800"
                                 >
                                     Tinggalkan
                                 </button>
@@ -1773,8 +1773,8 @@ export function EventCreateController() {
                 {isOpen && (
                     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
                         <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative mt-10 w-full max-w-2xl border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
-                            <button type="button" onClick={() => setIsOpen(false)} className="absolute right-4 top-4 border-2 border-gray-900 bg-white p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            className="relative mt-10 w-full max-w-2xl border-2 border-gray-900 bg-white p-6 st-shadow-lg">
+                            <button type="button" onClick={() => setIsOpen(false)} className="absolute right-4 top-4 border-2 border-gray-900 bg-white p-2 st-shadow-sm">
                                 <X size={16} />
                             </button>
                             <h2 className="pr-12 font-display text-3xl font-black text-gray-900">Buat Event Baru</h2>
@@ -1870,7 +1870,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                     { label: 'Total Peserta', value: summary.participants, icon: <Users size={18} className="text-green-500" /> },
                     { label: 'Bot Leaderboard', value: summary.bots, icon: <Users size={18} className="text-indigo-500" /> },
                 ].map(({ label, value, icon }) => (
-                    <div key={label} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <div key={label} className="border-2 border-gray-900 bg-white p-5 st-shadow-md">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{label}</p>
                             {icon}
@@ -1896,7 +1896,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                                 <div key={event.id}>
                                     {/* Event Row */}
                                     <div className={cn(
-                                        'border-2 border-gray-900 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition',
+                                        'border-2 border-gray-900 bg-white st-shadow-md transition',
                                         isExpanded && 'shadow-none border-b-0'
                                     )}>
                                         <div className="flex items-center gap-4 p-4">
@@ -1992,9 +1992,9 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                             initial={{ scale: 0.92, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.92, opacity: 0 }}
-                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                            className="w-full max-w-md border-2 border-gray-900 bg-white p-6 st-shadow-lg"
                         >
-                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 bg-yellow-300 text-gray-900 st-shadow-sm">
                                 <AlertTriangle size={28} strokeWidth={3} />
                             </div>
                             <h3 className="font-display text-3xl font-black leading-tight text-gray-900">
@@ -2007,14 +2007,14 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                                 <button
                                     type="button"
                                     onClick={() => setPendingExpandedId(undefined)}
-                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100"
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-100"
                                 >
                                     Tetap di Event Ini
                                 </button>
                                 <button
                                     type="button"
                                     onClick={confirmExpandChange}
-                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-800"
+                                    className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-2.5 font-black text-white st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-800"
                                 >
                                     Tinggalkan
                                 </button>
@@ -2026,7 +2026,7 @@ export default function TryoutAkbarClient({ events }: TryoutAkbarClientProps) {
                 {eventToDelete && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
                         <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-                            className="w-full max-w-sm border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                            className="w-full max-w-sm border-2 border-gray-900 bg-white p-6 st-shadow-lg">
                             <div className="flex items-center gap-2 mb-3">
                                 <AlertTriangle size={20} className="text-red-500" />
                                 <h2 className="font-display text-2xl font-black text-gray-900">Hapus Event?</h2>

@@ -185,7 +185,7 @@ export default function TkaRemedialModeClient({
                         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                             <Link
                                 href="/tka/smp/progress"
-                                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700"
+                                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-md shadow-blue-600/20 transition hover:bg-indigo-700"
                             >
                                 Lihat Perkembangan
                             </Link>

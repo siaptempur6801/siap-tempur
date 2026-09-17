@@ -236,7 +236,7 @@ export default function QuestionCard({
             {/* Delete Confirmation Modal */}
             {showDeleteModal && mounted && createPortal(
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-sm animate-in overflow-hidden border-2 border-gray-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] duration-200 zoom-in-95">
+                    <div className="relative w-full max-w-sm animate-in overflow-hidden border-2 border-gray-900 bg-white p-8 st-shadow-lg duration-200 zoom-in-95">
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-black/10 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
@@ -255,7 +255,7 @@ export default function QuestionCard({
                                 <button
                                     onClick={() => setShowDeleteModal(false)}
                                     disabled={isDeleting}
-                                    className="rounded-md border-2 border-gray-900 bg-white px-4 py-2 font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:bg-gray-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="rounded-md border-2 border-gray-900 bg-white px-4 py-2 font-bold st-shadow-sm transition hover:bg-gray-100 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
                                     Batal
                                 </button>

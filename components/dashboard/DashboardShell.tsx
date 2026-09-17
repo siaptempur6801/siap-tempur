@@ -123,7 +123,7 @@ export default function DashboardShell({
                 </nav>
 
                 <div className="shrink-0 border-t-2 border-slate-900 p-3">
-                    <div className="flex items-center gap-2.5 border-2 border-slate-900 bg-white p-2.5 shadow-[2px_2px_0_0_#111827]">
+                    <div className="flex items-center gap-2.5 border-2 border-slate-900 bg-white p-2.5 st-shadow-sm">
                         <Link
                             href="/cpns/dashboard/profile"
                             aria-label="Buka profil"
@@ -164,7 +164,7 @@ export default function DashboardShell({
                         <Link
                             href="/cpns/dashboard/beli-paket"
                             aria-label={`${tokenBalance} token tersisa`}
-                            className="st-focus inline-flex min-h-9 shrink-0 items-center gap-1.5 border-2 border-slate-900 bg-yellow-100 px-2.5 text-xs font-black text-slate-900 shadow-[2px_2px_0_0_#111827]"
+                            className="st-focus inline-flex min-h-9 shrink-0 items-center gap-1.5 border-2 border-slate-900 bg-yellow-100 px-2.5 text-xs font-black text-slate-900 st-shadow-sm"
                         >
                             <Ticket size={14} aria-hidden="true" />
                             <span className="tabular-nums">{tokenBalance}</span>

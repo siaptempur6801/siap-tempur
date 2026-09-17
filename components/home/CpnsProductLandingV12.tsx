@@ -265,7 +265,7 @@ export default function CpnsProductLandingV12({
 
             <section id="hero-cpns" className="relative px-4 pb-12 pt-8 md:px-8 md:pb-20 md:pt-14 lg:pb-24">
                 <div className="pointer-events-none absolute -left-28 top-24 h-56 w-56 rounded-full border-2 border-dashed border-amber-400 bg-[var(--st-yellow-soft)]" aria-hidden="true" />
-                <div className="pointer-events-none absolute -right-16 top-4 h-52 w-44 rotate-12 rounded-[2rem] border-2 border-dashed border-blue-300 bg-[var(--st-blue-soft)]" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-16 top-4 h-52 w-44 rotate-12 rounded-st-2xl border-2 border-dashed border-blue-300 bg-[var(--st-blue-soft)]" aria-hidden="true" />
 
                 <div className="px-container-marketing relative grid items-center gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14">
                     <div>
@@ -369,7 +369,7 @@ export default function CpnsProductLandingV12({
                     </div>
                     <div className="mt-8 grid gap-4 lg:grid-cols-3 lg:gap-5">
                         {skdMap.map((item) => (
-                            <article key={item.code} className={`group rounded-[1.5rem] border-2 border-[var(--st-ink)] p-5 transition-transform hover:-translate-y-1 md:p-6 ${item.tone}`}>
+                            <article key={item.code} className={`group rounded-3xl border-2 border-[var(--st-ink)] p-5 transition-transform hover:-translate-y-1 md:p-6 ${item.tone}`}>
                                 <span className="inline-flex rounded-xl border-2 border-[var(--st-ink)] bg-white px-3 py-1 font-display text-2xl font-black">{item.code}</span>
                                 <h3 className="mt-4 text-xl font-black tracking-tight sm:text-2xl">{item.title}</h3>
                                 <p className="st-muted mt-3 text-sm font-semibold leading-relaxed sm:text-base">{item.text}</p>
@@ -419,7 +419,7 @@ export default function CpnsProductLandingV12({
                     </div>
                     <div className="mt-8 grid gap-4 lg:grid-cols-3 lg:gap-5">
                         {decisionCards.map((card) => (
-                            <article key={card.title} className={`group rounded-[1.5rem] border border-gray-200 p-5 shadow-sm transition-transform hover:-translate-y-1 sm:p-6 ${card.tone}`}>
+                            <article key={card.title} className={`group rounded-3xl border border-gray-200 p-5 shadow-sm transition-transform hover:-translate-y-1 sm:p-6 ${card.tone}`}>
                                 <h3 className="text-xl font-black tracking-tight sm:text-2xl">{card.title}</h3>
                                 <p className="st-muted mt-3 text-sm font-semibold leading-relaxed sm:text-base">{card.text}</p>
                                 <TrackedLink href={resolveProtectedHref(card.href)} eventName="px_landing_cta" eventProperties={{ program: 'cpns', surface: 'landing', cta: `decision_${card.mode}`, mode: card.mode }} className="st-focus mt-5 inline-flex min-h-11 items-center gap-2 font-black text-blue-700">
@@ -455,7 +455,7 @@ export default function CpnsProductLandingV12({
             </section>
 
             <section id="pemulihan" className="scroll-mt-24 px-4 py-12 md:px-8 md:py-18 lg:py-20">
-                <div className="px-container-marketing rounded-[2rem] border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-5 shadow-[3px_3px_0_var(--st-ink)] sm:p-6 md:p-10 lg:p-12">
+                <div className="px-container-marketing rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-5 st-shadow-sm sm:p-6 md:p-10 lg:p-12">
                     <div className="grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:gap-10">
                         <div>
                             <div className="st-kicker bg-white">Setelah salah, lalu apa?</div>
@@ -484,7 +484,7 @@ export default function CpnsProductLandingV12({
                         <div className="st-kicker">Bukan sekadar bank soal</div>
                         <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Bedanya terasa setelah kamu menekan “Selesai”.</h2>
                     </div>
-                    <div className="mt-8 overflow-hidden rounded-[1.5rem] border-2 border-[var(--st-ink)] bg-white">
+                    <div className="mt-8 overflow-hidden rounded-3xl border-2 border-[var(--st-ink)] bg-white">
                         <div className="hidden grid-cols-[0.55fr_1fr_1.15fr] border-b-2 border-[var(--st-ink)] bg-gray-50 text-sm font-black md:grid">
                             <div className="p-4">Perbandingan</div><div className="border-l-2 border-[var(--st-ink)] p-4">Belajar dari kumpulan soal</div><div className="border-l-2 border-[var(--st-ink)] bg-[var(--st-blue-soft)] p-4 text-blue-800">SiapTempur CPNS</div>
                         </div>
@@ -513,7 +513,7 @@ export default function CpnsProductLandingV12({
                     </div>
 
                     {activeEvent && (
-                        <article className="rounded-[1.5rem] border-2 border-[var(--st-ink)] bg-white p-5 shadow-[4px_4px_0_var(--st-ink)] sm:p-6 md:p-8">
+                        <article className="rounded-3xl border-2 border-[var(--st-ink)] bg-white p-5 st-shadow-md sm:p-6 md:p-8">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex flex-wrap gap-2"><span className="st-pill bg-[var(--st-green-soft)] text-green-800">{activeEvent.status === 'live' ? 'Live' : 'Terjadwal'}</span><CpnsEventCountdown startsAt={activeEvent.starts_at} status={activeEvent.status} /></div>
                                 <span className="text-sm font-black text-blue-700">{formatPrice(activeEvent)}</span>
@@ -534,7 +534,7 @@ export default function CpnsProductLandingV12({
             </section>
 
             <section id="paket" className="scroll-mt-24 px-4 py-14 md:px-8 md:py-20 lg:py-24">
-                <div className="px-container-marketing overflow-hidden rounded-[2rem] border-2 border-[var(--st-ink)] bg-white">
+                <div className="px-container-marketing overflow-hidden rounded-st-2xl border-2 border-[var(--st-ink)] bg-white">
                     <div className="grid lg:grid-cols-[1.06fr_0.94fr]">
                         <div className="bg-[var(--st-yellow-soft)] p-5 sm:p-6 md:p-10 lg:p-12">
                             <div className="st-kicker bg-white"><Ticket size={15} /> Cara kerja token</div>
@@ -595,7 +595,7 @@ export default function CpnsProductLandingV12({
             </section>
 
             <section id="final-cta" className="px-4 pb-16 pt-6 md:px-8 md:pb-24 lg:pb-28">
-                <div className="px-container-marketing rounded-[2rem] border-2 border-[var(--st-ink)] bg-blue-600 px-5 py-8 text-white shadow-[5px_5px_0_var(--st-ink)] sm:px-6 sm:py-10 md:px-10 md:py-14">
+                <div className="px-container-marketing rounded-st-2xl border-2 border-[var(--st-ink)] bg-blue-600 px-5 py-8 text-white st-shadow-md sm:px-6 sm:py-10 md:px-10 md:py-14">
                     <div className="grid items-center gap-7 lg:grid-cols-[1fr_auto] lg:gap-8">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border-2 border-white/70 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.1em]"><Sparkles size={14} /> Persiapan SKD yang lebih terarah</div>

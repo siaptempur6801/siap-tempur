@@ -361,6 +361,27 @@ Do not treat colors merely as decoration. Define semantic roles.
 
 ## 7. Borders, radius, and shadows
 
+### 7.1 Token implementasi (2026-09-17)
+
+**Shadow** — hard shadow neo-brutalist sekarang hanya punya tiga ukuran, global (dipakai juga admin
+yang di luar scope `.st-product`), semuanya memakai brand ink:
+
+| Kelas | Nilai | Dipakai untuk |
+|---|---|---|
+| `.st-shadow-sm` | `3px 3px 0 var(--brand-ink)` | chip, badge, kontrol kecil |
+| `.st-shadow-md` | `5px 5px 0 var(--brand-ink)` | kartu & tombol standar |
+| `.st-shadow-lg` | `8px 8px 0 var(--brand-ink)` | hero, elemen prioritas |
+
+Sebelumnya ada 297 shadow arbitrer dengan enam offset berbeda plus hex warisan `#0f172a`/`#111827`
+dan `rgba(0,0,0,1)`; semuanya sudah dipetakan ke tiga kelas di atas (shadow *soft* ber-alpha tetap
+dipertahankan untuk kedalaman halus).
+
+**Radius** — skala token: `rounded-st-sm` 12px · `-md` 16px · `-lg` 20px · `-xl` 24px · `-2xl` 32px
+(`--radius-st-*` di `@theme`). Nilai arbitrer yang ekuivalen sudah dikonversi; sisa `rounded-[1.15rem]`
+(3 pemakaian) dipertahankan karena tidak punya padanan persis di skala.
+
+
+
 The brand may keep dark outlines and hard shadows, but use them by hierarchy.
 
 ### Level 0 — quiet

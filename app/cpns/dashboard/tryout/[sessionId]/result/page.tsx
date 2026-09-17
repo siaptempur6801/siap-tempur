@@ -63,7 +63,7 @@ export default async function PracticeResultPage({
                     href={back.href}
                     eventName="px_result_action"
                     eventProperties={{ program: 'cpns', surface: 'result', cta: `back_${back.label.replace(/\s+/g, '_')}` }}
-                    className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-[var(--st-ink)] bg-white px-4 py-2 text-sm font-black shadow-[3px_3px_0_var(--st-ink)]"
+                    className="st-focus inline-flex min-h-11 items-center gap-2 border-2 border-[var(--st-ink)] bg-white px-4 py-2 text-sm font-black st-shadow-sm"
                 >
                     <ArrowLeft size={17} /> Kembali ke {back.label}
                 </TrackedLink>
@@ -79,7 +79,7 @@ export default async function PracticeResultPage({
                         </p>
                         <Mascot name="tama" size="xs" tone="soft" className="mt-6 hidden sm:inline-flex" />
                     </div>
-                    <div className="border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] p-5 text-center shadow-[4px_4px_0_var(--st-ink)]">
+                    <div className="border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] p-5 text-center st-shadow-md">
                         <div className="text-xs font-black uppercase tracking-[0.16em] text-gray-600">Total skor</div>
                         <div className="mt-1 text-5xl font-black">{result.totalScore}</div>
                         <div className="mt-1 text-sm font-bold text-gray-700">

@@ -85,7 +85,7 @@ export default function SidebarSignoutButton({
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                        <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl st-shadow-lg max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                             {/* Tape Effect */}
                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-red-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
@@ -104,14 +104,14 @@ export default function SidebarSignoutButton({
                                     <button
                                         onClick={() => setShowModal(false)}
                                         disabled={isLoading}
-                                        className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                        className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold st-shadow-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                     >
                                         Batal
                                     </button>
                                     <button
                                         onClick={handleSignout}
                                         disabled={isLoading}
-                                        className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
+                                        className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold st-shadow-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
                                         {isLoading ? 'Keluar...' : 'Ya, Keluar'}
                                     </button>

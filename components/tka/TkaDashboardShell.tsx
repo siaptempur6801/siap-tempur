@@ -202,7 +202,7 @@ export default function TkaDashboardShell({
             </div>
 
             <nav
-                className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(15,23,42,0.04)] backdrop-blur-xl md:hidden"
+                className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(13,43,69,0.04)] backdrop-blur-xl md:hidden"
                 aria-label="Navigasi utama TKA"
             >
                 <div className="grid grid-cols-6 gap-1 px-2 py-1.5">

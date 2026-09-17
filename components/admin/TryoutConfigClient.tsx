@@ -389,13 +389,13 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             {/* Left: Configuration List */}
             <div className="lg:col-span-2 space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                    <div className="border-2 border-gray-900 bg-white p-4 st-shadow-sm">
                         <div className="text-xs font-black uppercase tracking-widest text-gray-500">Total</div>
                         <div className={cn("mt-1 text-3xl font-black", isValidTotal ? "text-green-600" : "text-gray-900")}>{totalQuestions}</div>
                         <div className="text-xs font-bold text-gray-500">Target 110 soal</div>
                     </div>
                     {sectionBlocks.map(section => (
-                        <div key={section.label} className="border-2 border-gray-900 bg-white p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                        <div key={section.label} className="border-2 border-gray-900 bg-white p-4 st-shadow-sm">
                             <div className="text-xs font-black uppercase tracking-widest text-gray-500">{section.label}</div>
                             <div className={cn("mt-1 text-3xl font-black", section.value === section.target ? "text-green-600" : "text-gray-900")}>{section.value}</div>
                             <div className="text-xs font-bold text-gray-500">Target {section.target} soal</div>
@@ -403,7 +403,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                     ))}
                 </div>
 
-                <div className="relative overflow-hidden border-2 border-gray-900 bg-white shadow-[5px_5px_0px_0px_rgba(0,0,0,1)]">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-white st-shadow-md">
                     <PaperBackground />
 
                     <div className="sticky top-0 z-10 flex flex-col gap-3 border-b-2 border-gray-900 bg-gray-100/90 p-6 backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:p-8">
@@ -416,13 +416,13 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                 type="button"
                                 onClick={handleBulkDelete}
                                 disabled={isDeleting || selectedConfigIds.length === 0}
-                                className="flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:bg-gray-100 disabled:opacity-50"
+                                className="flex items-center gap-2 border-2 border-gray-900 bg-white px-4 py-2 text-sm font-black text-gray-900 st-shadow-sm transition hover:bg-gray-100 disabled:opacity-50"
                             >
                                 <Trash2 size={16} />
                                 Hapus Terpilih{selectedConfigIds.length > 0 ? ` (${selectedConfigIds.length})` : ''}
                             </button>
                             <span className={cn(
-                                "w-fit border-2 px-4 py-2 text-sm font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]",
+                                "w-fit border-2 px-4 py-2 text-sm font-black st-shadow-sm",
                                 isValidTotal ? "border-gray-900 bg-gray-900 text-white" : "border-gray-900 bg-white text-gray-900"
                             )}>
                                 Total: {totalQuestions} Soal
@@ -552,7 +552,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
 
             {/* Right: Add New Category & Sidebar Rules */}
             <div className="space-y-6">
-                <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 st-shadow-md sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10">
                         <h3 className="mb-3 border-b-2 border-gray-900 pb-2 font-display text-2xl font-black text-gray-900">Preset Struktur</h3>
@@ -569,7 +569,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-white p-6 st-shadow-md sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10">
                         <h3 className="mb-4 border-b-2 border-gray-900 pb-2 font-display text-2xl font-black text-gray-900">Tambah Kategori</h3>
@@ -611,7 +611,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                             <button
                                 type="submit"
                                 disabled={isAdding}
-                                className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-white p-3 font-black text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-50"
+                                className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border-2 border-gray-900 bg-white p-3 font-black text-gray-900 st-shadow-sm transition-all hover:-translate-y-0.5 hover:bg-gray-100 disabled:opacity-50"
                             >
                                 {isAdding ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
                                 Tambahkan Topik
@@ -620,7 +620,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden border-2 border-gray-900 bg-gray-100 p-6 shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] sm:p-8">
+                <div className="relative overflow-hidden border-2 border-gray-900 bg-gray-100 p-6 st-shadow-md sm:p-8">
                     <PaperBackground />
                     <div className="relative z-10 text-gray-800 space-y-3">
                         <h4 className="font-display text-xl font-black mb-2 flex items-center gap-2">
@@ -640,7 +640,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
             {/* Custom Delete Confirmation Modal */}
             {itemToDelete && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-                    <div className="relative w-full max-w-sm animate-in overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] duration-200 zoom-in-95 sm:p-8">
+                    <div className="relative w-full max-w-sm animate-in overflow-hidden border-2 border-gray-900 bg-white p-6 st-shadow-lg duration-200 zoom-in-95 sm:p-8">
                         <PaperBackground />
                         <div className="relative z-10 flex flex-col items-center text-center space-y-4">
                             <div className="flex h-16 w-16 items-center justify-center border-2 border-gray-900 bg-gray-100 text-gray-900">
@@ -673,11 +673,11 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
 
             {confirmDialog && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
-                    <div className="relative w-full max-w-md overflow-hidden border-2 border-gray-900 bg-white p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] sm:p-8">
+                    <div className="relative w-full max-w-md overflow-hidden border-2 border-gray-900 bg-white p-6 st-shadow-lg sm:p-8">
                         <PaperBackground />
                         <div className="relative z-10">
                             <div className={cn(
-                                "mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]",
+                                "mb-5 flex h-14 w-14 items-center justify-center border-2 border-gray-900 st-shadow-sm",
                                 confirmDialog.tone === 'danger' ? "bg-yellow-300 text-gray-900" : "bg-blue-100 text-blue-900"
                             )}>
                                 <AlertTriangle size={28} strokeWidth={3} />
@@ -694,7 +694,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                 <button
                                     type="button"
                                     onClick={() => resolveConfirm(false)}
-                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5 hover:bg-gray-100"
+                                    className="rounded-md border-2 border-gray-900 bg-white px-5 py-2.5 font-black text-gray-900 st-shadow-sm transition hover:-translate-y-0.5 hover:bg-gray-100"
                                 >
                                     {confirmDialog.cancelLabel}
                                 </button>
@@ -702,7 +702,7 @@ export default function TryoutConfigClient({ initialConfigs }: { initialConfigs:
                                     type="button"
                                     onClick={() => resolveConfirm(true)}
                                     className={cn(
-                                        "rounded-md border-2 border-gray-900 px-5 py-2.5 font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition hover:-translate-y-0.5",
+                                        "rounded-md border-2 border-gray-900 px-5 py-2.5 font-black st-shadow-sm transition hover:-translate-y-0.5",
                                         confirmDialog.tone === 'danger'
                                             ? "bg-gray-900 text-white hover:bg-gray-800"
                                             : "bg-blue-600 text-white hover:bg-blue-700"

@@ -93,7 +93,7 @@ export default function RetakeButton({ isCombined, singleType, quota }: RetakeBu
             <button
                 onClick={requestRetake}
                 disabled={isLoading}
-                className="flex justify-center items-center gap-3 px-8 py-4 rounded-2xl border-2 border-gray-900 bg-white hover:bg-gray-50 text-gray-900 font-black text-xl transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex justify-center items-center gap-3 px-8 py-4 rounded-2xl border-2 border-gray-900 bg-white hover:bg-gray-50 text-gray-900 font-black text-xl transition-all st-shadow-md active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {isLoading ? (
                     <Loader2 size={24} className="animate-spin" />

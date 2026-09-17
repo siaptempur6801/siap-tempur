@@ -19,7 +19,7 @@ export default function ConsistencyTracker({ data, score, activeCount }: { data:
                     </h3>
                     <p className="text-sm text-gray-600">Aktivitas belajar dalam 30 hari terakhir</p>
                 </div>
-                <div className="flex items-center gap-4 bg-green-200 border-2 border-gray-900 p-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex items-center gap-4 bg-green-200 border-2 border-gray-900 p-3 st-shadow-sm">
                     <div className="text-right">
                         <div className="text-2xl font-bold text-green-700">{score}%</div>
                         <div className="text-xs text-gray-700 uppercase font-bold tracking-wider">Consistency Score</div>

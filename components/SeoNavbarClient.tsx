@@ -53,7 +53,7 @@ export default function SeoNavbarClient({
 
     return (
         <header className="st-product fixed left-0 right-0 top-0 z-50 !bg-transparent px-4 py-3 md:px-8 md:py-4">
-            <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
+            <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 st-shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                     <Link href="/" className="st-focus shrink-0 font-display text-2xl font-black tracking-tight md:text-3xl">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
@@ -91,7 +91,7 @@ export default function SeoNavbarClient({
                         <summary className="st-focus flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border-2 border-[var(--st-ink)] bg-white marker:hidden" aria-label="Buka navigasi">
                             <Menu size={20} />
                         </summary>
-                        <div className="absolute right-0 top-full mt-3 w-[min(21rem,calc(100vw-2rem))] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-3 shadow-[4px_4px_0_var(--st-ink)]">
+                        <div className="absolute right-0 top-full mt-3 w-[min(21rem,calc(100vw-2rem))] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-3 st-shadow-md">
                             <nav className="grid gap-1 text-sm font-black" aria-label="Navigasi mobile">
                                 {navItems.map((item) => (
                                     <Link key={item.href} href={item.href} className="st-focus rounded-xl px-3 py-3 hover:bg-blue-50">

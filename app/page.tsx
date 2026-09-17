@@ -186,7 +186,7 @@ export default async function Index() {
     return (
         <main className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
             <header className="sticky top-0 z-50 px-4 py-3 md:px-8 md:py-4">
-                <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 shadow-[3px_3px_0_var(--st-ink)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
+                <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 st-shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
                     <Link href="/" className="st-focus shrink-0 font-display text-2xl font-black tracking-tight md:text-3xl">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>
@@ -218,7 +218,7 @@ export default async function Index() {
                             <summary className="st-focus flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border-2 border-[var(--st-ink)] bg-white marker:hidden" aria-label="Buka navigasi">
                                 <Menu size={20} />
                             </summary>
-                            <div className="absolute right-0 top-full mt-3 w-[min(19rem,calc(100vw-2rem))] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-3 shadow-[4px_4px_0_var(--st-ink)]">
+                            <div className="absolute right-0 top-full mt-3 w-[min(19rem,calc(100vw-2rem))] rounded-2xl border-2 border-[var(--st-ink)] bg-white p-3 st-shadow-md">
                                 <nav className="grid gap-1 text-sm font-black" aria-label="Navigasi mobile">
                                     <Link href="#produk" className="st-focus rounded-xl px-3 py-3 hover:bg-blue-50">Program</Link>
                                     <Link href="#beda" className="st-focus rounded-xl px-3 py-3 hover:bg-blue-50">Kenapa berbeda</Link>
@@ -240,7 +240,7 @@ export default async function Index() {
 
             <section className="relative px-4 pb-14 pt-12 md:px-8 md:pb-20 md:pt-16">
                 <div className="pointer-events-none absolute -left-24 top-24 h-56 w-56 rounded-full border-2 border-dashed border-amber-400 bg-[var(--st-yellow-soft)]" aria-hidden="true" />
-                <div className="pointer-events-none absolute -right-16 top-6 h-52 w-44 rotate-12 rounded-[2rem] border-2 border-dashed border-blue-300 bg-[var(--st-blue-soft)]" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-16 top-6 h-52 w-44 rotate-12 rounded-st-2xl border-2 border-dashed border-blue-300 bg-[var(--st-blue-soft)]" aria-hidden="true" />
 
                 <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
                     <div>
@@ -384,7 +384,7 @@ export default async function Index() {
             </section>
 
             <section id="beda" className="scroll-mt-28 px-4 py-16 md:px-8 md:py-24">
-                <div className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border-2 border-[var(--st-ink)] bg-white shadow-[5px_5px_0_var(--st-ink)]">
+                <div className="mx-auto max-w-7xl overflow-hidden rounded-st-2xl border-2 border-[var(--st-ink)] bg-white st-shadow-md">
                     <div className="grid lg:grid-cols-[0.85fr_1.15fr]">
                         <div className="bg-[var(--st-blue-soft)] p-6 md:p-10 lg:p-12">
                             <div className="st-kicker bg-white">Bukan cuma tryout</div>
@@ -446,7 +446,7 @@ export default async function Index() {
 
                         <div className="space-y-4">
                             {learningSteps.map(({ number, title, text, icon: Icon, surface }, index) => (
-                                <article key={number} className={`relative rounded-2xl border-2 border-[var(--st-ink)] p-5 md:p-6 ${surface} ${index === 0 || index === learningSteps.length - 1 ? 'shadow-[3px_3px_0_var(--st-ink)]' : ''}`}>
+                                <article key={number} className={`relative rounded-2xl border-2 border-[var(--st-ink)] p-5 md:p-6 ${surface} ${index === 0 || index === learningSteps.length - 1 ? 'st-shadow-sm' : ''}`}>
                                     <div className="flex gap-4 md:gap-6">
                                         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-[var(--st-ink)] bg-white font-display text-2xl font-black">{number}</div>
                                         <div className="pt-1">
@@ -482,7 +482,7 @@ export default async function Index() {
             </section>
 
             <section className="px-4 py-16 md:px-8 md:py-24">
-                <div className="mx-auto max-w-7xl rounded-[2rem] border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-6 md:p-10 lg:p-12">
+                <div className="mx-auto max-w-7xl rounded-st-2xl border-2 border-[var(--st-ink)] bg-[var(--st-yellow-soft)] p-6 md:p-10 lg:p-12">
                     <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
                         <div>
                             <div className="st-kicker bg-white">Satu akun</div>
@@ -529,7 +529,7 @@ export default async function Index() {
             </section>
 
             <section className="px-4 pb-20 pt-10 md:px-8 md:pb-28">
-                <div className="mx-auto max-w-7xl rounded-[2rem] border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white shadow-[6px_6px_0_var(--st-ink)] md:px-10 md:py-14">
+                <div className="mx-auto max-w-7xl rounded-st-2xl border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white st-shadow-md md:px-10 md:py-14">
                     <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto]">
                         <div>
                             <div className="inline-flex items-center gap-2 rounded-full border-2 border-white/70 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.1em]"><Sparkles size={14} /> Mulai dari targetmu</div>

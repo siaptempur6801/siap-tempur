@@ -67,7 +67,7 @@ export function Mascot({
         <span
             className={cn(
                 'inline-flex shrink-0 items-end justify-center overflow-hidden',
-                tone !== 'plain' && 'rounded-[1.75rem] p-3',
+                tone !== 'plain' && 'rounded-st-2xl p-3',
                 TONES[tone],
                 className,
             )}

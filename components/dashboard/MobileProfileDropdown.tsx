@@ -76,7 +76,7 @@ export default function MobileProfileDropdown({
                 onClick={() => setIsOpen(!isOpen)}
                 aria-label={isOpen ? 'Tutup menu profil' : 'Buka menu profil'}
                 aria-expanded={isOpen}
-                className="relative w-10 h-10 bg-white border-2 border-gray-900 flex items-center justify-center overflow-hidden hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all"
+                className="relative w-10 h-10 bg-white border-2 border-gray-900 flex items-center justify-center overflow-hidden hover:st-shadow-sm transition-all"
             >
                 {avatarUrl ? (
                     <Image
@@ -93,7 +93,7 @@ export default function MobileProfileDropdown({
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden font-display">
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-gray-900 st-shadow-md rounded-lg z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden font-display">
                     {/* Pattern Overlay */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
 
@@ -102,7 +102,7 @@ export default function MobileProfileDropdown({
                         <p className="text-sm text-gray-600 truncate font-sans">{user.email}</p>
 
                         <div className="mt-2.5 flex items-center gap-2">
-                            <span className="text-xs px-2 py-0.5 font-bold uppercase inline-flex items-center gap-1 border border-gray-900 bg-blue-100 text-blue-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]">
+                            <span className="text-xs px-2 py-0.5 font-bold uppercase inline-flex items-center gap-1 border border-gray-900 bg-blue-100 text-blue-900 st-shadow-sm">
                                 <Ticket size={12} className="fill-current" />
                                 {tokenBalance} Token
                             </span>
@@ -186,7 +186,7 @@ export default function MobileProfileDropdown({
 
             {showModal && mounted && createPortal(
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 font-sans">
-                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl st-shadow-lg max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
                         {/* Tape Effect */}
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-red-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
@@ -205,14 +205,14 @@ export default function MobileProfileDropdown({
                                 <button
                                     onClick={() => setShowModal(false)}
                                     disabled={isLoading}
-                                    className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold st-shadow-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                                 >
                                     Batal
                                 </button>
                                 <button
                                     onClick={handleSignout}
                                     disabled={isLoading}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold st-shadow-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     {isLoading ? 'Keluar...' : 'Ya, Keluar'}
                                 </button>

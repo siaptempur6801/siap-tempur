@@ -280,7 +280,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
                 <main className="mx-auto w-full max-w-[1600px] px-4 py-5 pb-24 sm:px-6 sm:py-7 lg:px-8 lg:pb-8">{children}</main>
             </div>
 
-            <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-slate-200 bg-white/95 px-2 shadow-[0_-6px_20px_rgba(15,23,42,0.06)] backdrop-blur-xl md:hidden">
+            <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-slate-200 bg-white/95 px-2 shadow-[0_-6px_20px_rgba(13,43,69,0.06)] backdrop-blur-xl md:hidden">
                 {mobileItems.map((item) => <MobileNavLink key={item.href} item={item} contextHref={contextualNavHref(item.href, currentProgram, currentTrack)}/>) }
             </nav>
         </div>

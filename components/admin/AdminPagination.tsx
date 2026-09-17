@@ -30,7 +30,7 @@ export default function AdminPagination({
     const endItem = Math.min(currentPage * pageSize, totalItems)
 
     return (
-        <div className="flex flex-col gap-3 border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 border-2 border-gray-900 bg-white p-4 st-shadow-md sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-bold text-gray-600">
                 Menampilkan {startItem}-{endItem} dari {totalItems} soal
             </p>
@@ -42,7 +42,7 @@ export default function AdminPagination({
                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                         currentPage <= 1
                             ? 'pointer-events-none border-2 border-gray-200 bg-gray-100 text-gray-400'
-                            : 'border-2 border-gray-900 bg-white text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
+                            : 'border-2 border-gray-900 bg-white text-gray-900 st-shadow-sm hover:-translate-y-0.5'
                     }`}
                 >
                     Sebelumnya
@@ -58,7 +58,7 @@ export default function AdminPagination({
                     className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                         currentPage >= totalPages
                             ? 'pointer-events-none border-2 border-gray-200 bg-gray-100 text-gray-400'
-                            : 'border-2 border-gray-900 bg-white text-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5'
+                            : 'border-2 border-gray-900 bg-white text-gray-900 st-shadow-sm hover:-translate-y-0.5'
                     }`}
                 >
                     Berikutnya

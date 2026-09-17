@@ -47,7 +47,7 @@ export default function VoucherClaim({ onSuccessClaim, isTka = false }: VoucherC
     }
 
     return (
-        <div className={isTka ? 'rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs space-y-4' : 'bg-white border-2 border-gray-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-6 space-y-4'}>
+        <div className={isTka ? 'rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs space-y-4' : 'bg-white border-2 border-gray-900 st-shadow-md p-6 space-y-4'}>
             {/* Header */}
             <div className="flex items-center gap-2.5">
                 <div className={isTka ? 'flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs' : 'text-blue-600'}>

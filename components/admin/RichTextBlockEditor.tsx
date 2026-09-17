@@ -109,7 +109,7 @@ function ColorPicker({ editor }: { editor: Editor }) {
       </ToolbarButton>
 
       {isOpen && (
-        <div className="absolute left-1/2 top-full z-50 mt-2 w-52 -translate-x-1/2 border-2 border-gray-900 bg-white p-2.5 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+        <div className="absolute left-1/2 top-full z-50 mt-2 w-52 -translate-x-1/2 border-2 border-gray-900 bg-white p-2.5 st-shadow-sm">
           <div className="mb-2 flex items-center justify-between border-b border-dashed border-gray-300 pb-1.5">
             <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Warna Teks</span>
             <span className="text-[10px] font-bold text-gray-500">{TEXT_COLORS.find(color => color.value === currentColor)?.label || 'Custom'}</span>
@@ -128,7 +128,7 @@ function ColorPicker({ editor }: { editor: Editor }) {
                 }}
                 className={cn(
                   'flex h-8 w-8 items-center justify-center border-2 bg-white transition hover:-translate-y-0.5 hover:border-gray-900',
-                  currentColor === color.value ? 'border-gray-900 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]' : 'border-gray-300'
+                  currentColor === color.value ? 'border-gray-900 st-shadow-sm' : 'border-gray-300'
                 )}
               >
                 {color.value ? (

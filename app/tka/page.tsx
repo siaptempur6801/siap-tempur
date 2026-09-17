@@ -79,7 +79,7 @@ function PublicTkaLanding() {
 
             <section className="relative px-4 pb-16 pt-32 md:px-8 md:pb-24 md:pt-36">
                 <div className="pointer-events-none absolute -left-24 top-40 h-52 w-52 rounded-full border-2 border-dashed border-amber-400 bg-[var(--st-yellow-soft)]" aria-hidden="true" />
-                <div className="pointer-events-none absolute -right-16 top-24 h-56 w-48 rotate-12 rounded-[2rem] border-2 border-dashed border-emerald-300 bg-[var(--st-green-soft)]" aria-hidden="true" />
+                <div className="pointer-events-none absolute -right-16 top-24 h-56 w-48 rotate-12 rounded-st-2xl border-2 border-dashed border-emerald-300 bg-[var(--st-green-soft)]" aria-hidden="true" />
 
                 <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[1.04fr_0.96fr] lg:gap-14">
                     <div>
@@ -145,7 +145,7 @@ function PublicTkaLanding() {
             </section>
 
             <section className="px-4 py-16 md:px-8 md:py-24">
-                <div className="mx-auto grid max-w-7xl items-center gap-8 rounded-[2rem] border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white shadow-[6px_6px_0_var(--st-ink)] md:grid-cols-[1fr_auto] md:px-10 md:py-12">
+                <div className="mx-auto grid max-w-7xl items-center gap-8 rounded-st-2xl border-2 border-[var(--st-ink)] bg-blue-600 px-6 py-10 text-white st-shadow-md md:grid-cols-[1fr_auto] md:px-10 md:py-12">
                     <div>
                         <h2 className="font-display text-4xl font-black leading-tight md:text-5xl">Mulai dari jenjangmu hari ini.</h2>
                         <p className="mt-3 max-w-2xl font-semibold leading-relaxed text-blue-100">Satu akun menyimpan perjalanan belajar TKA dari SD, SMP, hingga SMA.</p>

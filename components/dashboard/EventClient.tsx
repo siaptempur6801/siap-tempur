@@ -189,7 +189,7 @@ function ConfirmModal({ event, onConfirm, onCancel, isLoading }: {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-md border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] font-display"
+                className="w-full max-w-md border-4 border-gray-900 bg-white st-shadow-lg font-display"
             >
                 <div className="border-b-4 border-gray-900 bg-orange-400 px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -222,7 +222,7 @@ function ConfirmModal({ event, onConfirm, onCancel, isLoading }: {
                         <button
                             onClick={onConfirm}
                             disabled={isLoading}
-                            className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-900 bg-blue-600 py-3 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:shadow-none disabled:opacity-60"
+                            className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-900 bg-blue-600 py-3 font-black text-white st-shadow-md transition hover:translate-x-px hover:translate-y-px hover:shadow-none disabled:opacity-60"
                         >
                             {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} />}
                             Gas Mulai!
@@ -326,7 +326,7 @@ function EventCard({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
-                'relative overflow-hidden border-2 border-gray-900 bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]',
+                'relative overflow-hidden border-2 border-gray-900 bg-white st-shadow-md',
                 isLive && 'border-red-500 shadow-[6px_6px_0px_0px_rgba(239,68,68,0.5)]'
             )}
         >
@@ -344,7 +344,7 @@ function EventCard({
                 {/* --- Poster --- */}
                 <div className="w-full max-w-[360px] justify-self-center lg:max-w-none lg:justify-self-stretch">
                     {event.flyer_image_url && (
-                        <div className="relative aspect-[4/5] overflow-hidden border-2 border-gray-900 bg-blue-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="relative aspect-[4/5] overflow-hidden border-2 border-gray-900 bg-blue-50 st-shadow-md">
                             <Image
                                 src={event.flyer_image_url}
                                 alt={`Flyer ${event.title}`}
@@ -439,7 +439,7 @@ function EventCard({
                             href={event.group_link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex w-full items-center justify-center gap-2 border-2 border-green-700 bg-green-600 px-5 py-3 text-sm font-black uppercase text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-green-700 hover:shadow-none"
+                            className="flex w-full items-center justify-center gap-2 border-2 border-green-700 bg-green-600 px-5 py-3 text-sm font-black uppercase text-white st-shadow-md transition hover:translate-x-px hover:translate-y-px hover:bg-green-700 hover:shadow-none"
                         >
                             <ExternalLink size={16} />
                             Join Group
@@ -458,7 +458,7 @@ function EventCard({
                                 href={`/cpns/live/${event.id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-3 flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-yellow-300 px-3 py-2 text-xs font-black uppercase text-gray-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-yellow-200 hover:shadow-none"
+                                className="mt-3 flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-yellow-300 px-3 py-2 text-xs font-black uppercase text-gray-900 st-shadow-sm transition hover:translate-x-px hover:translate-y-px hover:bg-yellow-200 hover:shadow-none"
                             >
                                 <Trophy size={14} />
                                 Lihat Leaderboard
@@ -469,7 +469,7 @@ function EventCard({
                         <button
                             type="button"
                             onClick={() => onCertificate(event)}
-                            className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-500 px-3 py-3 text-sm font-black uppercase text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-emerald-600 hover:shadow-none"
+                            className="flex w-full items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-500 px-3 py-3 text-sm font-black uppercase text-white st-shadow-sm transition hover:translate-x-px hover:translate-y-px hover:bg-emerald-600 hover:shadow-none"
                         >
                             {event.certificate_number && event.certificate_name_locked_at ? <Download size={16} /> : <Award size={16} />}
                             {event.certificate_number && event.certificate_name_locked_at ? 'Preview Sertifikat' : 'Klaim Sertifikat'}
@@ -491,11 +491,11 @@ function EventCard({
                         className={cn(
                             'flex w-full items-center justify-center gap-2 border-2 border-gray-900 px-5 py-4 text-lg font-black transition-all',
                             state.action === 'pay' || state.action === 'check_payment'
-                                ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none'
+                                ? 'bg-amber-500 hover:bg-amber-600 text-white st-shadow-md hover:translate-x-px hover:translate-y-px hover:shadow-none'
                                 : ({
-                                    register: 'bg-blue-600 hover:bg-blue-700 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none',
-                                    start: 'bg-green-500 hover:bg-green-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none',
-                                    history: 'bg-gray-900 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none',
+                                    register: 'bg-blue-600 hover:bg-blue-700 text-white st-shadow-md hover:translate-x-px hover:translate-y-px hover:shadow-none',
+                                    start: 'bg-green-500 hover:bg-green-600 text-white st-shadow-md hover:translate-x-px hover:translate-y-px hover:shadow-none',
+                                    history: 'bg-gray-900 text-white st-shadow-md hover:translate-x-px hover:translate-y-px hover:shadow-none',
                                     disabled: 'bg-gray-100 text-gray-400 cursor-not-allowed',
                                 } as Record<string, string>)[state.action]
                         )}
@@ -558,7 +558,7 @@ function CertificateModal({
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="max-h-[92vh] w-full max-w-3xl overflow-y-auto border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                className="max-h-[92vh] w-full max-w-3xl overflow-y-auto border-4 border-gray-900 bg-white st-shadow-lg"
             >
                 <div className="flex items-center gap-3 border-b-4 border-gray-900 bg-emerald-400 px-6 py-4">
                     <Award className="h-7 w-7 text-gray-900" />
@@ -618,7 +618,7 @@ function CertificateModal({
                         <button
                             type="submit"
                             disabled={isPending}
-                            className="flex flex-1 items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-600 py-3 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition hover:translate-x-px hover:translate-y-px hover:bg-emerald-700 hover:shadow-none disabled:opacity-60"
+                            className="flex flex-1 items-center justify-center gap-2 border-2 border-gray-900 bg-emerald-600 py-3 font-black text-white st-shadow-md transition hover:translate-x-px hover:translate-y-px hover:bg-emerald-700 hover:shadow-none disabled:opacity-60"
                         >
                             {isPending ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
                             Simpan Nama
@@ -730,7 +730,7 @@ function EventPaymentModal({
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-md border-4 border-gray-900 bg-white shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]"
+                className="w-full max-w-md border-4 border-gray-900 bg-white st-shadow-lg"
             >
                 <div className="border-b-4 border-gray-900 bg-amber-400 px-6 py-4 flex items-center gap-3">
                     <Ticket className="h-7 w-7 text-gray-900" />
@@ -767,7 +767,7 @@ function EventPaymentModal({
                             Batal
                         </button>
                         <button onClick={handleBuy} disabled={isPending || isLoading}
-                            className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-900 bg-amber-500 py-3 font-black text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-px hover:translate-y-px hover:shadow-none transition disabled:opacity-60">
+                            className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-900 bg-amber-500 py-3 font-black text-white st-shadow-md hover:translate-x-px hover:translate-y-px hover:shadow-none transition disabled:opacity-60">
                             {isPending || isLoading ? <Loader2 size={18} className="animate-spin" /> : <CreditCard size={18} />}
                             {isLoading ? 'Memuat...' : shouldRefreshPendingToken ? 'Buat QRIS Baru' : 'Bayar Sekarang'}
                         </button>
@@ -933,7 +933,7 @@ export default function EventClient({ events }: EventClientProps) {
         <div className="space-y-8 font-display">
             {/* Header */}
             <div className="relative z-10">
-                <div className="mb-4 inline-flex -rotate-1 items-center gap-2 border-2 border-gray-900 bg-blue-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-blue-700 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+                <div className="mb-4 inline-flex -rotate-1 items-center gap-2 border-2 border-gray-900 bg-blue-100 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-blue-700 st-shadow-sm">
                     <CalendarDays size={14} />
                     <span>Event resmi Siap Tempur</span>
                 </div>
@@ -953,7 +953,7 @@ export default function EventClient({ events }: EventClientProps) {
                     ['Live', summary.live, <Radio key="live-icon" size={20} className="text-red-500" />],
                     ['Selesai', summary.closed, <CheckCircle2 key="closed-event-icon" size={20} className="text-gray-500" />],
                 ].map(([label, value, icon]) => (
-                    <div key={String(label)} className="border-2 border-gray-900 bg-white p-5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                    <div key={String(label)} className="border-2 border-gray-900 bg-white p-5 st-shadow-md">
                         <div className="flex items-center justify-between">
                             <p className="text-sm font-bold uppercase tracking-wide text-gray-500">{label as string}</p>
                             <span>{icon as React.ReactNode}</span>
@@ -995,7 +995,7 @@ export default function EventClient({ events }: EventClientProps) {
                                                     if (isPending) return
                                                     submitEventCode(event)
                                                 }}
-                                                className="mb-2 flex items-center gap-2 border-2 border-blue-600 bg-blue-50 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(15,23,42,0.18)]"
+                                                className="mb-2 flex items-center gap-2 border-2 border-blue-600 bg-blue-50 px-4 py-2 shadow-[4px_4px_0px_0px_rgba(13,43,69,0.18)]"
                                             >
                                                 <Lock size={12} className="text-blue-700 shrink-0" />
                                                 <label className="text-xs font-black uppercase text-blue-800 shrink-0">Kode Masuk:</label>
@@ -1010,7 +1010,7 @@ export default function EventClient({ events }: EventClientProps) {
                                                     type="submit"
                                                     disabled={isPending || !(eventCodes[event.id] || '').trim()}
                                                     aria-label="Submit kode masuk"
-                                                    className="flex shrink-0 items-center justify-center gap-1.5 border-2 border-blue-900 bg-blue-600 px-3 py-1.5 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_rgba(15,23,42,1)] transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-gray-200 disabled:text-gray-500 disabled:shadow-none"
+                                                    className="flex shrink-0 items-center justify-center gap-1.5 border-2 border-blue-900 bg-blue-600 px-3 py-1.5 text-xs font-black uppercase text-white shadow-[2px_2px_0px_0px_rgba(13,43,69,1)] transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:border-gray-400 disabled:bg-gray-200 disabled:text-gray-500 disabled:shadow-none"
                                                 >
                                                     {isPending && pendingEventId === event.id ? (
                                                         <Loader2 size={13} className="animate-spin" />

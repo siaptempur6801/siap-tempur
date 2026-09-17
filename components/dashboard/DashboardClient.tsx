@@ -197,7 +197,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                             <p className="mt-2 text-5xl font-black tracking-tight text-blue-700">{data.user.tryoutQuota}</p>
                             <p className="mt-1 text-sm font-bold text-slate-600">token tersisa</p>
                         </div>
-                        <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-white shadow-[2px_2px_0_#111827]">
+                        <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-white st-shadow-sm">
                             <Ticket size={22} />
                         </div>
                     </div>
@@ -233,7 +233,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                                 <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Perkembanganmu</p>
                                 <h2 id="gamification-title" className="st-heading mt-1 text-2xl">{data.stats.xp.toLocaleString('id-ID')} XP terkumpul</h2>
                             </div>
-                            <div className="flex items-center gap-2 border-2 border-slate-900 bg-orange-100 px-3 py-2 text-sm font-black text-orange-800 shadow-[2px_2px_0_#111827]">
+                            <div className="flex items-center gap-2 border-2 border-slate-900 bg-orange-100 px-3 py-2 text-sm font-black text-orange-800 st-shadow-sm">
                                 <Flame size={18} aria-hidden="true" /> {data.user.streak} hari
                             </div>
                         </div>
@@ -339,7 +339,7 @@ export default function DashboardClient({ data, greeting }: Props) {
                     </div>
                 ) : (
                     <article className="st-card-md p-8 text-center md:p-10">
-                        <div className="mx-auto flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-100 shadow-[2px_2px_0_#111827]">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-100 st-shadow-sm">
                             <BarChart3 size={24} />
                         </div>
                         <h3 className="st-heading mt-4 text-xl">Belum ada hasil yang bisa dianalisis</h3>

@@ -45,7 +45,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
     return (
         <div className="flex flex-col h-full min-h-[400px] p-2">
             <div className="mb-6 flex items-center gap-2">
-                <div className="p-2 bg-yellow-100 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div className="p-2 bg-yellow-100 border-2 border-gray-900 st-shadow-sm">
                     <BarChart3 className="w-5 h-5 text-gray-900" />
                 </div>
                 <div>
@@ -78,7 +78,7 @@ export default function CategoryChart({ data }: { data: CategoryData[] }) {
                     const gap = d.passing - d.score
                     const isPassed = d.score >= d.passing
                     return (
-                        <div key={d.subject} className="text-center p-2 bg-gray-50 border-2 border-gray-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center justify-center min-h-[80px]">
+                        <div key={d.subject} className="text-center p-2 bg-gray-50 border-2 border-gray-900 st-shadow-sm flex flex-col items-center justify-center min-h-[80px]">
                             <div className="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">{d.subject}</div>
                             <div className="text-3xl font-black mb-1">{d.score}</div>
                             <div className={`text-xs font-bold ${isPassed ? 'text-green-600' : 'text-red-500'}`}>

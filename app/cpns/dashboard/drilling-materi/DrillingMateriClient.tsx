@@ -238,7 +238,7 @@ export default function DrillingMateriClient({ activeSessionsByKey, materials, q
                         return (
                             <section key={type} className="space-y-4" aria-labelledby={`focused-${type}`}>
                                 <div className="flex items-center gap-3">
-                                    <div className={cn('flex h-11 w-11 items-center justify-center border-2 border-[var(--st-ink)] shadow-[3px_3px_0_var(--st-ink)]', style.badgeClassName)}>
+                                    <div className={cn('flex h-11 w-11 items-center justify-center border-2 border-[var(--st-ink)] st-shadow-sm', style.badgeClassName)}>
                                         <Icon size={22} />
                                     </div>
                                     <div>

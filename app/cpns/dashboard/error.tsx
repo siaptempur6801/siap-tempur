@@ -17,7 +17,7 @@ export default function DashboardError({
     return (
         <div className="st-product flex min-h-[60vh] w-full items-center justify-center px-4 py-10 font-body">
             <section className="st-card-md w-full max-w-xl bg-red-50 p-7 text-center md:p-9" role="alert">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center border-2 border-[var(--st-ink)] bg-white shadow-[3px_3px_0_var(--st-ink)]">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center border-2 border-[var(--st-ink)] bg-white st-shadow-sm">
                     <AlertTriangle className="h-7 w-7 text-red-600" />
                 </div>
                 <div className="st-kicker mt-5 bg-red-100">Ada gangguan</div>

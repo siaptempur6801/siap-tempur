@@ -59,7 +59,7 @@ export default function TkaDiagnosticStartButton({
                 type="button"
                 onClick={() => void start()}
                 disabled={Boolean(disabledReason) || loading}
-                className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm shadow-indigo-600/20 transition-all duration-150 hover:bg-indigo-700 hover:shadow-md hover:shadow-indigo-600/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:w-auto"
+                className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2.5 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-sm shadow-blue-600/20 transition-all duration-150 hover:bg-indigo-700 hover:shadow-md hover:shadow-blue-600/25 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:w-auto"
             >
                 {loading ? <LoadingSpinner label="Menyiapkan tes diagnostik" size="sm" /> : <BrainCircuit size={17} aria-hidden="true" />}
                 <span>{loading ? 'Menyiapkan tes...' : disabledReason || 'Mulai Tes Diagnostik'}</span>

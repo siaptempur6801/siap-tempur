@@ -164,7 +164,7 @@ export default function ProfileClient({
                                     ? 'rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs'
                                     : 'rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/80 shadow-2xs'
                                 : activeTab === tab.id
-                                    ? 'border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] shadow-[3px_3px_0_var(--st-ink)] font-black text-sm'
+                                    ? 'border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] st-shadow-sm font-black text-sm'
                                     : 'border-2 border-[var(--st-ink)] bg-white text-gray-600 hover:bg-blue-50 font-black text-sm'
                         )}
                     >

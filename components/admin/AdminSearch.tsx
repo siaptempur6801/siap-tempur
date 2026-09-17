@@ -56,7 +56,7 @@ export default function AdminSearch({ categoryMap }: { categoryMap: CategoryMap 
     const currentPageSize = searchParams.get('page_size') || '10'
 
     return (
-        <div className="border-2 border-gray-900 bg-white p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="border-2 border-gray-900 bg-white p-4 st-shadow-md">
             <div className="flex flex-col gap-3 md:flex-row md:items-end">
                 <div className="relative flex-1">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 transition-colors" size={18} />
