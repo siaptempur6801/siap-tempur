@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils'
 import TrackedLink from '@/components/analytics/TrackedLink'
 import ProgressBar from '@/components/ui/ProgressBar'
+import { Mascot } from '@/components/brand/Mascot'
 
 interface DashboardData {
     user: {
@@ -154,14 +155,17 @@ export default function DashboardClient({ data, greeting }: Props) {
 
     return (
         <div data-testid="cpns-dashboard-ready" className="space-y-8 md:space-y-10">
-            <header className="max-w-4xl">
-                <span className="st-kicker">{greeting.greeting}, {data.user.name}</span>
-                <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">
-                    Apa yang sebaiknya kamu kerjakan hari ini?
-                </h1>
-                <p className="st-muted mt-4 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
-                    Gunakan hasil belajarmu untuk memilih langkah berikutnya, bukan sekadar mengulang tryout.
-                </p>
+            <header className="flex items-start justify-between gap-6">
+                <div className="max-w-4xl">
+                    <span className="st-kicker">{greeting.greeting}, {data.user.name}</span>
+                    <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">
+                        Apa yang sebaiknya kamu kerjakan hari ini?
+                    </h1>
+                    <p className="st-muted mt-4 max-w-2xl text-base font-semibold leading-relaxed md:text-lg">
+                        Gunakan hasil belajarmu untuk memilih langkah berikutnya, bukan sekadar mengulang tryout.
+                    </p>
+                </div>
+                <Mascot name="tama" size="sm" tone="soft" className="hidden shrink-0 sm:inline-flex" />
             </header>
 
             <section className="grid gap-5 lg:grid-cols-[1.7fr_0.8fr]" aria-label="Langkah berikutnya">

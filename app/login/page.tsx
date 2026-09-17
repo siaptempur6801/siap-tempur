@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import LoginForm from '@/components/auth/LoginForm'
+import { MascotPair } from '@/components/brand/Mascot'
 import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ returnTo?: string }> }) {
@@ -23,6 +24,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                         <p className="st-muted mt-5 max-w-xl text-lg font-semibold leading-relaxed">
                             Akun yang sama digunakan untuk CPNS dan TKA yang tersedia. Sesi, hasil, token, dan perkembangan belajar tetap tersimpan sesuai jalur belajarmu.
                         </p>
+                        <MascotPair size="md" tone="soft" priority className="mt-8" />
                     </section>
 
                     <LoginForm returnTo={returnTo} />

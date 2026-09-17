@@ -248,6 +248,39 @@ utility lama otomatis on-brand):
 Utility brand eksplisit untuk kode baru: `bg-brand-ink`, `text-brand-blue`, `bg-brand-amber`,
 `bg-brand-peach`, `bg-brand-paper`.
 
+### 6.1 Maskot — Tama & Tara
+
+Maskot resmi brand: **Tama** (laki-laki) dan **Tara** (perempuan), keduanya memakai hoodie SiapTempur.
+
+| Aset | Berkas | Ukuran | Catatan |
+|---|---|---|---|
+| Tama | `public/tamapng.png` | 1080×1350, transparan | pose berdiri, mengangkat tangan |
+| Tara | `public/tarapng.png` | 1080×1350, transparan | pose berdiri, membawa alat tulis |
+
+Komponen: `components/brand/Mascot.tsx`
+
+```tsx
+<Mascot name="tama" size="sm" tone="soft" />
+<MascotPair size="md" tone="soft" priority />
+```
+
+- `size`: `xs` 64 · `sm` 96 · `md` 144 · `lg` 208 · `xl` 288 (lebar; tinggi mengikuti rasio 4:5)
+- `tone`: `plain` (tanpa bingkai) · `soft` (ubin gradien peach→blue lembut) · `paper` (ubin paper + border ink)
+
+**Aturan per experience mode**
+
+| Mode | Boleh? | Panduan |
+|---|---|---|
+| Marketing | ✅ | ekspresif di hero/highlight; maksimal 1–2 maskot per layar; jangan menutupi CTA atau teks |
+| Learning | ✅ terbatas | sapaan, empty state, dan momen sukses; **jangan** di dalam tabel data padat atau form |
+| Exam | ❌ | tidak dipakai sama sekali agar peserta fokus |
+
+**Aksesibilitas:** default dekoratif (`alt=""` + `aria-hidden`). Isi `alt` hanya bila maskot menyampaikan
+informasi yang tidak ada di teks.
+
+**Pemakaian saat ini:** hero landing `/`, halaman `/login`, halaman 404, header dashboard CPNS, dan empty
+state riwayat CPNS.
+
 **Tipografi:** Poppins (400/500/600/700/800) adalah font brand untuk **display dan body**
 (`--font-display`, `--font-sans`, `--font-body`). Patrick Hand hanya untuk aksen tulisan tangan yang
 disengaja (`--font-script`); Geist Mono tetap untuk kode/angka. Kelas lama `font-handwriting`

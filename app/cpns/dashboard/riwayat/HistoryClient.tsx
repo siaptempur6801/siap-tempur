@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Clock3, FileSearch, Search, SlidersHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Mascot } from '@/components/brand/Mascot'
 
 type HistorySession = {
     id: string
@@ -190,7 +191,7 @@ export default function HistoryClient({ sessions }: HistoryClientProps) {
                 </div>
             ) : sessions.length === 0 ? (
                 <section className="border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-                    <div className="mx-auto flex h-12 w-12 items-center justify-center border-2 border-[var(--st-ink)] bg-white"><Clock3 size={22} /></div>
+                    <Mascot name="tama" size="xs" tone="plain" className="mx-auto" />
                     <h2 className="st-heading mt-4 text-xl">Belum ada hasil belajar.</h2>
                     <p className="st-muted mt-1 text-sm font-semibold">Kerjakan satu mini tryout atau latihan fokus dulu. Setelah selesai, hasil dan pembahasannya otomatis muncul di sini.</p>
                     <Link href="/cpns/dashboard/mini-tryout" className="st-button mt-5 inline-flex min-h-11 items-center gap-2 bg-blue-600 px-5 py-2.5 text-sm font-black text-white">Mulai mini tryout <ArrowRight size={16} /></Link>

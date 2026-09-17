@@ -19,6 +19,7 @@ import {
     Zap,
 } from 'lucide-react'
 import { createV2Client } from '@/lib/utils/supabase/server'
+import { MascotPair } from '@/components/brand/Mascot'
 
 export const metadata: Metadata = {
     title: 'SiapTempur - Persiapan CPNS & TKA SD, SMP, SMA',
@@ -267,6 +268,9 @@ export default async function Index() {
                                 </span>
                             ))}
                         </div>
+
+                        {/* Maskot brand: hadir di layar ≥ tablet agar hero mobile tetap fokus ke CTA. */}
+                        <MascotPair size="md" tone="soft" priority className="mt-9 hidden sm:inline-flex" />
                     </div>
 
                     <div className="st-card-lg relative bg-white p-5 md:p-7">
