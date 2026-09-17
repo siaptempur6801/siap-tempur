@@ -1,6 +1,8 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { createClient } from "@/lib/utils/supabase/server";
+import { protectedHref } from "@/lib/protected-href";
 import { Section } from "@/components/ui/Section";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -38,7 +40,11 @@ const eventBenefits = [
     },
 ] as const;
 
-export default function EventPage() {
+export default async function EventPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const authed = Boolean(user)
+
     return (
         <div data-experience-mode="marketing" className="min-h-screen bg-[#fdfbf7]">
             <SeoNavbar />
@@ -60,7 +66,7 @@ export default function EventPage() {
                             Event tryout memberi kamu kesempatan mengerjakan sesi pada waktu yang sama dengan peserta event lainnya, lalu meninjau hasil setelah sesi selesai.
                         </p>
                         <Button handwriting={false} asChild size="lg" variant="primary">
-                            <Link href="/login?returnTo=/cpns/dashboard/event">
+                            <Link href={protectedHref('/cpns/dashboard/event', authed)}>
                                 Lihat event yang tersedia
                             </Link>
                         </Button>

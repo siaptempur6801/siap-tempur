@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { createClient } from "@/lib/utils/supabase/server";
+import { protectedHref } from "@/lib/protected-href";
 import { ArrowRight, BarChart3, CheckCircle2, Clock3, Target, Zap } from "lucide-react";
 import StructuredData from "@/components/StructuredData";
 import SeoNavbar from "@/components/SeoNavbar";
@@ -40,7 +42,11 @@ const benefits = [
     { icon: BarChart3, title: "Gunakan hasil untuk memilih latihan", text: "Setelah selesai, lihat hasil yang tersedia dan lanjutkan ke latihan yang paling relevan untukmu.", tone: "bg-emerald-100 text-emerald-700" },
 ] as const;
 
-export default function MiniTryoutPage() {
+export default async function MiniTryoutPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const authed = Boolean(user)
+
     return (
         <main data-experience-mode="marketing" data-program="cpns" className="st-product min-h-screen pb-20">
             <StructuredData data={faqSchema} />
@@ -55,7 +61,7 @@ export default function MiniTryoutPage() {
                     <p className="st-muted mx-auto mt-6 max-w-3xl text-lg font-semibold leading-relaxed md:text-xl">Gunakan Mini Tryout untuk melihat kemampuanmu pada bagian tertentu, lalu tentukan apakah kamu perlu Latihan Fokus atau sudah siap mencoba sesi yang lebih lengkap.</p>
                     <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
                         <Button size="lg" className="w-full sm:w-auto" asChild>
-                            <Link href="/login?returnTo=/cpns/dashboard/mini-tryout">Mulai Mini Tryout <ArrowRight className="h-5 w-5" /></Link>
+                            <Link href={protectedHref('/cpns/dashboard/mini-tryout', authed)}>Mulai Mini Tryout <ArrowRight className="h-5 w-5" /></Link>
                         </Button>
                         <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
                             <Link href="/cpns/full-tryout">Bandingkan dengan Full Tryout</Link>
@@ -95,8 +101,8 @@ export default function MiniTryoutPage() {
                     <h2 className="st-heading-display text-4xl md:text-5xl">Pilih Mini Tryout dari akunmu.</h2>
                     <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">Detail sesi dan kebutuhan token akan ditampilkan sebelum kamu memulai, sehingga kamu bisa memilih latihan yang sesuai tanpa menebak biaya atau aturan akses.</p>
                     <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-                        <Button size="lg" className="w-full sm:w-auto" asChild><Link href="/login?returnTo=/cpns/dashboard/mini-tryout">Lihat Mini Tryout</Link></Button>
-                        <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild><Link href="/login?returnTo=/cpns/dashboard/beli-paket">Lihat paket token</Link></Button>
+                        <Button size="lg" className="w-full sm:w-auto" asChild><Link href={protectedHref('/cpns/dashboard/mini-tryout', authed)}>Lihat Mini Tryout</Link></Button>
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild><Link href={protectedHref('/cpns/dashboard/beli-paket', authed)}>Lihat paket token</Link></Button>
                     </div>
                 </div>
             </section>

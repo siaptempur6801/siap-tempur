@@ -1,6 +1,8 @@
 import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { createClient } from "@/lib/utils/supabase/server";
+import { protectedHref } from "@/lib/protected-href";
 import { Section } from "@/components/ui/Section";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -44,7 +46,11 @@ const sections = [
     },
 ] as const;
 
-export default function DrillingMateriPage() {
+export default async function DrillingMateriPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const authed = Boolean(user)
+
     return (
         <div data-experience-mode="marketing" className="min-h-screen bg-[#fdfbf7]">
             <SeoNavbar />
@@ -66,7 +72,7 @@ export default function DrillingMateriPage() {
                             Pilih TWK, TIU, atau TKP ketika kamu ingin memberi waktu lebih banyak pada bagian tertentu. Setelah latihan, gunakan hasilnya untuk menentukan apakah kamu perlu mengulang atau lanjut ke tryout.
                         </p>
                         <Button handwriting={false} asChild size="lg" className="mt-8">
-                            <Link href="/login?returnTo=/cpns/dashboard/drilling-materi">Mulai latihan fokus</Link>
+                            <Link href={protectedHref('/cpns/dashboard/drilling-materi', authed)}>Mulai latihan fokus</Link>
                         </Button>
                     </section>
 
@@ -120,7 +126,7 @@ export default function DrillingMateriPage() {
                             </p>
                             <div className="flex flex-col sm:flex-row justify-center gap-4">
                                 <Button handwriting={false} asChild size="lg">
-                                    <Link href="/login?returnTo=/cpns/dashboard/drilling-materi">Buka latihan fokus</Link>
+                                    <Link href={protectedHref('/cpns/dashboard/drilling-materi', authed)}>Buka latihan fokus</Link>
                                 </Button>
                                 <Button handwriting={false} asChild size="lg" variant="outline">
                                     <Link href="/cpns/mini-tryout">Lihat mini tryout</Link>

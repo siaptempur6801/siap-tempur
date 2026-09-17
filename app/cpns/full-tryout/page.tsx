@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { createClient } from "@/lib/utils/supabase/server";
+import { protectedHref } from "@/lib/protected-href";
 import {
     ArrowRight,
     BarChart3,
@@ -69,7 +71,11 @@ const benefits = [
     },
 ] as const;
 
-export default function FullTryoutPage() {
+export default async function FullTryoutPage() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const authed = Boolean(user)
+
     return (
         <main data-experience-mode="marketing" data-program="cpns" className="st-product min-h-screen pb-20">
             <StructuredData data={faqSchema} />
@@ -89,15 +95,19 @@ export default function FullTryoutPage() {
                     </p>
                     <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
                         <Button size="lg" className="w-full sm:w-auto" asChild>
-                            <Link href="/login?returnTo=/cpns/dashboard/tryout">
+                            <Link href={protectedHref('/cpns/dashboard/tryout', authed)}>
                                 Mulai Full Tryout <ArrowRight className="h-5 w-5" />
                             </Link>
                         </Button>
                         <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                            <Link href="/login?returnTo=/cpns/dashboard/beli-paket">Lihat paket token</Link>
+                            <Link href={protectedHref('/cpns/dashboard/beli-paket', authed)}>Lihat paket token</Link>
                         </Button>
                     </div>
-                    <p className="st-muted mt-4 text-sm font-bold">Kamu akan diminta masuk terlebih dahulu agar sesi dan hasil belajarmu tersimpan.</p>
+                    <p className="st-muted mt-4 text-sm font-bold">
+                        {authed
+                            ? 'Sesi dan hasil tryout akan tersimpan di akunmu.'
+                            : 'Kamu akan diminta masuk terlebih dahulu agar sesi dan hasil belajarmu tersimpan.'}
+                    </p>
                 </div>
             </section>
 
@@ -143,7 +153,7 @@ export default function FullTryoutPage() {
                     <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">Mulai Full Tryout saat kamu siap. Jika token belum tersedia, kamu bisa melihat pilihan paket terlebih dahulu.</p>
                     <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
                         <Button size="lg" className="w-full sm:w-auto" asChild>
-                            <Link href="/login?returnTo=/cpns/dashboard/tryout">Mulai Full Tryout <ArrowRight className="h-5 w-5" /></Link>
+                            <Link href={protectedHref('/cpns/dashboard/tryout', authed)}>Mulai Full Tryout <ArrowRight className="h-5 w-5" /></Link>
                         </Button>
                         <Button size="lg" variant="secondary" className="w-full sm:w-auto" asChild>
                             <Link href="/cpns">Kembali ke persiapan CPNS</Link>
