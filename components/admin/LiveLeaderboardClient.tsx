@@ -190,7 +190,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                     </div>
                     <div className="min-w-0">
                         <div className="flex min-w-0 items-baseline gap-2">
-                            <span className="hidden shrink-0 font-display text-lg font-black text-slate-950 sm:inline">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</span>
+                            <span className="hidden shrink-0 font-script text-lg font-black text-slate-950 sm:inline">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</span>
                             <span className="hidden text-slate-300 sm:inline">/</span>
                             <h1 className="truncate font-display text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
                             {isFinalLeaderboard ? 'Leaderboard Event' : 'Live Leaderboard'}

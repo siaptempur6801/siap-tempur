@@ -154,7 +154,7 @@ export default function Home({ user: initialUser, activeEvents = [], completedEv
                 <nav className="container mx-auto px-4 md:px-6 lg:px-8 h-20 flex items-center justify-between relative">
 
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll ke atas" className="flex items-center group cursor-pointer">
-                        <span className="text-3xl font-display font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
+                        <span className="text-3xl font-script font-bold text-gray-800 -rotate-1 group-hover:rotate-0 transition-transform leading-tight">
                             Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </span>
                     </button>

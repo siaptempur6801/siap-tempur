@@ -609,7 +609,7 @@ export default function CpnsProductLandingV12({
 
             <footer className="border-t border-gray-200 bg-white px-4 py-8 md:px-8">
                 <div className="px-container-marketing flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                    <div><Link href="/" className="font-display text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link><p className="st-muted mt-1 text-sm font-semibold">Persiapan SKD CPNS dengan latihan yang lebih terarah.</p></div>
+                    <div><Link href="/" className="font-script text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link><p className="st-muted mt-1 text-sm font-semibold">Persiapan SKD CPNS dengan latihan yang lebih terarah.</p></div>
                     <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600"><Link href="/" className="hover:text-blue-700">Beranda</Link><Link href="/tka" className="hover:text-green-700">TKA</Link><Link href="/blog" className="hover:text-blue-700">Artikel</Link><Link href="/syarat-ketentuan" className="hover:text-blue-700">Syarat & Ketentuan</Link><Link href="/kebijakan-privasi" className="hover:text-blue-700">Privasi</Link></div>
                 </div>
                 <div className="px-container-marketing mt-6 border-t border-gray-200 pt-5 text-xs font-semibold text-gray-500">© SiapTempur Indonesia</div>

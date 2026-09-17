@@ -318,9 +318,10 @@ aplikasi (`app/error.tsx`), header dashboard CPNS, header dashboard TKA, empty s
 kartu skor hasil ujian TKA + CPNS. Sesi ujian (exam mode) tetap **tanpa** maskot.
 
 **Tipografi:** Poppins (400/500/600/700/800) adalah font brand untuk **display dan body**
-(`--font-display`, `--font-sans`, `--font-body`). Patrick Hand hanya untuk aksen tulisan tangan yang
-disengaja (`--font-script`); Geist Mono tetap untuk kode/angka. Kelas lama `font-handwriting`
-dipertahankan sebagai alias Poppins agar tidak ada kelas yatim.
+(`--font-display`, `--font-sans`, `--font-body`). Patrick Hand dipertahankan untuk **aksen tulisan
+tangan** (`--font-script`, alias lama `--font-handwriting`) dan **wajib dipakai pada wordmark/logo**
+"SiapTempur." di header, footer, onboarding, dashboard CPNS/TKA, serta shell admin — supaya identitas
+logo tetap seperti aslinya. Geist Mono tetap untuk kode/angka.
 
 
 Do not treat colors merely as decoration. Define semantic roles.

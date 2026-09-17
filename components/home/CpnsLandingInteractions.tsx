@@ -130,7 +130,7 @@ export default function CpnsLandingInteractions({
             <header className="sticky top-0 z-50 px-4 py-2.5 md:px-8 md:py-3.5">
                 <div className="px-container-marketing relative flex min-h-14 items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 st-shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:min-h-16 md:px-5">
                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                        <Link href="/" className="st-focus shrink-0 font-display text-2xl font-black tracking-tight md:text-3xl">
+                        <Link href="/" className="st-focus shrink-0 font-script text-2xl font-black tracking-tight md:text-3xl">
                             Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </Link>
                         <span className="inline-flex shrink-0 rounded-full border-2 border-[var(--st-ink)] bg-blue-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-blue-800 sm:px-2.5 sm:text-[11px]">CPNS</span>

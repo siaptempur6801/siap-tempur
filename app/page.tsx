@@ -187,7 +187,7 @@ export default async function Index() {
         <main className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
             <header className="sticky top-0 z-50 px-4 py-3 md:px-8 md:py-4">
                 <div className="relative mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 rounded-2xl border-2 border-[var(--st-ink)] bg-white/90 px-4 st-shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-white/80 md:px-5">
-                    <Link href="/" className="st-focus shrink-0 font-display text-2xl font-black tracking-tight md:text-3xl">
+                    <Link href="/" className="st-focus shrink-0 font-script text-2xl font-black tracking-tight md:text-3xl">
                         Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                     </Link>
 

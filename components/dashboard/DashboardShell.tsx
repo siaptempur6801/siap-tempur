@@ -83,7 +83,7 @@ export default function DashboardShell({
                         href="/cpns"
                         className="st-focus inline-flex items-center focus-visible:outline-none"
                     >
-                        <span className="font-display text-[1.65rem] font-black leading-tight text-slate-950">
+                        <span className="font-script text-[1.65rem] font-black leading-tight text-slate-950">
                             Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                         </span>
                     </Link>

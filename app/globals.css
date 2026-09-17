@@ -242,7 +242,8 @@
   --font-sans: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
   --font-script: var(--font-patrick, "Patrick Hand"), cursive;
-  --font-handwriting: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
+  /* Alias lama: tetap berarti "tulisan tangan" (dipakai wordmark/logo & aksen dekoratif). */
+  --font-handwriting: var(--font-patrick, "Patrick Hand"), cursive;
 }
 
 /* =====================================================================
