@@ -26,7 +26,7 @@ const programOptions = [
         actionClass: 'bg-blue-600 text-white',
     },
     {
-        href: '/tka',
+        href: '/onboarding/tka',
         code: 'TKA',
         title: 'TKA sesuai jenjang',
         description: 'Lanjutkan ke ruang belajar SD, SMP, atau SMA sesuai jenjang aktifmu.',
