@@ -192,10 +192,31 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 
 ## In Progress
 
-- [ ] **Menjalankan 3 gerbang acceptance staging** (Round 8): `tka-staging-e2e.yml`,
-      `cpns-staging-e2e.yml`, `admin-workspace-staging-e2e.yml` — semuanya `ubuntu-24.04` +
-      `workflow_dispatch`. `content-review-staging-e2e.yml` tidak dapat dijalankan karena memakai
-      runner self-hosted macOS ARM64 (`192`) yang offline.
+- [ ] **Gerbang acceptance staging (Round 8) — run pertama `workflow_dispatch` di `777203b`:**
+
+  | Gate | Hasil | Akar masalah |
+  |---|---|---|
+  | TKA SMP Staging E2E (`35138490726`) | ❌ gagal di **setup** | Assertion memakai teks `Jalur belajar aktif` yang sudah tidak ada; UI merender `Jalur belajar SMP aktif. …` → **FIXED di `3f4e667`** |
+  | CPNS Staging E2E (`35138586647`) | ❌ gagal di **setup** | Login user staging disposabel ditolak di deployment yang dipakai (toast `Email atau password salah`) |
+  | Admin Workspace Staging E2E (`35138597772`) | ❌ gagal di **setup** | Sebab sama dengan CPNS |
+  | CI + Schema V2 CI (`777203b`, `3f4e667`) | ✅ success | — |
+
+  **Akar masalah CPNS/Admin:** deployment yang saya pakai sebagai `preview_url` adalah deployment
+  **Production** (dibuat otomatis oleh push ke `main`), yang memakai Supabase **produksi** — bukan
+  staging. Dibuktikan: kredensial yang sama **berhasil** login langsung ke staging Supabase, tetapi
+  **ditolak** di deployment tersebut (toast `Email atau password salah`).
+  Gate CPNS/Admin memang memerlukan deployment **Preview** (env staging) dan resolver
+  `scripts/resolve_vercel_preview.mjs` memverifikasi `deploymentCommitSha === expectedSha`.
+  Vercel **tidak** membuat deployment Preview untuk push branch biasa (`rc/staging-gates`), hanya
+  Production untuk `main` → jalan yang disetujui pengguna: buka **PR** agar Vercel membuat Preview
+  (env staging) dan workflow `pull_request` meng-auto-resolve URL-nya.
+
+  **Hygiene:** 17 user CI tertinggal (`ci-tka-*`, `ci-admin-*`, `ci-cpns-*`, sejak 2026-09-01) sudah
+  dihapus dari staging; sisa `ci-*` = 0. Penyebabnya cleanup Edge Function `ci-e2e-*` pernah gagal
+  (`CI_E2E_CPNS_FAILED` 500) — perlu ditelusuri bila terulang.
+
+  Catatan: `content-review-staging-e2e.yml` tidak dapat dijalankan karena memakai runner self-hosted
+  macOS ARM64 (`192`) yang offline.
 
 ## Remaining
 
