@@ -2,7 +2,7 @@ import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import TkaDashboardShell from '@/components/tka/TkaDashboardShell'
 import { createClient } from '@/lib/utils/supabase/server'
-import { parseTkaLevel, type TkaLevel } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, type TkaLevel } from '@/src/tka/context'
 import { hasActiveTempurPass } from '@/src/services/tempur-pass.service'
 
 export const dynamic = 'force-dynamic'
@@ -24,11 +24,15 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
 
     const pathname = requestHeaders.get('x-pathname')
 
-    // Halaman pengenalan TKA (`/tka`) adalah permukaan marketing: selalu tampil tanpa chrome
-    // aplikasi — juga saat dibuka pengguna yang sudah login (mis. dari tautan logo di shell).
-    // Di luar itu, pengunjung anonim tetap bebas chrome (marketing & coming soon publik).
+    // Permukaan marketing TKA selalu tampil tanpa chrome aplikasi — juga untuk pengguna login:
+    // 1. halaman pengenalan `/tka`, dan
+    // 2. halaman jenjang yang belum tersedia (`/tka/sd`, `/tka/sma` → "coming soon").
+    // Sub-halaman jenjang (mis. `/tka/sd/focus`) tetap memakai shell karena itu permukaan aplikasi.
     const isMarketingLanding = pathname === '/tka' || pathname === '/tka/'
-    if (!user || isMarketingLanding) return <>{children}</>
+    const levelLanding = parseTkaLevel(pathname?.match(/^\/tka\/([^/]+)\/?$/i)?.[1])
+    const isComingSoonLanding = Boolean(levelLanding && !isTkaLevelAvailable(levelLanding))
+    // Pengunjung anonim juga bebas chrome di seluruh permukaan publik.
+    if (!user || isMarketingLanding || isComingSoonLanding) return <>{children}</>
 
     const [{ data: profile }, hasTempurPass] = await Promise.all([
         supabase
