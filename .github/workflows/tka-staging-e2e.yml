@@ -49,6 +49,9 @@ env:
   # absent from GitHub; CI provisioning uses GitHub OIDC -> staging Edge Function.
   SUPABASE_SERVICE_ROLE_KEY: ci-no-service-role
   NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+  # Suite staging membuat banyak user disposabel & login dari satu alamat runner,
+  # sehingga limiter auth per-IP memblokir skenario yang sah. Hanya untuk gate staging.
+  E2E_DISABLE_AUTH_RATE_LIMIT: '1'
   # Core TKA CI intentionally does not hold real payment credentials.
   # Provider-paid Midtrans sandbox lifecycle is verified separately on Vercel Preview.
   MIDTRANS_SERVER_KEY_SANDBOX: e2e-not-used

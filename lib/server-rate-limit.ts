@@ -71,6 +71,16 @@ export async function getRequestIp(): Promise<string> {
 }
 
 /**
+ * Uji E2E staging membuat banyak user disposabel dan login berkali-kali dari satu alamat
+ * (runner CI), sehingga limit per-IP memblokir skenario yang sah. Bypass hanya aktif bila
+ * env `E2E_DISABLE_AUTH_RATE_LIMIT === '1'` diset eksplisit — **tidak pernah** diset di
+ * produksi, dan default tanpa env tetap memakai limit ketat di atas.
+ */
+export function isAuthRateLimitBypassed() {
+    return process.env.E2E_DISABLE_AUTH_RATE_LIMIT === '1'
+}
+
+/**
  * Rate limit untuk action auth tanpa sesi. Mengecek IP selalu, dan email (bila
  * disediakan) hanya untuk action yang memicunya.
  *
@@ -80,6 +90,8 @@ export async function isAuthActionRateLimited(
     action: AuthRateLimitAction,
     email?: string | null,
 ): Promise<boolean> {
+    if (isAuthRateLimitBypassed()) return false
+
     const policy = AUTH_RATE_LIMITS[action]
     const ip = await getRequestIp()
 

@@ -8,7 +8,12 @@ vi.mock('next/headers', () => ({
     headers: async () => new Headers({ 'x-real-ip': requestState.ip }),
 }))
 
-import { AUTH_RATE_LIMITS, hashRateLimitSubject, isAuthActionRateLimited } from '@/lib/server-rate-limit'
+import {
+    AUTH_RATE_LIMITS,
+    hashRateLimitSubject,
+    isAuthActionRateLimited,
+    isAuthRateLimitBypassed,
+} from '@/lib/server-rate-limit'
 
 const repoRoot = resolve(__dirname, '../..')
 
@@ -128,5 +133,30 @@ describe('kontrak: auth action memakai limiter', () => {
             expect(clientAt, `${name}: createV2Client tidak ditemukan`).toBeGreaterThan(-1)
             expect(limiterAt, `${name}: limiter harus dipasang sebelum Supabase`).toBeLessThan(clientAt)
         }
+    })
+})
+
+describe('bypass rate limit untuk gate E2E staging', () => {
+    it('nonaktif secara default (tanpa env)', async () => {
+        delete process.env.E2E_DISABLE_AUTH_RATE_LIMIT
+        expect(isAuthRateLimitBypassed()).toBe(false)
+        const ip = freshIp()
+        requestState.ip = ip
+        for (let index = 0; index < AUTH_RATE_LIMITS.login.ip.limit; index += 1) {
+            expect(await isAuthActionRateLimited('login')).toBe(false)
+        }
+        // Permintaan ke-(limit + 1) tetap ditolak seperti sebelumnya.
+        expect(await isAuthActionRateLimited('login')).toBe(true)
+    })
+
+    it('hanya aktif bila env E2E_DISABLE_AUTH_RATE_LIMIT=1', async () => {
+        process.env.E2E_DISABLE_AUTH_RATE_LIMIT = '1'
+        expect(isAuthRateLimitBypassed()).toBe(true)
+        requestState.ip = freshIp()
+        for (let index = 0; index < AUTH_RATE_LIMITS.login.ip.limit + 5; index += 1) {
+            expect(await isAuthActionRateLimited('login')).toBe(false)
+        }
+        delete process.env.E2E_DISABLE_AUTH_RATE_LIMIT
+        expect(isAuthRateLimitBypassed()).toBe(false)
     })
 })

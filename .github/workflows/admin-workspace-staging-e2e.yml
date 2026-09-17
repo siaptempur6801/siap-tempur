@@ -39,6 +39,9 @@ env:
   NEXT_PUBLIC_APP_ENV: staging
   E2E_ADMIN_STAGING: '1'
   E2E_REMOTE_BASE_URL: '1'
+  # Suite staging membuat banyak user disposabel & login dari satu alamat runner,
+  # sehingga limiter auth per-IP memblokir skenario yang sah. Hanya untuk gate staging.
+  E2E_DISABLE_AUTH_RATE_LIMIT: '1'
   PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
   PR_NUMBER: ${{ github.event.pull_request.number || '' }}
   VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
