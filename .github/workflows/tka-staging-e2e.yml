@@ -80,6 +80,31 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      # Flag monetisasi adalah state global di staging. Bila run sebelumnya gagal di tengah,
+      # flag bisa tertinggal ON dan membuat spec 6/8 (yang butuh jalur bebas) gagal.
+      # Reset di awal membuat gate hermetis terhadap run sebelumnya.
+      - name: Reset TKA SMP monetization enforcement before run
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL
+          const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN
+          if (!requestUrl || !requestToken) throw new Error('GitHub OIDC environment unavailable for M4 pre-cleanup')
+          const separator = requestUrl.includes('?') ? '&' : '?'
+          const tokenResponse = await fetch(`${requestUrl}${separator}audience=${encodeURIComponent('siap-tempur-staging-e2e')}`, {
+            headers: { Authorization: `bearer ${requestToken}` },
+          })
+          if (!tokenResponse.ok) throw new Error(`OIDC pre-cleanup token failed: ${tokenResponse.status}`)
+          const { value } = await tokenResponse.json()
+          if (!value) throw new Error('GitHub OIDC token empty')
+          const response = await fetch('https://lpgrivowdcepcxradavu.supabase.co/functions/v1/ci-e2e-m4', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${value}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'set_enforcement', enabled: false }),
+          })
+          if (!response.ok) throw new Error(`M4 enforcement pre-reset failed: ${response.status} ${await response.text()}`)
+          NODE
+
       - name: Run TKA SMP core exam E2E
         run: npx playwright test --project=chromium-tka-staging
 

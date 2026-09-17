@@ -95,8 +95,11 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
 
         const full = examCard(page, 'Tryout Lengkap TKA SMP')
         await expect(full).toBeVisible()
-        await full.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
-        await expect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
+        // Enforcement ON tanpa pass: tombol mulai diganti tombol terkunci yang disabled,
+        // jadi tidak ada lagi toast "Paket aktif diperlukan..." setelah klik.
+        const locked = full.getByRole('button', { name: 'Butuh Tempur Pass', exact: true })
+        await expect(locked).toBeVisible()
+        await expect(locked).toBeDisabled()
         await expect(page).toHaveURL(/\/tka\/smp\/tryout$/)
     })
 
@@ -110,8 +113,7 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
 
         await page.goto('/tka/smp/tryout')
         const full = examCard(page, 'Tryout Lengkap TKA SMP')
-        await full.getByRole('button', { name: 'Mulai Tryout', exact: true }).click()
-        await expect(page.getByText('Paket aktif diperlukan untuk membuka tryout ini.', { exact: true })).toBeVisible()
+        await expect(full.getByRole('button', { name: 'Butuh Tempur Pass', exact: true })).toBeDisabled()
     })
 
     test('active Tempur Pass shows expiry/renewal UX and unlocks Full Tryout', async ({ page }) => {
