@@ -22,8 +22,13 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
     ])
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Public TKA marketing and coming-soon surfaces stay accessible without app chrome.
-    if (!user) return <>{children}</>
+    const pathname = requestHeaders.get('x-pathname')
+
+    // Halaman pengenalan TKA (`/tka`) adalah permukaan marketing: selalu tampil tanpa chrome
+    // aplikasi — juga saat dibuka pengguna yang sudah login (mis. dari tautan logo di shell).
+    // Di luar itu, pengunjung anonim tetap bebas chrome (marketing & coming soon publik).
+    const isMarketingLanding = pathname === '/tka' || pathname === '/tka/'
+    if (!user || isMarketingLanding) return <>{children}</>
 
     const [{ data: profile }, hasTempurPass] = await Promise.all([
         supabase
@@ -34,7 +39,7 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
         hasActiveTempurPass(user.id),
     ])
 
-    const activeLevel = levelFromPath(requestHeaders.get('x-pathname'))
+    const activeLevel = levelFromPath(pathname)
 
     // Script Midtrans Snap sengaja TIDAK dimuat di sini. Satu-satunya halaman TKA
     // yang memakainya adalah /tka/[level]/pass, dan halaman itu memuatnya sendiri.
