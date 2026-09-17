@@ -12,7 +12,7 @@ import TkaStartDrillButton from '@/components/tka/TkaStartDrillButton'
 import ProgressBar from '@/components/ui/ProgressBar'
 import { createClient } from '@/lib/utils/supabase/server'
 import { cn } from '@/lib/utils'
-import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -46,7 +46,7 @@ export default async function TkaDiagnosticResultPage({
     const level = parseTkaLevel(rawLevel)
     if (!level) notFound()
     const base = tkaLevelPath(level)
-    if (level !== 'SMP') redirect(base)
+    if (!isTkaLevelAvailable(level)) redirect(base)
 
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()

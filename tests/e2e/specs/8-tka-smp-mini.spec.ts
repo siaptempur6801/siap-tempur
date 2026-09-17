@@ -136,16 +136,19 @@ async function finishMini(page: Page, expectedSubject: string) {
 }
 
 test.describe.serial('TKA SMP Mini Tryout core', () => {
-    test('SD coming-soon remains public and mobile-safe while SMP is the active pilot', async ({ browser }) => {
-        const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
-        const page = await context.newPage()
-        await page.setViewportSize({ width: 390, height: 844 })
-        await page.goto('/tka/sd')
+    test('SD & SMA aktif: pengunjung anonim diarahkan ke login dan tetap aman di mobile', async ({ browser }) => {
+        // Kebijakan 2026-09-17: SD dan SMA bukan lagi "coming soon" — keduanya permukaan aplikasi
+        // sehingga pengunjung anonim diarahkan ke login (sama seperti SMP).
+        for (const level of ['sd', 'sma']) {
+            const context = await browser.newContext({ storageState: { cookies: [], origins: [] } })
+            const page = await context.newPage()
+            await page.setViewportSize({ width: 390, height: 844 })
+            await page.goto(`/tka/${level}`)
 
-        await expect(page).toHaveURL(/\/tka\/sd$/i)
-        await expect(page.getByRole('heading', { name: 'Pengalaman belajar TKA SD sedang kami siapkan.', exact: true })).toBeVisible()
-        await assertNoDocumentOverflow(page)
-        await context.close()
+            await expect(page).toHaveURL(new RegExp(`/login\\?returnTo=%2Ftka%2F${level}$`, 'i'))
+            await assertNoDocumentOverflow(page)
+            await context.close()
+        }
     })
 
     test('Bahasa Indonesia: mobile resume, result, history, projection, dashboard, error state, and one-free-attempt limit', async ({ page }) => {

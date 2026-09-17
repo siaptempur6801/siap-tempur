@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ArrowRight, BrainCircuit, CheckCircle2, Clock3, History, ListChecks, RotateCcw } from 'lucide-react'
 import { notFound, redirect } from 'next/navigation'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -100,7 +100,7 @@ export default async function TkaHistoryPage({
     if (!level) notFound()
 
     const base = tkaLevelPath(level)
-    if (level !== 'SMP') redirect(base)
+    if (!isTkaLevelAvailable(level)) redirect(base)
 
     const supabase = await createV2Client()
     const { data: { user }, error: authError } = await supabase.auth.getUser()

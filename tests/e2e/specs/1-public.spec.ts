@@ -34,9 +34,12 @@ test.describe('Public Pages Flow', () => {
 
     const registrationEntry = page.getByRole('link', { name: /Mulai persiapan TKA/i });
     await expect(registrationEntry).toHaveAttribute('href', '/register?returnTo=%2Ftka');
+    // Kebijakan 2026-09-17: ketiga jenjang TKA aktif, jadi tidak ada lagi kartu "coming soon".
+    await expect(page.getByRole('link', { name: /TKA SD.*Buka jenjang/i })).toHaveAttribute('href', '/tka/sd');
     await expect(page.getByRole('link', { name: /TKA SMP.*Buka jenjang/i })).toHaveAttribute('href', '/tka/smp');
-    await expect(page.getByText('Segera hadir', { exact: true })).toHaveCount(2);
-    await expect(page.getByText('Belum tersedia', { exact: true })).toHaveCount(2);
+    await expect(page.getByRole('link', { name: /TKA SMA.*Buka jenjang/i })).toHaveAttribute('href', '/tka/sma');
+    await expect(page.getByText('Segera hadir', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Belum tersedia', { exact: true })).toHaveCount(0);
   });
 
   test('menampilkan halaman 404 jika URL tidak valid', async ({ page }) => {

@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { practiceResultService, type PracticeResultView } from '@/src/services/practice-result.service'
 import { tkaFullExamRpcService, type TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
-import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 import TkaInteractiveReviewClient from '@/components/tka/TkaInteractiveReviewClient'
 
 export const dynamic = 'force-dynamic'
@@ -26,7 +26,7 @@ export default async function TkaReviewPage({
     let result: PracticeResultView | null = null
     let fullExamState: TkaFullExamState | null = null
 
-    if (level === 'SMP') {
+    if (isTkaLevelAvailable(level)) {
         try {
             const candidate = await tkaFullExamRpcService.getState(sessionId)
             if (candidate.sections.length > 0) fullExamState = candidate

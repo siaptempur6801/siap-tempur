@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -109,7 +109,7 @@ export default async function TkaMiniTryoutPage({
 }) {
     const { level: rawLevel } = await params
     const level = parseTkaLevel(rawLevel)
-    if (!level || level !== 'SMP') notFound()
+    if (!level || !isTkaLevelAvailable(level)) notFound()
 
     const base = tkaLevelPath(level)
     const pagePath = `${base}/mini-tryout`

@@ -341,9 +341,26 @@ jenjang**, plus **bundle lintas jenjang TKA**; pass CPNS **diaktifkan**.
     (CPNS vs TKA).
   - `scripts/local-gates/ci-helper.mjs` — emulator gate memberi saldo `exam_token_cpns`.
 
-### Sisa pekerjaan (belum dikerjakan)
+### Aktivasi jenjang SD & SMA (2026-09-17, lanjutan)
 
-- Bundle TKA masih **DRAFT** (menunggu konten SD/SMA) — aktivasi = ubah status produk + harga.
+Pemilik produk memutuskan **langsung mengaktifkan TKA SD & SMA**:
+
+- Produk: `TKA_SMA_PASS_30/90` → ACTIVE + harga Rp29.000/Rp69.000; bundle `TKA_PASS_ALL_30/90`
+  → ACTIVE + harga Rp79.000/Rp179.000 (SD sudah ACTIVE sebelumnya).
+- Aplikasi: `TKA_AVAILABLE_LEVELS` kini `['SD','SMP','SMA']` dan **16 guard hardcode `SMP`**
+  diganti pengecekan `isTkaLevelAvailable(level)` (halaman pass, mini tryout, tryout, diagnostik,
+  remedial, fokus, soal salah, riwayat, progress, sesi tryout, beli-token) sehingga SD & SMA
+  memakai dashboard, latihan, dan halaman pass yang sama seperti SMP.
+- Landing `/tka` kini menampilkan ketiga jenjang sebagai aktif (`Buka jenjang`), bukan "Segera hadir".
+- Spec diperbarui mengikuti kebijakan baru: `tests/e2e/specs/1-public.spec.ts` (tidak ada lagi
+  "Segera hadir"/"Belum tersedia") dan `tests/e2e/specs/8-tka-smp-mini.spec.ts` (anonim di `/tka/sd`
+  dan `/tka/sma` diarahkan ke login), plus `tests/unit/tka-navigation.test.tsx`.
+
+**Risiko yang masih terbuka:** track **SMA belum punya exam (0)** sehingga pembeli pass SMA baru
+mendapat dashboard kosong (empty state jujur: "0 soal tersedia" + ajakan aktivasi jalur). Track SD
+punya 6 exam. Sebelum production GO, konten SMA harus diisi atau produk SMA dikembalikan ke DRAFT.
+
+### Sisa pekerjaan (belum dikerjakan)
 - Belum ada produk token TKA (`TKA_TOKEN_*`) karena exam TKA `token_cost = 0`; wallet TKA sudah siap.
 - Tampilan **dua saldo sekaligus** di satu layar (CPNS + TKA) belum dibuat; saat ini saldo mengikuti
   konteks halaman. Kandidat untuk halaman "Langganan & Token" tingkat akun.

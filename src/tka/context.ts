@@ -2,7 +2,9 @@ import type { ProgramTrackContext } from '@/src/services/catalog-context.service
 
 export const TKA_LEVELS = ['SD', 'SMP', 'SMA'] as const
 export type TkaLevel = (typeof TKA_LEVELS)[number]
-export const TKA_AVAILABLE_LEVELS: readonly TkaLevel[] = ['SMP']
+// Keputusan produk 2026-09-17: SD & SMA diaktifkan (SMP sudah aktif sebelumnya).
+// Catatan konten: track SD punya 6 exam; track SMA belum punya exam sehingga tampil empty state.
+export const TKA_AVAILABLE_LEVELS: readonly TkaLevel[] = ['SD', 'SMP', 'SMA']
 
 export function parseTkaLevel(value: string | null | undefined): TkaLevel | null {
     const normalized = value?.trim().toUpperCase()

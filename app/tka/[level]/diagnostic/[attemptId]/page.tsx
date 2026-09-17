@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import TkaDiagnosticSessionClient from '@/components/tka/TkaDiagnosticSessionClient'
 import { createClient } from '@/lib/utils/supabase/server'
 import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
-import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,7 +18,7 @@ export default async function TkaDiagnosticSessionPage({
     const level = parseTkaLevel(rawLevel)
     if (!level) notFound()
     const base = tkaLevelPath(level)
-    if (level !== 'SMP') redirect(base)
+    if (!isTkaLevelAvailable(level)) redirect(base)
 
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()

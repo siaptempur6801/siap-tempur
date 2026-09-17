@@ -4,6 +4,7 @@ import { Mascot, MascotPair } from '@/components/brand/Mascot'
 import { Doodle, MascotBubble, Sticker, WashiTape } from '@/components/brand/playful'
 import { LandingFooter } from '@/components/home/landing/sections'
 import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
+import { isTkaLevelAvailable } from '@/src/tka/context'
 import { tkaBenefitCards, tkaChecks, tkaCycleSteps, tkaFaqs, tkaSubjectCards } from './content'
 
 /**
@@ -146,15 +147,15 @@ export function TkaLevels() {
                 <div className="max-w-3xl">
                     <div className="flex flex-wrap items-center gap-3">
                         <div className="st-kicker">Pilih jenjang</div>
-                        <Sticker tone="green" rotate="left" className="hover-wiggle">1 jenjang sudah aktif</Sticker>
+                        <Sticker tone="green" rotate="left" className="hover-wiggle">3 jenjang aktif</Sticker>
                     </div>
                     <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Satu fondasi belajar, tiga tahap perjalanan.</h2>
                     <p className="st-muted mt-4 text-lg font-semibold leading-relaxed">Setiap jenjang memiliki jalur belajar tersendiri agar materi, hasil, dan progres tetap sesuai kebutuhanmu.</p>
                 </div>
                 <div className="mt-10 grid gap-5 md:grid-cols-3">
-                    <PublicLevelCard href="/tka/sd" level="SD" title="TKA SD" description="Bangun fondasi literasi dan numerasi melalui latihan yang terarah sejak jenjang dasar." icon={<School size={24} />} tone="amber" rotate="lg:-rotate-1" />
-                    <PublicLevelCard href="/tka/smp" level="SMP" title="TKA SMP" description="Perkuat Bahasa Indonesia dan Matematika lewat latihan, tryout, serta pembahasan." icon={<BookOpenCheck size={24} />} tone="blue" available rotate="lg:rotate-1" />
-                    <PublicLevelCard href="/tka/sma" level="SMA" title="TKA SMA" description="Siapkan kemampuan akademik sesuai jenjang dan pilihan mata pelajaran yang tersedia." icon={<GraduationCap size={24} />} tone="green" rotate="lg:-rotate-1" />
+                    <PublicLevelCard href="/tka/sd" level="SD" title="TKA SD" description="Bangun fondasi literasi dan numerasi melalui latihan yang terarah sejak jenjang dasar." icon={<School size={24} />} tone="amber" available={isTkaLevelAvailable('SD')} rotate="lg:-rotate-1" />
+                    <PublicLevelCard href="/tka/smp" level="SMP" title="TKA SMP" description="Perkuat Bahasa Indonesia dan Matematika lewat latihan, tryout, serta pembahasan." icon={<BookOpenCheck size={24} />} tone="blue" available={isTkaLevelAvailable('SMP')} rotate="lg:rotate-1" />
+                    <PublicLevelCard href="/tka/sma" level="SMA" title="TKA SMA" description="Siapkan kemampuan akademik sesuai jenjang dan pilihan mata pelajaran yang tersedia." icon={<GraduationCap size={24} />} tone="green" available={isTkaLevelAvailable('SMA')} rotate="lg:-rotate-1" />
                 </div>
             </div>
         </section>

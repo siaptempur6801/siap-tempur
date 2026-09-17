@@ -5,7 +5,7 @@ import TkaFullExamSessionClient from '@/components/tka/TkaFullExamSessionClient'
 import TkaPracticeSessionClient from '@/components/tka/TkaPracticeSessionClient'
 import { practiceSessionService } from '@/src/services/practice-session.service'
 import { tkaFullExamRpcService, type TkaFullExamState } from '@/src/services/tka-full-exam-rpc.service'
-import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -25,7 +25,7 @@ export default async function TkaPracticeSessionPage({
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(`${base}/tryout/${sessionId}`)}`)
 
     let fullExamState: TkaFullExamState | null = null
-    if (level === 'SMP') {
+    if (isTkaLevelAvailable(level)) {
         try {
             const candidate = await tkaFullExamRpcService.getState(sessionId)
             if (candidate.sections.length > 0) fullExamState = candidate

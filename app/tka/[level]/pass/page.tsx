@@ -6,7 +6,7 @@ import TkaPassPackagesClient, { type TkaPassPackage } from '@/components/tka/Tka
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
+import { TkaLevel, isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -56,7 +56,7 @@ function formatAccessDate(value: string) {
 
 async function listActivePassPackages(
     supabase: AuthenticatedV2Client,
-    trackCode: 'SMP'
+    trackCode: TkaLevel
 ): Promise<TkaPassPackage[]> {
     const now = new Date().toISOString()
 
@@ -191,7 +191,7 @@ async function getLearnerPassAccess(
 export default async function TkaPassPage({ params }: { params: Promise<{ level: string }> }) {
     const { level: rawLevel } = await params
     const level = parseTkaLevel(rawLevel)
-    if (!level || level !== 'SMP') notFound()
+    if (!level || !isTkaLevelAvailable(level)) notFound()
 
     const base = tkaLevelPath(level)
     if (env.appEnvironment() === 'production') redirect(base)

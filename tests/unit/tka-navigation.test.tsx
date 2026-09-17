@@ -14,9 +14,10 @@ vi.mock('next/navigation', () => ({
 
 describe('TKA navigation selection', () => {
     it('uses the shared level availability configuration', () => {
+        // Kebijakan 2026-09-17: SD, SMP, dan SMA semuanya aktif untuk pengguna.
+        expect(isTkaLevelAvailable('SD')).toBe(true)
         expect(isTkaLevelAvailable('SMP')).toBe(true)
-        expect(isTkaLevelAvailable('SD')).toBe(false)
-        expect(isTkaLevelAvailable('SMA')).toBe(false)
+        expect(isTkaLevelAvailable('SMA')).toBe(true)
     })
 
     for (const Component of [NavItem, MobileNavItem]) {

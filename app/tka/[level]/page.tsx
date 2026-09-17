@@ -21,7 +21,7 @@ import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { parseTkaLevel, tkaContext, tkaLevelPath, type TkaLevel } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath, type TkaLevel } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -72,7 +72,7 @@ export default async function TkaLevelPage({
     const level = parseTkaLevel(levelParam)
     if (!level) notFound()
 
-    if (level !== 'SMP') {
+    if (!isTkaLevelAvailable(level)) {
         return <TkaComingSoonPage level={level} />
     }
 
@@ -83,7 +83,7 @@ export default async function TkaLevelPage({
 
     const context = tkaContext(level)
     const stagingEnvironment = env.appEnvironment() !== 'production'
-    const stagingSmpPilot = stagingEnvironment && level === 'SMP'
+    const stagingPilot = stagingEnvironment
 
     const { data: program, error: programError } = await supabase
         .from('programs')
@@ -110,7 +110,7 @@ export default async function TkaLevelPage({
         .maybeSingle()
     if (userTrackError) throw userTrackError
 
-    const questionStatuses = stagingSmpPilot ? ['approved', 'published'] : ['published']
+    const questionStatuses = stagingPilot ? ['approved', 'published'] : ['published']
     const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { data: questionRows, error: questionError }] = await Promise.all([
         supabase
             .from('exams')
@@ -431,7 +431,7 @@ function SummaryMetric({ icon, label, value, detail }: { icon: React.ReactNode; 
     )
 }
 
-function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
+function TkaComingSoonPage({ level }: { level: TkaLevel }) {
     const isSd = level === 'SD'
     const Icon = isSd ? School : GraduationCap
     const iconTone = isSd ? 'bg-[var(--st-yellow-soft)] text-amber-800' : 'bg-[var(--st-blue-soft)] text-blue-700'

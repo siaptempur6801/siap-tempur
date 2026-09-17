@@ -25,7 +25,7 @@ import { tkaFullExamRpcService, type TkaFullExamState } from '@/src/services/tka
 import { tkaLearningFocusService, type TkaLearningFocusView } from '@/src/services/tka-learning-focus.service'
 import { tkaReadinessService, type TkaReadinessView } from '@/src/services/tka-readiness.service'
 import { tkaRemedialService, type TkaRemedialView } from '@/src/services/tka-remedial.service'
-import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
+import { isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -80,7 +80,7 @@ export default async function TkaResultPage({
     let learningFocus: TkaLearningFocusView | null = null
     let readiness: TkaReadinessView | null = null
 
-    if (level === 'SMP') {
+    if (isTkaLevelAvailable(level)) {
         try {
             const candidate = await tkaFullExamRpcService.getState(sessionId)
             if (candidate.sections.length > 0) fullExamState = candidate
@@ -127,7 +127,7 @@ export default async function TkaResultPage({
         }
     }
 
-    if (level === 'SMP') {
+    if (isTkaLevelAvailable(level)) {
         if (fullExamState) {
             try {
                 remedial = await tkaRemedialService.findBySourceAttempt(sessionId)
@@ -152,7 +152,7 @@ export default async function TkaResultPage({
     const label = practiceLabel(result.practiceKind)
     const wrongGapCount = result.reviewItems.filter((item) => item.isCorrect !== true).length
     const correctCount = result.reviewItems.filter((item) => item.isCorrect === true).length
-    const repeatWrongEnabled = level === 'SMP' && wrongGapCount > 0
+    const repeatWrongEnabled = isTkaLevelAvailable(level) && wrongGapCount > 0
     const automaticRemedialEnabled = Boolean(remedial?.session && remedial.session.pendingItems > 0)
     const accuracyPercent = result.reviewItems.length > 0
         ? Math.round((correctCount / result.reviewItems.length) * 100)
