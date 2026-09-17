@@ -77,7 +77,7 @@ export default async function TkaDiagnosticPage({
             : null
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 {/* Hero Section */}
                 <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm md:p-7">

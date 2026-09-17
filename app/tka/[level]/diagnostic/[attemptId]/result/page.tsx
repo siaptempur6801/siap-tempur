@@ -130,7 +130,7 @@ export default async function TkaDiagnosticResultPage({
     const weakest = competencies[0]
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div data-testid="tka-diagnostic-result" className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200/70">

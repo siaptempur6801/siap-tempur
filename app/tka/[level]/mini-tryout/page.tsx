@@ -256,7 +256,7 @@ export default async function TkaMiniTryoutPage({
     })
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 {/* Header - 100% consistent with all TKA pages */}
                 <header className="border-b border-slate-200/80 pb-6">

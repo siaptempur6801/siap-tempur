@@ -260,7 +260,7 @@ export default async function TkaLevelPage({
             }
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen overflow-x-clip px-4 py-6 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen overflow-x-clip px-4 py-6 md:px-8 md:py-8">
             <div data-testid="tka-level-ready" className="mx-auto max-w-6xl space-y-6 md:space-y-8">
                 {/* Welcoming Learner Header */}
                 <header className="flex items-start justify-between gap-6 border-b border-slate-200/80 pb-6">

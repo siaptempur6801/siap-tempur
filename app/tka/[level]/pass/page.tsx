@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { TkaLevel, isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
+import { PASS_FEATURE_BY_SCOPE, passScopeForTkaLevel } from '@/src/services/tempur-pass.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -128,12 +129,15 @@ async function listActivePassPackages(
 
 async function getLearnerPassAccess(
     supabase: AuthenticatedV2Client,
-    userId: string
+    userId: string,
+    level: TkaLevel
 ): Promise<LearnerPassAccess> {
+    // Fitur penanda pass mengikuti jenjang halaman ini. Sebelumnya di-hardcode ke TKA SMP,
+    // sehingga pass SD/SMA tidak pernah terdeteksi di halaman pass-nya sendiri.
     const { data: feature, error: featureError } = await supabase
         .from('features')
         .select('id')
-        .eq('code', 'tka.smp.full_tryout.regular')
+        .eq('code', PASS_FEATURE_BY_SCOPE[passScopeForTkaLevel(level)])
         .maybeSingle()
     if (featureError) throw featureError
     if (!feature) return { hasActivePass: false, accessThrough: null, scheduledExtensions: 0 }
@@ -202,12 +206,12 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
 
     const [packages, passAccess] = await Promise.all([
         listActivePassPackages(supabase, level),
-        getLearnerPassAccess(supabase, user.id),
+        getLearnerPassAccess(supabase, user.id, level),
     ])
     const snapClientKey = env.midtransClientKey()
 
     return (
-        <main data-experience-mode="learning" data-program="tka-smp" className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen px-4 py-6 md:px-8 md:py-8">
             <Script id="midtrans-snap" src={env.midtransSnapScriptUrl()} data-client-key={snapClientKey} strategy="afterInteractive" />
 
             <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
