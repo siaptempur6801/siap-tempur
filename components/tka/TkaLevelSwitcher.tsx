@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
 import { parseTkaLevel, type TkaLevel } from '@/src/tka/context'
 
 const LEVELS: Array<{
@@ -48,7 +48,7 @@ export default function TkaLevelSwitcher({
                     )
 
                     return (
-                        <Link
+                        <TkaSurfaceLink
                             key={item.level}
                             href={`/tka/${item.level.toLowerCase()}`}
                             aria-current={active ? 'page' : undefined}
@@ -60,7 +60,7 @@ export default function TkaLevelSwitcher({
                             className={className}
                         >
                             {item.label}
-                        </Link>
+                        </TkaSurfaceLink>
                     )
                 })}
             </div>

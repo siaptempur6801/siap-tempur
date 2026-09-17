@@ -17,6 +17,7 @@ import { activateTkaTrackAction } from '@/app/actions/user-track'
 import TkaNextStep from '@/components/tka/TkaNextStep'
 import { Mascot } from '@/components/brand/Mascot'
 import { MascotBubble } from '@/components/brand/playful'
+import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
@@ -490,13 +491,13 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
                                         Modul Tes Diagnostik, Latihan Fokus, Mini Tryout, dan Tryout Lengkap sudah aktif dan siap digunakan.
                                     </p>
                                 </div>
-                                <Link
+                                <TkaSurfaceLink
                                     href="/tka/smp"
                                     className="st-focus inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-blue-700 active:scale-[0.98]"
                                 >
                                     <span>Buka TKA SMP</span>
                                     <ArrowRight size={15} />
-                                </Link>
+                                </TkaSurfaceLink>
                             </div>
                         </div>
 
@@ -506,18 +507,18 @@ function TkaComingSoonPage({ level }: { level: Exclude<TkaLevel, 'SMP'> }) {
 
                         {/* Navigation button row */}
                         <div className="mt-8 flex flex-wrap items-center gap-3">
-                            <Link
+                            <TkaSurfaceLink
                                 href="/tka"
                                 className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all duration-200 hover:bg-slate-50 active:scale-[0.98]"
                             >
                                 Kembali ke TKA
-                            </Link>
-                            <Link
+                            </TkaSurfaceLink>
+                            <TkaSurfaceLink
                                 href="/tka/smp/pilih-jalur"
                                 className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50/60 px-5 py-2.5 text-xs font-bold text-indigo-700 shadow-2xs transition-all duration-200 hover:bg-indigo-100 active:scale-[0.98]"
                             >
                                 Pilih Jalur Belajar
-                            </Link>
+                            </TkaSurfaceLink>
                             <Link
                                 href="/cpns"
                                 className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl px-4 py-2.5 text-xs font-medium text-slate-500 transition-all duration-200 hover:text-slate-900"

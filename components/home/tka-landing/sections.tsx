@@ -3,6 +3,7 @@ import { ArrowRight, BookOpenCheck, CheckCircle2, GraduationCap, School, Sparkle
 import { Mascot, MascotPair } from '@/components/brand/Mascot'
 import { Doodle, MascotBubble, Sticker, WashiTape } from '@/components/brand/playful'
 import { LandingFooter } from '@/components/home/landing/sections'
+import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
 import { tkaBenefitCards, tkaChecks, tkaCycleSteps, tkaFaqs, tkaSubjectCards } from './content'
 
 /**
@@ -16,6 +17,18 @@ import { tkaBenefitCards, tkaChecks, tkaCycleSteps, tkaFaqs, tkaSubjectCards } f
  * CTA landing TKA. Label tiap seksi sengaja BERBEDA supaya locator spec
  * (`getByRole('link', { name: /Mulai persiapan TKA/i })`) tetap tunggal.
  */
+/**
+ * Tautan CTA landing TKA. Tujuan di dalam `/tka` (mis. dashboard TKA) harus berupa navigasi
+ * dokumen penuh karena permukaan marketing dan aplikasi memakai layout yang sama — lihat
+ * `components/tka/TkaSurfaceLink.tsx`.
+ */
+function CtaLink({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) {
+    if (href.startsWith('/tka')) {
+        return <TkaSurfaceLink href={href} className={className}>{children}</TkaSurfaceLink>
+    }
+    return <Link href={href} className={className}>{children}</Link>
+}
+
 type TkaCtaProps = {
     primaryHref: string
     /** Label utama — hanya dipakai hero. */
@@ -46,9 +59,9 @@ export function TkaHero({ primaryHref, primaryLabel }: TkaCtaProps) {
                         Mulai dari SD, lanjut ke SMP, hingga SMA dalam satu lingkungan belajar. Kerjakan latihan dan tryout, pahami hasilnya, lalu perbaiki bagian yang masih lemah.
                     </p>
                     <div className="mt-8 flex flex-wrap gap-3">
-                        <Link href={primaryHref} className="st-button inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
+                        <CtaLink href={primaryHref} className="st-button inline-flex min-h-12 items-center gap-2 bg-blue-600 px-5 py-3 font-black text-white">
                             {primaryLabel} <ArrowRight size={18} />
-                        </Link>
+                        </CtaLink>
                         <Link href="#jenjang-tka" className="st-focus inline-flex min-h-12 items-center rounded-xl px-4 py-3 font-black text-gray-700 hover:bg-white">
                             Pilih jenjang
                         </Link>
@@ -160,9 +173,9 @@ export function TkaFlow({ primaryHref }: TkaCtaProps) {
                         </div>
                         <h2 className="st-heading-display mt-5 text-4xl md:text-6xl">Dari latihan pertama sampai perbaikan.</h2>
                         <p className="st-muted mt-4 max-w-xl text-lg font-semibold leading-relaxed">Kamu tidak perlu menebak harus mulai dari mana, dan tidak berhenti bingung setelah melihat hasil.</p>
-                        <Link href={primaryHref} className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
+                        <CtaLink href={primaryHref} className="st-focus mt-6 inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
                             Mulai dari langkah pertama <ArrowRight size={17} />
-                        </Link>
+                        </CtaLink>
                     </div>
 
                     <div className="relative space-y-4">
@@ -240,9 +253,9 @@ export function TkaFaq({ primaryHref, altLabel }: TkaCtaProps) {
                     <MascotBubble name="tara" size="sm" side="right" bubbleTone="peach" className="mx-auto w-fit" bubbleClassName="max-w-md">
                         Masih ragu pilih jenjang? Mulai dari akun dulu — jenjangnya bisa dipilih sambil jalan.
                     </MascotBubble>
-                    <Link href={primaryHref} className="st-focus inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
+                    <CtaLink href={primaryHref} className="st-focus inline-flex min-h-11 items-center gap-2 font-black text-blue-700 hover:underline">
                         {altLabel} <ArrowRight size={17} />
-                    </Link>
+                    </CtaLink>
                 </div>
             </div>
         </section>
@@ -261,9 +274,9 @@ export function TkaCta({ primaryHref, finalLabel }: TkaCtaProps) {
                 </div>
                 <div className="flex flex-wrap items-center gap-3 md:flex-col md:items-stretch">
                     <MascotPair size="xs" tone="plain" className="mb-1 hidden justify-center md:flex" />
-                    <Link href={primaryHref} className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">
+                    <CtaLink href={primaryHref} className="st-button inline-flex min-h-12 items-center justify-center gap-2 bg-white px-5 py-3 font-black text-gray-900">
                         {finalLabel} <ArrowRight size={18} />
-                    </Link>
+                    </CtaLink>
                     <Link href="#jenjang-tka" className="inline-flex min-h-12 items-center justify-center rounded-xl border-2 border-white bg-blue-700 px-5 py-3 font-black text-white hover:bg-blue-800">
                         Lihat jenjang
                     </Link>
@@ -324,9 +337,9 @@ function PublicLevelCard({
     }
 
     return (
-        <Link href={href} className={`st-card-md st-focus group relative flex min-h-72 flex-col bg-white p-6 transition-transform hover:-translate-y-1 md:p-7 ${rotate ?? ''}`}>
+        <TkaSurfaceLink href={href} className={`st-card-md st-focus group relative flex min-h-72 flex-col bg-white p-6 transition-transform hover:-translate-y-1 md:p-7 ${rotate ?? ''}`}>
             <WashiTape tone="blue" className="-top-3 left-8" />
             {content}
-        </Link>
+        </TkaSurfaceLink>
     )
 }

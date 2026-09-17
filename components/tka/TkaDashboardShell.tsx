@@ -17,6 +17,7 @@ import {
     User,
 } from 'lucide-react'
 import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
+import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
 import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 import styles from '@/components/tka/TkaLearning.module.css'
@@ -99,11 +100,11 @@ export default function TkaDashboardShell({
             <aside className="relative z-20 hidden w-[16rem] min-h-0 flex-col border-r border-slate-200/80 bg-white md:flex">
                 <div className="shrink-0 border-b border-slate-100 px-4 pb-3.5 pt-4">
                     <div className="flex items-center justify-between">
-                        <Link href="/tka?landing=1" aria-label="Buka halaman TKA" className="inline-flex items-center focus-visible:outline-none">
+                        <TkaSurfaceLink href="/tka?landing=1" aria-label="Buka halaman TKA" className="inline-flex items-center focus-visible:outline-none">
                             <span className="font-script text-2xl font-black leading-tight text-slate-950">
                                 Siap<span className="text-indigo-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
                             </span>
-                        </Link>
+                        </TkaSurfaceLink>
                         <span className="inline-flex items-center rounded-full bg-[var(--brand-blue-50)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-700">
                             TKA
                         </span>
@@ -183,9 +184,9 @@ export default function TkaDashboardShell({
             <div className="relative min-w-0 flex-1 overflow-y-auto pb-24 md:pb-0">
                 <div className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl md:hidden">
                     <div className="flex h-14 items-center justify-between px-4">
-                        <Link href="/tka?landing=1" aria-label="Buka halaman TKA" className="font-script text-xl font-black text-slate-950">
+                        <TkaSurfaceLink href="/tka?landing=1" aria-label="Buka halaman TKA" className="font-script text-xl font-black text-slate-950">
                             Siap<span className="text-indigo-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.
-                        </Link>
+                        </TkaSurfaceLink>
                         <div className="flex items-center gap-2">
                             {hasActiveTempurPass && <TempurPassIndicator href={accessHref} compact />}
                             <span className="rounded-full bg-[var(--brand-blue-50)] px-2 py-0.5 text-[10px] font-bold text-blue-700">TKA</span>
