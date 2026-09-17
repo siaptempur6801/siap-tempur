@@ -102,7 +102,7 @@ function PublicTkaLanding({ loggedIn = false }: { loggedIn?: boolean }) {
     return (
         <main data-experience-mode="marketing" data-program="tka" className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
             <ReadingProgress />
-            <SeoNavbarClient isAuthenticated={loggedIn} programLabel="TKA" navItems={tkaNavItems} />
+            <SeoNavbarClient isAuthenticated={loggedIn} programLabel="TKA" navItems={tkaNavItems} compactNav />
             <TkaHero {...cta} />
             <TkaBenefits />
             <TkaLevels />

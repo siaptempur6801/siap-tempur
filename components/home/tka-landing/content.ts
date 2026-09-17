@@ -146,8 +146,9 @@ export const tkaChecks = [
 
 /** Navigasi in-page landing TKA (dipakai navbar dengan penanda section aktif). */
 export const tkaNavItems = [
-    { href: '#jenjang-tka', label: 'Pilih jenjang' },
+    // Urutan mengikuti urutan section di halaman: manfaat → jenjang → alur → kompetensi → tanya jawab.
     { href: '#manfaat-tka', label: 'Kenapa di sini' },
+    { href: '#jenjang-tka', label: 'Pilih jenjang' },
     { href: '#alur-tka', label: 'Cara kerja' },
     { href: '#kompetensi-tka', label: 'Yang dilatih' },
     { href: '#tanya-tka', label: 'Tanya jawab' },

@@ -29,18 +29,22 @@ function NavLink({
     label,
     active,
     ariaCurrent = 'page',
+    compact = false,
 }: {
     href: string;
     label: string;
     active?: boolean;
     ariaCurrent?: 'page' | 'location';
+    /** Ukuran rapat (13px) untuk landing dengan banyak item, mengikuti landing CPNS. */
+    compact?: boolean;
 }) {
     return (
         <InPageLink
             href={href}
             aria-current={active ? ariaCurrent : undefined}
             className={cn(
-                "st-focus rounded-xl px-3 py-2 text-sm font-black text-gray-700 hover:bg-blue-50 hover:text-blue-700",
+                "st-focus rounded-xl py-2 font-black text-gray-700 hover:bg-blue-50 hover:text-blue-700",
+                compact ? "px-2.5 text-[13px]" : "px-3 text-sm",
                 active && "bg-blue-50 text-blue-700"
             )}
         >
@@ -55,11 +59,14 @@ export default function SeoNavbarClient({
     isAuthenticated,
     programLabel,
     navItems: customNavItems,
+    compactNav = false,
 }: {
     isAuthenticated: boolean;
     programLabel?: ProgramLabel;
     /** Item navigasi khusus halaman ini (mis. anchor section landing TKA). */
     navItems?: readonly { href: string; label: string }[];
+    /** Nav lebih rapat (13px), dipakai landing TKA agar seragam dengan landing CPNS. */
+    compactNav?: boolean;
 }) {
     const pathname = usePathname();
     const currentPath = pathname || "/";
@@ -103,7 +110,10 @@ export default function SeoNavbarClient({
                     ) : null}
                 </div>
 
-                <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigasi utama">
+                <nav
+                    className={cn('hidden items-center lg:flex', compactNav ? 'gap-0.5 text-[13px]' : 'gap-1')}
+                    aria-label="Navigasi utama"
+                >
                     {items.map((item) => {
                         const targetId = sectionIdFromHref(item.href);
                         const active = targetId !== null ? targetId === activeId : item.href === currentPath;
@@ -114,6 +124,7 @@ export default function SeoNavbarClient({
                                 label={item.label}
                                 active={active}
                                 ariaCurrent={targetId !== null ? 'location' : 'page'}
+                                compact={compactNav}
                             />
                         );
                     })}
