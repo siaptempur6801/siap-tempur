@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import CpnsPilihJalurContent from '@/components/cpns/CpnsPilihJalurContent'
+import PaperBackground from '@/components/PaperBackground'
+import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { getPassAccess } from '@/src/services/pass-catalog.service'
 
@@ -23,10 +25,13 @@ export default async function CpnsPilihJalurPage() {
         : { hasActivePass: false, accessThrough: null, scheduledExtensions: 0 }
 
     return (
-        <div className="min-h-screen px-4 py-6 md:px-8 md:py-8">
-            <div className="mx-auto max-w-6xl">
+        <div className="relative min-h-screen w-full">
+            <PaperBackground />
+            <PageAnimateContainer className="relative z-10 mx-auto max-w-6xl space-y-7 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-9">
+                <PageAnimateItem>
                 <CpnsPilihJalurContent hasActivePass={passAccess.hasActivePass} />
-            </div>
+                </PageAnimateItem>
+            </PageAnimateContainer>
         </div>
     )
 }

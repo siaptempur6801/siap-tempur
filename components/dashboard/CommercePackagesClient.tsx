@@ -207,17 +207,17 @@ export default function CommercePackagesClient({
     return (
         <div className="space-y-6 md:space-y-8">
             {/* Header Section */}
-            <header className="border-b border-slate-200/80 pb-6 text-slate-950">
-                <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 ring-1 ring-indigo-200/50">
-                    <Coins size={14} className="text-indigo-600" aria-hidden="true" />
+            <header>
+                <div className="st-kicker">
+                    <Coins size={14} aria-hidden="true" />
                     <span>
                         {program === 'TKA' ? `Beli Token · TKA ${effectiveLevel}` : 'Beli Paket Token CPNS'}
                     </span>
                 </div>
-                <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">
                     {program === 'TKA' ? 'Beli Paket Token Ujian' : 'Beli Paket Token Tryout SKD CPNS'}
                 </h1>
-                <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
+                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
                     {program === 'TKA'
                         ? 'Siapkan token untuk mengikuti tryout CAT dan sesi latihan terpandu. Pilih paket sesuai kebutuhan belajarmu, token berlaku selamanya dan tersimpan aman di akunmu.'
                         : 'Pilih token sesuai ritme tryout-mu. Token digunakan untuk akses simulasi CAT SKD dan drilling materi berstandar nasional.'}

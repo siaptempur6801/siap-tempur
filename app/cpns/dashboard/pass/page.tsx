@@ -4,6 +4,8 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { CalendarDays, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react'
 import PassPackagesClient from '@/components/pass/PassPackagesClient'
+import PaperBackground from '@/components/PaperBackground'
+import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
@@ -47,18 +49,18 @@ export default async function CpnsPassPage() {
     const snapClientKey = env.midtransClientKey()
 
     return (
-        <div className="min-h-screen px-4 py-6 md:px-8 md:py-8">
+        <div className="relative min-h-screen w-full">
             <Script id="midtrans-snap" src={env.midtransSnapScriptUrl()} data-client-key={snapClientKey} strategy="afterInteractive" />
-
-            <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
+            <PaperBackground />
+            <PageAnimateContainer className="relative z-10 mx-auto max-w-6xl space-y-7 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-9">
+                <PageAnimateItem>
+                    <div className="space-y-6 md:space-y-8">
                 <header className="border-b border-slate-200/80 pb-6 text-slate-950">
-                    <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-blue-700 ring-1 ring-blue-200/70">
-                        <Sparkles size={14} /> Tempur Pass · CPNS
-                    </p>
-                    <h1 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">
+                    <div className="st-kicker"><Sparkles size={14} /> Tempur Pass · CPNS</div>
+                    <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">
                         {passAccess.hasActivePass ? 'Kelola akses belajar CPNS-mu' : 'Buka akses belajar CPNS tanpa hitung token'}
                     </h1>
-                    <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+                    <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
                         Tempur Pass CPNS berlaku untuk seluruh latihan dan tryout SKD di program CPNS. Pass TKA memiliki
                         cakupan sendiri per jenjang, jadi keduanya tidak saling menggantikan.
                     </p>
@@ -131,7 +133,9 @@ export default async function CpnsPassPage() {
                         dihitung per jenjang (SD, SMP, SMA).
                     </p>
                 </section>
-            </div>
+                    </div>
+                </PageAnimateItem>
+            </PageAnimateContainer>
         </div>
     )
 }

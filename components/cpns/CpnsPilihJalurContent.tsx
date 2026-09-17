@@ -59,14 +59,12 @@ const LADDER = [
 export default function CpnsPilihJalurContent({ hasActivePass }: { hasActivePass: boolean }) {
     return (
         <div className="space-y-6 md:space-y-8">
-            <header className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6">
-                <p className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-blue-700 ring-1 ring-blue-200/70">
-                    <Compass size={14} /> Pilih jalur CPNS
-                </p>
-                <h1 className="mt-3 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">
-                    Mulai dari satu subtes, lalu naik ke tryout penuh
+            <header>
+                <div className="st-kicker"><Compass size={14} /> Pilih jalur CPNS</div>
+                <h1 className="st-heading-display mt-5 text-4xl sm:text-5xl md:text-6xl">
+                    Mulai dari satu subtes, lalu naik ke tryout penuh.
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+                <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
                     Jalur CPNS menekankan penguasaan SKD. Pilih fokus yang paling perlu dikejar sekarang, kerjakan
                     latihannya, lalu ukur lagi dengan mini tryout atau full tryout.
                 </p>
@@ -74,7 +72,7 @@ export default function CpnsPilihJalurContent({ hasActivePass }: { hasActivePass
 
             <section aria-labelledby="fokus-skd" className="space-y-3">
                 <div>
-                    <h2 id="fokus-skd" className="text-base font-black tracking-tight text-slate-950">
+                    <h2 id="fokus-skd" className="st-heading text-xl md:text-2xl">
                         Pilih fokus SKD
                     </h2>
                     <p className="mt-1 text-xs font-semibold text-slate-500">Tiga subtes SKD, masing-masing punya halaman latihan sendiri.</p>
@@ -86,7 +84,7 @@ export default function CpnsPilihJalurContent({ hasActivePass }: { hasActivePass
                             <Link
                                 key={subtest.code}
                                 href={subtest.href}
-                                className="st-focus group flex flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                                className="st-flat-card st-focus group flex flex-col p-4 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                             >
                                 <span className={`flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200/80 ${subtest.tone}`}>
                                     <Icon size={20} className="text-slate-900" />
@@ -105,7 +103,7 @@ export default function CpnsPilihJalurContent({ hasActivePass }: { hasActivePass
 
             <section aria-labelledby="tangga-latihan" className="space-y-3">
                 <div>
-                    <h2 id="tangga-latihan" className="text-base font-black tracking-tight text-slate-950">
+                    <h2 id="tangga-latihan" className="st-heading text-xl md:text-2xl">
                         Tangga latihan
                     </h2>
                     <p className="mt-1 text-xs font-semibold text-slate-500">Urutan yang disarankan: kuasai materi, ukur dengan mini tryout, lalu full tryout.</p>
@@ -117,7 +115,7 @@ export default function CpnsPilihJalurContent({ hasActivePass }: { hasActivePass
                             <li key={step.href}>
                                 <Link
                                     href={step.href}
-                                    className="st-focus group flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                                    className="st-flat-card st-focus group flex h-full flex-col p-4 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                                 >
                                     <span className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">
                                         <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 text-[10px] text-slate-600">{index + 1}</span>
@@ -134,8 +132,8 @@ export default function CpnsPilihJalurContent({ hasActivePass }: { hasActivePass
                 </ol>
             </section>
 
-            <section aria-labelledby="akses-cpns" className="rounded-2xl border border-slate-200/80 bg-white p-5">
-                <h2 id="akses-cpns" className="text-base font-black tracking-tight text-slate-950">
+            <section aria-labelledby="akses-cpns" className="st-flat-card p-5">
+                <h2 id="akses-cpns" className="st-heading text-xl md:text-2xl">
                     Akses &amp; token CPNS
                 </h2>
                 {hasActivePass ? (
