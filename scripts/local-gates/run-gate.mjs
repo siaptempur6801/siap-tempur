@@ -188,9 +188,8 @@ async function runGate(name) {
             E2E_DISABLE_AUTH_RATE_LIMIT: '1',
         }),
         BASE_URL: gate.appBaseUrl,
-        // Hanya gate yang menargetkan app lokal saya yang butuh mode remote aktif;
-        // gate TKA justru butuh webServer Playwright (E2E_REMOTE_BASE_URL tidak diset).
-        ...(gate.manageApp ? { E2E_REMOTE_BASE_URL: gate.env.E2E_REMOTE_BASE_URL ?? '1' } : {}),
+        // Mode remote aktif kecuali gate memakai webServer Playwright (gate TKA).
+        ...(gate.manageApp || overrideBaseUrl ? { E2E_REMOTE_BASE_URL: gate.env.E2E_REMOTE_BASE_URL ?? '1' } : {}),
         NEXT_PUBLIC_SUPABASE_URL: STAGING_URL,
         NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: PUBLISHABLE,
         NEXT_PUBLIC_SUPABASE_ANON_KEY: PUBLISHABLE,
@@ -202,6 +201,9 @@ async function runGate(name) {
         CI: 'true',
         E2E_DISABLE_AUTH_RATE_LIMIT: '1',
         ...(expectedSha ? { E2E_EXPECTED_HEAD_SHA: expectedSha, PR_HEAD_SHA: expectedSha } : {}),
+        // Secret bypass Vercel hidup di .env.local, bukan di shell → teruskan eksplisit.
+        ...(fileEnv.VERCEL_AUTOMATION_BYPASS_SECRET ? { VERCEL_AUTOMATION_BYPASS_SECRET: fileEnv.VERCEL_AUTOMATION_BYPASS_SECRET } : {}),
+        ...(process.env.VERCEL_SHARE_URL || fileEnv.VERCEL_SHARE_URL ? { VERCEL_SHARE_URL: process.env.VERCEL_SHARE_URL || fileEnv.VERCEL_SHARE_URL } : {}),
     }
 
     const args = gate.project.split(' ').filter((token) => token !== 'test')
