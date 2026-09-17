@@ -234,12 +234,15 @@
   --color-brand-peach-100: var(--brand-peach-100);
   --color-brand-peach-800: var(--brand-peach-800);
 
-  /* Tipografi brand: Poppins sebagai display + body, Patrick Hand hanya aksen. */
-  --font-display: var(--font-poppins);
-  --font-sans: var(--font-poppins);
-  --font-body: var(--font-poppins);
-  --font-script: var(--font-patrick);
-  --font-handwriting: var(--font-poppins);
+  /* Tipografi brand: Poppins sebagai display + body, Patrick Hand hanya aksen.
+     CATATAN: `--font-poppins` di-inject next/font pada <body>, sehingga di :root
+     referensinya harus punya fallback literal — tanpa itu nilai custom property
+     menjadi invalid dan browser jatuh ke font sistem. */
+  --font-display: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
+  --font-script: var(--font-patrick, "Patrick Hand"), cursive;
+  --font-handwriting: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* =====================================================================
@@ -403,7 +406,8 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), sans-serif;
+  /* Pakai variabel font next/font langsung (tersedia di <body>) dengan fallback literal. */
+  font-family: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

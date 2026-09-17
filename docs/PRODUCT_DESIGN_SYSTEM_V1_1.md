@@ -124,6 +124,23 @@ Use for:
 - tables
 - help/error text
 
+### 3.1.1 Catatan implementasi font (penting)
+
+`next/font` meng-inject variabel `--font-poppins` pada elemen `<body>`, **bukan** `:root`. Karena itu
+deklarasi di `@theme` **wajib** memakai fallback literal:
+
+```css
+/* benar */
+--font-sans: var(--font-poppins, "Poppins"), ui-sans-serif, system-ui, sans-serif;
+
+/* salah — nilai custom property jadi invalid di :root dan browser jatuh ke font sistem */
+--font-sans: var(--font-poppins);
+```
+
+`body { font-family: ... }` juga memakai `var(--font-poppins, "Poppins")` langsung. Gejala bila salah:
+`getComputedStyle(document.body).fontFamily` menghasilkan `-apple-system, "system-ui", …` dan
+`document.fonts.check('16px Poppins')` = `false`.
+
 ### 3.2 Type hierarchy
 
 Recommended semantic scale:
