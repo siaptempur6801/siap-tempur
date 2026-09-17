@@ -6,7 +6,7 @@ import AdminShell from '@/components/admin/AdminShell'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
-import { hasActiveTempurPass } from '@/src/services/tempur-pass.service'
+import { getActivePassScopes } from '@/src/services/tempur-pass.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -58,7 +58,7 @@ export default async function AdminRootLayout({
             .select('avatar_url, full_name')
             .eq('id', user.id)
             .maybeSingle(),
-        hasActiveTempurPass(user.id),
+        getActivePassScopes(user.id).then((scopes) => scopes.length > 0),
     ])
 
     return (

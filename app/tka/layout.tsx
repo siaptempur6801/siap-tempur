@@ -3,7 +3,7 @@ import { signout } from '@/app/auth/actions'
 import TkaDashboardShell from '@/components/tka/TkaDashboardShell'
 import { createClient } from '@/lib/utils/supabase/server'
 import { isTkaLevelAvailable, parseTkaLevel, type TkaLevel } from '@/src/tka/context'
-import { hasActiveTempurPass } from '@/src/services/tempur-pass.service'
+import { hasActivePass, passScopeForTkaLevel } from '@/src/services/tempur-pass.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -34,16 +34,17 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
     // Pengunjung anonim juga bebas chrome di seluruh permukaan publik.
     if (!user || isMarketingLanding || isComingSoonLanding) return <>{children}</>
 
+    const activeLevel = levelFromPath(pathname)
+
     const [{ data: profile }, hasTempurPass] = await Promise.all([
         supabase
             .from('profiles')
             .select('avatar_url, full_name, display_name')
             .eq('id', user.id)
             .maybeSingle(),
-        hasActiveTempurPass(user.id),
+        // Pass dinilai per jenjang: user dengan pass TKA SD tidak dianggap ber-pass di SMP.
+        hasActivePass(user.id, passScopeForTkaLevel(activeLevel)),
     ])
-
-    const activeLevel = levelFromPath(pathname)
 
     // Script Midtrans Snap sengaja TIDAK dimuat di sini. Satu-satunya halaman TKA
     // yang memakainya adalah /tka/[level]/pass, dan halaman itu memuatnya sendiri.

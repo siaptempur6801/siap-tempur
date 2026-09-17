@@ -102,11 +102,19 @@ export class CommerceService {
             .from('product_wallet_grants')
             .select('product_id, wallet_type, amount')
             .in('product_id', productIds)
-            .eq('wallet_type', 'exam_token')
         if (grantError) throw grantError
-        const tokenGrantByProduct = new Map<string, number>(
-            (grants ?? []).map((grant) => [String(grant.product_id), numberValue(grant.amount)])
-        )
+        // Saldo token dipisah per program: jumlahkan hanya grant bertipe wallet token
+        // (`exam_token_cpns`, `exam_token_tka`, …), bukan grant tipe lain.
+        const tokenGrantByProduct = new Map<string, number>()
+        for (const grant of grants ?? []) {
+            const walletType = String(grant.wallet_type ?? '')
+            if (!walletType.startsWith('exam_token')) continue
+            const grantProductId = String(grant.product_id)
+            tokenGrantByProduct.set(
+                grantProductId,
+                (tokenGrantByProduct.get(grantProductId) ?? 0) + numberValue(grant.amount),
+            )
+        }
 
         return products.flatMap((product) => {
             const productId = stringValue(product.id)
@@ -155,13 +163,14 @@ export class CommerceService {
         if (!price) return null
 
         const untyped = await createAdminClient()
-        const { data: grant, error: grantError } = await untyped
+        const { data: grantRows, error: grantError } = await untyped
             .from('product_wallet_grants')
-            .select('amount')
+            .select('wallet_type, amount')
             .eq('product_id', productId)
-            .eq('wallet_type', 'exam_token')
-            .maybeSingle()
         if (grantError) throw grantError
+        const tokenGrantAmount = (grantRows ?? [])
+            .filter((row) => String(row.wallet_type ?? '').startsWith('exam_token'))
+            .reduce((total, row) => total + numberValue(row.amount), 0)
 
         return {
             id: productId,
@@ -172,7 +181,7 @@ export class CommerceService {
             durationDays: nullableNumber(product.duration_days),
             price: numberValue(price.amount),
             currency: stringValue(price.currency) || 'IDR',
-            tokenGrant: numberValue(grant?.amount),
+            tokenGrant: tokenGrantAmount,
         }
     }
 

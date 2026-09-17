@@ -217,7 +217,8 @@ async function ciCpns(body) {
             await activateTrack(userId, 'CPNS', 'SKD')
             const now = new Date().toISOString()
             const { error } = await admin.from('wallets').upsert(
-                { user_id: userId, wallet_type: 'exam_token', balance: 3, updated_at: now },
+                // Saldo token dipisah per program: gate CPNS memakai wallet CPNS.
+                { user_id: userId, wallet_type: 'exam_token_cpns', balance: 3, updated_at: now },
                 { onConflict: 'user_id,wallet_type' },
             )
             if (error) throw error

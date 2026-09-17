@@ -1,4 +1,4 @@
-import { walletRepository } from '@/src/repositories/wallet.repository'
+import { DEFAULT_TOKEN_WALLET_TYPE, walletRepository } from '@/src/repositories/wallet.repository'
 
 export type WalletErrorCode =
     | 'INSUFFICIENT_TOKEN_BALANCE'
@@ -22,13 +22,23 @@ function errorMessage(error: unknown) {
 }
 
 export class WalletService {
-    async getExamTokenBalance(userId: string) {
-        return walletRepository.getBalance(userId, 'exam_token')
+    /**
+     * Saldo token pengguna. Saldo dipisah per program: kirim `programId` agar terbaca wallet
+     * program tersebut (CPNS → `exam_token_cpns`, TKA → `exam_token_tka`).
+     */
+    async getExamTokenBalance(userId: string, programId?: string | null) {
+        if (programId) return walletRepository.getBalanceForProgram(userId, programId)
+        return walletRepository.getBalance(userId, DEFAULT_TOKEN_WALLET_TYPE)
     }
 
-    async assertCanAfford(userId: string, tokenCost: number) {
+    /** Tipe wallet token program (dipakai UI untuk label saldo). */
+    async getTokenWalletTypeForProgram(programId: string | null | undefined) {
+        return walletRepository.getTokenWalletTypeForProgram(programId)
+    }
+
+    async assertCanAfford(userId: string, tokenCost: number, programId?: string | null) {
         if (tokenCost <= 0) return
-        const balance = await this.getExamTokenBalance(userId)
+        const balance = await this.getExamTokenBalance(userId, programId)
         if (balance < tokenCost) {
             throw new WalletDomainError(
                 'INSUFFICIENT_TOKEN_BALANCE',

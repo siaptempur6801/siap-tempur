@@ -125,7 +125,8 @@ export default async function AccountProfilePage({ searchParams, profilePath = '
             .from('wallets')
             .select('id, balance')
             .eq('user_id', user.id)
-            .eq('wallet_type', 'exam_token')
+            // Saldo token dipisah per program; halaman profil TKA membaca wallet TKA.
+            .eq('wallet_type', tka ? 'exam_token_tka' : 'exam_token_cpns')
             .maybeSingle(),
     ])
 

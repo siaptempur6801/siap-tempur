@@ -297,6 +297,58 @@ di mobile & desktop (0 overflow, 0 page error).
 3. Jangan deploy, jangan ubah env produksi, jangan commit otomatis tanpa diminta.
 4. Detail aturan kerja: `AGENTS.md`.
 
+## Kebijakan monetisasi CPNS + TKA pada satu akun (2026-09-17)
+
+**Keputusan produk (dipilih pemilik produk):** token **dipisah per program**, langganan **per program +
+jenjang**, plus **bundle lintas jenjang TKA**; pass CPNS **diaktifkan**.
+
+### Aturan yang berlaku
+
+| Aspek | Aturan |
+|---|---|
+| Identitas | Satu akun untuk semua program; hak akses diikat ke program (+jenjang), bukan ke akun |
+| Token | Saldo terpisah per program: `exam_token_cpns` dan `exam_token_tka` (`programs.token_wallet_type`) |
+| Konsumsi | Pass/entitlement diperiksa lebih dulu → kalau tidak ada pass dan `token_cost > 0`, token dipotong → kalau token habis, tawarkan paket |
+| Langganan | `CPNS_PASS_30/90` (ACTIVE, Rp39.000/Rp89.000) dan `TKA_{SD,SMP,SMA}_PASS_30/90` |
+| Bundle | `TKA_PASS_ALL_30/90` (DRAFT, meng-grant 30 fitur TKA SD+SMP+SMA; harga DRAFT Rp79.000/Rp179.000) — diaktifkan setelah konten SD/SMA live |
+| Fulfillment | `fulfill_paid_order` sudah membaca `wallet_type` dari `product_wallet_grants`, jadi kredit otomatis masuk ke wallet program yang benar |
+
+### Perubahan yang diterapkan
+
+- **Migrasi staging** (belum produksi):
+  - `20260917090000_program_token_wallets_v1.sql` — `programs.token_wallet_type`, pemindahan saldo
+    lama `exam_token` → `exam_token_cpns`, dan RPC `debit_exam_token_once` menjadi program-aware
+    (tipe wallet diturunkan dari program exam; semantik lama dipertahankan: idempotensi per attempt,
+    `token_cost = 0`, pesan error lama).
+  - `20260917094500_monetization_policy_cpns_tka_v1.sql` — grant token CPNS → `exam_token_cpns`,
+    pass CPNS ACTIVE + harga, exam CPNS tersambung ke fitur pass (`cpns.full_tryout.regular`,
+    `cpns.mini_tryout.unlimited`, `cpns.drill.unlimited`), dan bundle TKA lintas jenjang (DRAFT).
+- **Kode**:
+  - `src/services/tempur-pass.service.ts` — helper scope-aware (`PassScope`, `hasActivePass`,
+    `getActivePassScopes`, `passScopeForTkaLevel`). **Bug lama diperbaiki:** `hasActiveTempurPass()`
+    selalu memeriksa fitur TKA SMP sehingga pass TKA SD/SMA dan pass CPNS tidak terdeteksi benar;
+    kini setiap call site memakai scope eksplisit (dashboard CPNS → `cpns`, shell TKA → jenjang aktif,
+    shell admin → "ada pass mana pun").
+  - `src/services/exam-attempt.service.ts` — urutan akses menjadi **pass dulu, token sebagai
+    fallback**: `required_feature_id` tanpa token tetap wajib pass (perilaku TKA), sedangkan exam
+    ber-token boleh lanjut tanpa pass dan tokennya dipotong; pemegang pass **tidak** dipotong token
+    (termasuk saat melanjutkan attempt yang sudah ada).
+  - `src/services/wallet.service.ts` + `src/repositories/wallet.repository.ts` — saldo per program
+    (`getBalanceForProgram`, `getTokenWalletTypeForProgram`).
+  - `src/services/commerce.service.ts` + `src/services/admin-v2.service.ts` — tidak lagi hardcode
+    `wallet_type = 'exam_token'`; grant token mengikuti program produk.
+  - `components/profile/AccountProfilePage.tsx` — halaman profil membaca wallet sesuai konteks
+    (CPNS vs TKA).
+  - `scripts/local-gates/ci-helper.mjs` — emulator gate memberi saldo `exam_token_cpns`.
+
+### Sisa pekerjaan (belum dikerjakan)
+
+- Bundle TKA masih **DRAFT** (menunggu konten SD/SMA) — aktivasi = ubah status produk + harga.
+- Belum ada produk token TKA (`TKA_TOKEN_*`) karena exam TKA `token_cost = 0`; wallet TKA sudah siap.
+- Tampilan **dua saldo sekaligus** di satu layar (CPNS + TKA) belum dibuat; saat ini saldo mengikuti
+  konteks halaman. Kandidat untuk halaman "Langganan & Token" tingkat akun.
+- Produksi belum disentuh: migrasi hanya di staging, monetisasi produksi tetap menunggu Milestone 5.
+
 ## Audit UI/UX menyeluruh (2026-09-17)
 
 Audit dijalankan dengan harness otomatis: 122 pemuatan halaman (20 rute publik × 3 viewport +

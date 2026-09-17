@@ -198,7 +198,8 @@ export class ExamAttemptService {
                     { attemptId: existing.id },
                 )
             }
-            await this.chargeAttempt(input.userId, existing.id, exam.tokenCost)
+            const resumeCoveredByPass = await this.isSessionCoveredByPass(input.userId, exam)
+            await this.chargeAttempt(input.userId, existing.id, resumeCoveredByPass ? 0 : exam.tokenCost)
             return { attemptId: existing.id, resumed: true }
         }
 
@@ -212,7 +213,7 @@ export class ExamAttemptService {
             throw new PracticeDomainError('ATTEMPT_LIMIT_REACHED', 'Exam attempt limit reached')
         }
 
-        await this.assertAccess(input.userId, exam, usedAttempts)
+        const access = await this.assertAccess(input.userId, exam, usedAttempts)
 
         let questions
         try {
@@ -246,7 +247,7 @@ export class ExamAttemptService {
         try {
             await attemptRepository.addAttemptQuestions(attempt.id, questions)
             questionsAllocated = true
-            await this.chargeAttempt(input.userId, attempt.id, exam.tokenCost)
+            await this.chargeAttempt(input.userId, attempt.id, access.coveredByPass ? 0 : exam.tokenCost)
         } catch (error) {
             const confirmedNoCharge = !questionsAllocated || (
                 error instanceof PracticeDomainError && error.code === 'INSUFFICIENT_TOKEN_BALANCE'
@@ -272,7 +273,19 @@ export class ExamAttemptService {
         return ((data ?? []) as EntitlementRow[]).find(isEntitlementUsable) ?? null
     }
 
-    private async assertAccess(userId: string, exam: ResolvedExam, usedAttempts: number | null = null) {
+    /** Sesudah `assertAccess`: apakah pass/entitlement menutup sesi ini (token tidak dipotong). */
+    private async isSessionCoveredByPass(userId: string, exam: ResolvedExam) {
+        if (exam.tokenCost <= 0 || !exam.requiredFeatureId) return false
+        return Boolean(await this.findUsableEntitlement(userId, exam.requiredFeatureId))
+    }
+
+    private async assertAccess(
+        userId: string,
+        exam: ResolvedExam,
+        usedAttempts: number | null = null,
+    ): Promise<{ coveredByPass: boolean }> {
+        let coveredByPass = false
+
         if (accessType(exam) === 'FREEMIUM') {
             if (!exam.requiredFeatureId) {
                 throw new PracticeDomainError(
@@ -282,6 +295,7 @@ export class ExamAttemptService {
             }
 
             const activeEntitlement = await this.findUsableEntitlement(userId, exam.requiredFeatureId)
+            coveredByPass = Boolean(activeEntitlement)
             if (!activeEntitlement) {
                 const freeAttemptLimit = exam.attemptLimit ?? 1
                 const used = usedAttempts ?? await attemptRepository.countAttempts(userId, exam.id)
@@ -295,14 +309,18 @@ export class ExamAttemptService {
             }
         } else if (exam.requiredFeatureId) {
             const activeEntitlement = await this.findUsableEntitlement(userId, exam.requiredFeatureId)
-            if (!activeEntitlement) {
+            coveredByPass = Boolean(activeEntitlement)
+
+            // Pass lebih dulu; kalau tidak ada pass dan exam memang berbayar token, pengguna
+            // tetap boleh lanjut dan tokennya dipotong (pass = bypass token, bukan syarat mati).
+            if (!activeEntitlement && exam.tokenCost <= 0) {
                 throw new PracticeDomainError('ENTITLEMENT_REQUIRED', 'Active entitlement is required for this exam')
             }
         }
 
-        if (exam.tokenCost > 0) {
+        if (exam.tokenCost > 0 && !coveredByPass) {
             try {
-                await walletService.assertCanAfford(userId, exam.tokenCost)
+                await walletService.assertCanAfford(userId, exam.tokenCost, exam.programId)
             } catch (error) {
                 if (error instanceof WalletDomainError && error.code === 'INSUFFICIENT_TOKEN_BALANCE') {
                     throw new PracticeDomainError(
@@ -314,6 +332,8 @@ export class ExamAttemptService {
                 throw error
             }
         }
+
+        return { coveredByPass }
     }
 
     private async chargeAttempt(userId: string, attemptId: string, tokenCost: number) {

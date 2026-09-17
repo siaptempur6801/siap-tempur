@@ -2,6 +2,7 @@ import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { getAttemptXp } from '@/lib/gamification'
 import { chunkValues } from '@/lib/supabase-batch'
 import type { Json } from '@/types/database.types'
+import { DEFAULT_TOKEN_WALLET_TYPE } from '@/src/repositories/wallet.repository'
 
 export type ActiveAttemptOverview = {
     id: string
@@ -85,7 +86,7 @@ export class PracticeOverviewRepository {
             .from('wallets')
             .select('balance')
             .eq('user_id', userId)
-            .eq('wallet_type', 'exam_token')
+            .eq('wallet_type', DEFAULT_TOKEN_WALLET_TYPE)
             .maybeSingle()
         if (error) throw error
         return numberOrZero((data as GenericRow | null)?.balance)

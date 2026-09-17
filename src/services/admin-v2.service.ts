@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json } from '@/types/database.types'
 import { env } from '@/lib/env'
+import { DEFAULT_TOKEN_WALLET_TYPE } from '@/src/repositories/wallet.repository'
 import {
     catalogContextService,
     CPNS_SKD_CONTEXT,
@@ -299,13 +300,26 @@ export class AdminV2Service {
         }
 
         const untyped = await createAdminClient()
+
+        // Tipe wallet token mengikuti program produk (CPNS → exam_token_cpns, TKA → exam_token_tka),
+        // supaya grant token masuk ke saldo program yang benar.
+        const { data: programRow } = await untyped
+            .from('programs')
+            .select('token_wallet_type')
+            .eq('id', catalog.program.id)
+            .maybeSingle()
+        const programTokenWalletType =
+            typeof programRow?.token_wallet_type === 'string' && programRow.token_wallet_type.length > 0
+                ? programRow.token_wallet_type
+                : DEFAULT_TOKEN_WALLET_TYPE
+
         if (input.tokenGrant !== null && input.tokenGrant !== undefined) {
             if (input.tokenGrant > 0) {
                 const { error } = await untyped
                     .from('product_wallet_grants')
                     .upsert({
                         product_id: productId,
-                        wallet_type: 'exam_token',
+                        wallet_type: programTokenWalletType,
                         amount: input.tokenGrant,
                         config: {},
                     }, { onConflict: 'product_id,wallet_type' })
@@ -315,7 +329,7 @@ export class AdminV2Service {
                     .from('product_wallet_grants')
                     .delete()
                     .eq('product_id', productId)
-                    .eq('wallet_type', 'exam_token')
+                    .eq('wallet_type', programTokenWalletType)
                 if (error) throw error
             }
         }

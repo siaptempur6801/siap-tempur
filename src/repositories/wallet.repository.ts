@@ -4,6 +4,9 @@ export type AttemptCharge = {
     tokenCost: number
 }
 
+/** Tipe wallet token default bila program tidak punya pemetaan eksplisit. */
+export const DEFAULT_TOKEN_WALLET_TYPE = 'exam_token_cpns'
+
 export type WalletDebitResult = {
     debited: boolean
     balanceAfter: number
@@ -17,7 +20,26 @@ type RpcDebitRow = {
 }
 
 export class WalletRepository {
-    async getBalance(userId: string, walletType = 'exam_token') {
+    /** Tipe wallet token milik sebuah program (mis. CPNS → `exam_token_cpns`, TKA → `exam_token_tka`). */
+    async getTokenWalletTypeForProgram(programId: string | null | undefined) {
+        if (!programId) return DEFAULT_TOKEN_WALLET_TYPE
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('programs')
+            .select('token_wallet_type')
+            .eq('id', programId)
+            .maybeSingle()
+        if (error) throw error
+        const walletType = (data as { token_wallet_type?: unknown } | null)?.token_wallet_type
+        return typeof walletType === 'string' && walletType.length > 0 ? walletType : DEFAULT_TOKEN_WALLET_TYPE
+    }
+
+    /** Saldo token untuk program tertentu (saldo terpisah per program). */
+    async getBalanceForProgram(userId: string, programId: string | null | undefined) {
+        return this.getBalance(userId, await this.getTokenWalletTypeForProgram(programId))
+    }
+
+    async getBalance(userId: string, walletType: string = DEFAULT_TOKEN_WALLET_TYPE) {
         const admin = await createV2AdminClient()
         const { data, error } = await admin
             .from('wallets')
