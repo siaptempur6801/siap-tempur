@@ -247,6 +247,7 @@ Konsistensi UI disatukan di atas brand sheet resmi (`#0D2B45` ink · `#1976D2` b
 | Tipografi | ✅ **terverifikasi di browser**: 16 face Poppins loaded, `fonts.check('16px Poppins')` = true, computed body/h1 = `Poppins` (bug resolusi var `:root` ditemukan & diperbaiki — lihat design doc §3.1.1); Poppins (400–800) untuk display + body; Patrick Hand hanya aksen (`--font-script`); 47 file `font-handwriting` → `font-display` |
 | Maskot | ✅ `components/brand/Mascot.tsx` (`<Mascot>` + `<MascotPair>`) dengan aturan per mode; terpasang di landing, login, 404, dashboard CPNS, empty state riwayat, hasil TKA & CPNS; **exam mode bebas maskot** |
 | Dokumentasi | ✅ `docs/PRODUCT_DESIGN_SYSTEM_V1_1.md` §6.0–6.2 (token konkret, tipografi, aturan maskot, peta tone) |
+| Fun & friendly (2026-09-17) | ✅ primitif playful `components/brand/playful.tsx` (`Sticker`, `WashiTape`, `Doodle`, `MascotBubble`) + `.animate-bob`/`.hover-wiggle`; diterapkan di landing (sticker, squiggle, bintang, gelembung Tama+Tara, maskot footer & CTA), login/register, dashboard CPNS & TKA, 404, dan error boundary. **Exam mode tetap tanpa ornamen**. Skala playfulness per mode: design doc §2.4–2.5 |
 
 Verifikasi: E2E publik 30/30 · E2E ber-auth 62/62 (32 cek overflow mobile+tablet) · lint 0/0 ·
 typecheck · 234 unit test · build hijau · screenshot landing/login/404/dashboard/riwayat/sesi ujian/hasil
