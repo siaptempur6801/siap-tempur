@@ -29,22 +29,22 @@ export default function TkaLevelSwitcher({
         <nav aria-label="Pilih jenjang TKA" className={cn('w-full', compact && 'max-w-sm')}>
             {!compact && (
                 <div className="mb-1.5 flex items-center justify-between px-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
                         Jenjang TKA
                     </span>
-                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full ring-1 ring-indigo-200/60 shadow-2xs">
+                    <span className="rounded-full border-2 border-slate-900 bg-[var(--st-yellow-soft)] px-2 py-0.5 text-[10px] font-black text-slate-900">
                         Aktif: {activeLevel}
                     </span>
                 </div>
             )}
-            <div className="flex items-center rounded-xl bg-slate-100/90 p-1 text-xs border border-slate-200/60">
+            <div className="flex items-center gap-1 rounded-xl border-2 border-slate-900 bg-white p-1 text-xs">
                 {LEVELS.map((item) => {
                     const active = item.level === activeLevel
                     const className = cn(
-                        'relative flex-1 flex items-center justify-center rounded-lg py-1.5 px-2 text-center text-xs font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+                        'relative flex-1 flex items-center justify-center rounded-lg px-2 py-1.5 text-center text-xs font-black transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
                         active
-                            ? 'bg-white text-indigo-700 shadow-xs ring-1 ring-slate-200/80 font-black'
-                            : 'text-slate-600 hover:text-slate-950 hover:bg-white/60',
+                            ? 'border-2 border-slate-900 bg-blue-600 text-white'
+                            : 'border-2 border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-950',
                     )
 
                     return (
