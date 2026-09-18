@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, Clock3, Compass, Library, LogOut, User, Ticket } from 'lucide-react'
+import { BarChart3, Clock3, Compass, Library, LogOut, Sparkles, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
@@ -144,6 +144,15 @@ export default function MobileProfileDropdown({
                         >
                             <Compass size={18} />
                             Pilih Jalur
+                        </Link>
+
+                        <Link
+                            href="/cpns/dashboard/pass"
+                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            <Sparkles size={18} />
+                            Tempur Pass CPNS
                         </Link>
 
                         <Link

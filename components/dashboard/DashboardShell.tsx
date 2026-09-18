@@ -104,7 +104,8 @@ export default function DashboardShell({
                     <div className="space-y-1">
                         <NavItem href="/cpns/dashboard/pilih-jalur" icon={<Compass size={17} />} label="Pilih Jalur" />
                         <NavItem href="/cpns/dashboard/beli-paket" icon={<Ticket size={17} />} label="Beli Token" />
-                        {hasActiveTempurPass && <NavItem href="/cpns/dashboard/pass" icon={<Sparkles size={17} />} label="Tempur Pass CPNS" badge="Aktif" />}
+                        {/* Selalu tampil: halaman Tempur Pass CPNS harus bisa dibuka walau belum berlangganan. */}
+                        <NavItem href="/cpns/dashboard/pass" icon={<Sparkles size={17} />} label="Tempur Pass CPNS" badge={hasActiveTempurPass ? 'Aktif' : undefined} />
                         <NavItem href="/cpns/dashboard/profile" icon={<User size={17} />} label="Profil" />
                     </div>
 

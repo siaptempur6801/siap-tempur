@@ -294,7 +294,7 @@ export class AdminV2Service {
                     amount: input.price,
                     starts_at: nowIso(),
                     ends_at: null,
-                    status: 'active',
+                    status: 'ACTIVE',
                 })
             if (priceError) throw priceError
         }
@@ -341,7 +341,7 @@ export class AdminV2Service {
         const admin = await createV2AdminClient()
         const { error } = await admin
             .from('products')
-            .update({ status: 'archived', updated_at: nowIso() })
+            .update({ status: 'ARCHIVED', updated_at: nowIso() })
             .eq('id', productId)
         if (error) throw error
     }
