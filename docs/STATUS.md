@@ -170,20 +170,25 @@ punya halaman, sehingga `revalidatePath` menunjuk rute yang tidak pernah dirende
 |---|---|---|
 | Unit — peta redirect (`admin-redirect-map.test.ts`) | 9 test | ✅ ya |
 | E2E publik (spec 9) — routing & redirect legacy | 3 test baru, 33 total | ✅ ya, tanpa kredensial |
-| E2E ber-auth (spec 10) — halaman admin dirender | 5 test baru, 11 total | ❌ **tidak** — butuh gate staging |
+| E2E ber-auth (spec 10) — halaman admin dirender | 5 test baru, 10 total | ✅ ya, lewat gate lokal (tanpa OIDC) |
 
-> ⚠️ **E2E ber-auth untuk halaman admin BELUM PERNAH DIJALANKAN.** Kredensial `E2E_PARTICIPANT_*`
-> tidak ada di `.env.local`, dan gate Admin butuh GitHub OIDC yang saat ini terblokir billing
-> (lihat "Blocker eksternal" di bawah). Jalankan sebelum produksi GO:
+> ✅ **E2E ber-auth halaman admin SUDAH DIJALANKAN dan HIJAU** (2026-09-18).
 >
 > ```bash
-> E2E_ADMIN_STAGING=1 npx playwright test --project=chromium-admin-staging
-> # atau lewat gate lokal: node scripts/local-gates/run-gate.mjs admin
+> node scripts/local-gates/run-gate.mjs admin
+> # hasil: 12 passed (1.1m), exit 0, 0 user ci-* tersisa di staging
 > ```
 >
-> Yang **sudah** terverifikasi lokal: routing & guard (307 ke login), seluruh 10 redirect path +
-> 7 redirect tab diuji langsung pada server produksi lokal, dan CSP + nonce + `strict-dynamic` +
-> cookie CSRF tetap utuh. Yang **belum**: render halaman admin saat sudah login.
+> Gate lokal memakai **emulator Edge Function** (`scripts/local-gates/ci-helper.mjs`) dengan
+> service-role staging, sehingga tidak memerlukan GitHub OIDC dan tetap bisa dijalankan meski
+> GitHub Actions terblokir billing. Kelima test baru lolos — artinya halaman
+> `/admin/content/review`, `/admin/content/articles`, `/admin/content/articles/create`, dan
+> `/admin/content/articles/[id]/edit` **benar-benar merender** saat sudah login, bukan hanya
+> lolos guard routing.
+>
+> Catatan penting: gate Admin ini **tidak** memerlukan deployment Vercel Preview. Dengan
+> `CI_E2E_HELPER_BASE_URL` diset ke emulator lokal, `assertPreviewUrl()` mengizinkan localhost.
+> Ini menutup satu-satunya celah verifikasi yang tersisa dari pemindahan modul admin.
 
 #### Auto-close event disambungkan ke `events` V2 (2026-09-18)
 
