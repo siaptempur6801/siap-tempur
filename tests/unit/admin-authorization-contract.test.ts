@@ -31,13 +31,6 @@ const sourceFiles = ['app', 'src', 'lib', 'components'].flatMap((dir) => {
  */
 const LEGACY_PROFILE_ROLE_QUERY = /from\(\s*['"]profiles['"]\s*\)[\s\S]{0,300}?select\(\s*['"]role['"]\s*\)/
 
-function functionBody(source: string, exportName: string, nextMarker: string) {
-    const start = source.indexOf(`export async function ${exportName}`)
-    if (start === -1) return ''
-    const end = source.indexOf(nextMarker, start)
-    return source.slice(start, end === -1 ? undefined : end)
-}
-
 describe('admin authorization contract', () => {
     it('tidak ada kode yang membaca kolom profiles.role yang sudah dihapus', () => {
         const offenders = sourceFiles.filter((file) => {
@@ -47,14 +40,30 @@ describe('admin authorization contract', () => {
         expect(offenders.map((file) => file.replace(repoRoot + '/', ''))).toEqual([])
     })
 
-    it('updateEventCertificateName memakai permission service, bukan role legacy', () => {
-        const source = readFileSync(join(repoRoot, 'app/actions/admin.ts'), 'utf8')
-        const body = functionBody(source, 'updateEventCertificateName', '\nfunction isEventQuestionGenerationMode')
+    /**
+     * Penjaga agar pohon admin legacy tidak tumbuh kembali.
+     *
+     * `app/actions/admin.ts` (1.302 baris) sudah dihapus 2026-09-18 karena
+     * seluruh 8 pengimpornya tidak terjangkau dan 12 tabel yang ditulisnya tidak
+     * ada di Schema V2. Kalau ada yang mengimpornya kembali, test ini gagal dan
+     * memaksa keputusan sadar — bukan diam-diam menghidupkan kode yang sudah
+     * terbukti tidak pernah dieksekusi.
+     */
+    it('tidak ada kode yang mengimpor kembali app/actions/admin yang sudah dihapus', () => {
+        const offenders = sourceFiles.filter((file) => {
+            const source = readFileSync(file, 'utf8')
+            return /from\s+['"]@\/app\/actions\/admin['"]/.test(source)
+        })
+        expect(offenders.map((file) => file.replace(repoRoot + '/', ''))).toEqual([])
+    })
 
-        expect(body, 'fungsi tidak ditemukan').not.toBe('')
-        expect(body).toContain('isAdmin()')
-        expect(body).not.toMatch(/select\(\s*['"]role['"]\s*\)/)
-        expect(body).not.toContain('superadmin')
+    it('halaman review admin memakai content-review service, bukan action legacy', () => {
+        // /admin/content/review adalah halaman hidup yang dulu tinggal di
+        // app/cpns/admin/review dan diimpor sebagai modul. Ia harus bergantung
+        // pada service Schema V2.
+        const source = readFileSync(join(repoRoot, 'app/admin/content/review/page.tsx'), 'utf8')
+        expect(source).toContain("from '@/src/services/content-review.service'")
+        expect(source).toContain("from '@/app/actions/content-review'")
     })
 
     it('isAdminRole mengenali kode role Schema V2 (huruf besar)', () => {
