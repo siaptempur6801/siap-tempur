@@ -135,15 +135,25 @@ Audit menyeluruh: `docs/AUDIT_2026-09-18.md`. Perbaikan yang sudah dikerjakan:
 | Kode mati legacy admin | Boleh dibongkar | ✅ selesai (lihat bagian berikut) |
 | Fitur Event Tryout Akbar | **Masih dipakai** | ✅ auto-close diarahkan ke `events` V2 + dijalankan dari cron |
 
-**Migration:** `20260918041911_batch_update_attempt_answer_scores.sql` **sudah ter-apply di staging.**
-Diverifikasi lewat PostgREST: `p_scores: []` → `200` + `0`; payload bukan array → `400` (22023);
-`anon` → `401 permission denied`. `supabase db push --dry-run` → *"Remote database is up to date."*
-`supabase db push` harus dijalankan **dari dalam folder `supabase/`** — dari root ia gagal dengan
-`Cannot find project ref`.
+**Migration:** `20260918041911_batch_update_attempt_answer_scores.sql` — **ter-apply di staging DAN produksi
+(2026-09-18).** Diverifikasi langsung ke database produksi lewat `supabase db query --linked`:
 
-> ⚠️ **Produksi belum disentuh.** Migration ini hanya ada di staging. Sebelum deploy ke produksi,
-> migration wajib di-apply lebih dulu — kode sudah punya fallback sehingga submit ujian tidak akan
-> gagal, tetapi perbaikan N+1 belum aktif tanpa migration.
+| Pemeriksaan produksi | Hasil |
+|---|---|
+| Identitas target | 100 tabel `public`, **428 profil, 1088 soal** — cocok dengan angka produksi yang tercatat |
+| Fungsi ada | `update_attempt_answer_scores(jsonb)` ✓ |
+| Tercatat di ledger | `supabase_migrations.schema_migrations` → `20260918041911` ✓ (162 baris, sama dengan staging) |
+| Konfigurasi keamanan | `security_definer=true`, `search_path=""`, ACL **hanya** `postgres` + `service_role` ✓ |
+| Perilaku (diuji dalam transaksi yang DI-ROLLBACK) | `'[]'` → `0`; payload bukan array → `22023 update_attempt_answer_scores expects a JSON array`; id tidak ada → `0` ✓ |
+| Integritas setelah uji | 428 profil / 1088 soal / 479 attempt / 17109 jawaban — **tidak berubah** ✓ |
+
+`supabase db push --dry-run` → *"Remote database is up to date."* (`supabase db push` harus dijalankan
+**dari dalam folder `supabase/`** — dari root ia gagal dengan `Cannot find project ref`.)
+
+> **Catatan operasional:** CLI Supabase hanya menautkan SATU project pada satu waktu. Untuk memeriksa
+> produksi, tautkan ulang dengan `supabase link --project-ref llnttutwhtvxtdktiizo`, lalu kembalikan
+> ke staging (`--project-ref lpgrivowdcepcxradavu`). `supabase db query --linked` bekerja tanpa DB
+> password karena lewat Management API, dan **wajib** dibungkus `begin; … rollback;` untuk uji tulis.
 
 #### Pemindahan modul admin + penghapusan pohon legacy (2026-09-18, langkah 1–3)
 
@@ -482,7 +492,17 @@ punya 6 exam. Sebelum production GO, konten SMA harus diisi atau produk SMA dike
 - Belum ada produk token TKA (`TKA_TOKEN_*`) karena exam TKA `token_cost = 0`; wallet TKA sudah siap.
 - Tampilan **dua saldo sekaligus** di satu layar (CPNS + TKA) belum dibuat; saat ini saldo mengikuti
   konteks halaman. Kandidat untuk halaman "Langganan & Token" tingkat akun.
-- Produksi belum disentuh: migrasi hanya di staging, monetisasi produksi tetap menunggu Milestone 5.
+- ⚠️ **KOREKSI 2026-09-18 — pernyataan "produksi belum disentuh" di bawah TIDAK AKURAT.**
+  Verifikasi langsung ke DB produksi (`supabase db query --linked`, read-only) menunjukkan keenam
+  migration `20260917*` **sudah ada di ledger produksi**, dan seluruh 15 produk monetisasi berstatus
+  **ACTIVE** di produksi: `CPNS_TOKEN_{1,5,10}`, `CPNS_PASS_{7,30,90,180}`,
+  `TKA_{SD,SMP,SMA}_PASS_{30,90}`, dan bundle `TKA_PASS_ALL_{30,90}`.
+  Artinya monetisasi CPNS + TKA **sudah aktif di produksi**, bukan menunggu Milestone 5.
+  Yang perlu ditinjau sebelum domain dibuka: apakah harga dan cakupan produk itu memang sudah final,
+  dan apakah flag `tka.smp.monetization_enforcement` (ON di produksi) sesuai keputusan produk.
+  *(Teks asli dipertahankan di bawah sebagai catatan historis.)*
+- ~~Produksi belum disentuh: migrasi hanya di staging, monetisasi produksi tetap menunggu Milestone 5.~~
+  *(pernyataan 2026-09-17 — sudah tidak berlaku, lihat koreksi di atas)*
 
 ## Audit UI/UX menyeluruh (2026-09-17)
 
