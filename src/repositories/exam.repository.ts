@@ -530,6 +530,27 @@ export class ExamRepository {
                     imageUrl: option.image_url,
                     responseGroup: option.response_group,
                     responseGroupOrder: option.response_group_order,
+                    /**
+                     * Kunci jawaban DIBEKUKAN di snapshot, bukan dibaca ulang dari
+                     * `question_options` saat menyekor.
+                     *
+                     * Alasannya: kalau kunci soal diperbaiki setelah peserta
+                     * mengerjakan, nilai peserta tidak boleh ikut berubah. Snapshot
+                     * mewakili soal persis seperti yang dilihat peserta.
+                     *
+                     * Aman disimpan di sini karena:
+                     *  - `question_snapshot` hanya dibaca server (RPC state membuang
+                     *    `is_correct`/`score` lewat `o - 'is_correct' - 'score'`);
+                     *  - akses tabel langsung untuk `authenticated` sudah di-revoke;
+                     *  - layar ujian (`practice-session.service.ts`) memetakan opsi
+                     *    satu per satu dan tidak pernah meneruskan field ini.
+                     *
+                     * Pola ini sudah dipakai jalur TKA
+                     * (`app_private.score_exam_attempt`), jadi kedua engine kini
+                     * membaca struktur yang sama.
+                     */
+                    isCorrect: option.is_correct,
+                    score: option.score,
                 })),
             }
 

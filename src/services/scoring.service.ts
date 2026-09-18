@@ -32,6 +32,60 @@ function readResponseConfig(snapshot: Json): ResponseScoringConfig | undefined {
     return undefined
 }
 
+/** Opsi dari snapshot beku, dalam bentuk yang dipahami `calculateResponseScore`. */
+export type FrozenOption = {
+    id: string
+    isCorrect: boolean | null
+    score: number | null
+    responseGroup: string | null
+    responseGroupOrder: number | null
+}
+
+function readFrozenString(source: Record<string, unknown>, ...keys: string[]): string | null {
+    for (const key of keys) {
+        const value = source[key]
+        if (typeof value === 'string' && value !== '') return value
+    }
+    return null
+}
+
+function readFrozenNullableNumber(source: Record<string, unknown>, ...keys: string[]): number | null {
+    for (const key of keys) {
+        const value = source[key]
+        if (typeof value === 'number' && Number.isFinite(value)) return value
+    }
+    return null
+}
+
+/**
+ * Membaca opsi dari `question_snapshot` yang dibekukan saat attempt dibuat.
+ *
+ * Mengembalikan array kosong bila snapshot tidak memuat kunci jawaban — yaitu
+ * attempt yang dibuat sebelum kunci ikut dibekukan. Pemanggil memakai hasil kosong
+ * ini sebagai sinyal untuk jatuh ke opsi hidup.
+ */
+export function readSnapshotOptions(snapshot: Json): FrozenOption[] {
+    if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== 'object') return []
+    const raw = snapshot.options
+    if (!Array.isArray(raw)) return []
+
+    return raw.flatMap((value) => {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) return []
+        const option = value as Record<string, unknown>
+        const id = readFrozenString(option, 'id')
+        // Kunci jawaban harus ada; tanpa itu snapshot dianggap tidak membawa kunci.
+        if (!id || !('isCorrect' in option)) return []
+        const isCorrect = option.isCorrect
+        return [{
+            id,
+            isCorrect: typeof isCorrect === 'boolean' ? isCorrect : null,
+            score: readFrozenNullableNumber(option, 'score'),
+            responseGroup: readFrozenString(option, 'responseGroup', 'response_group'),
+            responseGroupOrder: readFrozenNullableNumber(option, 'responseGroupOrder', 'response_group_order'),
+        }]
+    })
+}
+
 function durationSeconds(startedAt: string | null) {
     if (!startedAt) return null
     const started = Date.parse(startedAt)
@@ -91,12 +145,39 @@ export class ScoringService {
         const answerByQuestion = new Map<string, AttemptAnswerRow>()
         for (const answer of bundle.answers) answerByQuestion.set(answer.attempt_question_id, answer)
 
-        const [joinedSelections, scoringOptions] = await Promise.all([
+        /**
+         * Kunci jawaban dibaca dari `question_snapshot` yang DIBEKUKAN saat attempt
+         * dibuat, bukan dari `question_options` yang hidup.
+         *
+         * Konsekuensinya: memperbaiki kunci soal tidak mengubah nilai peserta yang
+         * sudah mengerjakan — keputusan produk 2026-09-18. Sebelumnya jalur ini
+         * membaca tabel hidup sehingga nilai historis ikut bergerak, sementara
+         * jalur TKA (`app_private.score_exam_attempt`) sudah memakai snapshot:
+         * satu attempt, dua kunci jawaban berbeda.
+         *
+         * Attempt yang dibuat SEBELUM snapshot memuat kunci tidak punya data ini,
+         * jadi jalur lama dipertahankan sebagai fallback (dan dicatat di log)
+         * supaya attempt lama tetap dapat diselesaikan dan diskor.
+         */
+        const frozenOptionsAvailable = bundle.questions.every(
+            (question) => readSnapshotOptions(question.question_snapshot).length > 0,
+        )
+
+        const [joinedSelections, liveScoringOptions] = await Promise.all([
             attemptRepository.getAnswerOptionSelections(bundle.answers.map((answer) => answer.id)),
-            attemptRepository.getScoringOptionsForQuestions(bundle.questions.map((question) => question.question_id)),
+            frozenOptionsAvailable
+                ? Promise.resolve([] as ScoringOptionRow[])
+                : attemptRepository.getScoringOptionsForQuestions(bundle.questions.map((question) => question.question_id)),
         ])
         const selectionsByAnswer = selectionMapForAnswers({ answers: bundle.answers, joinedSelections })
-        const optionsByQuestion = optionMapForQuestions(scoringOptions)
+        const liveOptionsByQuestion = optionMapForQuestions(liveScoringOptions)
+
+        if (!frozenOptionsAvailable) {
+            logger.warn(
+                '[scoring] Snapshot attempt tidak memuat kunci jawaban — memakai opsi hidup (attempt lama)',
+                { attemptId, questionCount: bundle.questions.length },
+            )
+        }
 
         const subjects = new Map<string, SubjectAccumulator>()
         let totalScore = 0
@@ -108,17 +189,20 @@ export class ScoringService {
             const selectedOptionIds = answer ? selectionsByAnswer.get(answer.id) ?? [] : []
             const questionType = readSnapshotField<string>(question.question_snapshot, 'questionType') ?? 'single_choice'
             const responseConfig = readResponseConfig(question.question_snapshot)
-            const options = optionsByQuestion.get(question.question_id) ?? []
-            const scored = calculateResponseScore({
-                questionType,
-                selectedOptionIds,
-                options: options.map((option) => ({
+            const frozenOptions = readSnapshotOptions(question.question_snapshot)
+            const options = frozenOptions.length > 0
+                ? frozenOptions
+                : (liveOptionsByQuestion.get(question.question_id) ?? []).map((option) => ({
                     id: option.id,
                     isCorrect: option.is_correct,
                     score: option.score,
                     responseGroup: option.response_group,
                     responseGroupOrder: option.response_group_order,
-                })),
+                }))
+            const scored = calculateResponseScore({
+                questionType,
+                selectedOptionIds,
+                options,
                 config: responseConfig,
             })
 
