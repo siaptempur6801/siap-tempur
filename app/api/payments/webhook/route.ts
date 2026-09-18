@@ -3,7 +3,7 @@ import { errorResponse, successResponse } from '@/lib/api-utils'
 import { webhookPayloadSchema } from '@/lib/validations/api'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
-import { isSupportedMidtransStatus, normalizeMidtransStatus } from '@/lib/midtrans-status'
+import { isSupportedMidtransStatus, normalizeFraudStatus, normalizeMidtransStatus, resolveMidtransFulfilment } from '@/lib/midtrans-status'
 import { paymentService } from '@/src/services/payment.service'
 
 function signaturesMatch(expected: string, provided: string) {
@@ -60,13 +60,38 @@ export async function POST(req: Request) {
 
         const providerTransactionId = typeof payload.transaction_id === 'string' ? payload.transaction_id : null
         const paymentMethod = typeof payload.payment_type === 'string' ? payload.payment_type : null
+
+        /**
+         * `fraud_status` wajib dihormati sebelum order dipenuhi.
+         *
+         * Midtrans dapat mengirim `transaction_status='capture'` bersama
+         * `fraud_status='deny'` (transaksi ditolak hasil review fraud). Tanpa
+         * pemeriksaan ini, notifikasi tersebut akan ditandai sukses, token dan
+         * entitlement bertambah, dan guard status yang monotonik membuatnya tidak
+         * dapat ditarik kembali.
+         */
+        const fulfilment = resolveMidtransFulfilment(transactionStatus, payload.fraud_status)
+        if (fulfilment.blockedReason) {
+            logger.warn('Midtrans webhook tidak memenuhi order karena keputusan fraud', {
+                orderId: order_id,
+                transactionStatus,
+                fraudStatus: normalizeFraudStatus(payload.fraud_status),
+                reason: fulfilment.blockedReason,
+            })
+        }
+        const effectiveStatus = fulfilment.status
+
+        // `fraud_status` ikut menjadi bagian dari idempotency key. Tanpa itu,
+        // `capture:deny` dan `capture:accept` untuk transaksi yang sama akan
+        // dianggap sebagai peristiwa yang sama dan notifikasi kedua diabaikan.
+        const fraudStatus = normalizeFraudStatus(payload.fraud_status)
         const webhookEventId = providerTransactionId
-            ? `${providerTransactionId}:${transactionStatus}`
-            : `${order_id}:${transactionStatus}:${status_code}`
+            ? `${providerTransactionId}:${effectiveStatus}${fraudStatus ? `:${fraudStatus}` : ''}`
+            : `${order_id}:${effectiveStatus}:${status_code}${fraudStatus ? `:${fraudStatus}` : ''}`
 
         const result = await paymentService.processWebhook({
             orderNumber: order_id,
-            status: transactionStatus,
+            status: effectiveStatus,
             amount,
             providerTransactionId,
             paymentMethod,
