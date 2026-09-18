@@ -1,10 +1,7 @@
 import CpnsProductLandingV12 from '@/components/home/CpnsProductLandingV12'
 import { Metadata } from 'next'
-import { createAdminClient, createClient } from '@/lib/utils/supabase/server'
-import { autoCloseExpiredTryoutEvents } from '@/lib/tryout-event-status'
+import { createClient } from '@/lib/utils/supabase/server'
 
-const eventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url, documentation_url'
-const legacyEventSelect = 'id, title, description, starts_at, ends_at, start_grace_minutes, duration_minutes, max_participants, requires_code, is_paid, price, status, flyer_image_url'
 const articleSelect = 'id, title, slug, cover_image_url, published_at, excerpt, content, category'
 
 export const metadata: Metadata = {
@@ -41,28 +38,6 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const admin = await createAdminClient()
-  await autoCloseExpiredTryoutEvents(admin)
-  const now = new Date().toISOString()
-
-  const activeEventsResult = await admin
-    .from('tryout_events')
-    .select(eventSelect)
-    .in('status', ['scheduled', 'live'])
-    .gte('ends_at', now)
-    .order('starts_at', { ascending: true })
-    .limit(3)
-
-  const activeEvents = activeEventsResult.error
-    ? (await admin
-      .from('tryout_events')
-      .select(legacyEventSelect)
-      .in('status', ['scheduled', 'live'])
-      .gte('ends_at', now)
-      .order('starts_at', { ascending: true })
-      .limit(3)).data?.map((event) => ({ ...event, documentation_url: null }))
-    : activeEventsResult.data
-
   const { data: latestArticles } = await supabase
     .from('articles')
     .select(articleSelect)
@@ -73,7 +48,7 @@ export default async function Home() {
   return (
     <CpnsProductLandingV12
       user={user ? { id: user.id } : null}
-      activeEvents={(activeEvents || []) as Parameters<typeof CpnsProductLandingV12>[0]['activeEvents']}
+      activeEvents={[]}
       latestArticles={(latestArticles || []) as Parameters<typeof CpnsProductLandingV12>[0]['latestArticles']}
     />
   )
