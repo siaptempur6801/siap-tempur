@@ -1,8 +1,7 @@
 import CpnsProductLandingV12 from '@/components/home/CpnsProductLandingV12'
 import { Metadata } from 'next'
-import { createClient } from '@/lib/utils/supabase/server'
-
-const articleSelect = 'id, title, slug, cover_image_url, published_at, excerpt, content, category'
+import { getAuthUserIdVerified } from '@/lib/utils/supabase/server'
+import { listLatestPublishedArticleCards } from '@/src/services/article-read.service'
 
 export const metadata: Metadata = {
   title: 'Persiapan SKD CPNS - TWK, TIU, TKP, Drill & Tryout | SiapTempur',
@@ -33,21 +32,16 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function Home() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const { data: latestArticles } = await supabase
-    .from('articles')
-    .select(articleSelect)
-    .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .limit(3)
+  // Halaman ini hanya butuh TAHU sudah login atau belum, bukan objek user.
+  // `getAuthUserIdVerified` memverifikasi JWT secara lokal (ES256 + JWKS) tanpa
+  // round trip jaringan. Daftar artikel di-cache 5 menit dan dibatalkan lewat
+  // `revalidatePath('/blog')` pada setiap penulisan artikel.
+  const userId = await getAuthUserIdVerified()
+  const latestArticles = await listLatestPublishedArticleCards(3)
 
   return (
     <CpnsProductLandingV12
-      user={user ? { id: user.id } : null}
+      user={userId ? { id: userId } : null}
       activeEvents={[]}
       latestArticles={(latestArticles || []) as Parameters<typeof CpnsProductLandingV12>[0]['latestArticles']}
     />

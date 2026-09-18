@@ -153,6 +153,123 @@ async function listContentPeople(): Promise<ContentPerson[]> {
 }
 
 export class ContentReviewService {
+    /**
+     * Menghitung jumlah soal per status sebagai AGREGAT SELURUH TABEL.
+     *
+     * KENAPA BUKAN DARI ARRAY `questions`
+     *   Sebelumnya angka-angka ini dihitung dari hasil query daftar soal, yang
+     *   dibatasi `.limit(250)`. Pada context dengan lebih dari 250 soal, jendela
+     *   itu hanya memuat sebagian status — dan karena diurutkan `updated_at desc`,
+     *   yang terpotong adalah soal-soal lama. Contoh nyata di staging
+     *   (CPNS/SKD, 573 soal: 140 published + 433 draft): 250 baris terbaru
+     *   SELURUHNYA draft, sehingga dashboard dan halaman review melaporkan
+     *   `published = 0` — angka yang menyesatkan admin.
+     *
+     *   Sekarang dihitung dengan `count: 'exact', head: true` per status, tanpa
+     *   menarik satu baris pun. Satu query per status, dijalankan paralel.
+     *
+     * `total` adalah jumlah seluruh soal pada context ini, terlepas dari filter
+     * yang sedang aktif — sama seperti sebelumnya, di mana `total` dihitung
+     * setelah filter stage/reviewer diterapkan. Perhatikan bahwa filter
+     * stage/reviewer tetap TIDAK memengaruhi angka status (perilaku lama yang
+     * dipertahankan), sedangkan filter subject/status/q memang mempersempit
+     * `questions` di `getWorkspaceData` — dan sejak perubahan ini tidak lagi
+     * mempersempit `counts`.
+     *
+     * `unassigned` tetap dihitung dari review yang benar-benar tertunda pada
+     * jendela soal yang dimuat, karena "belum ditugaskan" hanya bermakna untuk
+     * soal yang punya review pending. Artinya angka ini memang dibatasi
+     * `p_limit` — perilaku yang sama seperti sebelumnya.
+     */
+    private async countQuestionsByStatus(
+        catalog: { program: { id: string }; track: { id: string } },
+        unassignedWithinQuestionIds: string[],
+    ) {
+        const client = await createClient()
+        const base = () => client
+            .from('questions')
+            .select('id', { count: 'exact', head: true })
+            .eq('program_id', catalog.program.id)
+            .eq('track_id', catalog.track.id)
+
+        const [total, published, approved, revisionRequired, pendingReviews] = await Promise.all([
+            base(),
+            base().eq('status', 'published'),
+            base().eq('status', 'approved'),
+            base().eq('status', 'revision_required'),
+            unassignedWithinQuestionIds.length
+                ? client
+                    .from('content_reviews')
+                    .select('entity_id, reviewer_id', { count: 'exact' })
+                    .eq('entity_type', 'question')
+                    .eq('status', 'pending')
+                    .in('entity_id', unassignedWithinQuestionIds)
+                : Promise.resolve({ data: [], error: null, count: 0 }),
+        ])
+
+        for (const result of [total, published, approved, revisionRequired, pendingReviews]) {
+            if (result.error) throw result.error
+        }
+
+        // Selaras dengan perhitungan lama di `getWorkspaceData`: satu review
+        // pending tanpa reviewer = satu soal belum ditugaskan.
+        const unassigned = new Set(
+            (pendingReviews.data ?? [])
+                .filter((row) => !row.reviewer_id)
+                .map((row) => String(row.entity_id)),
+        ).size
+
+        return {
+            total: total.count ?? 0,
+            unassigned,
+            published: published.count ?? 0,
+            approved: approved.count ?? 0,
+            revisionRequired: revisionRequired.count ?? 0,
+        }
+    }
+
+    /**
+     * Ringkasan content untuk dashboard admin.
+     *
+     * KENAPA TERPISAH DARI `getWorkspaceData`
+     *   Dashboard hanya membutuhkan: context (program/track), beberapa angka
+     *   status, dan 6 baris teratas untuk "Review queue". Tetapi ia memanggil
+     *   `getWorkspaceData`, yang jauh lebih berat:
+     *
+     *     1. menarik 250 soal LENGKAP dengan `stem`;
+     *     2. menarik SELURUH `content_reviews` untuk 250 soal itu;
+     *     3. memanggil RPC `get_content_question_detail` untuk satu soal terpilih
+     *        — RPC itu mengembalikan opsi, pembahasan, stimulus, knowledge
+     *        mapping, versi, audit log, dan kandidat stimulus dalam satu payload.
+     *
+     *   Tidak satu pun dari (2) dan (3) dipakai dashboard. Lihat
+     *   `app/admin/AdminOverview.tsx`: ia hanya membaca `catalog`, `counts`,
+     *   `questions` (untuk hitungan tahap review + 6 baris queue), dan
+     *   `subjectById`.
+     */
+    async getReviewSummary(context: ProgramTrackContext) {
+        const client = await createClient()
+        const catalog = await resolveCatalog(context)
+
+        // Kolom minimum yang benar-benar dibaca dashboard. `updated_at` tetap
+        // diperlukan karena urutannya menentukan isi jendela 250 baris yang
+        // dipakai untuk "Review queue" dan hitungan tahap review.
+        const { data, error } = await client
+            .from('questions')
+            .select('id, question_code, subject_id, status, version, stem')
+            .eq('program_id', catalog.program.id)
+            .eq('track_id', catalog.track.id)
+            .order('updated_at', { ascending: false })
+            .limit(250)
+        if (error) throw error
+
+        const questions = (data ?? []) as Row[]
+        const subjectById = new Map(catalog.subjects.map((subject) => [String(subject.id), subject]))
+        const counts = await this.countQuestionsByStatus(catalog, questions.map((row) => stringValue(row.id)))
+
+        return { catalog, questions, subjectById, counts }
+    }
+
     async getWorkspaceData(
         context: ProgramTrackContext,
         filters: ReviewWorkspaceFilters = {},
@@ -271,13 +388,11 @@ export class ContentReviewService {
         }
 
         const subjectById = new Map(catalog.subjects.map((subject) => [String(subject.id), subject]))
-        const counts = {
-            total: questions.length,
-            unassigned: questions.filter((row) => Boolean(row.pending_review && !row.pending_review.reviewer_id)).length,
-            revisionRequired: questions.filter((row) => lower(row.status) === 'revision_required').length,
-            approved: questions.filter((row) => lower(row.status) === 'approved').length,
-            published: questions.filter((row) => lower(row.status) === 'published').length,
-        }
+        // Agregat seluruh tabel — lihat `countQuestionsByStatus`. Sebelumnya
+        // angka ini dihitung dari array `questions` yang sudah difilter dan
+        // dibatasi 250 baris, sehingga pada context dengan >250 soal angkanya
+        // salah (mis. `published = 0` padahal ada 140).
+        const counts = await this.countQuestionsByStatus(catalog, questions.map((row) => stringValue(row.id)))
 
         return {
             catalog,

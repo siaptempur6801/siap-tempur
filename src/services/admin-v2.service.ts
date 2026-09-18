@@ -107,6 +107,16 @@ function validateQuestionOptions(questionType: string, options: AdminQuestionOpt
     throw new Error('QUESTION_TYPE_INVALID')
 }
 
+/**
+ * Domain data yang dapat dimuat workspace admin secara terpisah.
+ *
+ * Setiap tab admin hanya membutuhkan satu domain. Lihat `getWorkspaceData`.
+ */
+export type WorkspaceSection = 'products' | 'events' | 'exams' | 'questions' | 'commerce'
+
+export const ALL_WORKSPACE_SECTIONS: readonly WorkspaceSection[] =
+    ['products', 'events', 'exams', 'questions', 'commerce'] as const
+
 export class AdminV2Service {
     private async getCatalog(context?: ProgramTrackContext) {
         return catalogContextService.resolve(contextOrDefault(context))
@@ -116,49 +126,79 @@ export class AdminV2Service {
         return catalogContextService.listActiveContexts()
     }
 
-    async getWorkspaceData(context?: ProgramTrackContext) {
+    /**
+     * Memuat data workspace admin.
+     *
+     * `sections` membatasi domain mana yang benar-benar di-query. Setiap tab
+     * admin hanya membutuhkan satu domain, jadi tanpa pembatasan ini membuka
+     * tab "Products" ikut menarik 80 soal beserta seluruh opsinya (setiap opsi
+     * memuat `content`) — payload dan kerja database yang tidak pernah dirender.
+     *
+     * Bila `sections` tidak diisi, SELURUH domain dimuat. Itu yang dibutuhkan
+     * dashboard (`AdminOverview`), yang memang menampilkan metrik lintas domain.
+     *
+     * Nilai balik selalu memuat SEMUA kunci (dengan array kosong untuk domain
+     * yang tidak diminta), supaya pemanggil tidak perlu menangani `undefined`.
+     * Pemanggil yang memakai `sections` bertanggung jawab membaca
+     * `loadedSections` sebelum menafsirkan array kosong sebagai "tidak ada data".
+     */
+    async getWorkspaceData(context?: ProgramTrackContext, sections?: readonly WorkspaceSection[]) {
+        const wanted = new Set<WorkspaceSection>(sections ?? ALL_WORKSPACE_SECTIONS)
         const admin = await createV2AdminClient()
         const catalog = await this.getCatalog(context)
+        const empty = Promise.resolve({ data: [], error: null })
 
         const [productsResult, eventsResult, examsResult, questionsResult, ordersResult, paymentsResult] = await Promise.all([
-            admin
-                .from('products')
-                .select('id, code, name, description, product_type, duration_days, status, created_at, updated_at')
-                .eq('program_id', catalog.program.id)
-                .eq('track_id', catalog.track.id)
-                .order('updated_at', { ascending: false })
-                .limit(50),
-            admin
-                .from('events')
-                .select('id, code, title, slug, event_type, description, flyer_image_url, registration_start, registration_end, starts_at, ends_at, status, created_at')
-                .eq('program_id', catalog.program.id)
-                .eq('track_id', catalog.track.id)
-                .order('starts_at', { ascending: false })
-                .limit(50),
-            admin
-                .from('exams')
-                .select('id, exam_type_id, title, slug, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, starts_at, ends_at, token_cost, updated_at')
-                .eq('program_id', catalog.program.id)
-                .eq('track_id', catalog.track.id)
-                .order('updated_at', { ascending: false })
-                .limit(80),
-            admin
-                .from('questions')
-                .select('id, question_code, subject_id, question_type, stem, difficulty, source_reference, status, version, author_id, reviewer_id, published_at, updated_at')
-                .eq('program_id', catalog.program.id)
-                .eq('track_id', catalog.track.id)
-                .order('updated_at', { ascending: false })
-                .limit(80),
-            admin
-                .from('orders')
-                .select('id, order_number, user_id, status, subtotal, discount_amount, total_amount, currency, paid_at, created_at')
-                .order('created_at', { ascending: false })
-                .limit(50),
-            admin
-                .from('payments')
-                .select('id, order_id, provider, provider_transaction_id, payment_method, amount, status, paid_at, created_at, updated_at')
-                .order('created_at', { ascending: false })
-                .limit(50),
+            wanted.has('products')
+                ? admin
+                    .from('products')
+                    .select('id, code, name, description, product_type, duration_days, status, created_at, updated_at')
+                    .eq('program_id', catalog.program.id)
+                    .eq('track_id', catalog.track.id)
+                    .order('updated_at', { ascending: false })
+                    .limit(50)
+                : empty,
+            wanted.has('events')
+                ? admin
+                    .from('events')
+                    .select('id, code, title, slug, event_type, description, flyer_image_url, registration_start, registration_end, starts_at, ends_at, status, created_at')
+                    .eq('program_id', catalog.program.id)
+                    .eq('track_id', catalog.track.id)
+                    .order('starts_at', { ascending: false })
+                    .limit(50)
+                : empty,
+            wanted.has('exams')
+                ? admin
+                    .from('exams')
+                    .select('id, exam_type_id, title, slug, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, starts_at, ends_at, token_cost, updated_at')
+                    .eq('program_id', catalog.program.id)
+                    .eq('track_id', catalog.track.id)
+                    .order('updated_at', { ascending: false })
+                    .limit(80)
+                : empty,
+            wanted.has('questions')
+                ? admin
+                    .from('questions')
+                    .select('id, question_code, subject_id, question_type, stem, difficulty, source_reference, status, version, author_id, reviewer_id, published_at, updated_at')
+                    .eq('program_id', catalog.program.id)
+                    .eq('track_id', catalog.track.id)
+                    .order('updated_at', { ascending: false })
+                    .limit(80)
+                : empty,
+            wanted.has('commerce')
+                ? admin
+                    .from('orders')
+                    .select('id, order_number, user_id, status, subtotal, discount_amount, total_amount, currency, paid_at, created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(50)
+                : empty,
+            wanted.has('commerce')
+                ? admin
+                    .from('payments')
+                    .select('id, order_id, provider, provider_transaction_id, payment_method, amount, status, paid_at, created_at, updated_at')
+                    .order('created_at', { ascending: false })
+                    .limit(50)
+                : empty,
         ])
 
         for (const result of [productsResult, eventsResult, examsResult, questionsResult, ordersResult, paymentsResult]) {
@@ -198,6 +238,11 @@ export class AdminV2Service {
         return {
             catalog,
             contexts: await this.listCatalogContexts(),
+            /**
+             * Domain mana yang benar-benar di-query. Tanpa ini, array kosong
+             * menjadi ambigu: "tidak ada data" atau "tidak diminta"?
+             */
+            loadedSections: Array.from(wanted),
             products: productsResult.data ?? [],
             productPrices: pricesResult.data ?? [],
             productWalletGrants: grantsResult.data ?? [],

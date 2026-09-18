@@ -21,10 +21,16 @@ const CRITICAL_PATTERNS = [
 
 const PUBLIC_ROUTES = [
   '/',
+  '/cpns',
   '/tka',
   '/login',
   '/register',
   '/forgot-password',
+  '/blog',
+  '/event',
+  '/syarat-ketentuan',
+  '/kebijakan-privasi',
+  '/kebijakan-pengembalian',
   '/halaman-tidak-ada-untuk-test-console',
 ];
 

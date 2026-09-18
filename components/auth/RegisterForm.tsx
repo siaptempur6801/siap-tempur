@@ -7,8 +7,7 @@ import { signup } from '@/app/auth/actions'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { registerSchema, RegisterFormData } from '@/lib/validations/auth'
+import { registerResolver, type RegisterFormData } from '@/lib/validations/auth-form'
 import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 import { trackProductEvent } from '@/lib/product-analytics'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
@@ -25,7 +24,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
         handleSubmit,
         formState: { errors },
     } = useForm<RegisterFormData>({
-        resolver: zodResolver(registerSchema),
+        resolver: registerResolver,
         defaultValues: { fullName: '', email: '', password: '' },
     })
 

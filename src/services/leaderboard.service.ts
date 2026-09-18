@@ -91,9 +91,16 @@ export class LeaderboardService {
         if (eligibleBoards.length === 0) return []
 
         const rpcAdmin = await createAdminClient()
+        // `p_user_id` WAJIB dikirim di jalur submit. Tanpa itu fungsi akan
+        // menghitung ulang SELURUH papan setiap kali satu peserta selesai
+        // (perilaku lama, O(N^2) penulisan). Dengan `p_user_id`, hanya baris
+        // peserta ini yang dihitung ulang dan hanya peringkat yang benar-benar
+        // bergeser yang ditulis. Lihat migration
+        // `20260918140000_leaderboard_incremental_recalculation.sql`.
         await Promise.all(eligibleBoards.map(async (board) => {
             const { error } = await rpcAdmin.rpc('recalculate_leaderboard', {
                 p_leaderboard_id: String(board.id),
+                p_user_id: userId,
             })
             if (error) throw error
         }))

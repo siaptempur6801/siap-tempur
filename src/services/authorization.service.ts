@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/utils/supabase/server'
+import { getAuthUser } from '@/lib/utils/supabase/server'
 import { authorizationRepository, type AuthorizationScope, type UserAuthorization } from '@/src/repositories/authorization.repository'
 import type { PermissionCode } from '@/src/auth/permissions'
 
@@ -18,10 +18,11 @@ export class AuthenticationError extends Error {
 
 export class AuthorizationService {
     async getCurrentAuthorization(scope?: AuthorizationScope): Promise<UserAuthorization | null> {
-        const supabase = await createClient()
-        const { data: { user }, error } = await supabase.auth.getUser()
+        // Identitas user di-dedup per request (lihat `getAuthUser`). Sebelumnya
+        // satu render halaman admin dapat menembak `/auth/v1/user` tiga kali.
+        const { user } = await getAuthUser()
 
-        if (error || !user) return null
+        if (!user) return null
         return authorizationRepository.getUserAuthorization(user.id, scope)
     }
 

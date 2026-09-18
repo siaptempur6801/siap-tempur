@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Archive, CalendarDays, FileQuestion, Package, Save } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getServerNowMs } from '@/lib/server/time'
-import { adminV2Service } from '@/src/services/admin-v2.service'
+import { adminV2Service, type WorkspaceSection } from '@/src/services/admin-v2.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import {
@@ -147,13 +147,31 @@ function PermissionEmpty({ permission }: { permission: string }) {
     return <AdminCard><AdminEmptyState title="Akses tidak tersedia" description={`Akun ini tidak memiliki permission ${permission}.`}/></AdminCard>
 }
 
+/**
+ * Domain data yang dibutuhkan tiap tab.
+ *
+ * Setiap mode hanya merender satu domain, tetapi sebelumnya SELURUH domain
+ * di-query — membuka tab "Products" ikut menarik 80 soal beserta seluruh
+ * opsinya (setiap opsi memuat `content`). Pemetaan ini yang menghentikannya.
+ *
+ * Catatan: `products` tetap dimuat di mode `events` karena formulir event
+ * menautkan event ke product lewat `eventProducts`.
+ */
+const SECTIONS_BY_MODE: Record<AdminOperationsMode, readonly WorkspaceSection[]> = {
+    products: ['products'],
+    events: ['events', 'products'],
+    exams: ['exams'],
+    questions: ['questions'],
+    commerce: ['commerce'],
+}
+
 export default async function AdminOperationsWorkspace({ mode, searchParams }: { mode: AdminOperationsMode; searchParams: Promise<SearchParams> }) {
     const params = await searchParams
     const requestedContext = {
         programCode: (params.program || 'TKA').toUpperCase(),
         trackCode: (params.track || 'SMP').toUpperCase(),
     }
-    const data = await adminV2Service.getWorkspaceData(requestedContext) as unknown as WorkspaceView
+    const data = await adminV2Service.getWorkspaceData(requestedContext, SECTIONS_BY_MODE[mode]) as unknown as WorkspaceView
     const authorization = await authorizationService.getCurrentAuthorization()
     const permissions = new Set(authorization?.permissions ?? [])
     const program = data.catalog.program.code

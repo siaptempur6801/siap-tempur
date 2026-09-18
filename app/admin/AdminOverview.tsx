@@ -81,7 +81,11 @@ export default async function AdminOverview({ params }: { params: SearchParams }
     }
 
     const [review, workspace] = await Promise.all([
-        contentReviewService.getWorkspaceData(context),
+        // Ringkasan ringan: dashboard hanya butuh angka status, 6 baris review
+        // queue, dan peta subjek. `getWorkspaceData` akan ikut menarik 250 soal
+        // lengkap + seluruh content_reviews + RPC detail satu soal, yang tidak
+        // satu pun dipakai di sini.
+        contentReviewService.getReviewSummary(context),
         adminV2Service.getWorkspaceData(context),
     ])
 

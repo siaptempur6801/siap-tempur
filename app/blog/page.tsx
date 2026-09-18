@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Clock, Newspaper } from "lucide-react";
 import SeoNavbar from "@/components/SeoNavbar";
 import ArticlePreviewCard, { type ArticlePreview } from "@/components/articles/ArticlePreviewCard";
-import { createClient } from "@/lib/utils/supabase/server";
+import { listPublishedArticles } from "@/src/services/article-read.service";
 import { estimateReadTime, formatArticleDate } from "@/lib/articles";
 
 export const metadata: Metadata = {
@@ -41,12 +41,9 @@ function ArticleCover({ article, featured = false }: { article: ArticlePreview; 
 }
 
 export default async function BlogIndexPage() {
-    const supabase = await createClient()
-    const { data: articles } = await supabase
-        .from('articles')
-        .select('title, slug, excerpt, content, category, cover_image_url, published_at')
-        .eq('status', 'published')
-        .order('published_at', { ascending: false })
+    // Di-cache 5 menit dengan pembatalan lewat `revalidatePath('/blog')` pada
+    // setiap penulisan artikel. Lihat `src/services/article-read.service.ts`.
+    const articles = await listPublishedArticles()
 
     const rows = (articles as ArticlePreview[] | null) ?? []
     const featured = rows[0]

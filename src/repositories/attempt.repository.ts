@@ -55,6 +55,22 @@ export type AttemptAnswerOptionRow = {
     option_id: string
 }
 
+/**
+ * Hasil pemanggilan RPC `save_attempt_answer_for_user`.
+ *
+ * `unavailable` berarti fungsi belum ada di schema cache PostgREST (migration
+ * belum di-apply). Pemanggil memakai jalur lama sebagai cadangan supaya
+ * penyimpanan jawaban tidak pernah gagal hanya karena urutan deploy.
+ *
+ * `domainErrorCode` diisi bila database menolak dengan alasan domain
+ * (attempt tidak aktif, soal tidak teralokasi, opsi bukan milik soal, waktu
+ * habis) — pemanggil memetakannya kembali ke `PracticeDomainError` yang sama.
+ */
+export type SaveAttemptAnswerResult =
+    | { status: 'saved' }
+    | { status: 'unavailable' }
+    | { status: 'domain_error'; code: string; message: string }
+
 export type AttemptBundle = {
     attempt: AttemptRow
     questions: AttemptQuestionRow[]
@@ -180,6 +196,33 @@ export class AttemptRepository {
         return data as AttemptQuestionRow | null
     }
 
+    /**
+     * Varian ringan `getAttemptQuestion` untuk jalur simpan jawaban.
+     *
+     * Jalur itu hanya butuh `id` (untuk upsert jawaban) dan `position` (untuk
+     * menandai posisi terakhir), tetapi `getAttemptQuestion` ikut menarik
+     * `question_snapshot` — JSONB berisi stem soal, opsi, pembahasan, dan kunci
+     * jawaban. Untuk Full Tryout CPNS (110 soal) itu berarti membaca ulang
+     * dokumen besar setiap kali peserta mengklik satu opsi.
+     *
+     * Dipisah sebagai method tersendiri (bukan mengubah `getAttemptQuestion`)
+     * supaya pemanggil yang memang membutuhkan snapshot tidak ikut berubah.
+     */
+    async getAttemptQuestionRef(
+        attemptId: string,
+        questionId: string,
+    ): Promise<Pick<AttemptQuestionRow, 'id' | 'position'> | null> {
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('attempt_questions')
+            .select('id, position')
+            .eq('attempt_id', attemptId)
+            .eq('question_id', questionId)
+            .maybeSingle()
+        if (error) throw error
+        return data
+    }
+
     async getOptionForQuestion(questionId: string, optionId: string): Promise<ScoringOptionRow | null> {
         const admin = await createAdminClient()
         const { data, error } = await admin
@@ -202,6 +245,50 @@ export class AttemptRepository {
             .in('id', optionIds)
         if (error) throw error
         return (data ?? []) as ScoringOptionRow[]
+    }
+
+    /**
+     * Menyimpan jawaban satu soal dalam SATU round trip.
+     *
+     * Menggantikan lima panggilan berurutan di `AttemptAnswerService`
+     * (`getActiveOwnedAttempt` → `getAttemptQuestionRef` →
+     * `getOptionForQuestion(s)` → `upsertAnswer(Options)` → `touchAttempt`).
+     * Seluruh validasi yang sama dijalankan di dalam fungsi database — termasuk
+     * pemeriksaan bahwa SETIAP opsi benar-benar milik soal tersebut, yang
+     * mencegah klien mengirim opsi dari soal lain untuk memanipulasi skor.
+     *
+     * Lihat migration `20260918150000_save_attempt_answer_single_round_trip.sql`.
+     *
+     * @returns `unavailable` bila RPC belum ada (migration belum di-apply),
+     *          supaya pemanggil dapat memakai jalur lama.
+     */
+    async saveAttemptAnswer(input: {
+        userId: string
+        attemptId: string
+        questionId: string
+        optionIds: string[]
+    }): Promise<SaveAttemptAnswerResult> {
+        const admin = await createV2AdminClient()
+        const { error } = await admin.rpc('save_attempt_answer_for_user', {
+            p_user_id: input.userId,
+            p_attempt_id: input.attemptId,
+            p_question_id: input.questionId,
+            p_option_ids: input.optionIds,
+        })
+        if (!error) return { status: 'saved' }
+
+        // PGRST202 = fungsi tidak ada di schema cache PostgREST.
+        if (error.code === 'PGRST202') return { status: 'unavailable' }
+
+        // Fungsi melempar `[KODE] pesan` untuk penolakan domain. Dipetakan
+        // kembali ke kode yang sama supaya pemanggil tidak perlu tahu bahwa
+        // validasinya kini berjalan di database.
+        const match = /^\[([A-Z_]+)\]\s*([\s\S]*)$/.exec(error.message ?? '')
+        if (match) {
+            return { status: 'domain_error', code: match[1], message: match[2].trim() }
+        }
+
+        throw error
     }
 
     async upsertAnswer(input: {

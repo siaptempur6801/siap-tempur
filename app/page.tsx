@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import ReadingProgress from '@/components/blog/ReadingProgress'
-import { createV2Client } from '@/lib/utils/supabase/server'
+import { getAuthUserIdVerified } from '@/lib/utils/supabase/server'
 import {
     LandingAccount,
     LandingAudience,
@@ -35,18 +35,22 @@ export const revalidate = 0
  * satu akun → tanya jawab → CTA → footer.
  */
 export default async function Index() {
-    const supabase = await createV2Client()
-    const { data: { user } } = await supabase.auth.getUser()
+    // Hanya butuh "sudah login atau belum" untuk memilih label CTA.
+    // `getAuthUserIdVerified` memverifikasi JWT secara lokal (proyek ini memakai
+    // ES256 + JWKS), sehingga tidak ada round trip ke Auth server hanya demi
+    // satu label — sebelumnya `getUser()` menembak `/auth/v1/user` di sini.
+    const userId = await getAuthUserIdVerified()
+    const loggedIn = Boolean(userId)
 
     const cta = {
-        primaryHref: user ? '#produk' : '/register?returnTo=%2F',
-        primaryLabel: user ? 'Pilih program' : 'Mulai belajar gratis',
+        primaryHref: loggedIn ? '#produk' : '/register?returnTo=%2F',
+        primaryLabel: loggedIn ? 'Pilih program' : 'Mulai belajar gratis',
     }
 
     return (
         <main className="st-product min-h-screen overflow-x-clip bg-[var(--st-paper)] font-body text-[var(--st-ink)]">
             <ReadingProgress />
-            <LandingHeader user={Boolean(user)} {...cta} />
+            <LandingHeader user={loggedIn} {...cta} />
             <LandingHero {...cta} />
             <LandingBenefits />
             <LandingQuickStart {...cta} />

@@ -6,7 +6,7 @@ import SeoNavbar from '@/components/SeoNavbar'
 import ReadingProgress from '@/components/blog/ReadingProgress'
 import ArticleToc from '@/components/blog/ArticleToc'
 import { buildArticleToc } from '@/lib/article-toc'
-import { createClient } from '@/lib/utils/supabase/server'
+import { getPublishedArticleBySlug } from '@/src/services/article-read.service'
 import { estimateReadTime, formatArticleDate } from '@/lib/articles'
 import { escapeHtml, sanitizeArticleHtml } from '@/lib/article-sanitize'
 import { logger } from '@/lib/logger'
@@ -22,20 +22,17 @@ type Article = {
 }
 
 async function getArticle(slug: string) {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-        .from('articles')
-        .select('title, slug, excerpt, content, category, cover_image_url, published_at')
-        .eq('slug', slug)
-        .eq('status', 'published')
-        .maybeSingle()
-
-    if (error) {
-        logger.warn('[blog-detail-read]', { error: error.message, slug })
+    try {
+        // Di-cache 5 menit; dibatalkan lewat `revalidatePath('/blog/${slug}')`
+        // pada setiap penulisan artikel.
+        return (await getPublishedArticleBySlug(slug)) as Article | null
+    } catch (error) {
+        logger.warn('[blog-detail-read]', {
+            error: error instanceof Error ? error.message : String(error),
+            slug,
+        })
         return null
     }
-
-    return data as Article | null
 }
 
 function getSafeArticleContent(article: Article) {

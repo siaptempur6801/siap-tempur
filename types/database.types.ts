@@ -782,6 +782,38 @@ export type Database = {
                 Args: { p_scores: Json }
                 Returns: number
             }
+            /**
+             * `get_user_subject_progress` — lihat migration
+             * `20260918130000_subject_progress_aggregate_rpc.sql`.
+             * Agregat progres per subjek dihitung di database, menggantikan
+             * agregasi tanpa batas di Node (satu baris per subjek, satu round trip).
+             */
+            get_user_subject_progress: {
+                Args: { p_user_id: string }
+                Returns: Array<{
+                    subject_id: string
+                    attempts: number
+                    questions_answered: number
+                    correct_answers: number
+                    total_questions: number
+                    weighted_percentage: number
+                }>
+            }
+            /**
+             * `save_attempt_answer_for_user` — lihat migration
+             * `20260918150000_save_attempt_answer_single_round_trip.sql`.
+             * Menyimpan jawaban satu soal (validasi + tulis) dalam satu round trip,
+             * menggantikan lima panggilan PostgREST berurutan per klik jawaban.
+             */
+            save_attempt_answer_for_user: {
+                Args: {
+                    p_user_id: string
+                    p_attempt_id: string
+                    p_question_id: string
+                    p_option_ids: string[]
+                }
+                Returns: Json
+            }
         }
         Enums: { [_ in never]: never }
         CompositeTypes: { [_ in never]: never }

@@ -158,9 +158,17 @@ export class ScoringService {
          * Attempt yang dibuat SEBELUM snapshot memuat kunci tidak punya data ini,
          * jadi jalur lama dipertahankan sebagai fallback (dan dicatat di log)
          * supaya attempt lama tetap dapat diselesaikan dan diskor.
+         *
+         * Snapshot di-parse SEKALI di sini dan hasilnya dipakai ulang di loop
+         * penilaian. Sebelumnya `readSnapshotOptions` dipanggil dua kali per soal
+         * (sekali untuk cek ketersediaan, sekali saat menilai), sehingga Full
+         * Tryout 110 soal mem-parse JSONB yang sama 220 kali.
          */
+        const frozenOptionsByQuestion = new Map(
+            bundle.questions.map((question) => [question.id, readSnapshotOptions(question.question_snapshot)]),
+        )
         const frozenOptionsAvailable = bundle.questions.every(
-            (question) => readSnapshotOptions(question.question_snapshot).length > 0,
+            (question) => (frozenOptionsByQuestion.get(question.id)?.length ?? 0) > 0,
         )
 
         const [joinedSelections, liveScoringOptions] = await Promise.all([
@@ -189,7 +197,7 @@ export class ScoringService {
             const selectedOptionIds = answer ? selectionsByAnswer.get(answer.id) ?? [] : []
             const questionType = readSnapshotField<string>(question.question_snapshot, 'questionType') ?? 'single_choice'
             const responseConfig = readResponseConfig(question.question_snapshot)
-            const frozenOptions = readSnapshotOptions(question.question_snapshot)
+            const frozenOptions = frozenOptionsByQuestion.get(question.id) ?? []
             const options = frozenOptions.length > 0
                 ? frozenOptions
                 : (liveOptionsByQuestion.get(question.question_id) ?? []).map((option) => ({

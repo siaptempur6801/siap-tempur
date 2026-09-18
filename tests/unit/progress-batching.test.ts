@@ -80,10 +80,18 @@ describe('progress repository — batching filter .in()', () => {
         expect(inCalls).toHaveLength(0)
     })
 
-    it('membatasi jumlah attempt agregat secara eksplisit, bukan diam-diam', async () => {
-        // Kontrak: agregat progres TIDAK boleh dipotong tanpa terlihat. Bila batas
-        // tersentuh, repository harus gagal keras supaya tidak menghasilkan angka
-        // progres yang salah tanpa ada yang menyadarinya.
-        expect(ProgressRepository.MAX_ATTEMPTS_PER_AGGREGATE).toBeGreaterThan(1000)
+    it('tidak membatasi agregat progres di sisi Node lagi', async () => {
+        // Kontrak lama: agregat progres per user dihitung di Node dengan menarik
+        // SELURUH id attempt, sehingga butuh ambang gagal-keras
+        // (`MAX_ATTEMPTS_PER_AGGREGATE`) agar tidak diam-diam memotong data.
+        //
+        // Sejak migration `20260918130000_subject_progress_aggregate_rpc.sql`,
+        // agregat dihitung di database lewat `get_user_subject_progress`, jadi
+        // tidak ada lagi daftar id yang perlu dibatasi — dan ambang itu dihapus
+        // bersama jalur lamanya.
+        expect(progressRepository).not.toHaveProperty('listAllCompletedAttemptIds')
+        expect(ProgressRepository).not.toHaveProperty('MAX_ATTEMPTS_PER_AGGREGATE')
+        // Jalur agregat baru tetap harus ada.
+        expect(typeof progressRepository.getSubjectProgressAggregates).toBe('function')
     })
 })

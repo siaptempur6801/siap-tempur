@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
-import { createV2Client } from '@/lib/utils/supabase/server'
+import { getAuthUserIdVerified, createV2Client } from '@/lib/utils/supabase/server'
 import SeoNavbarClient from '@/components/SeoNavbarClient'
 import { tkaNavItems } from '@/components/home/tka-landing/content'
 import ReadingProgress from '@/components/blog/ReadingProgress'
@@ -32,12 +32,15 @@ export default async function TkaHomePage({
     searchParams: Promise<{ landing?: string }>
 }) {
     const { landing } = await searchParams
-    const supabase = await createV2Client()
-    const { data: { user } } = await supabase.auth.getUser()
+    // Hanya butuh "sudah login atau belum", bukan objek user.
+    // `getAuthUserIdVerified` memverifikasi JWT secara lokal (ES256 + JWKS),
+    // sehingga tidak ada round trip ke Auth server hanya untuk memutuskan
+    // redirect dan label.
+    const userId = await getAuthUserIdVerified()
 
     // `?landing=1` (dari tautan logo di shell TKA) memaksa halaman pengenalan tampil
     // walau pengguna sudah login; tanpa itu perilaku lama tetap: redirect ke jenjang aktif.
-    if (!user || landing === '1') return <PublicTkaLanding loggedIn={Boolean(user)} />
+    if (!userId || landing === '1') return <PublicTkaLanding loggedIn={Boolean(userId)} />
 
     // Halaman pengenalan (`/tka`) dan halaman jenjang memakai segmen layout yang sama, tetapi
     // chrome-nya berbeda (tanpa sidebar vs dengan sidebar). Pada navigasi klien, router memakai
@@ -66,6 +69,10 @@ export default async function TkaHomePage({
         return goToLevel(tkaLevelPath(preferredLevel))
     }
 
+    // Klien ini dipakai untuk query DATA (bukan identitas). Identitas sudah
+    // diverifikasi di atas lewat klaim JWT, jadi `userId` dipakai apa adanya.
+    const supabase = await createV2Client()
+
     const { data: program, error: programError } = await supabase
         .from('programs')
         .select('id')
@@ -86,7 +93,7 @@ export default async function TkaHomePage({
         ? await supabase
             .from('user_tracks')
             .select('track_id')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .in('track_id', trackIds)
             .in('status', ['active', 'ACTIVE'])
             .order('updated_at', { ascending: false })

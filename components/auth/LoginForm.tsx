@@ -7,8 +7,7 @@ import { login, resendVerificationEmail } from '@/app/auth/actions'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { loginSchema, LoginFormData } from '@/lib/validations/auth'
+import { loginResolver, type LoginFormData } from '@/lib/validations/auth-form'
 import { resolvePostLoginRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 import { trackProductEvent } from '@/lib/product-analytics'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
@@ -26,7 +25,7 @@ export default function LoginForm({ returnTo }: { returnTo: string }) {
         handleSubmit,
         formState: { errors },
     } = useForm<LoginFormData>({
-        resolver: zodResolver(loginSchema),
+        resolver: loginResolver,
         defaultValues: { email: '', password: '' },
     })
 

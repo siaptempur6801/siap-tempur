@@ -1,5 +1,33 @@
 import { attemptRepository, type AttemptRow } from '@/src/repositories/attempt.repository'
-import { PracticeDomainError } from '@/src/services/exam-attempt.service'
+import { PracticeDomainError, type PracticeErrorCode } from '@/src/services/exam-attempt.service'
+
+/**
+ * Kode error yang boleh dikembalikan database lewat RPC
+ * `save_attempt_answer_for_user`. Daftar putih ini mencegah nilai tak dikenal
+ * dari database masuk ke union `PracticeErrorCode` tanpa pemeriksaan.
+ */
+const RPC_DOMAIN_ERROR_CODES: readonly PracticeErrorCode[] = [
+    'EXAM_CONFIGURATION_ERROR',
+    'ATTEMPT_TIME_EXPIRED',
+]
+
+function isPracticeErrorCode(value: string): value is PracticeErrorCode {
+    return (RPC_DOMAIN_ERROR_CODES as readonly string[]).includes(value)
+}
+
+/**
+ * Memetakan penolakan dari RPC ke `PracticeDomainError`.
+ *
+ * Kode yang tidak dikenal diperlakukan sebagai kesalahan konfigurasi, bukan
+ * diteruskan mentah-mentah — supaya pesan internal database tidak bocor ke
+ * klien dan tipe `PracticeErrorCode` tetap terjaga.
+ */
+function toDomainError(result: { code: string; message: string }): PracticeDomainError {
+    const code: PracticeErrorCode = isPracticeErrorCode(result.code)
+        ? result.code
+        : 'EXAM_CONFIGURATION_ERROR'
+    return new PracticeDomainError(code, result.message)
+}
 
 /**
  * Toleransi kecil untuk latensi jaringan saat jawaban terakhir dikirim tepat di
@@ -46,7 +74,74 @@ export function assertAnswerWindowOpen(attempt: AttemptRow) {
 }
 
 export class AttemptAnswerService {
+    /**
+     * Menyimpan jawaban satu soal.
+     *
+     * Jalur utama adalah satu RPC (`save_attempt_answer_for_user`) yang
+     * menjalankan seluruh validasi dan penulisan dalam SATU round trip.
+     * Sebelumnya jalur ini menembus jaringan lima kali per klik jawaban
+     * (attempt → soal → opsi → upsert → touch), ditambah `auth.getUser()` di
+     * server action.
+     *
+     * Bila RPC belum tersedia (migration belum di-apply), jalur lama dipakai
+     * sebagai cadangan. Ini disengaja: menyimpan jawaban peserta adalah operasi
+     * yang tidak boleh gagal hanya karena urutan deploy, dan validasinya
+     * identik di kedua jalur.
+     */
     async saveAnswer(input: {
+        userId: string
+        attemptId: string
+        questionId: string
+        optionId: string
+    }) {
+        const result = await attemptRepository.saveAttemptAnswer({
+            userId: input.userId,
+            attemptId: input.attemptId,
+            questionId: input.questionId,
+            optionIds: [input.optionId],
+        })
+
+        if (result.status === 'domain_error') {
+            throw toDomainError(result)
+        }
+        if (result.status === 'saved') return { success: true as const }
+
+        return this.saveAnswerLegacy(input)
+    }
+
+    async saveAnswerOptions(input: {
+        userId: string
+        attemptId: string
+        questionId: string
+        optionIds: string[]
+    }) {
+        // Dedup + buang string kosong dilakukan sebelum apa pun, supaya klien
+        // yang mengirim opsi duplikat tidak ditolak oleh pemeriksaan jumlah.
+        const optionIds = Array.from(new Set(input.optionIds.filter(Boolean)))
+
+        const result = await attemptRepository.saveAttemptAnswer({
+            userId: input.userId,
+            attemptId: input.attemptId,
+            questionId: input.questionId,
+            optionIds,
+        })
+
+        if (result.status === 'domain_error') {
+            throw toDomainError(result)
+        }
+        if (result.status === 'saved') return { success: true as const }
+
+        return this.saveAnswerOptionsLegacy({ ...input, optionIds })
+    }
+
+    /**
+     * Jalur lama: lima panggilan berurutan.
+     *
+     * Dipertahankan sebagai cadangan selama masa transisi migration. Dapat
+     * dihapus setelah `save_attempt_answer_for_user` dipastikan ter-apply di
+     * semua environment (staging & produksi).
+     */
+    private async saveAnswerLegacy(input: {
         userId: string
         attemptId: string
         questionId: string
@@ -58,7 +153,7 @@ export class AttemptAnswerService {
         }
         assertAnswerWindowOpen(attempt)
 
-        const attemptQuestion = await attemptRepository.getAttemptQuestion(input.attemptId, input.questionId)
+        const attemptQuestion = await attemptRepository.getAttemptQuestionRef(input.attemptId, input.questionId)
         if (!attemptQuestion) {
             throw new PracticeDomainError('EXAM_CONFIGURATION_ERROR', 'Question is not allocated to this attempt')
         }
@@ -77,7 +172,8 @@ export class AttemptAnswerService {
         return { success: true as const }
     }
 
-    async saveAnswerOptions(input: {
+    /** Cadangan jalur lama untuk pilihan ganda. Lihat `saveAnswerLegacy`. */
+    private async saveAnswerOptionsLegacy(input: {
         userId: string
         attemptId: string
         questionId: string
@@ -89,7 +185,7 @@ export class AttemptAnswerService {
         }
         assertAnswerWindowOpen(attempt)
 
-        const attemptQuestion = await attemptRepository.getAttemptQuestion(input.attemptId, input.questionId)
+        const attemptQuestion = await attemptRepository.getAttemptQuestionRef(input.attemptId, input.questionId)
         if (!attemptQuestion) {
             throw new PracticeDomainError('EXAM_CONFIGURATION_ERROR', 'Question is not allocated to this attempt')
         }
