@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/utils/supabase/middleware'
 import { CSRF_COOKIE } from '@/lib/csrf'
+import { LEGACY_ADMIN_BASE_PATH, LEGACY_ADMIN_TAB_ROUTES } from '@/lib/admin-redirects'
 
 function isLoopbackHostname(hostname: string) {
     return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
@@ -9,28 +10,18 @@ function isLoopbackHostname(hostname: string) {
 /**
  * Tab legacy `/cpns/admin?tab=...` → halaman kanonik.
  *
- * Redirect berbasis path untuk rute legacy ada di `next.config.ts`. Tab TIDAK
- * bisa ditangani di sana karena `redirects()` tidak dapat mencocokkan query
- * parameter.
+ * Redirect berbasis path untuk rute legacy ada di `lib/admin-redirects.ts` dan
+ * dievaluasi oleh `next.config.ts`. Tab TIDAK bisa ditangani di sana karena
+ * `redirects()` tidak dapat mencocokkan query parameter.
  *
  * Penting: fungsi ini dijalankan SETELAH `updateSession()` dan pemasangan header
  * CSP + cookie CSRF — bukan di awal seperti implementasi sebelumnya. Versi lama
  * `return` lebih awal sehingga request ke rute legacy tidak pernah melewati
  * refresh sesi dan tidak pernah menerima header keamanan.
  */
-const LEGACY_ADMIN_TAB_ROUTES: Record<string, string> = {
-    products: '/admin/commerce/products',
-    events: '/admin/assessment/events',
-    exams: '/admin/assessment/exams',
-    questions: '/admin/content/questions',
-    commerce: '/admin/commerce',
-    articles: '/admin/content/articles',
-    review: '/admin/content/review',
-}
-
 function legacyAdminTabRedirect(request: NextRequest, response: NextResponse) {
     const pathname = request.nextUrl.pathname
-    if (pathname !== '/cpns/admin') return null
+    if (pathname !== LEGACY_ADMIN_BASE_PATH) return null
 
     const tab = request.nextUrl.searchParams.get('tab')
     // Tanpa tab, `/cpns/admin` diarahkan ke root workspace admin.

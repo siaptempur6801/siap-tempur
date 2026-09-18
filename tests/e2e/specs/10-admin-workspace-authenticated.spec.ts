@@ -96,3 +96,93 @@ test.describe('Authenticated Admin Workspace closure', () => {
     await expectNoHorizontalOverflow(page)
   })
 })
+
+/**
+ * Penutup untuk pemindahan modul admin 2026-09-18.
+ *
+ * Empat halaman ini dulu tinggal di `app/cpns/admin/**` dan dipakai sebagai modul
+ * oleh delegator di `app/admin/content/**` (`import X from
+ * '@/app/cpns/admin/review/page'`). Setelah pohon legacy dihapus, keempatnya
+ * adalah page nyata di pohon kanonik.
+ *
+ * Inti test ini adalah integritas otorisasi: halaman-halaman itu DULU dilindungi
+ * `app/cpns/admin/layout.tsx`, yang kini tidak ada. Yang harus terbukti adalah
+ * `app/admin/layout.tsx` mengambil alih sepenuhnya — dan halaman tetap merender
+ * untuk pemegang ADMIN_ACCESS.
+ */
+test.describe('Admin content modules after legacy tree removal', () => {
+  test.setTimeout(120_000)
+
+  test('reviewer workspace renders at its canonical route', async ({ page }) => {
+    await page.goto('/admin/content/review?program=CPNS&track=SKD')
+    await expect(page).toHaveURL(/\/admin\/content\/review/)
+    await expect(page.locator('main h1')).toHaveText('Reviewer Workspace')
+    await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+    await expectNoHorizontalOverflow(page)
+  })
+
+  test('articles list renders and links into the article editor', async ({ page }) => {
+    await page.goto('/admin/content/articles?program=CPNS&track=SKD')
+    await expect(page).toHaveURL(/\/admin\/content\/articles/)
+    await expect(page.locator('main h1')).toHaveText('Articles')
+    await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+
+    // Halaman listing tidak boleh kosong karena error. Kalau ada artikel, salah
+    // satunya harus menautkan ke editor; kalau tidak ada, harus tampil empty state
+    // yang jujur — bukan halaman kosong tanpa penjelasan.
+    const editLinks = page.getByRole('link', { name: 'Edit', exact: true })
+    if (await editLinks.count() === 0) {
+      await expect(page.getByText('Belum ada artikel', { exact: true })).toBeVisible()
+    } else {
+      await editLinks.first().click()
+      await expect(page).toHaveURL(/\/admin\/content\/articles\/[^/]+\/edit/)
+      await expect(page.locator('main h1')).toHaveText('Edit Artikel')
+    }
+  })
+
+  test('article create page renders at its canonical route', async ({ page }) => {
+    await page.goto('/admin/content/articles/create?program=CPNS&track=SKD')
+    await expect(page).toHaveURL(/\/admin\/content\/articles\/create/)
+    await expect(page.locator('main h1')).toHaveText('Buat Artikel Baru')
+    await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+  })
+
+  test('every moved module is reachable through the admin sidebar', async ({ page }) => {
+    // Membuktikan navigasi internal tidak menunjuk rute yang sudah dihapus.
+    await page.goto('/admin?program=CPNS&track=SKD')
+    await expect(page.locator('main h1')).toHaveText('Dashboard')
+
+    await page.getByRole('link', { name: 'Review Queue', exact: true }).click()
+    await expect(page).toHaveURL(/\/admin\/content\/review/)
+    await expect(page.locator('main h1')).toHaveText('Reviewer Workspace')
+
+    await page.getByRole('link', { name: 'Articles', exact: true }).first().click()
+    await expect(page).toHaveURL(/\/admin\/content\/articles/)
+    await expect(page.locator('main h1')).toHaveText('Articles')
+  })
+
+  test('no legacy admin route returns 404 after the tree removal', async ({ page }) => {
+    // `/cpns/admin/export` tidak pernah ada di peta redirect proxy — ia satu-satunya
+    // rute legacy yang benar-benar dirender lalu redirect sendiri. Sekarang harus
+    // mengalir lewat next.config.ts seperti rute legacy lain.
+    const legacyPaths = [
+      '/cpns/admin',
+      '/cpns/admin/review',
+      '/cpns/admin/articles',
+      '/cpns/admin/articles/create',
+      '/cpns/admin/create',
+      '/cpns/admin/event',
+      '/cpns/admin/tryout-akbar',
+      '/cpns/admin/tryout-config',
+      '/cpns/admin/keuangan',
+      '/cpns/admin/voucher',
+      '/cpns/admin/export',
+    ]
+
+    for (const path of legacyPaths) {
+      const response = await page.goto(path)
+      expect(response?.status(), `${path} harus redirect, bukan 404`).not.toBe(404)
+      await expect(page, `${path} harus mendarat di dalam /admin`).toHaveURL(/\/admin(\/|\?|$)/)
+    }
+  })
+})
