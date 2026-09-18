@@ -89,6 +89,50 @@ export class EventRepository {
         return data as CanonicalEventRow | null
     }
 
+    /**
+     * Menutup event yang sudah melewati `ends_at` tetapi status tersimpannya masih
+     * terbuka.
+     *
+     * ## Kenapa ini perlu
+     *
+     * `event.service.ts` menurunkan status saat dibaca (`statusFor()` → `closed`
+     * bila `now > ends_at`), jadi halaman tidak pernah menampilkan status yang
+     * salah. Yang basi adalah KOLOM `events.status` — dan kolom itu dipakai
+     * pembaca yang tidak menurunkan status sendiri:
+     *   - leaderboard event (`getLiveLeaderboardAction`)
+     *   - pelepasan sertifikat (`certificate_enabled` / `certificate_released_at`)
+     *   - filter daftar event admin
+     *   - `listVisibleEvents()` yang memfilter `.in('status', [...])`
+     *
+     * ## Kenapa IDEMPOTEN
+     *
+     * Hanya menyentuh baris yang statusnya masih terbuka, sehingga dijalankan
+     * berkali-kali tidak berefek tambahan. Ini juga membuatnya aman dijalankan
+     * sebagai cron tanpa penyimpanan state.
+     *
+     * ## Kenapa `.lt('ends_at', now)` bukan `<=`
+     *
+     * Event yang baru saja berakhir tepat pada detik ini masih dianggap berjalan;
+     * cron berikutnya akan menutupnya.
+     *
+     * @returns jumlah baris yang benar-benar ditutup
+     */
+    async closeExpiredEvents(now = new Date().toISOString()): Promise<number> {
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('events')
+            .update({ status: 'closed' })
+            .in('status', [
+                'scheduled', 'SCHEDULED',
+                'live', 'LIVE',
+                'active', 'ACTIVE',
+            ])
+            .lt('ends_at', now)
+            .select('id')
+        if (error) throw error
+        return (data ?? []).length
+    }
+
     async listSessions(eventIds: string[]): Promise<CanonicalEventSessionRow[]> {
         if (eventIds.length === 0) return []
         const admin = await createV2AdminClient()

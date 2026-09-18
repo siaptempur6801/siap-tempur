@@ -3,6 +3,7 @@ import { attemptRepository } from '@/src/repositories/attempt.repository'
 import { eventRepository, type CanonicalEventRow, type CanonicalEventSessionRow } from '@/src/repositories/event.repository'
 import { examRepository } from '@/src/repositories/exam.repository'
 import { walletService, WalletDomainError } from '@/src/services/wallet.service'
+import { logger } from '@/lib/logger'
 import type { Json } from '@/types/database.types'
 
 export type EventDomainErrorCode =
@@ -54,6 +55,29 @@ function remainingDurationSeconds(session: CanonicalEventSessionRow, configuredD
 }
 
 export class EventService {
+    /**
+     * Menutup event yang sudah melewati `ends_at` (bookkeeping status tersimpan).
+     *
+     * Halaman TIDAK bergantung pada ini — `statusFor()` sudah menurunkan status
+     * saat dibaca. Yang bergantung pada kolom tersimpan adalah leaderboard event,
+     * pelepasan sertifikat, filter admin, dan `listVisibleEvents()`.
+     *
+     * Dijalankan dari cron (`/api/cron/reconcile-payments`), bukan dari render
+     * halaman publik — sebelumnya fungsi serupa dipanggil di dalam render GET
+     * `/cpns`, sehingga setiap crawl anonim menjalankan UPDATE dengan service role
+     * dan halaman itu tidak pernah bisa di-cache.
+     *
+     * Idempoten: hanya menyentuh baris yang statusnya masih terbuka, jadi aman
+     * dijalankan berkali-kali.
+     */
+    async closeExpiredEvents(now?: string) {
+        const closed = await eventRepository.closeExpiredEvents(now)
+        if (closed > 0) {
+            logger.info('Event kedaluwarsa ditutup otomatis', { closedCount: closed })
+        }
+        return { closed }
+    }
+
     async getUserEventPageData(userId: string) {
         const events = await eventRepository.listVisibleEvents()
         if (events.length === 0) return []

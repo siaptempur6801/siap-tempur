@@ -4,10 +4,12 @@ const {
     fromMock,
     syncUserOrderMock,
     createV2AdminClientMock,
+    closeExpiredEventsMock,
 } = vi.hoisted(() => ({
     fromMock: vi.fn(),
     syncUserOrderMock: vi.fn(),
     createV2AdminClientMock: vi.fn(),
+    closeExpiredEventsMock: vi.fn(),
 }))
 
 vi.mock('@/lib/utils/supabase/server', () => ({
@@ -17,6 +19,17 @@ vi.mock('@/lib/utils/supabase/server', () => ({
 vi.mock('@/src/services/payment.service', () => ({
     paymentService: {
         syncUserOrder: syncUserOrderMock,
+    },
+}))
+
+/**
+ * Cron yang sama juga menjalankan bookkeeping status event. Di-mock di sini supaya
+ * test rekonsiliasi pembayaran tidak ikut menyentuh tabel `events`; perilaku
+ * auto-close diuji tersendiri di `event-auto-close.test.ts`.
+ */
+vi.mock('@/src/services/event.service', () => ({
+    eventService: {
+        closeExpiredEvents: closeExpiredEventsMock,
     },
 }))
 
@@ -97,7 +110,9 @@ describe('payment reconciliation cron', () => {
         fromMock.mockReset()
         syncUserOrderMock.mockReset()
         createV2AdminClientMock.mockReset()
+        closeExpiredEventsMock.mockReset()
         createV2AdminClientMock.mockResolvedValue({ from: fromMock })
+        closeExpiredEventsMock.mockResolvedValue({ closed: 0 })
         installCanonicalQueryMocks()
     })
 
@@ -107,6 +122,36 @@ describe('payment reconciliation cron', () => {
         expect(response.status).toBe(401)
         expect(createV2AdminClientMock).not.toHaveBeenCalled()
         expect(syncUserOrderMock).not.toHaveBeenCalled()
+        // Endpoint tidak berautorisasi juga tidak boleh menyentuh tabel events.
+        expect(closeExpiredEventsMock).not.toHaveBeenCalled()
+    })
+
+    it('menutup event kedaluwarsa dan melaporkan jumlahnya', async () => {
+        closeExpiredEventsMock.mockResolvedValueOnce({ closed: 3 })
+
+        const response = await GET(authorizedRequest())
+        const payload = await response.json()
+
+        expect(response.status).toBe(200)
+        expect(closeExpiredEventsMock).toHaveBeenCalledTimes(1)
+        expect(payload.data.events).toEqual({ closed: 3 })
+    })
+
+    it('kegagalan auto-close event TIDAK menggagalkan rekonsiliasi pembayaran', async () => {
+        // Rekonsiliasi pembayaran sudah selesai saat auto-close dijalankan. Menjadikan
+        // kegagalannya fatal akan membuang pekerjaan yang sudah berhasil, dan
+        // sebaliknya membuat cron terlihat gagal padahal pembayaran sudah direkonsiliasi.
+        pendingPayments = [{ order_id: 'order-1' }]
+        orders = [{ id: 'order-1', user_id: 'user-1', status: 'pending' }]
+        syncUserOrderMock.mockResolvedValueOnce({ status: 'settlement', paid: true })
+        closeExpiredEventsMock.mockRejectedValueOnce(new Error('EVENTS_TABLE_DOWN'))
+
+        const response = await GET(authorizedRequest())
+        const payload = await response.json()
+
+        expect(response.status).toBe(200)
+        expect(payload.data.orders.settled).toBe(1)
+        expect(payload.data.events).toEqual({ error: 'EVENTS_TABLE_DOWN' })
     })
 
     it('reconciles a settled canonical pending order through the payment service', async () => {

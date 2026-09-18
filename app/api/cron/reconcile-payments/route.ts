@@ -8,6 +8,7 @@ import {
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { isBearerTokenValid } from '@/lib/timing-safe'
 import { paymentService } from '@/src/services/payment.service'
+import { eventService } from '@/src/services/event.service'
 
 const BATCH_SIZE = 50
 
@@ -36,6 +37,40 @@ export async function GET(request: Request) {
         return errorResponse('unauthorized', 'Unauthorized', 401)
     }
 
+    /**
+     * Bookkeeping status event dijalankan di cron yang sama.
+     *
+     * Sebelumnya ini dijalankan di dalam render GET `/cpns` dengan klien service
+     * role, sehingga setiap crawl anonim menjalankan UPDATE dan halaman publik itu
+     * tidak pernah bisa di-cache. Sifatnya pemeliharaan terjadwal, jadi tempatnya
+     * di sini.
+     *
+     * Dijalankan lebih dulu dan TERPISAH dari rekonsiliasi pembayaran supaya tidak
+     * bisa terlewat oleh jalur keluar lebih awal milik rekonsiliasi (mis. saat
+     * tidak ada pembayaran pending — justru kondisi normal).
+     */
+    let events: { closed: number } | { error: string }
+    try {
+        events = await eventService.closeExpiredEvents()
+    } catch (error) {
+        logger.error('Auto-close event kedaluwarsa gagal', error)
+        events = { error: error instanceof Error ? error.message : String(error) }
+    }
+
+    const orders = await reconcilePendingPayments()
+    return successResponse({ orders, events })
+}
+
+/**
+ * Rekonsiliasi pembayaran pending terhadap status kanonik Midtrans.
+ *
+ * Mengembalikan ringkasan alih-alih `Response` supaya `GET` hanya punya SATU
+ * titik keluar. Sebelumnya fungsi ini punya `return` lebih awal saat tidak ada
+ * pembayaran pending, yang membuat pekerjaan lain di cron yang sama tidak pernah
+ * dijalankan.
+ */
+async function reconcilePendingPayments(): Promise<ReconcileSummary> {
+    const summary = createSummary()
     const admin = await createV2AdminClient()
     const { data: pendingPayments, error: paymentError } = await admin
         .from('payments')
@@ -47,7 +82,8 @@ export async function GET(request: Request) {
 
     if (paymentError) {
         logger.error('Payment reconcile pending payment query failed', paymentError)
-        return errorResponse('internal_error', 'Failed to load pending payments', 500)
+        summary.failed += 1
+        return summary
     }
 
     const orderIds = Array.from(new Set(
@@ -56,10 +92,9 @@ export async function GET(request: Request) {
             .filter(Boolean)
     ))
 
-    const summary = createSummary()
     if (orderIds.length === 0) {
         logger.info('Payment reconcile completed', { orders: summary })
-        return successResponse({ orders: summary })
+        return summary
     }
 
     const { data: orders, error: orderError } = await admin
@@ -69,7 +104,8 @@ export async function GET(request: Request) {
 
     if (orderError) {
         logger.error('Payment reconcile pending order query failed', orderError)
-        return errorResponse('internal_error', 'Failed to load pending orders', 500)
+        summary.failed += 1
+        return summary
     }
 
     const orderById = new Map(
@@ -110,5 +146,5 @@ export async function GET(request: Request) {
     }
 
     logger.info('Payment reconcile completed', { orders: summary })
-    return successResponse({ orders: summary })
+    return summary
 }
