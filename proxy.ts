@@ -2,94 +2,54 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/utils/supabase/middleware'
 import { CSRF_COOKIE } from '@/lib/csrf'
 
+function isLoopbackHostname(hostname: string) {
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+}
+
+/**
+ * Tab legacy `/cpns/admin?tab=...` → halaman kanonik.
+ *
+ * Redirect berbasis path untuk rute legacy ada di `next.config.ts`. Tab TIDAK
+ * bisa ditangani di sana karena `redirects()` tidak dapat mencocokkan query
+ * parameter.
+ *
+ * Penting: fungsi ini dijalankan SETELAH `updateSession()` dan pemasangan header
+ * CSP + cookie CSRF — bukan di awal seperti implementasi sebelumnya. Versi lama
+ * `return` lebih awal sehingga request ke rute legacy tidak pernah melewati
+ * refresh sesi dan tidak pernah menerima header keamanan.
+ */
 const LEGACY_ADMIN_TAB_ROUTES: Record<string, string> = {
     products: '/admin/commerce/products',
     events: '/admin/assessment/events',
     exams: '/admin/assessment/exams',
     questions: '/admin/content/questions',
     commerce: '/admin/commerce',
+    articles: '/admin/content/articles',
+    review: '/admin/content/review',
 }
 
-function applyDefaultAdminContext(target: URL) {
-    if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
-    if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
-}
-
-function legacyAdminRedirect(request: NextRequest) {
+function legacyAdminTabRedirect(request: NextRequest, response: NextResponse) {
     const pathname = request.nextUrl.pathname
-    if (!pathname.startsWith('/cpns/admin')) return null
+    if (pathname !== '/cpns/admin') return null
+
+    const tab = request.nextUrl.searchParams.get('tab')
+    // Tanpa tab, `/cpns/admin` diarahkan ke root workspace admin.
+    const destination = tab ? LEGACY_ADMIN_TAB_ROUTES[tab.toLowerCase()] : '/admin'
+    if (!destination) return null
 
     const target = request.nextUrl.clone()
+    target.pathname = destination
+    target.searchParams.delete('tab')
+    if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
+    if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
 
-    if (pathname === '/cpns/admin') {
-        const tab = target.searchParams.get('tab') || ''
-        target.pathname = LEGACY_ADMIN_TAB_ROUTES[tab] || '/admin'
-        target.searchParams.delete('tab')
-        applyDefaultAdminContext(target)
-        return NextResponse.redirect(target)
-    }
-
-    if (pathname === '/cpns/admin/review') {
-        target.pathname = '/admin/content/review'
-        applyDefaultAdminContext(target)
-        return NextResponse.redirect(target)
-    }
-
-    if (pathname === '/cpns/admin/articles' || pathname.startsWith('/cpns/admin/articles/')) {
-        target.pathname = pathname.replace('/cpns/admin/articles', '/admin/content/articles')
-        return NextResponse.redirect(target)
-    }
-
-    if (pathname === '/cpns/admin/event' || pathname === '/cpns/admin/tryout-akbar') {
-        target.pathname = '/admin/assessment/events'
-        applyDefaultAdminContext(target)
-        return NextResponse.redirect(target)
-    }
-
-    if (pathname === '/cpns/admin/tryout-config') {
-        target.pathname = '/admin/assessment/exams'
-        applyDefaultAdminContext(target)
-        return NextResponse.redirect(target)
-    }
-
-    if (pathname === '/cpns/admin/keuangan') {
-        target.pathname = '/admin/commerce'
-        applyDefaultAdminContext(target)
-        return NextResponse.redirect(target)
-    }
-
-    if (pathname === '/cpns/admin/create') {
-        target.pathname = '/admin/content/questions'
-        applyDefaultAdminContext(target)
-        return NextResponse.redirect(target)
-    }
-
-    const editMatch = pathname.match(/^\/cpns\/admin\/edit\/([^/]+)$/)
-    if (editMatch) {
-        target.pathname = '/admin/content/questions'
-        target.searchParams.set('edit', editMatch[1])
-        applyDefaultAdminContext(target)
-        return NextResponse.redirect(target)
-    }
-
-    if (pathname === '/cpns/admin/voucher') {
-        target.pathname = '/admin/commerce/products'
-        target.searchParams.set('error', 'Voucher/promosi Schema V2 belum tersedia. Gunakan fitur ini setelah migrasi promosi selesai.')
-        applyDefaultAdminContext(target)
-        return NextResponse.redirect(target)
-    }
-
-    return null
-}
-
-function isLoopbackHostname(hostname: string) {
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+    const redirect = NextResponse.redirect(target)
+    // Bawa cookie sesi yang baru di-refresh agar tidak hilang saat redirect.
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie))
+    return redirect
 }
 
 export async function proxy(request: NextRequest) {
-    const legacyRedirect = legacyAdminRedirect(request)
-    if (legacyRedirect) return legacyRedirect
-
     const nonce = crypto.randomUUID().replace(/-/g, '')
     const csrfToken = crypto.randomUUID()
 
@@ -131,7 +91,7 @@ export async function proxy(request: NextRequest) {
         path: '/',
     })
 
-    return response
+    return legacyAdminTabRedirect(request, response) ?? response
 }
 
 export const config = {

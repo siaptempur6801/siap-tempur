@@ -148,14 +148,40 @@ async function actor(permission: PermissionCode) {
     return authorizationService.requirePermission(permission)
 }
 
-async function finish(tab: string, success: string, context: ProgramTrackContext, error: unknown = null, editId?: string | null) {
-    revalidatePath('/cpns/admin')
+/**
+ * Halaman kanonik untuk setiap tab workspace admin.
+ *
+ * Sebelumnya `finish()` mengarahkan ke `/cpns/admin?tab=...`. Setelah pohon admin
+ * legacy dihapus, path itu tidak punya halaman lagi dan hanya menghasilkan
+ * redirect 307 — sehingga `revalidatePath` menunjuk rute yang tidak pernah
+ * dirender dan `?ok=`/`?error=` tidak pernah sampai ke layar, artinya admin
+ * tidak melihat pesan sukses maupun kegagalan.
+ */
+const ADMIN_TAB_ROUTES = {
+    products: '/admin/commerce/products',
+    commerce: '/admin/commerce',
+    events: '/admin/assessment/events',
+    exams: '/admin/assessment/exams',
+    questions: '/admin/content/questions',
+} as const
+
+type AdminTab = keyof typeof ADMIN_TAB_ROUTES
+
+async function finish(
+    tab: AdminTab,
+    success: string,
+    context: ProgramTrackContext,
+    error: unknown = null,
+    editId?: string | null,
+) {
+    const base = `${ADMIN_TAB_ROUTES[tab]}?${contextQuery(context)}`
+    // Revalidasi rute kanonik, bukan path legacy yang hanya me-redirect.
+    revalidatePath(ADMIN_TAB_ROUTES[tab])
     const edit = editId ? `&edit=${encodeURIComponent(editId)}` : ''
-    const base = `/cpns/admin?${contextQuery(context)}&tab=${encodeURIComponent(tab)}${edit}`
     if (error) {
         redirect(`${base}&error=${encodeURIComponent(errorMessage(error))}`)
     }
-    redirect(`${base}&ok=${encodeURIComponent(success)}`)
+    redirect(`${base}&ok=${encodeURIComponent(success)}${edit}`)
 }
 
 export async function saveProductAction(form: FormData) {
