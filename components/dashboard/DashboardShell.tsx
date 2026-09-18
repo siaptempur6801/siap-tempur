@@ -10,7 +10,6 @@ import {
     Compass,
     Ticket,
     Target,
-    Shield,
     Library,
     ListChecks,
     Dumbbell,
@@ -41,7 +40,6 @@ interface DashboardShellProps {
     tokenBalance: number
     hasActiveTempurPass: boolean
     signoutAction: () => Promise<{ success: boolean }>
-    isAdmin?: boolean
 }
 
 export default function DashboardShell({
@@ -51,7 +49,6 @@ export default function DashboardShell({
     tokenBalance,
     hasActiveTempurPass,
     signoutAction,
-    isAdmin = false,
 }: DashboardShellProps) {
     const pathname = usePathname()
 
@@ -111,15 +108,6 @@ export default function DashboardShell({
                         <NavItem href="/cpns/dashboard/profile" icon={<User size={17} />} label="Profil" />
                     </div>
 
-                    {isAdmin && (
-                        <>
-                            <div className="my-3.5 border-t-2 border-dashed border-slate-300" />
-                            <p className="mb-1 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">Workspace</p>
-                            <div className="space-y-1">
-                                <NavItem href="/cpns/admin" icon={<Shield size={17} />} label="Admin" />
-                            </div>
-                        </>
-                    )}
                 </nav>
 
                 <div className="shrink-0 border-t-2 border-slate-900 p-3">
@@ -178,7 +166,6 @@ export default function DashboardShell({
                             hasActiveTempurPass={hasActiveTempurPass}
                             signoutAction={signoutAction}
                             signoutRedirectTo="/cpns"
-                            isAdmin={isAdmin}
                         />
                     </div>
                 </div>

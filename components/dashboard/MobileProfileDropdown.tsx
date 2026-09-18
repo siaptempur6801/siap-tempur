@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { BarChart3, Clock3, Compass, Library, LogOut, Shield, User, Ticket } from 'lucide-react'
+import { BarChart3, Clock3, Compass, Library, LogOut, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
@@ -24,7 +24,6 @@ interface MobileProfileDropdownProps {
 
     signoutAction: (redirectTo?: string) => Promise<{ success: boolean }>
     signoutRedirectTo?: string
-    isAdmin?: boolean
 }
 
 export default function MobileProfileDropdown({
@@ -34,7 +33,6 @@ export default function MobileProfileDropdown({
     hasActiveTempurPass,
     signoutAction,
     signoutRedirectTo = '/',
-    isAdmin = false,
 }: MobileProfileDropdownProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [showModal, setShowModal] = useState(false)
@@ -156,19 +154,6 @@ export default function MobileProfileDropdown({
                             <User size={18} />
                             Profil Saya
                         </Link>
-
-                        {isAdmin && (
-                            <div className="my-2 border-t-2 border-dashed border-gray-200 pt-2">
-                                <Link
-                                    href="/cpns/admin"
-                                    className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    <Shield size={18} />
-                                    Admin
-                                </Link>
-                            </div>
-                        )}
 
                         <button
                             onClick={() => {

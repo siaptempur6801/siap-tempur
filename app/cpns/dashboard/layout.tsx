@@ -6,7 +6,6 @@ import DashboardShell from '@/components/dashboard/DashboardShell'
 import Script from 'next/script'
 import { logger } from '@/lib/logger'
 import { env } from '@/lib/env'
-import { authorizationService } from '@/src/services/authorization.service'
 import { hasActivePass } from '@/src/services/tempur-pass.service'
 import { walletService } from '@/src/services/wallet.service'
 
@@ -66,13 +65,10 @@ export default async function DashboardLayout({
         }
     }
 
-    const [authorization, tokenBalance, hasTempurPass] = await Promise.all([
-        authorizationService.getAuthorizationForUser(user.id),
+    const [tokenBalance, hasTempurPass] = await Promise.all([
         walletService.getExamTokenBalance(user.id),
         hasActivePass(user.id, 'cpns'),
     ])
-    const permissions = authorization?.permissions ?? []
-    const isAdminUser = permissions.includes('admin.access')
 
     return (
         <>
@@ -89,7 +85,6 @@ export default async function DashboardLayout({
                 tokenBalance={tokenBalance}
                 hasActiveTempurPass={hasTempurPass}
                 signoutAction={signout}
-                isAdmin={isAdminUser}
             >
                 {children}
             </DashboardShell>
