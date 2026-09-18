@@ -5,6 +5,15 @@ import { Plus, Trash2 } from 'lucide-react'
 import { adminInputClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 
  type OptionRow = {
+    /**
+     * Identitas baris yang stabil dan tidak dapat diedit — dipakai sebagai React key.
+     *
+     * JANGAN memakai `key` (kode opsi A/B/C) sebagai React key: field itu terikat
+     * ke sebuah <input>, sehingga setiap ketikan mengubah key, React me-remount
+     * baris, dan input kehilangan fokus. Gejalanya: admin hanya bisa mengetik satu
+     * karakter per klik.
+     */
+    id: string
     key: string
     content: string
     score: string
@@ -14,8 +23,17 @@ import { adminInputClass, adminSecondaryButtonClass } from '@/components/admin/A
     imageUrl: string
 }
 
+export function newRowId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID()
+    }
+    // Fallback untuk lingkungan tanpa crypto.randomUUID (mis. jsdom lama).
+    return `row-${Math.random().toString(36).slice(2)}-${Date.now()}`
+}
+
 function defaultRows(): OptionRow[] {
     return ['A', 'B', 'C', 'D'].map((key, index) => ({
+        id: newRowId(),
         key,
         content: `Pilihan ${key}`,
         score: '',
@@ -35,6 +53,7 @@ function parseDefaultValue(value?: string): OptionRow[] {
         .map((line) => {
             const [key = '', content = '', score = '', correct = '', responseGroup = '', responseGroupOrder = '', imageUrl = ''] = line.split('|')
             return {
+                id: newRowId(),
                 key,
                 content,
                 score,
@@ -75,6 +94,7 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
 
     function addRow() {
         setRows((current) => [...current, {
+            id: newRowId(),
             key: nextKey(current),
             content: '',
             score: '',
@@ -103,7 +123,7 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
 
             <div className="space-y-3">
                 {rows.map((row, index) => (
-                    <div key={`${row.key}-${index}`} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <div key={row.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                         <div className="grid gap-3 md:grid-cols-[88px_minmax(0,1fr)_120px_110px_auto] md:items-end">
                             <label className="space-y-1">
                                 <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Kode</span>
