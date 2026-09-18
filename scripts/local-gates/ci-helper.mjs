@@ -377,7 +377,8 @@ async function m4SeedOrder(userId) {
         .order('starts_at', { ascending: false }).limit(1).maybeSingle()
     if (priceError || !price) throw priceError ?? new Error('PASS_PRICE_NOT_FOUND')
     const subtotal = Number(price.amount)
-    const total = subtotal + 500
+    // Tanpa biaya admin: jumlah order = harga paket (sama dengan yang ditampilkan ke pengguna).
+    const total = subtotal
     const orderNumber = `${M4_ORDER_PREFIX}${Date.now()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
     const { data: order, error: orderError } = await admin.from('orders').insert({
         order_number: orderNumber,

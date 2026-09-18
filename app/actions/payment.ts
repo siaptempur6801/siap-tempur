@@ -85,7 +85,6 @@ export async function createPackageTransaction(productCode: string, returnPath =
             email: user.email,
             fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
             productCode,
-            adminFee: 500,
             returnPath,
         })
 
@@ -134,7 +133,6 @@ export async function createTkaPassTransaction(
             email: user.email,
             fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
             productCode,
-            adminFee: 500,
             returnPath: tkaLevelPath(level),
         })
 
@@ -184,7 +182,6 @@ export async function createQrisQaTransaction(productCode: string): Promise<Crea
             email: user.email,
             fullName: typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
             productCode,
-            adminFee: 500,
         })
 
         return { success: true, ...checkout }

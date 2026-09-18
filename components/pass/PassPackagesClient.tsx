@@ -29,7 +29,6 @@ function analyticsPackageDays(days: number | null): 30 | 90 | undefined {
     return undefined
 }
 
-const ADMIN_FEE = 500
 
 export default function PassPackagesClient({
     level,
@@ -235,15 +234,11 @@ export default function PassPackagesClient({
                         ? 'Lanjutkan persiapanmu dengan durasi tambahan. Perpanjangan dimulai setelah masa aktif saat ini berakhir, sehingga sisa aksesmu tetap utuh.'
                         : 'Mulai dengan persiapan satu bulan atau beri diri lebih banyak waktu untuk latihan rutin. Mini Tryout dan Full Tryout tersedia sesuai akses paket selama masa aktif.'}
                 </p>
-                <p className="mt-2 text-xs font-bold text-slate-500">
-                    Setiap pembayaran dikenai biaya admin {rupiah(ADMIN_FEE)} satu kali.
-                </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
                 {packages.map((pkg) => {
                     const days = pkg.durationDays ?? 0
-                    const totalPayment = pkg.price + ADMIN_FEE
                     const isBestValue = pkg.code === bestValueCode
                     const isBuyingThis = buying === pkg.code
 
@@ -296,13 +291,10 @@ export default function PassPackagesClient({
                                             <div className="mt-0.5 text-xl sm:text-2xl font-black tracking-tight text-indigo-700">{rupiah(pkg.price)}</div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total dibayar</div>
-                                            <div className="mt-0.5 text-lg sm:text-xl font-bold text-slate-900">{rupiah(totalPayment)}</div>
+                                            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Harga paket</div>
+                                            <div className="mt-0.5 text-lg sm:text-xl font-bold text-slate-900">{rupiah(pkg.price)}</div>
                                         </div>
                                     </div>
-                                    <p className="mt-2 text-xs text-slate-500 font-medium leading-relaxed">
-                                        Harga paket {rupiah(pkg.price)} + biaya admin {rupiah(ADMIN_FEE)}.
-                                    </p>
                                 </div>
 
                                 <div className="my-5 flex-1 space-y-2 text-xs font-medium text-slate-700">

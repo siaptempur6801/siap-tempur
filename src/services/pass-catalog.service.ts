@@ -69,7 +69,10 @@ export async function listActivePassPackages(
         .from('products')
         .select('id, code, name, description, duration_days')
         .eq('program_id', programId)
-        .in('status', ['active', 'ACTIVE'])
+        // Hanya paket pass: paket token punya halaman sendiri (`/cpns/dashboard/beli-paket`),
+        // jadi tidak boleh ikut tampil di halaman Tempur Pass.
+        .eq('product_type', 'PASS')
+        .in('status', ['ACTIVE', 'active'])
         .order('duration_days', { ascending: true })
 
     if (trackCode) {

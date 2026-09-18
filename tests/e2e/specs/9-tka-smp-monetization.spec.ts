@@ -72,13 +72,11 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
         await expect(page.getByRole('heading', { name: 'Pilih paket yang sesuai target belajarmu', exact: true })).toBeVisible()
         await expect(page.getByTestId('tka-pass-status-inactive')).toContainText('Belum ada Tempur Pass aktif.')
         await expect(page.getByRole('heading', { name: 'Pilih akses belajar TKA SMP', exact: true })).toBeVisible()
+        // Harga yang tampil adalah harga asli paket — tanpa baris biaya admin terpisah.
         await expect(page.getByText('Harga paket', { exact: true }).first()).toBeVisible()
-        await expect(page.getByText('Total dibayar', { exact: true }).first()).toBeVisible()
-        await expect(page.getByText('Rp29.000', { exact: true })).toBeVisible()
-        await expect(page.getByText('Rp29.500', { exact: true })).toBeVisible()
-        await expect(page.getByText('Rp69.000', { exact: true })).toBeVisible()
-        await expect(page.getByText('Rp69.500', { exact: true })).toBeVisible()
-        await expect(page.getByText(/biaya admin Rp500 satu kali/i)).toBeVisible()
+        await expect(page.getByText('Rp29.000', { exact: true }).first()).toBeVisible()
+        await expect(page.getByText('Rp69.000', { exact: true }).first()).toBeVisible()
+        await expect(page.getByText(/biaya admin/i)).toHaveCount(0)
 
         await assertTouchTarget(page, /Pilih 30 hari/i)
         await assertTouchTarget(page, /Pilih 90 hari/i)
@@ -165,7 +163,8 @@ test.describe.serial('TKA SMP Monetization staging surface', () => {
     test('orders and payments are owner-only across two authenticated learners', async ({ page }) => {
         const owner = await fresh(page)
         const order = await seedM4Order(owner)
-        expect(order.amount).toBe(29_500)
+        // Order tidak lagi menambahkan biaya admin: jumlah = harga paket.
+        expect(order.amount).toBe(29_000)
 
         const attacker = await provisionSecondaryTkaSession()
         try {
