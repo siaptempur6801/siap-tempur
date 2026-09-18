@@ -133,7 +133,7 @@ Audit menyeluruh: `docs/AUDIT_2026-09-18.md`. Perbaikan yang sudah dikerjakan:
 | Kelulusan TKA | **Tidak ada konsep lulus** | ✅ panel "Status Kelulusan" dihapus |
 | Passing grade 65/80/166 | **Masih berlaku**, harus mudah diubah admin | ✅ database jadi sumber otoritatif (`src/repositories/passing-grade.repository.ts`); `PASSING_GRADES` turun jadi cadangan. Admin sudah bisa mengubahnya lewat field "Passing score" di panel exam |
 | Kode mati legacy admin | Boleh dibongkar | ✅ selesai (lihat bagian berikut) |
-| Fitur Event Tryout Akbar | **Masih dipakai** | ⏳ auto-close perlu diarahkan ke `events` V2 + cron |
+| Fitur Event Tryout Akbar | **Masih dipakai** | ✅ auto-close diarahkan ke `events` V2 + dijalankan dari cron |
 
 **Migration:** `20260918041911_batch_update_attempt_answer_scores.sql` **sudah ter-apply di staging.**
 Diverifikasi lewat PostgREST: `p_scores: []` → `200` + `0`; payload bukan array → `400` (22023);
@@ -185,12 +185,42 @@ punya halaman, sehingga `revalidatePath` menunjuk rute yang tidak pernah dirende
 > 7 redirect tab diuji langsung pada server produksi lokal, dan CSP + nonce + `strict-dynamic` +
 > cookie CSRF tetap utuh. Yang **belum**: render halaman admin saat sudah login.
 
+#### Auto-close event disambungkan ke `events` V2 (2026-09-18)
+
+Kode lama (`lib/tryout-event-status.ts`, sudah dihapus) menulis ke tabel `tryout_events` yang
+**tidak ada di Schema V2**, jadi selalu gagal tanpa ada yang tahu. Bukti nyata: staging berisi event
+QA berstatus `live` padahal `ends_at` sudah lewat sebulan.
+
+Penting dipahami: halaman **tidak** menampilkan status yang salah — `statusFor()` menurunkan status
+saat dibaca. Yang basi adalah **kolom** `events.status`, dan kolom itu dipakai pembaca yang tidak
+menurunkan status sendiri: leaderboard event, pelepasan sertifikat, filter admin, dan
+`listVisibleEvents()`.
+
+`eventRepository.closeExpiredEvents()` (idempoten — hanya menyentuh baris berstatus terbuka dengan
+`ends_at < now`) kini dijalankan dari `/api/cron/reconcile-payments`, bukan dari render halaman.
+
+Saat menyalinnya ke cron ditemukan bug: rekonsiliasi pembayaran punya `return` lebih awal ketika
+**tidak ada** pembayaran pending — yaitu kondisi normal — sehingga bookkeeping apa pun yang
+ditaruh setelahnya tidak akan pernah jalan. `reconcilePendingPayments()` diekstrak agar `GET` hanya
+punya satu titik keluar.
+
+**Diverifikasi end-to-end terhadap staging lewat endpoint cron sungguhan:**
+
+| Uji | Hasil |
+|---|---|
+| Tanpa token / token salah | `401` (fail-closed; `CRON_SECRET` sengaja kosong di `.env.local`) |
+| Token benar | `{ orders: {...}, events: { closed: 1 } }` |
+| Dijalankan kedua kali | `{ closed: 0 }` — idempoten |
+| Kondisi DB | event QA kini berstatus `closed` |
+
+Test: 6 test `event-auto-close` + 2 test cron baru (termasuk kegagalan auto-close yang tidak fatal).
+
 #### Regression test baru dari perbaikan di atas
 
 `progress-batching`, `scoring-batch-fallback`, `scoring-frozen-answer-key`,
 `question-options-editor-keys`, `midtrans-fraud-status`, `timing-safe`,
-`passing-grade-source`, `admin-redirect-map` — total **297 unit test / 56 file**
-(sebelum audit: 263 / 52).
+`passing-grade-source`, `admin-redirect-map`, `event-auto-close` — total
+**305 unit test / 57 file** (sebelum audit: 263 / 52).
 
 - ✅ **Timer ujian ditegakkan server-side (2026-09-16).** `AttemptAnswerService` menolak penyimpanan jawaban setelah `started_at + durationSeconds` (+ toleransi 30 detik) lewat kode error `ATTEMPT_TIME_EXPIRED`. Sebelumnya hanya timer browser. Attempt tanpa durasi (drill/latihan) tidak dibatasi. Test: `tests/unit/attempt-deadline.test.ts`.
 - ✅ **`getResult` memeriksa `status === 'completed'` (2026-09-16)** — `src/services/practice-result.service.ts`. Sebelumnya fail-open (hanya bergantung pada halaman pemanggil).
