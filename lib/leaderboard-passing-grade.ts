@@ -2,6 +2,30 @@ import { PASSING_GRADES } from '@/lib/constants'
 
 type PassingGradeSubject = 'TWK' | 'TIU' | 'TKP'
 
+/**
+ * Ambang kelulusan per mata pelajaran.
+ *
+ * Nilai ini harus berasal dari database (`exam_sections.config->>'passing_score'`,
+ * dibaca lewat `passingGradeRepository`) supaya sama dengan angka yang dipakai
+ * saat menilai ujian dan dapat diubah admin. `PASSING_GRADES` di bawah hanya
+ * berlaku sebagai cadangan bila baris section belum dikonfigurasi.
+ */
+export type PassingGradeMap = Partial<Record<PassingGradeSubject, number>>
+
+export const FALLBACK_PASSING_GRADES: Record<PassingGradeSubject, number> = {
+    TWK: PASSING_GRADES.TWK,
+    TIU: PASSING_GRADES.TIU,
+    TKP: PASSING_GRADES.TKP,
+}
+
+export function resolvePassingGrades(passingGrades?: PassingGradeMap): Record<PassingGradeSubject, number> {
+    return {
+        TWK: passingGrades?.TWK ?? FALLBACK_PASSING_GRADES.TWK,
+        TIU: passingGrades?.TIU ?? FALLBACK_PASSING_GRADES.TIU,
+        TKP: passingGrades?.TKP ?? FALLBACK_PASSING_GRADES.TKP,
+    }
+}
+
 export type PassingGradeLeaderboardEntry = {
     entry_id: string
     user_id: string
@@ -48,12 +72,14 @@ function formatSubjectList(subjects: PassingGradeSubject[]) {
 
 export function hasPassedSkdPassingGrade(
     entry: Pick<PassingGradeLeaderboardEntry, 'score_twk' | 'score_tiu' | 'score_tkp'>,
-    activeSubjects: PassingGradeSubject[] = DEFAULT_PASSING_GRADE_SUBJECTS
+    activeSubjects: PassingGradeSubject[] = DEFAULT_PASSING_GRADE_SUBJECTS,
+    passingGrades?: PassingGradeMap,
 ) {
+    const grades = resolvePassingGrades(passingGrades)
     return activeSubjects.every((subject) => {
-        if (subject === 'TWK') return entry.score_twk >= PASSING_GRADES.TWK
-        if (subject === 'TIU') return entry.score_tiu >= PASSING_GRADES.TIU
-        return entry.score_tkp >= PASSING_GRADES.TKP
+        if (subject === 'TWK') return entry.score_twk >= grades.TWK
+        if (subject === 'TIU') return entry.score_tiu >= grades.TIU
+        return entry.score_tkp >= grades.TKP
     })
 }
 
@@ -77,12 +103,13 @@ function rankSection<T extends PassingGradeLeaderboardEntry>(entries: T[], rankO
 }
 
 export function buildPassingGradeLeaderboardSections<T extends PassingGradeLeaderboardEntry>(
-    entries: T[]
+    entries: T[],
+    passingGrades?: PassingGradeMap,
 ): PassingGradeLeaderboardSection<T>[] {
     const activeSubjects = getActivePassingGradeSubjects(entries)
     const subjectList = formatSubjectList(activeSubjects)
-    const passedEntries = entries.filter((entry) => hasPassedSkdPassingGrade(entry, activeSubjects))
-    const belowEntries = entries.filter((entry) => !hasPassedSkdPassingGrade(entry, activeSubjects))
+    const passedEntries = entries.filter((entry) => hasPassedSkdPassingGrade(entry, activeSubjects, passingGrades))
+    const belowEntries = entries.filter((entry) => !hasPassedSkdPassingGrade(entry, activeSubjects, passingGrades))
     const rankedPassedEntries = rankSection(passedEntries) as T[]
     const rankedBelowEntries = rankSection(belowEntries, rankedPassedEntries.length) as T[]
 

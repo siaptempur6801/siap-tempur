@@ -7,14 +7,26 @@ import { getLiveLeaderboardAction, LiveLeaderboardEntry } from '@/app/actions/ev
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { shouldRefreshEventLeaderboard } from '@/lib/event-leaderboard-refresh'
-import { buildPassingGradeLeaderboardSections } from '@/lib/leaderboard-passing-grade'
+import { buildPassingGradeLeaderboardSections, type PassingGradeMap } from '@/lib/leaderboard-passing-grade'
 
 const DEFAULT_AUTO_SCROLL_SPEED = 10
 const MIN_AUTO_SCROLL_SPEED = 5
 const MAX_AUTO_SCROLL_SPEED = 80
 const AUTO_SCROLL_SPEED_STEP = 5
 
-export default function LiveLeaderboardClient({ eventId }: { eventId: string }) {
+export default function LiveLeaderboardClient({
+    eventId,
+    passingGrades,
+}: {
+    eventId: string
+    /**
+     * Ambang kelulusan dari database (`exam_sections.config->>'passing_score'`).
+     * Dikirim dari server supaya halaman ini menilai dengan angka yang sama seperti
+     * saat ujian dinilai, dan ikut berubah begitu admin mengubahnya.
+     * Bila tidak dikirim, dipakai nilai cadangan di `lib/constants.ts`.
+     */
+    passingGrades?: PassingGradeMap
+}) {
     const scrollContainerRef = useRef<HTMLElement | null>(null)
     const [entries, setEntries] = useState<LiveLeaderboardEntry[]>([])
     const [prevRanks, setPrevRanks] = useState<Record<string, number>>({})
@@ -25,7 +37,10 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
     const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true)
     const [autoScrollSpeed, setAutoScrollSpeed] = useState(DEFAULT_AUTO_SCROLL_SPEED)
     const isFinalLeaderboard = event?.status === 'closed'
-    const leaderboardSections = useMemo(() => buildPassingGradeLeaderboardSections(entries), [entries])
+    const leaderboardSections = useMemo(
+        () => buildPassingGradeLeaderboardSections(entries, passingGrades),
+        [entries, passingGrades],
+    )
     const decreaseAutoScrollSpeed = () => {
         setAutoScrollSpeed((current) => Math.max(current - AUTO_SCROLL_SPEED_STEP, MIN_AUTO_SCROLL_SPEED))
     }
@@ -47,7 +62,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
 
                 setEntries((currentEntries) => {
                     if (currentEntries.length > 0) {
-                        const currentSectionEntries = buildPassingGradeLeaderboardSections(currentEntries)
+                        const currentSectionEntries = buildPassingGradeLeaderboardSections(currentEntries, passingGrades)
                             .flatMap((section) => section.entries)
 
                         setPrevRanks(Object.fromEntries(
@@ -80,7 +95,7 @@ export default function LiveLeaderboardClient({ eventId }: { eventId: string }) 
                 window.clearTimeout(refreshTimer)
             }
         }
-    }, [eventId])
+    }, [eventId, passingGrades])
 
     useEffect(() => {
         const scrollContainer = scrollContainerRef.current
