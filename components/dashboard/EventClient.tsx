@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { canViewCompletedEventLeaderboard } from '@/lib/event-access'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
+import { getEventState, isEventDone, SUCCESS_PAYMENT } from '@/lib/event-state'
 
 type EventStatus = 'scheduled' | 'live' | 'closed'
 
@@ -67,7 +68,6 @@ function formatDate(value: string) {
     }).format(new Date(value))
 }
 
-const SUCCESS_PAYMENT = new Set(['capture', 'settlement'])
 
 function getEffectiveEventStatus(event: UserEvent, now: number): EventStatus {
     const startsAt = new Date(event.starts_at).getTime()
@@ -80,49 +80,6 @@ function getEffectiveEventStatus(event: UserEvent, now: number): EventStatus {
 
 function getDisplayEventStatus(event: UserEvent, now: number | null): EventStatus {
     return now == null ? event.status : getEffectiveEventStatus(event, now)
-}
-
-function getEventState(event: UserEvent, now: number) {
-    const startsAt = new Date(event.starts_at).getTime()
-    const endsAt = new Date(event.ends_at).getTime()
-    const latestStartAt = startsAt + event.start_grace_minutes * 60 * 1000
-    const canUseScheduleWindow = event.status === 'scheduled' || event.status === 'live'
-
-    const isDone =
-        event.session_id &&
-        (event.test_session_status === 'completed' ||
-            event.event_session_status === 'completed' ||
-            event.participant_status === 'completed')
-
-    const canStart = canUseScheduleWindow && now >= startsAt && now <= latestStartAt && now <= endsAt
-
-    if (isDone) return { label: 'Lihat Hasil', action: 'history' as const, step: 3 }
-    if (event.session_id) return { label: 'Lanjutkan', action: 'start' as const, step: 2 }
-    if (event.status === 'closed') return { label: 'Event Berakhir', action: 'disabled' as const, step: 3 }
-    if (canUseScheduleWindow && now > endsAt) return { label: 'Event Berakhir', action: 'disabled' as const, step: 3 }
-
-    // Registration is the source of truth for event access.
-    if (event.participant_id) {
-        if (canStart) return { label: 'Mulai Tryout', action: 'start' as const, step: 2 }
-        if (canUseScheduleWindow && now > latestStartAt) return { label: 'Waktu Masuk Ditutup', action: 'disabled' as const, step: 1 }
-        return { label: 'Menunggu Jadwal', action: 'disabled' as const, step: 1 }
-    }
-
-    // Paid event gate only applies before registration exists.
-    if (event.is_paid && event.price > 0) {
-        const hasPaid = event.payment_status != null && SUCCESS_PAYMENT.has(event.payment_status)
-        const hasPendingPayment = event.payment_status === 'pending'
-
-        if (!hasPaid) {
-            if (hasPendingPayment) return { label: `Beli Tiket`, action: 'check_payment' as const, step: 0 }
-            return { label: `Beli Tiket`, action: 'pay' as const, step: 0 }
-        }
-    }
-
-    if (!event.participant_id) return { label: 'Daftar Sekarang', action: 'register' as const, step: 0 }
-    if (canStart) return { label: 'Mulai Tryout', action: 'start' as const, step: 2 }
-    if (canUseScheduleWindow && now > latestStartAt) return { label: 'Waktu Masuk Ditutup', action: 'disabled' as const, step: 1 }
-    return { label: 'Menunggu Jadwal', action: 'disabled' as const, step: 1 }
 }
 
 function CountdownBadge({ targetMs, label, now }: { targetMs: number; label: string; now: number }) {
@@ -296,11 +253,9 @@ function EventCard({
         participantId: event.participant_id,
         now: new Date(logicNow),
     })
-    const isDone =
-        event.session_id &&
-        (event.test_session_status === 'completed' ||
-            event.event_session_status === 'completed' ||
-            event.participant_status === 'completed')
+    // Memakai helper yang sama dengan `getEventState` supaya tombol sertifikat
+    // dan label status tidak pernah berbeda pendapat.
+    const isDone = isEventDone(event, logicNow)
     const canUseCertificate = Boolean(
         isDone &&
         event.certificate_enabled &&
@@ -826,6 +781,14 @@ export default function EventClient({ events }: EventClientProps) {
         const state = getEventState(event, now)
         if (state.action === 'disabled') return
         if (state.action === 'history') {
+            // Jaring pengaman: halaman hasil membaca attempt berdasarkan id, jadi
+            // tanpa attempt jangan pernah diarahkan ke sana. `getEventState` sudah
+            // menjaga ini; penjaga di sini mencegah navigasi rusak bila keadaan
+            // itu lolos karena suatu hal.
+            if (!event.session_id) {
+                toast.info('Riwayat pengerjaan event ini tidak tersedia untuk akunmu.')
+                return
+            }
             router.push(`/cpns/dashboard/tryout/${event.session_id}/result?from=event`)
             return
         }
