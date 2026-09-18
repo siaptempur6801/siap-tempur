@@ -109,6 +109,89 @@ Keduanya **terkonfirmasi AKTIF** di staging (schema dump read-only) **dan di pro
 
 ### P1 — keamanan/kualitas
 
+#### Perbaikan audit 2026-09-18 (P0 & P1)
+
+Audit menyeluruh: `docs/AUDIT_2026-09-18.md`. Perbaikan yang sudah dikerjakan:
+
+| Temuan | Perbaikan | File |
+|---|---|---|
+| **P0** Submit ujian gagal untuk pengguna dengan riwayat banyak (`.in()` tanpa batas → `UND_ERR_HEADERS_OVERFLOW`) | `listScores` di-batch lewat `chunkValues()`; `listAllCompletedAttemptIds` diberi batas eksplisit yang gagal keras, bukan memotong agregat diam-diam | `src/repositories/progress.repository.ts` |
+| **P0** Loop N+1: 110 UPDATE berurutan per submit Full Tryout | Satu RPC batch `update_attempt_answer_scores`; **plus fallback** ke jalur lama bila RPC belum ada | `src/services/scoring.service.ts`, `src/repositories/attempt.repository.ts` |
+| **P0** Write-on-GET dengan service role di halaman publik anonim | Dihapus; `/cpns` tidak lagi menulis ke DB saat render dan tidak lagi memakai klien service role | `app/cpns/page.tsx` |
+| **P1** `lib/audit-log.ts` gagal 100% senyap (4 nama kolom tidak ada) | Nama kolom diselaraskan ke skema nyata; kegagalan naik ke `logger.error` | `lib/audit-log.ts` |
+| **P1** Bug: React key dari field yang dapat diedit → admin hanya bisa mengetik 1 karakter per klik | Identitas baris stabil (`row.id`) | `components/admin/QuestionOptionsEditor.tsx` |
+| **P1** `fraud_status` Midtrans tidak pernah divalidasi | `resolveMidtransFulfilment()`; `deny` → ditolak, `challenge` → pending; `fraud_status` masuk idempotency key | `lib/midtrans-status.ts`, `app/api/payments/webhook/route.ts` |
+| **P1** `CRON_SECRET` dibandingkan `===` (tidak timing-safe) | Helper bersama `lib/timing-safe.ts`; `lib/csrf.ts` memakai helper yang sama | `lib/timing-safe.ts`, `app/api/cron/reconcile-payments/route.ts` |
+| **P1** Kunci jawaban dibaca dari opsi HIDUP, bukan snapshot | Kunci dibekukan di `question_snapshot` saat attempt dibuat; attempt lama pakai fallback + `logger.warn` | `src/repositories/exam.repository.ts`, `src/services/scoring.service.ts` |
+| **P1** Dependency mati | `isomorphic-dompurify`, `@tiptap/extension-underline` dihapus | `package.json` |
+
+**Keputusan produk 2026-09-18 (dari pemilik produk):**
+
+| Aspek | Keputusan | Status |
+|---|---|---|
+| Attempt lama bila kunci soal diperbaiki | **Dibiarkan** — tidak ada perhitungan ulang data historis | ✅ diterapkan |
+| Kelulusan TKA | **Tidak ada konsep lulus** | ✅ panel "Status Kelulusan" dihapus |
+| Passing grade 65/80/166 | **Masih berlaku**, harus mudah diubah admin | ✅ database jadi sumber otoritatif (`src/repositories/passing-grade.repository.ts`); `PASSING_GRADES` turun jadi cadangan. Admin sudah bisa mengubahnya lewat field "Passing score" di panel exam |
+| Kode mati legacy admin | Boleh dibongkar | ✅ selesai (lihat bagian berikut) |
+| Fitur Event Tryout Akbar | **Masih dipakai** | ⏳ auto-close perlu diarahkan ke `events` V2 + cron |
+
+**Migration:** `20260918041911_batch_update_attempt_answer_scores.sql` **sudah ter-apply di staging.**
+Diverifikasi lewat PostgREST: `p_scores: []` → `200` + `0`; payload bukan array → `400` (22023);
+`anon` → `401 permission denied`. `supabase db push --dry-run` → *"Remote database is up to date."*
+`supabase db push` harus dijalankan **dari dalam folder `supabase/`** — dari root ia gagal dengan
+`Cannot find project ref`.
+
+> ⚠️ **Produksi belum disentuh.** Migration ini hanya ada di staging. Sebelum deploy ke produksi,
+> migration wajib di-apply lebih dulu — kode sudah punya fallback sehingga submit ujian tidak akan
+> gagal, tetapi perbaikan N+1 belum aktif tanpa migration.
+
+#### Pemindahan modul admin + penghapusan pohon legacy (2026-09-18, langkah 1–3)
+
+Empat halaman di `app/cpns/admin/**` **bukan kode mati** — mereka implementasi hidup untuk rute
+kanonik, diimpor sebagai modul oleh delegator di `app/admin/content/**`. Keempatnya kini page nyata
+di pohon kanonik; sisa 11 file pohon legacy dihapus; **44 file / 12.330 baris** kode tak terjangkau
+ikut dihapus (termasuk `app/actions/admin.ts` 1.302 baris dan `TryoutAkbarClient` 2.052 baris).
+
+Redirect legacy dipindahkan dari `proxy.ts` ke `next.config.ts` — **sekaligus memperbaiki bug**:
+peta lama dijalankan dengan `return` di awal `proxy()`, sebelum cookie sesi di-refresh dan sebelum
+header CSP dipasang, sehingga request ke rute legacy tidak pernah melewati `updateSession()`.
+
+Redirect berbasis tab (`?tab=...`) tetap di `proxy.ts` karena `redirects()` tidak bisa mencocokkan
+query — tetapi kini dijalankan **setelah** CSP dan cookie dipasang, cookie sesi hasil refresh ikut
+dibawa, dan konteks `program`/`track` dari URL asal dipertahankan (dulu selalu dipaksa CPNS/SKD).
+
+`app/actions/admin-v2.ts`: `finish()` dulu mengarahkan ke `/cpns/admin?tab=...` yang sudah tidak
+punya halaman, sehingga `revalidatePath` menunjuk rute yang tidak pernah dirender dan
+`?ok=`/`?error=` tidak pernah sampai ke layar. Kini diarahkan ke rute kanonik per tab.
+
+**Cakupan test:**
+
+| Lapis | Jumlah | Dapat dijalankan lokal? |
+|---|---|---|
+| Unit — peta redirect (`admin-redirect-map.test.ts`) | 9 test | ✅ ya |
+| E2E publik (spec 9) — routing & redirect legacy | 3 test baru, 33 total | ✅ ya, tanpa kredensial |
+| E2E ber-auth (spec 10) — halaman admin dirender | 5 test baru, 11 total | ❌ **tidak** — butuh gate staging |
+
+> ⚠️ **E2E ber-auth untuk halaman admin BELUM PERNAH DIJALANKAN.** Kredensial `E2E_PARTICIPANT_*`
+> tidak ada di `.env.local`, dan gate Admin butuh GitHub OIDC yang saat ini terblokir billing
+> (lihat "Blocker eksternal" di bawah). Jalankan sebelum produksi GO:
+>
+> ```bash
+> E2E_ADMIN_STAGING=1 npx playwright test --project=chromium-admin-staging
+> # atau lewat gate lokal: node scripts/local-gates/run-gate.mjs admin
+> ```
+>
+> Yang **sudah** terverifikasi lokal: routing & guard (307 ke login), seluruh 10 redirect path +
+> 7 redirect tab diuji langsung pada server produksi lokal, dan CSP + nonce + `strict-dynamic` +
+> cookie CSRF tetap utuh. Yang **belum**: render halaman admin saat sudah login.
+
+#### Regression test baru dari perbaikan di atas
+
+`progress-batching`, `scoring-batch-fallback`, `scoring-frozen-answer-key`,
+`question-options-editor-keys`, `midtrans-fraud-status`, `timing-safe`,
+`passing-grade-source`, `admin-redirect-map` — total **297 unit test / 56 file**
+(sebelum audit: 263 / 52).
+
 - ✅ **Timer ujian ditegakkan server-side (2026-09-16).** `AttemptAnswerService` menolak penyimpanan jawaban setelah `started_at + durationSeconds` (+ toleransi 30 detik) lewat kode error `ATTEMPT_TIME_EXPIRED`. Sebelumnya hanya timer browser. Attempt tanpa durasi (drill/latihan) tidak dibatasi. Test: `tests/unit/attempt-deadline.test.ts`.
 - ✅ **`getResult` memeriksa `status === 'completed'` (2026-09-16)** — `src/services/practice-result.service.ts`. Sebelumnya fail-open (hanya bergantung pada halaman pemanggil).
 - ✅ **`fulfill_paid_order` diverifikasi aman (2026-09-16):** ACL di staging **dan** produksi hanya `postgres` + `service_role`; `anon`, `authenticated`, dan `PUBLIC` **tidak** bisa execute. Cek internal `auth.role()` bersifat opsional (defense-in-depth) — belum ditambahkan karena menuntut penulisan ulang fungsi pembayaran ±220 baris dengan risiko regresi lebih besar daripada manfaatnya.
