@@ -358,6 +358,47 @@ export class AttemptRepository {
         if (error) throw error
     }
 
+    /**
+     * Menulis skor SELURUH jawaban satu attempt dalam satu round trip.
+     *
+     * Menggantikan pemanggilan `updateAnswerScore` per soal di dalam loop
+     * `ScoringService.finishAttempt`. Full Tryout CPNS berisi 110 soal, sehingga
+     * cara lama menjalankan 110 UPDATE berurutan di dalam request submit.
+     *
+     * Memakai RPC `update_attempt_answer_scores` karena UPDATE massal dengan nilai
+     * berbeda per baris tidak dapat diungkapkan lewat PostgREST biasa. Satu
+     * pernyataan SQL juga membuat penulisan skor menjadi atomik: tidak ada lagi
+     * kondisi sebagian jawaban terskor dan sebagian belum.
+     *
+     * Idempoten — murni UPDATE berdasarkan primary key.
+     *
+     * @returns `true` bila batch berhasil, `false` bila RPC belum tersedia
+     *          (lihat catatan kompatibilitas di `finishAttempt`).
+     */
+    async updateAnswerScores(
+        rows: Array<{ answerId: string; isCorrect: boolean | null; score: number }>,
+    ): Promise<boolean> {
+        if (rows.length === 0) return true
+        const admin = await createV2AdminClient()
+        const { error } = await admin.rpc('update_attempt_answer_scores', {
+            p_scores: rows.map((row) => ({
+                id: row.answerId,
+                is_correct: row.isCorrect,
+                score_awarded: row.score,
+            })),
+        })
+        if (error) {
+            // PGRST202 = fungsi tidak ada di schema cache PostgREST. Ini terjadi
+            // bila kode sudah deploy tetapi migration
+            // `20260918041911_batch_update_attempt_answer_scores.sql` belum
+            // di-apply. Dikembalikan sebagai `false` (bukan throw) supaya
+            // pemanggil dapat memakai jalur lama dan submit ujian tetap berhasil.
+            if (error.code === 'PGRST202') return false
+            throw error
+        }
+        return true
+    }
+
     async upsertScores(scores: Array<{
         attemptId: string
         subjectId: string

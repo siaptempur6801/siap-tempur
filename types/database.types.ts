@@ -766,7 +766,23 @@ export type Database = {
             exam_statistics: GenericTable
         }
         Views: { [_ in never]: never }
-        Functions: { [_ in never]: never }
+        Functions: {
+            /**
+             * Entri ini ditulis tangan, bukan hasil `supabase gen types`.
+             * Karena bagian lain masih `GenericTable`, SETIAP nama RPC yang dipakai
+             * dari TypeScript harus didaftarkan di sini — kalau tidak, pemanggilan
+             * `admin.rpc(...)` gagal typecheck sebagai nama fungsi tak dikenal.
+             *
+             * `update_attempt_answer_scores` — lihat migration
+             * `20260918041911_batch_update_attempt_answer_scores.sql`.
+             * Menulis skor seluruh jawaban satu attempt dalam satu round trip
+             * (menghilangkan N+1 pada submit ujian).
+             */
+            update_attempt_answer_scores: {
+                Args: { p_scores: Json }
+                Returns: number
+            }
+        }
         Enums: { [_ in never]: never }
         CompositeTypes: { [_ in never]: never }
     }

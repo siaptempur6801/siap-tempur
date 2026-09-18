@@ -1,6 +1,7 @@
 import { attemptRepository, type AttemptAnswerRow, type ScoringOptionRow } from '@/src/repositories/attempt.repository'
 import { PracticeDomainError } from '@/src/services/exam-attempt.service'
 import { calculateResponseScore, type ResponseScoringConfig } from '@/src/domain/question-response'
+import { logger } from '@/lib/logger'
 import type { Json } from '@/types/database.types'
 
 type SubjectAccumulator = {
@@ -100,6 +101,7 @@ export class ScoringService {
         const subjects = new Map<string, SubjectAccumulator>()
         let totalScore = 0
         let totalMaxScore = 0
+        const answerScoresToPersist: Array<{ answerId: string; isCorrect: boolean | null; score: number }> = []
 
         for (const question of bundle.questions) {
             const answer = answerByQuestion.get(question.id)
@@ -144,9 +146,38 @@ export class ScoringService {
             }
 
             if (answer) {
-                await attemptRepository.updateAnswerScore(answer.id, {
+                // Dikumpulkan dulu, ditulis sekali setelah loop. Sebelumnya setiap
+                // soal menjalankan satu UPDATE berurutan — 110 round trip untuk satu
+                // Full Tryout, di dalam request submit.
+                answerScoresToPersist.push({
+                    answerId: answer.id,
                     isCorrect: scored.isCorrect,
                     score: scored.score,
+                })
+            }
+        }
+
+        /**
+         * Kompatibilitas deploy: `update_attempt_answer_scores` baru tersedia
+         * setelah migration `20260918041911_batch_update_attempt_answer_scores.sql`
+         * di-apply. Bila RPC belum ada, jalur batch mengembalikan `false` dan kita
+         * jatuh ke penulisan per jawaban.
+         *
+         * Fallback ini murni jaring keamanan agar submit ujian tidak pernah gagal
+         * hanya karena migration belum jalan — bukan jalur yang diharapkan. Ia
+         * dapat dihapus setelah migration dipastikan ter-apply di semua
+         * environment (staging & produksi).
+         */
+        const batchWritten = await attemptRepository.updateAnswerScores(answerScoresToPersist)
+        if (!batchWritten) {
+            logger.warn(
+                '[scoring] RPC update_attempt_answer_scores belum tersedia — memakai penulisan per jawaban',
+                { attemptId, answerCount: answerScoresToPersist.length },
+            )
+            for (const row of answerScoresToPersist) {
+                await attemptRepository.updateAnswerScore(row.answerId, {
+                    isCorrect: row.isCorrect,
+                    score: row.score,
                 })
             }
         }
