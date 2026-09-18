@@ -12,6 +12,7 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "test:cpns-resume": "node scripts/test_cpns_resume_flow.mjs",
+    "test:db-parity": "node scripts/local-gates/run-gate.mjs parity",
     "cpns:legacy:stage": "node scripts/migrate_cpns_legacy_reviewed_to_schema_v2.mjs",
     "cpns:legacy:repair-inline-assets": "node scripts/repair_cpns_legacy_inline_asset_urls.mjs",
     "cpns:legacy:import:staging": "node scripts/migrate_cpns_legacy_reviewed_to_schema_v2.mjs --import-reviewed && npm run cpns:legacy:repair-inline-assets",

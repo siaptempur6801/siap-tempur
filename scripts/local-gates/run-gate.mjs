@@ -67,6 +67,33 @@ const GATES = {
         manageApp: true,
         env: { E2E_ADMIN_STAGING: '1', E2E_REMOTE_BASE_URL: '1' },
     },
+    /**
+     * Gate paritas skema: membandingkan objek skema runtime staging vs produksi.
+     *
+     * KENAPA PENTING
+     *   `supabase db push` TIDAK dapat dipercaya sebagai jaminan bahwa skema remote
+     *   sesuai repo: pada 2026-09-18 ditemukan produksi kehilangan 7 fungsi dan 2
+     *   tabel padahal ledger produksi menyatakan migrasinya sudah `applied`.
+     *   Akibatnya `/tka/[level]/focus` gagal dimuat di produksi. Satu-satunya cara
+     *   mengetahui drift seperti itu adalah membandingkan objeknya langsung.
+     *
+     * BUKAN PLAYWRIGHT
+     *   Gate ini tidak menjalankan browser maupun aplikasi. `manageApp: false`
+     *   dan `direct: true` membuatnya menjalankan skrip Node biasa.
+     *
+     * PRODUKSI — READ-ONLY, DENGAN PAGAR
+     *   Skrip memakai `supabase link` + `SELECT` katalog saja (tanpa tulis), dan
+     *   menolak berjalan tanpa `DB_PARITY_ALLOW_PRODUCTION=1`. Pagar itu dibuka di
+     *   sini secara eksplisit, sehingga tidak ada perintah rutin lain yang tanpa
+     *   sengaja menyentuh produksi.
+     */
+    parity: {
+        serviceRoleKey: SERVICE_ROLE,
+        appBaseUrl: BASE_URL,
+        manageApp: false,
+        direct: { command: 'node', args: ['scripts/db-parity-check.mjs'], env: { DB_PARITY_ALLOW_PRODUCTION: '1' } },
+        env: {},
+    },
 }
 
 const children = []
@@ -137,6 +164,20 @@ async function cleanStagingLeftovers() {
 async function runGate(name) {
     const gate = { ...GATES[name] }
     if (!gate) throw new Error(`Gate tidak dikenal: ${name}`)
+
+    /**
+     * Gate "direct": menjalankan satu perintah Node tanpa build, tanpa app, dan
+     * tanpa emulator ci-helper. Dipakai gate paritas skema, yang membandingkan
+     * database alih-alih merender halaman.
+     */
+    if (gate.direct) {
+        console.log(`[gate] menjalankan gate "${name}" (perintah langsung)…`)
+        const code = await new Promise((done) => {
+            const runner = startProcess(gate.direct.command, gate.direct.args, gate.direct.env ?? {}, name)
+            runner.on('exit', (exitCode) => done(exitCode ?? 1))
+        })
+        return code
+    }
 
     // Gate yang butuh Vercel Preview (mis. admin memverifikasi deploymentCommitSha) bisa
     // diarahkan dengan GATE_BASE_URL; app lokal tidak dijalankan dalam mode ini.

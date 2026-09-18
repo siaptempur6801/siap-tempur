@@ -132,13 +132,124 @@ nyata untuk menutup verifikasi ini.
 
 1. **Verifikasi manual** halaman `/tka/<jenjang>/focus` di produksi dengan akun
    peserta.
-2. **Jangan percaya ledger sendirian.** Setelah setiap `db push`, periksa objek
-   yang seharusnya dibuat. Ledger di kedua environment sudah pernah terbukti
-   tidak akurat.
-3. **Pertimbangkan pemeriksaan paritas otomatis** sebagai bagian dari gate rilis:
-   bandingkan daftar fungsi/tabel/policy antara staging dan produksi, dan
-   gagalkan bila ada selisih di luar daftar putih.
-4. **Bereskan referensi mati:** `advance_exam_section` dan `score_exam_attempt`
-   disebut di komentar kode tetapi tidak ada di **kedua** environment dan tidak
-   punya pemanggil. Komentar di `src/repositories/exam.repository.ts` dan
-   `src/services/scoring.service.ts` sebaiknya diperbarui agar tidak menyesatkan.
+2. **Jalankan gate paritas** sebelum setiap rilis (lihat di bawah).
+
+### Koreksi: referensi `score_exam_attempt`
+
+Pemeriksaan awal di dokumen ini sempat menyebut `score_exam_attempt` sebagai
+referensi mati. **Itu keliru** — `app_private.score_exam_attempt` **ada** di
+kedua environment. Kekeliruan itu berasal dari pemeriksaan yang hanya melihat
+schema `public`, padahal fungsinya berada di `app_private`.
+
+Komentar di `src/repositories/exam.repository.ts` dan
+`src/services/scoring.service.ts` yang menunjuk `app_private.score_exam_attempt`
+**sudah benar** dan tidak perlu diubah.
+
+Yang benar-benar tidak ada: **`advance_exam_section`** — tidak ditemukan di
+schema mana pun (`public` maupun `app_private`) di **kedua** environment, dan
+tidak punya pemanggil di kode. Sejauh penelusuran, ia hanya muncul di catatan
+historis, bukan di kode yang berjalan.
+
+
+## Gate paritas otomatis
+
+Drift seperti ini tidak boleh lagi ditemukan secara kebetulan. Tersedia:
+
+```bash
+node scripts/local-gates/run-gate.mjs parity
+```
+
+atau langsung:
+
+```bash
+DB_PARITY_ALLOW_PRODUCTION=1 node scripts/db-parity-check.mjs [--verbose]
+```
+
+**Apa yang dibandingkan** (skema runtime `public` + `app_private`):
+
+| Objek | Detail yang dibandingkan |
+|---|---|
+| Fungsi | argumen identitas, `SECURITY DEFINER`, `search_path`, ACL |
+| Tabel & view | jenis, daftar kolom + tipe + nullability |
+| Policy RLS | perintah, ekspresi USING/WITH CHECK, roles |
+| Index | definisi lengkap |
+| Trigger | nama, event, timing |
+| Ledger migrasi | daftar versi (sebagai himpunan) |
+
+Skema `legacy_prod` (arsip Schema V1 di produksi) sengaja **tidak** dibandingkan —
+ia memang hanya ada di produksi dan tidak dipakai runtime.
+
+**Exit code:** `0` setara, `1` ada selisih tak terduga. Aman dipakai di otomasi.
+
+### Pagar keselamatan produksi
+
+Skrip menautkan CLI ke produksi, jadi ia **menolak berjalan** tanpa pagar
+eksplisit:
+
+```bash
+DB_PARITY_ALLOW_PRODUCTION=1 ...
+```
+
+Tanpa flag itu skrip berhenti sebelum menyentuh apa pun. Ini menjaga agar tidak
+ada perintah rutin yang tanpa sengaja membandingkan ke produksi. Operasinya
+sendiri **read-only** (hanya `SELECT` katalog), dan link CLI dikembalikan ke
+staging di akhir — termasuk bila terjadi kegagalan.
+
+### Menangani selisih yang memang disengaja
+
+Selisih yang diterima **wajib didaftarkan beserta alasannya** di
+`INTENTIONAL_DIFFERENCES` di dalam skrip. Pencocokan bersifat berantai: bila
+sebuah tabel didaftarkan, index dan trigger milik tabel itu ikut diterima —
+sebuah tabel tidak mungkin ada tanpa primary key, jadi mewajibkan pendaftaran
+index satu per satu hanya menambah kebisingan tanpa menambah keamanan.
+
+Selisih **definisi** (objek ada di kedua sisi tetapi bentuknya berbeda) **tidak
+pernah** diterima daftar putih — kalau bentuknya berbeda, itu memang drift.
+
+### Membuktikan gate ini benar-benar bisa gagal
+
+Gate yang selalu hijau lebih berbahaya daripada tidak ada gate. Untuk
+membuktikannya tanpa menyabotase database mana pun:
+
+```bash
+DB_PARITY_ALLOW_PRODUCTION=1 DB_PARITY_DISABLE_WHITELIST=1 \
+  node scripts/db-parity-check.mjs
+# harus exit 1 dan menyebut app_private.cpns_skd_p1_import_stage
+```
+
+Terverifikasi: dengan daftar putih normal → `exit 0`; dengan daftar putih
+dikosongkan → `exit 1` dan melaporkan 2 selisih.
+
+### Mengapa TIDAK ditaruh di CI standar
+
+`.github/workflows/ci.yml` **sengaja tidak memegang kredensial database yang
+mampu admin** — ada komentar eksplisit di workflow bahwa CI standar tidak boleh
+punya `SUPABASE_SERVICE_ROLE_KEY` asli, dan nilai yang dipasang adalah
+`ci-no-service-role`. Menjalankan gate ini di sana berarti menambah kredensial
+produksi ke CI, yang melanggar batas desain itu.
+
+Karena itu gate ini dijalankan:
+
+- **secara lokal** lewat `scripts/local-gates/run-gate.mjs parity` (memakai
+  `.env.local` yang sudah menunjuk staging), atau
+- **secara manual** sebelum rilis sebagai bagian dari runbook.
+
+Bila kelak diinginkan otomatis di CI, tambahkan **workflow terpisah** dengan
+secret khusus (bukan menambah kredensial ke `ci.yml`), mengikuti pola
+`*-staging-e2e.yml` yang sudah ada.
+
+## Status paritas saat ini
+
+Diverifikasi 2026-09-18 lewat gate di atas:
+
+```
+staging  : 95 fungsi · 105 tabel · 96 policy · 394 index · 167 migrasi
+produksi : 95 fungsi · 104 tabel · 96 policy · 393 index · 167 migrasi
+
+2 selisih DISENGAJA (daftar putih):
+  · [table] app_private.cpns_skd_p1_import_stage — hanya di staging
+  · [index] app_private.cpns_skd_p1_import_stage_pkey — hanya di staging
+
+✓ skema setara — tidak ada selisih tak terduga
+```
+
