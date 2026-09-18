@@ -11,7 +11,6 @@ import {
     RotateCcw,
     Target,
     Trophy,
-    XCircle,
 } from 'lucide-react'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import TkaLearningFocusPanel from '@/components/tka/TkaLearningFocusPanel'
@@ -26,7 +25,6 @@ import { tkaLearningFocusService, type TkaLearningFocusView } from '@/src/servic
 import { tkaReadinessService, type TkaReadinessView } from '@/src/services/tka-readiness.service'
 import { tkaRemedialService, type TkaRemedialView } from '@/src/services/tka-remedial.service'
 import { isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
-import { cn } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -253,25 +251,6 @@ export default async function TkaResultPage({
                             value={formatDuration(result.startedAt, result.submittedAt)}
                             helper="Total waktu tercatat"
                         />
-                        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-                            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
-                                {result.passed === false ? (
-                                    <XCircle size={18} className="text-rose-600" />
-                                ) : (
-                                    <CheckCircle2 size={18} className="text-emerald-600" />
-                                )}
-                                Status Kelulusan
-                            </div>
-                            <div className={cn(
-                                'mt-2 text-2xl font-black tracking-tight md:text-3xl',
-                                result.passed === false ? 'text-rose-700' : result.passed === true ? 'text-emerald-700' : 'text-slate-800'
-                            )}>
-                                {result.passed === null ? 'Skor tersimpan' : result.passed ? 'Target tercapai' : 'Masih perlu diperkuat'}
-                            </div>
-                            <p className="mt-1 text-xs font-semibold text-slate-400">
-                                {result.passed ? 'Memenuhi target kelulusan TKA' : 'Tingkatkan lagi di sesi berikutnya'}
-                            </p>
-                        </div>
                     </section>
 
                     {/* Subject Breakdown Cards */}
