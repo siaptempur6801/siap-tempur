@@ -153,14 +153,233 @@ Empat kandidat yang tersisa (voucher, event bot, learning recommendations,
 mastery) semuanya **bukan** kasus itu — mereka tidak punya padanan langsung, dan
 untuk voucher/bot/recommendations hal itu **disengaja oleh perubahan desain**.
 
-## Rekomendasi
+## Status tindak lanjut (2026-09-18)
 
-| Prioritas | Tindakan | Alasan |
+| Prioritas | Keputusan pemilik produk | Status |
 |---|---|---|
-| **P1** | Sembunyikan form klaim voucher dari halaman profil | Saat ini pengguna melihat form yang selalu gagal — menjanjikan sesuatu yang tidak bisa ditepati |
-| **P2** | Konfirmasi apakah bot event masih diinginkan | Kalau ya, fiturnya harus dibangun ulang di Schema V2 (bukan migrasi data) |
-| **P3** | Biarkan `learning_recommendations` & mastery lama di `legacy_prod` | Tidak ada padanan konseptual; V2 menghitung ulang dengan model baru |
-| **P4** | Rencanakan penghapusan `legacy_prod` setelah semua selesai diverifikasi | Arsip bagus, tapi jangan selamanya — ia membingungkan (`tryout_events` vs `events`) |
+| **P1** — voucher | **Dihidupkan kembali**, bukan disembunyikan | ✅ selesai — `20260918180000_voucher_claim_schema_v2.sql` |
+| **P2** — bot event | **Ditunda** ("tidak perlu dulu") | ⏸ ditunda — lihat catatan blocker di bawah |
+| **P3** — data rekomendasi & mastery | Tahan dulu, minta detail | 📋 detail di bawah |
+| **P4** — penghapusan `legacy_prod` | Minta detail | 📋 detail di bawah |
+
+### P2 — catatan penundaan
+
+Bot event ditunda. **Alasan teknis yang perlu diingat saat fitur ini dibuka lagi:**
+event di Schema V2 **belum dapat dikerjakan sama sekali** — 104 orang terdaftar
+di 4 event, tetapi **0 attempt** dan **0 soal**, karena exam yang dipakai event
+tidak punya satu pun `exam_sections` (42 dari 48 exam lain punya).
+
+Artinya bot tidak ada gunanya dihidupkan lebih dulu: menghidupkan bot berarti
+memoles papan peringkat yang tidak akan pernah diisi peserta nyata. Urutan yang
+benar: **perbaiki eksekusi event dulu, baru bot.**
+
+Rincian bagian bot yang harus dipulihkan bila saatnya tiba:
+
+| Bagian | Kondisi sekarang |
+|---|---|
+| Tabel `event_bot_names`, `tryout_event_bot_entries` | hilang di `public` (migration `202607050001` bergantung pada `tryout_events` nama lama) |
+| `lib/event-leaderboard-bots.ts` (588 baris, ber-test) | dihapus di `dbd0096` saat bersih-bersih admin legacy — masih dapat dipulihkan dari git |
+| `bot_count` di `public.events` | kolomnya tidak ada |
+| `LiveLeaderboardEntry.is_bot` | masih ada di tipe, tetapi tidak pernah di-set |
+| Panel admin pengatur jumlah bot | ikut terhapus bersama pohon admin legacy |
+
+## P3 — Detail: data rekomendasi & mastery lama
+
+### Isi data
+
+| Tabel legacy | Baris | Padanan V2 | Baris V2 |
+|---|---|---|---|
+| `learning_recommendations` | 681 | `public.learning_recommendations` | 6 |
+| `user_subject_mastery` | 257 | `public.user_knowledge_progress` | 15 |
+| `competencies` + `subcompetencies` + `curriculum_domains` | 70 | `public.knowledge_nodes` | 469 |
+
+### Mengapa migrasi TIDAK disarankan
+
+**Model kompetensinya berbeda, bukan sekadar berbeda nama.** Legacy memakai
+`competency_id` (70 baris kompetensi); V2 memakai `knowledge_node_id`
+(469 node). Tidak ada pemetaan yang tersimpan antara keduanya — memetakan
+681 rekomendasi ke node baru berarti **menebak** kemiripan semantik antar
+kompetensi, dan hasilnya adalah rekomendasi belajar yang salah sasaran.
+
+Yang lebih penting: **V2 sudah menghitung ulang.** Halaman hasil diagnostik
+(`app/tka/[level]/diagnostic/[attemptId]/result/page.tsx`) membaca
+`public.learning_recommendations` dengan tipe `diagnostic_baseline_v1`, yang
+diisi otomatis oleh trigger dari `user_knowledge_progress` — turunan dari
+attempt nyata peserta. Jadi peserta TKA tetap mendapat rekomendasi, dihitung
+dari data mereka sendiri.
+
+### Risiko masing-masing opsi
+
+| Opsi | Risiko | Manfaat |
+|---|---|---|
+| **Biarkan (rekomendasi)** | Tidak ada | Tidak ada — data beku, tidak dibaca kode |
+| Pindahkan apa adanya | **Tinggi** — 681 baris masuk ke tabel V2 tanpa `knowledge_node_id` yang sah, bisa merusak query diagnostik yang sudah jalan | Rekomendasi lama muncul lagi |
+| Petakan kompetensi → node | **Tinggi** — pemetaan hasil tebakan; salah petakan = saran belajar salah | Rekomendasi lama relevan |
+| Hapus | Sedang — kehilangan jejak historis, padahal ini satu-satunya salinan | Membersihkan |
+
+**Rekomendasi: biarkan.** Ia beku, tidak dibaca kode, dan tidak mengganggu V2.
+Nilainya sebagai arsip historis lebih besar daripada risikonya.
+
+**Satu tindakan yang layak dipertimbangkan:** 257 baris `user_subject_mastery`
+memuat mastery historis per user yang **tidak lagi terlihat peserta mana pun**
+(halaman progres sekarang membaca `user_subject_progress` V2). Bila pemilik
+produk ingin peserta melihat kembali capaian lamanya, itu butuh **fitur baru**
+(membaca arsip), bukan migrasi data. Ini keputusan produk.
+
+## P4 — Detail: penghapusan `legacy_prod`
+
+### Ukuran sebenarnya — argumen "boros" ternyata lemah
+
+| Objek | Ukuran |
+|---|---|
+| `legacy_prod` (74 objek) | **27 MB** |
+| `public` | 55 MB |
+| **Total database** | **107 MB** |
+
+`legacy_prod` hanya **25% dari database**. Tabel terbesarnya `test_answers`
+(13 MB) — sudah dimigrasikan ke `public.attempt_answers`, jadi salinan ini murni
+cadangan.
+
+### Yang bergantung padanya (titik kritis)
+
+**1. Schema `archive` — dependensi struktural yang nyata.**
+
+Produksi punya schema **ketiga** yang tidak terdokumentasi: `archive`, berisi 4
+tabel (12 baris total) yang tampaknya sisa fitur "exam group" / B2B sekolah dan
+**tidak ada migration pembuatnya di repo**:
+
+| Tabel `archive` | Baris |
+|---|---|
+| `exam_groups` | 1 |
+| `exam_group_memberships` | 1 |
+| `exam_group_capabilities` | 2 |
+| `exam_group_role_capabilities` | 8 |
+
+Keempatnya punya **5 foreign key yang menunjuk ke `legacy_prod`**:
+
+```
+archive.exam_group_memberships → legacy_prod.profiles
+archive.exam_groups            → legacy_prod.programs
+archive.exam_groups            → legacy_prod.profiles
+archive.exam_groups            → legacy_prod.organizations
+archive.exam_groups            → legacy_prod.organization_periods
+```
+
+Konsekuensinya: `drop schema legacy_prod cascade` **akan ikut menghapus schema
+`archive`** (atau gagal karena FK). Jadi penghapusan bukan satu perintah, dan
+urutan ketergantungannya harus diselesaikan lebih dulu.
+
+**2. Satu migration membaca `legacy_prod`** — yang baru dibuat untuk voucher:
+
+```
+20260918180000_voucher_claim_schema_v2.sql  →  legacy_prod.vouchers, legacy_prod.voucher_claims
+```
+
+Migration itu **sudah dijalankan di staging dan produksi**, dan blok pemindahan
+datanya sudah dibungkus pengecekan `if not exists (select 1 from pg_namespace
+where nspname='legacy_prod')`. Jadi menghapus `legacy_prod` **tidak** membuat
+migration gagal — blok itu dilewati dengan `raise notice`.
+
+Di luar itu, hanya skrip rehearsal cutover (`scripts/production_rehearsal_*`)
+yang menyebutnya — alat sekali pakai, bukan jalur produksi.
+
+**Yang TIDAK ditemukan (terverifikasi):** tidak ada fungsi di schema manapun
+selain `legacy_prod` yang memanggilnya, dan tidak ada view produksi yang
+bergantung padanya.
+
+### Risiko penghapusan
+
+| Risiko | Tingkat | Catatan |
+|---|---|---|
+| Migration voucher gagal setelahnya | **Rendah** | sudah ada guard; akan dilewati |
+| Kehilangan satu-satunya rollback path ke data pra-cutover | **Tinggi** | setelah dihapus, TIDAK ADA cara memulihkan angka pra-cutover |
+| Kehilangan sumber pemulihan bila ditemukan data tertinggal lain | **Sedang** | audit ini menemukan 3 kasus; audit berikutnya mungkin menemukan lagi |
+| Kebingungan developer (`tryout_events` vs `events`) | **Rendah-sedang** | dapat diatasi dengan dokumentasi, bukan penghapusan |
+
+### Rekomendasi: JANGAN hapus sekarang
+
+Alasannya bukan teknis, melainkan nilai opsi:
+
+1. **Biayanya nyata tapi kecil** — 27 MB. Backup database 107 MB tidak mahal.
+2. **Nilainya besar** — ini satu-satunya jalan kembali ke keadaan pra-cutover.
+   Tiga kasus data tertinggal sudah ditemukan dari arsip ini (artikel, gambar
+   event, sertifikat), dan ketiganya **dipulihkan** karena arsipnya masih ada.
+   Kalau arsip itu sudah dihapus, ketiganya hilang permanen.
+3. **Waktu yang tepat untuk menghapus belum tiba** — domain publik masih
+   ditahan, dan setiap audit baru masih mungkin menemukan data lain.
+
+### Kapan sebaiknya dihapus
+
+Setelah **semua** ini terpenuhi:
+
+- domain publik sudah dibuka dan berjalan tanpa keluhan data hilang selama
+  minimal satu siklus ujian penuh;
+- audit `legacy_prod` diulang dan tidak lagi menemukan data tertinggal;
+- ada backup database penuh di luar Supabase yang memuat `legacy_prod`.
+
+### Bila nanti diputuskan dihapus — urutannya
+
+```sql
+-- 1. Selesaikan dulu schema `archive` (5 FK ke legacy_prod).
+--    Putuskan: pindahkan ke public, atau ikut diarsipkan, atau dihapus.
+--    JANGAN pakai `cascade` sebelum ini beres — cascade akan menghapusnya
+--    tanpa Anda memutuskannya.
+
+-- 2. Pastikan tidak ada objek produksi lain yang bergantung padanya.
+select conrelid::regclass::text as dari_tabel, confrelid::regclass::text as ke_tabel
+from pg_constraint
+where contype='f'
+  and confrelid in (select c.oid from pg_class c join pg_namespace n on n.oid=c.relnamespace
+                     where n.nspname='legacy_prod')
+  and conrelid not in (select c.oid from pg_class c join pg_namespace n on n.oid=c.relnamespace
+                        where n.nspname='legacy_prod');
+
+-- 3. Ekspor dulu (WAJIB, bukan opsional).
+--    supabase db dump --linked --schema legacy_prod > legacy_prod-backup.sql
+--    supabase db dump --linked --schema archive     > archive-backup.sql
+
+-- 4. Baru hapus — satu per satu, bukan cascade.
+--    drop schema archive cascade;
+--    drop schema legacy_prod restrict;
+```
+
+**Jangan pernah menjalankan langkah 4 tanpa langkah 3.** Gunakan `restrict`
+(bukan `cascade`) pada langkah terakhir supaya PostgreSQL **menolak** bila masih
+ada yang bergantung — itu jaring pengaman terakhir.
+
+### Opsi tengah: bekukan, jangan hapus
+
+Bila kebingungan developer yang jadi kekhawatiran (bukan penyimpanan), cara yang
+lebih murah daripada menghapus:
+
+```sql
+revoke all on all tables in schema legacy_prod from anon, authenticated;
+comment on schema legacy_prod is
+  'ARSIP BEKU pra-cutover Schema V2. Hanya-baca. JANGAN dipakai kode produksi. '
+  'Lihat docs/LEGACY_PROD_AUDIT_2026-09-18.md sebelum menyentuh schema ini.';
+```
+
+Ini menghilangkan risiko "ada yang tidak sengaja memakainya" tanpa kehilangan
+jalan pemulihan.
+
+## Lampiran: perbedaan schema antar environment
+
+Ditemukan saat memverifikasi dependensi P4. Perbedaan ini **disengaja** dan
+tidak dianggap drift (gate paritas hanya membandingkan `public` + `app_private`).
+
+| Schema | Staging | Produksi | Keterangan |
+|---|---|---|---|
+| `public` | 102 tabel | 102 tabel | ✅ setara |
+| `app_private` | 3 tabel | 2 tabel | selisih 1 tabel artefak cutover (daftar putih gate) |
+| `legacy_prod` | — | **73 tabel** | arsip pra-cutover, hanya di produksi |
+| `archive` | — | **4 tabel** | sisa fitur exam group, **hanya di produksi**, tanpa migration di repo |
+| `cron` | — | ada | `pg_cron` hanya tersedia di produksi |
+| `realtime` | ada | — | Supabase Realtime aktif di staging |
+
+Dua schema (`legacy_prod`, `archive`) tidak punya migration pembuat di repo.
+Keduanya **artefak**, bukan bagian dari skema yang dikelola. Ini memperkuat
+rekomendasi P4: perlakukan keduanya sebagai satu paket arsip dengan aturan yang
+jelas, jangan dibiarkan tanpa dokumentasi seperti sekarang.
 
 ## Cara mengulang audit ini
 
