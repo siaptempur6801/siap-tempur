@@ -225,12 +225,76 @@ export async function updatePassword(data: { currentPassword: string; newPasswor
     return { success: true }
 }
 
-export async function claimVoucherCode(_code: string) {
+export async function claimVoucherCode(code: string, isTka = false) {
     try { await validateCsrf() } catch { return { success: false, message: 'Invalid request' } }
 
+    const trimmed = typeof code === 'string' ? code.trim() : ''
+    if (!trimmed) {
+        return { success: false, message: 'Masukkan kode voucher terlebih dahulu' }
+    }
+
+    const supabase = await createV2Client()
+
+    // Sengaja klien berbasis cookie, bukan admin: RPC `claim_voucher` menegakkan
+    // `auth.uid() = p_user_id`, jadi identitas harus berasal dari sesi pengguna —
+    // bukan dari argumen yang bisa dipalsukan klien.
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+        return { success: false, message: 'Sesi tidak valid. Silakan masuk ulang.' }
+    }
+
+    // Saldo token terpisah per program: profil CPNS mengisi wallet CPNS, profil
+    // TKA mengisi wallet TKA — sejalan dengan pembacaan saldo di
+    // `AccountProfilePage`.
+    const walletType = isTka ? 'exam_token_tka' : 'exam_token_cpns'
+
+    const { data, error } = await supabase.rpc('claim_voucher', {
+        p_user_id: user.id,
+        p_voucher_code: trimmed,
+        p_wallet_type: walletType,
+    })
+
+    if (error) {
+        logger.warn('[claimVoucherCode] RPC gagal', {
+            code: error.code,
+            message: error.message,
+            userId: user.id,
+        })
+        // Pesan dari RPC sudah berbahasa Indonesia dan aman ditampilkan
+        // (kuota/aktif/kadaluarsa/duplikat). Selain itu pakai pesan umum agar
+        // detail internal tidak bocor.
+        const known = /kode voucher|kuota|kadaluarsa|tidak aktif|sudah pernah|tidak berlaku|tidak boleh kosong/i.test(error.message)
+        return {
+            success: false,
+            message: known ? error.message : 'Voucher belum bisa diklaim. Coba lagi beberapa saat.',
+        }
+    }
+
+    const result = (data ?? {}) as {
+        already_claimed?: boolean
+        amount?: number
+        balance?: number
+        message?: string
+    }
+
+    revalidatePath('/cpns/dashboard/profile')
+    revalidatePath('/tka/smp/profile')
+
+    if (result.already_claimed) {
+        return {
+            success: false,
+            message: result.message || 'Anda sudah pernah mengklaim kode voucher ini sebelumnya',
+        }
+    }
+
+    const amount = Number(result.amount ?? 0)
     return {
-        success: false,
-        message: 'Voucher sedang dimigrasikan ke Promotions Schema V2 dan sementara belum dapat diklaim.',
+        success: true,
+        message: amount > 0
+            ? `Voucher berhasil diklaim! ${amount} token ditambahkan.`
+            : 'Voucher berhasil diklaim!',
+        amount,
+        balance: Number(result.balance ?? 0),
     }
 }
 

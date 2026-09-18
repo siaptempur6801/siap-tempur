@@ -25,7 +25,9 @@ export default function VoucherClaim({ onSuccessClaim, isTka = false }: VoucherC
         setLoading(true)
 
         try {
-            const result = await claimVoucherCode(code)
+            // `isTka` menentukan wallet program mana yang diisi: saldo token
+            // terpisah antara CPNS dan TKA di Schema V2.
+            const result = await claimVoucherCode(code, isTka)
 
             if (!result.success) {
                 toast.error(result.message || 'Gagal mengklaim voucher')

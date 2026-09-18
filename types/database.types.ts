@@ -814,6 +814,21 @@ export type Database = {
                 }
                 Returns: Json
             }
+            /**
+             * `claim_voucher` — lihat migration
+             * `20260918180000_voucher_claim_schema_v2.sql`.
+             * Klaim kode voucher lalu kredit token ke wallet program yang diminta.
+             * Idempoten: klaim ulang mengembalikan `already_claimed: true` tanpa
+             * menambah token lagi.
+             */
+            claim_voucher: {
+                Args: {
+                    p_user_id: string
+                    p_voucher_code: string
+                    p_wallet_type: string
+                }
+                Returns: Json
+            }
         }
         Enums: { [_ in never]: never }
         CompositeTypes: { [_ in never]: never }
