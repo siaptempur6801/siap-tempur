@@ -12,21 +12,13 @@
  */
 
 import { cookies, headers } from 'next/headers'
+import { constantTimeEqual } from '@/lib/timing-safe'
 
 const CSRF_COOKIE = 'csrf-token'
 const CSRF_HEADER = 'x-csrf-token'
 
 type HeaderReader = {
   get(name: string): string | null
-}
-
-function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false
-  let result = 0
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
-  }
-  return result === 0
 }
 
 function normalizeOrigin(value: string | undefined | null): string | null {

@@ -6,6 +6,7 @@ import {
     normalizeMidtransStatus,
 } from '@/lib/midtrans-status'
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { isBearerTokenValid } from '@/lib/timing-safe'
 import { paymentService } from '@/src/services/payment.service'
 
 const BATCH_SIZE = 50
@@ -24,8 +25,10 @@ function createSummary(): ReconcileSummary {
 }
 
 function isAuthorized(request: Request) {
-    const cronSecret = process.env.CRON_SECRET
-    return Boolean(cronSecret && request.headers.get('authorization') === `Bearer ${cronSecret}`)
+    // Dibandingkan dengan waktu konstan. Sebelumnya memakai `===` sehingga
+    // rahasia cron berpotensi dibocorkan lewat timing. Fail-closed bila
+    // CRON_SECRET belum dikonfigurasi (lihat lib/env.schema-v2.example).
+    return isBearerTokenValid(request.headers.get('authorization'), process.env.CRON_SECRET)
 }
 
 export async function GET(request: Request) {
