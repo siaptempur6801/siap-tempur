@@ -164,6 +164,19 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         ],
     },
     {
+        label: 'Instansi',
+        items: [
+            {
+                href: '/admin/organizations',
+                label: 'Instansi & Batch',
+                mobileLabel: 'Instansi',
+                icon: 'Building2',
+                requiresAny: [PERMISSIONS.ORGANIZATION_MANAGE],
+                contextual: false,
+            },
+        ],
+    },
+    {
         label: 'People',
         items: [
             {
@@ -228,6 +241,10 @@ const LANDING_CANDIDATES: Array<{ href: string; requiresAny: PermissionCode[] }>
         ],
     },
     { href: '/admin/content/articles', requiresAny: [PERMISSIONS.CONTENT_READ] },
+    // Instansi didahulukan atas Reports: `SCHOOL_ADMIN` memegang
+    // organization.manage + report.read, dan pekerjaan utamanya adalah
+    // mengelola instansi serta batch-nya, bukan membaca laporan.
+    { href: '/admin/organizations', requiresAny: [PERMISSIONS.ORGANIZATION_MANAGE] },
     { href: '/admin/users', requiresAny: [PERMISSIONS.USER_MANAGE, PERMISSIONS.USER_READ] },
     { href: '/admin/reports', requiresAny: [PERMISSIONS.REPORT_READ] },
     { href: '/admin/audit', requiresAny: [PERMISSIONS.AUDIT_READ] },

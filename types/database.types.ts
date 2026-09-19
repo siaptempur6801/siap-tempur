@@ -1022,6 +1022,74 @@ export type Database = {
                 Args: { p_key: string }
                 Returns: Json
             }
+            /**
+             * MVP CPNS Instansi Managed Service — lihat migration
+             * `20260919160000_organization_instansi_foundation.sql` dan
+             * `20260919170000_organization_admin_rpcs.sql`.
+             *
+             * `authenticated` hanya memegang SELECT pada tabel instansi, jadi
+             * seluruh penulisan lewat RPC ini. Penjaganya menolak kode duplikat,
+             * mengaktifkan batch pada instansi nonaktif, dan menonaktifkan
+             * instansi yang masih punya batch aktif.
+             */
+            admin_list_organizations: {
+                Args: {
+                    p_search: string | null
+                    p_status: string | null
+                    p_limit: number | null
+                    p_offset: number | null
+                }
+                Returns: Json
+            }
+            admin_upsert_organization: {
+                Args: {
+                    p_id: string | null
+                    p_name: string
+                    p_code: string
+                    p_type: string | null
+                    p_city: string | null
+                    p_province: string | null
+                    p_address: string | null
+                    p_contact_name: string | null
+                    p_contact_email: string | null
+                    p_contact_phone: string | null
+                    p_status: string | null
+                    p_notes: string | null
+                }
+                Returns: Json
+            }
+            admin_get_organization: {
+                Args: { p_id: string }
+                Returns: Json
+            }
+            admin_upsert_batch: {
+                Args: {
+                    p_id: string | null
+                    p_organization_id: string
+                    p_code: string
+                    p_name: string
+                    p_starts_at: string | null
+                    p_ends_at: string | null
+                    p_status: string | null
+                    p_notes: string | null
+                }
+                Returns: Json
+            }
+            admin_rotate_batch_invite: {
+                Args: { p_batch_id: string }
+                Returns: Json
+            }
+            admin_list_participants: {
+                Args: {
+                    p_organization_id: string | null
+                    p_batch_id: string | null
+                    p_search: string | null
+                    p_status: string | null
+                    p_limit: number | null
+                    p_offset: number | null
+                }
+                Returns: Json
+            }
         }
         Enums: { [_ in never]: never }
         CompositeTypes: { [_ in never]: never }

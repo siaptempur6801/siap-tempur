@@ -41,6 +41,26 @@ test.describe('Authenticated Admin Workspace closure', () => {
     // token dan katalog 40 fitur, keduanya sebelumnya hanya bisa lewat SQL.
     await expectAdminModule(page, '/admin/entitlements', 'Entitlements')
     await expectAdminModule(page, '/admin/settings', 'Settings')
+    // MVP CPNS Instansi Managed Service §6.1-6.2.
+    await expectAdminModule(page, '/admin/organizations', 'Instansi & Batch')
+  })
+
+  test('ADMIN dapat membuka Instansi & Batch', async ({ page }) => {
+    await page.goto('/admin/organizations')
+    await expect(page.locator('main h1')).toHaveText('Instansi & Batch')
+    await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Daftar instansi', exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Instansi baru', exact: true })).toBeVisible()
+    await expectNoHorizontalOverflow(page)
+
+    // Form instansi baru harus memuat semua kolom yang PRD §6.1 minta,
+    // termasuk kontak PIC yang sebelumnya tidak punya kolom sama sekali.
+    await page.getByRole('link', { name: 'Instansi baru', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Instansi baru', exact: true })).toBeVisible()
+    for (const label of ['Nama instansi', 'Kode', 'Jenis', 'Status', 'Kota', 'Provinsi', 'Alamat', 'Nama PIC', 'Telepon PIC', 'Email PIC', 'Catatan']) {
+      await expect(page.getByText(label, { exact: true }).first()).toBeVisible()
+    }
+    await expectNoHorizontalOverflow(page)
   })
 
   test('ADMIN dapat membuka Settings dan melihat konfigurasi platform', async ({ page }) => {

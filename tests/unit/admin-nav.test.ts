@@ -105,15 +105,16 @@ describe('visibleAdminNavGroups — menu mengikuti permission, bukan satu boolea
         expect(labels(ROLE_PERMISSIONS.CONTENT_REVIEWER)).toEqual(['Review Queue', 'Articles'])
     })
 
-    it('SCHOOL_ADMIN tetap punya permukaan (Reports), bukan menu kosong', () => {
+    it('SCHOOL_ADMIN melihat Instansi & Batch dan Reports', () => {
         // Dulu peran ini tidak mendapat apa pun dan dilempar tanpa penjelasan.
-        expect(labels(ROLE_PERMISSIONS.SCHOOL_ADMIN)).toEqual(['Reports'])
+        // Kini ia punya dua permukaan: pekerjaan utamanya (instansi & batch)
+        // dan laporan.
+        expect(labels(ROLE_PERMISSIONS.SCHOOL_ADMIN)).toEqual(['Instansi & Batch', 'Reports'])
     })
 
     it('grup tanpa item yang lolos tidak dirender sama sekali', () => {
         const groups = visibleAdminNavGroups(ROLE_PERMISSIONS.SCHOOL_ADMIN)
-        expect(groups).toHaveLength(1)
-        expect(groups[0].label).toBe('Insights')
+        expect(groups.map((group) => group.label)).toEqual(['Instansi', 'Insights'])
         expect(groups.every((group) => group.items.length > 0)).toBe(true)
     })
 
@@ -136,18 +137,32 @@ describe('adminLandingPath — setiap peran mendarat di pekerjaannya', () => {
         expect(adminLandingPath(ROLE_PERMISSIONS.CONTENT_REVIEWER)).toBe('/admin/content/review')
     })
 
-    it('SCHOOL_ADMIN mendarat di Reports, bukan dead-end', () => {
+    it('SCHOOL_ADMIN mendarat di Instansi & Batch, bukan dead-end', () => {
         // Ini inti perbaikannya: dulu peran ini tidak punya tujuan sama sekali.
-        expect(adminLandingPath(ROLE_PERMISSIONS.SCHOOL_ADMIN)).toBe('/admin/reports')
+        // Setelah halaman instansi ada, pekerjaan utamanya yang didahulukan
+        // atas laporan.
+        expect(adminLandingPath(ROLE_PERMISSIONS.SCHOOL_ADMIN)).toBe('/admin/organizations')
     })
 
     it('peran tanpa permukaan admin mengembalikan null secara eksplisit', () => {
         // `null` memaksa pemanggil memutuskan; bukan diam-diam dilempar ke halaman
         // orang lain seperti perilaku sebelumnya.
         expect(adminLandingPath([])).toBeNull()
-        expect(adminLandingPath(['organization.manage'])).toBeNull()
         expect(hasAdminSurface([])).toBe(false)
-        expect(hasAdminSurface(['organization.manage'])).toBe(false)
+
+        // `notification.manage` dan `role.manage` belum punya halaman, jadi
+        // pemegangnya memang tidak punya permukaan. `role.manage` tetap berguna
+        // lewat /admin/users, tetapi halaman itu digerbangi user.read/user.manage.
+        expect(adminLandingPath(['notification.manage'])).toBeNull()
+        expect(adminLandingPath(['role.manage'])).toBeNull()
+        expect(hasAdminSurface(['notification.manage'])).toBe(false)
+    })
+
+    it('organization.manage kini punya permukaan sendiri', () => {
+        // Sebelum halaman instansi ada, pemegang tunggal permission ini tidak
+        // punya tujuan sama sekali. Sekarang ia mendarat di Instansi & Batch.
+        expect(adminLandingPath(['organization.manage'])).toBe('/admin/organizations')
+        expect(hasAdminSurface(['organization.manage'])).toBe(true)
     })
 
     it('setiap peran yang punya permukaan mendarat di halaman yang benar-benar ada di menunya', () => {

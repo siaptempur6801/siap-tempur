@@ -39,7 +39,7 @@ import {
 test.describe.configure({ mode: 'serial' })
 test.setTimeout(180_000)
 
-const ALL_MODULES = ['Dashboard', 'Question Bank', 'Review Queue', 'Articles', 'Exams', 'Events', 'Products', 'Orders & Payments', 'Entitlements', 'Users & Roles', 'Reports', 'Audit Log', 'Settings']
+const ALL_MODULES = ['Dashboard', 'Question Bank', 'Review Queue', 'Articles', 'Exams', 'Events', 'Products', 'Orders & Payments', 'Entitlements', 'Instansi & Batch', 'Users & Roles', 'Reports', 'Audit Log', 'Settings']
 
 /** Sidebar yang sedang terlihat. Lihat catatan scope di atas. */
 function sidebar(page: Page): Locator {
@@ -146,14 +146,20 @@ test.describe('Alur peran Admin Workspace', () => {
         }
     })
 
-    test('SCHOOL_ADMIN mendarat di Reports, bukan dead-end', async ({ page }) => {
+    test('SCHOOL_ADMIN mendarat di Instansi & Batch, bukan dead-end', async ({ page }) => {
         const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
         // Tanpa admin.access, peran ini dulu dilempar diam-diam ke /cpns/dashboard.
-        const user = await provisionAndLogin(page, 'SCHOOL_ADMIN', '/admin/reports')
+        // Kini ia mendarat di pekerjaan utamanya: mengelola instansi & batch.
+        const user = await provisionAndLogin(page, 'SCHOOL_ADMIN', '/admin/organizations')
         try {
-            await expect(page).toHaveURL(/\/admin\/reports/)
-            await expect(page.locator('main h1')).toHaveText('Reports')
-            await expectMenus(page, ['Reports'], without(['Reports']))
+            await expect(page).toHaveURL(/\/admin\/organizations/)
+            await expect(page.locator('main h1')).toHaveText('Instansi & Batch')
+            await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+            const visible = ['Instansi & Batch', 'Reports']
+            await expectMenus(page, visible, without(visible))
+
+            // Halaman instansi harus benar-benar membuka, bukan sekadar ada di menu.
+            await expect(page.getByRole('heading', { name: 'Daftar instansi', exact: true })).toBeVisible()
         } finally {
             await cleanupRoleUser(supabaseUrl, user.userId)
         }

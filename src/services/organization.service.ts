@@ -1,0 +1,293 @@
+import { createClient } from '@/lib/utils/supabase/server'
+
+/**
+ * MVP CPNS Instansi Managed Service — akses data instansi & batch.
+ *
+ * Sumber: `docs/notes/prd-cpns-instansi-managed-service.md` §6.1, §6.2, §6.3.
+ *
+ * Semuanya lewat RPC karena `authenticated` hanya memegang SELECT pada tabel
+ * instansi (disaring RLS); penulisan lewat fungsi SECURITY DEFINER yang
+ * memeriksa `organization.manage`.
+ *
+ * Service ini tidak memeriksa permission sendiri — RPC yang menolak, dan
+ * galatnya diteruskan apa adanya. Pemeriksaan izin di UI hanya untuk
+ * menyembunyikan aksi.
+ */
+
+export type OrganizationRow = {
+    id: string
+    type: string
+    name: string
+    code: string
+    address: string | null
+    city: string | null
+    province: string | null
+    contact_name: string | null
+    contact_email: string | null
+    contact_phone: string | null
+    status: string
+    notes: string | null
+    created_at: string | null
+    updated_at: string | null
+    batch_count: number
+    active_batch_count: number
+    participant_count: number
+    member_count: number
+}
+
+export type BatchRow = {
+    id: string
+    code: string
+    name: string
+    invite_token: string
+    starts_at: string | null
+    ends_at: string | null
+    status: string
+    notes: string | null
+    created_at: string | null
+    participant_count: number
+    linked_count: number
+}
+
+export type ParticipantRow = {
+    id: string
+    organization_id: string
+    batch_id: string
+    user_id: string | null
+    participant_code: string
+    full_name_snapshot: string
+    email_snapshot: string | null
+    phone_snapshot: string | null
+    nik: string | null
+    unit: string | null
+    jabatan: string | null
+    status: string
+    registered_at: string | null
+    notes: string | null
+    batch_code: string
+    batch_name: string
+    organization_code: string
+    organization_name: string
+}
+
+export type OrganizationDetail = {
+    organization: OrganizationRow
+    batches: BatchRow[]
+}
+
+export type OrganizationFilters = {
+    search?: string | null
+    status?: string | null
+    limit?: number
+    offset?: number
+}
+
+export type ParticipantFilters = {
+    organizationId?: string | null
+    batchId?: string | null
+    search?: string | null
+    status?: string | null
+    limit?: number
+    offset?: number
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+    if (!value || Array.isArray(value) || typeof value !== 'object') return {}
+    return value as Record<string, unknown>
+}
+
+function asArray(value: unknown): unknown[] {
+    return Array.isArray(value) ? value : []
+}
+
+function str(value: unknown): string {
+    return value == null ? '' : String(value)
+}
+
+function nullableStr(value: unknown): string | null {
+    const text = str(value)
+    return text || null
+}
+
+function num(value: unknown): number {
+    const parsed = Number(value ?? 0)
+    return Number.isFinite(parsed) ? parsed : 0
+}
+
+function toOrganization(row: unknown): OrganizationRow {
+    const source = asObject(row)
+    return {
+        id: str(source.id),
+        type: str(source.type) || 'instansi',
+        name: str(source.name),
+        code: str(source.code),
+        address: nullableStr(source.address),
+        city: nullableStr(source.city),
+        province: nullableStr(source.province),
+        contact_name: nullableStr(source.contact_name),
+        contact_email: nullableStr(source.contact_email),
+        contact_phone: nullableStr(source.contact_phone),
+        status: str(source.status) || 'active',
+        notes: nullableStr(source.notes),
+        created_at: nullableStr(source.created_at),
+        updated_at: nullableStr(source.updated_at),
+        batch_count: num(source.batch_count),
+        active_batch_count: num(source.active_batch_count),
+        participant_count: num(source.participant_count),
+        member_count: num(source.member_count),
+    }
+}
+
+function toBatch(row: unknown): BatchRow {
+    const source = asObject(row)
+    return {
+        id: str(source.id),
+        code: str(source.code),
+        name: str(source.name),
+        invite_token: str(source.invite_token),
+        starts_at: nullableStr(source.starts_at),
+        ends_at: nullableStr(source.ends_at),
+        status: str(source.status) || 'draft',
+        notes: nullableStr(source.notes),
+        created_at: nullableStr(source.created_at),
+        participant_count: num(source.participant_count),
+        linked_count: num(source.linked_count),
+    }
+}
+
+function toParticipant(row: unknown): ParticipantRow {
+    const source = asObject(row)
+    return {
+        id: str(source.id),
+        organization_id: str(source.organization_id),
+        batch_id: str(source.batch_id),
+        user_id: nullableStr(source.user_id),
+        participant_code: str(source.participant_code),
+        full_name_snapshot: str(source.full_name_snapshot),
+        email_snapshot: nullableStr(source.email_snapshot),
+        phone_snapshot: nullableStr(source.phone_snapshot),
+        nik: nullableStr(source.nik),
+        unit: nullableStr(source.unit),
+        jabatan: nullableStr(source.jabatan),
+        status: str(source.status) || 'registered',
+        registered_at: nullableStr(source.registered_at),
+        notes: nullableStr(source.notes),
+        batch_code: str(source.batch_code),
+        batch_name: str(source.batch_name),
+        organization_code: str(source.organization_code),
+        organization_name: str(source.organization_name),
+    }
+}
+
+export class OrganizationService {
+    /** Daftar instansi. Butuh `organization.manage`. */
+    async listOrganizations(filters: OrganizationFilters = {}) {
+        const client = await createClient()
+        const { data, error } = await client.rpc('admin_list_organizations', {
+            p_search: filters.search || null,
+            p_status: filters.status || null,
+            p_limit: filters.limit ?? 50,
+            p_offset: filters.offset ?? 0,
+        })
+        if (error) throw new Error(error.message)
+        const payload = asObject(data)
+        return {
+            organizations: asArray(payload.organizations).map(toOrganization),
+            total: num(payload.total),
+        }
+    }
+
+    /** Detail satu instansi beserta batch-nya. */
+    async getOrganization(id: string): Promise<OrganizationDetail | null> {
+        const client = await createClient()
+        const { data, error } = await client.rpc('admin_get_organization', { p_id: id })
+        if (error) {
+            // Instansi tidak ditemukan bukan kesalahan server; kembalikan null
+            // supaya halaman dapat menampilkan empty state yang jujur.
+            if (error.message.includes('Organization not found')) return null
+            throw new Error(error.message)
+        }
+        const payload = asObject(data)
+        const organization = asObject(payload.organization)
+        if (!organization.id) return null
+        return {
+            organization: toOrganization(organization),
+            batches: asArray(payload.batches).map(toBatch),
+        }
+    }
+
+    /** Daftar peserta, dapat disaring per instansi maupun batch. */
+    async listParticipants(filters: ParticipantFilters = {}) {
+        const client = await createClient()
+        const { data, error } = await client.rpc('admin_list_participants', {
+            p_organization_id: filters.organizationId || null,
+            p_batch_id: filters.batchId || null,
+            p_search: filters.search || null,
+            p_status: filters.status || null,
+            p_limit: filters.limit ?? 100,
+            p_offset: filters.offset ?? 0,
+        })
+        if (error) throw new Error(error.message)
+        const payload = asObject(data)
+        return {
+            participants: asArray(payload.participants).map(toParticipant),
+            total: num(payload.total),
+        }
+    }
+}
+
+export const organizationService = new OrganizationService()
+
+export const ORGANIZATION_STATUS_LABELS: Record<string, string> = {
+    active: 'Aktif',
+    inactive: 'Nonaktif',
+}
+
+export const ORGANIZATION_TYPE_LABELS: Record<string, string> = {
+    instansi: 'Instansi',
+    sekolah: 'Sekolah',
+    komunitas: 'Komunitas',
+    lainnya: 'Lainnya',
+}
+
+export const BATCH_STATUS_LABELS: Record<string, string> = {
+    draft: 'Draft',
+    active: 'Aktif',
+    closed: 'Ditutup',
+    archived: 'Diarsipkan',
+}
+
+export const PARTICIPANT_STATUS_LABELS: Record<string, string> = {
+    registered: 'Terdaftar',
+    active: 'Aktif',
+    completed: 'Selesai',
+    withdrawn: 'Mengundurkan diri',
+}
+
+export function organizationStatusLabel(status: string) {
+    return ORGANIZATION_STATUS_LABELS[status] || status
+}
+
+export function organizationTypeLabel(type: string) {
+    return ORGANIZATION_TYPE_LABELS[type] || type
+}
+
+export function batchStatusLabel(status: string) {
+    return BATCH_STATUS_LABELS[status] || status
+}
+
+export function participantStatusLabel(status: string) {
+    return PARTICIPANT_STATUS_LABELS[status] || status
+}
+
+/**
+ * Tautan self-onboarding peserta (PRD §10A.2).
+ *
+ * PRD menyarankan `/cpns/join/[token]`; rute itu dibuat pada Fase 3. Fungsi ini
+ * ada di sini supaya bentuk tautannya ditentukan di SATU tempat — admin hanya
+ * menyalinnya, dan halaman join memakai bentuk yang sama.
+ */
+export function batchInviteUrl(inviteToken: string, baseUrl?: string) {
+    const path = `/cpns/join/${inviteToken}`
+    return baseUrl ? `${baseUrl.replace(/\/$/, '')}${path}` : path
+}
