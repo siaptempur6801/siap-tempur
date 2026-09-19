@@ -463,3 +463,161 @@ grant execute on function public.admin_get_organization(uuid) to authenticated;
 grant execute on function public.admin_upsert_batch(uuid, uuid, text, text, timestamptz, timestamptz, text, text) to authenticated;
 grant execute on function public.admin_rotate_batch_invite(uuid) to authenticated;
 grant execute on function public.admin_list_participants(uuid, uuid, text, text, integer, integer) to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 7. Hapus instansi. Permission: organization.manage.
+--
+--    Ditambahkan setelah terlihat bahwa instansi yang salah ketik TIDAK PERNAH
+--    bisa dihapus — satu-satunya jalan adalah menonaktifkannya, dan daftar
+--    instansi jadi penuh sampah.
+--
+--    PENJAGA: instansi yang sudah punya peserta TIDAK boleh dihapus. Peserta
+--    membawa snapshot dan riwayat partisipasi yang menjadi dasar export (§7.7)
+--    serta KPI "0 data antar instansi tercampur" (§11). Batch ikut terhapus
+--    lewat ON DELETE CASCADE hanya bila instansinya memang masih kosong.
+-- -----------------------------------------------------------------------------
+create or replace function public.admin_delete_organization(p_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path to ''
+as $function$
+declare
+    v_actor   uuid := auth.uid();
+    v_name    text;
+    v_peserta integer;
+    v_deleted integer := 0;
+begin
+    if v_actor is null then
+        raise exception 'Authentication required';
+    end if;
+
+    if not app_private.current_user_has_permission('organization.manage') then
+        raise exception 'Organization manage permission required';
+    end if;
+
+    select name into v_name from public.organizations where id = p_id;
+    if v_name is null then
+        raise exception 'Organization not found';
+    end if;
+
+    select count(*) into v_peserta
+      from public.organization_participants where organization_id = p_id;
+
+    if v_peserta > 0 then
+        raise exception 'Cannot delete an organization that has % participants', v_peserta;
+    end if;
+
+    delete from public.organizations where id = p_id;
+    get diagnostics v_deleted = row_count;
+
+    return jsonb_build_object('id', p_id, 'name', v_name, 'deleted', v_deleted > 0);
+end;
+$function$;
+
+revoke all on function public.admin_delete_organization(uuid) from public, anon;
+grant execute on function public.admin_delete_organization(uuid) to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- 8. Keluarkan peserta dari batch. Permission: organization.manage.
+--
+--    Dibutuhkan karena peserta bisa bergabung ke batch yang salah lewat tautan
+--    undangan, dan tanpa ini satu-satunya jalan adalah menghapus seluruh
+--    instansi — yang justru ditolak bila sudah ada peserta lain.
+--
+--    PENJAGA: peserta yang SUDAH mengerjakan ujian tidak boleh dihapus. Attempt
+--    instansi adalah dasar export (§7.7), ranking (§7.6), dan KPI "0 data antar
+--    instansi tercampur" (§11); menghapus barisnya akan membuat attempt itu
+--    kehilangan konteks instansi. Untuk kasus itu, ubah statusnya menjadi
+--    'withdrawn'.
+-- -----------------------------------------------------------------------------
+create or replace function public.admin_remove_participant(p_participant_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path to ''
+as $function$
+declare
+    v_actor     uuid := auth.uid();
+    v_row       public.organization_participants%rowtype;
+    v_attempts  integer;
+    v_deleted   integer := 0;
+begin
+    if v_actor is null then
+        raise exception 'Authentication required';
+    end if;
+
+    if not app_private.current_user_has_permission('organization.manage') then
+        raise exception 'Organization manage permission required';
+    end if;
+
+    select * into v_row from public.organization_participants where id = p_participant_id for update;
+    if not found then
+        raise exception 'Participant not found';
+    end if;
+
+    select count(*) into v_attempts
+      from public.exam_attempts a
+     where a.participant_id = p_participant_id;
+
+    if v_attempts > 0 then
+        raise exception 'Cannot remove a participant who has already taken % exam(s)', v_attempts;
+    end if;
+
+    delete from public.organization_participants where id = p_participant_id;
+    get diagnostics v_deleted = row_count;
+
+    return jsonb_build_object(
+        'id', p_participant_id,
+        'participant_code', v_row.participant_code,
+        'deleted', v_deleted > 0
+    );
+end;
+$function$;
+
+-- -----------------------------------------------------------------------------
+-- 9. Ubah status peserta. Permission: organization.manage.
+--    Jalur untuk peserta yang sudah mengerjakan ujian: tandai mundur tanpa
+--    menghapus riwayatnya.
+-- -----------------------------------------------------------------------------
+create or replace function public.admin_set_participant_status(p_participant_id uuid, p_status text)
+returns jsonb
+language plpgsql
+security definer
+set search_path to ''
+as $function$
+declare
+    v_actor  uuid := auth.uid();
+    v_status text := lower(btrim(coalesce(p_status, '')));
+    v_updated integer := 0;
+begin
+    if v_actor is null then
+        raise exception 'Authentication required';
+    end if;
+
+    if not app_private.current_user_has_permission('organization.manage') then
+        raise exception 'Organization manage permission required';
+    end if;
+
+    if v_status not in ('registered', 'active', 'completed', 'withdrawn') then
+        raise exception 'Unknown participant status';
+    end if;
+
+    update public.organization_participants
+       set status = v_status,
+           updated_at = now()
+     where id = p_participant_id;
+    get diagnostics v_updated = row_count;
+
+    if v_updated = 0 then
+        raise exception 'Participant not found';
+    end if;
+
+    return jsonb_build_object('id', p_participant_id, 'status', v_status);
+end;
+$function$;
+
+revoke all on function public.admin_remove_participant(uuid) from public, anon;
+revoke all on function public.admin_set_participant_status(uuid, text) from public, anon;
+grant execute on function public.admin_remove_participant(uuid) to authenticated;
+grant execute on function public.admin_set_participant_status(uuid, text) to authenticated;

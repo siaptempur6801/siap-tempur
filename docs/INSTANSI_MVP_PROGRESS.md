@@ -15,7 +15,7 @@ Terakhir diperbarui: 2026-09-19
 | 1 | Schema instansi, batch, peserta | ✅ **selesai** |
 | 2 | Metadata session untuk source instansi | ✅ **selesai** |
 | 3 | UI internal pengelolaan instansi & batch | ✅ **selesai** |
-| 4 | Flow join peserta via token/kode batch | ⏳ belum |
+| 4 | Flow join peserta via token/kode batch | ✅ **selesai** |
 | 5 | Import peserta | ⏳ belum |
 | 6 | Template ujian & assignment | ⏳ belum |
 | 7 | Dashboard monitoring | ⏳ belum |
@@ -124,6 +124,47 @@ Grup nav baru **Instansi** di `lib/admin-nav.ts`. `SCHOOL_ADMIN`
 (`organization.manage` + `report.read`) kini **mendarat di Instansi & Batch**,
 bukan di Reports — pekerjaan utamanya didahulukan.
 
+## Fase 3 — Self-onboarding peserta
+
+Migration:
+`supabase/migrations/20260919180000_organization_self_onboarding.sql`
+
+RPC: `get_batch_invite` (pratinjau), `join_batch_with_invite` (bergabung),
+`get_my_organization_memberships` (dashboard peserta §10A.3).
+Halaman: `/cpns/join/[token]`.
+
+Halaman join sengaja berdiri DI LUAR `/admin` — pesertanya bukan admin, dan
+shell admin akan menolaknya. Rute `/cpns/join` juga tidak ada di
+`PROTECTED_ROUTES` middleware, jadi tidak ada pengalihan yang mengganggu.
+
+**Penjaga yang diuji** (11 langkah, `scripts/db-verify/organization-join-flow.sql`):
+
+- token palsu ditolak; batch tertutup menolak peserta baru;
+- bergabung bersifat IDEMPOTEN — dibuka dua kali tetap satu baris dengan kode
+  yang sama, ditegakkan lewat unique index `(batch_id, user_id)` plus penguncian
+  baris batch, bukan pengecekan di UI;
+- kode peserta dibuat otomatis (`<KODE-BATCH>-NNN`) di dalam baris batch yang
+  terkunci, sehingga dua peserta yang bergabung bersamaan tidak bentrok;
+- **baris peserta hasil IMPORT diklaim berdasarkan email**, bukan diduplikasi:
+  kode import dipakai ulang, nama import dipertahankan, status naik
+  `registered` → `active`, dan tetap hanya ada SATU baris.
+
+### Dua celah yang ketahuan saat E2E dijalankan
+
+1. **Instansi salah ketik tidak pernah bisa dihapus.** Satu-satunya jalan adalah
+   menonaktifkannya, dan daftar instansi jadi penuh sampah — terbukti: 12
+   instansi sampah menumpuk di staging dari run E2E yang gagal. Ditambahkan
+   `admin_delete_organization` dengan penjaga: instansi yang masih punya peserta
+   TIDAK boleh dihapus.
+2. **Peserta yang salah gabung tidak bisa dikeluarkan.** Menghapus instansinya
+   justru ditolak karena sudah ada peserta. Ditambahkan
+   `admin_remove_participant` (menolak bila peserta sudah mengerjakan ujian —
+   attempt instansi adalah dasar export §7.7) dan `admin_set_participant_status`
+   sebagai jalur untuk kasus itu.
+
+Keduanya ditemukan karena E2E-nya membersihkan dirinya sendiri: tanpa cleanup,
+sampahnya tidak terlihat.
+
 ## Verifikasi
 
 | Pemeriksaan | Hasil |
@@ -132,14 +173,18 @@ bukan di Reports — pekerjaan utamanya didahulukan.
 | `eslint` | lolos |
 | Unit test | **458 / 458** (70 file) |
 | `npm run build` | lolos |
-| Gate admin | **22 / 22** |
+| Gate admin | **24 / 24** |
+| Gate TKA | lolos |
+| Gate paritas DB | hijau — 174 = 174 migrasi, tanpa selisih tak terduga |
 | Alur CRUD instansi/batch | **11 / 11** sesuai harapan |
+| Alur join & klaim peserta | **11 / 11** sesuai harapan |
+| E2E alur penuh | admin buat instansi → batch → peserta bergabung → admin melihat peserta "Tertaut" → cleanup |
 
 ## Yang BELUM
 
-- **Migration Fase 1 & 1b belum diterapkan ke produksi** → gate paritas merah
-  sampai itu diputuskan.
-- Fase 3–7 (join peserta, import, template & assignment, monitoring, export).
+- Fase 4–7 (import peserta, template & assignment, monitoring, export XLSX).
+- Peran klien instansi (`organization_members` dengan `owner`/`manager`/`staff`)
+  belum punya UI — §15 menetapkan klien belum menjadi admin sistem pada MVP.
 - `organization_members` belum punya UI. PRD §9 menyebutnya untuk role klien
   (`owner`/`manager`/`staff`), dan §15 menetapkan klien belum menjadi admin
   sistem pada MVP — jadi belum dipakai.

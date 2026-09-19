@@ -24,7 +24,14 @@ import {
     organizationTypeLabel,
     participantStatusLabel,
 } from '@/src/services/organization.service'
-import { rotateBatchInviteAction, saveBatchAction, saveOrganizationAction } from '@/app/actions/admin-organization'
+import {
+    deleteOrganizationAction,
+    removeParticipantAction,
+    rotateBatchInviteAction,
+    saveBatchAction,
+    saveOrganizationAction,
+    setParticipantStatusAction,
+} from '@/app/actions/admin-organization'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -53,6 +60,7 @@ type SearchParams = {
 
 const ORG_TYPES = ['instansi', 'sekolah', 'komunitas', 'lainnya'] as const
 const BATCH_STATUSES = ['draft', 'active', 'closed', 'archived'] as const
+const PARTICIPANT_STATUSES = ['registered', 'active', 'completed', 'withdrawn'] as const
 
 const ORG_STATUS_VARIANT: Record<string, 'green' | 'neutral'> = { active: 'green', inactive: 'neutral' }
 const BATCH_STATUS_VARIANT: Record<string, 'green' | 'neutral' | 'blue' | 'orange'> = {
@@ -258,7 +266,7 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                             </select>
                         </Field>
                         <Field label="Status">
-                            <select className={adminInputClass} name="status" defaultValue={editingOrg?.status ?? 'active'}>
+                            <select className={adminInputClass} name="status" aria-label="Status instansi" defaultValue={editingOrg?.status ?? 'active'}>
                                 <option value="active">Aktif</option>
                                 <option value="inactive">Nonaktif</option>
                             </select>
@@ -291,6 +299,21 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                     </form>
 
                     {editingOrg ? (
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 px-5 py-4">
+                            <p className="text-xs font-semibold text-slate-500">
+                                Hapus hanya bisa bila instansinya belum punya peserta. Bila sudah ada, nonaktifkan saja supaya riwayat dan export tetap utuh.
+                            </p>
+                            <form action={deleteOrganizationAction}>
+                                <input type="hidden" name="id" value={editingOrg.id}/>
+                                <input type="hidden" name="name" value={editingOrg.name}/>
+                                <input type="hidden" name="q" value={params.q || ''}/>
+                                <input type="hidden" name="status" value={params.status || ''}/>
+                                <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100">Hapus instansi</button>
+                            </form>
+                        </div>
+                    ) : null}
+
+                    {editingOrg ? (
                         <div className="border-t border-slate-200 bg-slate-50/70 p-5">
                             <AdminSectionHeading
                                 title="Batch"
@@ -302,7 +325,10 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                 <form action={saveBatchAction} className="mt-4 grid gap-4 rounded-xl border border-blue-200 bg-blue-50/40 p-4 lg:grid-cols-3">
                                     <input type="hidden" name="batch_id" value={selectedBatch?.id ?? ''}/>
                                     <input type="hidden" name="organization_id" value={editingOrg.id}/>
-                                    <input type="hidden" name="org" value={editingOrg.id}/>
+                                    {/* Konteks filter dibawa supaya menyimpan batch tidak
+                                        mengembalikan admin ke daftar tanpa filternya. */}
+                                    <input type="hidden" name="q" value={params.q || ''}/>
+                                    <input type="hidden" name="status" value={params.status || ''}/>
                                     <Field label="Nama batch" className="lg:col-span-2">
                                         <input className={adminInputClass} name="name" required minLength={2} defaultValue={selectedBatch?.name ?? ''} placeholder="CPNS 2026 Batch A"/>
                                     </Field>
@@ -316,7 +342,7 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                         <input className={adminInputClass} name="ends_at" type="datetime-local" defaultValue={localDateTime(selectedBatch?.ends_at ?? null)}/>
                                     </Field>
                                     <Field label="Status">
-                                        <select className={adminInputClass} name="status" defaultValue={selectedBatch?.status ?? 'draft'}>
+                                        <select className={adminInputClass} name="batch_status" aria-label="Status batch" defaultValue={selectedBatch?.status ?? 'draft'}>
                                             {BATCH_STATUSES.map((status) => <option key={status} value={status}>{batchStatusLabel(status)}</option>)}
                                         </select>
                                     </Field>
@@ -396,6 +422,7 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                                                             <th className="px-3 py-2">Kontak</th>
                                                                             <th className="px-3 py-2">Akun</th>
                                                                             <th className="px-3 py-2">Status</th>
+                                                                            <th className="px-3 py-2 text-right">Aksi</th>
                                                                         </tr>
                                                                     </thead>
                                                                     <tbody className="divide-y divide-slate-100">
@@ -416,6 +443,30 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                                                                         : <AdminBadge variant="orange">Belum</AdminBadge>}
                                                                                 </td>
                                                                                 <td className="px-3 py-2.5"><AdminBadge variant={PARTICIPANT_STATUS_VARIANT[participant.status] || 'neutral'}>{participantStatusLabel(participant.status)}</AdminBadge></td>
+                                                                                <td className="px-3 py-2.5">
+                                                                                    <div className="flex items-center justify-end gap-1.5">
+                                                                                        <form action={setParticipantStatusAction} className="flex items-center gap-1.5">
+                                                                                            <input type="hidden" name="participant_id" value={participant.id}/>
+                                                                                            <input type="hidden" name="org" value={editingOrg.id}/>
+                                                                                            <input type="hidden" name="batch" value={batch.id}/>
+                                                                                            <input type="hidden" name="q" value={params.q || ''}/>
+                                                                                            <input type="hidden" name="status" value={params.status || ''}/>
+                                                                                            <select className={`${adminInputClass} h-8 py-0 text-[11px]`} name="participant_status" defaultValue={participant.status} aria-label={`Status ${participant.participant_code}`}>
+                                                                                                {PARTICIPANT_STATUSES.map((status) => <option key={status} value={status}>{participantStatusLabel(status)}</option>)}
+                                                                                            </select>
+                                                                                            <button className={`${adminSecondaryButtonClass} h-8 min-h-0 px-2 text-[11px]`}>Ubah</button>
+                                                                                        </form>
+                                                                                        <form action={removeParticipantAction}>
+                                                                                            <input type="hidden" name="participant_id" value={participant.id}/>
+                                                                                            <input type="hidden" name="participant_code" value={participant.participant_code}/>
+                                                                                            <input type="hidden" name="org" value={editingOrg.id}/>
+                                                                                            <input type="hidden" name="batch" value={batch.id}/>
+                                                                                            <input type="hidden" name="q" value={params.q || ''}/>
+                                                                                            <input type="hidden" name="status" value={params.status || ''}/>
+                                                                                            <button className="text-[11px] font-extrabold text-red-600 hover:text-red-700" title="Keluarkan peserta">Keluarkan</button>
+                                                                                        </form>
+                                                                                    </div>
+                                                                                </td>
                                                                             </tr>
                                                                         ))}
                                                                     </tbody>

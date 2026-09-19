@@ -144,7 +144,7 @@ export default defineConfig({
              * lalu membersihkannya di `finally`.
              */
             name: 'chromium-admin-roles',
-            testMatch: /.*19-admin-role-navigation\.spec\.ts/,
+            testMatch: /.*(?:19-admin-role-navigation|20-instansi-join)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
               storageState: { cookies: [], origins: [] },

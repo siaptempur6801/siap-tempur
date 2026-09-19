@@ -291,3 +291,138 @@ export function batchInviteUrl(inviteToken: string, baseUrl?: string) {
     const path = `/cpns/join/${inviteToken}`
     return baseUrl ? `${baseUrl.replace(/\/$/, '')}${path}` : path
 }
+
+/* ------------------------------------------------------------------ self-onboarding */
+
+export type BatchInvite = {
+    found: boolean
+    joinable: boolean
+    /** Alasan bila tidak bisa bergabung; dipakai halaman untuk menjelaskan. */
+    reason: string | null
+    alreadyJoined: boolean
+    batch: { id: string; code: string; name: string; status: string; starts_at: string | null; ends_at: string | null } | null
+    organization: { id: string; name: string; code: string; city: string | null; province: string | null; status: string } | null
+}
+
+export type JoinResult = {
+    joined: boolean
+    alreadyJoined: boolean
+    claimed: boolean
+    participantCode: string
+    batchId: string
+    organizationId: string
+}
+
+export type Membership = {
+    participant_id: string
+    participant_code: string
+    status: string
+    batch_id: string
+    batch_code: string
+    batch_name: string
+    batch_status: string
+    starts_at: string | null
+    ends_at: string | null
+    organization_id: string
+    organization_name: string
+    organization_code: string
+}
+
+/** Alasan yang bisa dibaca manusia untuk `BatchInvite.reason`. */
+export const INVITE_REASON_LABELS: Record<string, string> = {
+    already_joined: 'Anda sudah terdaftar di batch ini.',
+    batch_closed: 'Batch ini sudah ditutup dan tidak menerima peserta baru.',
+    organization_inactive: 'Instansi ini sedang nonaktif.',
+}
+
+export class OrganizationInviteService {
+    /** Pratinjau batch dari token undangan. Butuh login. */
+    async getInvite(token: string): Promise<BatchInvite> {
+        const client = await createClient()
+        const { data, error } = await client.rpc('get_batch_invite', { p_token: token })
+        if (error) throw new Error(error.message)
+        const payload = asObject(data)
+        const batch = asObject(payload.batch)
+        const organization = asObject(payload.organization)
+        const found = payload.found === true
+        return {
+            found,
+            joinable: payload.joinable === true,
+            reason: nullableStr(payload.reason),
+            alreadyJoined: payload.already_joined === true,
+            batch: found && batch.id
+                ? {
+                    id: str(batch.id),
+                    code: str(batch.code),
+                    name: str(batch.name),
+                    status: str(batch.status),
+                    starts_at: nullableStr(batch.starts_at),
+                    ends_at: nullableStr(batch.ends_at),
+                }
+                : null,
+            organization: found && organization.id
+                ? {
+                    id: str(organization.id),
+                    name: str(organization.name),
+                    code: str(organization.code),
+                    city: nullableStr(organization.city),
+                    province: nullableStr(organization.province),
+                    status: str(organization.status),
+                }
+                : null,
+        }
+    }
+
+    /** Bergabung ke batch. Selalu atas nama pemanggil; user_id tidak dari klien. */
+    async join(token: string, profile: { fullName?: string; phone?: string; unit?: string; jabatan?: string } = {}): Promise<JoinResult> {
+        const client = await createClient()
+        const { data, error } = await client.rpc('join_batch_with_invite', {
+            p_token: token,
+            p_full_name: profile.fullName || null,
+            p_phone: profile.phone || null,
+            p_unit: profile.unit || null,
+            p_jabatan: profile.jabatan || null,
+        })
+        if (error) throw new Error(error.message)
+        const payload = asObject(data)
+        return {
+            joined: payload.joined === true,
+            alreadyJoined: payload.already_joined === true,
+            claimed: payload.claimed === true,
+            participantCode: str(payload.participant_code),
+            batchId: str(payload.batch_id),
+            organizationId: str(payload.organization_id),
+        }
+    }
+
+    /** Keanggotaan instansi milik pemanggil, untuk dashboard peserta (PRD §10A.3). */
+    async listMyMemberships(): Promise<Membership[]> {
+        const client = await createClient()
+        const { data, error } = await client.rpc('get_my_organization_memberships', {})
+        if (error) throw new Error(error.message)
+        return asArray(asObject(data).memberships).map((row): Membership => {
+            const item = asObject(row)
+            return {
+                participant_id: str(item.participant_id),
+                participant_code: str(item.participant_code),
+                status: str(item.status),
+                batch_id: str(item.batch_id),
+                batch_code: str(item.batch_code),
+                batch_name: str(item.batch_name),
+                batch_status: str(item.batch_status),
+                starts_at: nullableStr(item.starts_at),
+                ends_at: nullableStr(item.ends_at),
+                organization_id: str(item.organization_id),
+                organization_name: str(item.organization_name),
+                organization_code: str(item.organization_code),
+            }
+        })
+    }
+}
+
+export const organizationInviteService = new OrganizationInviteService()
+
+export function inviteReasonLabel(reason: string | null) {
+    if (!reason) return ''
+    return INVITE_REASON_LABELS[reason] || reason
+}
