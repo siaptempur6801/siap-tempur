@@ -111,7 +111,10 @@ function orgBack(form: FormData): Back {
     if (status) params.status = status
     const org = text(form, 'organization_id') || text(form, 'org') || text(form, 'id')
     if (org) params.org = org
-    const batch = text(form, 'batch_id')
+    // Form batch memakai `batch_id`; form peserta memakai `batch`. Keduanya harus
+    // dibaca — tanpa itu, mengeluarkan peserta atau mengubah statusnya menutup
+    // panel peserta dan memaksa admin membukanya lagi.
+    const batch = text(form, 'batch_id') || text(form, 'batch')
     if (batch) params.batch = batch
     return { path: '/admin/organizations', params }
 }

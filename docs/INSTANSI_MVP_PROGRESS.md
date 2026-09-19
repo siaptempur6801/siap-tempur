@@ -16,7 +16,7 @@ Terakhir diperbarui: 2026-09-19
 | 2 | Metadata session untuk source instansi | ✅ **selesai** |
 | 3 | UI internal pengelolaan instansi & batch | ✅ **selesai** |
 | 4 | Flow join peserta via token/kode batch | ✅ **selesai** |
-| 5 | Import peserta | ⏳ belum |
+| 5 | Import peserta | ✅ **selesai** |
 | 6 | Template ujian & assignment | ⏳ belum |
 | 7 | Dashboard monitoring | ⏳ belum |
 | 8 | Export XLSX per instansi/batch | ⏳ belum |
@@ -165,24 +165,89 @@ shell admin akan menolaknya. Rute `/cpns/join` juga tidak ada di
 Keduanya ditemukan karena E2E-nya membersihkan dirinya sendiri: tanpa cleanup,
 sampahnya tidak terlihat.
 
+## Fase 4 — Bulk import peserta
+
+Migration:
+`supabase/migrations/20260919190000_organization_participant_import.sql`
+RPC: `admin_import_participants(p_batch_id, p_rows, p_dry_run)`.
+UI: `components/admin/ParticipantImportPanel.tsx` di kartu batch.
+
+### Kenapa satu RPC untuk preview DAN commit
+
+Validasi ada di SATU jalur kode dengan `p_dry_run`. Kalau preview divalidasi di
+TypeScript dan commit di SQL, keduanya pasti menyimpang cepat atau lambat — dan
+pengguna akan melihat "preview bersih" lalu ditolak saat menekan Impor.
+
+### Pemenuhan §7.2.1
+
+| Kebutuhan | Cara |
+|---|---|
+| template CSV baku | tombol Template, dihasilkan dari kolom yang sama dengan yang divalidasi |
+| preview sebelum submit | `p_dry_run = true` |
+| validasi per baris | hasil per baris lengkap dengan **nomor baris di berkas asli** |
+| dedupe email/phone/kode | ketiganya diperiksa, di dalam berkas maupun terhadap data batch |
+| import idempotent | mengunggah ulang berkas yang sama dilaporkan `duplicate`, bukan digandakan |
+| file error yang bisa diunduh | tombol Berkas kesalahan berisi baris gagal + kolom `line` dan `errors` |
+
+Baris bermasalah **tidak** membatalkan baris yang sah, dan tombol Impor diblokir
+selama masih ada baris error — supaya impor sebagian tidak terjadi tanpa disadari.
+
+Parser CSV ditulis sendiri (`lib/csv.ts`, 32 unit test) karena repo belum punya
+pustakanya. Yang ditangani: BOM UTF-8 dari Excel Windows, pemisah `;` dari Excel
+locale Indonesia, field berkutip berisi koma dan baris baru, serta kutip ganda.
+
+### Bug yang ketahuan saat mengerjakan fase ini
+
+1. **Client component menyeret modul server ke bundle browser.** Panel import
+   mengimpor tipe dan konstanta dari `organization.service`, yang mengimpor
+   `lib/utils/supabase/server.ts`. TypeScript tidak menangkapnya (tipe dihapus
+   saat kompilasi, yang tersisa justru `import` nilai), tetapi build gagal:
+   `./lib/utils/supabase/server.ts [Client Component Browser]`. Kontrak bersama
+   dipindah ke `lib/participant-import.ts` yang murni.
+2. **Tombol "Impor sekarang" tidak pernah menjalankan impor.** Tiga pendekatan
+   gagal SENYAP — tanpa galat apa pun, panel hanya menampilkan ulang hasil
+   pemeriksaan, sehingga tampak seperti tombolnya rusak:
+   `<button name="mode" value="commit">`, lalu field `mode` yang diisi lewat DOM
+   di `onClick`, lalu `formAction={commitAction}` pada tombol. Yang bekerja:
+   **dua `<form>` terpisah**, masing-masing dengan action-nya sendiri.
+3. **Mengeluarkan peserta menutup panel peserta.** `orgBack` membaca `batch_id`,
+   sedangkan form peserta mengirim `batch`. Sekarang keduanya dibaca.
+
+### Empat bug pada E2E-nya sendiri
+
+Ditemukan karena pembersihan diperketat, bukan karena fiturnya salah:
+
+- `locator.count()` **tidak menunggu render**, sehingga blok pembersihan
+  terlewat tanpa gagal.
+- `toContainText('dihapus')` cocok pada pesan **GALAT** ("...tidak bisa
+  dihapus..."), jadi assertion lolos justru ketika pembersihan gagal.
+- Memeriksa pesan status di dalam loop: setelah penghapusan pertama, pesan
+  "…dikeluarkan…" sudah ada di layar sehingga pemeriksaan berikutnya lolos
+  seketika — loop berputar lebih cepat daripada server menyelesaikan permintaan,
+  menyisakan peserta yang tidak terhapus. Diganti penantian **jumlah baris**.
+- `fill()` pada textarea terkendali setelah sebuah server action dapat kalah oleh
+  render ulang; halaman dimuat ulang di antara dua kasus berkas.
+
 ## Verifikasi
 
 | Pemeriksaan | Hasil |
 |---|---|
 | `tsc --noEmit` | lolos |
 | `eslint` | lolos |
-| Unit test | **458 / 458** (70 file) |
+| Unit test | **490 / 490** (71 file) — 32 di antaranya `lib/csv.ts` |
 | `npm run build` | lolos |
-| Gate admin | **24 / 24** |
+| Gate admin | **25 / 25** |
 | Gate TKA | lolos |
-| Gate paritas DB | hijau — 174 = 174 migrasi, tanpa selisih tak terduga |
+| Gate paritas DB | hijau — 175 = 175 migrasi, tanpa selisih tak terduga |
 | Alur CRUD instansi/batch | **11 / 11** sesuai harapan |
 | Alur join & klaim peserta | **11 / 11** sesuai harapan |
-| E2E alur penuh | admin buat instansi → batch → peserta bergabung → admin melihat peserta "Tertaut" → cleanup |
+| Alur bulk import | **19 / 19** sesuai harapan |
+| E2E join peserta | admin buat instansi → batch → peserta bergabung → admin melihat "Tertaut" |
+| E2E bulk import | preview 2 sah + 1 rusak → impor diblokir → berkas diperbaiki → 3 diimpor → tampil di daftar |
 
 ## Yang BELUM
 
-- Fase 4–7 (import peserta, template & assignment, monitoring, export XLSX).
+- Fase 6–7 (template & assignment ujian, dashboard monitoring, export XLSX).
 - Peran klien instansi (`organization_members` dengan `owner`/`manager`/`staff`)
   belum punya UI — §15 menetapkan klien belum menjadi admin sistem pada MVP.
 - `organization_members` belum punya UI. PRD §9 menyebutnya untuk role klien

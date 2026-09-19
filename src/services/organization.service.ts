@@ -426,3 +426,65 @@ export function inviteReasonLabel(reason: string | null) {
     if (!reason) return ''
     return INVITE_REASON_LABELS[reason] || reason
 }
+
+/* ---------------------------------------------------------------- bulk import */
+
+// Kontrak import tinggal di `lib/participant-import.ts` (modul murni) karena
+// dipakai bersama client component; mengimpornya dari sini akan menyeret modul
+// server ke bundle browser dan menggagalkan build.
+export type {
+    ImportPreview,
+    ImportRow,
+    ImportRowResult,
+    ImportRowStatus,
+} from '@/lib/participant-import'
+export {
+    IMPORT_STATUS_LABELS,
+    PARTICIPANT_IMPORT_COLUMNS,
+    PARTICIPANT_IMPORT_COLUMN_LABELS,
+    PARTICIPANT_IMPORT_MAX_ROWS,
+    PARTICIPANT_IMPORT_REQUIRED_COLUMNS,
+    PARTICIPANT_IMPORT_SAMPLE,
+} from '@/lib/participant-import'
+
+export class ParticipantImportService {
+    /**
+     * Validasi (dan bila `dryRun` false, sekaligus simpan) baris import.
+     *
+     * Satu RPC untuk preview dan commit: validasinya ada di SATU jalur kode,
+     * sehingga hasil preview tidak mungkin berbeda dari hasil commit.
+     */
+    async import(batchId: string, rows: import('@/lib/participant-import').ImportRow[], dryRun: boolean): Promise<import('@/lib/participant-import').ImportPreview> {
+        const client = await createClient()
+        const { data, error } = await client.rpc('admin_import_participants', {
+            p_batch_id: batchId,
+            p_rows: rows as never,
+            p_dry_run: dryRun,
+        })
+        if (error) throw new Error(error.message)
+        const payload = asObject(data)
+        return {
+            dryRun: payload.dry_run === true,
+            total: num(payload.total),
+            ok: num(payload.ok),
+            duplicate: num(payload.duplicate),
+            error: num(payload.error),
+            imported: num(payload.imported),
+            rows: asArray(payload.rows).map((row): import('@/lib/participant-import').ImportRowResult => {
+                const item = asObject(row)
+                const status = str(item.status)
+                return {
+                    line: num(item.line),
+                    status: status === 'ok' || status === 'duplicate' ? status : 'error',
+                    participant_code: str(item.participant_code),
+                    full_name: str(item.full_name),
+                    email: str(item.email),
+                    phone: str(item.phone),
+                    errors: asArray(item.errors).map(str).filter(Boolean),
+                }
+            }),
+        }
+    }
+}
+
+export const participantImportService = new ParticipantImportService()

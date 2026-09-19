@@ -14,6 +14,7 @@ import {
     adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
 import { cn } from '@/lib/utils'
+import ParticipantImportPanel from '@/components/admin/ParticipantImportPanel'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import {
@@ -473,6 +474,8 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                                                 </table>
                                                             </div>
                                                         )}
+
+                                                        <ParticipantImportPanel batchId={batch.id} batchCode={batch.code}/>
                                                     </div>
                                                 ) : null}
                                             </div>

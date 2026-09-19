@@ -1079,6 +1079,10 @@ export type Database = {
                 Args: { p_batch_id: string }
                 Returns: Json
             }
+            admin_import_participants: {
+                Args: { p_batch_id: string; p_rows: Json; p_dry_run: boolean | null }
+                Returns: Json
+            }
             admin_delete_organization: {
                 Args: { p_id: string }
                 Returns: Json
