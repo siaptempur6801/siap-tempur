@@ -3,16 +3,16 @@
 -- Cara pakai (staging):
 --   supabase db query --linked --file scripts/db-verify/organization-participant-import.sql
 --
--- Seluruh alur berjalan di dalam transaksi yang di-ROLLBACK. Membuktikan:
---   1. dry-run TIDAK menulis apa pun, tetapi tetap melaporkan hasil per baris;
---   2. validasi menolak nama kosong, email salah format, kode ganda di dalam
---      berkas, dan baris tanpa identifier sama sekali;
---   3. kode peserta kosong dibuat otomatis dari kode batch;
---   4. commit hanya memasukkan baris yang sah — baris bermasalah tidak
---      membatalkan baris lainnya;
---   5. mengunggah ULANG berkas yang sama bersifat idempoten: baris yang sudah ada
---      dilaporkan `duplicate`, bukan digandakan maupun ditimpa;
---   6. penjaga menolak batch tidak dikenal, berkas kosong, dan lebih dari 2000 baris.
+-- Seluruh alur berjalan di dalam transaksi yang di-ROLLBACK.
+--
+-- Membuktikan: dry-run TIDAK menulis apa pun tetapi tetap melaporkan hasil per
+-- baris; validasi menolak nama kosong, email salah format, kode ganda di dalam
+-- berkas, dan baris tanpa identifier; kode peserta kosong dibuat otomatis;
+-- commit hanya memasukkan baris yang sah; mengunggah ULANG berkas yang sama
+-- bersifat idempoten (dilaporkan `duplicate`, bukan digandakan); serta penjaga
+-- menolak batch tidak dikenal, berkas kosong, dan lebih dari 2000 baris.
+create or replace function public.__test_import_flow() returns jsonb
+language plpgsql security definer set search_path to '' as $$
 declare
   v_admin uuid := '93b4d35b-a1fb-4a16-9304-fef1116002cf';
   v_org uuid; v_batch uuid; v_out jsonb := '{}'::jsonb;
@@ -104,6 +104,27 @@ begin
 end $$;
 
 begin;
+
+-- Admin dicari dari DATABASE, bukan di-hardcode. UUID pengguna TIDAK stabil antar
+-- environment: pada 2026-09-19 ditemukan `93b4d35b-…` berperan ADMIN di staging
+-- tetapi TANPA peran sama sekali di produksi (di sana ia "Cutover Content Actor"),
+-- sehingga skrip gagal dengan "permission required" yang menyesatkan.
+do $$
+declare v_admin uuid;
+begin
+  select ur.user_id into v_admin
+    from public.user_roles ur join public.roles r on r.id = ur.role_id
+   where r.code in ('SUPER_ADMIN', 'ADMIN')
+   order by case when r.code = 'SUPER_ADMIN' then 0 else 1 end
+   limit 1;
+  if v_admin is null then
+    raise exception 'Tidak ada pengguna berperan SUPER_ADMIN atau ADMIN di database ini';
+  end if;
+  perform set_config('request.jwt.claims',
+                     json_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
+end $$;
+set local role authenticated;
+
 select jsonb_pretty(public.__test_import_flow());
 rollback;
 

@@ -3,13 +3,14 @@
 -- Cara pakai (staging):
 --   supabase db query --linked --file scripts/db-verify/organization-flow.sql
 --
--- Seluruh alur berjalan di dalam satu transaksi yang di-ROLLBACK, jadi tidak ada
--- data yang tertinggal. Fungsi bantu dibuat sementara lalu dibuang di akhir.
+-- Seluruh alur berjalan di dalam transaksi yang di-ROLLBACK, jadi tidak ada data
+-- yang tertinggal.
 --
--- Yang dibuktikan: instansi & batch dapat dibuat, token undangan tergenerate dan
--- dapat dirotasi, dan SELURUH penjaga menolak dengan benar — kode duplikat,
+-- Membuktikan: instansi & batch dapat dibuat, token undangan tergenerate dan
+-- dapat dirotasi, serta SELURUH penjaga menolak dengan benar — kode duplikat,
 -- kode tidak valid, tanggal selesai sebelum mulai, mengaktifkan batch pada
 -- instansi nonaktif, dan menonaktifkan instansi yang masih punya batch aktif.
+create or replace function public.__test_org_flow() returns jsonb
 language plpgsql security definer set search_path to '' as $$
 declare
   v_org jsonb; v_batch jsonb; v_detail jsonb; v_list jsonb; v_token jsonb;
@@ -80,7 +81,28 @@ begin
 end $$;
 
 begin;
+
+-- Admin dicari dari DATABASE, bukan di-hardcode. UUID pengguna TIDAK stabil antar
+-- environment: pada 2026-09-19 ditemukan `93b4d35b-…` berperan ADMIN di staging
+-- tetapi TANPA peran sama sekali di produksi (di sana ia "Cutover Content Actor"),
+-- sehingga skrip gagal dengan "permission required" yang menyesatkan.
+do $$
+declare v_admin uuid;
+begin
+  select ur.user_id into v_admin
+    from public.user_roles ur join public.roles r on r.id = ur.role_id
+   where r.code in ('SUPER_ADMIN', 'ADMIN')
+   order by case when r.code = 'SUPER_ADMIN' then 0 else 1 end
+   limit 1;
+  if v_admin is null then
+    raise exception 'Tidak ada pengguna berperan SUPER_ADMIN atau ADMIN di database ini';
+  end if;
+  perform set_config('request.jwt.claims',
+                     json_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
+end $$;
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"93b4d35b-a1fb-4a16-9304-fef1116002cf","role":"authenticated"}';
+
 select jsonb_pretty(public.__test_org_flow());
 rollback;
+
+drop function if exists public.__test_org_flow();

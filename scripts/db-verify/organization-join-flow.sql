@@ -1,18 +1,19 @@
--- Verifikasi self-onboarding peserta (Fase 3 MVP CPNS Instansi Managed Service).
+-- Verifikasi self-onboarding peserta (Fase 3 MVP CPNS Instansi Managed Service,
+-- PRD §6.3, §7.2.1, §10.3).
 --
 -- Cara pakai (staging):
 --   supabase db query --linked --file scripts/db-verify/organization-join-flow.sql
 --
--- Seluruh alur berjalan di dalam transaksi yang di-ROLLBACK. Membuktikan:
---   1. batch & token undangan terbentuk;
---   2. pratinjau token menampilkan instansi dan status "bisa bergabung";
---   3. bergabung menghasilkan kode peserta otomatis;
---   4. bergabung ULANG bersifat idempoten (kode sama, tidak ada baris kedua);
---   5. token palsu ditolak;
---   6. batch yang sudah ditutup tidak menerima peserta baru;
---   7. baris peserta hasil IMPORT diklaim berdasarkan email, bukan diduplikasi —
---      kode import dipakai ulang, nama import dipertahankan, status naik
---      menjadi aktif, dan tetap hanya ada SATU baris.
+-- Seluruh alur berjalan di dalam transaksi yang di-ROLLBACK.
+--
+-- Membuktikan: batch & token undangan terbentuk; pratinjau token menampilkan
+-- instansi dan status "bisa bergabung"; bergabung menghasilkan kode peserta
+-- otomatis; bergabung ULANG idempoten (kode sama, tidak ada baris kedua); token
+-- palsu ditolak; batch tertutup tidak menerima peserta baru; dan baris peserta
+-- hasil IMPORT DIKLAIM berdasarkan email — kode import dipakai ulang, nama import
+-- dipertahankan, status naik menjadi aktif, tetap hanya SATU baris.
+create or replace function public.__test_join_flow() returns jsonb
+language plpgsql security definer set search_path to '' as $$
 declare
   v_org uuid; v_batch uuid; v_token text; v_out jsonb := '{}'::jsonb; v_msg text;
   v_admin uuid := '93b4d35b-a1fb-4a16-9304-fef1116002cf';
@@ -67,6 +68,9 @@ begin
 
   return v_out;
 end $$;
+
+create or replace function public.__test_claim_flow() returns jsonb
+language plpgsql security definer set search_path to '' as $$
 declare
   v_org uuid; v_batch uuid; v_token text; v_out jsonb := '{}'::jsonb;
   v_admin uuid := '93b4d35b-a1fb-4a16-9304-fef1116002cf';
@@ -112,6 +116,27 @@ begin
 end $$;
 
 begin;
+
+-- Admin dicari dari DATABASE, bukan di-hardcode. UUID pengguna TIDAK stabil antar
+-- environment: pada 2026-09-19 ditemukan `93b4d35b-…` berperan ADMIN di staging
+-- tetapi TANPA peran sama sekali di produksi (di sana ia "Cutover Content Actor"),
+-- sehingga skrip gagal dengan "permission required" yang menyesatkan.
+do $$
+declare v_admin uuid;
+begin
+  select ur.user_id into v_admin
+    from public.user_roles ur join public.roles r on r.id = ur.role_id
+   where r.code in ('SUPER_ADMIN', 'ADMIN')
+   order by case when r.code = 'SUPER_ADMIN' then 0 else 1 end
+   limit 1;
+  if v_admin is null then
+    raise exception 'Tidak ada pengguna berperan SUPER_ADMIN atau ADMIN di database ini';
+  end if;
+  perform set_config('request.jwt.claims',
+                     json_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
+end $$;
+set local role authenticated;
+
 select jsonb_pretty(jsonb_build_object(
   'alur_join', public.__test_join_flow(),
   'alur_klaim_import', public.__test_claim_flow()

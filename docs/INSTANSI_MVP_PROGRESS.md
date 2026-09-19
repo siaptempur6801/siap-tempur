@@ -17,7 +17,7 @@ Terakhir diperbarui: 2026-09-19
 | 3 | UI internal pengelolaan instansi & batch | ✅ **selesai** |
 | 4 | Flow join peserta via token/kode batch | ✅ **selesai** |
 | 5 | Import peserta | ✅ **selesai** |
-| 6 | Template ujian & assignment | ⏳ belum |
+| 6 | Template ujian & assignment | 🔶 skema & RPC selesai, UI belum |
 | 7 | Dashboard monitoring | ⏳ belum |
 | 8 | Export XLSX per instansi/batch | ⏳ belum |
 
@@ -245,9 +245,84 @@ Ditemukan karena pembersihan diperketat, bukan karena fiturnya salah:
 | E2E join peserta | admin buat instansi → batch → peserta bergabung → admin melihat "Tertaut" |
 | E2E bulk import | preview 2 sah + 1 rusak → impor diblokir → berkas diperbaiki → 3 diimpor → tampil di daftar |
 
+## Fase 5 — Template ujian & assignment (skema & RPC)
+
+Migration:
+`supabase/migrations/20260919200000_organization_exam_templates_assignment.sql`
+RPC: `admin_list_org_templates`, `admin_template_shortages`,
+`admin_upsert_org_template`, `admin_compose_exam_from_template`,
+`admin_list_assignments`, `admin_upsert_assignment`.
+
+### Komposisi melaporkan kekurangan, bukan gagal sepihat
+
+Ini keputusan intinya. Kalau fungsinya sekadar melempar galat saat soal kurang,
+admin hanya tahu "gagal" tanpa tahu APA yang kurang dan BERAPA banyak.
+`admin_compose_exam_from_template` mengembalikan `composed: false` beserta daftar
+kekurangan per subjek (`required`/`available`/`missing`), sehingga halaman dapat
+menampilkannya sebagai daftar kerja.
+
+### Dipakai apa adanya: mesin ujian yang sudah ada
+
+Assignment menunjuk ke `exams` hasil komposisi template — bukan mesin ujian
+paralel. Yang dipisahkan hanya DATANYA (§7.6), bukan mesinnya.
+
+`access_type` memakai `FREE` dan `result_visibility` memakai `instant` — nilai
+yang SUDAH ada di sistem. Mengarang nilai baru seperti `INSTANSI` berisiko tidak
+dikenali kode mana pun, dan `exam-access-policy.ts` hanya mengkhususkan FREEMIUM.
+
+Constraint `exam_question_items` unik pada `(exam_id, position)` membuat
+`position` harus berurutan GLOBAL (1..110), bukan 1..30 per section. Diuji
+eksplisit: `position` unik 110 dan berurutan 1..110.
+
+`randomize_options` disimpan tetapi TIDAK diterapkan: `tests/unit/option-ordering-source.test.ts`
+mengunci keputusan bahwa mesin ujian tidak mengacak urutan opsi. Halaman nanti
+harus menandainya "belum diterapkan" supaya admin tidak mengira fiturnya bekerja.
+
+## Verifikasi Fase 5
+
+Diuji dengan data staging nyata: tersedia **TWK 60, TIU 35, TKP 45** terbit, dan
+komposisi 30/35/45 menghasilkan exam **110 soal** dengan distribusi tepat,
+3 section, `position` unik 1..110, dan seluruh soal berstatus terbit.
+
+## Dua kesalahan operasional pada fase ini (dan bagaimana ketahuan)
+
+1. **Migration Fase 5 terapkan ke PRODUKSI, bukan staging.** Setelah memeriksa
+   produksi, saya tidak menautkan ulang CLI ke staging, sehingga perintah
+   berikutnya berjalan di produksi tanpa disadari. Akibatnya selama beberapa saat
+   hanya produksi yang punya fungsi Fase 5.
+   Karena migrasinya murni aditif (6 fungsi baru, tidak mengubah objek yang ada),
+   ia **dipertahankan** di produksi dan staging kemudian disamakan.
+2. **Fungsi coretan `public.__test_template_flow()` tertinggal di PRODUKSI.**
+   Ketahuan oleh gate paritas, yang melaporkan "hanya ada di produksi". Sudah
+   dibuang. Tanpa gate itu, fungsi tes akan mengendap di produksi selamanya.
+
+Akar keduanya sama: kehilangan jejak environment yang sedang ditautkan CLI.
+Untuk mencegahnya, **setiap perintah kini menautkan project ref secara eksplisit**
+dan mencetak `LINK=<ref>` sebelum berjalan.
+
+## Ketiga skrip verifikasi sebelumnya TIDAK PERNAH BISA JALAN
+
+Ketika keempat skrip dijalankan sebagai berkas (bukan sebagai tempelan `/tmp`),
+tiga di antaranya langsung gagal dengan `syntax error`. Penyebabnya: saat
+menyusunnya saya memakai `sed -e '1,2d'` untuk membuang header, dan itu ikut
+memotong baris `create or replace function`. Jadi klaim "terverifikasi lewat
+scripts/db-verify/…" sebelumnya bersandar pada versi `/tmp` yang lengkap, BUKAN
+pada artefak yang di-commit — dan artefak itu tidak pernah dieksekusi.
+
+Semuanya sudah disusun ulang dan **dijalankan sebagai berkas**, dengan hasil:
+`organization-flow` 17 baris, `organization-join-flow` 29 baris,
+`organization-participant-import` 22 baris, `organization-exam-template` 41 baris.
+
+Selain itu UUID admin di-hardcode di skrip-skrip itu. UUID tidak stabil antar
+environment (`93b4d35b-…` berperan ADMIN di staging tetapi tanpa peran di
+produksi), jadi admin sekarang dicari dari database. Lihat
+`scripts/db-verify/_bootstrap.sql`.
+
 ## Yang BELUM
 
-- Fase 6–7 (template & assignment ujian, dashboard monitoring, export XLSX).
+- **UI Fase 5**: halaman template & assignment belum dibuat (RPC-nya sudah ada
+  dan teruji).
+- Fase 6–7 (dashboard monitoring, export XLSX).
 - Peran klien instansi (`organization_members` dengan `owner`/`manager`/`staff`)
   belum punya UI — §15 menetapkan klien belum menjadi admin sistem pada MVP.
 - `organization_members` belum punya UI. PRD §9 menyebutnya untuk role klien
