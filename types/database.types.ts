@@ -922,6 +922,106 @@ export type Database = {
                 Args: Record<string, never>
                 Returns: Json
             }
+            /**
+             * Modul Entitlements (token, voucher, pass) dan Settings
+             * (konfigurasi platform) — lihat migration
+             * `20260919140000_admin_entitlements_settings.sql`.
+             *
+             * `admin_adjust_wallet` menyentuh saldo token bernilai uang, jadi
+             * fungsinya menolak penyesuaian dompet sendiri, jumlah nol, saldo
+             * negatif, dan alasan yang terlalu pendek — semuanya di database.
+             */
+            admin_entitlement_overview: {
+                Args: Record<string, never>
+                Returns: Json
+            }
+            admin_list_wallets: {
+                Args: {
+                    p_search: string | null
+                    p_wallet_type: string | null
+                    p_limit: number | null
+                    p_offset: number | null
+                }
+                Returns: Json
+            }
+            admin_list_wallet_transactions: {
+                Args: {
+                    p_user_id: string | null
+                    p_wallet_type: string | null
+                    p_limit: number | null
+                    p_offset: number | null
+                }
+                Returns: Json
+            }
+            admin_adjust_wallet: {
+                Args: {
+                    p_user_id: string
+                    p_wallet_type: string
+                    p_amount: number
+                    p_reason: string
+                }
+                Returns: Json
+            }
+            admin_list_vouchers: {
+                Args: Record<string, never>
+                Returns: Json
+            }
+            admin_upsert_voucher: {
+                Args: {
+                    p_id: string | null
+                    p_code: string
+                    p_quota_amount: number
+                    p_max_uses: number
+                    p_expires_at: string | null
+                    p_is_active: boolean | null
+                    p_wallet_type: string | null
+                }
+                Returns: Json
+            }
+            admin_list_entitlements: {
+                Args: {
+                    p_search: string | null
+                    p_status: string | null
+                    p_limit: number | null
+                    p_offset: number | null
+                }
+                Returns: Json
+            }
+            admin_list_settings: {
+                Args: Record<string, never>
+                Returns: Json
+            }
+            admin_upsert_feature_flag: {
+                Args: {
+                    p_id: string | null
+                    p_key: string
+                    p_name: string
+                    p_enabled: boolean | null
+                    p_rollout_percentage: number | null
+                }
+                Returns: Json
+            }
+            admin_upsert_certificate_template: {
+                Args: {
+                    p_id: string
+                    p_name: string
+                    p_template_url: string | null
+                    p_config: Json | null
+                }
+                Returns: Json
+            }
+            admin_set_track_period_active: {
+                Args: { p_track_period_id: string; p_is_active: boolean | null }
+                Returns: Json
+            }
+            admin_upsert_system_setting: {
+                Args: { p_key: string; p_value: Json }
+                Returns: Json
+            }
+            admin_delete_system_setting: {
+                Args: { p_key: string }
+                Returns: Json
+            }
         }
         Enums: { [_ in never]: never }
         CompositeTypes: { [_ in never]: never }

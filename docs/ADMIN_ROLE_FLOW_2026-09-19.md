@@ -142,12 +142,13 @@ terbatas pada satu workflow.
 ## Yang BELUM dilakukan
 
 - **Migration belum diterapkan ke produksi.** Karena itu gate paritas merah:
-  staging punya 8 fungsi + 1 migrasi yang belum ada di produksi. Ini drift yang
+  staging punya fungsi + migrasi yang belum ada di produksi. Ini drift yang
   disengaja dan **perlu keputusan eksplisit**, bukan diabaikan.
-- `organization.manage`, `entitlement.manage`, `notification.manage`, dan
-  `settings.manage` masih belum punya halaman. `SCHOOL_ADMIN` sudah tidak
-  dead-end karena punya `report.read`, tetapi `organization.manage`-nya masih
-  tanpa UI.
+- `organization.manage` (B2B sekolah) dan `notification.manage` masih belum
+  punya halaman. Keduanya **ditunda oleh `docs/STATUS.md`** §3 dan §4, tabelnya
+  kosong di staging maupun produksi, dan tidak dirujuk satu file kode pun —
+  lihat `docs/ADMIN_ENTITLEMENTS_SETTINGS_2026-09-19.md` untuk alasannya.
+  `entitlement.manage` dan `settings.manage` sudah dibuatkan halaman di sana.
 - `lib/utils/admin.ts` (`getCurrentUserRole`, `isAdminRole`) masih dipakai
   `app/actions/articles.ts` dan halaman artikel. Itu adapter transisional yang
   sudah didokumentasikan sebagai calon dihapus; belum disentuh karena di luar

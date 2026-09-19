@@ -12,6 +12,7 @@ import {
     ChevronLeft,
     ChevronRight,
     ClipboardCheck,
+    Coins,
     CreditCard,
     FileQuestion,
     LayoutDashboard,
@@ -19,6 +20,7 @@ import {
     MoreHorizontal,
     Package,
     ScrollText,
+    Settings2,
     ShieldCheck,
     Users,
     X,
@@ -65,9 +67,11 @@ const ICONS: Record<string, typeof ShieldCheck> = {
     CalendarDays,
     Package,
     CreditCard,
+    Coins,
     Users,
     BarChart3,
     ScrollText,
+    Settings2,
 }
 
 /** Berapa item yang muat di bottom-nav mobile sebelum sisanya masuk "Lainnya". */

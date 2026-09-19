@@ -39,7 +39,7 @@ import {
 test.describe.configure({ mode: 'serial' })
 test.setTimeout(180_000)
 
-const ALL_MODULES = ['Dashboard', 'Question Bank', 'Review Queue', 'Articles', 'Exams', 'Events', 'Products', 'Orders & Payments', 'Users & Roles', 'Reports', 'Audit Log']
+const ALL_MODULES = ['Dashboard', 'Question Bank', 'Review Queue', 'Articles', 'Exams', 'Events', 'Products', 'Orders & Payments', 'Entitlements', 'Users & Roles', 'Reports', 'Audit Log', 'Settings']
 
 /** Sidebar yang sedang terlihat. Lihat catatan scope di atas. */
 function sidebar(page: Page): Locator {
@@ -93,12 +93,12 @@ test.describe('Alur peran Admin Workspace', () => {
         }
     })
 
-    test('FINANCE hanya melihat Dashboard, Orders & Payments, dan Reports', async ({ page }) => {
+    test('FINANCE hanya melihat Dashboard, Orders & Payments, Entitlements, dan Reports', async ({ page }) => {
         const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
         const user = await provisionAndLogin(page, 'FINANCE', '/admin')
         try {
             await expect(page.locator('main h1')).toHaveText('Dashboard')
-            const visible = ['Dashboard', 'Orders & Payments', 'Reports']
+            const visible = ['Dashboard', 'Orders & Payments', 'Entitlements', 'Reports']
             // Inti perbaikannya: FINANCE punya admin.access, tetapi TIDAK boleh
             // melihat modul content, assessment, maupun product.
             await expectMenus(page, visible, without(visible))
@@ -112,6 +112,15 @@ test.describe('Alur peran Admin Workspace', () => {
             await expect(page.getByRole('link', { name: 'Order & pembayaran', exact: true })).toBeVisible()
             await expect(page.getByRole('link', { name: 'Question bank', exact: true })).toHaveCount(0)
             await expect(page.getByRole('link', { name: 'Kelola exam', exact: true })).toHaveCount(0)
+
+            // Entitlements harus benar-benar membuka — inilah pekerjaan FINANCE
+            // yang sebelumnya hanya bisa dilakukan lewat SQL langsung.
+            await sidebar(page).getByRole('link', { name: 'Entitlements', exact: true }).click()
+            await expect(page).toHaveURL(/\/admin\/entitlements/)
+            await expect(page.locator('main h1')).toHaveText('Entitlements')
+            await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+            await expect(page.getByRole('heading', { name: 'Dompet pengguna', exact: true })).toBeVisible()
+            await expect(page.getByRole('heading', { name: 'Voucher', exact: true })).toBeVisible()
         } finally {
             await cleanupRoleUser(supabaseUrl, user.userId)
         }

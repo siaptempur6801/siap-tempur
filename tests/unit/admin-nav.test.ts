@@ -70,15 +70,29 @@ describe('visibleAdminNavGroups — menu mengikuti permission, bukan satu boolea
 
     it('FINANCE TIDAK melihat Content, Assessment, Products, Users, maupun Audit', () => {
         // Regresi utama: FINANCE punya `admin.access`, jadi dulu ia melihat
-        // SELURUH menu. Yang benar hanya yang permission-nya ia miliki.
-        expect(labels(ROLE_PERMISSIONS.FINANCE)).toEqual(['Dashboard', 'Orders & Payments', 'Reports'])
-        for (const forbidden of ['Question Bank', 'Review Queue', 'Articles', 'Exams', 'Events', 'Products', 'Users & Roles', 'Audit Log']) {
+        // SELURUH menu. Yang benar hanya yang permission-nya ia miliki:
+        // order.read + payment.manage (Orders), entitlement.manage
+        // (Entitlements), dan report.read (Reports).
+        expect(labels(ROLE_PERMISSIONS.FINANCE)).toEqual(['Dashboard', 'Orders & Payments', 'Entitlements', 'Reports'])
+        for (const forbidden of ['Question Bank', 'Review Queue', 'Articles', 'Exams', 'Events', 'Products', 'Users & Roles', 'Audit Log', 'Settings']) {
             expect(labels(ROLE_PERMISSIONS.FINANCE)).not.toContain(forbidden)
         }
     })
 
     it('SUPPORT hanya melihat Dashboard, Orders & Payments, dan Users & Roles', () => {
         expect(labels(ROLE_PERMISSIONS.SUPPORT)).toEqual(['Dashboard', 'Orders & Payments', 'Users & Roles'])
+    })
+
+    it('Entitlements dan Settings hanya muncul untuk pemegang permission-nya', () => {
+        // `entitlement.manage` → FINANCE + ADMIN; `settings.manage` → ADMIN saja.
+        expect(labels(ROLE_PERMISSIONS.FINANCE)).toContain('Entitlements')
+        expect(labels(ROLE_PERMISSIONS.FINANCE)).not.toContain('Settings')
+        expect(labels(ROLE_PERMISSIONS.SUPPORT)).not.toContain('Entitlements')
+        expect(labels(ROLE_PERMISSIONS.SUPPORT)).not.toContain('Settings')
+        expect(labels(ROLE_PERMISSIONS.SCHOOL_ADMIN)).not.toContain('Entitlements')
+        expect(labels(ROLE_PERMISSIONS.SCHOOL_ADMIN)).not.toContain('Settings')
+        expect(labels(ROLE_PERMISSIONS.ADMIN)).toContain('Entitlements')
+        expect(labels(ROLE_PERMISSIONS.ADMIN)).toContain('Settings')
     })
 
     it('CONTENT_EDITOR TIDAK melihat Question Bank (butuh question.manage)', () => {

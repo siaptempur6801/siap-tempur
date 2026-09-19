@@ -153,6 +153,14 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
                 requiresAny: [PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE],
                 contextual: true,
             },
+            {
+                href: '/admin/entitlements',
+                label: 'Entitlements',
+                mobileLabel: 'Token',
+                icon: 'Coins',
+                requiresAny: [PERMISSIONS.ENTITLEMENT_MANAGE],
+                contextual: false,
+            },
         ],
     },
     {
@@ -184,6 +192,13 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
                 mobileLabel: 'Audit',
                 icon: 'ScrollText',
                 requiresAny: [PERMISSIONS.AUDIT_READ],
+                contextual: false,
+            },
+            {
+                href: '/admin/settings',
+                label: 'Settings',
+                icon: 'Settings2',
+                requiresAny: [PERMISSIONS.SETTINGS_MANAGE],
                 contextual: false,
             },
         ],
@@ -218,8 +233,10 @@ const LANDING_CANDIDATES: Array<{ href: string; requiresAny: PermissionCode[] }>
     { href: '/admin/audit', requiresAny: [PERMISSIONS.AUDIT_READ] },
     { href: '/admin/commerce', requiresAny: [PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE] },
     { href: '/admin/commerce/products', requiresAny: [PERMISSIONS.PRODUCT_MANAGE] },
+    { href: '/admin/entitlements', requiresAny: [PERMISSIONS.ENTITLEMENT_MANAGE] },
     { href: '/admin/assessment/exams', requiresAny: [PERMISSIONS.EXAM_MANAGE] },
     { href: '/admin/assessment/events', requiresAny: [PERMISSIONS.EVENT_MANAGE] },
+    { href: '/admin/settings', requiresAny: [PERMISSIONS.SETTINGS_MANAGE] },
 ]
 
 /** Semua permission yang memberi akses ke suatu permukaan admin. */

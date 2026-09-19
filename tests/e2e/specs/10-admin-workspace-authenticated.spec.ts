@@ -37,6 +37,22 @@ test.describe('Authenticated Admin Workspace closure', () => {
     // sekali, sehingga SUPPORT dan SCHOOL_ADMIN tidak punya tempat mendarat.
     await expectAdminModule(page, '/admin/reports', 'Reports')
     await expectAdminModule(page, '/admin/audit', 'Audit Log')
+    // `entitlement.manage` dan `settings.manage`: produksi memegang 426 dompet
+    // token dan katalog 40 fitur, keduanya sebelumnya hanya bisa lewat SQL.
+    await expectAdminModule(page, '/admin/entitlements', 'Entitlements')
+    await expectAdminModule(page, '/admin/settings', 'Settings')
+  })
+
+  test('ADMIN dapat membuka Settings dan melihat konfigurasi platform', async ({ page }) => {
+    await page.goto('/admin/settings')
+    await expect(page.locator('main h1')).toHaveText('Settings')
+    await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+    // Katalog fitur berasal dari database (40 baris di produksi), bukan daftar
+    // yang di-hardcode.
+    await expect(page.getByRole('heading', { name: 'Katalog fitur', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Template sertifikat', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Periode & track', exact: true })).toBeVisible()
+    await expectNoHorizontalOverflow(page)
   })
 
   test('ADMIN dapat membuka Users & Roles dan melihat daftar pengguna', async ({ page }) => {
