@@ -18,7 +18,8 @@ test.describe('Authenticated Admin Workspace closure', () => {
   test('ADMIN can load canonical dashboard and every core module', async ({ page }) => {
     await page.goto('/admin?program=CPNS&track=SKD')
     await expect(page.locator('main h1')).toHaveText('Dashboard')
-    await expect(page.getByText('ADMIN', { exact: true }).first()).toBeVisible()
+    // Label peran kini dibaca manusia ("Admin"), bukan kode mentah ("ADMIN").
+    await expect(page.getByText('Admin', { exact: true }).first()).toBeVisible()
 
     const contextSelects = page.getByRole('banner').locator('select')
     await expect(contextSelects.nth(0)).toHaveValue('CPNS')
@@ -31,6 +32,20 @@ test.describe('Authenticated Admin Workspace closure', () => {
     await expectAdminModule(page, '/admin/assessment/events', 'Events')
     await expectAdminModule(page, '/admin/commerce/products', 'Products')
     await expectAdminModule(page, '/admin/commerce', 'Orders & Payments')
+    // Modul People & Insights: sebelumnya `user.read`, `user.manage`,
+    // `role.manage`, `report.read`, dan `audit.read` tidak punya halaman sama
+    // sekali, sehingga SUPPORT dan SCHOOL_ADMIN tidak punya tempat mendarat.
+    await expectAdminModule(page, '/admin/reports', 'Reports')
+    await expectAdminModule(page, '/admin/audit', 'Audit Log')
+  })
+
+  test('ADMIN dapat membuka Users & Roles dan melihat daftar pengguna', async ({ page }) => {
+    await page.goto('/admin/users')
+    await expect(page.locator('main h1')).toHaveText('Users & Roles')
+    await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+    // Komposisi peran dirender dari database, bukan daftar yang di-hardcode.
+    await expect(page.getByText('ADMIN', { exact: true }).first()).toBeVisible()
+    await expectNoHorizontalOverflow(page)
   })
 
   test('Exam modal exposes canonical Drill subject → knowledge-node contract', async ({ page }) => {
@@ -86,9 +101,23 @@ test.describe('Authenticated Admin Workspace closure', () => {
     await expectNoHorizontalOverflow(page)
 
     await page.getByLabel('Buka menu').click()
-    await expect(page.getByRole('link', { name: 'Question Bank', exact: true })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Exams', exact: true })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Products', exact: true })).toBeVisible()
+    // Sidebar yang sama dirender untuk desktop DAN di dalam drawer, dan bottom-nav
+    // memuat sebagian item yang sama — jadi selector tanpa scope melanggar strict
+    // mode. Yang diperiksa di sini adalah drawer yang sedang terbuka.
+    const drawer = page.locator('nav[aria-label="Menu admin"]:visible')
+    await expect(drawer.getByRole('link', { name: 'Question Bank', exact: true })).toBeVisible()
+    await expect(drawer.getByRole('link', { name: 'Exams', exact: true })).toBeVisible()
+    await expect(drawer.getByRole('link', { name: 'Products', exact: true })).toBeVisible()
+    await page.getByLabel('Tutup menu').last().click()
+
+    // Bottom-nav harus memberi jalan keluar ke menu yang tidak muat: kalau item
+    // tidak muat, tombol "Lainnya" membuka drawer. Sebelumnya daftarnya dipotong
+    // `.slice(0, 3)` tanpa jalan keluar sehingga Assessment dan Commerce tidak
+    // pernah bisa dicapai dari bottom-nav.
+    const quickNav = page.getByRole('navigation', { name: 'Akses cepat' })
+    await expect(quickNav.getByRole('button', { name: 'Lainnya' })).toBeVisible()
+    await quickNav.getByRole('button', { name: 'Lainnya' }).click()
+    await expect(page.locator('nav[aria-label="Menu admin"]:visible').getByRole('link', { name: 'Orders & Payments', exact: true })).toBeVisible()
     await page.getByLabel('Tutup menu').last().click()
 
     await page.goto('/admin/assessment/exams?program=CPNS&track=SKD')

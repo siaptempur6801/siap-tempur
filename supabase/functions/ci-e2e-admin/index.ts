@@ -25,7 +25,29 @@ type Body = {
   password?: string
   runId?: string
   userId?: string
+  role?: string
 }
+
+/**
+ * Peran yang boleh diprovisikan helper ini.
+ *
+ * Diperlukan untuk menguji ALUR TIAP PERAN: `FINANCE`, `SUPPORT`, dan
+ * `SCHOOL_ADMIN` tidak punya jalan masuk lain, padahal justru ketiganya yang
+ * dulu tidak punya permukaan admin sama sekali.
+ *
+ * `SUPER_ADMIN` SENGAJA TIDAK ADA DI DAFTAR. Helper ini sudah bisa membuat
+ * `ADMIN` — yang praktis sudah sangat luas — dan menambahkan `SUPER_ADMIN` akan
+ * menaikkan dampak bila endpoint ini disalahgunakan. Tidak ada test alur peran
+ * yang membutuhkan `role.manage`.
+ */
+const ALLOWED_ROLES = [
+  'ADMIN',
+  'CONTENT_EDITOR',
+  'CONTENT_REVIEWER',
+  'FINANCE',
+  'SUPPORT',
+  'SCHOOL_ADMIN',
+] as const
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -126,10 +148,15 @@ async function provision(body: Body) {
 
   const userId = created.user.id
   try {
+    const requestedRole = (body.role?.trim().toUpperCase() || 'ADMIN')
+    if (!(ALLOWED_ROLES as readonly string[]).includes(requestedRole)) {
+      throw new Error('CI_ADMIN_ROLE_NOT_ALLOWED')
+    }
+
     const { data: role, error: roleError } = await admin
       .from('roles')
       .select('id')
-      .eq('code', 'ADMIN')
+      .eq('code', requestedRole)
       .maybeSingle()
     if (roleError || !role) throw roleError ?? new Error('ADMIN_ROLE_NOT_FOUND')
 
@@ -138,7 +165,7 @@ async function provision(body: Body) {
       .insert({ user_id: userId, role_id: role.id, scope_type: null, scope_id: null })
     if (assignmentError) throw assignmentError
 
-    return json({ userId })
+    return json({ userId, role: requestedRole })
   } catch (error) {
     await admin.auth.admin.deleteUser(userId).catch(() => undefined)
     throw error

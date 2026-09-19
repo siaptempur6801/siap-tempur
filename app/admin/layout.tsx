@@ -5,19 +5,46 @@ import { signout } from '@/app/auth/actions'
 import UnifiedAdminShell from '@/components/admin/UnifiedAdminShell'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { authorizationService } from '@/src/services/authorization.service'
-import { PERMISSIONS } from '@/src/auth/permissions'
 import { getActivePassScopes } from '@/src/services/tempur-pass.service'
+import { adminLandingPath, hasAdminSurface } from '@/lib/admin-nav'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-const CONTENT_PERMISSIONS = [
-    PERMISSIONS.CONTENT_READ,
-    PERMISSIONS.CONTENT_CREATE,
-    PERMISSIONS.CONTENT_UPDATE,
-    PERMISSIONS.CONTENT_REVIEW,
-    PERMISSIONS.CONTENT_PUBLISH,
-]
+/**
+ * Gerbang Admin Workspace.
+ *
+ * ## Yang berubah dan kenapa
+ *
+ * Sebelumnya gerbang ini memakai dua boolean yang di-hardcode:
+ *
+ *     const canAccessAdmin = permissions.has(ADMIN_ACCESS)
+ *     const canAccessContent = CONTENT_PERMISSIONS.some(...)
+ *     if (!canAccessAdmin && !canAccessContent) redirect('/cpns/dashboard')
+ *     if (!canAccessAdmin && !pathname.startsWith('/admin/content')) redirect('/admin/content/review')
+ *
+ * Dua akibatnya:
+ *
+ * 1. Pendaratan non-admin di-hardcode ke `/admin/content/review`. `CONTENT_EDITOR`
+ *    — yang pekerjaannya menulis soal — selalu mendarat di antrean REVIEW.
+ * 2. `SCHOOL_ADMIN` (hanya `organization.manage` + `report.read`) tidak punya
+ *    `admin.access` maupun permission content, jadi ia dilempar diam-diam ke
+ *    `/cpns/dashboard` tanpa penjelasan apa pun. Itu dead-end navigation, yang
+ *    dilarang `docs/ADMIN_UI_UX_STANDARD.md` §4.
+ *
+ * Sekarang gerbang ini memakai model yang sama dengan sidebar
+ * (`lib/admin-nav.ts`), sehingga apa yang boleh dibuka dan apa yang terlihat di
+ * menu tidak pernah berbeda.
+ *
+ * ## Kenapa TIDAK ada redirect per-halaman di sini
+ *
+ * Menendang pengguna keluar dari halaman yang izinnya kurang akan membuat URL
+ * yang salah ketik terasa seperti halaman hilang, dan berisiko loop bila
+ * `landingPath` sendiri tidak diizinkan. Halaman yang bersangkutan tetap
+ * dirender dan menampilkan "Akses tidak tersedia" — jujur, tanpa loop. Yang
+ * WAJIB adalah query datanya tidak berjalan sebelum izin diperiksa; itu
+ * ditangani masing-masing halaman.
+ */
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createV2Client()
@@ -31,17 +58,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const authorization = await authorizationService.getCurrentAuthorization()
     if (!authorization) redirect('/login?returnTo=%2Fadmin')
 
-    const permissions = new Set(authorization.permissions)
-    const canAccessAdmin = permissions.has(PERMISSIONS.ADMIN_ACCESS)
-    const canAccessContent = CONTENT_PERMISSIONS.some((permission) => permissions.has(permission))
+    const permissions = authorization.permissions
+    const landingPath = adminLandingPath(permissions)
 
-    if (!canAccessAdmin && !canAccessContent) {
-        redirect('/cpns/dashboard')
-    }
-
-    const isContentRoute = pathname.startsWith('/admin/content')
-    if (!canAccessAdmin && !isContentRoute) {
-        redirect('/admin/content/review')
+    // Tidak punya permukaan admin sama sekali -> beri tahu, jangan diam-diam
+    // dilempar. `?admin=no-access` dibaca dashboard peserta untuk menampilkan
+    // penjelasan; tanpa itu pun pengguna tetap mendarat di tempat yang masuk akal.
+    if (!landingPath || !hasAdminSurface(permissions)) {
+        redirect('/cpns/dashboard?admin=no-access')
     }
 
     const [{ data: profile }, hasTempurPass] = await Promise.all([
@@ -58,8 +82,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             user={user}
             profile={profile}
             roles={authorization.roles}
-            permissions={authorization.permissions}
+            permissions={permissions}
             hasActiveTempurPass={hasTempurPass}
+            landingPath={landingPath}
             signoutAction={signout}
         >
             {children}

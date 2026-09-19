@@ -2,25 +2,18 @@ import { test as setup } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { ciHelperUrl } from './ci-helper'
+import { callAdminHelper, requireEnv } from './admin-roles'
 
-const EXPECTED_STAGING_REF = 'lpgrivowdcepcxradavu'
-const OIDC_AUDIENCE = 'siap-tempur-staging-e2e'
+/**
+ * Setup sesi ADMIN untuk project `chromium-admin-staging`.
+ *
+ * Fungsi bantu (OIDC, pemanggilan helper, penjaga URL staging) tinggal di
+ * `admin-roles.ts` supaya spec alur peran memakai jalur yang sama persis.
+ * Sebelumnya keduanya duplikat — dan duplikat seperti itu yang gampang menyimpang.
+ */
+
 const authFile = path.join(__dirname, '../../playwright/.auth/admin-user.json')
 const metadataFile = path.join(__dirname, '../../playwright/.auth/admin-user-meta.json')
-
-function required(name: string) {
-    const value = process.env[name]
-    if (!value) throw new Error(`${name} wajib diatur untuk Admin staging E2E.`)
-    return value
-}
-
-function assertStagingUrl(url: string) {
-    const projectRef = new URL(url).hostname.split('.')[0]
-    if (projectRef !== EXPECTED_STAGING_REF) {
-        throw new Error(`Admin E2E diblokir: expected staging ${EXPECTED_STAGING_REF}, received ${projectRef || 'unknown'}.`)
-    }
-}
 
 /**
  * Mode gate lokal (emulator Edge Function aktif): app boleh berjalan di localhost sehingga gate
@@ -38,43 +31,9 @@ function assertPreviewUrl(url: string) {
     }
 }
 
-async function githubOidcToken() {
-    const explicit = process.env.E2E_GITHUB_OIDC_TOKEN
-    if (explicit) return explicit
-
-    const requestUrl = required('ACTIONS_ID_TOKEN_REQUEST_URL')
-    const requestToken = required('ACTIONS_ID_TOKEN_REQUEST_TOKEN')
-    const separator = requestUrl.includes('?') ? '&' : '?'
-    const response = await fetch(`${requestUrl}${separator}audience=${encodeURIComponent(OIDC_AUDIENCE)}`, {
-        headers: { Authorization: `bearer ${requestToken}` },
-    })
-    if (!response.ok) throw new Error(`Gagal meminta GitHub OIDC token (${response.status}).`)
-    const payload = await response.json() as { value?: string }
-    if (!payload.value) throw new Error('GitHub OIDC token kosong.')
-    return payload.value
-}
-
-async function callAdminHelper(supabaseUrl: string, body: Record<string, unknown>) {
-    const oidcToken = await githubOidcToken()
-    const response = await fetch(ciHelperUrl(supabaseUrl, 'ci-e2e-admin'), {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${oidcToken}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-    })
-    const payload = await response.json().catch(() => ({})) as { userId?: string; error?: string }
-    if (!response.ok) {
-        throw new Error(`ci-e2e-admin ${String(body.action)} gagal (${response.status}): ${payload.error || 'unknown'}`)
-    }
-    return payload
-}
-
 setup('provision disposable ADMIN staging user', async ({ page }) => {
-    const supabaseUrl = required('NEXT_PUBLIC_SUPABASE_URL')
-    const baseUrl = required('BASE_URL')
-    assertStagingUrl(supabaseUrl)
+    const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+    const baseUrl = requireEnv('BASE_URL')
     assertPreviewUrl(baseUrl)
 
     const shareUrl = process.env.VERCEL_SHARE_URL

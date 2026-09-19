@@ -61,7 +61,7 @@ const GATES = {
         env: { E2E_REMOTE_BASE_URL: '1' },
     },
     admin: {
-        project: '--project=chromium-admin-staging',
+        project: '--project=chromium-admin-staging --project=chromium-admin-roles',
         serviceRoleKey: SERVICE_ROLE,
         appBaseUrl: BASE_URL,
         manageApp: true,

@@ -868,6 +868,60 @@ export type Database = {
                 Args: { p_batch: string }
                 Returns: Json
             }
+            /**
+             * Modul admin: Users & Roles, Reports, Audit Log — lihat migration
+             * `20260919120000_admin_users_reports_audit.sql`.
+             *
+             * Kenapa lewat RPC dan bukan SELECT langsung: `user_roles`, `roles`,
+             * `permissions`, dan `audit_logs` mengaktifkan RLS TANPA policy,
+             * sehingga `authenticated` tidak bisa membacanya sama sekali. Setiap
+             * fungsi memeriksa permission-nya sendiri, dan operasi tulis
+             * menegakkan penjaga anti-lockout di database.
+             */
+            admin_list_users: {
+                Args: {
+                    p_search: string | null
+                    p_role: string | null
+                    p_status: string | null
+                    p_limit: number | null
+                    p_offset: number | null
+                }
+                Returns: Json
+            }
+            admin_list_roles: {
+                Args: Record<string, never>
+                Returns: Json
+            }
+            admin_assign_user_role: {
+                Args: { p_user_id: string; p_role_code: string }
+                Returns: Json
+            }
+            admin_revoke_user_role: {
+                Args: { p_user_id: string; p_role_code: string }
+                Returns: Json
+            }
+            admin_set_user_status: {
+                Args: { p_user_id: string; p_status: string }
+                Returns: Json
+            }
+            admin_report_overview: {
+                Args: { p_program_code: string | null; p_track_code: string | null }
+                Returns: Json
+            }
+            admin_list_audit_logs: {
+                Args: {
+                    p_action: string | null
+                    p_entity_type: string | null
+                    p_actor_id: string | null
+                    p_limit: number | null
+                    p_offset: number | null
+                }
+                Returns: Json
+            }
+            admin_audit_facets: {
+                Args: Record<string, never>
+                Returns: Json
+            }
         }
         Enums: { [_ in never]: never }
         CompositeTypes: { [_ in never]: never }

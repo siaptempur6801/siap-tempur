@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { getServerNowMs } from '@/lib/server/time'
 import { adminV2Service, type WorkspaceSection } from '@/src/services/admin-v2.service'
 import { authorizationService } from '@/src/services/authorization.service'
-import { PERMISSIONS } from '@/src/auth/permissions'
+import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import {
     archiveEventAction,
     archiveExamAction,
@@ -165,15 +165,46 @@ const SECTIONS_BY_MODE: Record<AdminOperationsMode, readonly WorkspaceSection[]>
     commerce: ['commerce'],
 }
 
+/**
+ * Permission yang dibutuhkan tiap mode.
+ *
+ * Dipakai untuk memeriksa izin SEBELUM menyentuh database. Sebelumnya urutannya
+ * terbalik: `getWorkspaceData()` dipanggil lebih dulu, baru permission dicek
+ * pada `canProducts`/`canExams`/… di bawahnya. Akibatnya peran yang tidak punya
+ * izin (mis. FINANCE membuka Question Bank) tetap menunggu query soal + seluruh
+ * opsinya, exam, event, product, dan order selesai — lalu disuguhi "Akses tidak
+ * tersedia". Selain boros, pola itu membuat waktu muat halaman membocorkan
+ * seberapa berat data di baliknya.
+ */
+const REQUIRED_PERMISSIONS: Record<AdminOperationsMode, PermissionCode[]> = {
+    products: [PERMISSIONS.PRODUCT_MANAGE],
+    events: [PERMISSIONS.EVENT_MANAGE],
+    exams: [PERMISSIONS.EXAM_MANAGE],
+    questions: [PERMISSIONS.QUESTION_MANAGE],
+    commerce: [PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE],
+}
+
 export default async function AdminOperationsWorkspace({ mode, searchParams }: { mode: AdminOperationsMode; searchParams: Promise<SearchParams> }) {
     const params = await searchParams
     const requestedContext = {
         programCode: (params.program || 'TKA').toUpperCase(),
         trackCode: (params.track || 'SMP').toUpperCase(),
     }
-    const data = await adminV2Service.getWorkspaceData(requestedContext, SECTIONS_BY_MODE[mode]) as unknown as WorkspaceView
+
+    // Otorisasi dulu, query kemudian.
     const authorization = await authorizationService.getCurrentAuthorization()
     const permissions = new Set(authorization?.permissions ?? [])
+    const allowed = REQUIRED_PERMISSIONS[mode]
+    if (!allowed.some((permission) => permissions.has(permission))) {
+        return (
+            <div className="space-y-5 pb-10">
+                <AdminPageHeader title={PAGE_COPY[mode].title} description={PAGE_COPY[mode].description}/>
+                <PermissionEmpty permission={allowed.join(' atau ')}/>
+            </div>
+        )
+    }
+
+    const data = await adminV2Service.getWorkspaceData(requestedContext, SECTIONS_BY_MODE[mode]) as unknown as WorkspaceView
     const program = data.catalog.program.code
     const track = data.catalog.track.code
     const nowMs = getServerNowMs()

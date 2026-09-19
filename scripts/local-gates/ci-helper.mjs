@@ -34,6 +34,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const CI_TKA_EMAIL = /^ci-(?:tka|content-editor|content-reviewer)-[a-zA-Z0-9-]{1,96}@example\.invalid$/
 const CI_CPNS_EMAIL = /^ci-cpns-[a-zA-Z0-9-]{1,96}@example\.invalid$/
 const CI_ADMIN_EMAIL = /^ci-admin-[a-zA-Z0-9-]{1,96}@example\.invalid$/
+/** Cerminan ALLOWED_ROLES di `supabase/functions/ci-e2e-admin`. SUPER_ADMIN tidak ada. */
+const CI_ADMIN_ALLOWED_ROLES = ['ADMIN', 'CONTENT_EDITOR', 'CONTENT_REVIEWER', 'FINANCE', 'SUPPORT', 'SCHOOL_ADMIN']
 
 function loadEnvFile(path = '.env.local') {
     try {
@@ -259,8 +261,15 @@ async function ciAdmin(body) {
             metadata: { full_name: 'CI Admin Workspace', ci_e2e: true, ci_kind: 'admin', github_run_id: String(body.runId ?? '') },
         })
         try {
-            await assignRole(userId, 'ADMIN')
-            return json(200, { userId })
+            // Mengikuti Edge Function asli: peran opsional untuk menguji alur tiap
+            // peran, dengan SUPER_ADMIN sengaja TIDAK diizinkan.
+            const role = String(body.role ?? 'ADMIN').trim().toUpperCase()
+            if (!CI_ADMIN_ALLOWED_ROLES.includes(role)) {
+                await deleteUserFully(userId).catch(() => undefined)
+                return json(400, { error: 'CI_ADMIN_ROLE_NOT_ALLOWED' })
+            }
+            await assignRole(userId, role)
+            return json(200, { userId, role })
         } catch (error) {
             await deleteUserFully(userId).catch(() => undefined)
             throw error

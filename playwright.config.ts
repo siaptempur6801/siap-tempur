@@ -133,6 +133,32 @@ export default defineConfig({
             dependencies: ['admin-setup'],
           },
           {
+            /**
+             * Alur peran. Project terpisah karena spec ini login sendiri sebagai
+             * beberapa peran berbeda, jadi ia HARUS mulai tanpa sesi tersimpan —
+             * memakai storageState admin akan membuat `goto('/login')` langsung
+             * teralih ke dashboard dan login berikutnya tidak pernah terjadi.
+             *
+             * Tidak bergantung pada `admin-setup`: helper CI sudah dijalankan gate
+             * sebelum app dinyalakan, dan setiap test memprovisikan usernya sendiri
+             * lalu membersihkannya di `finally`.
+             */
+            name: 'chromium-admin-roles',
+            testMatch: /.*19-admin-role-navigation\.spec\.ts/,
+            use: {
+              ...devices['Desktop Chrome'],
+              storageState: { cookies: [], origins: [] },
+              ...(vercelAutomationBypass
+                ? {
+                    extraHTTPHeaders: {
+                      'x-vercel-protection-bypass': vercelAutomationBypass,
+                      'x-vercel-set-bypass-cookie': 'true',
+                    },
+                  }
+                : {}),
+            },
+          },
+          {
             name: 'admin-cleanup',
             testMatch: /.*admin\.cleanup\.ts/,
           },
