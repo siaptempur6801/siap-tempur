@@ -17,7 +17,7 @@ Terakhir diperbarui: 2026-09-19
 | 3 | UI internal pengelolaan instansi & batch | ✅ **selesai** |
 | 4 | Flow join peserta via token/kode batch | ✅ **selesai** |
 | 5 | Import peserta | ✅ **selesai** |
-| 6 | Template ujian & assignment | 🔶 skema & RPC selesai, UI belum |
+| 6 | Template ujian & assignment | ✅ **selesai** |
 | 7 | Dashboard monitoring | ⏳ belum |
 | 8 | Export XLSX per instansi/batch | ⏳ belum |
 
@@ -318,10 +318,50 @@ environment (`93b4d35b-…` berperan ADMIN di staging tetapi tanpa peran di
 produksi), jadi admin sekarang dicari dari database. Lihat
 `scripts/db-verify/_bootstrap.sql`.
 
+## Fase 5b — UI template & assignment
+
+Bagian **Template ujian** di detail instansi: daftar template beserta ketersediaan
+soal terbit per subjek ("Soal cukup" / "Kurang TIU 12"), dan form lengkap sesuai
+§7.3. Bagian **Ujian batch ini** di kartu batch: pilih template → bentuk exam →
+langsung terjadwal.
+
+### Bentuk dan jadwalkan disatukan
+
+§7.4 menetapkan assignment adalah batch + template + jadwal, dan §10.1 langkah 4–5
+menjalankannya berurutan. Versi pertama memisahkan keduanya, dan hasilnya exam
+terbentuk tanpa jadwal sama sekali — panel hanya bisa MENGUBAH assignment yang
+sudah ada, tidak membuatnya. Sekarang satu tombol mengerjakan keduanya.
+
+### Tiga bug nyata yang ditangkap E2E
+
+1. **`orgHref` tidak meneruskan parameter `template`.** Tombol "Template baru"
+   dan "Ubah" membuka halaman yang sama tanpa form apa pun — tanpa galat apa pun.
+   Penyebabnya daftar key yang ditulis satu per satu dan lupa diperbarui.
+   Sekarang key-nya didefinisikan sekali dan diteruskan otomatis.
+2. **Daftar template tidak pernah muncul** karena datanya digantungkan pada batch
+   terpilih, padahal template milik instansi. Template baru terlihat hanya setelah
+   admin membuka salah satu batch.
+3. **Exam hasil komposisi bocor.** Ia TIDAK terikat instansi, jadi tidak ikut
+   terhapus bersama instansinya: satu run gate meninggalkan satu exam 110 soal
+   beserta 3 section dan 110 item. Ditambahkan `admin_delete_composed_exam`
+   dengan penjaga — exam yang sudah punya attempt tidak boleh dihapus, harus
+   diarsipkan.
+
+### Dua bug lagi pada E2E-nya sendiri
+
+- Pembersihan memakai `locator.count()` yang **tidak menunggu render**, sehingga
+  satu instansi dan satu template tertinggal setiap kali gate dijalankan TANPA
+  membuat test gagal. Sekarang tanpa penjaga: `orgId` hanya terisi setelah
+  instansinya benar-benar dibuat, jadi kegagalan pembersihan memang harus berisik.
+- Assertion `getByText('Aktif')` cocok pada `<option>Aktif</option>` di `<select>`
+  yang tersembunyi. Diganti tombol "Nonaktifkan", yang hanya muncul saat
+  assignment memang aktif.
+- Assertion pembersihan menebak judul exam ("Exam Batch Ujian"), padahal exam
+  mewarisi nama template ketika kolom judul dikosongkan — jadi gagal justru
+  setelah penghapusannya berhasil. Diganti pola `/^Exam .+ dihapus\.$/`.
+
 ## Yang BELUM
 
-- **UI Fase 5**: halaman template & assignment belum dibuat (RPC-nya sudah ada
-  dan teruji).
 - Fase 6–7 (dashboard monitoring, export XLSX).
 - Peran klien instansi (`organization_members` dengan `owner`/`manager`/`staff`)
   belum punya UI — §15 menetapkan klien belum menjadi admin sistem pada MVP.

@@ -15,6 +15,7 @@ import {
 } from '@/components/admin/AdminUi'
 import { cn } from '@/lib/utils'
 import ParticipantImportPanel from '@/components/admin/ParticipantImportPanel'
+import BatchExamPanel from '@/components/admin/BatchExamPanel'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import {
@@ -25,6 +26,16 @@ import {
     organizationTypeLabel,
     participantStatusLabel,
 } from '@/src/services/organization.service'
+import { organizationExamService } from '@/src/services/organization-exam.service'
+import { saveOrgTemplateAction } from '@/app/actions/admin-organization-exam'
+import {
+    durationMinutes,
+    explanationLabel,
+    rankingLabel,
+    templateComposition,
+    templateShortages,
+    templateStatusLabel,
+} from '@/lib/organization-exam'
 import {
     deleteOrganizationAction,
     removeParticipantAction,
@@ -55,6 +66,7 @@ type SearchParams = {
     org?: string
     batch?: string
     new?: string
+    template?: string
     ok?: string
     error?: string
 }
@@ -121,6 +133,14 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
         ? await organizationService.listParticipants({ batchId: selectedBatch.id, limit: 100 })
         : null
 
+    // Template milik INSTANSI, jadi diambil begitu ada instansi yang dibuka —
+    // bukan hanya ketika ada batch terpilih. Versi pertama menggantungkan keduanya
+    // pada batch terpilih, sehingga daftar template tidak pernah terlihat sampai
+    // admin membuka salah satu batch. Ketahuan oleh E2E, bukan oleh typecheck.
+    const templateData = params.org ? await organizationExamService.listTemplates(params.org) : null
+    // Assignment melekat pada batch, jadi hanya diambil bila ada batch terpilih.
+    const assignments = selectedBatch ? await organizationExamService.listAssignments(selectedBatch.id) : []
+
     const activeOrganizations = list.organizations.filter((org) => org.status === 'active').length
     const totalBatches = list.organizations.reduce((sum, org) => sum + org.batch_count, 0)
     const totalParticipants = list.organizations.reduce((sum, org) => sum + org.participant_count, 0)
@@ -128,6 +148,9 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
     const creatingOrg = params.new === '1'
     const editingOrg = detail?.organization ?? null
     const showOrgForm = creatingOrg || Boolean(editingOrg)
+    const editingTemplate = params.template && params.template !== 'new'
+        ? templateData?.templates.find((template) => template.id === params.template) ?? null
+        : null
     const creatingBatch = params.batch === 'new'
     const showBatchForm = (creatingBatch || selectedBatch) && Boolean(editingOrg)
 
@@ -135,12 +158,24 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
     if (params.q) baseParams.set('q', params.q)
     if (params.status) baseParams.set('status', params.status)
 
+    /**
+     * Bangun tautan dengan konteks halaman yang dipertahankan.
+     *
+     * Daftar key-nya ditulis SEKALI dan diteruskan otomatis. Versi sebelumnya
+     * menyebut key satu per satu (`org`, `batch`, `new`) dan lupa menambahkan
+     * `template` ketika fitur template ditambahkan — akibatnya tombol "Template
+     * baru" dan "Ubah" membuka halaman yang sama tanpa form apa pun, tanpa galat.
+     * Ketahuan oleh E2E, bukan oleh typecheck.
+     */
+    const CONTEXT_KEYS = ['q', 'status', 'org', 'batch', 'new', 'template'] as const
+
     function orgHref(overrides: Partial<SearchParams>) {
-        const query = new URLSearchParams(baseParams)
-        const merged = { q: params.q, status: params.status, org: params.org, batch: params.batch, new: params.new, ...overrides }
-        if (merged.org) query.set('org', merged.org)
-        if (merged.batch) query.set('batch', merged.batch)
-        if (merged.new) query.set('new', merged.new)
+        const merged = { ...params, ...overrides }
+        const query = new URLSearchParams()
+        for (const key of CONTEXT_KEYS) {
+            const value = merged[key]
+            if (value) query.set(key, value)
+        }
         const value = query.toString()
         return value ? `/admin/organizations?${value}` : '/admin/organizations'
     }
@@ -315,6 +350,132 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                     ) : null}
 
                     {editingOrg ? (
+                        <div className="border-t border-slate-200 p-5">
+                            <AdminSectionHeading
+                                title="Template ujian"
+                                description="Cetak biru komposisi ujian. Template dipakai untuk membentuk exam pada batch mana pun."
+                                action={<Link className={adminPrimaryButtonClass} href={orgHref({ org: editingOrg.id, template: 'new', batch: undefined })}><Plus size={16}/>Template baru</Link>}
+                            />
+
+                            {templateData ? (
+                                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
+                                    <span className="rounded-md bg-slate-100 px-2 py-1 text-slate-600">Soal terbit tersedia</span>
+                                    <span className={cn('rounded-md px-2 py-1 ring-1', (templateData.available.TWK ?? 0) >= 30 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200')}>TWK {templateData.available.TWK ?? 0}</span>
+                                    <span className={cn('rounded-md px-2 py-1 ring-1', (templateData.available.TIU ?? 0) >= 35 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200')}>TIU {templateData.available.TIU ?? 0}</span>
+                                    <span className={cn('rounded-md px-2 py-1 ring-1', (templateData.available.TKP ?? 0) >= 45 ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200')}>TKP {templateData.available.TKP ?? 0}</span>
+                                </div>
+                            ) : null}
+
+                            {editingTemplate || params.template === 'new' ? (
+                                <form action={saveOrgTemplateAction} className="mt-4 grid gap-4 rounded-xl border border-blue-200 bg-blue-50/40 p-4 lg:grid-cols-4">
+                                    <input type="hidden" name="template_id" value={editingTemplate?.id ?? ''}/>
+                                    <input type="hidden" name="org" value={editingOrg.id}/>
+                                    <input type="hidden" name="batch" value={selectedBatch?.id ?? ''}/>
+                                    <Field label="Nama template" className="lg:col-span-2">
+                                        <input className={adminInputClass} name="name" required minLength={2} defaultValue={editingTemplate?.name ?? ''} placeholder="Full Tryout SKD Standar"/>
+                                    </Field>
+                                    <Field label="Berlaku untuk">
+                                        <select className={adminInputClass} name="template_organization_id" defaultValue={editingTemplate?.organization_id ?? ''} aria-label="Cakupan template">
+                                            <option value="">Semua instansi</option>
+                                            <option value={editingOrg.id}>Hanya {editingOrg.name}</option>
+                                        </select>
+                                    </Field>
+                                    <Field label="Status">
+                                        <select className={adminInputClass} name="template_status" defaultValue={editingTemplate?.status ?? 'active'} aria-label="Status template">
+                                            <option value="draft">Draft</option>
+                                            <option value="active">Aktif</option>
+                                            <option value="archived">Diarsipkan</option>
+                                        </select>
+                                    </Field>
+                                    <Field label="Jumlah TWK">
+                                        <input className={adminInputClass} name="twk_count" type="number" min="0" max="200" defaultValue={editingTemplate?.twk_count ?? 30}/>
+                                    </Field>
+                                    <Field label="Jumlah TIU">
+                                        <input className={adminInputClass} name="tiu_count" type="number" min="0" max="200" defaultValue={editingTemplate?.tiu_count ?? 35}/>
+                                    </Field>
+                                    <Field label="Jumlah TKP">
+                                        <input className={adminInputClass} name="tkp_count" type="number" min="0" max="200" defaultValue={editingTemplate?.tkp_count ?? 45}/>
+                                    </Field>
+                                    <Field label="Durasi (menit)">
+                                        <input className={adminInputClass} name="duration_minutes" type="number" min="1" defaultValue={editingTemplate ? durationMinutes(editingTemplate.duration_seconds) : 100}/>
+                                    </Field>
+                                    <Field label="Batas attempt">
+                                        <input className={adminInputClass} name="max_attempts" type="number" min="1" defaultValue={editingTemplate?.max_attempts ?? 1}/>
+                                    </Field>
+                                    <Field label="Pembahasan">
+                                        <select className={adminInputClass} name="show_explanation" defaultValue={editingTemplate?.show_explanation ?? 'after_exam'} aria-label="Pengaturan pembahasan">
+                                            <option value="after_exam">{explanationLabel('after_exam')}</option>
+                                            <option value="after_close">{explanationLabel('after_close')}</option>
+                                            <option value="never">{explanationLabel('never')}</option>
+                                        </select>
+                                    </Field>
+                                    <Field label="Visibilitas ranking">
+                                        <select className={adminInputClass} name="ranking_visibility" defaultValue={editingTemplate?.ranking_visibility ?? 'internal'} aria-label="Visibilitas ranking">
+                                            <option value="internal">{rankingLabel('internal')}</option>
+                                            <option value="hidden">{rankingLabel('hidden')}</option>
+                                            <option value="public">{rankingLabel('public')}</option>
+                                        </select>
+                                    </Field>
+                                    <div className="flex flex-wrap items-center gap-4 lg:col-span-4">
+                                        <label className="flex items-center gap-2">
+                                            <input type="checkbox" name="randomize_questions" defaultChecked={editingTemplate ? editingTemplate.randomize_questions : true} className="h-4 w-4 rounded border-slate-300"/>
+                                            <span className="text-sm font-bold text-slate-700">Acak urutan soal</span>
+                                        </label>
+                                        <label className="flex items-center gap-2" title="Belum diterapkan oleh mesin ujian">
+                                            <input type="checkbox" name="randomize_options" defaultChecked={editingTemplate?.randomize_options ?? false} className="h-4 w-4 rounded border-slate-300"/>
+                                            <span className="text-sm font-bold text-slate-400">Acak urutan opsi</span>
+                                            <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-amber-700">Belum diterapkan</span>
+                                        </label>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 lg:col-span-4">
+                                        <button className={adminPrimaryButtonClass}>{editingTemplate ? 'Simpan template' : 'Buat template'}</button>
+                                        <Link className={adminSecondaryButtonClass} href={orgHref({ org: editingOrg.id, template: undefined, batch: undefined })}>Batal</Link>
+                                    </div>
+                                </form>
+                            ) : null}
+
+                            {templateData && templateData.templates.length === 0 ? (
+                                <p className="mt-4 text-sm font-semibold text-slate-500">
+                                    Belum ada template. Buat template pertama, mis. 30 TWK + 35 TIU + 45 TKP sesuai komposisi SKD.
+                                </p>
+                            ) : (
+                                <div className="mt-4 space-y-2">
+                                    {templateData?.templates.map((template) => {
+                                        const shortages = templateShortages(template, templateData.available)
+                                        const isEditing = template.id === params.template
+                                        return (
+                                            <div key={template.id} className={cn('rounded-xl border bg-white p-4', isEditing ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200')}>
+                                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="text-sm font-black text-slate-900">{template.name}</span>
+                                                            <AdminBadge variant={template.status === 'active' ? 'green' : 'neutral'}>{templateStatusLabel(template.status)}</AdminBadge>
+                                                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">{template.organization_id ? 'Khusus instansi ini' : 'Semua instansi'}</span>
+                                                            {shortages.length === 0 ? (
+                                                                <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200">Soal cukup</span>
+                                                            ) : (
+                                                                <span className="rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-red-700 ring-1 ring-red-200">Kurang {shortages.map((row) => `${row.subject} ${row.missing}`).join(', ')}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-slate-500">
+                                                            <span>{templateComposition(template)}</span>
+                                                            <span>{durationMinutes(template.duration_seconds)} menit</span>
+                                                            <span>{template.max_attempts} attempt</span>
+                                                            <span>{template.randomize_questions ? 'soal diacak' : 'soal berurutan'}</span>
+                                                            <span>pembahasan: {explanationLabel(template.show_explanation)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <Link className="text-xs font-extrabold text-blue-600 hover:text-blue-700" href={orgHref({ org: editingOrg.id, template: template.id, batch: undefined })}>Ubah</Link>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    ) : null}
+
+                    {editingOrg ? (
                         <div className="border-t border-slate-200 bg-slate-50/70 p-5">
                             <AdminSectionHeading
                                 title="Batch"
@@ -476,6 +637,16 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                                         )}
 
                                                         <ParticipantImportPanel batchId={batch.id} batchCode={batch.code}/>
+
+                                                        {templateData && batch.id === selectedBatch?.id ? (
+                                                            <BatchExamPanel
+                                                                batchId={batch.id}
+                                                                organizationId={editingOrg.id}
+                                                                templates={templateData.templates.filter((template) => template.status !== 'archived')}
+                                                                available={templateData.available}
+                                                                assignments={assignments}
+                                                            />
+                                                        ) : null}
                                                     </div>
                                                 ) : null}
                                             </div>

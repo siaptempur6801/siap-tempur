@@ -1079,6 +1079,57 @@ export type Database = {
                 Args: { p_batch_id: string }
                 Returns: Json
             }
+            admin_delete_composed_exam: {
+                Args: { p_exam_id: string }
+                Returns: Json
+            }
+            admin_list_org_templates: {
+                Args: { p_organization_id: string | null }
+                Returns: Json
+            }
+            admin_template_shortages: {
+                Args: { p_template_id: string }
+                Returns: Json
+            }
+            admin_upsert_org_template: {
+                Args: {
+                    p_id: string | null
+                    p_organization_id: string | null
+                    p_name: string
+                    p_twk_count: number
+                    p_tiu_count: number
+                    p_tkp_count: number
+                    p_duration_seconds: number
+                    p_max_attempts: number
+                    p_randomize_questions: boolean | null
+                    p_randomize_options: boolean | null
+                    p_show_explanation: string | null
+                    p_ranking_visibility: string | null
+                    p_status: string | null
+                }
+                Returns: Json
+            }
+            admin_compose_exam_from_template: {
+                Args: { p_template_id: string; p_title: string | null; p_status: string | null }
+                Returns: Json
+            }
+            admin_list_assignments: {
+                Args: { p_batch_id: string | null }
+                Returns: Json
+            }
+            admin_upsert_assignment: {
+                Args: {
+                    p_id: string | null
+                    p_batch_id: string
+                    p_exam_id: string
+                    p_template_id: string | null
+                    p_starts_at: string | null
+                    p_due_at: string | null
+                    p_is_active: boolean | null
+                    p_notes: string | null
+                }
+                Returns: Json
+            }
             admin_import_participants: {
                 Args: { p_batch_id: string; p_rows: Json; p_dry_run: boolean | null }
                 Returns: Json
