@@ -18,8 +18,8 @@ Terakhir diperbarui: 2026-09-19
 | 4 | Flow join peserta via token/kode batch | ✅ **selesai** |
 | 5 | Import peserta | ✅ **selesai** |
 | 6 | Template ujian & assignment | ✅ **selesai** |
-| 7 | Dashboard monitoring | ⏳ belum |
-| 8 | Export XLSX per instansi/batch | ⏳ belum |
+| 7 | Dashboard monitoring | ✅ **selesai** |
+| 8 | Export XLSX per instansi/batch | ✅ **selesai** |
 
 Notifikasi (`notification.manage`) **tidak termasuk** goal ini: repo tidak punya
 pengirim email/push apa pun, jadi ditunda sampai provider dipilih.
@@ -360,9 +360,71 @@ sudah ada, tidak membuatnya. Sekarang satu tombol mengerjakan keduanya.
   mewarisi nama template ketika kolom judul dikosongkan — jadi gagal justru
   setelah penghapusannya berhasil. Diganti pola `/^Exam .+ dihapus\.$/`.
 
+## Fase 6 & 7 — Monitoring dan export XLSX
+
+Migration: `supabase/migrations/20260919220000_organization_monitoring_export.sql`
+RPC: `admin_batch_monitoring`, `admin_export_organization`.
+
+### Pemisahan data adalah syarat, bukan kenyamanan
+
+§12 menetapkan risikonya eksplisit ("data B2C dan instansi bercampur") dan §11
+menjadikannya KPI. Karena itu **setiap** query memfilter `source = 'organization'`
+DAN `organization_id`, dan tidak ada satu pun yang mengandalkan penyaringan di
+sisi halaman. Dibuktikan langsung: attempt B2C bernilai 999 milik peserta yang
+sama TIDAK muncul di export instansi yang nilainya 275.
+
+### Ranking internal, bukan leaderboard nasional
+
+§7.6 menuntut keduanya tidak tercampur. Peringkat dihitung ulang di dalam
+batch/instansi saja memakai `rank()` — bukan `row_number()`, karena dua peserta
+dengan skor sama seharusnya berbagi peringkat.
+
+Catatan teknis: `FILTER` TIDAK berlaku untuk fungsi window (hanya agregat),
+sehingga peserta yang belum selesai dipisahkan lewat
+`partition by (attempt_status = 'completed')` lalu di-null-kan.
+
+### XLSX ditulis sendiri, tanpa dependensi
+
+§6.6 menetapkan XLSX sebagai format utama, sedangkan repo belum punya
+pustakanya — dan satu pustaka XLSX umumnya ~1 MB. XLSX adalah arsip ZIP berisi
+beberapa berkas XML, jadi `lib/xlsx.ts` menulis ZIP entri STORED (tanpa
+kompresi) plus enam berkas XML.
+
+Yang TIDAK didukung, dan memang tidak dibutuhkan: membaca XLSX, rumus, grafik,
+gambar, kompresi. Kolom `null` ditulis sebagai sel kosong — peserta yang belum
+mengerjakan tidak boleh tampil sebagai `0`, karena "belum ada nilai" dan
+"nilainya nol" berbeda.
+
+**Verifikasinya memakai `unzip` sungguhan**, bukan sekadar memeriksa string XML:
+struktur ZIP yang salah membuat Excel menolak membuka berkas, dan itu tidak
+terlihat dari unit test yang hanya membaca teks. 19 unit test menutup CRC-32
+(vektor uji standar `0xCBF43926`), escaping XML, pembuangan karakter kontrol yang
+membuat Excel menolak berkas, penomoran kolom melampaui Z, nama sheet duplikat,
+dan determinisme berkas.
+
+### Empat assertion E2E yang rusak karena tabel monitoring baru
+
+Menambahkan tabel monitoring membuat nama peserta muncul di DUA tabel sekaligus,
+sehingga tiga assertion tanpa scope melanggar strict mode di dua spec berbeda.
+Semuanya dipersempit ke tabelnya masing-masing, dibedakan oleh header: tabel
+peserta lewat "Akun", tabel monitoring lewat "Status ujian".
+
+Dan satu lagi: pembersihan memakai `locator.count()` **tanpa menunggu render**
+— keempat kalinya jebakan yang sama muncul di sesi ini. Tanpa penantian, loop
+pengeluaran peserta langsung berhenti karena tabelnya belum ada, dan
+penghapusan instansi gagal.
+
 ## Yang BELUM
 
-- Fase 6–7 (dashboard monitoring, export XLSX).
+Seluruh tujuh langkah §14 **selesai**. Yang tersisa di luar cakupan MVP:
+
+- Peran klien instansi (`organization_members` dengan `owner`/`manager`/`staff`)
+  belum punya UI — §15 menetapkan klien belum menjadi admin sistem pada MVP.
+- Dua open question §13 belum diputuskan: apakah hasil yang dibagikan ke klien
+  perlu detail jawaban per soal, dan apakah passing grade boleh memakai target
+  internal instansi (bukan hanya standar nasional).
+- `randomize_options` disimpan di template tetapi belum diterapkan mesin ujian;
+  halaman menandainya "Belum diterapkan" supaya tidak menyesatkan.
 - Peran klien instansi (`organization_members` dengan `owner`/`manager`/`staff`)
   belum punya UI — §15 menetapkan klien belum menjadi admin sistem pada MVP.
 - `organization_members` belum punya UI. PRD §9 menyebutnya untuk role klien

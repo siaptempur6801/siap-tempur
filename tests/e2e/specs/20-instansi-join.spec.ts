@@ -111,8 +111,12 @@ test.describe('Instansi — self-onboarding peserta', () => {
             // benar-benar dapat dibuka.
             await page.goto(`/admin/organizations?org=${orgId}`)
             await page.getByRole('link', { name: 'Lihat peserta', exact: true }).first().click()
-            await expect(page.getByText('Peserta E2E', { exact: true })).toBeVisible()
-            await expect(page.getByText('Tertaut', { exact: true })).toBeVisible()
+            // Dipersempit ke tabel PESERTA: sejak panel monitoring ditambahkan, nama
+            // peserta muncul di DUA tabel, sehingga locator tanpa scope melanggar
+            // strict mode.
+            const participantsTable = page.locator('table', { hasText: 'Akun' }).first()
+            await expect(participantsTable.getByText('Peserta E2E', { exact: true })).toBeVisible()
+            await expect(participantsTable.getByText('Tertaut', { exact: true })).toBeVisible()
         } finally {
             // Bersihkan instansi yang dibuat test ini. Tanpa ini, setiap kali gate
             // dijalankan akan tertinggal satu instansi sampah di staging — dan
@@ -131,7 +135,8 @@ test.describe('Instansi — self-onboarding peserta', () => {
                 const participantToggle = page.getByRole('link', { name: 'Lihat peserta', exact: true })
                 if (await participantToggle.count() > 0) {
                     await participantToggle.first().click()
-                    await expect(page.getByText('Peserta E2E', { exact: true })).toBeVisible()
+                    const table = page.locator('table', { hasText: 'Akun' }).first()
+                    await expect(table.getByText('Peserta E2E', { exact: true })).toBeVisible({ timeout: 30_000 })
                     await page.getByRole('button', { name: 'Keluarkan' }).first().click()
                     await expect(page.getByRole('button', { name: 'Keluarkan' })).toHaveCount(0, { timeout: 30_000 })
                 }
@@ -240,13 +245,16 @@ test.describe('Instansi — bulk import peserta', () => {
             // termasuk hitungan `imported`/`duplicate` pada impor kedua). Mengujinya
             // lagi lewat UI hanya menambah kerapuhan tanpa menambah keyakinan.
 
-            // Peserta benar-benar ada di daftar batch.
+            // Peserta benar-benar ada di daftar batch. Dipersempit ke tabel PESERTA
+            // (dibedakan oleh header "Akun"): sejak panel monitoring ditambahkan,
+            // nama peserta muncul di dua tabel sekaligus.
             await page.reload()
+            const importedTable = page.locator('table', { hasText: 'Akun' }).first()
             for (const name of ['Andi Import', 'Budi Import', 'Email Diperbaiki']) {
-                await expect(page.getByText(name, { exact: true })).toBeVisible()
+                await expect(importedTable.getByText(name, { exact: true })).toBeVisible()
             }
             // Ketiganya belum menautkan akun — statusnya harus jujur "Belum".
-            await expect(page.getByText('Belum', { exact: true }).first()).toBeVisible()
+            await expect(importedTable.getByText('Belum', { exact: true }).first()).toBeVisible()
         } finally {
             if (orgId) {
                 await page.goto(`/admin/organizations?org=${orgId}`)

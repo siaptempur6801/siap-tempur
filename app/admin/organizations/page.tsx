@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Building2, CalendarDays, Link2, Plus, RefreshCcw, Search, Users } from 'lucide-react'
+import { Building2, CalendarDays, Download, Link2, Plus, RefreshCcw, Search, Users } from 'lucide-react'
 import {
     AdminBadge,
     AdminCard,
@@ -16,6 +16,7 @@ import {
 import { cn } from '@/lib/utils'
 import ParticipantImportPanel from '@/components/admin/ParticipantImportPanel'
 import BatchExamPanel from '@/components/admin/BatchExamPanel'
+import { organizationExportService, attemptStatusLabel, formatDuration } from '@/src/services/organization-export.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import {
@@ -140,6 +141,9 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
     const templateData = params.org ? await organizationExamService.listTemplates(params.org) : null
     // Assignment melekat pada batch, jadi hanya diambil bila ada batch terpilih.
     const assignments = selectedBatch ? await organizationExamService.listAssignments(selectedBatch.id) : []
+    // Monitoring ikut dimuat bersama batch terpilih: inilah yang dilihat admin
+    // setiap kali membuka satu batch.
+    const monitoring = selectedBatch ? await organizationExportService.getMonitoring(selectedBatch.id) : null
 
     const activeOrganizations = list.organizations.filter((org) => org.status === 'active').length
     const totalBatches = list.organizations.reduce((sum, org) => sum + org.batch_count, 0)
@@ -637,6 +641,90 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                                         )}
 
                                                         <ParticipantImportPanel batchId={batch.id} batchCode={batch.code}/>
+
+                                                        {isSelected && monitoring ? (
+                                                            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+                                                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+                                                                            <Users size={16}/>Monitoring peserta
+                                                                        </div>
+                                                                        <p className="mt-0.5 text-xs font-medium leading-5 text-slate-500">
+                                                                            Siapa yang belum mulai, sedang mengerjakan, dan sudah selesai.
+                                                                        </p>
+                                                                    </div>
+                                                                    <a
+                                                                        href={`/admin/organizations/export?org=${editingOrg.id}&batch=${batch.id}`}
+                                                                        className={adminSecondaryButtonClass}
+                                                                    >
+                                                                        <Download size={15}/>Unduh XLSX
+                                                                    </a>
+                                                                </div>
+
+                                                                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                                                                    {[
+                                                                        { label: 'Peserta', value: monitoring.summary.total, tone: 'text-slate-900' },
+                                                                        { label: 'Belum mulai', value: monitoring.summary.notStarted, tone: monitoring.summary.notStarted > 0 ? 'text-amber-700' : 'text-slate-400' },
+                                                                        { label: 'Mengerjakan', value: monitoring.summary.inProgress, tone: 'text-blue-700' },
+                                                                        { label: 'Selesai', value: monitoring.summary.completed, tone: 'text-emerald-700' },
+                                                                        { label: 'Lulus', value: monitoring.summary.passed, tone: monitoring.summary.passed > 0 ? 'text-emerald-700' : 'text-slate-400' },
+                                                                    ].map((metric) => (
+                                                                        <div key={metric.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                                                                            <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{metric.label}</div>
+                                                                            <div className={cn('mt-1 text-lg font-black', metric.tone)}>{metric.value}</div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+
+                                                                {monitoring.participants.length === 0 ? (
+                                                                    <p className="mt-3 text-sm font-semibold text-slate-500">Belum ada peserta di batch ini.</p>
+                                                                ) : (
+                                                                    <div className="mt-3 overflow-x-auto">
+                                                                        <table className="w-full min-w-[860px] text-left text-sm">
+                                                                            <thead className="bg-slate-50 text-[10px] font-extrabold uppercase tracking-wide text-slate-400">
+                                                                                <tr>
+                                                                                    <th className="px-3 py-2">Kode</th>
+                                                                                    <th className="px-3 py-2">Nama</th>
+                                                                                    <th className="px-3 py-2">Status ujian</th>
+                                                                                    <th className="px-3 py-2 text-right">TWK</th>
+                                                                                    <th className="px-3 py-2 text-right">TIU</th>
+                                                                                    <th className="px-3 py-2 text-right">TKP</th>
+                                                                                    <th className="px-3 py-2 text-right">Total</th>
+                                                                                    <th className="px-3 py-2 text-right">Peringkat</th>
+                                                                                    <th className="px-3 py-2 text-right">Durasi</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody className="divide-y divide-slate-100">
+                                                                                {monitoring.participants.map((participant) => (
+                                                                                    <tr key={participant.participantId}>
+                                                                                        <td className="px-3 py-2 font-mono text-xs font-bold text-slate-600">{participant.participantCode}</td>
+                                                                                        <td className="px-3 py-2">
+                                                                                            <div className="font-semibold text-slate-800">{participant.fullName}</div>
+                                                                                            {participant.unit ? <div className="text-[11px] font-medium text-slate-400">{participant.unit}</div> : null}
+                                                                                        </td>
+                                                                                        <td className="px-3 py-2">
+                                                                                            <span className={cn('rounded-md px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide',
+                                                                                                participant.attemptStatus === 'completed' ? 'bg-emerald-100 text-emerald-800'
+                                                                                                    : participant.attemptStatus === 'in_progress' ? 'bg-blue-100 text-blue-800'
+                                                                                                    : 'bg-amber-100 text-amber-800')}>
+                                                                                                {attemptStatusLabel(participant.attemptStatus)}
+                                                                                            </span>
+                                                                                            {participant.passed === true ? <span className="ml-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-800">Lulus</span> : null}
+                                                                                        </td>
+                                                                                        <td className="px-3 py-2 text-right font-semibold text-slate-600">{participant.attemptStatus === 'completed' ? participant.twkScore : '—'}</td>
+                                                                                        <td className="px-3 py-2 text-right font-semibold text-slate-600">{participant.attemptStatus === 'completed' ? participant.tiuScore : '—'}</td>
+                                                                                        <td className="px-3 py-2 text-right font-semibold text-slate-600">{participant.attemptStatus === 'completed' ? participant.tkpScore : '—'}</td>
+                                                                                        <td className="px-3 py-2 text-right font-black text-slate-900">{participant.totalScore ?? '—'}</td>
+                                                                                        <td className="px-3 py-2 text-right font-bold text-slate-600">{participant.internalRank ?? '—'}</td>
+                                                                                        <td className="px-3 py-2 text-right font-medium text-slate-500">{formatDuration(participant.durationSeconds)}</td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ) : null}
 
                                                         {templateData && batch.id === selectedBatch?.id ? (
                                                             <BatchExamPanel

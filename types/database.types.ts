@@ -1079,6 +1079,14 @@ export type Database = {
                 Args: { p_batch_id: string }
                 Returns: Json
             }
+            admin_batch_monitoring: {
+                Args: { p_batch_id: string }
+                Returns: Json
+            }
+            admin_export_organization: {
+                Args: { p_organization_id: string; p_batch_id: string | null }
+                Returns: Json
+            }
             admin_delete_composed_exam: {
                 Args: { p_exam_id: string }
                 Returns: Json
