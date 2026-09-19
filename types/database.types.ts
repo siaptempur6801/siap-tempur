@@ -829,6 +829,45 @@ export type Database = {
                 }
                 Returns: Json
             }
+            /**
+             * RPC alur review konten — lihat migration
+             * `202607130001_event_certificates.sql` dan
+             * `20260823121937_cpns_legacy_import_guard_v1.sql`.
+             *
+             * Dipakai aksi batch review (`app/actions/content-review-batch.ts`).
+             * Semuanya menegakkan `auth.uid()` dan permission di dalam fungsi,
+             * sehingga jalur ini TIDAK menembus penjaga workflow.
+             */
+            submit_question_for_review: {
+                Args: { p_question_id: string }
+                Returns: Json
+            }
+            assign_question_reviewer: {
+                Args: { p_question_id: string; p_reviewer_id: string }
+                Returns: Json
+            }
+            publish_question: {
+                Args: { p_question_id: string }
+                Returns: Json
+            }
+            bulk_review_pilot_stage: {
+                Args: { p_batch: string; p_decision: string; p_notes: string | null }
+                Returns: Json
+            }
+            /**
+             * Menugaskan `auth.uid()` sebagai reviewer untuk SEMUA soal batch
+             * yang masih punya review pending tanpa reviewer.
+             *
+             * Wajib dipanggil SEBELUM `bulk_review_pilot_stage` di setiap tahap:
+             * `review_question_stage` mengosongkan `reviewer_id` (di `questions`
+             * dan `content_reviews`) setiap kali satu tahap selesai, sedangkan
+             * `bulk_review_pilot_stage` hanya menyentuh soal yang
+             * `reviewer_id = auth.uid()`. Jadi tiap tahap harus diklaim ulang.
+             */
+            claim_pilot_review_stage: {
+                Args: { p_batch: string }
+                Returns: Json
+            }
         }
         Enums: { [_ in never]: never }
         CompositeTypes: { [_ in never]: never }

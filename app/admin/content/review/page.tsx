@@ -9,11 +9,13 @@ import {
     Search,
     Send,
     ShieldCheck,
+    Sparkles,
     UserCheck,
     XCircle,
 } from 'lucide-react'
 import MathRenderer from '@/components/MathRenderer'
 import QuestionOptionsEditor from '@/components/admin/QuestionOptionsEditor'
+import ReviewBatchPanel, { BATCH_CODE } from '@/components/admin/ReviewBatchPanel'
 import {
     AdminBadge,
     AdminCard,
@@ -239,13 +241,16 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
     const createNew = params.new === '1'
     const activeSubjectCode = params.subject || data.catalog.subjects[0]?.code || ''
+    // Panel review massal hanya relevan untuk batch CPNS/SKD yang sedang
+    // dikerjakan. Konteks lain tidak perlu query tambahan.
+    const isBatchContext = program === 'CPNS' && track === 'SKD'
 
     return (
         <div className="space-y-5 pb-10">
             <AdminPageHeader
                 title="Reviewer Workspace"
                 description={`Kelola soal ${program} / ${track} dari draft sampai published dalam satu antrian kerja. Context dapat diganti dari header admin.`}
-                action={canCreate ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}
+                action={<div className="flex flex-wrap items-center gap-2">{!isBatchContext ? <Link href={workspaceHref({ ...params, program: 'CPNS', track: 'SKD' }, { subject: undefined, status: undefined, stage: undefined, reviewer: undefined, q: undefined, question: undefined, new: undefined })} className={adminSecondaryButtonClass}><Sparkles size={16}/>Batch CPNS</Link> : null}{canCreate ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}</div>}
             />
 
             {(params.ok || params.error) ? (
@@ -253,6 +258,8 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                     {params.error ? <XCircle className="mt-0.5 shrink-0" size={17}/> : <CheckCircle2 className="mt-0.5 shrink-0" size={17}/>}<span>{params.error || params.ok}</span>
                 </div>
             ) : null}
+
+            {isBatchContext ? <ReviewBatchPanel batch={BATCH_CODE} program={program} track={track} actorId={authorization.userId} canReview={permissions.has(PERMISSIONS.CONTENT_REVIEW)} canPublish={permissions.has(PERMISSIONS.CONTENT_PUBLISH)}/> : null}
 
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <AdminMetric label="Editorial" value={editorialCount} helper="Menunggu editorial" icon={<Clock3 size={18}/>} tone="yellow"/>

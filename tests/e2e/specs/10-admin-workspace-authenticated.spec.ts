@@ -119,6 +119,27 @@ test.describe('Admin content modules after legacy tree removal', () => {
     await expect(page.locator('main h1')).toHaveText('Reviewer Workspace')
     await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
     await expectNoHorizontalOverflow(page)
+
+    // Panel review massal untuk batch CPNS. Alur review normal hanya satu soal
+    // per form; panel ini yang memakai RPC massal (`claim_pilot_review_stage` +
+    // `bulk_review_pilot_stage`) sehingga satu batch 80 soal tidak perlu ~1.700
+    // klik. Yang dibuktikan di sini adalah panelnya benar-benar terpasang di
+    // halaman kanonik pada konteks CPNS/SKD — bukan sekadar ada di dalam repo.
+    await expect(page.getByRole('heading', { name: 'Review massal — batch' })).toBeVisible()
+    await expect(page.getByText('cpns-full-tryout-1', { exact: true })).toBeVisible()
+    await expect(page.getByText('Sebaran status', { exact: true })).toBeVisible()
+    await expect(page.getByText('Belum ada reviewer', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Siapkan & klaim' })).toBeVisible()
+    await expectNoHorizontalOverflow(page)
+  })
+
+  test('review massal tidak bocor ke konteks TKA', async ({ page }) => {
+    // Panel batch terikat konteks CPNS/SKD. Di konteks lain halaman review harus
+    // tetap seperti semula: tidak ada panel batch maupun tombol massal.
+    await page.goto('/admin/content/review?program=TKA&track=SMP')
+    await expect(page.locator('main h1')).toHaveText('Reviewer Workspace')
+    await expect(page.getByRole('heading', { name: 'Review massal — batch' })).toHaveCount(0)
+    await expect(page.getByText('cpns-full-tryout-1', { exact: true })).toHaveCount(0)
   })
 
   test('articles list renders and links into the article editor', async ({ page }) => {
