@@ -2,19 +2,23 @@ import Link from 'next/link'
 import { Archive, CalendarDays, FileQuestion, Package, Save } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getServerNowMs } from '@/lib/server/time'
-import { adminV2Service, type WorkspaceSection } from '@/src/services/admin-v2.service'
+import {
+    ADMIN_OPERATIONS_PAGE_COPY,
+    ADMIN_OPERATIONS_PERMISSIONS,
+    ADMIN_OPERATIONS_ROUTES,
+    ADMIN_OPERATIONS_SECTIONS,
+    type AdminOperationsMode,
+} from '@/lib/admin-operations'
+import { adminV2Service } from '@/src/services/admin-v2.service'
 import { authorizationService } from '@/src/services/authorization.service'
-import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
+import { PERMISSIONS } from '@/src/auth/permissions'
 import {
     archiveEventAction,
-    archiveExamAction,
     archiveProductAction,
     archiveQuestionAction,
     linkEventProductAction,
     saveEventAction,
     saveEventSessionAction,
-    saveExamAction,
-    saveExamSectionAction,
     saveProductAction,
     saveQuestionAction,
 } from '@/app/actions/admin-v2'
@@ -33,7 +37,7 @@ import {
     adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
 
-export type AdminOperationsMode = 'products' | 'events' | 'exams' | 'questions' | 'commerce'
+export type { AdminOperationsMode }
 
 type ViewRow = Record<string, unknown>
 
@@ -65,22 +69,6 @@ type SearchParams = {
     track?: string
 }
 
-const ROUTES: Record<AdminOperationsMode, string> = {
-    products: '/admin/commerce/products',
-    events: '/admin/assessment/events',
-    exams: '/admin/assessment/exams',
-    questions: '/admin/content/questions',
-    commerce: '/admin/commerce',
-}
-
-const PAGE_COPY: Record<AdminOperationsMode, { title: string; description: string }> = {
-    products: { title: 'Products', description: 'Kelola paket, harga, durasi, dan grant untuk context aktif.' },
-    events: { title: 'Events', description: 'Kelola event, sesi pelaksanaan, dan produk tiket untuk context aktif.' },
-    exams: { title: 'Exams', description: 'Kelola konfigurasi exam dan section untuk context aktif.' },
-    questions: { title: 'Question Bank', description: 'Kelola soal operasional, opsi jawaban, versi, dan status publikasi.' },
-    commerce: { title: 'Orders & Payments', description: 'Monitor order dan payment terbaru. Data commerce masih global lintas program.' },
-}
-
 function s(value: unknown) { return typeof value === 'string' ? value : value == null ? '' : String(value) }
 function n(value: unknown) { const parsed = Number(value ?? 0); return Number.isFinite(parsed) ? parsed : 0 }
 function nullable(value: unknown) { const valueString = s(value); return valueString || null }
@@ -109,7 +97,7 @@ function rupiah(value: unknown) {
 function workspaceHref(mode: AdminOperationsMode, program: string, track: string, edit?: string) {
     const query = new URLSearchParams({ program, track })
     if (edit) query.set('edit', edit)
-    return `${ROUTES[mode]}?${query.toString()}`
+    return `${ADMIN_OPERATIONS_ROUTES[mode]}?${query.toString()}`
 }
 
 function statusVariant(value: unknown): 'neutral' | 'blue' | 'green' | 'yellow' | 'orange' | 'red' | 'violet' {
@@ -147,43 +135,6 @@ function PermissionEmpty({ permission }: { permission: string }) {
     return <AdminCard><AdminEmptyState title="Akses tidak tersedia" description={`Akun ini tidak memiliki permission ${permission}.`}/></AdminCard>
 }
 
-/**
- * Domain data yang dibutuhkan tiap tab.
- *
- * Setiap mode hanya merender satu domain, tetapi sebelumnya SELURUH domain
- * di-query — membuka tab "Products" ikut menarik 80 soal beserta seluruh
- * opsinya (setiap opsi memuat `content`). Pemetaan ini yang menghentikannya.
- *
- * Catatan: `products` tetap dimuat di mode `events` karena formulir event
- * menautkan event ke product lewat `eventProducts`.
- */
-const SECTIONS_BY_MODE: Record<AdminOperationsMode, readonly WorkspaceSection[]> = {
-    products: ['products'],
-    events: ['events', 'products'],
-    exams: ['exams'],
-    questions: ['questions'],
-    commerce: ['commerce'],
-}
-
-/**
- * Permission yang dibutuhkan tiap mode.
- *
- * Dipakai untuk memeriksa izin SEBELUM menyentuh database. Sebelumnya urutannya
- * terbalik: `getWorkspaceData()` dipanggil lebih dulu, baru permission dicek
- * pada `canProducts`/`canExams`/… di bawahnya. Akibatnya peran yang tidak punya
- * izin (mis. FINANCE membuka Question Bank) tetap menunggu query soal + seluruh
- * opsinya, exam, event, product, dan order selesai — lalu disuguhi "Akses tidak
- * tersedia". Selain boros, pola itu membuat waktu muat halaman membocorkan
- * seberapa berat data di baliknya.
- */
-const REQUIRED_PERMISSIONS: Record<AdminOperationsMode, PermissionCode[]> = {
-    products: [PERMISSIONS.PRODUCT_MANAGE],
-    events: [PERMISSIONS.EVENT_MANAGE],
-    exams: [PERMISSIONS.EXAM_MANAGE],
-    questions: [PERMISSIONS.QUESTION_MANAGE],
-    commerce: [PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE],
-}
-
 export default async function AdminOperationsWorkspace({ mode, searchParams }: { mode: AdminOperationsMode; searchParams: Promise<SearchParams> }) {
     const params = await searchParams
     const requestedContext = {
@@ -194,24 +145,23 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
     // Otorisasi dulu, query kemudian.
     const authorization = await authorizationService.getCurrentAuthorization()
     const permissions = new Set(authorization?.permissions ?? [])
-    const allowed = REQUIRED_PERMISSIONS[mode]
+    const allowed = ADMIN_OPERATIONS_PERMISSIONS[mode]
     if (!allowed.some((permission) => permissions.has(permission))) {
         return (
             <div className="space-y-5 pb-10">
-                <AdminPageHeader title={PAGE_COPY[mode].title} description={PAGE_COPY[mode].description}/>
+                <AdminPageHeader title={ADMIN_OPERATIONS_PAGE_COPY[mode].title} description={ADMIN_OPERATIONS_PAGE_COPY[mode].description}/>
                 <PermissionEmpty permission={allowed.join(' atau ')}/>
             </div>
         )
     }
 
-    const data = await adminV2Service.getWorkspaceData(requestedContext, SECTIONS_BY_MODE[mode]) as unknown as WorkspaceView
+    const data = await adminV2Service.getWorkspaceData(requestedContext, ADMIN_OPERATIONS_SECTIONS[mode]) as unknown as WorkspaceView
     const program = data.catalog.program.code
     const track = data.catalog.track.code
     const nowMs = getServerNowMs()
 
     const canProducts = permissions.has(PERMISSIONS.PRODUCT_MANAGE)
     const canEvents = permissions.has(PERMISSIONS.EVENT_MANAGE)
-    const canExams = permissions.has(PERMISSIONS.EXAM_MANAGE)
     const canQuestions = permissions.has(PERMISSIONS.QUESTION_MANAGE)
     const canCommerce = permissions.has(PERMISSIONS.ORDER_READ) || permissions.has(PERMISSIONS.PAYMENT_MANAGE)
 
@@ -228,12 +178,10 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
     const subjectById = new Map(data.catalog.subjects.map((row) => [row.id, row]))
     const examTypeById = new Map(data.catalog.examTypes.map((row) => [row.id, row]))
     const sessionsFor = (eventId: string) => data.eventSessions.filter((row) => s(row.event_id) === eventId)
-    const sectionsFor = (examId: string) => data.examSections.filter((row) => s(row.exam_id) === examId)
     const optionsFor = (questionId: string) => data.questionOptions.filter((row) => s(row.question_id) === questionId)
 
     const editedProduct = data.products.find((row) => s(row.id) === params.edit)
     const editedEvent = data.events.find((row) => s(row.id) === params.edit)
-    const editedExam = data.exams.find((row) => s(row.id) === params.edit)
     const editedQuestion = data.questions.find((row) => s(row.id) === params.edit)
     const editedProductPrice = editedProduct ? priceByProduct.get(s(editedProduct.id)) : undefined
     const closeHref = workspaceHref(mode, program, track)
@@ -298,35 +246,6 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
         )
     }
 
-    if (mode === 'exams' && canExams) {
-        pageAction = (
-            <AdminModal
-                title={editedExam ? 'Edit exam' : 'Buat exam'}
-                description="Konfigurasi akses, attempt, durasi, dan urutan soal."
-                triggerLabel="Buat exam"
-                defaultOpen={Boolean(editedExam)}
-                closeHref={closeHref}
-                size="xl"
-            >
-                <form key={editedExam ? `exam-${s(editedExam.id)}-${s(editedExam.updated_at)}` : `exam-new-${program}-${track}`} action={saveExamAction} className="grid gap-4 md:grid-cols-2">
-                    <ContextFields program={program} track={track}/>
-                    {editedExam && <input type="hidden" name="id" value={s(editedExam.id)}/>} 
-                    <Field label="Tipe"><select className={adminInputClass} name="exam_type_code" defaultValue={examTypeById.get(s(editedExam?.exam_type_id))?.code}>{data.catalog.examTypes.map((type)=><option key={type.id} value={type.code}>{type.code}</option>)}</select></Field>
-                    <Field label="Judul"><input className={adminInputClass} name="title" required defaultValue={s(editedExam?.title)}/></Field>
-                    <Field label="Slug"><input className={adminInputClass} name="slug" defaultValue={s(editedExam?.slug)}/></Field>
-                    <Field label="Status"><select className={adminInputClass} name="status" defaultValue={s(editedExam?.status)||'draft'}><option>draft</option><option>active</option><option>scheduled</option><option>archived</option></select></Field>
-                    <Field label="Durasi detik"><input className={adminInputClass} name="duration_seconds" type="number" min="1" defaultValue={s(editedExam?.duration_seconds)}/></Field>
-                    <Field label="Attempt limit"><input className={adminInputClass} name="attempt_limit" type="number" min="1" defaultValue={s(editedExam?.attempt_limit)}/></Field>
-                    <Field label="Token cost"><input className={adminInputClass} name="token_cost" type="number" min="0" defaultValue={s(editedExam?.token_cost)||'0'}/></Field>
-                    <Field label="Order"><select className={adminInputClass} name="question_order" defaultValue={s(editedExam?.question_order)||'random'}><option>random</option><option>fixed</option></select></Field>
-                    <input type="hidden" name="result_visibility" value={s(editedExam?.result_visibility)||'instant'}/>
-                    <input type="hidden" name="access_type" value={s(editedExam?.access_type)||'FREE'}/>
-                    <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}><Save size={16}/>{editedExam ? 'Simpan perubahan' : 'Simpan exam'}</button></div>
-                </form>
-            </AdminModal>
-        )
-    }
-
     if (mode === 'questions' && canQuestions) {
         pageAction = (
             <AdminModal
@@ -358,8 +277,8 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
     return (
         <div className="space-y-6 pb-10">
             <AdminPageHeader
-                title={PAGE_COPY[mode].title}
-                description={`${PAGE_COPY[mode].description} Context aktif: ${data.catalog.program.name} / ${data.catalog.track.name}.`}
+                title={ADMIN_OPERATIONS_PAGE_COPY[mode].title}
+                description={`${ADMIN_OPERATIONS_PAGE_COPY[mode].description} Context aktif: ${data.catalog.program.name} / ${data.catalog.track.name}.`}
                 action={pageAction}
             />
             <Feedback ok={params.ok} error={params.error}/>
@@ -417,33 +336,6 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                     </AdminCard>
                 }) : <AdminCard><AdminEmptyState title="Belum ada event" description="Gunakan tombol Buat event untuk membuat event pertama."/></AdminCard>}
             </section> : <PermissionEmpty permission="event.manage"/>)}
-
-            {mode === 'exams' && (canExams ? <section className="space-y-3">
-                {data.exams.length ? data.exams.map((row) => {
-                    const id = s(row.id)
-                    const sections = sectionsFor(id)
-                    return <AdminCard key={id} className="p-5">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.title)}</span><AdminBadge variant="blue">{examTypeById.get(s(row.exam_type_id))?.code ?? '?'}</AdminBadge><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></div><p className="mt-1 text-xs font-semibold text-slate-500">{sections.length} section · token {s(row.token_cost)}</p></div>
-                            <div className="flex flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={workspaceHref('exams', program, track, id)}>Edit</Link><form action={archiveExamAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div>
-                        </div>
-                        <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div className="flex min-w-0 flex-wrap gap-2">{sections.length ? sections.map((section) => <AdminBadge key={s(section.id)}>{subjectById.get(s(section.subject_id))?.code ?? '-'} · {s(section.question_count)} soal</AdminBadge>) : <span className="text-sm font-medium text-slate-500">Belum ada section.</span>}</div>
-                            <AdminModal title="Tambah section" description={`Tambahkan section ke ${s(row.title)}.`} triggerLabel="Tambah section" triggerVariant="secondary" size="lg">
-                                <form action={saveExamSectionAction} className="grid gap-4 md:grid-cols-2">
-                                    <ContextFields program={program} track={track}/><input type="hidden" name="exam_id" value={id}/>
-                                    <Field label="Mapel / Subtes"><select className={adminInputClass} name="subject_code"><option value="">Tanpa mapel</option>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></Field>
-                                    <Field label="Judul"><input className={adminInputClass} name="title" required/></Field>
-                                    <Field label="Urutan"><input className={adminInputClass} name="sort_order" type="number" defaultValue={sections.length + 1}/></Field>
-                                    <Field label="Jumlah soal"><input className={adminInputClass} name="question_count" type="number" min="1"/></Field>
-                                    <Field label="Passing score"><input className={adminInputClass} name="passing_score" type="number" min="0"/></Field>
-                                    <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}>Tambah section</button></div>
-                                </form>
-                            </AdminModal>
-                        </div>
-                    </AdminCard>
-                }) : <AdminCard><AdminEmptyState title="Belum ada exam" description="Gunakan tombol Buat exam untuk membuat exam pertama."/></AdminCard>}
-            </section> : <PermissionEmpty permission="exam.manage"/>)}
 
             {mode === 'questions' && (canQuestions ? <section className="space-y-5">
                 <AdminCard className="overflow-hidden"><div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Daftar soal" description={`${data.questions.length} soal pada context aktif.`}/></div>{data.questions.length ? <div className="divide-y divide-slate-100">{data.questions.map((row) => {
