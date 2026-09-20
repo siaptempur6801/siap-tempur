@@ -66,12 +66,26 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
     programCode: (params.program || 'CPNS').toUpperCase(),
     trackCode: (params.track || 'SKD').toUpperCase(),
   }
-  const [data, authorization] = await Promise.all([
-    adminExamsService.getWorkspace(requestedContext),
-    authorizationService.getCurrentAuthorization(),
-  ])
+
+  // Otorisasi dulu, query kemudian — pola yang sama dengan
+  // `AdminOperationsWorkspace`. Sebelumnya keduanya dijalankan serentak
+  // (`Promise.all`), sehingga peran tanpa `exam.manage` tetap menunggu seluruh
+  // query exam + section + pool soal selesai hanya untuk disuguhi "Akses tidak
+  // tersedia". Selain boros, waktu muat halaman ikut membocorkan seberapa berat
+  // data di baliknya.
+  const authorization = await authorizationService.getCurrentAuthorization()
   const permissions = new Set(authorization?.permissions ?? [])
   const canExams = permissions.has(PERMISSIONS.EXAM_MANAGE)
+  if (!canExams) {
+    return (
+      <div className="space-y-6 pb-10">
+        <AdminPageHeader title="Exams" description="Kelola konfigurasi exam dan section untuk context aktif."/>
+        <AdminCard><AdminEmptyState title="Akses tidak tersedia" description="Akun ini tidak memiliki permission exam.manage."/></AdminCard>
+      </div>
+    )
+  }
+
+  const data = await adminExamsService.getWorkspace(requestedContext)
   const program = data.catalog.program.code
   const track = data.catalog.track.code
   const closeHref = workspaceHref(program, track)
@@ -116,9 +130,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
         </div>
       ) : null}
 
-      {!canExams ? (
-        <AdminCard><AdminEmptyState title="Akses tidak tersedia" description="Akun ini tidak memiliki permission exam.manage."/></AdminCard>
-      ) : data.exams.length ? (
+      {data.exams.length ? (
         <section className="space-y-3">
           {data.exams.map((exam) => {
             const examType = typeById.get(exam.exam_type_id)

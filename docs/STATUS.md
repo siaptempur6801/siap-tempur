@@ -254,6 +254,30 @@ Test: 6 test `event-auto-close` + 2 test cron baru (termasuk kegagalan auto-clos
 - ✅ **Urutan header IP terverifikasi di produksi (2026-09-16):** `/api/health` kini melaporkan `clientIpSource` (nama header, bukan IP). Diuji dengan mengirim header palsu — `x-real-ip` palsu, `x-forwarded-for` palsu, bahkan `x-vercel-forwarded-for` palsu — sumbernya **tetap** `x-vercel-forwarded-for`, jadi header kiriman client tidak pernah menang. Catatan cakupan: yang terbukti adalah **prioritas nama header** di kode kita; jaminan bahwa Vercel menimpa *nilai* `x-vercel-forwarded-for` adalah kontrak platform Vercel, bukan sesuatu yang bisa dibuktikan dari repo ini. Rate limit Supabase Auth tetap jaring pengaman otoritatif.
 - [ ] Belum ada regression test untuk replay webhook secara end-to-end (unit webhook sudah ada).
 
+#### Stabilisasi admin Fase 1 — S1–S4 (2026-09-20)
+
+Empat bug/perbaikan inti pada permukaan admin, semuanya tanpa migration. Rincian lengkap:
+`docs/ADMIN_STABILIZATION_2026-09-20.md`.
+
+| # | Temuan | Perbaikan |
+|---|---|---|
+| S1 | Modal "Tambah sesi" di `/admin/assessment/events` selalu punya dropdown "Exam EVENT" kosong — mode `events` tidak memuat domain `exams`, padahal modalnya membacanya. Sesi event **tidak bisa dibuat sama sekali dari UI**, tanpa error | mode `events` memuat `['events','products','exams']`; dikunci 8 unit test |
+| S2 | Mode `exams` (±146 baris) di `AdminOperationsWorkspace` adalah kode mati tanpa route; ada dua permukaan exam yang berbeda | kode mati dibuang; peta tab pindah ke `lib/admin-operations.ts` (murni, dapat diuji) |
+| S3 | Question Bank masih memakai textarea `A\|Teks\|1\|true` — dilarang standar admin §7 — dan **membuang field `imageUrl`** sehingga gambar opsi hilang diam-diam saat disimpan | memakai `QuestionOptionsEditor`; serialisasi & parsing disatukan di `lib/question-options.ts` (7 field, create/update/perbandingan); dikunci 17 unit test |
+| S4 | `/admin/assessment/exams` menjalankan query **sebelum** memeriksa izin (`Promise.all`), sehingga peran tanpa `exam.manage` menunggu query berat lalu ditolak | otorisasi lebih dulu, query hanya bila diizinkan |
+
+Verifikasi: `tsc` lolos · lint exit 0 · unit **534/534** (dari 490) · build lolos ·
+**gate admin lokal 29 passed, exit 0** · staging bersih di akhir run.
+
+Sisa Fase 1 (belum dikerjakan): S5 header "X dari N" di semua daftar · S6 pagination server-side
+6 route · S7 search/filter lewat query DB · S8 `app/admin/error.tsx` · S9 audit trail menyeluruh
+(kini hanya artikel & alur review yang tercatat) · S10 konfirmasi aksi destruktif · S11 Articles
+keluar dari stack V1 · S12 responsive smoke 2 → 16 route.
+
+> Batas yang diketahui: daftar exam di mode `events` masih dibatasi 80 baris terbaru dari
+> `getWorkspaceData`; exam EVENT lama bisa tidak muncul bila satu context punya >80 exam.
+> Ditutup bersama S6.
+
 ---
 
 ## 7. Gate membuka domain publik
