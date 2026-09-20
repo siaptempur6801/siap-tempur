@@ -645,7 +645,7 @@ export default function CpnsProductLandingV12({
                         <MascotPair size="xs" tone="plain" className="hidden shrink-0 sm:inline-flex" />
                         <div><Link href="/" className="font-script text-2xl font-black">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</Link><p className="st-muted mt-1 text-sm font-semibold">Persiapan SKD CPNS dengan latihan yang lebih terarah.</p></div>
                     </div>
-                    <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600"><Link href="/" className="hover:text-blue-700">Beranda</Link><Link href="/tka" className="hover:text-green-700">TKA</Link><Link href="/blog" className="hover:text-blue-700">Artikel</Link><Link href="/syarat-ketentuan" className="hover:text-blue-700">Syarat & Ketentuan</Link><Link href="/kebijakan-privasi" className="hover:text-blue-700">Privasi</Link></div>
+                    <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600"><Link href="/" className="hover:text-blue-700">Beranda</Link><Link href="/tka?landing=1" className="hover:text-green-700">TKA</Link><Link href="/blog" className="hover:text-blue-700">Artikel</Link><Link href="/syarat-ketentuan" className="hover:text-blue-700">Syarat & Ketentuan</Link><Link href="/kebijakan-privasi" className="hover:text-blue-700">Privasi</Link></div>
                 </div>
                 <div className="px-container-marketing mt-6 border-t border-gray-200 pt-5 text-xs font-semibold text-gray-500">© SiapTempur Indonesia</div>
             </footer>

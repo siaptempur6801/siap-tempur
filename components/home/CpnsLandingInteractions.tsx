@@ -142,7 +142,12 @@ export default function CpnsLandingInteractions({
                                 {item.label}
                             </InPageLink>
                         ))}
-                        <Link href="/tka" className="st-focus rounded-xl px-2.5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">TKA</Link>
+                        {/* `?landing=1` WAJIB: tanpa penanda itu `/tka` mengalihkan pengguna
+                            yang sudah login ke jenjang TKA-nya, sehingga halaman pengenalan
+                            TKA tidak pernah terlihat oleh pemilik akun — sedangkan pengunjung
+                            biasa selalu melihatnya. Tautan ini adalah navigasi PROGRAM, jadi
+                            yang dituju memang halaman pengenalannya. */}
+                        <Link href="/tka?landing=1" className="st-focus rounded-xl px-2.5 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700">TKA</Link>
                     </nav>
 
                     <div className="flex items-center gap-2">
@@ -182,7 +187,7 @@ export default function CpnsLandingInteractions({
                                     {section.label}
                                 </InPageLink>
                             ))}
-                            <Link href="/tka" className="st-focus flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-green-700 hover:bg-green-50">Buka SiapTempur TKA</Link>
+                            <Link href="/tka?landing=1" className="st-focus flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-green-700 hover:bg-green-50">Buka SiapTempur TKA</Link>
                             {!isLoggedIn && (
                                 <div className="mt-2 grid gap-2 border-t border-gray-200 pt-3 sm:hidden">
                                     <Link href="/login?returnTo=/cpns" className="st-focus flex min-h-11 items-center justify-center rounded-xl text-sm font-black text-gray-700 hover:bg-gray-100">

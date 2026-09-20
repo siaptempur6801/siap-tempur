@@ -536,7 +536,7 @@ export function LandingFooter() {
                 </div>
                 <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-bold text-gray-600">
                     <Link href="/cpns" className="hover:text-blue-700">CPNS</Link>
-                    <Link href="/tka" className="hover:text-blue-700">TKA</Link>
+                    <Link href="/tka?landing=1" className="hover:text-blue-700">TKA</Link>
                     <Link href="/blog" className="hover:text-blue-700">Artikel</Link>
                     <Link href="/syarat-ketentuan" className="hover:text-blue-700">Syarat & Ketentuan</Link>
                     <Link href="/kebijakan-privasi" className="hover:text-blue-700">Privasi</Link>
