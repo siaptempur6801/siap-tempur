@@ -9,6 +9,7 @@ import {
     ADMIN_OPERATIONS_SECTIONS,
     type AdminOperationsMode,
 } from '@/lib/admin-operations'
+import { serializeOptionRows } from '@/lib/question-options'
 import { adminV2Service } from '@/src/services/admin-v2.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -24,6 +25,7 @@ import {
 } from '@/app/actions/admin-v2'
 import AdminModal from '@/components/admin/AdminModal'
 import EventFlyerField from '@/components/admin/EventFlyerField'
+import QuestionOptionsEditor from '@/components/admin/QuestionOptionsEditor'
 import {
     AdminBadge,
     AdminCard,
@@ -266,8 +268,9 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                     <Field label="Source reference"><input className={adminInputClass} name="source_reference" defaultValue={s(editedQuestion?.source_reference)} placeholder="Sumber soal / referensi internal"/></Field>
                     <Field label="Alasan perubahan"><input className={adminInputClass} name="change_reason" placeholder="Contoh: koreksi typo atau kunci"/></Field>
                     <Field label="Pertanyaan"><textarea className={cn(adminInputClass, 'min-h-36 resize-y')} name="stem" required rows={5} defaultValue={s(editedQuestion?.stem)}/></Field>
-                    <Field label="Opsi"><textarea className={cn(adminInputClass, 'min-h-44 resize-y font-mono text-xs')} name="options" required={!editedQuestion} rows={7} defaultValue={editedQuestion ? optionsFor(s(editedQuestion.id)).map((option) => { const base = `${s(option.option_key)}|${s(option.content)}|${s(option.score)}|${s(option.is_correct)}`; return nullable(option.response_group) ? `${base}|${s(option.response_group)}|${s(option.response_group_order)}` : base }).join('\n') : ''} placeholder={'A|Pilihan A|1|true\nB|Pilihan B|0|false'}/></Field>
-                    <p className="lg:col-span-2 text-xs font-semibold leading-5 text-slate-500">Format opsi: A|Teks|score|true/false. Untuk category tambahkan group dan groupOrder.</p>
+                    <Field label="Opsi" className="lg:col-span-2">
+                        <QuestionOptionsEditor defaultValue={serializeOptionRows(optionsFor(s(editedQuestion?.id)))}/>
+                    </Field>
                     <div className="lg:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}><Save size={16}/>{editedQuestion ? 'Simpan perubahan' : 'Tambah soal'}</button></div>
                 </form>
             </AdminModal>

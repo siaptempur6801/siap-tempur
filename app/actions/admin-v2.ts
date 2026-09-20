@@ -6,6 +6,7 @@ import { validateCsrf } from '@/lib/csrf'
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminV2Service, type AdminQuestionOptionInput } from '@/src/services/admin-v2.service'
+import { parseQuestionOptions as parseQuestionOptionRows } from '@/lib/question-options'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
 function text(form: FormData, key: string) {
@@ -59,36 +60,15 @@ function jakartaIso(form: FormData, key: string) {
     return parsed.toISOString()
 }
 
+/**
+ * Membaca payload opsi dari `QuestionOptionsEditor`.
+ *
+ * Parsernya tinggal di `lib/question-options.ts` — modul murni yang juga dipakai
+ * halaman untuk menyerialkan opsi yang sudah ada, sehingga format 7 field tidak
+ * bisa lagi menyimpang antara penulis dan pembaca.
+ */
 function parseQuestionOptions(raw: string): AdminQuestionOptionInput[] {
-    if (!raw.trim()) return []
-    const rows = raw
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-
-    return rows.map((line, index) => {
-        const [keyRaw, contentRaw, scoreRaw, correctRaw, groupRaw, groupOrderRaw] = line.split('|').map((part) => part.trim())
-        if (!keyRaw || !contentRaw) throw new Error(`OPTION_LINE_${index + 1}_INVALID`)
-        const score = scoreRaw === '' || scoreRaw === undefined ? null : Number(scoreRaw)
-        if (score !== null && !Number.isFinite(score)) throw new Error(`OPTION_SCORE_${index + 1}_INVALID`)
-        const correct = correctRaw?.toLowerCase()
-        const isCorrect = correct === undefined || correct === ''
-            ? null
-            : ['true', '1', 'yes', 'ya'].includes(correct)
-        const responseGroupOrder = groupOrderRaw === '' || groupOrderRaw === undefined ? null : Number(groupOrderRaw)
-        if (responseGroupOrder !== null && (!Number.isInteger(responseGroupOrder) || responseGroupOrder < 1)) {
-            throw new Error(`OPTION_GROUP_ORDER_${index + 1}_INVALID`)
-        }
-        return {
-            key: keyRaw.toUpperCase(),
-            content: contentRaw,
-            score,
-            isCorrect,
-            sortOrder: index + 1,
-            responseGroup: groupRaw || null,
-            responseGroupOrder,
-        }
-    })
+    return parseQuestionOptionRows(raw)
 }
 
 function errorMessage(error: unknown) {

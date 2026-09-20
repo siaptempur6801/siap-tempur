@@ -17,6 +17,11 @@ export type AdminQuestionOptionInput = {
     sortOrder: number
     responseGroup?: string | null
     responseGroupOrder?: number | null
+    /**
+     * URL gambar opsi. Opsional supaya pemanggil lama tetap kompilasi, tetapi
+     * jalur Question Bank maupun Content Workspace kini sama-sama mengisinya.
+     */
+    imageUrl?: string | null
 }
 
 function slugify(value: string) {
@@ -729,6 +734,7 @@ export class AdminV2Service {
                     sort_order: option.sortOrder,
                     response_group: option.responseGroup?.trim() || null,
                     response_group_order: option.responseGroupOrder ?? null,
+                    image_url: option.imageUrl?.trim() || null,
                 }))
             )
             if (optionError) {
@@ -740,7 +746,7 @@ export class AdminV2Service {
 
         const [{ data: currentQuestion, error: currentError }, { data: currentOptions, error: currentOptionError }] = await Promise.all([
             admin.from('questions').select('*').eq('id', input.id).maybeSingle(),
-            untyped.from('question_options').select('id, option_key, content, is_correct, score, sort_order, response_group, response_group_order').eq('question_id', input.id).order('sort_order'),
+            untyped.from('question_options').select('id, option_key, content, is_correct, score, sort_order, response_group, response_group_order, image_url').eq('question_id', input.id).order('sort_order'),
         ])
         if (currentError) throw currentError
         if (currentOptionError) throw currentOptionError
@@ -766,6 +772,7 @@ export class AdminV2Service {
             sortOrder: option.sortOrder,
             responseGroup: option.responseGroup?.trim() || null,
             responseGroupOrder: option.responseGroupOrder ?? null,
+            imageUrl: option.imageUrl?.trim() || null,
         }))
         const persistedOptions = (currentOptions ?? []).map((option) => ({
             key: String(option.option_key ?? '').trim().toUpperCase(),
@@ -775,6 +782,7 @@ export class AdminV2Service {
             sortOrder: Number(option.sort_order),
             responseGroup: option.response_group ? String(option.response_group) : null,
             responseGroupOrder: option.response_group_order === null ? null : Number(option.response_group_order),
+            imageUrl: option.image_url ? String(option.image_url) : null,
         }))
         const optionsChanged = options.length > 0 && JSON.stringify(submittedOptions) !== JSON.stringify(persistedOptions)
 
@@ -844,6 +852,7 @@ export class AdminV2Service {
                     sort_order: option.sortOrder,
                     response_group: option.responseGroup?.trim() || null,
                     response_group_order: option.responseGroupOrder ?? null,
+                    image_url: option.imageUrl?.trim() || null,
                 }
                 if (existing) {
                     const { error } = await untyped.from('question_options').update(payload).eq('id', existing.id)
