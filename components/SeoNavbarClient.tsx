@@ -92,6 +92,17 @@ export default function SeoNavbarClient({
      */
     const showPrimaryCta = !(isAuthenticated && programLabel === "TKA");
 
+    /**
+     * Ketika tombol utama disembunyikan, tombol "Dashboard" MENGAMBIL ALIH gayanya.
+     *
+     * Menyembunyikan tombol biru tanpa memindahkan gayanya akan meninggalkan
+     * halaman tanpa CTA yang menonjol: yang tersisa hanya tautan teks abu-abu,
+     * padahal justru "Dashboard" satu-satunya jalan masuk di halaman ini. Kelasnya
+     * disalin persis dari tombol utama supaya tingginya, paddingnya, dan warnanya
+     * identik — bukan disusun ulang dari nol.
+     */
+    const authAsPrimary = !showPrimaryCta;
+
     // Penanda section aktif hanya berlaku untuk tautan anchor (`#...`) di halaman ini.
     const sectionItems: SectionNavItem[] = useMemo(
         () => items
@@ -144,7 +155,15 @@ export default function SeoNavbarClient({
                 </nav>
 
                 <div className="flex items-center gap-2">
-                    <Link href={authHref} className="st-focus hidden min-h-11 items-center rounded-xl px-3 text-sm font-black text-gray-700 hover:bg-gray-100 sm:inline-flex">
+                    <Link
+                        href={authHref}
+                        className={cn(
+                            "hidden min-h-11 items-center sm:inline-flex",
+                            authAsPrimary
+                                ? "st-button justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white"
+                                : "st-focus rounded-xl px-3 text-sm font-black text-gray-700 hover:bg-gray-100",
+                        )}
+                    >
                         {authLabel}
                     </Link>
 
@@ -186,7 +205,15 @@ export default function SeoNavbarClient({
                                 ))}
                             </div>
                             <div className="mt-2 grid gap-2 border-t border-gray-200 pt-3 sm:hidden">
-                                <Link href={authHref} className="st-focus flex min-h-11 items-center justify-center rounded-xl font-black hover:bg-gray-100">
+                                <Link
+                                    href={authHref}
+                                    className={cn(
+                                        "flex min-h-11 items-center justify-center",
+                                        authAsPrimary
+                                            ? "st-button bg-blue-600 px-4 py-2 text-sm font-black text-white"
+                                            : "st-focus rounded-xl font-black hover:bg-gray-100",
+                                    )}
+                                >
                                     {authLabel}
                                 </Link>
                                 {showPrimaryCta ? (
