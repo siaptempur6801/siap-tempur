@@ -24,6 +24,23 @@ const programItems = [
     { href: "/cpns/drilling-materi", label: "Drilling Materi" },
 ] as const;
 
+/**
+ * Warna penanda untuk tautan LINTAS PROGRAM.
+ *
+ * Tautan ini berbeda sifatnya dari item navigasi lain: yang lain melompat ke
+ * bagian lain halaman ini (`#anchor`), sedangkan yang ini berpindah ke program
+ * lain. Tanpa penanda keduanya tampil identik, dan pengguna tidak tahu bahwa ada
+ * jalan ke program satunya.
+ *
+ * Warnanya mengikuti badge program di header (CPNS biru, TKA hijau) supaya
+ * hubungannya terbaca tanpa perlu dijelaskan.
+ */
+function programSwitchTone(href: string): string | null {
+    if (href === '/cpns') return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
+    if (href === '/tka') return 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
+    return null;
+}
+
 function NavLink({
     href,
     label,
@@ -38,14 +55,19 @@ function NavLink({
     /** Ukuran rapat (13px) untuk landing dengan banyak item, mengikuti landing CPNS. */
     compact?: boolean;
 }) {
+    const switchTone = programSwitchTone(href);
+
     return (
         <InPageLink
             href={href}
             aria-current={active ? ariaCurrent : undefined}
             className={cn(
-                "st-focus rounded-xl py-2 font-black text-gray-700 hover:bg-blue-50 hover:text-blue-700",
+                "st-focus rounded-xl py-2 font-black",
                 compact ? "px-2.5 text-[13px]" : "px-3 text-sm",
-                active && "bg-blue-50 text-blue-700"
+                // Tautan lintas program memakai warnanya sendiri; penanda section
+                // aktif tidak berlaku untuknya karena ia bukan bagian halaman ini.
+                switchTone ?? "text-gray-700 hover:bg-blue-50 hover:text-blue-700",
+                !switchTone && active && "bg-blue-50 text-blue-700"
             )}
         >
             {label}
@@ -189,7 +211,8 @@ export default function SeoNavbarClient({
                                             aria-current={active ? 'location' : undefined}
                                             className={cn(
                                                 'st-focus rounded-xl px-3 py-3',
-                                                active ? 'bg-blue-50 font-black text-blue-700' : 'hover:bg-blue-50',
+                                                programSwitchTone(item.href)
+                                                    ?? (active ? 'bg-blue-50 font-black text-blue-700' : 'hover:bg-blue-50'),
                                             )}
                                         >
                                             {item.label}
