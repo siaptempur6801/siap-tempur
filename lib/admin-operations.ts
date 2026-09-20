@@ -77,6 +77,25 @@ export const ADMIN_OPERATIONS_SECTIONS: Record<AdminOperationsMode, readonly Adm
 }
 
 /**
+ * Domain yang benar-benar di-query saat halaman merender, per mode.
+ *
+ * Sejak S6/S7, `products` dan `questions` membaca daftarnya langsung dari
+ * database lewat `adminV2Service.listDomainPage` (paginasi + pencarian di sisi
+ * database). Dari workspace mereka hanya perlu `catalog` — daftar program,
+ * track, subjek, dan tipe exam. Memuat domainnya sekaligus berarti menarik
+ * delapan puluh baris beserta seluruh opsinya untuk tidak pernah dirender.
+ *
+ * `events` dan `commerce` masih memakai jalur workspace, jadi tetap memuat
+ * domainnya.
+ */
+export const ADMIN_OPERATIONS_PAGE_SECTIONS: Record<AdminOperationsMode, readonly AdminWorkspaceSection[]> = {
+    products: [],
+    events: ['events', 'products', 'exams'],
+    questions: [],
+    commerce: ['commerce'],
+}
+
+/**
  * Permission yang membuka tiap mode.
  *
  * Dipakai untuk memeriksa izin SEBELUM menyentuh database. Sebelumnya urutannya

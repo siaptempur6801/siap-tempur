@@ -175,6 +175,47 @@ test.describe('Authenticated Admin Workspace closure', () => {
  * `app/admin/layout.tsx` mengambil alih sepenuhnya — dan halaman tetap merender
  * untuk pemegang ADMIN_ACCESS.
  */
+/**
+ * Paginasi & pencarian daftar admin (S5–S7).
+ *
+ * Sebelumnya setiap daftar memuat satu jendela tetap dan diam tentang sisanya
+ * (soal 80, exam 80, product/event 50), dan `/admin/users` mencetak "100 dari N"
+ * tanpa cara menuju sisanya. Pencariannya disaring di klien atas baris yang
+ * sudah terpotong, sehingga mencari soal ke-500 selalu dijawab "tidak ada" —
+ * jawaban yang salah, bukan sekadar kosong.
+ */
+test.describe('Admin list pagination and search', () => {
+  test.setTimeout(120_000)
+
+  test('Question Bank menyatakan posisi daftar dan mencari di sisi database', async ({ page }) => {
+    await page.goto('/admin/content/questions?program=CPNS&track=SKD')
+    await expect(page.locator('main h1')).toHaveText('Question Bank')
+    await expect(page.getByText('Akses tidak tersedia', { exact: true })).toHaveCount(0)
+
+    // Daftar menyatakan posisinya alih-alih menampilkan potongan seolah seluruhnya.
+    await expect(page.getByText(/Menampilkan \d+–\d+ dari \d+ soal|Belum ada soal/).first()).toBeVisible()
+
+    // Filter hidup di URL, dan setiap perubahan filter mengembalikan ke halaman 1.
+    await page.fill('input[name="q"]', 'TWK')
+    await page.getByRole('button', { name: 'Terapkan' }).click()
+    await expect(page).toHaveURL(/[?&]q=TWK/)
+    await expect(page).not.toHaveURL(/[?&]page=/)
+    await expect(page.getByText(/Filter aktif/)).toBeVisible()
+
+    // Paginasi hanya dirender bila memang ada lebih dari satu halaman — dan bila
+    // ada, ia wajib membawa filter yang sedang aktif.
+    const next = page.getByRole('link', { name: /Halaman berikutnya/ })
+    if (await next.count() > 0) {
+      await next.first().click()
+      await expect(page).toHaveURL(/[?&]page=2/)
+      await expect(page).toHaveURL(/[?&]q=TWK/)
+      await expect(page.getByRole('link', { name: /Halaman sebelumnya/ })).toBeVisible()
+    }
+
+    await expectNoHorizontalOverflow(page)
+  })
+})
+
 test.describe('Admin content modules after legacy tree removal', () => {
   test.setTimeout(120_000)
 

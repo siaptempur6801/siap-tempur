@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
     ADMIN_OPERATIONS_PAGE_COPY,
+    ADMIN_OPERATIONS_PAGE_SECTIONS,
     ADMIN_OPERATIONS_PERMISSIONS,
     ADMIN_OPERATIONS_ROUTES,
     ADMIN_OPERATIONS_SECTIONS,
@@ -77,5 +78,33 @@ describe('peta tab workspace admin', () => {
 
     it('route exams tetap ada di pohon admin, hanya bukan lewat komponen ini', () => {
         expect(existsSync(join(repoRoot, 'app/admin/assessment/exams/page.tsx'))).toBe(true)
+    })
+})
+
+describe('domain yang di-query per halaman', () => {
+    /**
+     * Sejak S6/S7 daftar product dan soal dibaca langsung dari database
+     * (berhalaman + pencarian), jadi workspace-nya tidak perlu memuat domain itu
+     * lagi. Kalau keduanya dimuat kembali, setiap kunjungan Question Bank
+     * menarik delapan puluh baris beserta seluruh opsinya untuk tidak pernah
+     * dirender — kerja database yang persis dulu dihilangkan.
+     */
+    it('product dan soal tidak lagi dimuat lewat workspace', () => {
+        expect(ADMIN_OPERATIONS_PAGE_SECTIONS.products).toEqual([])
+        expect(ADMIN_OPERATIONS_PAGE_SECTIONS.questions).toEqual([])
+    })
+
+    it('events tetap memuat ketiga domainnya karena masih memakai jalur workspace', () => {
+        expect(ADMIN_OPERATIONS_PAGE_SECTIONS.events).toEqual(['events', 'products', 'exams'])
+    })
+
+    it('setiap mode punya entri, dan domainnya bagian dari domain mode itu', () => {
+        for (const mode of MODES) {
+            const pageSections = ADMIN_OPERATIONS_PAGE_SECTIONS[mode]
+            expect(pageSections, `page sections ${mode}`).toBeDefined()
+            for (const section of pageSections) {
+                expect(ADMIN_OPERATIONS_SECTIONS[mode], `${mode} memuat ${section}`).toContain(section)
+            }
+        }
     })
 })

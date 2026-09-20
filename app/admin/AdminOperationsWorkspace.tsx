@@ -1,15 +1,16 @@
 import Link from 'next/link'
-import { Archive, CalendarDays, FileQuestion, Package, Save } from 'lucide-react'
+import { Archive, CalendarDays, FileQuestion, Package, Save, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getServerNowMs } from '@/lib/server/time'
 import {
     ADMIN_OPERATIONS_PAGE_COPY,
+    ADMIN_OPERATIONS_PAGE_SECTIONS,
     ADMIN_OPERATIONS_PERMISSIONS,
     ADMIN_OPERATIONS_ROUTES,
-    ADMIN_OPERATIONS_SECTIONS,
     type AdminOperationsMode,
 } from '@/lib/admin-operations'
 import { serializeOptionRows } from '@/lib/question-options'
+import { adminPageHref, adminPageSummary, adminPageSummaryLabel, parseAdminPage } from '@/lib/admin-pagination'
 import { adminV2Service } from '@/src/services/admin-v2.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -24,6 +25,7 @@ import {
     saveQuestionAction,
 } from '@/app/actions/admin-v2'
 import AdminModal from '@/components/admin/AdminModal'
+import AdminPagination from '@/components/admin/AdminPagination'
 import EventFlyerField from '@/components/admin/EventFlyerField'
 import QuestionOptionsEditor from '@/components/admin/QuestionOptionsEditor'
 import {
@@ -69,12 +71,22 @@ type SearchParams = {
     edit?: string
     program?: string
     track?: string
+    /** Nomor halaman daftar (S6). */
+    page?: string
+    /** Kata kunci pencarian di sisi database (S7). */
+    q?: string
+    /** Filter status daftar (S7). */
+    status?: string
 }
 
 function s(value: unknown) { return typeof value === 'string' ? value : value == null ? '' : String(value) }
 function n(value: unknown) { const parsed = Number(value ?? 0); return Number.isFinite(parsed) ? parsed : 0 }
 function nullable(value: unknown) { const valueString = s(value); return valueString || null }
 function lower(value: unknown) { return s(value).toLowerCase() }
+
+/** Bentuk UUID — dipakai sebagai penjaga sebelum id dari URL menyentuh query. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isUuid(value: string) { return UUID_PATTERN.test(value) }
 
 function localDateTime(value: unknown) {
     const source = s(value)
@@ -137,6 +149,107 @@ function PermissionEmpty({ permission }: { permission: string }) {
     return <AdminCard><AdminEmptyState title="Akses tidak tersedia" description={`Akun ini tidak memiliki permission ${permission}.`}/></AdminCard>
 }
 
+/**
+ * Toolbar daftar: pencarian + filter status (S7).
+ *
+ * Form-nya `method="get"` sehingga filter hidup di URL — bisa di-bookmark,
+ * dibagikan, dan bertahan saat admin membuka detail lalu kembali, sesuai
+ * `docs/ADMIN_UI_UX_STANDARD.md` §6. Nomor halaman sengaja tidak ikut dikirim:
+ * setiap kali filter berubah, daftar kembali ke halaman 1.
+ */
+function AdminListToolbar({
+    pathname,
+    program,
+    track,
+    search,
+    status,
+    statusOptions,
+    placeholder,
+    resultCount,
+}: {
+    pathname: string
+    program: string
+    track: string
+    search: string
+    status: string
+    statusOptions: readonly string[]
+    placeholder: string
+    resultCount: number
+}) {
+    return (
+        <AdminCard className="p-4">
+            <form className="grid gap-3 md:grid-cols-[minmax(220px,1.6fr)_1fr_auto]" method="get">
+                <input type="hidden" name="program" value={program}/>
+                <input type="hidden" name="track" value={track}/>
+                <label className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
+                    <input className={cn(adminInputClass, 'pl-9')} name="q" defaultValue={search} placeholder={placeholder} aria-label={placeholder}/>
+                </label>
+                <select className={adminInputClass} name="status" defaultValue={status} aria-label="Filter status">
+                    <option value="">Semua status</option>
+                    {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+                <div className="flex items-center gap-2">
+                    <button className={adminPrimaryButtonClass}>Terapkan</button>
+                    <Link className={adminSecondaryButtonClass} href={`${pathname}?program=${encodeURIComponent(program)}&track=${encodeURIComponent(track)}`}>Reset</Link>
+                </div>
+            </form>
+            {(search || status) ? (
+                <p role="status" className="mt-3 text-xs font-bold text-slate-500">
+                    Filter aktif{search ? <> · kata kunci “{search}”</> : null}{status ? <> · status <span className="font-mono">{status}</span></> : null} · {resultCount} hasil
+                </p>
+            ) : null}
+        </AdminCard>
+    )
+}
+
+/**
+ * Nilai status yang ditawarkan per domain.
+ *
+ * Ditulis eksplisit, bukan diturunkan dari baris yang sedang tampil: kalau
+ * diturunkan, filter hanya bisa memilih status yang kebetulan ada di halaman
+ * ini — persis kebalikan dari gunanya filter.
+ */
+const DOMAIN_STATUS_OPTIONS = {
+    products: ['draft', 'active', 'archived'],
+    events: ['draft', 'scheduled', 'live', 'closed', 'archived'],
+    questions: ['draft', 'published', 'archived'],
+} as const
+
+/**
+ * Jendela event yang dimuat `getWorkspaceData` (lihat `.limit(50)` di service).
+ *
+ * Dipakai untuk menyatakan cap secara eksplisit alih-alih menampilkan 50 baris
+ * seolah itu seluruhnya.
+ */
+const EVENTS_WINDOW = 50
+
+/** Placeholder pencarian per domain, memakai istilah yang dikenali admin. */
+const DOMAIN_SEARCH_PLACEHOLDER = {
+    products: 'Cari kode atau nama produk…',
+    events: 'Cari kode atau judul event…',
+    questions: 'Cari kode soal atau isi pertanyaan…',
+} as const
+
+/**
+ * Keadaan daftar ketika nomor halaman di URL melewati jumlah baris.
+ *
+ * Dulu ini merender halaman tanpa heading sama sekali — terlihat seperti
+ * kerusakan, padahal hanya nomor halaman yang terlalu jauh (CPNS/SKD punya 7
+ * product, jadi `?page=2` sudah di luar jangkauan). `redirect()` TIDAK dipakai di
+ * sini: di dalam server component yang di-stream ia menghasilkan shell kosong
+ * tanpa heading, yaitu masalah yang sama dengan bentuk berbeda.
+ */
+function PageOutOfRange({ lastPage, href, noun }: { lastPage: number; href: string; noun: string }) {
+    return (
+        <AdminEmptyState
+            title={`Tidak ada ${noun} di halaman ini`}
+            description={`Daftar hanya punya ${lastPage} halaman. Nomor halaman di alamat mungkin sudah usang — buka halaman terakhir untuk melihat ${noun} terbaru.`}
+            action={<Link className={adminSecondaryButtonClass} href={href}>Ke halaman {lastPage}</Link>}
+        />
+    )
+}
+
 export default async function AdminOperationsWorkspace({ mode, searchParams }: { mode: AdminOperationsMode; searchParams: Promise<SearchParams> }) {
     const params = await searchParams
     const requestedContext = {
@@ -157,9 +270,9 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
         )
     }
 
-    const data = await adminV2Service.getWorkspaceData(requestedContext, ADMIN_OPERATIONS_SECTIONS[mode]) as unknown as WorkspaceView
-    const program = data.catalog.program.code
-    const track = data.catalog.track.code
+    const workspace = await adminV2Service.getWorkspaceData(requestedContext, ADMIN_OPERATIONS_PAGE_SECTIONS[mode]) as unknown as WorkspaceView
+    const program = workspace.catalog.program.code
+    const track = workspace.catalog.track.code
     const nowMs = getServerNowMs()
 
     const canProducts = permissions.has(PERMISSIONS.PRODUCT_MANAGE)
@@ -167,8 +280,88 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
     const canQuestions = permissions.has(PERMISSIONS.QUESTION_MANAGE)
     const canCommerce = permissions.has(PERMISSIONS.ORDER_READ) || permissions.has(PERMISSIONS.PAYMENT_MANAGE)
 
+    const domainFilters = { search: params.q || null, status: params.status || null, page: parseAdminPage(params.page) }
+    /** Mode yang daftarnya dibaca langsung dari database, bukan dari workspace. */
+    const isPaginatedDomain = (value: AdminOperationsMode): value is 'products' | 'questions' =>
+        value === 'products' || value === 'questions'
+
+    /**
+     * Domain berhalaman membaca langsung dari database (S6/S7): pencarian dan
+     * `total` dihitung di sana, bukan atas baris yang sudah terpotong. Domain
+     * lain tetap memakai data workspace.
+     */
+    const domainPage = isPaginatedDomain(mode)
+        ? await adminV2Service.listDomainPage(mode, { context: requestedContext, ...domainFilters })
+        : null
+
+    const products = domainPage && mode === 'products' ? domainPage.rows : workspace.products
+    const questions = domainPage && mode === 'questions' ? domainPage.rows : workspace.questions
+    const events = workspace.events
+
+    /**
+     * Pencarian & filter untuk domain yang BELUM berhalaman.
+     *
+     * `getWorkspaceData` memuat jendela tetap (event 50, product 50), dan UI
+     * tidak pernah mengatakannya. Untuk events, filter di sini berlaku atas
+     * jendela itu — bukan seluruh tabel — jadi `eventsCapped` wajib
+     * ditampilkan agar admin tidak menyimpulkan "tidak ada" dari jawaban yang
+     * sebenarnya "tidak ada di 50 terbaru".
+     *
+     * Product dan soal tidak lagi punya masalah ini: keduanya membaca langsung
+     * dari database lewat `listDomainPage`.
+     */
+    const eventsCapped = events.length >= EVENTS_WINDOW
+    const normalizedStatus = (params.status || '').toLowerCase()
+    const normalizedQuery = (params.q || '').trim().toLowerCase()
+    const filteredEvents = events.filter((row) => {
+        if (normalizedStatus && lower(row.status) !== normalizedStatus) return false
+        if (!normalizedQuery) return true
+        return [row.code, row.title, row.slug].some((value) => lower(value).includes(normalizedQuery))
+    })
+
+    /**
+     * Baris yang sedang diedit.
+     *
+     * `?edit=` dibawa oleh tautan Edit dari baris yang terlihat, jadi biasanya
+     * sudah ada di halaman ini. Pengambilan khusus hanya untuk kasus nomor
+     * halaman dirapikan (mis. `?edit=X&page=999`), supaya formulir tidak diam-
+     * diam menyimpan sebagai **baris baru** hanya karena barisnya tidak termuat.
+     */
+    const editedId = params.edit || ''
+    const domainRows = mode === 'products' ? products : mode === 'questions' ? questions : []
+    const editedRow = editedId ? domainRows.find((row) => s(row.id) === editedId) : undefined
+    // Hanya id berbentuk UUID yang boleh masuk ke query. `?edit=` berasal dari
+    // URL dan bisa berisi apa saja; PostgREST menolak `uuid = 'apa-saja'` dengan
+    // 400, dan kegagalannya menjatuhkan SELURUH halaman ke error boundary —
+    // bukan sekadar mengembalikan nol baris.
+    const editFallback = (isUuid(editedId) && isPaginatedDomain(mode) && !editedRow)
+        ? (await adminV2Service.listDomainPage(mode, { context: requestedContext, id: editedId })).rows[0]
+        : undefined
+
+    const editedProduct = mode === 'products' ? (editedRow ?? editFallback) : undefined
+    const editedQuestion = mode === 'questions' ? (editedRow ?? editFallback) : undefined
+    const editedEvent = mode === 'events' ? events.find((row) => s(row.id) === editedId) : undefined
+
+    const activeFilters = { program, track, q: params.q || '', status: params.status || '' }
+    const pathname = ADMIN_OPERATIONS_ROUTES[mode]
+
+    const pageSummary = domainPage
+        ? adminPageSummary(domainPage.clampTo ?? domainFilters.page, domainPage.rows.length, domainPage.total)
+        : null
+    /** Nomor halaman di URL melewati jumlah baris — daftar kosong, bukan error. */
+    const pageOutOfRange = Boolean(domainPage?.clampTo)
+
+    const relatedFilters = domainPage && mode === 'products'
+        ? { productIds: products.map((row) => s(row.id)), questionIds: [] as string[] }
+        : domainPage && mode === 'questions'
+            ? { productIds: [] as string[], questionIds: questions.map((row) => s(row.id)) }
+            : null
+    const priceRows = relatedFilters ? await adminV2Service.listProductPrices(relatedFilters.productIds) : []
+    const grantRows = relatedFilters ? await adminV2Service.listProductWalletGrants(relatedFilters.productIds) : []
+    const optionRows = relatedFilters ? await adminV2Service.listQuestionOptions(relatedFilters.questionIds) : []
+
     const priceByProduct = new Map<string, ViewRow>()
-    for (const row of data.productPrices) {
+    for (const row of [...priceRows, ...workspace.productPrices]) {
         if (lower(row.status) !== 'active') continue
         const endsAt = nullable(row.ends_at)
         if (endsAt && new Date(endsAt).getTime() < nowMs) continue
@@ -176,17 +369,30 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
         if (!priceByProduct.has(id)) priceByProduct.set(id, row)
     }
 
-    const grantByProduct = new Map(data.productWalletGrants.map((row) => [s(row.product_id), n(row.amount)]))
-    const subjectById = new Map(data.catalog.subjects.map((row) => [row.id, row]))
-    const examTypeById = new Map(data.catalog.examTypes.map((row) => [row.id, row]))
-    const sessionsFor = (eventId: string) => data.eventSessions.filter((row) => s(row.event_id) === eventId)
-    const optionsFor = (questionId: string) => data.questionOptions.filter((row) => s(row.question_id) === questionId)
+    const grantByProduct = new Map([...workspace.productWalletGrants, ...grantRows].map((row) => [s(row.product_id), n(row.amount)]))
+    const subjectById = new Map(workspace.catalog.subjects.map((row) => [row.id, row]))
+    const examTypeById = new Map(workspace.catalog.examTypes.map((row) => [row.id, row]))
+    const sessionsFor = (eventId: string) => workspace.eventSessions.filter((row) => s(row.event_id) === eventId)
+    const questionOptionRows = [...workspace.questionOptions, ...optionRows]
+    const optionsFor = (questionId: string) => questionOptionRows.filter((row) => s(row.question_id) === questionId)
 
-    const editedProduct = data.products.find((row) => s(row.id) === params.edit)
-    const editedEvent = data.events.find((row) => s(row.id) === params.edit)
-    const editedQuestion = data.questions.find((row) => s(row.id) === params.edit)
     const editedProductPrice = editedProduct ? priceByProduct.get(s(editedProduct.id)) : undefined
     const closeHref = workspaceHref(mode, program, track)
+
+    /**
+     * Tautan "Edit" yang mempertahankan halaman dan filter.
+     *
+     * Tanpa `page`/`q`/`status`, membuka detail dari halaman 5 lalu menyimpan
+     * akan melempar admin kembali ke halaman 1 — kehilangan konteks kerja, hal
+     * yang dilarang `docs/ADMIN_UI_UX_STANDARD.md` §6.
+     */
+    const editHref = (targetMode: AdminOperationsMode, id: string) => {
+        const query = new URLSearchParams({ program, track, edit: id })
+        if (params.page) query.set('page', params.page)
+        if (params.q) query.set('q', params.q)
+        if (params.status) query.set('status', params.status)
+        return `${ADMIN_OPERATIONS_ROUTES[targetMode]}?${query.toString()}`
+    }
 
     let pageAction: React.ReactNode = null
 
@@ -261,7 +467,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                 <form key={editedQuestion ? `question-${s(editedQuestion.id)}-${s(editedQuestion.updated_at)}-${s(editedQuestion.version)}` : `question-new-${program}-${track}`} action={saveQuestionAction} className="grid gap-4 lg:grid-cols-2">
                     <ContextFields program={program} track={track}/>
                     {editedQuestion && <input type="hidden" name="id" value={s(editedQuestion.id)}/>} 
-                    <Field label="Mapel / Subtes"><select className={adminInputClass} name="subject_code" defaultValue={subjectById.get(s(editedQuestion?.subject_id))?.code}>{data.catalog.subjects.map((subject)=><option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></Field>
+                    <Field label="Mapel / Subtes"><select className={adminInputClass} name="subject_code" defaultValue={subjectById.get(s(editedQuestion?.subject_id))?.code}>{workspace.catalog.subjects.map((subject)=><option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></Field>
                     <Field label="Tipe respons"><select className={adminInputClass} name="question_type" defaultValue={s(editedQuestion?.question_type)||'single_choice'}><option value="single_choice">single_choice</option><option value="multiple_choice">multiple_choice</option><option value="category">category</option></select></Field>
                     <Field label="Difficulty"><select className={adminInputClass} name="difficulty" defaultValue={s(editedQuestion?.difficulty)||'medium'}><option>easy</option><option>medium</option><option>hard</option></select></Field>
                     <Field label="Status"><select className={adminInputClass} name="status" defaultValue={s(editedQuestion?.status)||'draft'}><option>draft</option><option>published</option><option>archived</option></select></Field>
@@ -281,34 +487,64 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
         <div className="space-y-6 pb-10">
             <AdminPageHeader
                 title={ADMIN_OPERATIONS_PAGE_COPY[mode].title}
-                description={`${ADMIN_OPERATIONS_PAGE_COPY[mode].description} Context aktif: ${data.catalog.program.name} / ${data.catalog.track.name}.`}
+                description={`${ADMIN_OPERATIONS_PAGE_COPY[mode].description} Context aktif: ${workspace.catalog.program.name} / ${workspace.catalog.track.name}.`}
                 action={pageAction}
             />
             <Feedback ok={params.ok} error={params.error}/>
 
             {mode === 'products' && (canProducts ? <section className="space-y-5">
+                <AdminListToolbar
+                    pathname={pathname}
+                    program={program}
+                    track={track}
+                    search={activeFilters.q}
+                    status={activeFilters.status}
+                    statusOptions={DOMAIN_STATUS_OPTIONS.products}
+                    placeholder={DOMAIN_SEARCH_PLACEHOLDER.products}
+                    resultCount={pageSummary?.total ?? products.length}
+                />
                 <AdminCard className="overflow-hidden">
-                    <div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Product catalog" description={`${data.products.length} product pada context aktif.`}/></div>
-                    {data.products.length ? <div className="divide-y divide-slate-100">{data.products.map((row) => {
+                    <div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Product catalog" description={pageSummary ? adminPageSummaryLabel(pageSummary, 'product', 'produk') : `${products.length} product pada context aktif.`}/></div>
+                    {products.length ? <div className="divide-y divide-slate-100">{products.map((row) => {
                         const id = s(row.id)
                         const price = priceByProduct.get(id)
                         return <div key={id} className="flex flex-col gap-4 p-5 transition hover:bg-slate-50/70 lg:flex-row lg:items-center lg:justify-between">
                             <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.name)}</span><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></div><div className="mt-1 text-xs font-semibold text-slate-500">{s(row.code)} · {s(row.product_type)} · {price ? rupiah(price.amount) : 'Tanpa harga'} · grant {grantByProduct.get(id) ?? 0}</div></div>
-                            <div className="flex shrink-0 flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={workspaceHref('products', program, track, id)}>Edit</Link><form action={archiveProductAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div>
+                            <div className="flex shrink-0 flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('products', id)}>Edit</Link><form action={archiveProductAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div>
                         </div>
-                    })}</div> : <AdminEmptyState title="Belum ada product" description="Gunakan tombol Tambah product untuk membuat product pertama."/>}
+                    })}</div> : pageOutOfRange ? (
+                        <PageOutOfRange lastPage={pageSummary?.totalPages ?? 1} href={adminPageHref(pathname, activeFilters, pageSummary?.totalPages ?? 1)} noun="product"/>
+                    ) : <AdminEmptyState title="Tidak ada product" description={(activeFilters.q || activeFilters.status) ? 'Tidak ada product yang cocok dengan filter ini. Coba ubah kata kunci atau status, atau tekan Reset.' : 'Gunakan tombol Tambah product untuk membuat product pertama.'}/>}
+                    {pageSummary && (products.length > 0 || pageOutOfRange) ? (
+                        <AdminPagination pathname={pathname} params={activeFilters} summary={pageSummary} noun="product" plural="produk"/>
+                    ) : null}
                 </AdminCard>
             </section> : <PermissionEmpty permission="product.manage"/>)}
 
             {mode === 'events' && (canEvents ? <section className="space-y-3">
-                {data.events.length ? data.events.map((row) => {
+                <AdminListToolbar
+                    pathname={pathname}
+                    program={program}
+                    track={track}
+                    search={params.q || ''}
+                    status={params.status || ''}
+                    statusOptions={DOMAIN_STATUS_OPTIONS.events}
+                    placeholder={DOMAIN_SEARCH_PLACEHOLDER.events}
+                    resultCount={filteredEvents.length}
+                />
+                {eventsCapped ? (
+                    <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-800">
+                        Menampilkan {EVENTS_WINDOW} event terbaru pada context ini. Event yang lebih lama belum dapat dijangkau dari halaman ini — halaman berhalaman untuk Events belum tersedia; sementara pakai pencarian, atau kelola lewat <span className="font-mono">/admin/assessment/exams</span> bila exam-nya perlu disunting.
+                    </p>
+                ) : null}
+                {filteredEvents.length ? filteredEvents.map((row) => {
                     const id = s(row.id)
                     const sessions = sessionsFor(id)
-                    const ticketProducts = data.products.filter((product) => s(product.product_type) === 'EVENT_TICKET')
+                    const ticketProducts = workspace.products.filter((product) => s(product.product_type) === 'EVENT_TICKET')
                     return <AdminCard key={id} className="p-5">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.title)}</span><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></div><p className="mt-1 text-xs font-semibold text-slate-500">{s(row.code)} · {sessions.length} sesi · {displayDate(row.starts_at)} → {displayDate(row.ends_at)}</p></div>
-                            <div className="flex flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={workspaceHref('events', program, track, id)}>Edit</Link><form action={archiveEventAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div>
+                            <div className="flex flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('events', id)}>Edit</Link><form action={archiveEventAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div>
                         </div>
                         <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between">
                             <div className="flex min-w-0 flex-wrap gap-2">{sessions.length ? sessions.map((session) => <AdminBadge key={s(session.id)}>{s(session.name)} · {s(session.status)}</AdminBadge>) : <span className="text-sm font-medium text-slate-500">Belum ada sesi.</span>}</div>
@@ -317,7 +553,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                                     <form action={saveEventSessionAction} className="grid gap-4 md:grid-cols-2">
                                         <ContextFields program={program} track={track}/><input type="hidden" name="event_id" value={id}/>
                                         <Field label="Nama sesi"><input className={adminInputClass} name="name" required/></Field>
-                                        <Field label="Exam EVENT"><select className={adminInputClass} name="exam_id">{data.exams.filter((exam) => examTypeById.get(s(exam.exam_type_id))?.code === 'EVENT').map((exam) => <option key={s(exam.id)} value={s(exam.id)}>{s(exam.title)}</option>)}</select></Field>
+                                        <Field label="Exam EVENT"><select className={adminInputClass} name="exam_id">{workspace.exams.filter((exam) => examTypeById.get(s(exam.exam_type_id))?.code === 'EVENT').map((exam) => <option key={s(exam.id)} value={s(exam.id)}>{s(exam.title)}</option>)}</select></Field>
                                         <Field label="Mulai"><input className={adminInputClass} type="datetime-local" name="starts_at" defaultValue={localDateTime(row.starts_at)}/></Field>
                                         <Field label="Selesai"><input className={adminInputClass} type="datetime-local" name="ends_at" defaultValue={localDateTime(row.ends_at)}/></Field>
                                         <Field label="Kapasitas"><input className={adminInputClass} type="number" min="1" name="capacity"/></Field>
@@ -337,21 +573,39 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                             </div>
                         </div>
                     </AdminCard>
-                }) : <AdminCard><AdminEmptyState title="Belum ada event" description="Gunakan tombol Buat event untuk membuat event pertama."/></AdminCard>}
+                }) : <AdminCard><AdminEmptyState title={(params.q || params.status) ? 'Tidak ada event yang cocok' : 'Belum ada event'} description={(params.q || params.status) ? 'Tidak ada event yang cocok dengan filter ini. Coba ubah kata kunci atau status, atau tekan Reset.' : 'Gunakan tombol Buat event untuk membuat event pertama.'}/></AdminCard>}
             </section> : <PermissionEmpty permission="event.manage"/>)}
 
             {mode === 'questions' && (canQuestions ? <section className="space-y-5">
-                <AdminCard className="overflow-hidden"><div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Daftar soal" description={`${data.questions.length} soal pada context aktif.`}/></div>{data.questions.length ? <div className="divide-y divide-slate-100">{data.questions.map((row) => {
+                <AdminListToolbar
+                    pathname={pathname}
+                    program={program}
+                    track={track}
+                    search={activeFilters.q}
+                    status={activeFilters.status}
+                    statusOptions={DOMAIN_STATUS_OPTIONS.questions}
+                    placeholder={DOMAIN_SEARCH_PLACEHOLDER.questions}
+                    resultCount={pageSummary?.total ?? questions.length}
+                />
+                <AdminCard className="overflow-hidden">
+                    <div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Daftar soal" description={pageSummary ? adminPageSummaryLabel(pageSummary, 'soal') : `${questions.length} soal pada context aktif.`}/></div>
+                    {questions.length ? <div className="divide-y divide-slate-100">{questions.map((row) => {
                     const id = s(row.id)
-                    return <div key={id} className="flex flex-col gap-4 p-5 transition hover:bg-slate-50/70 lg:flex-row lg:items-center lg:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.question_code) || 'Tanpa kode'}</span><AdminBadge variant="blue">{subjectById.get(s(row.subject_id))?.code ?? '?'}</AdminBadge><AdminBadge>{s(row.question_type)}</AdminBadge><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge><span className="text-xs font-bold text-slate-400">v{s(row.version)}</span></div><p className="mt-2 line-clamp-2 max-w-4xl text-sm font-medium leading-6 text-slate-600">{s(row.stem)}</p></div><div className="flex shrink-0 flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={workspaceHref('questions', program, track, id)}>Edit</Link><form action={archiveQuestionAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div></div>
-                })}</div> : <AdminEmptyState title="Belum ada soal" description="Gunakan tombol Tambah soal untuk membuat soal pertama."/>}</AdminCard>
+                    return <div key={id} className="flex flex-col gap-4 p-5 transition hover:bg-slate-50/70 lg:flex-row lg:items-center lg:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.question_code) || 'Tanpa kode'}</span><AdminBadge variant="blue">{subjectById.get(s(row.subject_id))?.code ?? '?'}</AdminBadge><AdminBadge>{s(row.question_type)}</AdminBadge><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge><span className="text-xs font-bold text-slate-400">v{s(row.version)}</span></div><p className="mt-2 line-clamp-2 max-w-4xl text-sm font-medium leading-6 text-slate-600">{s(row.stem)}</p></div><div className="flex shrink-0 flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('questions', id)}>Edit</Link><form action={archiveQuestionAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div></div>
+                })}</div> : pageOutOfRange ? (
+                    <PageOutOfRange lastPage={pageSummary?.totalPages ?? 1} href={adminPageHref(pathname, activeFilters, pageSummary?.totalPages ?? 1)} noun="soal"/>
+                ) : <AdminEmptyState title="Tidak ada soal" description={(activeFilters.q || activeFilters.status) ? 'Tidak ada soal yang cocok dengan filter ini. Coba ubah kata kunci atau status, atau tekan Reset.' : 'Gunakan tombol Tambah soal untuk membuat soal pertama.'}/>}
+                    {pageSummary && (questions.length > 0 || pageOutOfRange) ? (
+                        <AdminPagination pathname={pathname} params={activeFilters} summary={pageSummary} noun="soal"/>
+                    ) : null}
+                </AdminCard>
             </section> : <PermissionEmpty permission="question.manage"/>)}
 
             {mode === 'commerce' && (canCommerce ? <section className="space-y-5">
                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">Commerce monitor masih global lintas program. Filter per Program/Track belum diterapkan karena ownership berada pada order_items.</div>
-                <section className="grid gap-3 sm:grid-cols-3"><AdminMetric label="Order terbaru" value={data.orders.length} helper="Snapshot workspace" icon={<Package size={18}/>} tone="blue"/><AdminMetric label="Payment terbaru" value={data.payments.length} helper="Snapshot workspace" icon={<CalendarDays size={18}/>} tone="violet"/><AdminMetric label="Paid" value={data.orders.filter((row) => lower(row.status) === 'paid').length} helper="Order berstatus paid" icon={<FileQuestion size={18}/>} tone="green"/></section>
-                <AdminCard className="overflow-hidden"><div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Orders" description="Order terbaru dan status pembayarannya."/></div>{data.orders.length ? <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400"><tr><th className="px-5 py-3">Order</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Total</th><th className="px-4 py-3">User</th><th className="px-5 py-3">Created</th></tr></thead><tbody className="divide-y divide-slate-100">{data.orders.map((row) => <tr key={s(row.id)} className="hover:bg-slate-50/70"><td className="px-5 py-4 font-extrabold text-slate-900">{s(row.order_number)}</td><td className="px-4 py-4"><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></td><td className="px-4 py-4 font-bold text-slate-700">{rupiah(row.total_amount)}</td><td className="px-4 py-4 font-mono text-xs text-slate-500">{s(row.user_id).slice(0, 8)}</td><td className="px-5 py-4 text-slate-500">{displayDate(row.created_at)}</td></tr>)}</tbody></table></div> : <AdminEmptyState title="Belum ada order"/>}</AdminCard>
-                <AdminCard className="overflow-hidden"><div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Payments" description="Payment terbaru dari provider."/></div>{data.payments.length ? <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400"><tr><th className="px-5 py-3">Provider</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Order</th><th className="px-5 py-3">Method</th></tr></thead><tbody className="divide-y divide-slate-100">{data.payments.map((row) => <tr key={s(row.id)} className="hover:bg-slate-50/70"><td className="px-5 py-4 font-extrabold text-slate-900">{s(row.provider)}</td><td className="px-4 py-4"><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></td><td className="px-4 py-4 font-bold text-slate-700">{rupiah(row.amount)}</td><td className="px-4 py-4 font-mono text-xs text-slate-500">{s(row.order_id).slice(0, 8)}</td><td className="px-5 py-4 text-slate-500">{s(row.payment_method) || '—'}</td></tr>)}</tbody></table></div> : <AdminEmptyState title="Belum ada payment"/>}</AdminCard>
+                <section className="grid gap-3 sm:grid-cols-3"><AdminMetric label="Order terbaru" value={workspace.orders.length} helper="Snapshot workspace" icon={<Package size={18}/>} tone="blue"/><AdminMetric label="Payment terbaru" value={workspace.payments.length} helper="Snapshot workspace" icon={<CalendarDays size={18}/>} tone="violet"/><AdminMetric label="Paid" value={workspace.orders.filter((row) => lower(row.status) === 'paid').length} helper="Order berstatus paid" icon={<FileQuestion size={18}/>} tone="green"/></section>
+                <AdminCard className="overflow-hidden"><div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Orders" description="Order terbaru dan status pembayarannya."/></div>{workspace.orders.length ? <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400"><tr><th className="px-5 py-3">Order</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Total</th><th className="px-4 py-3">User</th><th className="px-5 py-3">Created</th></tr></thead><tbody className="divide-y divide-slate-100">{workspace.orders.map((row) => <tr key={s(row.id)} className="hover:bg-slate-50/70"><td className="px-5 py-4 font-extrabold text-slate-900">{s(row.order_number)}</td><td className="px-4 py-4"><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></td><td className="px-4 py-4 font-bold text-slate-700">{rupiah(row.total_amount)}</td><td className="px-4 py-4 font-mono text-xs text-slate-500">{s(row.user_id).slice(0, 8)}</td><td className="px-5 py-4 text-slate-500">{displayDate(row.created_at)}</td></tr>)}</tbody></table></div> : <AdminEmptyState title="Belum ada order"/>}</AdminCard>
+                <AdminCard className="overflow-hidden"><div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Payments" description="Payment terbaru dari provider."/></div>{workspace.payments.length ? <div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400"><tr><th className="px-5 py-3">Provider</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Order</th><th className="px-5 py-3">Method</th></tr></thead><tbody className="divide-y divide-slate-100">{workspace.payments.map((row) => <tr key={s(row.id)} className="hover:bg-slate-50/70"><td className="px-5 py-4 font-extrabold text-slate-900">{s(row.provider)}</td><td className="px-4 py-4"><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></td><td className="px-4 py-4 font-bold text-slate-700">{rupiah(row.amount)}</td><td className="px-4 py-4 font-mono text-xs text-slate-500">{s(row.order_id).slice(0, 8)}</td><td className="px-5 py-4 text-slate-500">{s(row.payment_method) || '—'}</td></tr>)}</tbody></table></div> : <AdminEmptyState title="Belum ada payment"/>}</AdminCard>
             </section> : <PermissionEmpty permission="order.read / payment.manage"/>)}
         </div>
     )

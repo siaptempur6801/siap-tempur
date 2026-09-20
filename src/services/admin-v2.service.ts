@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json } from '@/types/database.types'
 import { env } from '@/lib/env'
+import { ADMIN_PAGE_SIZE, adminOffset, adminTotalPages } from '@/lib/admin-pagination'
+import { chunkValues } from '@/lib/supabase-batch'
 import { DEFAULT_TOKEN_WALLET_TYPE } from '@/src/repositories/wallet.repository'
 import {
     catalogContextService,
@@ -122,6 +124,65 @@ export type WorkspaceSection = 'products' | 'events' | 'exams' | 'questions' | '
 export const ALL_WORKSPACE_SECTIONS: readonly WorkspaceSection[] =
     ['products', 'events', 'exams', 'questions', 'commerce'] as const
 
+/** Domain yang punya daftar berhalaman + pencarian di database. */
+export type AdminDomainList = 'products' | 'events' | 'exams' | 'questions'
+
+/**
+ * Spesifikasi query per domain.
+ *
+ * Kolom pencarian ditulis eksplisit per domain: kolom `title` tidak ada di
+ * product, dan `name` tidak ada di exam, sehingga daftar kolom tidak bisa
+ * digeneralisasi tanpa menebak.
+ */
+const ADMIN_DOMAIN_LISTS: Record<AdminDomainList, {
+    table: 'products' | 'events' | 'exams' | 'questions'
+    select: string
+    searchColumns: readonly string[]
+    orderColumn: string
+    orderAscending: boolean
+}> = {
+    products: {
+        table: 'products',
+        select: 'id, code, name, description, product_type, duration_days, status, created_at, updated_at',
+        searchColumns: ['code', 'name', 'description'],
+        orderColumn: 'updated_at',
+        orderAscending: false,
+    },
+    events: {
+        table: 'events',
+        select: 'id, code, title, slug, event_type, description, flyer_image_url, registration_start, registration_end, starts_at, ends_at, status, created_at',
+        searchColumns: ['code', 'title', 'slug'],
+        orderColumn: 'starts_at',
+        orderAscending: false,
+    },
+    exams: {
+        table: 'exams',
+        select: 'id, exam_type_id, title, slug, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, starts_at, ends_at, token_cost, updated_at',
+        searchColumns: ['title', 'slug'],
+        orderColumn: 'updated_at',
+        orderAscending: false,
+    },
+    questions: {
+        table: 'questions',
+        select: 'id, question_code, subject_id, question_type, stem, difficulty, source_reference, status, version, author_id, reviewer_id, published_at, updated_at',
+        searchColumns: ['question_code', 'stem'],
+        orderColumn: 'updated_at',
+        orderAscending: false,
+    },
+}
+
+/**
+ * Membersihkan nilai pencarian sebelum dipakai di dalam ekspresi `or` PostgREST.
+ *
+ * `or=(...)` memakai koma sebagai pemisah kondisi dan tanda kurung sebagai
+ * pengelompok, jadi nilai yang mengandung keduanya bisa mengubah bentuk filter —
+ * bukan sekadar gagal. Karakter liarnya juga dibuang supaya `%` yang diketik
+ * admin tidak berubah menjadi wildcard tak terbatas.
+ */
+function escapePostgrestValue(value: string) {
+    return value.replace(/[,()*%\\]/g, ' ').trim()
+}
+
 export class AdminV2Service {
     private async getCatalog(context?: ProgramTrackContext) {
         return catalogContextService.resolve(contextOrDefault(context))
@@ -147,6 +208,179 @@ export class AdminV2Service {
      * Pemanggil yang memakai `sections` bertanggung jawab membaca
      * `loadedSections` sebelum menafsirkan array kosong sebagai "tidak ada data".
      */
+    /**
+     * Daftar satu domain secara berhalaman + pencarian di sisi database.
+     *
+     * ## Kenapa terpisah dari `getWorkspaceData`
+     *
+     * `getWorkspaceData` memuat SATU jendela tetap (soal 80, exam 80, event 50,
+     * product 50) dan tidak pernah memberi tahu berapa total sebenarnya. Dua
+     * akibatnya nyata:
+     *
+     * - **Data tidak terjangkau.** Produksi punya ribuan soal; Question Bank
+     *   hanya bisa menampilkan 80 terbaru, dan tidak ada jalan menuju sisanya.
+     * - **Pencarian berbohong.** Filter di klien berjalan atas baris yang sudah
+     *   terpotong, sehingga mencari soal ke-500 menjawab "tidak ada" — jawaban
+     *   yang salah, bukan sekadar kosong.
+     *
+     * Karena itu pencarian dan paginasi dilakukan di database, dan `total`
+     * dihitung dengan `count: 'exact'` supaya UI dapat menyatakan posisinya
+     * dengan jujur.
+     */
+    async listDomainPage(
+        domain: AdminDomainList,
+        options: { context?: ProgramTrackContext; search?: string | null; status?: string | null; page?: number | null; id?: string | null } = {},
+    ) {
+        const spec = ADMIN_DOMAIN_LISTS[domain]
+        const admin = await createV2AdminClient()
+        const catalog = await this.getCatalog(options.context)
+        const search = (options.search ?? '').trim()
+        const status = (options.status ?? '').trim()
+
+        /** Filter yang berlaku untuk perhitungan total maupun pengambilan baris. */
+        const applyFilters = <T extends { eq: (column: string, value: string) => T; or: (expression: string) => T }>(builder: T): T => {
+            let query = builder
+                .eq('program_id', catalog.program.id)
+                .eq('track_id', catalog.track.id)
+            // `id` dipakai untuk memuat satu baris di luar halaman yang sedang
+            // tampil (mis. tautan edit lama), sehingga admin tidak pernah
+            // menyimpan baris baru hanya karena barisnya tidak termuat. Sengaja
+            // diperiksa sebagai nilai truthy: `''` akan menjadi `uuid = ''` dan
+            // PostgREST menolaknya.
+            if (options.id) query = query.eq('id', options.id)
+            if (status) query = query.eq('status', status)
+            if (search) {
+                // Kolom pencarian ditentukan per domain supaya tidak menabrak
+                // kolom yang tidak ada.
+                query = query.or(spec.searchColumns.map((column) => `${column}.ilike.%${escapePostgrestValue(search)}%`).join(','))
+            }
+            return query
+        }
+
+        /**
+         * Saat nomor halaman dari URL melewati jumlah baris, permintaan baris
+         * TIDAK dijalankan sama sekali.
+         *
+         * PostgREST menolak `Range` di luar jumlah baris dengan **PGRST103
+         * "Requested range not satisfiable"** — sebuah error, bukan array kosong.
+         * Sebelumnya itu menjatuhkan seluruh halaman ke error boundary, dan
+         * `redirect()` yang seharusnya merapikan nomor halaman tidak pernah
+         * tercapai. Pagar ini membuat halaman terakhir tetap penting, tetapi
+         * tidak pernah menjadi kegagalan.
+         */
+        let clampTo: number | null = null
+        if (!options.id) {
+            const total = await this.countDomainRows(domain, { context: options.context, search, status })
+            const requested = Math.max(1, Math.floor(options.page ?? 1))
+            const lastPage = adminTotalPages(total)
+            if (requested > lastPage) return { rows: [], total, lastPage, clampTo: lastPage }
+            clampTo = lastPage
+        }
+
+        const page = Math.max(1, Math.floor(options.page ?? 1))
+        const from = adminOffset(page)
+        const query = applyFilters(admin.from(spec.table).select(spec.select, { count: 'exact' }))
+
+        const { data, count, error } = await query
+            .order(spec.orderColumn, { ascending: spec.orderAscending })
+            .range(from, from + ADMIN_PAGE_SIZE - 1)
+        if (error) throw error
+
+        return {
+            rows: (data ?? []) as unknown as Array<Record<string, unknown>>,
+            total: count ?? 0,
+            lastPage: adminTotalPages(count ?? 0),
+            clampTo,
+        }
+    }
+
+    /**
+     * Jumlah baris satu domain tanpa mengambil satu baris pun.
+     *
+     * `head: true` membuat PostgREST hanya mengirim header, sehingga biayanya
+     * jauh lebih kecil daripada memuat data lalu menghitungnya di aplikasi.
+     */
+    private async countDomainRows(
+        domain: AdminDomainList,
+        options: { context?: ProgramTrackContext; search?: string; status?: string },
+    ): Promise<number> {
+        const spec = ADMIN_DOMAIN_LISTS[domain]
+        const admin = await createV2AdminClient()
+        const catalog = await this.getCatalog(options.context)
+
+        let query = admin
+            .from(spec.table)
+            .select('id', { count: 'exact', head: true })
+            .eq('program_id', catalog.program.id)
+            .eq('track_id', catalog.track.id)
+        if (options.status) query = query.eq('status', options.status)
+        if (options.search) {
+            query = query.or(spec.searchColumns.map((column) => `${column}.ilike.%${escapePostgrestValue(options.search!)}%`).join(','))
+        }
+
+        const { count, error } = await query
+        if (error) throw error
+        return count ?? 0
+    }
+
+    /**
+     * Detail yang dibutuhkan daftar berhalaman, diambil hanya untuk baris yang
+     * benar-benar tampil.
+     *
+     * Sebelumnya harga product, grant token, dan seluruh opsi soal ikut dimuat
+     * untuk semua baris — membuka Question Bank menarik opsi dari 80 soal
+     * sekaligus meski hanya 25 yang dirender.
+     */
+    async listProductPrices(productIds: readonly string[]) {
+        return this.listRowsForIds('product_prices', 'id, product_id, amount, currency, status, starts_at, ends_at', 'product_id', productIds)
+    }
+
+    async listProductWalletGrants(productIds: readonly string[]) {
+        // Tabel ini TIDAK punya kolom `id` — primary key-nya `(product_id, wallet_type)`.
+        // Memilih `id` membuat PostgREST menolak dengan 42703 dan seluruh halaman
+        // jatuh ke error boundary.
+        return this.listRowsForIds('product_wallet_grants', 'product_id, wallet_type, amount', 'product_id', productIds)
+    }
+
+    async listQuestionOptions(questionIds: readonly string[]) {
+        return this.listRowsForIds(
+            'question_options',
+            'id, question_id, option_key, content, is_correct, score, sort_order, response_group, response_group_order, image_url',
+            'question_id',
+            questionIds,
+        )
+    }
+
+    /**
+     * Query `IN` yang di-batch.
+     *
+     * Daftar id yang panjang membuat URL PostgREST melewati batas header server
+     * (±16KB) dan permintaan gagal dengan `UND_ERR_HEADERS_OVERFLOW` — insiden
+     * yang pernah menjatuhkan `/admin/assessment/exams`. Karena itu filter
+     * dipecah memakai helper batching yang sudah ada.
+     */
+    private async listRowsForIds(
+        table: 'product_prices' | 'product_wallet_grants' | 'question_options',
+        select: string,
+        column: 'product_id' | 'question_id',
+        ids: readonly string[],
+    ) {
+        const unique = [...new Set(ids.filter(Boolean))]
+        if (unique.length === 0) return [] as Array<Record<string, unknown>>
+        // `untyped` dipakai karena `product_wallet_grants` belum ada di tipe
+        // database yang di-generate, sedangkan tabelnya nyata dan sudah dipakai
+        // `getWorkspaceData`. Menambahkannya ke tipe berarti regenerasi tipe
+        // database — di luar cakupan perubahan ini.
+        const admin = await createAdminClient()
+        const rows: Array<Record<string, unknown>> = []
+        for (const chunk of chunkValues(unique)) {
+            const { data, error } = await admin.from(table).select(select).in(column, chunk)
+            if (error) throw error
+            rows.push(...((data ?? []) as unknown as Array<Record<string, unknown>>))
+        }
+        return rows
+    }
+
     async getWorkspaceData(context?: ProgramTrackContext, sections?: readonly WorkspaceSection[]) {
         const wanted = new Set<WorkspaceSection>(sections ?? ALL_WORKSPACE_SECTIONS)
         const admin = await createV2AdminClient()
