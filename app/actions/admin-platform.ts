@@ -6,6 +6,7 @@ import { validateCsrf } from '@/lib/csrf'
 import { createClient } from '@/lib/utils/supabase/server'
 import { authorizationService, AuthorizationError } from '@/src/services/authorization.service'
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
+import { auditAdminAction } from '@/lib/audit-log'
 import { logger } from '@/lib/logger'
 
 /**
@@ -112,9 +113,12 @@ export async function adjustWalletAction(form: FormData) {
     const back = contextFrom(form, '/admin/entitlements')
     let failure: unknown = null
     let summary = ''
+    let actorId = ''
+    let audit: { entityType: string; entityId: string | null; label: string; after: Record<string, unknown> } | null = null
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.ENTITLEMENT_MANAGE)
+        const authorization = await requirePermission(PERMISSIONS.ENTITLEMENT_MANAGE)
+        actorId = authorization.userId
         const userId = text(form, 'user_id')
         const walletType = text(form, 'wallet_type')
         const amount = number(form, 'amount')
@@ -132,11 +136,20 @@ export async function adjustWalletAction(form: FormData) {
         if (error) throw new Error(error.message)
         const payload = (data ?? {}) as { balance?: number }
         summary = `Saldo ${walletType} disesuaikan ${amount > 0 ? '+' : ''}${amount}. Saldo sekarang ${payload.balance ?? '—'}.`
+        audit = {
+            entityType: 'wallet',
+            entityId: userId,
+            label: `${walletType} ${amount > 0 ? '+' : ''}${amount}`,
+            after: { wallet_type: walletType, amount, reason, balance_after: payload.balance ?? null },
+        }
     } catch (error) {
         failure = error
         logger.warn('[adjustWalletAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    // Token bernilai uang: setiap penyesuaian wajib meninggalkan jejak siapa,
+    // berapa, dan dengan alasan apa.
+    if (audit) await auditAdminAction({ action: 'ADJUST_WALLET', actorId, ...audit })
     backTo(back, summary)
 }
 
@@ -144,9 +157,12 @@ export async function upsertVoucherAction(form: FormData) {
     const back = contextFrom(form, '/admin/entitlements')
     let failure: unknown = null
     let code = ''
+    let actorId = ''
+    let audit: { entityType: string; entityId: string | null; label: string; after: Record<string, unknown> } | null = null
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.ENTITLEMENT_MANAGE)
+        const authorization = await requirePermission(PERMISSIONS.ENTITLEMENT_MANAGE)
+        actorId = authorization.userId
         const id = text(form, 'voucher_id')
         code = text(form, 'code').toUpperCase()
         const quota = number(form, 'quota_amount')
@@ -165,11 +181,25 @@ export async function upsertVoucherAction(form: FormData) {
             p_wallet_type: walletType || null,
         })
         if (error) throw new Error(error.message)
+        audit = {
+            entityType: 'voucher',
+            entityId: id || null,
+            label: code,
+            after: {
+                code,
+                quota_amount: quota ?? 0,
+                max_uses: maxUses ?? 0,
+                expires_at: expiresRaw || null,
+                is_active: checkbox(form, 'is_active'),
+                wallet_type: walletType || null,
+            },
+        }
     } catch (error) {
         failure = error
         logger.warn('[upsertVoucherAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    if (audit) await auditAdminAction({ action: 'UPSERT_VOUCHER', actorId, ...audit })
     backTo(back, `Voucher ${code} disimpan.`)
 }
 
@@ -179,28 +209,40 @@ export async function upsertFeatureFlagAction(form: FormData) {
     const back = contextFrom(form, '/admin/settings')
     let failure: unknown = null
     let key = ''
+    let actorId = ''
+    let audit: { entityType: string; entityId: string | null; label: string; after: Record<string, unknown> } | null = null
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        const authorization = await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        actorId = authorization.userId
         const id = text(form, 'flag_id')
         key = text(form, 'key')
         const name = text(form, 'name')
         const rollout = number(form, 'rollout_percentage') ?? 0
+        const enabled = checkbox(form, 'enabled')
 
         const client = await createClient()
         const { error } = await client.rpc('admin_upsert_feature_flag', {
             p_id: id || null,
             p_key: key,
             p_name: name,
-            p_enabled: checkbox(form, 'enabled'),
+            p_enabled: enabled,
             p_rollout_percentage: rollout,
         })
         if (error) throw new Error(error.message)
+        audit = {
+            entityType: 'feature_flag',
+            entityId: id || null,
+            label: key,
+            after: { key, name, enabled, rollout_percentage: rollout },
+        }
     } catch (error) {
         failure = error
         logger.warn('[upsertFeatureFlagAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    // Feature flag bisa mematikan/menyalakan enforcement yang berdampak uang.
+    if (audit) await auditAdminAction({ action: 'UPSERT_FEATURE_FLAG', actorId, ...audit })
     backTo(back, `Feature flag ${key} disimpan.`)
 }
 
@@ -208,9 +250,12 @@ export async function upsertCertificateTemplateAction(form: FormData) {
     const back = contextFrom(form, '/admin/settings')
     let failure: unknown = null
     let name = ''
+    let actorId = ''
+    let audit: { entityType: string; entityId: string | null; label: string; after: Record<string, unknown> } | null = null
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        const authorization = await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        actorId = authorization.userId
         const id = text(form, 'template_id')
         name = text(form, 'name')
         const templateUrl = text(form, 'template_url')
@@ -235,11 +280,18 @@ export async function upsertCertificateTemplateAction(form: FormData) {
             p_config: (config ?? null) as never,
         })
         if (error) throw new Error(error.message)
+        audit = {
+            entityType: 'certificate_template',
+            entityId: id || null,
+            label: name,
+            after: { name, template_url: templateUrl || null },
+        }
     } catch (error) {
         failure = error
         logger.warn('[upsertCertificateTemplateAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    if (audit) await auditAdminAction({ action: 'UPSERT_CERTIFICATE_TEMPLATE', actorId, ...audit })
     backTo(back, `Template sertifikat ${name} disimpan.`)
 }
 
@@ -247,15 +299,18 @@ export async function setTrackPeriodActiveAction(form: FormData) {
     const back = contextFrom(form, '/admin/settings')
     let failure: unknown = null
     const active = checkbox(form, 'is_active')
+    let actorId = ''
+    let entityId = ''
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
-        const id = text(form, 'track_period_id')
-        if (!id) throw new Error('Track period not found')
+        const authorization = await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        actorId = authorization.userId
+        entityId = text(form, 'track_period_id')
+        if (!entityId) throw new Error('Track period not found')
 
         const client = await createClient()
         const { error } = await client.rpc('admin_set_track_period_active', {
-            p_track_period_id: id,
+            p_track_period_id: entityId,
             p_is_active: active,
         })
         if (error) throw new Error(error.message)
@@ -264,6 +319,14 @@ export async function setTrackPeriodActiveAction(form: FormData) {
         logger.warn('[setTrackPeriodActiveAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditAdminAction({
+        action: 'SET_TRACK_PERIOD_ACTIVE',
+        actorId,
+        entityType: 'track_period',
+        entityId,
+        label: active ? 'aktif' : 'nonaktif',
+        after: { is_active: active },
+    })
     backTo(back, active ? 'Track period diaktifkan.' : 'Track period dinonaktifkan.')
 }
 
@@ -271,9 +334,12 @@ export async function upsertSystemSettingAction(form: FormData) {
     const back = contextFrom(form, '/admin/settings')
     let failure: unknown = null
     let key = ''
+    let actorId = ''
+    let written: unknown = null
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        const authorization = await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        actorId = authorization.userId
         key = text(form, 'key')
         const valueRaw = text(form, 'value')
         if (!valueRaw) throw new Error('Setting value is required')
@@ -293,11 +359,20 @@ export async function upsertSystemSettingAction(form: FormData) {
             p_value: value as never,
         })
         if (error) throw new Error(error.message)
+        written = value
     } catch (error) {
         failure = error
         logger.warn('[upsertSystemSettingAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditAdminAction({
+        action: 'UPSERT_SYSTEM_SETTING',
+        actorId,
+        entityType: 'system_setting',
+        entityId: null,
+        label: key,
+        after: { key, value: written },
+    })
     backTo(back, `Pengaturan ${key} disimpan.`)
 }
 
@@ -305,9 +380,11 @@ export async function deleteSystemSettingAction(form: FormData) {
     const back = contextFrom(form, '/admin/settings')
     let failure: unknown = null
     let key = ''
+    let actorId = ''
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        const authorization = await requirePermission(PERMISSIONS.SETTINGS_MANAGE)
+        actorId = authorization.userId
         key = text(form, 'key')
         const client = await createClient()
         const { error } = await client.rpc('admin_delete_system_setting', { p_key: key })
@@ -317,5 +394,13 @@ export async function deleteSystemSettingAction(form: FormData) {
         logger.warn('[deleteSystemSettingAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditAdminAction({
+        action: 'DELETE_SYSTEM_SETTING',
+        actorId,
+        entityType: 'system_setting',
+        entityId: null,
+        label: key,
+        before: { key },
+    })
     backTo(back, `Pengaturan ${key} dihapus.`)
 }

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { createClient } from '@/lib/utils/supabase/server'
 import { authorizationService, AuthorizationError } from '@/src/services/authorization.service'
+import { auditAdminAction } from '@/lib/audit-log'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { organizationExamService, type TemplateShortage } from '@/src/services/organization-exam.service'
 import { logger } from '@/lib/logger'
@@ -87,6 +88,30 @@ function friendlyError(error: unknown) {
 
 type Back = { batchId: string; orgId: string }
 
+type OrgExamAudit = {
+    actorId: string
+    action: string
+    entityType: string
+    entityId?: string | null
+    label?: string | null
+    before?: Record<string, unknown> | null
+    after?: Record<string, unknown> | null
+}
+
+/**
+ * Menulis jejak audit satu aksi instansi, bila aksinya berhasil.
+ *
+ * Dipisah dari `backTo` dan di-await SEBELUM `backTo` dipanggil, karena `backTo`
+ * harus tetap fungsi SINKRON yang melempar `redirect()`: `redirect()` yang
+ * dilempar dari dalam fungsi `async` tidak lagi tertangkap mekanisme Server
+ * Action Next — browser tidak berpindah halaman dan pesan sukses tidak pernah
+ * sampai ke layar, meskipun datanya sudah berubah di database.
+ */
+async function auditOrgExamAction(audit: OrgExamAudit, error?: unknown) {
+    if (error) return
+    await auditAdminAction(audit)
+}
+
 function backTo(back: Back, ok?: string, error?: unknown): never {
     revalidatePath('/admin/organizations')
     const params = new URLSearchParams()
@@ -108,10 +133,13 @@ export async function saveOrgTemplateAction(form: FormData) {
     const back = backFrom(form)
     let failure: unknown = null
     let name = ''
+    let actorId = ''
+    const templateId = text(form, 'template_id')
     try {
         await validateCsrf()
-        await requirePermission()
-        const id = text(form, 'template_id')
+        const authorization = await requirePermission()
+        actorId = authorization.userId
+        const id = templateId
         name = text(form, 'name')
 
         const client = await createClient()
@@ -136,6 +164,14 @@ export async function saveOrgTemplateAction(form: FormData) {
         logger.warn('[saveOrgTemplateAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditOrgExamAction({
+        actorId,
+        action: templateId ? 'UPDATE_ORG_TEMPLATE' : 'CREATE_ORG_TEMPLATE',
+        entityType: 'organization_exam_template',
+        entityId: templateId || null,
+        label: name,
+        after: { twk: number(form, 'twk_count') ?? 0, tiu: number(form, 'tiu_count') ?? 0, tkp: number(form, 'tkp_count') ?? 0 },
+    }, failure)
     backTo(back, `Template ${name} disimpan.`)
 }
 
@@ -157,9 +193,11 @@ export async function composeExamAction(
     _previous: ComposeActionResult,
     form: FormData,
 ): Promise<ComposeActionResult> {
+    let actorId = ''
     try {
         await validateCsrf()
-        await requirePermission()
+        const authorization = await requirePermission()
+        actorId = authorization.userId
 
         const templateId = text(form, 'template_id')
         const title = text(form, 'title')
@@ -200,6 +238,20 @@ export async function composeExamAction(
             examId: result.examId,
             total: result.totalQuestions,
         })
+        // Membentuk exam dari template membuat soal ujian nyata untuk peserta.
+        await auditAdminAction({
+            actorId,
+            action: 'COMPOSE_EXAM_FROM_TEMPLATE',
+            entityType: 'exam',
+            entityId: result.examId,
+            label: result.title,
+            after: {
+                template_id: templateId,
+                total_questions: result.totalQuestions,
+                status,
+                batch_id: batchId || null,
+            },
+        })
         return {
             status: 'composed',
             examId: result.examId,
@@ -220,9 +272,12 @@ export async function composeExamAction(
 export async function saveAssignmentAction(form: FormData) {
     const back = backFrom(form)
     let failure: unknown = null
+    let actorId = ''
+    const assignmentId = text(form, 'assignment_id')
     try {
         await validateCsrf()
-        await requirePermission()
+        const authorization = await requirePermission()
+        actorId = authorization.userId
 
         const examId = text(form, 'exam_id')
         const batchId = text(form, 'batch_id')
@@ -231,7 +286,7 @@ export async function saveAssignmentAction(form: FormData) {
 
         const client = await createClient()
         const { error } = await client.rpc('admin_upsert_assignment', {
-            p_id: text(form, 'assignment_id') || null,
+            p_id: assignmentId || null,
             p_batch_id: batchId,
             p_exam_id: examId,
             p_template_id: text(form, 'template_id') || null,
@@ -246,6 +301,14 @@ export async function saveAssignmentAction(form: FormData) {
         logger.warn('[saveAssignmentAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditOrgExamAction({
+        actorId,
+        action: assignmentId ? 'UPDATE_ASSIGNMENT' : 'CREATE_ASSIGNMENT',
+        entityType: 'organization_exam_assignment',
+        entityId: assignmentId || null,
+        label: text(form, 'batch_id'),
+        after: { exam_id: text(form, 'exam_id'), is_active: checkbox(form, 'is_active') },
+    }, failure)
     backTo(back, 'Ujian batch disimpan.')
 }
 
@@ -253,9 +316,11 @@ export async function toggleAssignmentActiveAction(form: FormData) {
     const back = backFrom(form)
     let failure: unknown = null
     const active = checkbox(form, 'is_active')
+    let actorId = ''
     try {
         await validateCsrf()
-        await requirePermission()
+        const authorization = await requirePermission()
+        actorId = authorization.userId
         const client = await createClient()
         const { error } = await client.rpc('admin_upsert_assignment', {
             p_id: text(form, 'assignment_id') || null,
@@ -273,6 +338,14 @@ export async function toggleAssignmentActiveAction(form: FormData) {
         logger.warn('[toggleAssignmentActiveAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditOrgExamAction({
+        actorId,
+        action: 'SET_ASSIGNMENT_ACTIVE',
+        entityType: 'organization_exam_assignment',
+        entityId: text(form, 'assignment_id') || null,
+        label: text(form, 'batch_id'),
+        after: { is_active: active },
+    }, failure)
     backTo(back, active ? 'Ujian diaktifkan.' : 'Ujian dinonaktifkan.')
 }
 
@@ -280,10 +353,12 @@ export async function deleteComposedExamAction(form: FormData) {
     const back = backFrom(form)
     let failure: unknown = null
     let title = ''
+    let actorId = ''
+    const examId = text(form, 'exam_id')
     try {
         await validateCsrf()
-        await requirePermission()
-        const examId = text(form, 'exam_id')
+        const authorization = await requirePermission()
+        actorId = authorization.userId
         title = text(form, 'exam_title')
         if (!examId) throw new Error('Exam not found')
 
@@ -295,5 +370,15 @@ export async function deleteComposedExamAction(form: FormData) {
         logger.warn('[deleteComposedExamAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    // Menghapus exam hasil komposisi mencabut ujian yang mungkin sudah
+    // dijadwalkan ke peserta — tindakan yang paling perlu bisa ditelusuri.
+    await auditOrgExamAction({
+        actorId,
+        action: 'DELETE_COMPOSED_EXAM',
+        entityType: 'exam',
+        entityId: examId,
+        label: title,
+        before: { title },
+    }, failure)
     backTo(back, `Exam ${title || 'tersebut'} dihapus.`)
 }

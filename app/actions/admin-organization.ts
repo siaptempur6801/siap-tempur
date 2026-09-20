@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { createClient } from '@/lib/utils/supabase/server'
 import { authorizationService, AuthorizationError } from '@/src/services/authorization.service'
+import { auditAdminAction } from '@/lib/audit-log'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { logger } from '@/lib/logger'
 
@@ -86,6 +87,31 @@ function friendlyError(error: unknown) {
 
 type Back = { path: string; params: Record<string, string> }
 
+/**
+ * Menulis jejak audit satu aksi instansi, bila aksinya berhasil.
+ *
+ * SENGAJA dipisah dari `backTo` dan di-await SEBELUM `backTo` dipanggil.
+ * `backTo` harus tetap fungsi SINKRON yang melempar `redirect()`: `redirect()`
+ * yang dilempar dari dalam fungsi `async` tidak lagi tertangkap mekanisme Server
+ * Action Next — responsnya kembali sebagai penolakan yang tidak tertangani,
+ * browser tidak berpindah halaman, dan pesan sukses tidak pernah sampai ke
+ * layar. Gejalanya sempat menyesatkan: instansinya SUDAH dibuat di database
+ * (dan `redirect()` memang tercatat memanggil `NEXT_REDIRECT`), tetapi admin
+ * tetap melihat formulir kosong tanpa pesan apa pun.
+ */
+async function auditOrgAction(audit: {
+    actorId: string
+    action: string
+    entityType: string
+    entityId?: string | null
+    label?: string | null
+    before?: Record<string, unknown> | null
+    after?: Record<string, unknown> | null
+} | null, error?: unknown) {
+    if (!audit || error) return
+    await auditAdminAction(audit)
+}
+
 function backTo(back: Back, ok?: string, error?: unknown): never {
     revalidatePath('/admin/organizations')
     const params = new URLSearchParams(back.params)
@@ -139,10 +165,13 @@ export async function saveOrganizationAction(form: FormData) {
     const back = orgBack(form)
     let failure: unknown = null
     let name = ''
+    let actorId = ''
+    const orgId = text(form, 'id')
     try {
         await validateCsrf()
-        await requirePermission()
-        const id = text(form, 'id')
+        const authorization = await requirePermission()
+        actorId = authorization.userId
+        const id = orgId
         const fields = orgFields(form)
         name = fields.name
 
@@ -173,6 +202,14 @@ export async function saveOrganizationAction(form: FormData) {
         logger.warn('[saveOrganizationAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditOrgAction({
+        actorId,
+        action: orgId ? 'UPDATE_ORGANIZATION' : 'CREATE_ORGANIZATION',
+        entityType: 'organization',
+        entityId: orgId || null,
+        label: name,
+        after: { name, code: text(form, 'code'), status: text(form, 'status') },
+    }, failure)
     backTo(back, `Instansi ${name} disimpan.`)
 }
 
@@ -180,11 +217,14 @@ export async function saveBatchAction(form: FormData) {
     const back = orgBack(form)
     let failure: unknown = null
     let name = ''
+    let actorId = ''
+    const batchId = text(form, 'batch_id')
+    const organizationId = text(form, 'organization_id')
     try {
         await validateCsrf()
-        await requirePermission()
-        const id = text(form, 'batch_id')
-        const organizationId = text(form, 'organization_id')
+        const authorization = await requirePermission()
+        actorId = authorization.userId
+        const id = batchId
         name = text(form, 'name')
         if (!organizationId) throw new Error('Organization is required')
 
@@ -205,16 +245,26 @@ export async function saveBatchAction(form: FormData) {
         logger.warn('[saveBatchAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditOrgAction({
+        actorId,
+        action: batchId ? 'UPDATE_BATCH' : 'CREATE_BATCH',
+        entityType: 'organization_batch',
+        entityId: batchId || null,
+        label: name,
+        after: { organization_id: organizationId, code: text(form, 'code'), status: text(form, 'batch_status') },
+    }, failure)
     backTo(back, `Batch ${name} disimpan.`)
 }
 
 export async function rotateBatchInviteAction(form: FormData) {
     const back = orgBack(form)
     let failure: unknown = null
+    let actorId = ''
+    const batchId = text(form, 'batch_id')
     try {
         await validateCsrf()
-        await requirePermission()
-        const batchId = text(form, 'batch_id')
+        const authorization = await requirePermission()
+        actorId = authorization.userId
         if (!batchId) throw new Error('Batch not found')
 
         const client = await createClient()
@@ -225,6 +275,14 @@ export async function rotateBatchInviteAction(form: FormData) {
         logger.warn('[rotateBatchInviteAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    // Rotasi tautan undangan mencabut akses masuk peserta: tindakan sengaja yang
+    // perlu bisa ditelusuri ("kenapa undangan lama tidak jalan?").
+    await auditOrgAction({
+        actorId,
+        action: 'ROTATE_BATCH_INVITE',
+        entityType: 'organization_batch',
+        entityId: batchId,
+    }, failure)
     backTo(back, 'Tautan undangan baru dibuat. Tautan lama langsung tidak berlaku.')
 }
 
@@ -232,10 +290,13 @@ export async function deleteOrganizationAction(form: FormData) {
     const back = orgBack(form)
     let failure: unknown = null
     let name = ''
+    let actorId = ''
+    const orgId = text(form, 'id')
     try {
         await validateCsrf()
-        await requirePermission()
-        const id = text(form, 'id')
+        const authorization = await requirePermission()
+        actorId = authorization.userId
+        const id = orgId
         if (!id) throw new Error('Organization not found')
         name = text(form, 'name')
 
@@ -251,6 +312,14 @@ export async function deleteOrganizationAction(form: FormData) {
         logger.warn('[deleteOrganizationAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditOrgAction({
+        actorId,
+        action: 'DELETE_ORGANIZATION',
+        entityType: 'organization',
+        entityId: orgId,
+        label: name,
+        before: { name, status: text(form, 'status') },
+    }, failure)
     backTo(back, `Instansi ${name || 'tersebut'} dihapus.`)
 }
 
@@ -258,10 +327,12 @@ export async function removeParticipantAction(form: FormData) {
     const back = orgBack(form)
     let failure: unknown = null
     let code = ''
+    let actorId = ''
+    const participantId = text(form, 'participant_id')
     try {
         await validateCsrf()
-        await requirePermission()
-        const participantId = text(form, 'participant_id')
+        const authorization = await requirePermission()
+        actorId = authorization.userId
         if (!participantId) throw new Error('Participant not found')
         code = text(form, 'participant_code')
 
@@ -273,6 +344,16 @@ export async function removeParticipantAction(form: FormData) {
         logger.warn('[removeParticipantAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditOrgAction({
+        actorId,
+        action: 'REMOVE_PARTICIPANT',
+        entityType: 'organization_participant',
+        entityId: participantId,
+        label: code,
+        // Nama tidak ikut: jejak audit dibaca banyak orang, dan yang dibutuhkan
+        // di sini adalah "peserta mana" (kode), bukan identitas pribadinya.
+        before: { participant_code: code, batch_id: text(form, 'batch_id') },
+    }, failure)
     backTo(back, `Peserta ${code || 'tersebut'} dikeluarkan dari batch.`)
 }
 
@@ -280,10 +361,12 @@ export async function setParticipantStatusAction(form: FormData) {
     const back = orgBack(form)
     let failure: unknown = null
     let status = ''
+    let actorId = ''
+    const participantId = text(form, 'participant_id')
     try {
         await validateCsrf()
-        await requirePermission()
-        const participantId = text(form, 'participant_id')
+        const authorization = await requirePermission()
+        actorId = authorization.userId
         status = text(form, 'participant_status')
         if (!participantId) throw new Error('Participant not found')
 
@@ -298,5 +381,13 @@ export async function setParticipantStatusAction(form: FormData) {
         logger.warn('[setParticipantStatusAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditOrgAction({
+        actorId,
+        action: 'SET_PARTICIPANT_STATUS',
+        entityType: 'organization_participant',
+        entityId: participantId,
+        label: text(form, 'participant_code') || status,
+        after: { status },
+    }, failure)
     backTo(back, `Status peserta diubah menjadi ${status}.`)
 }

@@ -6,6 +6,7 @@ import { validateCsrf } from '@/lib/csrf'
 import { createClient } from '@/lib/utils/supabase/server'
 import { authorizationService, AuthorizationError } from '@/src/services/authorization.service'
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
+import { auditAdminAction } from '@/lib/audit-log'
 import { logger } from '@/lib/logger'
 
 /**
@@ -79,10 +80,13 @@ export async function assignUserRoleAction(form: FormData) {
     const back = contextFrom(form)
     let failure: unknown = null
     let roleCode = ''
+    let actorId = ''
+    let userId = ''
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.ROLE_MANAGE)
-        const userId = text(form, 'user_id')
+        const authorization = await requirePermission(PERMISSIONS.ROLE_MANAGE)
+        actorId = authorization.userId
+        userId = text(form, 'user_id')
         roleCode = text(form, 'role_code')
         if (!userId) throw new Error('User is required')
         const client = await createClient()
@@ -96,6 +100,16 @@ export async function assignUserRoleAction(form: FormData) {
         logger.warn('[assignUserRoleAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    // Pemberian peran adalah perubahan hak akses: tanpa jejak, tidak ada cara
+    // menjawab "siapa memberi akses ini dan kapan".
+    await auditAdminAction({
+        action: 'ASSIGN_USER_ROLE',
+        actorId,
+        entityType: 'user',
+        entityId: userId,
+        label: roleCode,
+        after: { role_code: roleCode },
+    })
     backTo(back, `Peran ${roleCode} diberikan.`)
 }
 
@@ -103,10 +117,13 @@ export async function revokeUserRoleAction(form: FormData) {
     const back = contextFrom(form)
     let failure: unknown = null
     let roleCode = ''
+    let actorId = ''
+    let userId = ''
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.ROLE_MANAGE)
-        const userId = text(form, 'user_id')
+        const authorization = await requirePermission(PERMISSIONS.ROLE_MANAGE)
+        actorId = authorization.userId
+        userId = text(form, 'user_id')
         roleCode = text(form, 'role_code')
         if (!userId) throw new Error('User is required')
         const client = await createClient()
@@ -120,6 +137,16 @@ export async function revokeUserRoleAction(form: FormData) {
         logger.warn('[revokeUserRoleAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    // Pencabutan peran dicatat dengan alasan yang sama seperti pemberiannya —
+    // bahkan lebih penting, karena inilah yang bisa mengunci orang dari sistem.
+    await auditAdminAction({
+        action: 'REVOKE_USER_ROLE',
+        actorId,
+        entityType: 'user',
+        entityId: userId,
+        label: roleCode,
+        before: { role_code: roleCode },
+    })
     backTo(back, `Peran ${roleCode} dicabut.`)
 }
 
@@ -127,10 +154,13 @@ export async function setUserStatusAction(form: FormData) {
     const back = contextFrom(form)
     let failure: unknown = null
     let status = ''
+    let actorId = ''
+    let userId = ''
     try {
         await validateCsrf()
-        await requirePermission(PERMISSIONS.USER_MANAGE)
-        const userId = text(form, 'user_id')
+        const authorization = await requirePermission(PERMISSIONS.USER_MANAGE)
+        actorId = authorization.userId
+        userId = text(form, 'user_id')
         status = text(form, 'status')
         if (!userId) throw new Error('User is required')
         const client = await createClient()
@@ -144,5 +174,13 @@ export async function setUserStatusAction(form: FormData) {
         logger.warn('[setUserStatusAction] gagal', { error: error instanceof Error ? error.message : String(error) })
     }
     if (failure) backTo(back, undefined, failure)
+    await auditAdminAction({
+        action: 'SET_USER_STATUS',
+        actorId,
+        entityType: 'user',
+        entityId: userId,
+        label: status,
+        after: { status },
+    })
     backTo(back, `Status pengguna diubah menjadi ${status}.`)
 }

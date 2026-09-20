@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { PERMISSIONS } from '@/src/auth/permissions'
+import { auditAdminAction } from '@/lib/audit-log'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminV2Service } from '@/src/services/admin-v2.service'
 import { adminExamsService } from '@/src/services/admin-exams.service'
@@ -86,7 +87,37 @@ async function requireExamManager() {
   return authorizationService.requirePermission(PERMISSIONS.EXAM_MANAGE)
 }
 
-async function finish(context: ProgramTrackContext, success: string, error?: unknown) {
+/**
+ * Menutup satu aksi exam: revalidasi, catat jejak audit, lalu redirect.
+ *
+ * Jejak ditulis SEBELUM `redirect()` karena redirect melempar — apa pun yang
+ * diletakkan setelahnya tidak akan pernah dijalankan.
+ */
+type ExamAudit = {
+  actorId: string
+  action: string
+  entityType: string
+  entityId?: string | null
+  label?: string | null
+  before?: Record<string, unknown> | null
+  after?: Record<string, unknown> | null
+}
+
+/**
+ * Menulis jejak audit satu aksi exam, bila aksinya berhasil.
+ *
+ * Dipisah dari `finish` dan di-await SEBELUM `finish` dipanggil, karena `finish`
+ * harus tetap fungsi SINKRON yang melempar `redirect()`: `redirect()` yang
+ * dilempar dari dalam fungsi `async` tidak lagi tertangkap mekanisme Server
+ * Action Next — browser tidak berpindah halaman dan pesan sukses tidak pernah
+ * sampai ke layar, meskipun datanya sudah berubah di database.
+ */
+async function auditExamAction(audit: ExamAudit, error?: unknown) {
+  if (error) return
+  await auditAdminAction(audit)
+}
+
+function finish(context: ProgramTrackContext, success: string, error?: unknown) {
   revalidatePath('/admin/assessment/exams')
   const query = new URLSearchParams({
     program: context.programCode,
@@ -99,8 +130,11 @@ async function finish(context: ProgramTrackContext, success: string, error?: unk
 export async function saveAdminExamAction(form: FormData) {
   const context = contextFrom(form)
   let failure: unknown = null
+  let actorId = ''
+  const existingId = nullableText(form, 'id')
   try {
     const authorization = await requireExamManager()
+    actorId = authorization.userId
     const examTypeCode = text(form, 'exam_type_code').toUpperCase()
     const title = text(form, 'title')
     const requestedSlug = text(form, 'slug')
@@ -151,29 +185,55 @@ export async function saveAdminExamAction(form: FormData) {
   } catch (error) {
     failure = error
   }
-  await finish(context, 'Exam tersimpan.', failure)
+  await auditExamAction({
+    actorId,
+    action: existingId ? 'UPDATE_EXAM' : 'CREATE_EXAM',
+    entityType: 'exam',
+    entityId: existingId,
+    label: text(form, 'title'),
+    after: {
+      exam_type_code: text(form, 'exam_type_code').toUpperCase(),
+      status: text(form, 'status') || 'draft',
+      token_cost: numberValue(form, 'token_cost', 0),
+    },
+  }, failure)
+  finish(context, 'Exam tersimpan.', failure)
 }
 
 export async function archiveAdminExamAction(form: FormData) {
   const context = contextFrom(form)
   let failure: unknown = null
+  const examId = text(form, 'id')
+  let actorId = ''
   try {
-    await requireExamManager()
-    await adminV2Service.archiveExam(text(form, 'id'))
+    const authorization = await requireExamManager()
+    actorId = authorization.userId
+    await adminV2Service.archiveExam(examId)
   } catch (error) {
     failure = error
   }
-  await finish(context, 'Exam diarsipkan.', failure)
+  await auditExamAction({
+    actorId,
+    action: 'ARCHIVE_EXAM',
+    entityType: 'exam',
+    entityId: examId,
+    after: { status: 'archived' },
+  }, failure)
+  finish(context, 'Exam diarsipkan.', failure)
 }
 
 export async function saveAdminExamSectionAction(form: FormData) {
   const context = contextFrom(form)
   let failure: unknown = null
+  let actorId = ''
+  const sectionId = nullableText(form, 'id')
+  const examId = text(form, 'exam_id')
   try {
-    await requireExamManager()
+    const authorization = await requireExamManager()
+    actorId = authorization.userId
     await adminV2Service.saveExamSection({
-      id: nullableText(form, 'id'),
-      examId: text(form, 'exam_id'),
+      id: sectionId,
+      examId,
       subjectCode: nullableText(form, 'subject_code'),
       title: text(form, 'title'),
       sortOrder: numberValue(form, 'sort_order', 0),
@@ -185,5 +245,16 @@ export async function saveAdminExamSectionAction(form: FormData) {
   } catch (error) {
     failure = error
   }
-  await finish(context, 'Section exam tersimpan.', failure)
+  await auditExamAction({
+    actorId,
+    action: sectionId ? 'UPDATE_EXAM_SECTION' : 'CREATE_EXAM_SECTION',
+    entityType: 'exam',
+    entityId: examId,
+    label: text(form, 'title'),
+    after: {
+      question_count: nullableNumber(form, 'question_count'),
+      passing_score: nullableNumber(form, 'passing_score'),
+    },
+  }, failure)
+  finish(context, 'Section exam tersimpan.', failure)
 }

@@ -11,6 +11,7 @@ import {
     type ImportRow,
 } from '@/lib/participant-import'
 import { participantImportService } from '@/src/services/organization.service'
+import { auditAdminAction } from '@/lib/audit-log'
 import { logger } from '@/lib/logger'
 
 /**
@@ -141,6 +142,21 @@ async function runImport(form: FormData, mode: 'preview' | 'commit'): Promise<Im
                 imported: preview.imported,
                 duplicate: preview.duplicate,
                 error: preview.error,
+            })
+            // Satu peristiwa per impor, bukan satu per baris: mengimpor 2.000
+            // peserta tidak boleh menghasilkan 2.000 baris audit yang menenggelamkan
+            // peristiwa lain di `/admin/audit`.
+            await auditAdminAction({
+                actorId: authorization.userId,
+                action: 'IMPORT_PARTICIPANTS',
+                entityType: 'organization_batch',
+                entityId: batchId,
+                label: `${preview.imported} peserta`,
+                after: {
+                    imported: preview.imported,
+                    duplicate: preview.duplicate,
+                    error: preview.error,
+                },
             })
             return { status: 'imported', preview, batchId }
         }

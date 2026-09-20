@@ -6,6 +6,7 @@ import { validateCsrf } from '@/lib/csrf'
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminV2Service, type AdminQuestionOptionInput } from '@/src/services/admin-v2.service'
+import { auditAdminAction } from '@/lib/audit-log'
 import { parseQuestionOptions as parseQuestionOptionRows } from '@/lib/question-options'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
@@ -129,6 +130,23 @@ async function actor(permission: PermissionCode) {
 }
 
 /**
+ * Jejak audit untuk satu aksi admin.
+ *
+ * `actorId` diteruskan dari `actor()` sehingga setiap aksi yang berhasil dapat
+ * mencatat SIAPA yang mengubah APA. Sebelumnya hanya modul artikel yang menulis
+ * jejak; perubahan produk, exam, event, dan soal tidak meninggalkan jejak sama
+ * sekali — termasuk perubahan harga dan kunci jawaban.
+ */
+type AdminAudit = {
+    action: string
+    entityType: string
+    entityId?: string | null
+    label?: string | null
+    before?: Record<string, unknown> | null
+    after?: Record<string, unknown> | null
+}
+
+/**
  * Halaman kanonik untuk setiap tab workspace admin.
  *
  * Sebelumnya `finish()` mengarahkan ke `/cpns/admin?tab=...`. Setelah pohon admin
@@ -147,7 +165,30 @@ const ADMIN_TAB_ROUTES = {
 
 type AdminTab = keyof typeof ADMIN_TAB_ROUTES
 
-async function finish(
+/**
+ * Menulis jejak audit satu aksi, bila aksinya berhasil.
+ *
+ * SENGAJA dipisah dari `finish` dan di-await SEBELUM `finish` dipanggil, karena
+ * `finish` harus tetap fungsi SINKRON yang melempar `redirect()`. `redirect()`
+ * yang dilempar dari dalam fungsi `async` tidak lagi tertangkap mekanisme Server
+ * Action Next: respons menjadi penolakan yang tidak tertangani, browser tidak
+ * berpindah halaman, dan pesan sukses tidak pernah muncul — meskipun datanya
+ * sudah berubah. Dijaga `tests/unit/admin-async-redirect-guard.test.ts`.
+ */
+async function auditAdminV2Action(audit: (AdminAudit & { actorId: string }) | null | undefined, error: unknown = null) {
+    if (!audit || error) return
+    await auditAdminAction({
+        action: audit.action,
+        actorId: audit.actorId,
+        entityType: audit.entityType,
+        entityId: audit.entityId ?? null,
+        label: audit.label ?? null,
+        before: audit.before ?? null,
+        after: audit.after ?? null,
+    })
+}
+
+function finish(
     tab: AdminTab,
     success: string,
     context: ProgramTrackContext,
@@ -169,13 +210,15 @@ export async function saveProductAction(form: FormData) {
     const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
+    let actorId = ''
     const submittedPrice = nullableNumber(form, 'price')
     const currentPrice = nullableNumber(form, 'current_price')
     const price = requestedId && submittedPrice !== null && currentPrice !== null && submittedPrice === currentPrice
         ? null
         : submittedPrice
     try {
-        await actor(PERMISSIONS.PRODUCT_MANAGE)
+        const authorization = await actor(PERMISSIONS.PRODUCT_MANAGE)
+        actorId = authorization.userId
         savedId = await adminV2Service.saveProduct({
             id: requestedId,
             code: text(form, 'code'),
@@ -190,17 +233,42 @@ export async function saveProductAction(form: FormData) {
             context,
         })
     } catch (error) { failure = error }
-    await finish('products', 'Produk tersimpan.', context, failure, savedId)
+    await auditAdminV2Action({
+        actorId,
+        action: requestedId ? 'UPDATE_PRODUCT' : 'CREATE_PRODUCT',
+        entityType: 'product',
+        entityId: savedId,
+        label: text(form, 'name') || text(form, 'code'),
+        after: {
+            code: text(form, 'code'),
+            status: text(form, 'status') || 'draft',
+            price,
+            currency: text(form, 'currency') || 'IDR',
+            token_grant: nullableNumber(form, 'token_grant'),
+        },
+    }, failure)
+    finish('products', 'Produk tersimpan.', context, failure, savedId)
 }
 
 export async function archiveProductAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
+    const productId = text(form, 'id')
+    let actorId = ''
     try {
-        await actor(PERMISSIONS.PRODUCT_MANAGE)
-        await adminV2Service.archiveProduct(text(form, 'id'))
+        const authorization = await actor(PERMISSIONS.PRODUCT_MANAGE)
+        actorId = authorization.userId
+        await adminV2Service.archiveProduct(productId)
     } catch (error) { failure = error }
-    await finish('products', 'Produk diarsipkan.', context, failure)
+    await auditAdminV2Action({
+        actorId,
+        action: 'ARCHIVE_PRODUCT',
+        entityType: 'product',
+        entityId: productId,
+        before: { status: 'active' },
+        after: { status: 'archived' },
+    }, failure)
+    finish('products', 'Produk diarsipkan.', context, failure)
 }
 
 export async function saveEventAction(form: FormData) {
@@ -208,8 +276,10 @@ export async function saveEventAction(form: FormData) {
     const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
+    let actorId = ''
     try {
-        await actor(PERMISSIONS.EVENT_MANAGE)
+        const authorization = await actor(PERMISSIONS.EVENT_MANAGE)
+        actorId = authorization.userId
         const startsAt = jakartaIso(form, 'starts_at')
         const endsAt = jakartaIso(form, 'ends_at')
         if (!startsAt || !endsAt) throw new Error('EVENT_FIELDS_REQUIRED')
@@ -228,30 +298,51 @@ export async function saveEventAction(form: FormData) {
             context,
         })
     } catch (error) { failure = error }
-    await finish('events', 'Event tersimpan.', context, failure, savedId)
+    await auditAdminV2Action({
+        actorId,
+        action: requestedId ? 'UPDATE_EVENT' : 'CREATE_EVENT',
+        entityType: 'event',
+        entityId: savedId,
+        label: text(form, 'title') || text(form, 'code'),
+        after: { code: text(form, 'code'), status: text(form, 'status') || 'draft' },
+    }, failure)
+    finish('events', 'Event tersimpan.', context, failure, savedId)
 }
 
 export async function archiveEventAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
+    const eventId = text(form, 'id')
+    let actorId = ''
     try {
-        await actor(PERMISSIONS.EVENT_MANAGE)
-        await adminV2Service.archiveEvent(text(form, 'id'))
+        const authorization = await actor(PERMISSIONS.EVENT_MANAGE)
+        actorId = authorization.userId
+        await adminV2Service.archiveEvent(eventId)
     } catch (error) { failure = error }
-    await finish('events', 'Event diarsipkan.', context, failure)
+    await auditAdminV2Action({
+        actorId,
+        action: 'ARCHIVE_EVENT',
+        entityType: 'event',
+        entityId: eventId,
+        after: { status: 'archived' },
+    }, failure)
+    finish('events', 'Event diarsipkan.', context, failure)
 }
 
 export async function saveEventSessionAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
     const eventId = text(form, 'event_id')
+    const sessionId = nullableText(form, 'id')
+    let actorId = ''
     try {
-        await actor(PERMISSIONS.EVENT_MANAGE)
+        const authorization = await actor(PERMISSIONS.EVENT_MANAGE)
+        actorId = authorization.userId
         const startsAt = jakartaIso(form, 'starts_at')
         const endsAt = jakartaIso(form, 'ends_at')
         if (!startsAt || !endsAt) throw new Error('EVENT_SESSION_TIME_INVALID')
         await adminV2Service.saveEventSession({
-            id: nullableText(form, 'id'),
+            id: sessionId,
             eventId,
             examId: text(form, 'exam_id'),
             name: text(form, 'name'),
@@ -262,15 +353,25 @@ export async function saveEventSessionAction(form: FormData) {
             context,
         })
     } catch (error) { failure = error }
-    await finish('events', 'Sesi event tersimpan.', context, failure, eventId || null)
+    await auditAdminV2Action({
+        actorId,
+        action: sessionId ? 'UPDATE_EVENT_SESSION' : 'CREATE_EVENT_SESSION',
+        entityType: 'event_session',
+        entityId: sessionId,
+        label: text(form, 'name'),
+        after: { event_id: eventId, status: text(form, 'status') || 'scheduled' },
+    }, failure)
+    finish('events', 'Sesi event tersimpan.', context, failure, eventId || null)
 }
 
 export async function linkEventProductAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
     const eventId = text(form, 'event_id')
+    let actorId = ''
     try {
-        await actor(PERMISSIONS.EVENT_MANAGE)
+        const authorization = await actor(PERMISSIONS.EVENT_MANAGE)
+        actorId = authorization.userId
         await adminV2Service.linkEventProduct({
             eventId,
             sessionId: text(form, 'session_id'),
@@ -278,7 +379,14 @@ export async function linkEventProductAction(form: FormData) {
             status: text(form, 'status') || 'active',
         })
     } catch (error) { failure = error }
-    await finish('events', 'Tiket produk terhubung ke event.', context, failure, eventId || null)
+    await auditAdminV2Action({
+        actorId,
+        action: 'LINK_EVENT_PRODUCT',
+        entityType: 'event',
+        entityId: eventId,
+        after: { product_id: text(form, 'product_id'), session_id: text(form, 'session_id') },
+    }, failure)
+    finish('events', 'Tiket produk terhubung ke event.', context, failure, eventId || null)
 }
 
 export async function saveExamAction(form: FormData) {
@@ -286,8 +394,10 @@ export async function saveExamAction(form: FormData) {
     const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
+    let actorId = ''
     try {
         const authorization = await actor(PERMISSIONS.EXAM_MANAGE)
+        actorId = authorization.userId
         savedId = await adminV2Service.saveExam({
             id: requestedId,
             examTypeCode: text(form, 'exam_type_code'),
@@ -306,27 +416,52 @@ export async function saveExamAction(form: FormData) {
             context,
         })
     } catch (error) { failure = error }
-    await finish('exams', 'Exam tersimpan.', context, failure, savedId)
+    await auditAdminV2Action({
+        actorId,
+        action: requestedId ? 'UPDATE_EXAM' : 'CREATE_EXAM',
+        entityType: 'exam',
+        entityId: savedId,
+        label: text(form, 'title'),
+        after: {
+            exam_type_code: text(form, 'exam_type_code'),
+            status: text(form, 'status') || 'draft',
+            token_cost: numberValue(form, 'token_cost', 0),
+        },
+    }, failure)
+    finish('exams', 'Exam tersimpan.', context, failure, savedId)
 }
 
 export async function archiveExamAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
+    const examId = text(form, 'id')
+    let actorId = ''
     try {
-        await actor(PERMISSIONS.EXAM_MANAGE)
-        await adminV2Service.archiveExam(text(form, 'id'))
+        const authorization = await actor(PERMISSIONS.EXAM_MANAGE)
+        actorId = authorization.userId
+        await adminV2Service.archiveExam(examId)
     } catch (error) { failure = error }
-    await finish('exams', 'Exam diarsipkan.', context, failure)
+    await auditAdminV2Action({
+        actorId,
+        action: 'ARCHIVE_EXAM',
+        entityType: 'exam',
+        entityId: examId,
+        after: { status: 'archived' },
+    }, failure)
+    finish('exams', 'Exam diarsipkan.', context, failure)
 }
 
 export async function saveExamSectionAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
     const examId = text(form, 'exam_id')
+    const sectionId = nullableText(form, 'id')
+    let actorId = ''
     try {
-        await actor(PERMISSIONS.EXAM_MANAGE)
+        const authorization = await actor(PERMISSIONS.EXAM_MANAGE)
+        actorId = authorization.userId
         await adminV2Service.saveExamSection({
-            id: nullableText(form, 'id'),
+            id: sectionId,
             examId,
             subjectCode: nullableText(form, 'subject_code'),
             title: text(form, 'title'),
@@ -337,7 +472,15 @@ export async function saveExamSectionAction(form: FormData) {
             context,
         })
     } catch (error) { failure = error }
-    await finish('exams', 'Section exam tersimpan.', context, failure, examId || null)
+    await auditAdminV2Action({
+        actorId,
+        action: sectionId ? 'UPDATE_EXAM_SECTION' : 'CREATE_EXAM_SECTION',
+        entityType: 'exam',
+        entityId: examId,
+        label: text(form, 'title'),
+        after: { question_count: nullableNumber(form, 'question_count'), passing_score: nullableNumber(form, 'passing_score') },
+    }, failure)
+    finish('exams', 'Section exam tersimpan.', context, failure, examId || null)
 }
 
 export async function saveQuestionAction(form: FormData) {
@@ -345,8 +488,10 @@ export async function saveQuestionAction(form: FormData) {
     const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
     let savedId = requestedId
+    let actorId = ''
     try {
         const authorization = await actor(PERMISSIONS.QUESTION_MANAGE)
+        actorId = authorization.userId
         savedId = await adminV2Service.saveQuestion({
             id: requestedId,
             subjectCode: text(form, 'subject_code'),
@@ -361,15 +506,40 @@ export async function saveQuestionAction(form: FormData) {
             context,
         })
     } catch (error) { failure = error }
-    await finish('questions', 'Soal tersimpan dan version history diperbarui.', context, failure, savedId)
+    // Perubahan soal mencakup kunci jawaban — perubahan yang paling perlu
+    // dipertanggungjawabkan di seluruh panel ini.
+    await auditAdminV2Action({
+        actorId,
+        action: requestedId ? 'UPDATE_QUESTION' : 'CREATE_QUESTION',
+        entityType: 'question',
+        entityId: savedId,
+        label: text(form, 'stem').slice(0, 80),
+        after: {
+            subject_code: text(form, 'subject_code'),
+            question_type: text(form, 'question_type') || 'single_choice',
+            status: text(form, 'status') || 'draft',
+            change_reason: nullableText(form, 'change_reason'),
+        },
+    }, failure)
+    finish('questions', 'Soal tersimpan dan version history diperbarui.', context, failure, savedId)
 }
 
 export async function archiveQuestionAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
+    const questionId = text(form, 'id')
+    let actorId = ''
     try {
-        await actor(PERMISSIONS.QUESTION_MANAGE)
-        await adminV2Service.archiveQuestion(text(form, 'id'))
+        const authorization = await actor(PERMISSIONS.QUESTION_MANAGE)
+        actorId = authorization.userId
+        await adminV2Service.archiveQuestion(questionId)
     } catch (error) { failure = error }
-    await finish('questions', 'Soal diarsipkan.', context, failure)
+    await auditAdminV2Action({
+        actorId,
+        action: 'ARCHIVE_QUESTION',
+        entityType: 'question',
+        entityId: questionId,
+        after: { status: 'archived' },
+    }, failure)
+    finish('questions', 'Soal diarsipkan.', context, failure)
 }
