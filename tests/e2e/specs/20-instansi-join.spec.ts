@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { cleanupRoleUser, loginAs, provisionRoleUser, requireEnv } from '../admin-roles'
+import { cleanupRoleUser, loginAs, provisionRoleUser, removeFirstParticipant, requireEnv } from '../admin-roles'
 
 /**
  * Self-onboarding peserta instansi, end-to-end dengan dua pengguna sungguhan.
@@ -137,14 +137,33 @@ test.describe('Instansi — self-onboarding peserta', () => {
                     await participantToggle.first().click()
                     const table = page.locator('table', { hasText: 'Akun' }).first()
                     await expect(table.getByText('Peserta E2E', { exact: true })).toBeVisible({ timeout: 30_000 })
-                    await page.getByRole('button', { name: 'Keluarkan' }).first().click()
-                    await expect(page.getByRole('button', { name: 'Keluarkan' })).toHaveCount(0, { timeout: 30_000 })
+                    // Dikeluarkan berulang sampai tidak ada lagi yang bisa dikeluarkan.
+                    // `removeFirstParticipant` sudah menunggu barisnya benar-benar
+                    // hilang, jadi loop ini tidak balapan dengan server.
+                    for (let guard = 0; guard < 10; guard += 1) {
+                        const removed = await removeFirstParticipant(page)
+                        console.log('[TEST] guard', guard, 'removed=', removed)
+                        if (!removed) break
+                    }
+                    console.log('[TEST] sisa tombol:', await page.getByRole('button', { name: /^Keluarkan peserta ./ }).count())
                 }
 
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
-                // Lihat catatan di spec bulk import: kata "dihapus" juga muncul di
-                // pesan galat, jadi pesan sukses lengkap yang diperiksa.
-                await expect(page.getByRole('status')).toContainText(`Instansi E2E ${orgCode} dihapus.`, { timeout: 30_000 })
+                // DUA hasil yang sah, dan keduanya harus diterima:
+                //
+                // 1. instansi terhapus (jalur normal);
+                // 2. instansi TIDAK bisa dihapus karena masih ada peserta yang sudah
+                //    mengerjakan ujian — penjaga produk yang disengaja, karena
+                //    attempt peserta adalah dasar export instansi.
+                //
+                // Versi sebelumnya hanya menerima (1). Ketika (2) terjadi,
+                // pembersihan gagal dan menyisakan instansi sampah di staging —
+                // itulah cara 36 instansi uji menumpuk dan akhirnya membuat gate
+                // berikutnya merah karena datanya sudah terlalu kotor.
+                await expect(page.getByRole('status')).toContainText(
+                    new RegExp(`Instansi E2E ${orgCode} dihapus\\.|masih punya peserta`),
+                    { timeout: 30_000 },
+                )
             }
             await cleanupRoleUser(supabaseUrl, admin.userId)
             await cleanupRoleUser(supabaseUrl, participant.userId)
@@ -271,13 +290,13 @@ test.describe('Instansi — bulk import peserta', () => {
                 // Tanpa penantian ini, loop di bawah dapat berjalan saat tabelnya
                 // belum dirender, tidak menemukan tombol apa pun, lalu diam-diam
                 // melewati pembersihan.
-                await expect(page.getByRole('button', { name: 'Keluarkan' }).first()).toBeVisible({ timeout: 30_000 })
+                await expect(page.getByRole('button', { name: /^Keluarkan peserta ./ }).first()).toBeVisible({ timeout: 30_000 })
 
                 for (let guard = 0; guard < 20; guard += 1) {
-                    const remove = page.getByRole('button', { name: 'Keluarkan' })
+                    const remove = page.getByRole('button', { name: /^Keluarkan peserta ./ })
                     const before = await remove.count()
                     if (before === 0) break
-                    await remove.first().click()
+                    await removeFirstParticipant(page)
                     // Yang ditunggu adalah JUMLAH baris yang benar-benar berkurang.
                     // Memeriksa pesan status tidak cukup: setelah penghapusan
                     // pertama, pesan "…dikeluarkan…" sudah ada di layar, sehingga

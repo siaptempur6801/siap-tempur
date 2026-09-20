@@ -14,6 +14,7 @@ import {
     adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
 import { cn } from '@/lib/utils'
+import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
 import ParticipantImportPanel from '@/components/admin/ParticipantImportPanel'
 import BatchExamPanel from '@/components/admin/BatchExamPanel'
 import { organizationExportService, attemptStatusLabel, formatDuration } from '@/src/services/organization-export.service'
@@ -562,7 +563,12 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                                         <input type="hidden" name="org" value={editingOrg.id}/>
                                                         <input type="hidden" name="q" value={params.q || ''}/>
                                                         <input type="hidden" name="status" value={params.status || ''}/>
-                                                        <button className={adminSecondaryButtonClass}><RefreshCcw size={15}/>Rotasi tautan</button>
+                                                        <ConfirmSubmit
+                                                            message={`Buat tautan undangan baru untuk batch “${batch.name}”?`}
+                                                            detail="Tautan lama langsung tidak berlaku. Peserta yang belum bergabung dengan tautan lama harus memakai tautan baru."
+                                                            confirmLabel="Rotasi tautan"
+                                                        trigger={<button type="button" className={adminSecondaryButtonClass}><RefreshCcw size={15}/>Rotasi tautan</button>}
+                                                        />
                                                     </form>
                                                 </div>
 
@@ -629,7 +635,13 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                                                                             <input type="hidden" name="batch" value={batch.id}/>
                                                                                             <input type="hidden" name="q" value={params.q || ''}/>
                                                                                             <input type="hidden" name="status" value={params.status || ''}/>
-                                                                                            <button className="text-[11px] font-extrabold text-red-600 hover:text-red-700" title="Keluarkan peserta">Keluarkan</button>
+                                                                                            <ConfirmSubmit
+                                                                                                message={`Keluarkan peserta ${participant.participant_code} dari batch ini?`}
+                                                                                                detail="Peserta yang sudah mengerjakan ujian tidak dapat dikeluarkan — hasilnya adalah dasar export instansi. Untuk kasus itu, ubah statusnya menjadi nonaktif."
+                                                                                                confirmLabel="Keluarkan peserta"
+                                                                                                title="Konfirmasi keluarkan peserta"
+                                                                                            trigger={<button type="button" aria-label={`Keluarkan peserta ${participant.participant_code}`} className="text-[11px] font-extrabold text-red-600 hover:text-red-700" title="Keluarkan peserta">Keluarkan</button>}
+                                                                                            />
                                                                                         </form>
                                                                                     </div>
                                                                                 </td>

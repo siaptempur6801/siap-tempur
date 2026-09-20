@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Archive, CalendarDays, FileQuestion, Package, Save, Search } from 'lucide-react'
+import { Archive, CalendarDays, FileQuestion, Package, Save } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getServerNowMs } from '@/lib/server/time'
 import {
@@ -25,6 +25,8 @@ import {
     saveQuestionAction,
 } from '@/app/actions/admin-v2'
 import AdminModal from '@/components/admin/AdminModal'
+import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
+import AdminListToolbar from '@/components/admin/AdminListToolbar'
 import AdminPagination from '@/components/admin/AdminPagination'
 import EventFlyerField from '@/components/admin/EventFlyerField'
 import QuestionOptionsEditor from '@/components/admin/QuestionOptionsEditor'
@@ -150,71 +152,31 @@ function PermissionEmpty({ permission }: { permission: string }) {
 }
 
 /**
- * Toolbar daftar: pencarian + filter status (S7).
- *
- * Form-nya `method="get"` sehingga filter hidup di URL — bisa di-bookmark,
- * dibagikan, dan bertahan saat admin membuka detail lalu kembali, sesuai
- * `docs/ADMIN_UI_UX_STANDARD.md` §6. Nomor halaman sengaja tidak ikut dikirim:
- * setiap kali filter berubah, daftar kembali ke halaman 1.
- */
-function AdminListToolbar({
-    pathname,
-    program,
-    track,
-    search,
-    status,
-    statusOptions,
-    placeholder,
-    resultCount,
-}: {
-    pathname: string
-    program: string
-    track: string
-    search: string
-    status: string
-    statusOptions: readonly string[]
-    placeholder: string
-    resultCount: number
-}) {
-    return (
-        <AdminCard className="p-4">
-            <form className="grid gap-3 md:grid-cols-[minmax(220px,1.6fr)_1fr_auto]" method="get">
-                <input type="hidden" name="program" value={program}/>
-                <input type="hidden" name="track" value={track}/>
-                <label className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-                    <input className={cn(adminInputClass, 'pl-9')} name="q" defaultValue={search} placeholder={placeholder} aria-label={placeholder}/>
-                </label>
-                <select className={adminInputClass} name="status" defaultValue={status} aria-label="Filter status">
-                    <option value="">Semua status</option>
-                    {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-                <div className="flex items-center gap-2">
-                    <button className={adminPrimaryButtonClass}>Terapkan</button>
-                    <Link className={adminSecondaryButtonClass} href={`${pathname}?program=${encodeURIComponent(program)}&track=${encodeURIComponent(track)}`}>Reset</Link>
-                </div>
-            </form>
-            {(search || status) ? (
-                <p role="status" className="mt-3 text-xs font-bold text-slate-500">
-                    Filter aktif{search ? <> · kata kunci “{search}”</> : null}{status ? <> · status <span className="font-mono">{status}</span></> : null} · {resultCount} hasil
-                </p>
-            ) : null}
-        </AdminCard>
-    )
-}
-
-/**
  * Nilai status yang ditawarkan per domain.
  *
  * Ditulis eksplisit, bukan diturunkan dari baris yang sedang tampil: kalau
  * diturunkan, filter hanya bisa memilih status yang kebetulan ada di halaman
  * ini — persis kebalikan dari gunanya filter.
  */
-const DOMAIN_STATUS_OPTIONS = {
-    products: ['draft', 'active', 'archived'],
-    events: ['draft', 'scheduled', 'live', 'closed', 'archived'],
-    questions: ['draft', 'published', 'archived'],
-} as const
+const DOMAIN_STATUS_OPTIONS: Record<'products' | 'events' | 'questions', ReadonlyArray<{ value: string; label: string }>> = {
+    products: [
+        { value: 'draft', label: 'Draf' },
+        { value: 'active', label: 'Aktif' },
+        { value: 'archived', label: 'Diarsipkan' },
+    ],
+    events: [
+        { value: 'draft', label: 'Draf' },
+        { value: 'scheduled', label: 'Terjadwal' },
+        { value: 'live', label: 'Berlangsung' },
+        { value: 'closed', label: 'Selesai' },
+        { value: 'archived', label: 'Diarsipkan' },
+    ],
+    questions: [
+        { value: 'draft', label: 'Draf' },
+        { value: 'published', label: 'Terbit' },
+        { value: 'archived', label: 'Diarsipkan' },
+    ],
+}
 
 /**
  * Jendela event yang dimuat `getWorkspaceData` (lihat `.limit(50)` di service).
@@ -510,7 +472,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                         const price = priceByProduct.get(id)
                         return <div key={id} className="flex flex-col gap-4 p-5 transition hover:bg-slate-50/70 lg:flex-row lg:items-center lg:justify-between">
                             <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.name)}</span><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></div><div className="mt-1 text-xs font-semibold text-slate-500">{s(row.code)} · {s(row.product_type)} · {price ? rupiah(price.amount) : 'Tanpa harga'} · grant {grantByProduct.get(id) ?? 0}</div></div>
-                            <div className="flex shrink-0 flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('products', id)}>Edit</Link><form action={archiveProductAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div>
+                            <div className="flex shrink-0 flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('products', id)}>Edit</Link><form action={archiveProductAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><ConfirmSubmit message={`Product “${s(row.name)}” akan diarsipkan.`} detail="Product yang diarsipkan tidak lagi ditawarkan ke peserta. Riwayat order dan dompet yang sudah terjadi tidak berubah." confirmLabel="Arsipkan product" trigger={<button type="button" className={adminDangerButtonClass}><Archive size={14}/>Archive</button>}/></form></div>
                         </div>
                     })}</div> : pageOutOfRange ? (
                         <PageOutOfRange lastPage={pageSummary?.totalPages ?? 1} href={adminPageHref(pathname, activeFilters, pageSummary?.totalPages ?? 1)} noun="product"/>
@@ -544,7 +506,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                     return <AdminCard key={id} className="p-5">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.title)}</span><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge></div><p className="mt-1 text-xs font-semibold text-slate-500">{s(row.code)} · {sessions.length} sesi · {displayDate(row.starts_at)} → {displayDate(row.ends_at)}</p></div>
-                            <div className="flex flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('events', id)}>Edit</Link><form action={archiveEventAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div>
+                            <div className="flex flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('events', id)}>Edit</Link><form action={archiveEventAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><ConfirmSubmit message={`Event “${s(row.title)}” akan diarsipkan.`} detail={`Event ini punya ${sessions.length} sesi. Peserta yang sudah terdaftar tidak lagi melihat event ini di halaman publik.`} confirmLabel="Arsipkan event" trigger={<button type="button" className={adminDangerButtonClass}><Archive size={14}/>Archive</button>}/></form></div>
                         </div>
                         <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between">
                             <div className="flex min-w-0 flex-wrap gap-2">{sessions.length ? sessions.map((session) => <AdminBadge key={s(session.id)}>{s(session.name)} · {s(session.status)}</AdminBadge>) : <span className="text-sm font-medium text-slate-500">Belum ada sesi.</span>}</div>
@@ -591,7 +553,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                     <div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Daftar soal" description={pageSummary ? adminPageSummaryLabel(pageSummary, 'soal') : `${questions.length} soal pada context aktif.`}/></div>
                     {questions.length ? <div className="divide-y divide-slate-100">{questions.map((row) => {
                     const id = s(row.id)
-                    return <div key={id} className="flex flex-col gap-4 p-5 transition hover:bg-slate-50/70 lg:flex-row lg:items-center lg:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.question_code) || 'Tanpa kode'}</span><AdminBadge variant="blue">{subjectById.get(s(row.subject_id))?.code ?? '?'}</AdminBadge><AdminBadge>{s(row.question_type)}</AdminBadge><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge><span className="text-xs font-bold text-slate-400">v{s(row.version)}</span></div><p className="mt-2 line-clamp-2 max-w-4xl text-sm font-medium leading-6 text-slate-600">{s(row.stem)}</p></div><div className="flex shrink-0 flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('questions', id)}>Edit</Link><form action={archiveQuestionAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><button className={adminDangerButtonClass}><Archive size={14}/>Archive</button></form></div></div>
+                    return <div key={id} className="flex flex-col gap-4 p-5 transition hover:bg-slate-50/70 lg:flex-row lg:items-center lg:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-extrabold text-slate-900">{s(row.question_code) || 'Tanpa kode'}</span><AdminBadge variant="blue">{subjectById.get(s(row.subject_id))?.code ?? '?'}</AdminBadge><AdminBadge>{s(row.question_type)}</AdminBadge><AdminBadge variant={statusVariant(row.status)}>{s(row.status)}</AdminBadge><span className="text-xs font-bold text-slate-400">v{s(row.version)}</span></div><p className="mt-2 line-clamp-2 max-w-4xl text-sm font-medium leading-6 text-slate-600">{s(row.stem)}</p></div><div className="flex shrink-0 flex-wrap gap-2"><Link className={adminSecondaryButtonClass} href={editHref('questions', id)}>Edit</Link><form action={archiveQuestionAction}><ContextFields program={program} track={track}/><input type="hidden" name="id" value={id}/><ConfirmSubmit message={`Soal ${s(row.question_code) || 'tanpa kode'} akan diarsipkan.`} detail="Soal yang diarsipkan keluar dari pool ujian berikutnya. Attempt yang sudah selesai tetap memakai snapshot-nya sendiri, jadi hasil peserta tidak berubah." confirmLabel="Arsipkan soal" trigger={<button type="button" className={adminDangerButtonClass}><Archive size={14}/>Archive</button>}/></form></div></div>
                 })}</div> : pageOutOfRange ? (
                     <PageOutOfRange lastPage={pageSummary?.totalPages ?? 1} href={adminPageHref(pathname, activeFilters, pageSummary?.totalPages ?? 1)} noun="soal"/>
                 ) : <AdminEmptyState title="Tidak ada soal" description={(activeFilters.q || activeFilters.status) ? 'Tidak ada soal yang cocok dengan filter ini. Coba ubah kata kunci atau status, atau tekan Reset.' : 'Gunakan tombol Tambah soal untuk membuat soal pertama.'}/>}

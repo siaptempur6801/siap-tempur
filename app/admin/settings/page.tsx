@@ -12,6 +12,7 @@ import {
     adminPrimaryButtonClass,
     adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
+import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
 import { cn } from '@/lib/utils'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
@@ -366,7 +367,12 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                                 </div>
                                 <form action={deleteSystemSettingAction}>
                                     <input type="hidden" name="key" value={setting.key}/>
-                                    <button className={adminDangerButtonClass}><Trash2 size={15}/>Hapus</button>
+                                    <ConfirmSubmit
+                                        message={`Hapus pengaturan “${setting.key}”?`}
+                                        detail="Pengaturan yang dihapus tidak bisa dikembalikan dari halaman ini — nilai lama hilang. Catat nilainya lebih dulu bila masih mungkin dibutuhkan."
+                                        confirmLabel="Hapus pengaturan"
+                                        trigger={<button type="button" className={adminDangerButtonClass}><Trash2 size={15}/>Hapus</button>}
+                                    />
                                 </form>
                             </div>
                         ))}

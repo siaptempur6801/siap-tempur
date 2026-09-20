@@ -10,6 +10,7 @@ import {
   saveAdminExamSectionAction,
 } from '@/app/actions/admin-exams'
 import AdminExamFormModal from '@/components/admin/AdminExamFormModal'
+import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
 import AdminModal from '@/components/admin/AdminModal'
 import {
   AdminBadge,
@@ -169,7 +170,14 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                     <form action={archiveAdminExamAction}>
                       <ContextFields program={program} track={track}/>
                       <input type="hidden" name="id" value={exam.id}/>
-                      <button className={adminDangerButtonClass}><Archive size={14}/>Archive</button>
+                      <ConfirmSubmit
+                        message={`Exam “${exam.title}” akan diarsipkan.`}
+                        detail={isDrill
+                          ? 'Drill ini tidak lagi muncul di jalur belajar peserta.'
+                          : `${sections.length} section dan pengaturannya tetap tersimpan, tetapi exam tidak lagi ditawarkan ke peserta.`}
+                        confirmLabel="Arsipkan exam"
+                      trigger={<button type="button" className={adminDangerButtonClass}><Archive size={14}/>Archive</button>}
+                      />
                     </form>
                   </div>
                 </div>

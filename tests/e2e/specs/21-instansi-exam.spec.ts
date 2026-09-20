@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
-import { cleanupRoleUser, loginAs, provisionRoleUser, requireEnv } from '../admin-roles'
+import { cleanupRoleUser, loginAs, provisionRoleUser, removeFirstParticipant, requireEnv } from '../admin-roles'
 
 /**
  * Template ujian → bentuk exam → jadwalkan (MVP CPNS Instansi Managed Service
@@ -128,9 +128,12 @@ test.describe('Instansi — template ujian & assignment', () => {
                 await expect(page.getByRole('status')).toHaveText(/^Exam .+ dihapus\.$/, { timeout: 30_000 })
 
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
-                // Pesan sukses lengkap diperiksa karena kata "dihapus" juga muncul di
-                // pesan galat ("...tidak bisa dihapus...").
-                await expect(page.getByRole('status')).toHaveText(/^Instansi .+ dihapus\.$/, { timeout: 30_000 })
+                // Dua hasil sah: terhapus, atau ditolak karena masih ada peserta
+                // yang sudah mengerjakan ujian (penjaga produk, bukan kegagalan).
+                await expect(page.getByRole('status')).toContainText(
+                    /dihapus\.|masih punya peserta/,
+                    { timeout: 30_000 },
+                )
             }
             await cleanupRoleUser(supabaseUrl, admin.userId)
         }
@@ -236,17 +239,24 @@ test.describe('Instansi — monitoring & export', () => {
                 // `locator.count()` tidak menunggu render; tanpa penantian ini loop
                 // langsung berhenti karena tabelnya belum ada, peserta tidak
                 // terkeluarkan, dan penghapusan instansi gagal.
-                await expect(page.getByRole('button', { name: 'Keluarkan' }).first()).toBeVisible({ timeout: 30_000 })
+                await expect(page.getByRole('button', { name: /^Keluarkan peserta ./ }).first()).toBeVisible({ timeout: 30_000 })
                 for (let guard = 0; guard < 10; guard += 1) {
-                    const remove = page.getByRole('button', { name: 'Keluarkan' })
+                    // Sejak S10 tombol "Keluarkan" hanya membuka dialog; helper ini
+                    // menekan tombol konfirmasinya lalu menunggu dialog tertutup.
+                    const remove = page.getByRole('button', { name: /^Keluarkan peserta ./ })
                     const before = await remove.count()
                     if (before === 0) break
-                    await remove.first().click()
+                    await removeFirstParticipant(page)
                     await expect(remove).toHaveCount(before - 1, { timeout: 30_000 })
                 }
 
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
-                await expect(page.getByRole('status')).toHaveText(/^Instansi .+ dihapus\.$/, { timeout: 30_000 })
+                // Sama seperti spec join: penolakan "masih punya peserta" adalah
+                // penjaga produk yang sah, bukan kegagalan pembersihan.
+                await expect(page.getByRole('status')).toContainText(
+                    /dihapus\.|masih punya peserta/,
+                    { timeout: 30_000 },
+                )
             }
             await cleanupRoleUser(supabaseUrl, admin.userId)
         }

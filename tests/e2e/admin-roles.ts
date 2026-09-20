@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import { ciHelperUrl } from './ci-helper'
 
 /**
@@ -127,4 +127,45 @@ export async function loginAs(page: Page, user: Pick<ProvisionedUser, 'email' | 
     await page.locator('input[type="password"]').fill(user.password)
     await page.getByRole('button', { name: 'Masuk', exact: true }).click()
     await page.waitForURL((url) => url.pathname === landingPath, { timeout: 60_000 })
+}
+
+/**
+ * Mengeluarkan peserta dari batch lewat UI, termasuk dialog konfirmasinya.
+ *
+ * Sejak S10 (konfirmasi proporsional), tombol "Keluarkan" hanya membuka dialog;
+ * peserta benar-benar dikeluarkan setelah tombol konfirmasi di dialog ditekan.
+ * Sebelumnya helper pembersihan di spec hanya mengklik tombol pertama dan
+ * menganggap pesertanya terhapus — akibatnya dialog tetap terbuka, baris tidak
+ * berkurang, dan pembersihan E2E gagal.
+ *
+ * Tombol pemicunya dicari lewat prefix `aria-label` ("Keluarkan peserta <kode>"),
+ * sedangkan tombol konfirmasi di dialog berlabel "Keluarkan peserta" tanpa kode.
+ */
+export async function removeFirstParticipant(page: Page) {
+    const trigger = page.getByRole('button', { name: /^Keluarkan peserta ./ })
+    const before = await trigger.count()
+    if (before === 0) return false
+
+    await trigger.first().click()
+    const dialog = page.getByRole('alertdialog')
+    await dialog.waitFor({ state: 'visible', timeout: 30_000 })
+    await dialog.getByRole('button', { name: 'Keluarkan peserta', exact: true }).click()
+
+    // Aksi tidak terkirim berarti tombol konfirmasi tidak benar-benar mengirim
+    // form server action (pernah terjadi: React menolak submit native). Gagalkan
+    // dengan pesan yang jelas alih-alih menunggu 30 detik lalu menyalahkan baris.
+    await page.waitForTimeout(1500)
+    const stillThere = await trigger.count()
+    if (stillThere >= before) {
+        const status = await page.locator('[role="status"], [role="alert"]').first().textContent().catch(() => '')
+        throw new Error(`Konfirmasi tidak mengubah daftar peserta (baris tetap ${stillThere}). Pesan di layar: ${JSON.stringify((status || '').slice(0, 160))}`)
+    }
+
+    // Dialog menutup dirinya SEGERA saat dikonfirmasi, jauh sebelum Server Action
+    // selesai. Menunggu dialog tersembunyi saja membuat pemanggil berjalan lebih
+    // cepat daripada server: hitungan baris berikutnya masih membaca baris lama,
+    // loop berhenti, dan peserta yang tersisa tidak pernah dikeluarkan. Karena
+    // itu yang ditunggu adalah barisnya benar-benar berkurang.
+    await expect(trigger).toHaveCount(before - 1, { timeout: 30_000 })
+    return true
 }

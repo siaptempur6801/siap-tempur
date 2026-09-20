@@ -12,6 +12,7 @@ import {
     adminInputClass,
     adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
+import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
 import { cn } from '@/lib/utils'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
@@ -174,7 +175,12 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                                                 <input type="hidden" name="q" value={hiddenParams.q}/>
                                                                 <input type="hidden" name="role" value={hiddenParams.role}/>
                                                                 <input type="hidden" name="status" value={hiddenParams.status}/>
-                                                                <button className="text-violet-500 transition hover:text-red-600" title={`Cabut peran ${roleLabel(role)}`} aria-label={`Cabut peran ${roleLabel(role)}`}><UserX size={12}/></button>
+                                                                <ConfirmSubmit
+                                                                            message={`Cabut peran ${roleLabel(role)} dari ${user.full_name}?`}
+                                                                            detail="Akses yang diberikan peran ini langsung hilang pada permintaan berikutnya. Akun tidak bisa kehilangan peran terakhirnya bila itu akan mengunci sistem — penjagaan itu ditegakkan di database."
+                                                                            confirmLabel="Cabut peran"
+                                                                            trigger={<button type="button" className="text-violet-500 transition hover:text-red-600" title={`Cabut peran ${roleLabel(role)}`} aria-label={`Cabut peran ${roleLabel(role)}`}><UserX size={12}/></button>}
+                                                                        />
                                                             </form>
                                                         ) : null}
                                                     </span>
@@ -214,7 +220,13 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                                             <option value="inactive">Nonaktif</option>
                                                             <option value="suspended">Ditangguhkan</option>
                                                         </select>
-                                                        <button className={`${adminSecondaryButtonClass} h-9 min-h-0 px-3 text-xs`}>Ubah</button>
+                                                        <ConfirmSubmit
+                                                            message={`Ubah status akun ${user.full_name}?`}
+                                                            detail={`Status saat ini: ${userStatusLabel(user.status)}. Akun nonaktif atau ditangguhkan tidak dapat masuk sampai statusnya dikembalikan. Penjagaan anti-lockout ditegakkan di database: admin tidak bisa menonaktifkan akunnya sendiri.`}
+                                                            confirmLabel="Ubah status"
+                                                            title="Konfirmasi perubahan status"
+                                                            trigger={<button type="button" className={`${adminSecondaryButtonClass} h-9 min-h-0 px-3 text-xs`}>Ubah</button>}
+                                                        />
                                                     </form>
                                                 ) : null}
                                                 {!canManageRoles && !canManageStatus ? <span className="text-xs font-bold text-slate-400">Hanya lihat</span> : null}
