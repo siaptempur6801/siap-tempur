@@ -79,6 +79,19 @@ export default function SeoNavbarClient({
     const primaryHref = isAuthenticated ? authedHref : `/register?returnTo=${encodeURIComponent(currentPath)}`;
     const primaryLabel = isAuthenticated ? "Lanjut belajar" : "Mulai belajar gratis";
 
+    /**
+     * Pada landing TKA, pengguna yang sudah login cukup melihat SATU tombol:
+     * "Dashboard".
+     *
+     * Alasannya bukan sekadar merapikan: untuk TKA, `authHref` dan `primaryHref`
+     * menunjuk ke tujuan yang PERSIS SAMA (`/tka`, yang lalu mengalihkan ke jenjang
+     * aktif). Dua tombol berbeda label dengan tujuan identik membuat pengguna
+     * menebak-nebak apakah keduanya memang berbeda.
+     *
+     * Dibatasi pada TKA sesuai permintaan; landing CPNS tidak diubah.
+     */
+    const showPrimaryCta = !(isAuthenticated && programLabel === "TKA");
+
     // Penanda section aktif hanya berlaku untuk tautan anchor (`#...`) di halaman ini.
     const sectionItems: SectionNavItem[] = useMemo(
         () => items
@@ -135,9 +148,11 @@ export default function SeoNavbarClient({
                         {authLabel}
                     </Link>
 
-                    <Link href={primaryHref} className="st-button hidden min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white sm:inline-flex">
-                        {primaryLabel}
-                    </Link>
+                    {showPrimaryCta ? (
+                        <Link href={primaryHref} className="st-button hidden min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white sm:inline-flex">
+                            {primaryLabel}
+                        </Link>
+                    ) : null}
 
                     <details className="group relative lg:hidden">
                         <summary className="st-focus flex h-11 w-11 cursor-pointer list-none items-center justify-center rounded-xl border-2 border-[var(--st-ink)] bg-white marker:hidden" aria-label="Buka navigasi">
@@ -174,9 +189,11 @@ export default function SeoNavbarClient({
                                 <Link href={authHref} className="st-focus flex min-h-11 items-center justify-center rounded-xl font-black hover:bg-gray-100">
                                     {authLabel}
                                 </Link>
-                                <Link href={primaryHref} className="st-button flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white">
-                                    {primaryLabel}
-                                </Link>
+                                {showPrimaryCta ? (
+                                    <Link href={primaryHref} className="st-button flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2 text-sm font-black text-white">
+                                        {primaryLabel}
+                                    </Link>
+                                ) : null}
                             </div>
                         </div>
                     </details>
