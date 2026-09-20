@@ -163,6 +163,74 @@ test.describe('Authenticated Admin Workspace closure', () => {
 })
 
 /**
+ * Smoke responsif untuk SELURUH permukaan admin.
+ *
+ * Sebelumnya hanya `/admin` dan `/admin/assessment/exams` yang diperiksa pada
+ * 390px, sementara `docs/ADMIN_UI_UX_STANDARD.md` §10 menetapkan mobile 390×844,
+ * tablet 1024×768, dan desktop sebagai target minimum untuk halaman kritis — dan
+ * §14 menjadikannya syarat Definition of Done. Artinya 14 dari 16 route hanya
+ * "diklaim" responsif, tidak pernah diuji.
+ *
+ * Yang diperiksa: heading benar-benar render (bukan error boundary), tidak ada
+ * overflow horizontal tingkat dokumen, dan tidak ada tautan ke halaman login
+ * yang bocor ke pengguna yang sudah masuk. Tabel lebar memang boleh ada selama
+ * ia hidup di dalam container scroll-nya sendiri (`overflow-x-auto`), karena
+ * itulah yang membuat halaman tidak melebar.
+ */
+const ADMIN_ROUTES: Array<{ path: string; heading: string }> = [
+  { path: '/admin', heading: 'Dashboard' },
+  { path: '/admin/content/questions', heading: 'Question Bank' },
+  { path: '/admin/content/review', heading: 'Reviewer Workspace' },
+  { path: '/admin/content/articles', heading: 'Articles' },
+  { path: '/admin/assessment/exams', heading: 'Exams' },
+  { path: '/admin/assessment/events', heading: 'Events' },
+  { path: '/admin/commerce/products', heading: 'Products' },
+  { path: '/admin/commerce', heading: 'Orders & Payments' },
+  { path: '/admin/users', heading: 'Users & Roles' },
+  { path: '/admin/organizations', heading: 'Instansi & Batch' },
+  { path: '/admin/entitlements', heading: 'Entitlements' },
+  { path: '/admin/settings', heading: 'Settings' },
+  { path: '/admin/reports', heading: 'Reports' },
+  { path: '/admin/audit', heading: 'Audit Log' },
+]
+
+test.describe('Admin workspace responsive smoke', () => {
+  test.setTimeout(300_000)
+
+  for (const viewport of [{ width: 390, height: 844, label: 'mobile' }, { width: 1024, height: 768, label: 'tablet' }]) {
+    for (const route of ADMIN_ROUTES) {
+      test(`${route.path} tidak overflow di ${viewport.label} ${viewport.width}px`, async ({ page }) => {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height })
+        await page.goto(`${route.path}?program=CPNS&track=SKD`)
+
+        // Halaman benar-benar render — bukan error boundary. Memakai
+        // `toContainText` karena judul seperti "Users & Roles" dirender sebagai
+        // `Users &amp; Roles` di HTML, dan `toHaveText` membandingkan teks mentah
+        // dari DOM alih-alih hasil decode.
+        await expect(page.locator('main h1')).toContainText(route.heading)
+        await expect(page.getByText('Halaman ini belum bisa dibuka.', { exact: true })).toHaveCount(0)
+        await expectNoHorizontalOverflow(page)
+
+        // Pengguna yang sudah masuk tidak boleh ditawari tautan masuk lagi.
+        await expect(page.locator('main').getByRole('link', { name: /^Masuk$/ })).toHaveCount(0)
+      })
+    }
+  }
+
+  test('halaman admin punya jalan keluar navigasi di mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/admin/settings?program=CPNS&track=SKD')
+    await expect(page.locator('main h1')).toHaveText('Settings')
+    // Bottom-nav + drawer: tidak boleh ada dead-end di halaman mana pun.
+    await expect(page.getByRole('navigation', { name: 'Akses cepat' })).toBeVisible()
+    await page.getByRole('navigation', { name: 'Akses cepat' }).getByRole('button', { name: 'Lainnya' }).click()
+    await expect(page.locator('nav[aria-label="Menu admin"]:visible').getByRole('link', { name: 'Audit Log', exact: true })).toBeVisible()
+    await page.getByLabel('Tutup menu').last().click()
+    await expectNoHorizontalOverflow(page)
+  })
+})
+
+/**
  * Penutup untuk pemindahan modul admin 2026-09-18.
  *
  * Empat halaman ini dulu tinggal di `app/cpns/admin/**` dan dipakai sebagai modul
@@ -184,6 +252,31 @@ test.describe('Authenticated Admin Workspace closure', () => {
  * sudah terpotong, sehingga mencari soal ke-500 selalu dijawab "tidak ada" —
  * jawaban yang salah, bukan sekadar kosong.
  */
+/**
+ * Dialog konfirmasi aksi destruktif (S10).
+ *
+ * Di sini hanya dibuktikan bahwa halaman benar-benar merender dengan dialog
+ * terpasang. Perilaku dialognya sendiri — trigger membuka dialog, dan tombol
+ * konfirmasi mengirim form induknya — diuji di unit test
+ * (`tests/unit/admin-confirm-submit.test.ts`), karena di sinilah semuanya sempat
+ * gagal: render prop ditolak React ("Functions cannot be passed directly to
+ * Client Components"), dan bentuk salah berikutnya menaruh tombol konfirmasi di
+ * luar form sehingga SELURUH halaman jatuh ke error boundary.
+ *
+ * Sengaja TIDAK mengklik sampai konfirmasi di staging: itu akan mengarsipkan
+ * produk nyata pada setiap run.
+ */
+test.describe('Admin destructive action confirmation', () => {
+  test.setTimeout(120_000)
+
+  test('halaman produk merender tombol arsip yang memakai dialog konfirmasi', async ({ page }) => {
+    await page.goto('/admin/commerce/products?program=CPNS&track=SKD')
+    await expect(page.locator('main h1')).toHaveText('Products')
+    await expect(page.getByText('Halaman ini belum bisa dibuka.', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Archive', exact: true }).first()).toBeVisible()
+  })
+})
+
 test.describe('Admin list pagination and search', () => {
   test.setTimeout(120_000)
 

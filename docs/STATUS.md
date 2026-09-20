@@ -254,9 +254,9 @@ Test: 6 test `event-auto-close` + 2 test cron baru (termasuk kegagalan auto-clos
 - ✅ **Urutan header IP terverifikasi di produksi (2026-09-16):** `/api/health` kini melaporkan `clientIpSource` (nama header, bukan IP). Diuji dengan mengirim header palsu — `x-real-ip` palsu, `x-forwarded-for` palsu, bahkan `x-vercel-forwarded-for` palsu — sumbernya **tetap** `x-vercel-forwarded-for`, jadi header kiriman client tidak pernah menang. Catatan cakupan: yang terbukti adalah **prioritas nama header** di kode kita; jaminan bahwa Vercel menimpa *nilai* `x-vercel-forwarded-for` adalah kontrak platform Vercel, bukan sesuatu yang bisa dibuktikan dari repo ini. Rate limit Supabase Auth tetap jaring pengaman otoritatif.
 - [ ] Belum ada regression test untuk replay webhook secara end-to-end (unit webhook sudah ada).
 
-#### Stabilisasi admin Fase 1 — S1–S8 (2026-09-20)
+#### Stabilisasi admin Fase 1 — S1–S12 (2026-09-20)
 
-Delapan butir perbaikan inti pada permukaan admin, semuanya tanpa migration. Rincian lengkap:
+Dua belas butir perbaikan inti pada permukaan admin, semuanya tanpa migration. Rincian lengkap:
 `docs/ADMIN_STABILIZATION_2026-09-20.md`.
 
 | # | Temuan | Perbaikan |
@@ -279,9 +279,19 @@ offset di luar jumlah baris, bukan mengembalikan array kosong. Catatan untuk per
 Verifikasi: `tsc` lolos · lint exit 0 · unit **556/556** (75 berkas, dari 490) · build lolos ·
 **gate admin lokal 30 passed, exit 0** · staging bersih di akhir run.
 
-Sisa Fase 1 (belum dikerjakan): S9 audit trail menyeluruh (kini hanya artikel & alur review yang
-tercatat) · S10 konfirmasi aksi destruktif · S11 Articles keluar dari stack V1 · S12 responsive smoke
-2 → 16 route.
+| S9 | Hanya artikel & alur review yang menulis `audit_logs`; penyesuaian dompet (uang), peran, penghapusan instansi, dan perubahan kunci jawaban **tidak meninggalkan jejak apa pun** | **33 aksi tulis** kini tercatat di 7 modul; helper menangkap before/after, menyunting kolom rahasia, dan menormalkan `entity_id` ke uuid. Kegagalannya sendiri menemukan bug: **`redirect()` dari fungsi `async`** membuat browser tidak berpindah halaman meski data sudah berubah — dikunci 10 unit test |
+| S10 | Hanya hapus artikel yang bertanya; arsip soal/produk/exam/event, hapus setting, keluarkan peserta, rotasi undangan, cabut peran, nonaktifkan akun berjalan **satu klik** | dialog konfirmasi di 12 tempat yang menyebut konsekuensi spesifik; bentuknya ditemukan lewat tiga kegagalan nyata (render prop ditolak React, tombol di luar form, `requestSubmit` menolak tombol `button`) — dikunci 12 unit test |
+| S11 | Halaman artikel masih stack V1 (`getCurrentUserRole`), query **tanpa batas**, tanpa pencarian/paginasi, badge status mentah | keluar dari adapter V1 + paginasi/pencarian + label manusiawi; **0 pemakaian `getCurrentUserRole`/`isAdminRole` di `/admin`** |
+| S12 | Responsive smoke hanya 2 dari 16 route, padahal §10/§14 menjadikannya syarat | 14 route × 2 viewport = **28 pemeriksaan**; langsung menemukan bug nyata: `/admin/content/review` melebar 412px pada viewport 390px (kolom grid tanpa `min-w-0`) — diperbaiki |
+
+Verifikasi Fase 1 lengkap: `tsc` lolos · lint exit 0 · unit **592/592** (77 berkas, dari 490) ·
+build lolos · **gate admin 59 passed, exit 0** (dari 30 sebelum fase ini) · verifikasi bentuk jejak
+audit terhadap staging **8/8 lolos**.
+
+> **Utang yang terbuka:** (1) baris jejak audit hasil tulisan aplikasi **tidak terlihat** oleh
+> pemeriksaan eksternal (CLI/REST staging) meski aplikasi berhasil membacanya kembali dan 36 instansi
+> uji dibersihkan dari staging — perlu diperiksa di lingkungan bersih; (2) participants/attempts
+> instansi masih tanpa paginasi; (3) `/admin/commerce` masih global (filter per program/track belum).
 
 > Batas yang diketahui: **events** masih memakai jendela 50 baris (cap-nya kini dinyatakan, tetapi
 > belum berhalaman); **exams** dan **articles** juga belum berhalaman; filter per program/track di

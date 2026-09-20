@@ -1,13 +1,13 @@
 # Stabilisasi Admin — Fase 1
 
 Tanggal: 2026-09-20
-Status: **S1–S8 selesai & terverifikasi lokal. Belum di-commit, belum menyentuh produksi.**
-Lanjutan backlog: Fase 1 butir S9–S12 (belum dikerjakan).
+Status: **S1–S12 selesai. Belum di-commit, belum menyentuh produksi.**
 
 | Butir | Isi | Status |
 |---|---|---|
 | S1–S4 | Bug sesi event, kode mati, editor opsi, urutan cek izin | ✅ selesai |
 | S5–S8 | Cap diam-diam, paginasi, pencarian, error boundary | ✅ selesai |
+| S9–S12 | Audit trail, konfirmasi destruktif, Articles V1, responsive smoke | ✅ selesai |
 
 ## Kenapa fase ini ada
 
@@ -121,12 +121,212 @@ Regression test yang mengunci insiden:
 
 ## Sisa Fase 1
 
-| # | Task |
+Tidak ada — S1–S12 selesai. Rincian S9–S12 ada di bagian berikutnya.
+
+---
+
+# S9–S12 — Audit trail, konfirmasi, Articles V1, smoke responsif
+
+## S9 — Jejak audit menyeluruh
+
+**Masalah.** Hanya `app/actions/articles.ts` (dan beberapa RPC alur review) yang
+menulis `audit_logs`. Seluruh sisanya tidak meninggalkan jejak apa pun — termasuk
+**penyesuaian dompet yang bernilai uang**, pemberian/pencabutan peran,
+penghapusan instansi, rotasi tautan undangan peserta, dan perubahan kunci
+jawaban. Padahal `/admin/audit` sudah ada dan menjual dirinya sebagai jejak audit;
+yang terbaca di sana praktis hanya riwayat artikel.
+
+**Perbaikan.** Helper `lib/audit-log.ts` diperluas (menangkap sebelum/sesudah,
+menyunting kolom rahasia, menormalkan `entity_id` ke uuid) dan dipasang di
+**33 aksi tulis** pada tujuh modul:
+
+| Modul | Aksi tercatat |
 |---|---|
-| S9 | Audit trail menyeluruh (kini hanya artikel & alur review yang tercatat) |
-| S10 | Konfirmasi proporsional untuk aksi destruktif |
-| S11 | Articles keluar dari stack V1 (`getCurrentUserRole` + client lama) |
-| S12 | Responsive smoke 2 → 16 route |
+| `admin-v2.ts` | 11 — product/event/sesi/tiket/exam/section/soal (create, update, archive) |
+| `admin-platform.ts` | 7 — penyesuaian dompet, voucher, feature flag, template sertifikat, system setting, track period |
+| `admin-organization.ts` | 6 — instansi, batch, rotasi undangan, pengeluaran peserta, status peserta |
+| `admin-organization-exam.ts` | 5 — template, komposisi exam, assignment, aktif/nonaktif, hapus exam |
+| `admin-directory.ts` | 3 — beri peran, cabut peran, ubah status akun |
+| `admin-exams.ts` | 3 — exam, section, arsip |
+| `admin-participant-import.ts` | 1 — impor massal (satu peristiwa per impor, bukan per baris) |
+
+Keputusan penting: jejak ditulis **sesudah aksi berhasil, sebelum `redirect()`** —
+`redirect()` melempar, jadi apa pun setelahnya tidak akan pernah jalan. Kegagalan
+menulis jejak tidak pernah menggagalkan aksi yang sudah mengubah database; ia
+tercatat sebagai `logger.error`.
+
+### Kegagalan yang ditemukan saat menambahkan jejak: `redirect()` dari fungsi `async`
+
+Ini temuan paling penting dari S9, dan **hanya terlihat saat halaman benar-benar
+dipakai**.
+
+Menambahkan `await auditAdminAction(...)` ke dalam helper redirect terasa wajar,
+jadi `backTo()` di `admin-organization.ts` (dan `finish()` di `admin-exams.ts`
+serta `admin-organization-exam.ts`) diubah menjadi `async`. Akibatnya alur buat
+instansi berhenti bekerja dengan gejala yang sangat menyesatkan:
+
+| Yang terlihat | Kenyataan |
+|---|---|
+| Browser tetap di formulir, tanpa pesan apa pun | Instansinya **sudah dibuat** di database |
+| Tidak ada halaman error | Log server mencatat `NEXT_REDIRECT;push;/admin/organizations?…&ok=Instansi…disimpan.` |
+| Dua spec gate instansi merah | Next melaporkannya sebagai `unhandledRejection: Error: NEXT_REDIRECT` |
+
+Sebabnya: `redirect()` melempar error khusus yang ditangkap framework. Dari
+fungsi **sinkron** ia tertangkap dengan benar; dari fungsi **`async`** ia menjadi
+penolakan promise yang tidak tertangani, sehingga respons Server Action tidak
+pernah sampai sebagai redirect.
+
+Dibuktikan dengan membandingkan dua build: versi sebelum perubahan berpindah ke
+`…&ok=Instansi…disimpan.` dan menampilkan pesan sukses; versi sesudahnya tetap di
+tempat. Pola yang benar: **await pekerjaan asinkronnya di action, lalu panggil
+helper redirect yang sinkron** — `await auditOrgAction(audit, failure)` baru
+`backTo(...)`.
+
+Dikunci `tests/unit/admin-async-redirect-guard.test.ts` (10 test): tidak boleh ada
+helper non-action yang `async` sekaligus memanggil `redirect(`. Typecheck tidak
+bisa menangkapnya — `Promise<never>` adalah tipe yang sah untuk helper redirect.
+
+**Bukti jejak audit (bukan asumsi).** `scripts/db-verify/admin-audit-log-shape.mjs`
+menulis satu baris dengan bentuk yang persis dipakai helper, memeriksanya, lalu
+menghapusnya. Hasil terhadap staging: **8/8 lolos**, termasuk `entity_id` non-uuid
+ditolak (inilah alasan `auditEntityId` ada) dan tidak ada sisa baris uji. Kelas
+kesalahan ini tidak bisa ditangkap unit test: yang salah dulu adalah nama kolom
+terhadap skema nyata (`42703`), bukan logika.
+
+Selain itu, alur nyata (buat instansi lewat UI sebagai admin staging) memanggil
+`logAuditEvent`, menerima `{ success: true }`, dan membaca kembali barisnya
+(`id` bertambah, `count` naik) — jadi mekanismenya bekerja end-to-end.
+
+> **Catatan verifikasi yang belum tuntas.** Baris hasil tulisan aplikasi itu
+> **tidak terlihat** oleh pemeriksaan eksternal saya (CLI `supabase db query
+> --linked` maupun REST dengan service-role key: `count` tetap 924, id tertinggi
+> 3659) meskipun aplikasi membaca kembali barisnya sendiri dan kuncinya sudah
+> dipastikan menunjuk project yang sama. Perbedaan ini belum dijelaskan dan
+> **perlu diperiksa di lingkungan yang bersih** sebelum dianggap beres — bisa jadi
+> lingkungan lokal ini menunjuk database yang berbeda dari yang dibaca CLI.
+> Yang sudah pasti: tidak ada bug logika di helper (insert sukses, read-back
+> sukses), dan gate E2E menutup jalur aksinya.
+
+Dikunci juga oleh `tests/unit/admin-audit-coverage.test.ts` (14 test): jumlah
+catatan audit harus sama dengan jumlah aksi tulis per modul, dan nama aksi wajib
+mengikuti `KAPITAL_UNDERSCORE` agar filter facet di `/admin/audit` tetap berguna.
+
+## S10 — Konfirmasi proporsional
+
+Sebelumnya hanya hapus artikel yang bertanya (`window.confirm`), sementara
+mengarsipkan soal, produk, exam, dan event; menghapus system setting;
+mengeluarkan peserta; merotasi tautan undangan; mencabut peran; dan menonaktifkan
+akun semuanya berjalan **satu klik** — padahal `docs/ADMIN_UI_UX_STANDARD.md` §8
+mensyaratkan konfirmasi proporsional.
+
+`components/admin/ConfirmSubmit.tsx` dipasang di 12 tempat: 11 form destruktif +
+menggantikan satu-satunya `window.confirm` yang tersisa. Dialognya menyebut
+**konsekuensi spesifik** ("3 sesi", "peserta yang sudah mengerjakan ujian tidak
+dapat dikeluarkan — hasilnya adalah dasar export instansi"), bukan sekadar
+"yakin?".
+
+**Dua kegagalan nyata saat mengerjakan bagian ini** — keduanya hanya terlihat
+ketika halaman benar-benar dibuka, dan keduanya menjelaskan bentuk akhir
+komponennya:
+
+1. **Render prop ditolak React.** Bentuk pertama memakai
+   `{(confirm) => <button …/>}`. Halaman admin adalah Server Component, jadi React
+   menolak fungsi yang dilewatkan ke komponen klien:
+
+   > Functions cannot be passed directly to Client Components unless you
+   > explicitly expose it by marking it with "use server".
+
+   Akibatnya **seluruh halaman jatuh ke error boundary** — 20 test gate merah,
+   termasuk halaman yang tidak saya sentuh karena ikut merender komponen yang
+   sama. Bentuk yang benar adalah **slot**: induk mengirim elemen, komponen klien
+   yang menyuntikkan handler lewat `cloneElement`:
+
+   ```tsx
+   <ConfirmSubmit message="…" trigger={<button type="button" …>Arsipkan</button>} />
+   ```
+
+2. **Tombol konfirmasi di luar form.** Bentuk berikutnya menutup dialog tanpa
+   mengirim apa pun, sehingga "konfirmasi" menjadi tombol yang tidak melakukan
+   apa-apa — lebih buruk daripada tidak ada konfirmasi. Sekarang tombolnya
+   `type="submit"` + `formNoValidate`, sehingga ia mengirim form server action
+   induknya sementara field di luar dialog tidak ikut divalidasi.
+
+Kontrak kedua hal itu dikunci `tests/unit/admin-confirm-submit.test.ts` (11 test),
+karena typecheck tidak bisa menangkapnya: yang salah adalah batas Server/Client
+Component dan letak tombol di DOM, bukan tipe.
+
+Tindakan rutin (simpan, publish, unpublish) sengaja TIDAK diberi konfirmasi.
+
+## S11 — Articles keluar dari stack V1
+
+Halaman artikel adalah satu-satunya permukaan admin yang masih memakai stack V1:
+`getCurrentUserRole()` (adapter yang didokumentasikan sebagai "calon dihapus"),
+klien lama, **query tanpa batas sama sekali**, tanpa pencarian, tanpa paginasi, dan
+badge status mentah (`draft` alih-alih "Draf").
+
+Kini memakai `authorizationService` + paginasi/pencarian dari S6–S7 + label
+manusiawi, dengan aturan visibilitas yang dipertahankan persis: editor hanya
+melihat artikelnya sendiri, reviewer/pemegang `content.publish` melihat semuanya;
+draft hanya bisa disunting pemiliknya, terbit hanya oleh pemegang `admin.access`.
+Nama penulis diambil sekali per halaman (satu query untuk 25 id) alih-alih
+embedding per baris.
+
+**Tidak ada lagi pemakaian `getCurrentUserRole`/`isAdminRole` di `/admin`**
+(sisa pemakaian ada di `app/actions/articles.ts`, yang sudah memakai
+AuthorizationService di dalamnya — adapter itu kini hanya dipakai untuk memilih
+peran lama di jalur aksi artikel dan bisa dihapus terpisah).
+
+## S12 — Smoke responsif seluruh permukaan admin
+
+Sebelumnya hanya `/admin` dan `/admin/assessment/exams` yang diperiksa pada 390px,
+padahal standar §10 menetapkan mobile 390×844 dan tablet 1024×768 sebagai target
+minimum untuk halaman kritis dan §14 menjadikannya syarat Definition of Done.
+Artinya 14 dari 16 route hanya "diklaim" responsif.
+
+Kini **14 route × 2 viewport = 28 pemeriksaan**, masing-masing menuntut: heading
+benar-benar render (bukan error boundary), tidak ada overflow horizontal tingkat
+dokumen, dan tidak ada tautan "Masuk" yang bocor ke pengguna yang sudah masuk.
+Ditambah satu test yang memastikan halaman admin punya jalan keluar navigasi di
+mobile (bottom-nav + drawer).
+
+**Dan langsung menemukan satu bug nyata di run pertamanya.**
+`/admin/content/review` melebar menjadi **412px pada viewport 390px** — halaman
+Reviewer Workspace memang sudah lama rusak di mobile, tetapi tidak pernah tahu
+karena hanya 2 dari 16 route yang diperiksa. Penyebabnya kelas bug CSS klasik:
+panel "Review Rounds", "Audit Trail", dan "Question version history" berada di
+kolom grid tanpa `min-w-0`, sehingga `min-width: auto` membuatnya menolak menyusut
+di bawah lebar kontennya — satu badge panjang sudah cukup mendorong seluruh
+halaman melebar.
+
+Perbaikannya `min-w-0` pada tiga kartu itu; sesudahnya `scrollWidth ===
+innerWidth` (390px) dan daftar elemen yang melampaui viewport kosong. Diverifikasi
+ulang untuk **seluruh 14 route di kedua viewport: 28/28 lolos**.
+
+## Berkas yang berubah pada S9–S12
+
+| Berkas | Perubahan |
+|---|---|
+| `lib/audit-log.ts` | before/after, penyuntingan rahasia, `auditEntityId`, `auditAdminAction` |
+| `app/actions/admin-{v2,exams,platform,directory,organization,organization-exam,participant-import}.ts` | 33 catatan audit |
+| `components/admin/ConfirmSubmit.tsx` | **baru** — dialog konfirmasi (render prop) |
+| `app/admin/AdminOperationsWorkspace.tsx`, `app/admin/assessment/exams/AdminExamsWorkspace.tsx`, `app/admin/users|settings|organizations/page.tsx`, `components/admin/ArticleStatusActions.tsx` | 12 pemasangan konfirmasi |
+| `app/admin/content/articles/page.tsx` | V2 + paginasi + pencarian + label manusiawi |
+| `app/admin/content/articles/create` dan `[id]/edit` | keluar dari adapter V1 |
+| `components/admin/AdminListToolbar.tsx` | **baru** — toolbar bersama (sebelumnya tertanam di workspace) |
+| `tests/unit/admin-audit-coverage.test.ts` | **baru** — 14 test |
+| `tests/e2e/specs/10-admin-workspace-authenticated.spec.ts` | +29 test (28 smoke responsif + navigasi mobile) |
+| `scripts/db-verify/admin-audit-log-shape.mjs` | **baru** — verifikasi bentuk insert terhadap DB nyata |
+
+## Verifikasi S9–S12
+
+| Pemeriksaan | Hasil |
+|---|---|
+| `npx tsc --noEmit` | lolos |
+| `npm run lint` | lolos (exit 0) |
+| `npm run test:unit` | **570 / 570** (76 berkas) |
+| `npm run build` | lolos |
+| `node scripts/db-verify/admin-audit-log-shape.mjs` | **8/8 lolos** (termasuk pembersihan) |
+| Gate admin lokal | lihat catatan di bawah |
 
 ---
 
