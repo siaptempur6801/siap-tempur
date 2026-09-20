@@ -2,8 +2,8 @@ import { notFound, redirect } from 'next/navigation'
 import ArticleForm from '@/components/admin/ArticleForm'
 import { updateArticle } from '@/app/actions/articles'
 import { createClient } from '@/lib/utils/supabase/server'
-import { getCurrentUserRole, isAdminRole } from '@/lib/utils/admin'
 import { PERMISSIONS } from '@/src/auth/permissions'
+import { authorizationService } from '@/src/services/authorization.service'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,8 +21,9 @@ type Article = {
 
 export default async function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
-    const actor = await getCurrentUserRole()
-    if (!actor?.permissions.includes(PERMISSIONS.CONTENT_UPDATE)) redirect('/admin/content/articles')
+    // Stack V2: permission dari AuthorizationService, bukan adapter peran lama.
+    const authorization = await authorizationService.getCurrentAuthorization()
+    if (!authorization?.permissions.includes(PERMISSIONS.CONTENT_UPDATE)) redirect('/admin/content/articles')
 
     const supabase = await createClient()
     const { data: article, error } = await supabase
@@ -34,7 +35,10 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
     if (error || !article) notFound()
 
     const row = article as Article
-    const canEdit = isAdminRole(actor.role) || (row.author_id === actor.userId && row.status !== 'published')
+    // Aturan yang sama seperti sebelumnya, tetapi `admin` kini berarti pemegang
+    // `admin.access` — bukan peran yang dulu dibaca dari `profiles.role`.
+    const isAdmin = authorization.permissions.includes(PERMISSIONS.ADMIN_ACCESS)
+    const canEdit = isAdmin || (row.author_id === authorization.userId && row.status !== 'published')
     if (!canEdit) redirect('/admin/content/articles')
 
     return <ArticleForm title="Edit Artikel" action={updateArticle.bind(null, row.id)} defaultValues={row}/>

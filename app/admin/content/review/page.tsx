@@ -385,18 +385,18 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                             </AdminCard>
 
                             <section className="grid gap-5 lg:grid-cols-2">
-                                <AdminCard className="p-5">
+                                <AdminCard className="min-w-0 p-5">
                                     <h3 className="mb-4 flex items-center gap-2 text-base font-black text-slate-950"><History size={18}/>Review Rounds</h3>
                                     <div className="space-y-3">{data.currentReviews.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada review round.</p> : data.currentReviews.map((review) => <div key={s(review.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5"><div className="flex flex-wrap items-center justify-between gap-2"><b className="text-sm text-slate-900">Round {n(review.review_round)} · {stageLabel(review.review_stage)}</b><AdminBadge variant={statusVariant(review.status)}>{prettyStatus(review.status)}</AdminBadge></div><div className="mt-1 text-xs font-medium text-slate-400">Reviewer: {profileName(data.profileById.get(s(review.reviewer_id)))} · Version {s(review.question_version) || '—'} · {fmt(review.completed_at || review.updated_at)}</div>{Boolean(review.notes) ? <div className="mt-2 rounded-lg bg-white p-2.5 text-sm font-medium leading-6 text-slate-700 ring-1 ring-slate-200">{s(review.notes)}</div> : null}</div>)}</div>
                                 </AdminCard>
 
-                                <AdminCard className="p-5">
+                                <AdminCard className="min-w-0 p-5">
                                     <h3 className="mb-4 text-base font-black text-slate-950">Audit Trail</h3>
                                     <div className="max-h-80 space-y-2 overflow-y-auto">{data.auditLogs.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada audit action untuk soal ini.</p> : data.auditLogs.map((log) => <div key={s(log.id)} className="rounded-xl border border-slate-200 p-3"><div className="text-sm font-extrabold text-slate-800">{s(log.action)}</div><div className="mt-1 text-xs font-medium text-slate-400">{fmt(log.created_at)} · {profileName(data.profileById.get(s(log.actor_user_id)), 'System')}</div></div>)}</div>
                                 </AdminCard>
                             </section>
 
-                            <AdminCard className="p-5">
+                            <AdminCard className="min-w-0 p-5">
                                 <AdminSectionHeading title="Question version history" description="Snapshot perubahan disimpan untuk audit dan rollback content."/>
                                 <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">{data.versions.length === 0 ? <p className="text-sm font-medium text-slate-500">Snapshot version belum tersedia.</p> : data.versions.map((version) => <details key={s(version.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-sm font-extrabold text-slate-800">v{n(version.version)} · {fmt(version.created_at)} · {s(version.change_reason) || 'Tanpa catatan'}</summary><pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-[11px] text-slate-200">{JSON.stringify(version.snapshot, null, 2)}</pre></details>)}</div>
                             </AdminCard>
