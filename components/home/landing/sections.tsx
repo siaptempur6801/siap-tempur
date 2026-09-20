@@ -40,11 +40,14 @@ export function LandingHeader({ user, primaryHref, primaryLabel }: CtaProps & { 
                 </nav>
 
                 <div className="flex items-center gap-2">
-                    {user ? (
-                        <Link href="/cpns/dashboard" className="st-focus hidden min-h-11 items-center rounded-xl px-3 text-sm font-black text-gray-700 hover:bg-gray-100 sm:inline-flex">
-                            Dashboard
-                        </Link>
-                    ) : (
+                    {/*
+                        Tombol "Dashboard" sengaja TIDAK ditampilkan di landing utama.
+                        Halaman ini adalah halaman pengenalan: satu-satunya jalan masuk
+                        adalah lewat "Pilih program", yang mengantar ke onboarding untuk
+                        memilih CPNS atau TKA. Menyediakan pintasan langsung ke dashboard
+                        CPNS membuat pengguna TKA diarahkan ke program yang salah.
+                    */}
+                    {!user && (
                         <Link href="/login?returnTo=%2F" className="st-focus hidden min-h-11 items-center rounded-xl px-3 text-sm font-black text-gray-700 hover:bg-gray-100 sm:inline-flex">
                             Masuk
                         </Link>
@@ -278,7 +281,7 @@ export function LandingPrograms() {
                             <Link
                                 key={product.code}
                                 href={product.href}
-                                data-testid={`program-card-${product.href.replace('/', '')}`}
+                                data-testid={`program-card-${product.testId}`}
                                 className={`st-card-lg st-focus group relative bg-white p-6 transition-transform hover:-translate-y-1 md:p-8 ${index === 0 ? 'lg:-rotate-1' : 'lg:rotate-1'}`}
                             >
                                 <WashiTape tone={index === 0 ? 'blue' : 'peach'} className="-top-3 left-8" />

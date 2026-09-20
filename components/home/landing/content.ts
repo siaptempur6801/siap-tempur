@@ -23,9 +23,23 @@ import {
  * (lihat `docs/PRODUCT_LANGUAGE_GUIDE_V1_1.md`).
  */
 
+/**
+ * Kartu program di landing utama.
+ *
+ * `testId` dipisah dari `href` supaya identitas kartu tidak ikut berubah ketika
+ * tujuan tautannya berubah. Sebelumnya test id diturunkan dari `href`, sehingga
+ * menambahkan query string ke `href` akan diam-diam memutus locator E2E.
+ *
+ * `href` TKA memakai `?landing=1`: `/tka` mengalihkan pengguna yang SUDAH LOGIN ke
+ * halaman jenjangnya, sehingga tanpa penanda itu orang yang sudah punya akun tidak
+ * pernah bisa melihat halaman pengenalan TKA — sedangkan pengguna yang belum login
+ * selalu melihatnya. `/cpns` tidak berperilaku begitu, dan itulah sebabnya
+ * pemilihan CPNS sudah benar sementara TKA tidak.
+ */
 export const productCards = [
     {
         code: 'CPNS / SKD',
+        testId: 'cpns',
         badge: 'Untuk yang mengejar CPNS',
         title: 'SiapTempur CPNS',
         description: 'Persiapan SKD untuk TWK, TIU, dan TKP — dari latihan pertama sampai evaluasi hasil, tanpa bingung harus mulai dari mana.',
@@ -39,10 +53,11 @@ export const productCards = [
     },
     {
         code: 'TKA / SD · SMP · SMA',
+        testId: 'tka',
         badge: 'Untuk siswa sekolah',
         title: 'SiapTempur TKA',
         description: 'Persiapan TKA per jenjang dengan latihan, tryout, pembahasan, analisis hasil, dan fokus belajar berikutnya.',
-        href: '/tka',
+        href: '/tka?landing=1',
         cta: 'Lihat program TKA',
         icon: GraduationCap,
         surface: 'bg-[var(--st-green-soft)]',

@@ -42,8 +42,21 @@ export default async function Index() {
     const userId = await getAuthUserIdVerified()
     const loggedIn = Boolean(userId)
 
+    /**
+     * Tombol utama landing.
+     *
+     * Yang sudah login diantar ke `/onboarding` — halaman "Pilih ruang belajar"
+     * tempat ia benar-benar memilih CPNS atau TKA. Sebelumnya tombol ini hanya
+     * menggulir ke seksi `#produk`, sehingga label "Pilih program" menjanjikan
+     * sesuatu yang tidak terjadi: pengguna tetap harus memilih sendiri dari kartu
+     * di bawah.
+     *
+     * Yang belum login tetap ke pendaftaran. `returnTo=%2F` sengaja dipakai:
+     * `resolvePostLoginRedirect` memetakan `/` ke `/onboarding`, jadi keduanya
+     * berakhir di tempat yang sama.
+     */
     const cta = {
-        primaryHref: loggedIn ? '#produk' : '/register?returnTo=%2F',
+        primaryHref: loggedIn ? '/onboarding' : '/register?returnTo=%2F',
         primaryLabel: loggedIn ? 'Pilih program' : 'Mulai belajar gratis',
     }
 

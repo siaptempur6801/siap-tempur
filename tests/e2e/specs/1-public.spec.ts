@@ -18,6 +18,21 @@ test.describe('Public Pages Flow', () => {
     await expect(homePage.tkaCard).toBeVisible();
   });
 
+  test('kartu program mengarah ke landing page masing-masing program', async () => {
+    // CPNS selalu menampilkan halaman pengenalannya.
+    await expect(homePage.cpnsCard).toHaveAttribute('href', '/cpns');
+    // TKA memakai ?landing=1: tanpa penanda itu `/tka` mengalihkan pengguna yang
+    // sudah login ke halaman jenjangnya, sehingga halaman pengenalan TKA tidak
+    // pernah terlihat oleh pemilik akun — sedangkan CPNS selalu terlihat.
+    await expect(homePage.tkaCard).toHaveAttribute('href', '/tka?landing=1');
+  });
+
+  test('memilih TKA mendarat di landing page TKA, bukan langsung ke jenjang', async ({ page }) => {
+    await homePage.tkaCard.click();
+    await expect(page).toHaveURL(/\/tka\?landing=1$/)
+    await expect(page.getByRole('heading', { name: /Persiapan TKA untuk setiap jenjang belajar/i })).toBeVisible();
+  });
+
   test('entry login dari root mempertahankan returnTo root', async ({ page }) => {
     await expect(homePage.loginLink).toHaveAttribute('href', '/login?returnTo=%2F');
     await homePage.loginLink.click();
