@@ -91,6 +91,21 @@ export const IN_REVIEW_STATUSES = new Set([
 export const SUBMITTABLE_STATUSES = new Set(['draft', 'revision_required'])
 
 /**
+ * Kode batch review massal yang dikenal.
+ *
+ * Satu definisi untuk panel dan action: sebelumnya daftar ini ditulis terpisah
+ * (`BATCH_CODE` di komponen, `BATCH_CODES` di action), sehingga menambah batch
+ * baru bisa membuat panel menawarkan kode yang justru ditolak server.
+ */
+export const REVIEW_BATCH_CODES = ['cpns-full-tryout-1'] as const
+export type ReviewBatchCode = (typeof REVIEW_BATCH_CODES)[number]
+export const DEFAULT_REVIEW_BATCH_CODE: ReviewBatchCode = REVIEW_BATCH_CODES[0]
+
+export function isReviewBatchCode(value: string): value is ReviewBatchCode {
+    return (REVIEW_BATCH_CODES as readonly string[]).includes(value)
+}
+
+/**
  * Status setelah review selesai. `reviewer_id` memang dikosongkan di sini oleh
  * `publish_question`/`review_question_stage`, jadi soal pada status ini BUKAN
  * "belum ada reviewer" — menghitungnya begitu hanya membuat panel berisik.

@@ -168,3 +168,43 @@ export function adminStatusLabel(value: unknown): string {
     }
     return labels[status] || raw || '—'
 }
+
+/**
+ * Label manusiawi untuk `audit_logs.action`.
+ *
+ * Nilai mentah tetap dipakai sebagai value filter (facets), tetapi tabel dan
+ * riwayat audit menampilkannya lewat fungsi ini. Aksi yang belum dipetakan
+ * ditampilkan dengan pemisah `_`/`.` diganti spasi supaya tidak tampak seperti
+ * kode internal — dan tetap bisa dicari sebagai teks.
+ */
+const AUDIT_LABELS: Record<string, string> = {
+    'question.content.created': 'Soal dibuat (draft)',
+    'question.content.updated': 'Soal diperbarui (draft)',
+    'question.workflow.submitted': 'Diajukan ke review',
+    'question.workflow.published': 'Soal diterbitkan',
+    'question.legacy_import.mapping_reviewed': 'Pemetaan soal legacy ditinjau',
+    'content.review.created': 'Review dibuat',
+    'content.review.assigned': 'Reviewer ditugaskan',
+    'content.review.pending': 'Review dimulai',
+    'content.review.approved': 'Review disetujui',
+    'content.review.revision_required': 'Diminta revisi',
+    'content.review.rejected': 'Review ditolak',
+    'content.review.cancelled': 'Review dibatalkan',
+    CREATE_QUESTION: 'Soal dibuat',
+    UPDATE_QUESTION: 'Soal diperbarui',
+    PUBLISH_QUESTION: 'Soal diterbitkan',
+    ARCHIVE_QUESTION: 'Soal diarsipkan',
+    REVISE_QUESTION: 'Soal dikembalikan ke draf',
+    REMOVE_PARTICIPANT: 'Peserta dikeluarkan',
+    CREATE_ARTICLE: 'Artikel dibuat',
+    UPDATE_ARTICLE: 'Artikel diperbarui',
+    PUBLISH_ARTICLE: 'Artikel diterbitkan',
+    ARCHIVE_ARTICLE: 'Artikel diarsipkan',
+    DELETE_ARTICLE: 'Artikel dihapus',
+}
+
+export function adminAuditLabel(action: unknown): string {
+    const raw = String(action ?? '')
+    if (!raw) return '—'
+    return AUDIT_LABELS[raw] ?? raw.replace(/[._]+/g, ' ')
+}

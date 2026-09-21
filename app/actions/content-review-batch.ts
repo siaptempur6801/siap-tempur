@@ -7,7 +7,7 @@ import { createClient } from '@/lib/utils/supabase/server'
 import { authorizationService, AuthorizationError } from '@/src/services/authorization.service'
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
-import { SUBMITTABLE_STATUSES } from '@/lib/review-batch'
+import { SUBMITTABLE_STATUSES, isReviewBatchCode, type ReviewBatchCode } from '@/lib/review-batch'
 import { logger } from '@/lib/logger'
 
 /**
@@ -42,14 +42,19 @@ import { logger } from '@/lib/logger'
  *   mekanis — tidak ada yang otomatis menyetujui atau menerbitkan soal.
  */
 
-const BATCH_CODES = ['cpns-full-tryout-1'] as const
-type BatchCode = (typeof BATCH_CODES)[number]
-
 const REVIEW_STAGES = [
     { key: 'editorial', label: 'Editorial' },
     { key: 'academic', label: 'Akademik' },
     { key: 'technical_qa', label: 'QA Teknis' },
 ] as const
+
+function batchFrom(form: FormData): ReviewBatchCode {
+    const raw = text(form, 'batch')
+    if (!isReviewBatchCode(raw)) {
+        throw new Error('BATCH_CODE_INVALID')
+    }
+    return raw
+}
 
 function text(form: FormData, key: string) {
     const value = form.get(key)
@@ -61,14 +66,6 @@ function contextFrom(form: FormData): ProgramTrackContext {
         programCode: (text(form, 'program_code') || 'CPNS').toUpperCase(),
         trackCode: (text(form, 'track_code') || 'SKD').toUpperCase(),
     }
-}
-
-function batchFrom(form: FormData): BatchCode {
-    const raw = text(form, 'batch')
-    if (!(BATCH_CODES as readonly string[]).includes(raw)) {
-        throw new Error('BATCH_CODE_INVALID')
-    }
-    return raw as BatchCode
 }
 
 async function requireAny(permissions: PermissionCode[]) {
@@ -126,7 +123,7 @@ function countFrom(data: unknown, key: string) {
 type BatchClient = Awaited<ReturnType<typeof createClient>>
 
 /** Soal di batch ini beserta statusnya (dipakai untuk memutuskan langkah aman). */
-async function listBatchQuestions(client: BatchClient, batch: BatchCode) {
+async function listBatchQuestions(client: BatchClient, batch: ReviewBatchCode) {
     const { data, error } = await client
         .from('questions')
         .select('id, status')

@@ -201,8 +201,10 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   dapat saling menimpa tanpa peringatan (last-write-wins).
 - Opsi di-upsert `on conflict (question_id, option_key)`; ID opsi yang masih ada dipertahankan
   (sebelumnya seluruh opsi dihapus lalu disisipkan ulang).
-- Migration `20260921120000_review_queue_draft_concurrency_v1.sql` **ter-apply di staging** dan
-  tercatat di ledger (via `migration repair`). **Produksi belum.**
+- Migration `20260921120000_review_queue_draft_concurrency_v1.sql` **ter-apply di staging DAN produksi**
+  (2026-09-21, GO eksplisit; ledger via `migration repair`). Diverifikasi langsung di produksi:
+  `scripts/db-verify/review-draft-concurrency.sql` lulus 5/5 (draft v1 → v2, ID opsi dipertahankan,
+  token basi ditolak, token untuk soal baru ditolak).
 - Verifikasi SQL rollback `scripts/db-verify/review-draft-concurrency.sql` — 5 pemeriksaan:
   `draft v1` → simpan kedua `v2`; ID opsi dipertahankan `true`; token basi `QUESTION_VERSION_CONFLICT`;
   token untuk soal baru `QUESTION_VERSION_INVALID`.
@@ -229,10 +231,11 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   `20260921140000_review_batch_submit_publish_v1.sql`) memanggil fungsi workflow yang SAMA di dalam
   satu transaksi — aturan tidak digandakan. Action massal kini satu panggilan, bukan satu RPC per
   soal (batch 500 soal = 500 round-trip berurutan). Batas 1.000 id per panggilan (`BATCH_TOO_LARGE`).
-- **Ter-apply di staging** (ledger via `migration repair`); **produksi belum**.
+- **Ter-apply di staging DAN produksi** (2026-09-21, GO eksplisit; ledger via `migration repair`).
 - Verifikasi SQL rollback `scripts/db-verify/review-batch-flow.sql` — 7 pemeriksaan: 3 draft →
   submit batch `3` + 3 pending editorial; publish non-approved ditolak tanpa mengubah status; array
-  kosong `0`; >1.000 → `BATCH_TOO_LARGE`.
+  kosong `0`; >1.000 → `BATCH_TOO_LARGE`. Lulus di staging **dan produksi** (tanpa sisa data;
+  jumlah soal produksi tidak berubah).
 
 ### P2-c — tipe soal terhubung ke editor
 - `ReviewQuestionFields` (client) membagi satu state tipe soal dengan `QuestionOptionsEditor` dan
@@ -242,6 +245,21 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
 ### P2-d — penjaga perubahan belum tersimpan
 - `ReviewDraftForm` (client) menandai `data-dirty` dan memasang `beforeunload` selama ada perubahan;
   form create & edit memakainya. Sebelumnya menutup tab membuang pekerjaan tanpa peringatan.
+
+### P3 — label audit, satu sumber kode batch, paritas validasi opsi
+- **Label audit manusiawi.** `adminAuditLabel` (`lib/admin-format.ts`) dipakai di Audit Trail
+  Review Queue dan tabel `/admin/audit` (opsi filter ikut dilabeli; kode mentah tetap di `title`).
+  Aksi tak dikenal tetap terbaca (pemisah jadi spasi). Dikunci 3 unit test.
+- **Satu sumber kode batch.** `REVIEW_BATCH_CODES`/`isReviewBatchCode` pindah ke `lib/review-batch.ts`;
+  panel dan action mengimpornya. Sebelumnya daftar ditulis terpisah (`BATCH_CODE` di komponen,
+  `BATCH_CODES` di action) sehingga menambah batch bisa membuat panel menawarkan kode yang ditolak.
+- **Paritas validasi opsi (ditemukan drift nyata).** `scripts/db-verify/question-option-parity.sql`
+  menjalankan matriks 12 payload melalui `mutate_question_bank` (QB) dan `save_question_draft`
+  (Review) dan membandingkan hasilnya. Awalnya **3/12 berbeda**: Review menerima kode opsi berformat
+  bebas, skor 3 desimal, dan URL gambar non-https; batas panjang/urutan kategori juga tidak diperiksa.
+  Migration `20260921160000_review_option_validation_parity_v1.sql` memperketat `save_question_draft`
+  (validasi saja, signature tidak berubah) → **12/12 sepakat di staging**.
+  **Produksi: migration ini BELUM di-apply (butuh GO).**
 
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
@@ -259,23 +277,26 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **625 unit test / 84 file** · build lolos.
+- Lint 0/0 · typecheck · **628 unit test / 85 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
 - Gate admin: hijau terakhir 60 passed; perubahan ini tidak menyentuh permukaan admin.
 
-File: `lib/postgrest-filter.ts` (baru), `src/services/admin-v2.service.ts`,
-`src/services/content-review.service.ts`, `app/actions/content-review.ts`,
-`app/actions/content-review-batch.ts`, `app/admin/content/review/page.tsx`,
-`app/admin/AdminOverview.tsx`, `components/admin/ReviewQuestionFields.tsx` (baru),
-`components/admin/ReviewDraftForm.tsx` (baru), `supabase/migrations/20260921120000_*.sql`,
-`supabase/migrations/20260921140000_*.sql`, `scripts/db-verify/review-draft-concurrency.sql`,
-`scripts/db-verify/review-batch-flow.sql`, `scripts/local-gates/ci-helper.mjs`,
+File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format.ts`,
+`src/services/admin-v2.service.ts`, `src/services/content-review.service.ts`,
+`app/actions/content-review.ts`, `app/actions/content-review-batch.ts`,
+`app/admin/content/review/page.tsx`, `app/admin/AdminOverview.tsx`, `app/admin/audit/page.tsx`,
+`components/admin/ReviewQuestionFields.tsx` (baru), `components/admin/ReviewDraftForm.tsx` (baru),
+`components/admin/ReviewBatchPanel.tsx`, `supabase/migrations/20260921120000_*.sql`,
+`supabase/migrations/20260921140000_*.sql`, `supabase/migrations/20260921160000_*.sql`,
+`scripts/db-verify/review-draft-concurrency.sql`, `scripts/db-verify/review-batch-flow.sql`,
+`scripts/db-verify/question-option-parity.sql`, `scripts/local-gates/ci-helper.mjs`,
 `scripts/local-gates/run-gate.mjs`, `supabase/functions/ci-e2e-user/index.ts`,
 `tests/e2e/specs/7-content-review-workflow.spec.ts`, `tests/unit/postgrest-filter.test.ts`,
 `tests/unit/review-draft-concurrency.test.ts`, `tests/unit/review-batch-n1.test.ts`,
-`tests/unit/content-review-counts.test.ts`, `docs/STATUS.md`.
+`tests/unit/content-review-counts.test.ts`, `tests/unit/admin-audit-label.test.ts`,
+`docs/STATUS.md`.
 
 ---
 

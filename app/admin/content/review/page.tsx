@@ -13,9 +13,10 @@ import {
     XCircle,
 } from 'lucide-react'
 import MathRenderer from '@/components/MathRenderer'
-import ReviewBatchPanel, { BATCH_CODE } from '@/components/admin/ReviewBatchPanel'
+import ReviewBatchPanel from '@/components/admin/ReviewBatchPanel'
 import ReviewDraftForm from '@/components/admin/ReviewDraftForm'
 import ReviewQuestionFields from '@/components/admin/ReviewQuestionFields'
+import { DEFAULT_REVIEW_BATCH_CODE } from '@/lib/review-batch'
 import {
     AdminBadge,
     AdminCard,
@@ -36,7 +37,7 @@ import {
 import AdminListToolbar from '@/components/admin/AdminListToolbar'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { adminPageHref, adminPageSummary, parseAdminPage } from '@/lib/admin-pagination'
-import { adminStatusLabel, adminStatusVariant, formatDateTime } from '@/lib/admin-format'
+import { adminAuditLabel, adminStatusLabel, adminStatusVariant, formatDateTime } from '@/lib/admin-format'
 import { cn } from '@/lib/utils'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
@@ -212,7 +213,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
             <AdminFeedbackBanner ok={params.ok} error={params.error}/>
 
-            {isBatchContext ? <ReviewBatchPanel batch={BATCH_CODE} program={program} track={track} actorId={authorization.userId} canReview={permissions.has(PERMISSIONS.CONTENT_REVIEW)} canPublish={permissions.has(PERMISSIONS.CONTENT_PUBLISH)}/> : null}
+            {isBatchContext ? <ReviewBatchPanel batch={DEFAULT_REVIEW_BATCH_CODE} program={program} track={track} actorId={authorization.userId} canReview={permissions.has(PERMISSIONS.CONTENT_REVIEW)} canPublish={permissions.has(PERMISSIONS.CONTENT_PUBLISH)}/> : null}
 
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <AdminMetric label="Editorial" value={editorialCount} helper="Menunggu editorial" icon={<Clock3 size={18}/>} tone="yellow"/>
@@ -387,7 +388,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
                                 <AdminCard className="min-w-0 p-5">
                                     <AdminSectionHeading title="Audit Trail" description="Riwayat aksi pada soal ini."/>
-                                    <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{data.auditLogs.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada audit action untuk soal ini.</p> : data.auditLogs.map((log) => <div key={s(log.id)} className="rounded-xl border border-slate-200 p-3"><div className="text-sm font-extrabold text-slate-800">{s(log.action)}</div><div className="mt-1 text-xs font-medium text-slate-500">{formatDateTime(log.created_at)} · {profileName(data.profileById.get(s(log.actor_user_id)), 'System')}</div></div>)}</div>
+                                    <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{data.auditLogs.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada audit action untuk soal ini.</p> : data.auditLogs.map((log) => <div key={s(log.id)} className="rounded-xl border border-slate-200 p-3"><div className="text-sm font-extrabold text-slate-800" title={s(log.action)}>{adminAuditLabel(log.action)}</div><div className="mt-1 text-xs font-medium text-slate-500">{formatDateTime(log.created_at)} · {profileName(data.profileById.get(s(log.actor_user_id)), 'System')}</div></div>)}</div>
                                 </AdminCard>
                             </section>
 

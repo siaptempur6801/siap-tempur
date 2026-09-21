@@ -14,7 +14,7 @@ import {
 import AdminListToolbar from '@/components/admin/AdminListToolbar'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { adminOffset, adminPageHref, adminPageSummary, adminTotalPages, parseAdminPage } from '@/lib/admin-pagination'
-import { formatDateTime } from '@/lib/admin-format'
+import { adminAuditLabel, formatDateTime } from '@/lib/admin-format'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminDirectoryService } from '@/src/services/admin-directory.service'
@@ -114,7 +114,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                         ariaLabel: 'Filter aksi',
                         placeholder: 'Semua aksi',
                         defaultValue: params.action || '',
-                        options: facets.actions.map((action) => ({ value: action, label: action })),
+                        options: facets.actions.map((action) => ({ value: action, label: adminAuditLabel(action) })),
                     },
                     {
                         name: 'entity',
@@ -153,7 +153,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <span className="font-mono text-xs font-black text-slate-900">{log.action}</span>
+                                            <span className="text-xs font-black text-slate-900" title={log.action}>{adminAuditLabel(log.action)}</span>
                                             <AdminBadge variant="blue">{log.entity_type}</AdminBadge>
                                         </div>
                                         <div className="mt-1.5 text-xs font-medium text-slate-500">

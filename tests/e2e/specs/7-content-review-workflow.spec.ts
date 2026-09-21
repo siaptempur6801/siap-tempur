@@ -167,8 +167,9 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await expect(reviewRounds).toContainText('Technical QA E2E approved')
 
     const auditTrail = reviewerPage.getByRole('heading', { name: 'Audit Trail' }).locator('xpath=ancestor::section[1]')
-    await expect(auditTrail).toContainText('question.workflow.published')
-    await expect(auditTrail).toContainText('content.review.approved')
+    // Label manusiawi; kode aksi mentah tetap tersedia lewat atribut title.
+    await expect(auditTrail).toContainText('Soal diterbitkan')
+    await expect(auditTrail).toContainText('Review disetujui')
 
     await reviewerContext.close()
 })

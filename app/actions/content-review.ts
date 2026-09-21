@@ -56,6 +56,8 @@ function friendlyError(error: unknown) {
         'Subject not found': 'Subject tidak valid.',
         'Question stem required': 'Pertanyaan wajib diisi.',
         'At least two options required': 'Minimal dua opsi jawaban diperlukan.',
+        'At most 100 options required': 'Maksimal 100 opsi jawaban.',
+        'Question options invalid': 'Periksa opsi: kode 1–16 huruf/angka (A-Z, 0-9, - atau _), isi maksimal 20.000 karakter, skor maksimal dua desimal, URL gambar https.',
         'Option keys must be unique': 'Key opsi jawaban harus unik.',
         'Option key and content required': 'Semua opsi harus memiliki key dan isi.',
         'Single choice requires exactly one correct option': 'Single choice harus memiliki tepat satu jawaban benar.',

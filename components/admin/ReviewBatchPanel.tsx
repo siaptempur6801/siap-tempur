@@ -3,6 +3,7 @@ import { AdminBadge, AdminCard, adminDangerButtonClass, adminInputClass, adminPr
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/utils/supabase/server'
 import {
+    DEFAULT_REVIEW_BATCH_CODE,
     nextStep,
     STATUS_LABEL,
     STATUS_ORDER,
@@ -30,8 +31,6 @@ import {
  * manusia — panel ini hanya menghapus klik yang mekanis.
  */
 
-export const BATCH_CODE = 'cpns-full-tryout-1'
-
 function stepClass(active: boolean) {
     return cn('flex gap-2 rounded-lg px-2 py-1', active ? 'bg-blue-50 text-blue-800' : '')
 }
@@ -56,7 +55,7 @@ async function loadBatchSummary(batch: string, actorId: string): Promise<BatchSu
 }
 
 export default async function ReviewBatchPanel({
-    batch = BATCH_CODE,
+    batch = DEFAULT_REVIEW_BATCH_CODE,
     program,
     track,
     actorId,
