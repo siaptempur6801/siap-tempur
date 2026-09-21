@@ -258,8 +258,9 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   (Review) dan membandingkan hasilnya. Awalnya **3/12 berbeda**: Review menerima kode opsi berformat
   bebas, skor 3 desimal, dan URL gambar non-https; batas panjang/urutan kategori juga tidak diperiksa.
   Migration `20260921160000_review_option_validation_parity_v1.sql` memperketat `save_question_draft`
-  (validasi saja, signature tidak berubah) → **12/12 sepakat di staging**.
-  **Produksi: migration ini BELUM di-apply (butuh GO).**
+  (validasi saja, signature tidak berubah) → **12/12 sepakat di staging DAN produksi**
+  (2026-09-21, GO eksplisit; ledger via `migration repair`). Verifikasi produksi: parity 12/12,
+  `review-draft-concurrency` tetap 5/5, 978 soal tidak berubah, 0 fungsi uji tertinggal.
 
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
