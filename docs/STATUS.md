@@ -224,6 +224,25 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   "Buka alur review" dari Question Bank); id non-UUID tidak menyentuh query.
 - Verifikasi: **623 unit test / 83 file**; gate Review 5 passed exit 0.
 
+### P2-b — aksi massal tanpa N+1
+- `submit_questions_for_review` dan `publish_questions` (migration
+  `20260921140000_review_batch_submit_publish_v1.sql`) memanggil fungsi workflow yang SAMA di dalam
+  satu transaksi — aturan tidak digandakan. Action massal kini satu panggilan, bukan satu RPC per
+  soal (batch 500 soal = 500 round-trip berurutan). Batas 1.000 id per panggilan (`BATCH_TOO_LARGE`).
+- **Ter-apply di staging** (ledger via `migration repair`); **produksi belum**.
+- Verifikasi SQL rollback `scripts/db-verify/review-batch-flow.sql` — 7 pemeriksaan: 3 draft →
+  submit batch `3` + 3 pending editorial; publish non-approved ditolak tanpa mengubah status; array
+  kosong `0`; >1.000 → `BATCH_TOO_LARGE`.
+
+### P2-c — tipe soal terhubung ke editor
+- `ReviewQuestionFields` (client) membagi satu state tipe soal dengan `QuestionOptionsEditor` dan
+  mengembalikan fragment, sehingga field-field di antaranya tetap menjadi grid item form induk.
+  Memilih "Category" kini langsung memunculkan field `responseGroup` yang wajib.
+
+### P2-d — penjaga perubahan belum tersimpan
+- `ReviewDraftForm` (client) menandai `data-dirty` dan memasang `beforeunload` selama ada perubahan;
+  form create & edit memakainya. Sebelumnya menutup tab membuang pekerjaan tanpa peringatan.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
@@ -240,7 +259,7 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **615 unit test / 83 file** · build lolos.
+- Lint 0/0 · typecheck · **625 unit test / 84 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -248,11 +267,15 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
 
 File: `lib/postgrest-filter.ts` (baru), `src/services/admin-v2.service.ts`,
 `src/services/content-review.service.ts`, `app/actions/content-review.ts`,
-`app/admin/content/review/page.tsx`, `supabase/migrations/20260921120000_*.sql`,
-`scripts/db-verify/review-draft-concurrency.sql`, `scripts/local-gates/ci-helper.mjs`,
+`app/actions/content-review-batch.ts`, `app/admin/content/review/page.tsx`,
+`app/admin/AdminOverview.tsx`, `components/admin/ReviewQuestionFields.tsx` (baru),
+`components/admin/ReviewDraftForm.tsx` (baru), `supabase/migrations/20260921120000_*.sql`,
+`supabase/migrations/20260921140000_*.sql`, `scripts/db-verify/review-draft-concurrency.sql`,
+`scripts/db-verify/review-batch-flow.sql`, `scripts/local-gates/ci-helper.mjs`,
 `scripts/local-gates/run-gate.mjs`, `supabase/functions/ci-e2e-user/index.ts`,
 `tests/e2e/specs/7-content-review-workflow.spec.ts`, `tests/unit/postgrest-filter.test.ts`,
-`tests/unit/review-draft-concurrency.test.ts`, `docs/STATUS.md`.
+`tests/unit/review-draft-concurrency.test.ts`, `tests/unit/review-batch-n1.test.ts`,
+`tests/unit/content-review-counts.test.ts`, `docs/STATUS.md`.
 
 ---
 

@@ -84,6 +84,7 @@ function friendlyError(error: unknown) {
     const known: Record<string, string> = {
         BATCH_CODE_INVALID: 'Kode batch tidak dikenal.',
         BATCH_EMPTY: 'Tidak ada soal di batch ini.',
+        BATCH_TOO_LARGE: 'Batch terlalu besar untuk satu tindakan (maksimal 1.000 soal).',
         'Keputusan review tidak valid.': 'Keputusan review tidak valid.',
         'Authentication required': 'Sesi tidak valid. Silakan masuk ulang.',
         'Content review permission required': 'Akun ini tidak punya permission review.',
@@ -164,16 +165,14 @@ export async function prepareReviewBatchAction(form: FormData) {
 
         if (questions.length === 0) throw new Error('BATCH_EMPTY')
 
-        for (const question of questions) {
-            if (!SUBMITTABLE_STATUSES.has(question.status)) {
-                // Sudah di alur review, atau sudah approved/published/rejected:
-                // bukan urusan langkah ini.
-                skipped += 1
-                continue
-            }
-            const result = await client.rpc('submit_question_for_review', { p_question_id: question.id })
+        // Satu panggilan untuk seluruh batch: dulu satu RPC per soal (N+1) —
+        // 500 soal berarti 500 round-trip sebelum satu pun selesai.
+        const toSubmit = questions.filter((question) => SUBMITTABLE_STATUSES.has(question.status)).map((question) => question.id)
+        skipped = questions.length - toSubmit.length
+        if (toSubmit.length > 0) {
+            const result = await client.rpc('submit_questions_for_review', { p_question_ids: toSubmit })
             if (result.error) throw new Error(result.error.message)
-            submitted += 1
+            submitted = countFrom(result.data, 'submitted')
         }
 
         // Satu panggilan untuk seluruh batch: tugaskan diri sendiri sebagai
@@ -274,14 +273,14 @@ export async function publishReviewBatchAction(form: FormData) {
 
         if (questions.length === 0) throw new Error('BATCH_EMPTY')
 
-        for (const question of questions) {
-            if (question.status !== 'approved') {
-                notApproved += 1
-                continue
-            }
-            const result = await client.rpc('publish_question', { p_question_id: question.id })
+        // Satu panggilan batch; `publish_question` tetap satu-satunya penjaga
+        // aturan (hanya approved, tanpa pending review).
+        const toPublish = questions.filter((question) => question.status === 'approved').map((question) => question.id)
+        notApproved = questions.length - toPublish.length
+        if (toPublish.length > 0) {
+            const result = await client.rpc('publish_questions', { p_question_ids: toPublish })
             if (result.error) throw new Error(result.error.message)
-            published += 1
+            published = countFrom(result.data, 'published')
         }
     } catch (error) {
         failure = error
