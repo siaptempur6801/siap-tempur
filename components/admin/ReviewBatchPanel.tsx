@@ -71,17 +71,30 @@ export default async function ReviewBatchPanel({
     canPublish: boolean
     className?: string
 }) {
-    if (!canReview && !canPublish) return null
+    if (!canReview && !canPublish) return <AdminCard className="border-amber-200 bg-amber-50 p-5">
+        <h2 className="font-black text-amber-900">Akun belum dapat menjalankan review massal</h2>
+        <p className="mt-1 text-sm font-medium text-amber-800">Minta peran Reviewer Konten atau permission publish kepada administrator.</p>
+    </AdminCard>
 
     let summary: BatchSummary
     try {
         summary = await loadBatchSummary(batch, actorId)
     } catch {
-        // Panel ini pelengkap. Bila query gagal (mis. RLS), jangan jatuhkan
-        // seluruh halaman review — cukup sembunyikan.
-        return null
+        return <AdminCard className="border-red-200 bg-red-50 p-5">
+            <h2 className="font-black text-red-900">Review massal tidak dapat dimuat</h2>
+            <p className="mt-1 text-sm font-medium text-red-800">Muat ulang halaman. Jika tetap gagal, pastikan akun memiliki permission review konten.</p>
+        </AdminCard>
     }
-    if (summary.total === 0) return null
+    if (summary.total === 0) return <AdminCard className="border-amber-200 bg-amber-50 p-5">
+        <h2 className="font-black text-amber-900">Belum ada soal dalam batch</h2>
+        <p className="mt-1 text-sm font-medium text-amber-800">Batch {batch} belum berisi soal yang disiapkan untuk review massal.</p>
+    </AdminCard>
+
+    const preparable = (summary.byStatus.draft ?? 0) + (summary.byStatus.revision_required ?? 0)
+    const active = (summary.byStatus.submitted ?? 0)
+        + (summary.byStatus.editorial_review ?? 0)
+        + (summary.byStatus.academic_review ?? 0)
+        + (summary.byStatus.technical_qa ?? 0)
 
     const context = (
         <>
@@ -101,11 +114,11 @@ export default async function ReviewBatchPanel({
                         <Sparkles className="text-blue-600" size={18} />
                         <h2 className="text-base font-black text-slate-950">Review massal — batch</h2>
                         <AdminBadge variant="blue">{batch}</AdminBadge>
+                        <AdminBadge>CPNS / SKD · TIU 35 + TKP 45</AdminBadge>
                     </div>
                     <p className="mt-1.5 max-w-2xl text-sm font-medium leading-6 text-slate-500">
-                        {summary.total} soal dalam satu batch. Tiga langkah di bawah memanggil RPC massal resmi, jadi
-                        tidak perlu membuka soal satu per satu. Keputusan review tetap milik Anda: tidak ada yang
-                        disetujui atau diterbitkan otomatis.
+                        {summary.total} soal telah dipilih khusus untuk satu Full Tryout. Kerjakan tombol yang disorot,
+                        lalu lanjutkan sampai tahap terbit. Setiap keputusan hanya memproses status yang sedang aktif.
                     </p>
                 </div>
                 {summary.isDone ? <AdminBadge variant="green">Batch selesai terbit</AdminBadge> : null}
@@ -164,9 +177,9 @@ export default async function ReviewBatchPanel({
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
                                     <h3 className="text-sm font-black text-slate-900">Langkah 1 · Siapkan &amp; klaim</h3>
-                                    <p className="mt-0.5 text-xs font-medium text-slate-500">Aman diulang: soal yang sudah di alur review dilewati.</p>
+                                    <p className="mt-0.5 text-xs font-medium text-slate-500">{preparable > 0 ? `${preparable} soal akan dikirim ke Editorial dan ditugaskan kepada Anda.` : 'Selesai. Tidak ada draft yang perlu disiapkan lagi.'}</p>
                                 </div>
-                                <button className={adminPrimaryButtonClass}><Send size={15} />Siapkan &amp; klaim</button>
+                                <button className={adminPrimaryButtonClass} disabled={!summary.needsPrepare}><Send size={15} />{preparable > 0 ? `Siapkan ${preparable} soal` : 'Sudah disiapkan'}</button>
                             </div>
                         </form>
                     ) : null}
@@ -181,7 +194,7 @@ export default async function ReviewBatchPanel({
                                     : `Langkah 2 · Putuskan tahap ${STAGE_LABEL[summary.activeStage]}`}
                             </h3>
                             <p className="mt-0.5 text-xs font-medium text-slate-500">
-                                Berlaku untuk seluruh batch yang ditugaskan kepada Anda. Setiap soal naik SATU tahap, lalu
+                                Berlaku untuk {active} soal pada tahap aktif. Setiap soal naik SATU tahap, lalu
                                 klaim reviewer dikosongkan — panel ini mengklaim ulang otomatis, jadi satu klik per tahap.
                             </p>
                             {summary.activeStages.length > 1 ? (
@@ -197,9 +210,9 @@ export default async function ReviewBatchPanel({
                                 placeholder="Catatan review untuk seluruh batch (opsional)..."
                             />
                             <div className="mt-3 flex flex-wrap gap-2">
-                                <button className={adminSuccessButtonClass} name="decision" value="approve"><CheckCircle2 size={16} />Setujui semua</button>
-                                <button className={adminWarningButtonClass} name="decision" value="revision_required"><Clock3 size={16} />Minta revisi</button>
-                                <button className={adminDangerButtonClass} name="decision" value="reject"><XCircle size={16} />Tolak</button>
+                                <button className={adminSuccessButtonClass} name="decision" value="approve"><CheckCircle2 size={16} />Setujui {active} soal</button>
+                                <button className={adminWarningButtonClass} name="decision" value="revision_required"><Clock3 size={16} />Revisi {active} soal</button>
+                                <button className={adminDangerButtonClass} name="decision" value="reject"><XCircle size={16} />Tolak {active} soal</button>
                             </div>
                         </form>
                     ) : null}

@@ -196,6 +196,13 @@ ke detail dan menyediakan tombol kembali ke antrean; filter/ringkasan disembunyi
 aktif. Gate Review lulus 5/5 pada build production lokal, termasuk deep-link mobile 390 px dan
 assertion tanpa overflow horizontal.
 
+Perbaikan review massal (2026-09-22): fitur kini dibuka sebagai mode fokus lewat tombol `Buka
+review massal`, otomatis berpindah ke konteks CPNS/SKD, dan mempertahankan mode tersebut setelah
+setiap Server Action. Panel tidak lagi menghilang diam-diam saat query gagal/kosong; jumlah soal
+yang akan diproses tampil pada setiap tombol, sedangkan langkah yang sudah selesai dinonaktifkan.
+Alur produksi 80 soal diverifikasi penuh dalam transaksi rollback: submit 80, klaim dan approve
+Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80 draft.
+
 ### P1-b — pencarian aman + pengukuran payload
 - `escapePostgrestValue` dipindah ke satu modul bersama `lib/postgrest-filter.ts` dan dipakai
   `admin-v2.service` (produk/exam/soal) serta `content-review.service`. Sebelumnya pencarian review

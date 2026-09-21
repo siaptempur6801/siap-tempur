@@ -104,6 +104,7 @@ function workspaceUrl(context: ProgramTrackContext, ok?: string | null, error?: 
         program: context.programCode,
         track: context.trackCode,
     })
+    params.set('bulk', '1')
     if (ok) params.set('ok', ok)
     if (error) params.set('error', friendlyError(error))
     return `/admin/content/review?${params.toString()}`

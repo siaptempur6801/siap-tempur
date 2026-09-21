@@ -71,6 +71,8 @@ type SearchParams = {
     new?: string
     ok?: string
     error?: string
+    /** Mode fokus untuk batch review CPNS yang sudah disiapkan. */
+    bulk?: string
     /** Nomor halaman antrean (25 baris/halaman). */
     page?: string
 }
@@ -106,7 +108,7 @@ function stageLabel(stage: unknown) {
 function workspaceHref(params: SearchParams, overrides: Partial<SearchParams> = {}) {
     const merged = { ...params, ...overrides }
     const query = new URLSearchParams()
-    for (const key of ['program', 'track', 'subject', 'status', 'stage', 'reviewer', 'q', 'question', 'new', 'page'] as const) {
+    for (const key of ['program', 'track', 'subject', 'status', 'stage', 'reviewer', 'q', 'question', 'new', 'page', 'bulk'] as const) {
         const value = merged[key]
         if (value) query.set(key, value)
     }
@@ -255,21 +257,22 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
     // Panel review massal hanya relevan untuk batch CPNS/SKD yang sedang
     // dikerjakan. Konteks lain tidak perlu query tambahan.
     const isBatchContext = program === 'CPNS' && track === 'SKD'
+    const bulkMode = isBatchContext && params.bulk === '1'
 
     return (
         <AdminPage>
             <AdminPageHeader
                 title="Reviewer Workspace"
                 description={`Kelola soal ${program} / ${track} dari draft sampai published dalam satu antrian kerja. Context dapat diganti dari header admin.`}
-                steps={['Pilih soal', 'Periksa isi', 'Ambil tindakan']}
-                action={<div className="flex flex-wrap items-center gap-2">{!isBatchContext ? <Link href={workspaceHref({ ...params, program: 'CPNS', track: 'SKD' }, { subject: undefined, status: undefined, stage: undefined, reviewer: undefined, q: undefined, question: undefined, new: undefined })} className={adminSecondaryButtonClass}><Sparkles size={16}/>Batch CPNS</Link> : null}{canCreate ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}</div>}
+                steps={bulkMode ? ['Siapkan soal', 'Review 3 tahap', 'Terbitkan'] : ['Pilih soal', 'Periksa isi', 'Ambil tindakan']}
+                action={<div className="flex flex-wrap items-center gap-2">{bulkMode ? <Link href={workspaceHref({ ...params, program, track }, { bulk: undefined })} className={adminSecondaryButtonClass}><ArrowLeft size={16}/>Kembali ke antrean</Link> : <Link href={workspaceHref({ program: 'CPNS', track: 'SKD', bulk: '1' })} className={adminSecondaryButtonClass}><Sparkles size={16}/>Buka review massal</Link>}{canCreate && !bulkMode ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}</div>}
             />
 
             <AdminFeedbackBanner ok={params.ok} error={params.error}/>
 
-            {isBatchContext ? <div className={selected ? 'hidden xl:block' : ''}><ReviewBatchPanel batch={DEFAULT_REVIEW_BATCH_CODE} program={program} track={track} actorId={authorization.userId} canReview={permissions.has(PERMISSIONS.CONTENT_REVIEW)} canPublish={permissions.has(PERMISSIONS.CONTENT_PUBLISH)}/></div> : null}
+            {bulkMode ? <div id="review-massal"><ReviewBatchPanel batch={DEFAULT_REVIEW_BATCH_CODE} program={program} track={track} actorId={authorization.userId} canReview={permissions.has(PERMISSIONS.CONTENT_REVIEW)} canPublish={permissions.has(PERMISSIONS.CONTENT_PUBLISH)}/></div> : null}
 
-            <section className={cn('grid gap-3 sm:grid-cols-2 xl:grid-cols-5', selected ? 'hidden xl:grid' : '')}>
+            <section className={cn('grid gap-3 sm:grid-cols-2 xl:grid-cols-5', bulkMode ? 'hidden' : selected ? 'hidden xl:grid' : '')}>
                 <AdminMetric label="Editorial" value={editorialCount} helper="Menunggu editorial" icon={<Clock3 size={18}/>} tone="yellow"/>
                 <AdminMetric label="Academic" value={academicCount} helper="Menunggu akademik" icon={<ClipboardCheck size={18}/>} tone="violet"/>
                 <AdminMetric label="Technical QA" value={technicalCount} helper="Menunggu QA" icon={<ShieldCheck size={18}/>} tone="blue"/>
@@ -277,7 +280,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                 <AdminMetric label="Perlu revisi" value={data.counts.revisionRequired} helper="Kembali ke author" icon={<History size={18}/>} tone="orange"/>
             </section>
 
-            <div className={selected ? 'hidden xl:block' : ''}>
+            <div className={bulkMode ? 'hidden' : selected ? 'hidden xl:block' : ''}>
                 <AdminListToolbar
                     pathname="/admin/content/review"
                     program={program}
@@ -317,7 +320,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                 />
             </div>
 
-            {createNew && canCreate ? (
+            {!bulkMode && createNew && canCreate ? (
                 <section className="rounded-2xl border border-blue-200 bg-white shadow-sm ring-4 ring-blue-50">
                     <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5">
                         <div><h2 className="text-lg font-black text-slate-950">Buat draft soal</h2><p className="mt-1 text-sm font-medium text-slate-500">Isi content utama dulu. Klasifikasi dan opsi disimpan sebagai satu draft transactional.</p></div>
@@ -340,7 +343,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                 </section>
             ) : null}
 
-            <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)]">
+            {!bulkMode ? <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)]">
                 <AdminCard className={cn('overflow-hidden xl:sticky xl:top-[88px]', selected ? 'hidden xl:block' : '')}>
                     <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5"><div><h2 className="text-sm font-black text-slate-950">Review Queue</h2><p className="text-xs font-medium text-slate-500">{data.total} soal sesuai filter</p></div><AdminBadge>{data.counts.unassigned} belum ditugaskan</AdminBadge></div>
                     <div className="max-h-[calc(100vh-270px)] overflow-y-auto">
@@ -458,7 +461,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                         </>
                     ) : null}
                 </main>
-            </div>
+            </div> : null}
         </AdminPage>
     )
 }
