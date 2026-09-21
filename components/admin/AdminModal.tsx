@@ -29,6 +29,13 @@ type AdminModalProps = {
     closeHref?: string
     confirmUnsaved?: boolean
     size?: keyof typeof sizes
+    /**
+     * Dipanggil saat trigger diklik, SEBELUM modal terbuka.
+     *
+     * Dipakai modal yang isinya dimuat malas (mis. katalog Question Bank ~1 MB):
+     * anak modal sudah dirender di server, jadi pemuatan harus dipicu dari sini.
+     */
+    onOpen?: () => void
 }
 
 export default function AdminModal({
@@ -42,6 +49,7 @@ export default function AdminModal({
     closeHref,
     size = 'lg',
     confirmUnsaved = false,
+    onOpen,
 }: AdminModalProps) {
     const dialogRef = useRef<HTMLDialogElement>(null)
     const [open, setOpen] = useState(defaultOpen)
@@ -61,6 +69,18 @@ export default function AdminModal({
         if (open && !dialog.open) dialog.showModal()
         if (!open && dialog.open) dialog.close()
     }, [open])
+
+    /**
+     * `onOpen` juga dipanggil untuk modal yang terbuka sejak render pertama
+     * (`defaultOpen`) — mis. tautan `?edit=` yang membuka form langsung. Sekali
+     * saja; identitas callback boleh berubah tanpa memicu pemuatan ulang.
+     */
+    const defaultOpenNotified = useRef(false)
+    useEffect(() => {
+        if (!defaultOpen || defaultOpenNotified.current) return
+        defaultOpenNotified.current = true
+        onOpen?.()
+    }, [defaultOpen, onOpen])
 
     async function closeModal() {
         if (confirmUnsaved && dialogRef.current?.querySelector('[data-pending="true"]')) return
@@ -83,7 +103,10 @@ export default function AdminModal({
             {triggerLabel ? (
                 <button
                     type="button"
-                    onClick={() => setOpen(true)}
+                    onClick={() => {
+                        onOpen?.()
+                        setOpen(true)
+                    }}
                     className={cn(
                         'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50',
                         triggerVariants[triggerVariant],

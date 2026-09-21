@@ -8,8 +8,7 @@ import {
     ADMIN_OPERATIONS_ROUTES,
     type AdminOperationsMode,
 } from '@/lib/admin-operations'
-import QuestionBankForm, { QuestionBankWorkflow } from '@/components/admin/QuestionBankForm'
-import { questionBankService } from '@/src/services/question-bank.service'
+import QuestionBankEditorModal from '@/components/admin/QuestionBankEditorModal'
 import { adminStatusLabel, formatDateTime, formatLocalDateTimeInput, formatRupiah } from '@/lib/admin-format'
 import { adminPageHref, adminPageSummary, adminPageSummaryLabel, parseAdminPage } from '@/lib/admin-pagination'
 import { adminV2Service } from '@/src/services/admin-v2.service'
@@ -270,11 +269,15 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
         : undefined
 
     const editedProduct = mode === 'products' ? (editedRow ?? editFallback) : undefined
-    const questionDetail = mode === 'questions'
-        ? await questionBankService.editor(program, track, (editedRow ?? editFallback) ? editedId : null)
-        : null
-    const editedQuestion = questionDetail?.question ?? undefined
-    const missingQuestion = mode === 'questions' && Boolean(editedId) && !editedQuestion
+    /**
+     * Soal yang sedang diedit — hanya id valid yang benar-benar ditemukan.
+     *
+     * Katalog editor (stimulus + materi; terukur ~1 MB untuk track SD/SMP) TIDAK
+     * dimuat di sini lagi: `QuestionBankEditorModal` memuatnya saat modal dibuka,
+     * sehingga halaman daftar tidak membayar payload itu.
+     */
+    const editingQuestionId = mode === 'questions' && (editedRow ?? editFallback) ? editedId : ''
+    const missingQuestion = mode === 'questions' && Boolean(editedId) && !editingQuestionId
     const editedEvent = mode === 'events' ? events.find((row) => s(row.id) === editedId) : undefined
 
     const activeFilters = { program, track, q: params.q || '', status: params.status || '', subject: params.subject || '' }
@@ -388,17 +391,17 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
         )
     }
 
-    if (mode === 'questions' && canQuestions && questionDetail) {
+    if (mode === 'questions' && canQuestions) {
         pageAction = (
-            <AdminModal key={editedId || 'new'} title={editedQuestion ? 'Detail & edit soal' : 'Tambah soal'}
-                description="Simpan draf, periksa pratinjau, lalu ajukan melalui alur review."
-                triggerLabel={editedQuestion ? 'Buka soal' : 'Tambah soal'} defaultOpen={Boolean(editedQuestion)}
-                closeHref={closeHref} size="wide" confirmUnsaved>
-                <QuestionBankForm key={editedQuestion ? s(editedQuestion.id) : 'new'} detail={questionDetail}
-                    program={program} track={track} subjects={workspace.catalog.subjects} returnFilters={returnFilters}/>
-                {editedQuestion ? <div className="mt-5"><QuestionBankWorkflow question={editedQuestion} program={program} track={track}
-                    returnFilters={returnFilters} canPublish={permissions.has(PERMISSIONS.CONTENT_PUBLISH)}/></div> : null}
-            </AdminModal>
+            <QuestionBankEditorModal
+                program={program}
+                track={track}
+                editId={editingQuestionId}
+                subjects={workspace.catalog.subjects}
+                returnFilters={returnFilters}
+                closeHref={closeHref}
+                canPublish={permissions.has(PERMISSIONS.CONTENT_PUBLISH)}
+            />
         )
     }
 

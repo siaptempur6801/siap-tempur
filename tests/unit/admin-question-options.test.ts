@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import {
     parseQuestionOptions,
     serializeOptionRows,
-    serializeQuestionOption,
 } from '@/lib/question-options'
 
 /** JSON is the canonical lossless editor transport. Legacy pipe payloads remain
@@ -138,19 +137,6 @@ describe('round-trip editor ↔ server', () => {
             isCorrect: false,
             imageUrl: null,
         })
-    })
-
-    it('serializeQuestionOption mempertahankan pemisah sebagai konten', () => {
-        const line = serializeQuestionOption({
-            key: 'a',
-            content: 'satu|dua',
-            score: 1,
-            isCorrect: true,
-            responseGroup: 'G|1',
-            imageUrl: 'https://contoh.test/a|b.png',
-        })
-        expect(parseQuestionOptions(line)[0]).toMatchObject({ content: 'satu|dua', responseGroup: 'G|1', imageUrl: 'https://contoh.test/a|b.png' })
-        expect(parseQuestionOptions(line)).toHaveLength(1)
     })
 })
 

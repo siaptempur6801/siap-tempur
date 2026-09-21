@@ -297,15 +297,6 @@ export class AdminV2Service {
         return this.listRowsForIds('product_wallet_grants', 'product_id, wallet_type, amount', 'product_id', productIds)
     }
 
-    async listQuestionOptions(questionIds: readonly string[]) {
-        return this.listRowsForIds(
-            'question_options',
-            'id, question_id, option_key, content, is_correct, score, sort_order, response_group, response_group_order, image_url',
-            'question_id',
-            questionIds,
-        )
-    }
-
     /**
      * Query `IN` yang di-batch.
      *
@@ -315,9 +306,9 @@ export class AdminV2Service {
      * dipecah memakai helper batching yang sudah ada.
      */
     private async listRowsForIds(
-        table: 'product_prices' | 'product_wallet_grants' | 'question_options',
+        table: 'product_prices' | 'product_wallet_grants',
         select: string,
-        column: 'product_id' | 'question_id',
+        column: 'product_id',
         ids: readonly string[],
     ) {
         const unique = [...new Set(ids.filter(Boolean))]

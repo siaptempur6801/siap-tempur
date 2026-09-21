@@ -101,9 +101,25 @@ Perbaikan:
   mengubah kontrak submit-nya. Uji regresi kini memindai `components/admin/**` + `app/admin/**`,
   bukan daftar berkas manual — dua berkas yang sebelumnya lolos (`QuestionBankForm`, `AdminModal`)
   kini tertutup.
+- **Katalog editor dimuat malas (P3).** `get_question_bank_editor` mengembalikan seluruh stimulus
+  satu track; terukur di staging **SD 1.036 kB · SMP 1.027 kB** (SMA/SKD 0) dan sebelumnya dipanggil
+  di setiap pemuatan halaman daftar. Kini `QuestionBankEditorModal` memuatnya saat modal dibuka
+  (trigger "Tambah soal" atau `defaultOpen` dari `?edit=`), memakai sesi pengguna langsung ke RPC;
+  halaman daftar tidak lagi membayar payload itu. `AdminModal` mendapat `onOpen` (sekali, termasuk
+  saat `defaultOpen`). Dikunci 2 unit test.
+- Dead code dibuang: `listQuestionOptions` (service) dan `serializeQuestionOption` (hanya dipakai
+  test) beserta union tipe `question_options` di `listRowsForIds`.
+
+Ditunda dengan bukti (bukan kelalaian):
+- `v_snapshot` di `mutate_question_bank` di-assign tanpa dipakai. Migration bersifat immutable;
+  menghapusnya menuntut migration baru tanpa manfaat fungsional → dibiarkan.
+- Retry kode soal `QB-<16 hex>`: `questions_question_code_key` unik dan ruang nama 64-bit; tabrakan
+  praktis nol → tidak ada retry.
+- Index `pg_trgm` untuk `stem ilike '%…%'`: `EXPLAIN ANALYZE` di staging (1.086 soal) = Seq Scan,
+  cost 137 — sub-milidetik. Ditunda sampai jumlah soal tumbuh.
 
 Verifikasi selesai:
-- Lint tanpa error/warning, typecheck, **607 unit test / 80 file**, build lolos.
+- Lint tanpa error/warning, typecheck, **608 unit test / 81 file**, build lolos.
 - Build tetap memiliki warning lama di `lib/event-certificate-pdf.ts` tentang tracing filesystem;
   warning konfigurasi Vitest lama juga masih ada. Keduanya di luar perubahan Question Bank.
 - Hardening lanjutan (2026-09-21): token concurrency `expectedUpdatedAt` kini hanya menerima ISO 8601
@@ -118,12 +134,12 @@ Verifikasi selesai:
   publikasi dan revisi kembali ke draf. Fixture milik run dibersihkan di `finally`.
 - Chromium desktop 1440 px, tablet 1024 px, mobile 390 px: tidak ada overflow halaman/modal;
   tidak ada page error / console error pada alur yang diuji, pratinjau dirender.
-- Gate admin lokal (`node scripts/local-gates/run-gate.mjs admin`): **60 passed, exit 0**. Dua spec
-  instansi diperbaiki karena commit Fase 2 menambahkan dialog konfirmasi pada "Hapus exam" dan
-  `role="status"` ringkasan filter: spec kini menekan tombol konfirmasi, mempersempit locator status,
-  dan helper `removeFirstParticipant` menunggu baris benar-benar berkurang — timeout tetap 1,5 detik
-  terbukti salah (trace menunjukkan POST konfirmasi masih in-flight). 11 instansi uji tertinggal dari
-  run gagal dibersihkan; staging kembali 0 instansi uji.
+- Gate admin lokal (`node scripts/local-gates/run-gate.mjs admin`): **60 passed, exit 0** (dua kali,
+  termasuk setelah lazy-load editor). Dua spec instansi diperbaiki karena commit Fase 2 menambahkan
+  dialog konfirmasi pada "Hapus exam" dan `role="status"` ringkasan filter: spec kini menekan tombol
+  konfirmasi, mempersempit locator status, dan helper `removeFirstParticipant` menunggu baris
+  benar-benar berkurang — timeout tetap 1,5 detik terbukti salah (trace menunjukkan POST konfirmasi
+  masih in-flight). 11 instansi uji tertinggal dari run gagal dibersihkan; staging kembali 0 instansi uji.
 - Uji SQL dalam transaksi **ROLLBACK**: kegagalan audit di langkah akhir membatalkan soal, opsi,
   dan version history; pengeditan saat attempt aktif ditolak; manager tanpa `content.publish`
   tidak dapat menerbitkan; akun suspended ditolak; pergantian mapel melepas pemetaan materi
@@ -148,11 +164,13 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   `app/admin/content/review/page.tsx`
 - `components/admin/QuestionBankForm.tsx`, `components/admin/QuestionOptionsEditor.tsx`,
   `components/admin/AdminModal.tsx`, `components/admin/AdminConfirmDialog.tsx` (baru),
-  `components/admin/useAdminConfirm.tsx` (baru), `components/admin/ConfirmSubmit.tsx`
+  `components/admin/useAdminConfirm.tsx` (baru), `components/admin/QuestionBankEditorModal.tsx` (baru),
+  `components/admin/ConfirmSubmit.tsx`
 - `lib/question-bank.ts`, `lib/question-options.ts`
 - `src/services/question-bank.service.ts`, `src/services/admin-v2.service.ts`
 - `types/database.types.ts`, migration di atas
 - `tests/unit/question-bank.test.ts`, `tests/unit/question-bank-category-editor.test.tsx` (baru),
+  `tests/unit/question-bank-editor-lazy.test.tsx` (baru),
   `tests/unit/admin-question-options.test.ts`, `tests/unit/admin-confirm-submit.test.ts`
 - `tests/e2e/specs/20-instansi-join.spec.ts`, `tests/e2e/specs/21-instansi-exam.spec.ts`,
   `tests/e2e/admin-roles.ts`

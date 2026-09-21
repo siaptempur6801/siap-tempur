@@ -36,13 +36,6 @@ export function isHttpsImageUrl(value: string): boolean {
 }
 
 
-export function serializeQuestionOption(option: {
-    key: unknown; content: unknown; score: unknown; isCorrect: unknown;
-    responseGroup?: unknown; responseGroupOrder?: unknown; imageUrl?: unknown;
-}): string {
-    return JSON.stringify([option])
-}
-
 export function serializeOptionRows(rows: Array<Record<string, unknown>>): string {
     return JSON.stringify(rows.map((row) => ({
         key: row.option_key, content: row.content, score: row.score, isCorrect: row.is_correct,
