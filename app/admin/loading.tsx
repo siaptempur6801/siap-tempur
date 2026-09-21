@@ -1,5 +1,5 @@
-import { PageLoadingSkeleton } from '@/components/ui/LoadingState'
+import { AdminLoadingSkeleton } from '@/components/admin/AdminLoading'
 
 export default function AdminLoading() {
-    return <PageLoadingSkeleton layout="list" label="Memuat ruang kerja admin" />
+    return <AdminLoadingSkeleton mode="dashboard" label="Memuat dashboard admin"/>
 }

@@ -1,3 +1,4 @@
+import { serializeOptionRows } from '@/lib/question-options'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
@@ -6,7 +7,6 @@ import {
     Clock3,
     FilePlus2,
     History,
-    Search,
     Send,
     ShieldCheck,
     Sparkles,
@@ -20,15 +20,21 @@ import {
     AdminBadge,
     AdminCard,
     AdminEmptyState,
+    AdminField,
+    AdminFeedbackBanner,
     AdminMetric,
+    AdminPage,
     AdminPageHeader,
     AdminSectionHeading,
-    adminButtonClass,
     adminDangerButtonClass,
     adminInputClass,
     adminPrimaryButtonClass,
     adminSecondaryButtonClass,
+    adminSuccessButtonClass,
+    adminWarningButtonClass,
 } from '@/components/admin/AdminUi'
+import AdminListToolbar from '@/components/admin/AdminListToolbar'
+import { adminStatusLabel, adminStatusVariant, formatDateTime } from '@/lib/admin-format'
 import { cn } from '@/lib/utils'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
@@ -45,6 +51,9 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 type Row = Record<string, unknown>
+
+/** Urutan status pada filter — label memakai `adminStatusLabel` agar konsisten. */
+const REVIEW_STATUS_OPTIONS = ['draft', 'submitted', 'editorial_review', 'academic_review', 'technical_qa', 'revision_required', 'approved', 'published', 'rejected'] as const
 
 type SearchParams = {
     program?: string
@@ -73,51 +82,10 @@ function lower(value: unknown) {
     return s(value).toLowerCase()
 }
 
-function fmt(value: unknown) {
-    const source = s(value)
-    if (!source) return '—'
-    const date = new Date(source)
-    if (Number.isNaN(date.getTime())) return source
-    return new Intl.DateTimeFormat('id-ID', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-        timeZone: 'Asia/Jakarta',
-    }).format(date)
-}
-
 function profileName(profile: unknown, fallback = 'Belum ditentukan') {
     if (!profile || typeof profile !== 'object') return fallback
     const row = profile as Row
     return s(row.display_name) || s(row.full_name) || fallback
-}
-
-function statusVariant(status: unknown): 'neutral' | 'blue' | 'green' | 'yellow' | 'orange' | 'red' | 'violet' {
-    switch (lower(status)) {
-        case 'published':
-        case 'approved': return 'green'
-        case 'revision_required': return 'orange'
-        case 'rejected': return 'red'
-        case 'editorial_review':
-        case 'submitted': return 'yellow'
-        case 'academic_review': return 'violet'
-        case 'technical_qa': return 'blue'
-        default: return 'neutral'
-    }
-}
-
-function prettyStatus(status: unknown) {
-    const labels: Record<string, string> = {
-        draft: 'Draft',
-        submitted: 'Editorial Review',
-        editorial_review: 'Editorial Review',
-        academic_review: 'Academic Review',
-        technical_qa: 'Technical QA',
-        revision_required: 'Perlu Revisi',
-        approved: 'Approved',
-        published: 'Published',
-        rejected: 'Rejected',
-    }
-    return labels[lower(status)] || s(status) || 'Unknown'
 }
 
 function stageLabel(stage: unknown) {
@@ -127,18 +95,6 @@ function stageLabel(stage: unknown) {
         case 'technical_qa': return 'Technical QA'
         default: return 'Belum masuk review'
     }
-}
-
-function optionsText(options: Row[]) {
-    return options.map((option) => [
-        s(option.option_key),
-        s(option.content).replace(/\r?\n/g, ' '),
-        option.score == null ? '' : s(option.score),
-        option.is_correct == null ? '' : String(Boolean(option.is_correct)),
-        s(option.response_group),
-        option.response_group_order == null ? '' : s(option.response_group_order),
-        s(option.image_url),
-    ].join('|')).join('\n')
 }
 
 function workspaceHref(params: SearchParams, overrides: Partial<SearchParams> = {}) {
@@ -155,10 +111,6 @@ function HiddenContext({ program, track }: { program: string; track: string }) {
     return <><input type="hidden" name="program_code" value={program}/><input type="hidden" name="track_code" value={track}/></>
 }
 
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
-    return <label className={cn('space-y-1.5', className)}><span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">{label}</span>{children}</label>
-}
-
 function OptionPreview({ option }: { option: Row }) {
     const isCorrect = option.is_correct === true
     return (
@@ -168,7 +120,7 @@ function OptionPreview({ option }: { option: Row }) {
                 <div className="min-w-0 flex-1">
                     {Boolean(option.response_group) ? <div className="mb-1 text-[11px] font-extrabold uppercase text-blue-600">{s(option.response_group)}</div> : null}
                     <div className="text-sm font-medium leading-6 text-slate-800"><MathRenderer text={s(option.content)}/></div>
-                    {Boolean(option.image_url) ? <div className="mt-2 break-all text-[10px] font-medium text-slate-400">Gambar: {s(option.image_url)}</div> : null}
+                    {Boolean(option.image_url) ? <div className="mt-2 break-all text-[10px] font-medium text-slate-500">Gambar: {s(option.image_url)}</div> : null}
                     {isCorrect ? <AdminBadge variant="green" className="mt-2">Jawaban benar</AdminBadge> : null}
                 </div>
             </div>
@@ -246,18 +198,14 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
     const isBatchContext = program === 'CPNS' && track === 'SKD'
 
     return (
-        <div className="space-y-5 pb-10">
+        <AdminPage>
             <AdminPageHeader
                 title="Reviewer Workspace"
                 description={`Kelola soal ${program} / ${track} dari draft sampai published dalam satu antrian kerja. Context dapat diganti dari header admin.`}
                 action={<div className="flex flex-wrap items-center gap-2">{!isBatchContext ? <Link href={workspaceHref({ ...params, program: 'CPNS', track: 'SKD' }, { subject: undefined, status: undefined, stage: undefined, reviewer: undefined, q: undefined, question: undefined, new: undefined })} className={adminSecondaryButtonClass}><Sparkles size={16}/>Batch CPNS</Link> : null}{canCreate ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}</div>}
             />
 
-            {(params.ok || params.error) ? (
-                <div role="status" className={cn('flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-bold shadow-sm', params.error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800')}>
-                    {params.error ? <XCircle className="mt-0.5 shrink-0" size={17}/> : <CheckCircle2 className="mt-0.5 shrink-0" size={17}/>}<span>{params.error || params.ok}</span>
-                </div>
-            ) : null}
+            <AdminFeedbackBanner ok={params.ok} error={params.error}/>
 
             {isBatchContext ? <ReviewBatchPanel batch={BATCH_CODE} program={program} track={track} actorId={authorization.userId} canReview={permissions.has(PERMISSIONS.CONTENT_REVIEW)} canPublish={permissions.has(PERMISSIONS.CONTENT_PUBLISH)}/> : null}
 
@@ -269,17 +217,43 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                 <AdminMetric label="Perlu revisi" value={data.counts.revisionRequired} helper="Kembali ke author" icon={<History size={18}/>} tone="orange"/>
             </section>
 
-            <AdminCard className="p-4">
-                <form className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1.4fr)_1fr_1fr_1fr_1fr_auto]" method="get">
-                    <input type="hidden" name="program" value={program}/><input type="hidden" name="track" value={track}/>
-                    <label className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/><input className={`${adminInputClass} pl-9`} name="q" defaultValue={params.q || ''} placeholder="Cari kode atau isi soal..." aria-label="Cari soal"/></label>
-                    <select className={adminInputClass} name="subject" defaultValue={params.subject || ''} aria-label="Filter subject"><option value="">Semua subject</option>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select>
-                    <select className={adminInputClass} name="status" defaultValue={params.status || ''} aria-label="Filter status"><option value="">Semua status</option>{['draft','submitted','editorial_review','academic_review','technical_qa','revision_required','approved','published','rejected'].map((status) => <option key={status} value={status}>{prettyStatus(status)}</option>)}</select>
-                    <select className={adminInputClass} name="stage" defaultValue={params.stage || ''} aria-label="Filter stage"><option value="">Semua stage</option><option value="editorial">Editorial</option><option value="academic">Academic</option><option value="technical_qa">Technical QA</option></select>
-                    <select className={adminInputClass} name="reviewer" defaultValue={params.reviewer || ''} aria-label="Filter reviewer"><option value="">Semua reviewer</option><option value="unassigned">Belum di-assign</option>{data.reviewers.map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name}</option>)}</select>
-                    <div className="flex gap-2"><button className={adminButtonClass}>Terapkan</button><Link className={adminSecondaryButtonClass} href={workspaceHref({}, { program, track })}>Reset</Link></div>
-                </form>
-            </AdminCard>
+            <AdminListToolbar
+                pathname="/admin/content/review"
+                program={program}
+                track={track}
+                search={params.q || ''}
+                status={params.status || ''}
+                statusOptions={REVIEW_STATUS_OPTIONS.map((status) => ({ value: status, label: adminStatusLabel(status) }))}
+                placeholder="Cari kode atau isi soal..."
+                resultCount={visibleQuestions.length}
+                selects={[
+                    {
+                        name: 'subject',
+                        ariaLabel: 'Filter subject',
+                        placeholder: 'Semua subject',
+                        defaultValue: params.subject || '',
+                        options: data.catalog.subjects.map((subject) => ({ value: subject.code, label: `${subject.code} · ${subject.name}` })),
+                    },
+                    {
+                        name: 'stage',
+                        ariaLabel: 'Filter stage',
+                        placeholder: 'Semua stage',
+                        defaultValue: params.stage || '',
+                        options: [
+                            { value: 'editorial', label: 'Editorial' },
+                            { value: 'academic', label: 'Academic' },
+                            { value: 'technical_qa', label: 'Technical QA' },
+                        ],
+                    },
+                    {
+                        name: 'reviewer',
+                        ariaLabel: 'Filter reviewer',
+                        placeholder: 'Semua reviewer',
+                        defaultValue: params.reviewer || '',
+                        options: [{ value: 'unassigned', label: 'Belum di-assign' }, ...data.reviewers.map((reviewer) => ({ value: reviewer.id, label: reviewer.full_name }))],
+                    },
+                ]}
+            />
 
             {createNew && canCreate ? (
                 <section className="rounded-2xl border border-blue-200 bg-white shadow-sm ring-4 ring-blue-50">
@@ -289,16 +263,16 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                     </div>
                     <form action={saveContentDraftAction} className="grid gap-4 p-5 lg:grid-cols-2">
                         <HiddenContext program={program} track={track}/>
-                        <Field label="Subject"><select className={adminInputClass} name="subject_code" required defaultValue={activeSubjectCode}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></Field>
-                        <Field label="Tipe soal"><select className={adminInputClass} name="question_type" defaultValue="single_choice"><option value="single_choice">Single choice</option><option value="multiple_choice">Multiple choice</option><option value="category">Category</option></select></Field>
-                        <Field label="Pertanyaan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="stem" required placeholder="Tulis pertanyaan dengan jelas..."/></Field>
-                        <Field label="Difficulty"><select className={adminInputClass} name="difficulty" defaultValue="medium"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></Field>
-                        <Field label="Cognitive level"><input className={adminInputClass} name="cognitive_level" placeholder="application / reasoning"/></Field>
-                        <Field label="Estimasi detik"><input className={adminInputClass} type="number" min="1" name="estimated_seconds" placeholder="60"/></Field>
-                        <Field label="Source reference"><input className={adminInputClass} name="source_reference" placeholder="Sumber atau referensi"/></Field>
+                        <AdminField label="Subject"><select className={adminInputClass} name="subject_code" required defaultValue={activeSubjectCode}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
+                        <AdminField label="Tipe soal"><select className={adminInputClass} name="question_type" defaultValue="single_choice"><option value="single_choice">Single choice</option><option value="multiple_choice">Multiple choice</option><option value="category">Category</option></select></AdminField>
+                        <AdminField label="Pertanyaan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="stem" required placeholder="Tulis pertanyaan dengan jelas..."/></AdminField>
+                        <AdminField label="Difficulty"><select className={adminInputClass} name="difficulty" defaultValue="medium"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></AdminField>
+                        <AdminField label="Cognitive level"><input className={adminInputClass} name="cognitive_level" placeholder="application / reasoning"/></AdminField>
+                        <AdminField label="Estimasi detik"><input className={adminInputClass} type="number" min="1" name="estimated_seconds" placeholder="60"/></AdminField>
+                        <AdminField label="Source reference"><input className={adminInputClass} name="source_reference" placeholder="Sumber atau referensi"/></AdminField>
                         <QuestionOptionsEditor/>
-                        <Field label="Pembahasan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="explanation" placeholder="Tulis alasan jawaban dan konsep yang diuji..."/></Field>
-                        <Field label="Alasan / catatan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Initial draft from Content Workspace"/></Field>
+                        <AdminField label="Pembahasan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="explanation" placeholder="Tulis alasan jawaban dan konsep yang diuji..."/></AdminField>
+                        <AdminField label="Alasan / catatan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Initial draft from Content Workspace"/></AdminField>
                         <div className="flex flex-wrap gap-2 lg:col-span-2"><button className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Simpan draft</button><Link href={workspaceHref({ program, track })} className={adminSecondaryButtonClass}>Batal</Link></div>
                     </form>
                 </section>
@@ -306,7 +280,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)]">
                 <AdminCard className="overflow-hidden xl:sticky xl:top-[88px]">
-                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5"><div><h2 className="text-sm font-black text-slate-950">Review Queue</h2><p className="text-xs font-medium text-slate-400">{visibleQuestions.length} soal sesuai filter</p></div><AdminBadge>{data.counts.unassigned} unassigned</AdminBadge></div>
+                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5"><div><h2 className="text-sm font-black text-slate-950">Review Queue</h2><p className="text-xs font-medium text-slate-500">{visibleQuestions.length} soal sesuai filter</p></div><AdminBadge>{data.counts.unassigned} unassigned</AdminBadge></div>
                     <div className="max-h-[calc(100vh-270px)] overflow-y-auto">
                         {visibleQuestions.length === 0 ? <AdminEmptyState title="Queue kosong" description="Tidak ada soal untuk filter ini. Coba ubah subject, status, reviewer, atau kata kunci."/> : visibleQuestions.map((question) => {
                             const id = s(question.id)
@@ -314,9 +288,9 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                             const subject = data.subjectById.get(s(question.subject_id))
                             const pending = question.pending_review
                             return (
-                                <Link key={id} href={workspaceHref({ ...params, program, track }, { question: id, new: undefined })} className={cn('block border-b border-slate-100 px-4 py-3.5 transition last:border-b-0', active ? 'bg-blue-50/80 shadow-[inset_3px_0_0_#2563eb]' : 'bg-white hover:bg-slate-50')}>
-                                    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black text-slate-900">{s(question.question_code) || 'Tanpa kode'}</span><span className="text-[10px] font-bold text-slate-400">{s(subject?.code)} · v{n(question.version)}</span></div><p className="mt-1.5 line-clamp-2 text-sm font-semibold leading-5 text-slate-700">{s(question.stem)}</p></div><AdminBadge variant={statusVariant(question.status)}>{prettyStatus(question.status)}</AdminBadge></div>
-                                    <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] font-semibold text-slate-400">{Boolean(question.current_stage) ? <span>{stageLabel(question.current_stage)}</span> : null}{Boolean(pending) ? <span>• {pending?.reviewer_id ? profileName(data.profileById.get(s(pending.reviewer_id)), 'Assigned') : 'Belum ada reviewer'}</span> : null}</div>
+                                <Link key={id} href={workspaceHref({ ...params, program, track }, { question: id, new: undefined })} aria-current={active ? 'true' : undefined} className={cn('block border-b border-slate-100 px-4 py-3.5 transition last:border-b-0', active ? 'bg-blue-50/80 shadow-[inset_3px_0_0_#2563eb]' : 'bg-white hover:bg-slate-50')}>
+                                    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black text-slate-900">{s(question.question_code) || 'Tanpa kode'}</span><span className="text-[10px] font-bold text-slate-500">{s(subject?.code)} · v{n(question.version)}</span></div><p className="mt-1.5 line-clamp-2 text-sm font-semibold leading-5 text-slate-700">{s(question.stem)}</p></div><AdminBadge variant={adminStatusVariant(question.status)}>{adminStatusLabel(question.status)}</AdminBadge></div>
+                                    <div className="mt-2 flex flex-wrap gap-x-2 gap-y-1 text-[11px] font-semibold text-slate-500">{Boolean(question.current_stage) ? <span>{stageLabel(question.current_stage)}</span> : null}{Boolean(pending) ? <span>• {pending?.reviewer_id ? profileName(data.profileById.get(s(pending.reviewer_id)), 'Assigned') : 'Belum ada reviewer'}</span> : null}</div>
                                 </Link>
                             )
                         })}
@@ -329,21 +303,21 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                         <>
                             <AdminCard className="p-5">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                    <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black uppercase tracking-wide text-blue-600">{s(data.subjectById.get(s(selected.subject_id))?.code)}</span><span className="text-xs font-bold text-slate-400">{s(selected.question_type)} · v{n(selected.version)}</span></div><h2 className="mt-1 text-xl font-black text-slate-950">{s(selected.question_code) || 'Soal tanpa kode'}</h2><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-500"><span>Author: <b className="text-slate-700">{profileName(author)}</b></span><span>Reviewer: <b className="text-slate-700">{profileName(assignedReviewer)}</b></span><span>Update: {fmt(selected.updated_at)}</span></div></div>
-                                    <AdminBadge variant={statusVariant(selected.status)}>{prettyStatus(selected.status)}</AdminBadge>
+                                    <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black uppercase tracking-wide text-blue-600">{s(data.subjectById.get(s(selected.subject_id))?.code)}</span><span className="text-xs font-bold text-slate-500">{s(selected.question_type)} · v{n(selected.version)}</span></div><h2 className="mt-1 text-xl font-black text-slate-950">{s(selected.question_code) || 'Soal tanpa kode'}</h2><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-500"><span>Author: <b className="text-slate-700">{profileName(author)}</b></span><span>Reviewer: <b className="text-slate-700">{profileName(assignedReviewer)}</b></span><span>Update: {formatDateTime(selected.updated_at)}</span></div></div>
+                                    <AdminBadge variant={adminStatusVariant(selected.status)}>{adminStatusLabel(selected.status)}</AdminBadge>
                                 </div>
                             </AdminCard>
 
                             <AdminCard className="p-5">
-                                <AdminSectionHeading title="Workflow & tindakan" description={Boolean(selected.current_stage) ? `Tahap aktif: ${stageLabel(selected.current_stage)}` : `Status saat ini: ${prettyStatus(selected.status)}`}/>
+                                <AdminSectionHeading title="Workflow & tindakan" description={Boolean(selected.current_stage) ? `Tahap aktif: ${stageLabel(selected.current_stage)}` : `Status saat ini: ${adminStatusLabel(selected.status)}`}/>
                                 <div className="mt-4 space-y-4">
                                     {canSubmit ? <form action={submitContentQuestionAction}><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><button className={adminPrimaryButtonClass}><Send size={16}/>Kirim ke Editorial Review</button></form> : null}
 
-                                    {canAssign ? <form action={assignContentReviewerAction} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><label className="block text-xs font-extrabold uppercase tracking-wide text-slate-400">Assign reviewer</label><div className="mt-2 flex flex-col gap-2 sm:flex-row"><select className={adminInputClass} name="reviewer_id" required defaultValue={s(pendingReview?.reviewer_id)}><option value="">Pilih reviewer</option>{data.reviewers.filter((reviewer) => s(reviewer.id) !== s(selected.author_id)).map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name}</option>)}</select><button className={adminButtonClass}><UserCheck size={16}/>Assign</button></div></form> : null}
+                                    {canAssign ? <form action={assignContentReviewerAction} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><label htmlFor="assign-reviewer-select" className="block text-xs font-extrabold uppercase tracking-wide text-slate-500">Assign reviewer</label><div className="mt-2 flex flex-col gap-2 sm:flex-row"><select id="assign-reviewer-select" className={adminInputClass} name="reviewer_id" required defaultValue={s(pendingReview?.reviewer_id)}><option value="">Pilih reviewer</option>{data.reviewers.filter((reviewer) => s(reviewer.id) !== s(selected.author_id)).map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name}</option>)}</select><button className={adminPrimaryButtonClass}><UserCheck size={16}/>Assign</button></div></form> : null}
 
                                     {Boolean(selected.current_stage) && !pendingReview ? <p className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm font-bold text-orange-800">Stage aktif tidak memiliki pending review. Periksa workflow history.</p> : null}
 
-                                    {canReview ? <form action={decideContentReviewAction} className="rounded-xl border border-blue-200 bg-blue-50/50 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><Field label="Reviewer notes"><textarea className={`${adminInputClass} min-h-24 resize-y`} name="notes" placeholder="Tuliskan alasan keputusan agar author/reviewer berikutnya memahami konteks..."/></Field><div className="mt-3 flex flex-wrap gap-2"><button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700" name="decision" value="approve"><CheckCircle2 size={16}/>Approve</button><button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-orange-700 hover:bg-orange-100" name="decision" value="revision_required"><Clock3 size={16}/>Request Revision</button><button className={adminDangerButtonClass} name="decision" value="reject"><XCircle size={16}/>Reject</button></div></form> : null}
+                                    {canReview ? <form action={decideContentReviewAction} className="rounded-xl border border-blue-200 bg-blue-50/50 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><AdminField label="Reviewer notes"><textarea className={`${adminInputClass} min-h-24 resize-y`} name="notes" placeholder="Tuliskan alasan keputusan agar author/reviewer berikutnya memahami konteks..."/></AdminField><div className="mt-3 flex flex-wrap gap-2"><button className={adminSuccessButtonClass} name="decision" value="approve"><CheckCircle2 size={16}/>Approve</button><button className={adminWarningButtonClass} name="decision" value="revision_required"><Clock3 size={16}/>Request Revision</button><button className={adminDangerButtonClass} name="decision" value="reject"><XCircle size={16}/>Reject</button></div></form> : null}
 
                                     {Boolean(selected.current_stage) && !canReview && Boolean(selected.reviewer_id) ? <p className="text-sm font-medium leading-6 text-slate-500">Tahap ini ditugaskan ke <b className="text-slate-800">{profileName(assignedReviewer)}</b>. Hanya reviewer tersebut yang dapat memberikan keputusan.</p> : null}
                                     {currentActorIsAuthor && Boolean(selected.current_stage) ? <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">Self-review diblok. Author tidak dapat mereview soal sendiri.</div> : null}
@@ -357,18 +331,18 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                                         <summary className="cursor-pointer list-none border-b border-slate-200 p-5"><div><h3 className="text-base font-black text-slate-950">Edit draft / revisi</h3><p className="mt-1 text-sm font-medium text-slate-500">Ubah content dan klasifikasi. Simpan sebelum mengirim kembali ke review.</p></div></summary>
                                         <form action={saveContentDraftAction} className="grid gap-4 p-5 lg:grid-cols-2">
                                             <HiddenContext program={program} track={track}/><input type="hidden" name="id" value={s(selected.id)}/>
-                                            <Field label="Subject"><select className={adminInputClass} name="subject_code" required defaultValue={s(data.subjectById.get(s(selected.subject_id))?.code)}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></Field>
-                                            <Field label="Tipe soal"><select className={adminInputClass} name="question_type" defaultValue={s(selected.question_type)}><option value="single_choice">Single choice</option><option value="multiple_choice">Multiple choice</option><option value="category">Category</option></select></Field>
-                                            <Field label="Pertanyaan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="stem" required defaultValue={s(selected.stem)}/></Field>
-                                            <Field label="Difficulty"><select className={adminInputClass} name="difficulty" defaultValue={s(selected.difficulty)}><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></Field>
-                                            <Field label="Cognitive level"><input className={adminInputClass} name="cognitive_level" defaultValue={s(selected.cognitive_level)}/></Field>
-                                            <Field label="Estimasi detik"><input className={adminInputClass} type="number" min="1" name="estimated_seconds" defaultValue={s(selected.estimated_seconds)}/></Field>
-                                            <Field label="Source reference"><input className={adminInputClass} name="source_reference" defaultValue={s(selected.source_reference)}/></Field>
-                                            <Field label="Stimulus"><select className={adminInputClass} name="stimulus_id" defaultValue={s(selected.stimulus_id)}><option value="">Tanpa stimulus</option>{data.stimulusCandidates.map((stimulus) => <option key={s(stimulus.id)} value={s(stimulus.id)}>{s(stimulus.stimulus_code)} · {s(stimulus.title) || s(stimulus.content).slice(0, 60)}</option>)}</select></Field>
-                                            <Field label="Primary knowledge node"><select className={adminInputClass} name="knowledge_node_id" defaultValue={primaryNode ? s(primaryNode.knowledge_node_id) : ''}><option value="">Belum dipetakan</option>{data.subjectKnowledgeNodes.map((node) => <option key={s(node.id)} value={s(node.id)}>{'—'.repeat(Math.min(n(node.depth), 4))} {s(node.name)}</option>)}</select></Field>
-                                            <QuestionOptionsEditor defaultValue={optionsText(data.options)}/>
-                                            <Field label="Pembahasan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="explanation" defaultValue={s(data.explanation?.content)}/></Field>
-                                            <Field label="Alasan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Content workspace update"/></Field>
+                                            <AdminField label="Subject"><select className={adminInputClass} name="subject_code" required defaultValue={s(data.subjectById.get(s(selected.subject_id))?.code)}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
+                                            <AdminField label="Tipe soal"><select className={adminInputClass} name="question_type" defaultValue={s(selected.question_type)}><option value="single_choice">Single choice</option><option value="multiple_choice">Multiple choice</option><option value="category">Category</option></select></AdminField>
+                                            <AdminField label="Pertanyaan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="stem" required defaultValue={s(selected.stem)}/></AdminField>
+                                            <AdminField label="Difficulty"><select className={adminInputClass} name="difficulty" defaultValue={s(selected.difficulty)}><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></AdminField>
+                                            <AdminField label="Cognitive level"><input className={adminInputClass} name="cognitive_level" defaultValue={s(selected.cognitive_level)}/></AdminField>
+                                            <AdminField label="Estimasi detik"><input className={adminInputClass} type="number" min="1" name="estimated_seconds" defaultValue={s(selected.estimated_seconds)}/></AdminField>
+                                            <AdminField label="Source reference"><input className={adminInputClass} name="source_reference" defaultValue={s(selected.source_reference)}/></AdminField>
+                                            <AdminField label="Stimulus"><select className={adminInputClass} name="stimulus_id" defaultValue={s(selected.stimulus_id)}><option value="">Tanpa stimulus</option>{data.stimulusCandidates.map((stimulus) => <option key={s(stimulus.id)} value={s(stimulus.id)}>{s(stimulus.stimulus_code)} · {s(stimulus.title) || s(stimulus.content).slice(0, 60)}</option>)}</select></AdminField>
+                                            <AdminField label="Primary knowledge node"><select className={adminInputClass} name="knowledge_node_id" defaultValue={primaryNode ? s(primaryNode.knowledge_node_id) : ''}><option value="">Belum dipetakan</option>{data.subjectKnowledgeNodes.map((node) => <option key={s(node.id)} value={s(node.id)}>{'—'.repeat(Math.min(n(node.depth), 4))} {s(node.name)}</option>)}</select></AdminField>
+                                            <QuestionOptionsEditor defaultValue={serializeOptionRows(data.options)}/>
+                                            <AdminField label="Pembahasan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="explanation" defaultValue={s(data.explanation?.content)}/></AdminField>
+                                            <AdminField label="Alasan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Content workspace update"/></AdminField>
                                             <div className="lg:col-span-2"><button className={adminPrimaryButtonClass}>Simpan perubahan</button></div>
                                         </form>
                                     </details>
@@ -377,33 +351,33 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
                             <AdminCard className="p-5">
                                 <AdminSectionHeading title="Preview soal" description="Tampilan read-only untuk memeriksa content sebelum keputusan review."/>
-                                {data.stimulus ? <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">{Boolean(data.stimulus.title) ? <h4 className="mb-2 font-black text-slate-900">{s(data.stimulus.title)}</h4> : null}<div className="whitespace-pre-wrap text-sm font-medium leading-6 text-slate-700"><MathRenderer text={s(data.stimulus.content)}/></div>{Boolean(data.stimulus.source_reference) ? <div className="mt-2 text-xs font-semibold text-slate-400">Sumber: {s(data.stimulus.source_reference)}</div> : null}</div> : null}
+                                {data.stimulus ? <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">{Boolean(data.stimulus.title) ? <h4 className="mb-2 font-black text-slate-900">{s(data.stimulus.title)}</h4> : null}<div className="whitespace-pre-wrap text-sm font-medium leading-6 text-slate-700"><MathRenderer text={s(data.stimulus.content)}/></div>{Boolean(data.stimulus.source_reference) ? <div className="mt-2 text-xs font-semibold text-slate-500">Sumber: {s(data.stimulus.source_reference)}</div> : null}</div> : null}
                                 <div className="mt-4 whitespace-pre-wrap text-base font-bold leading-7 text-slate-900"><MathRenderer text={s(selected.stem)}/></div>
                                 <div className="mt-5 space-y-2.5">{data.options.map((option) => <OptionPreview key={s(option.id)} option={option}/>)}</div>
-                                <div className="mt-5 border-t border-slate-200 pt-4"><div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Pembahasan</div><div className="mt-2 whitespace-pre-wrap text-sm font-medium leading-6 text-slate-700">{data.explanation?.content ? <MathRenderer text={s(data.explanation.content)}/> : <span className="font-bold text-orange-700">Pembahasan belum tersedia.</span>}</div></div>
-                                <div className="mt-4 border-t border-slate-200 pt-4"><div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Knowledge Mapping</div><div className="mt-2 flex flex-wrap gap-2">{data.knowledgeNodes.length ? data.knowledgeNodes.map((node) => <AdminBadge key={s(node.id)} variant="blue">{s(node.name)}</AdminBadge>) : <span className="text-sm font-bold text-orange-700">Belum dipetakan.</span>}</div></div>
+                                <div className="mt-5 border-t border-slate-200 pt-4"><div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Pembahasan</div><div className="mt-2 whitespace-pre-wrap text-sm font-medium leading-6 text-slate-700">{data.explanation?.content ? <MathRenderer text={s(data.explanation.content)}/> : <span className="font-bold text-orange-700">Pembahasan belum tersedia.</span>}</div></div>
+                                <div className="mt-4 border-t border-slate-200 pt-4"><div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Knowledge Mapping</div><div className="mt-2 flex flex-wrap gap-2">{data.knowledgeNodes.length ? data.knowledgeNodes.map((node) => <AdminBadge key={s(node.id)} variant="blue">{s(node.name)}</AdminBadge>) : <span className="text-sm font-bold text-orange-700">Belum dipetakan.</span>}</div></div>
                             </AdminCard>
 
                             <section className="grid gap-5 lg:grid-cols-2">
                                 <AdminCard className="min-w-0 p-5">
-                                    <h3 className="mb-4 flex items-center gap-2 text-base font-black text-slate-950"><History size={18}/>Review Rounds</h3>
-                                    <div className="space-y-3">{data.currentReviews.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada review round.</p> : data.currentReviews.map((review) => <div key={s(review.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5"><div className="flex flex-wrap items-center justify-between gap-2"><b className="text-sm text-slate-900">Round {n(review.review_round)} · {stageLabel(review.review_stage)}</b><AdminBadge variant={statusVariant(review.status)}>{prettyStatus(review.status)}</AdminBadge></div><div className="mt-1 text-xs font-medium text-slate-400">Reviewer: {profileName(data.profileById.get(s(review.reviewer_id)))} · Version {s(review.question_version) || '—'} · {fmt(review.completed_at || review.updated_at)}</div>{Boolean(review.notes) ? <div className="mt-2 rounded-lg bg-white p-2.5 text-sm font-medium leading-6 text-slate-700 ring-1 ring-slate-200">{s(review.notes)}</div> : null}</div>)}</div>
+                                    <AdminSectionHeading title="Review Rounds" description="Keputusan reviewer per tahap dan versi soal."/>
+                                    <div className="mt-4 space-y-3">{data.currentReviews.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada review round.</p> : data.currentReviews.map((review) => <div key={s(review.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5"><div className="flex flex-wrap items-center justify-between gap-2"><b className="text-sm text-slate-900">Round {n(review.review_round)} · {stageLabel(review.review_stage)}</b><AdminBadge variant={adminStatusVariant(review.status)}>{adminStatusLabel(review.status)}</AdminBadge></div><div className="mt-1 text-xs font-medium text-slate-500">Reviewer: {profileName(data.profileById.get(s(review.reviewer_id)))} · Version {s(review.question_version) || '—'} · {formatDateTime(review.completed_at || review.updated_at)}</div>{Boolean(review.notes) ? <div className="mt-2 rounded-lg bg-white p-2.5 text-sm font-medium leading-6 text-slate-700 ring-1 ring-slate-200">{s(review.notes)}</div> : null}</div>)}</div>
                                 </AdminCard>
 
                                 <AdminCard className="min-w-0 p-5">
-                                    <h3 className="mb-4 text-base font-black text-slate-950">Audit Trail</h3>
-                                    <div className="max-h-80 space-y-2 overflow-y-auto">{data.auditLogs.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada audit action untuk soal ini.</p> : data.auditLogs.map((log) => <div key={s(log.id)} className="rounded-xl border border-slate-200 p-3"><div className="text-sm font-extrabold text-slate-800">{s(log.action)}</div><div className="mt-1 text-xs font-medium text-slate-400">{fmt(log.created_at)} · {profileName(data.profileById.get(s(log.actor_user_id)), 'System')}</div></div>)}</div>
+                                    <AdminSectionHeading title="Audit Trail" description="Riwayat aksi pada soal ini."/>
+                                    <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{data.auditLogs.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada audit action untuk soal ini.</p> : data.auditLogs.map((log) => <div key={s(log.id)} className="rounded-xl border border-slate-200 p-3"><div className="text-sm font-extrabold text-slate-800">{s(log.action)}</div><div className="mt-1 text-xs font-medium text-slate-500">{formatDateTime(log.created_at)} · {profileName(data.profileById.get(s(log.actor_user_id)), 'System')}</div></div>)}</div>
                                 </AdminCard>
                             </section>
 
                             <AdminCard className="min-w-0 p-5">
                                 <AdminSectionHeading title="Question version history" description="Snapshot perubahan disimpan untuk audit dan rollback content."/>
-                                <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">{data.versions.length === 0 ? <p className="text-sm font-medium text-slate-500">Snapshot version belum tersedia.</p> : data.versions.map((version) => <details key={s(version.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-sm font-extrabold text-slate-800">v{n(version.version)} · {fmt(version.created_at)} · {s(version.change_reason) || 'Tanpa catatan'}</summary><pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-[11px] text-slate-200">{JSON.stringify(version.snapshot, null, 2)}</pre></details>)}</div>
+                                <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">{data.versions.length === 0 ? <p className="text-sm font-medium text-slate-500">Snapshot version belum tersedia.</p> : data.versions.map((version) => <details key={s(version.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-sm font-extrabold text-slate-800">v{n(version.version)} · {formatDateTime(version.created_at)} · {s(version.change_reason) || 'Tanpa catatan'}</summary><pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-[11px] text-slate-200">{JSON.stringify(version.snapshot, null, 2)}</pre></details>)}</div>
                             </AdminCard>
                         </>
                     ) : null}
                 </main>
             </div>
-        </div>
+        </AdminPage>
     )
 }

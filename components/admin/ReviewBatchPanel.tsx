@@ -1,5 +1,5 @@
 import { CheckCircle2, ClipboardCheck, Clock3, Send, ShieldCheck, Sparkles, UserCheck, XCircle } from 'lucide-react'
-import { AdminBadge, AdminCard, adminButtonClass, adminInputClass, adminPrimaryButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { AdminBadge, AdminCard, adminDangerButtonClass, adminInputClass, adminPrimaryButtonClass, adminSecondaryButtonClass, adminSuccessButtonClass, adminWarningButtonClass } from '@/components/admin/AdminUi'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/utils/supabase/server'
 import {
@@ -115,7 +115,7 @@ export default async function ReviewBatchPanel({
             <div className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
                 <div className="space-y-4">
                     <div>
-                        <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Sebaran status</div>
+                        <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Sebaran status</div>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                             {STATUS_ORDER.filter((key) => (summary.byStatus[key] ?? 0) > 0).map((key) => (
                                 <span key={key} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-bold text-slate-600">
@@ -128,11 +128,11 @@ export default async function ReviewBatchPanel({
 
                     <div className="grid grid-cols-2 gap-3">
                         <div className="rounded-xl border border-slate-200 bg-white p-3">
-                            <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-400"><UserCheck size={13} />Ditugaskan ke saya</div>
+                            <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-500"><UserCheck size={13} />Ditugaskan ke saya</div>
                             <div className="mt-1 text-xl font-black text-slate-900">{summary.assignedToMe}</div>
                         </div>
                         <div className="rounded-xl border border-slate-200 bg-white p-3">
-                            <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-400"><Clock3 size={13} />Belum ada reviewer</div>
+                            <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-slate-500"><Clock3 size={13} />Belum ada reviewer</div>
                             <div className="mt-1 text-xl font-black text-slate-900">{summary.unassigned}</div>
                         </div>
                     </div>
@@ -164,7 +164,7 @@ export default async function ReviewBatchPanel({
                             {context}
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
-                                    <div className="text-sm font-black text-slate-900">Langkah 1 · Siapkan &amp; klaim</div>
+                                    <h3 className="text-sm font-black text-slate-900">Langkah 1 · Siapkan &amp; klaim</h3>
                                     <p className="mt-0.5 text-xs font-medium text-slate-500">Aman diulang: soal yang sudah di alur review dilewati.</p>
                                 </div>
                                 <button className={adminPrimaryButtonClass}><Send size={15} />Siapkan &amp; klaim</button>
@@ -176,11 +176,11 @@ export default async function ReviewBatchPanel({
                         <form action={reviewReviewBatchStageAction} className={cn('rounded-xl border p-4', focus === 2 ? 'border-blue-300 bg-blue-50/60' : 'border-blue-200 bg-blue-50/40')}>
                             {context}
                             <input type="hidden" name="stage" value={summary.activeStage} />
-                            <div className="text-sm font-black text-slate-900">
+                            <h3 className="text-sm font-black text-slate-900">
                                 {summary.activeStages.length > 1
                                     ? `Langkah 2 · Putuskan tahap aktif (${summary.activeStages.map((stage) => STAGE_LABEL[stage]).join(' + ')})`
                                     : `Langkah 2 · Putuskan tahap ${STAGE_LABEL[summary.activeStage]}`}
-                            </div>
+                            </h3>
                             <p className="mt-0.5 text-xs font-medium text-slate-500">
                                 Berlaku untuk seluruh batch yang ditugaskan kepada Anda. Setiap soal naik SATU tahap, lalu
                                 klaim reviewer dikosongkan — panel ini mengklaim ulang otomatis, jadi satu klik per tahap.
@@ -198,9 +198,9 @@ export default async function ReviewBatchPanel({
                                 placeholder="Catatan review untuk seluruh batch (opsional)..."
                             />
                             <div className="mt-3 flex flex-wrap gap-2">
-                                <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700" name="decision" value="approve"><CheckCircle2 size={16} />Setujui semua</button>
-                                <button className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-orange-700 hover:bg-orange-100" name="decision" value="revision_required"><Clock3 size={16} />Minta revisi</button>
-                                <button className={adminButtonClass} name="decision" value="reject"><XCircle size={16} />Tolak</button>
+                                <button className={adminSuccessButtonClass} name="decision" value="approve"><CheckCircle2 size={16} />Setujui semua</button>
+                                <button className={adminWarningButtonClass} name="decision" value="revision_required"><Clock3 size={16} />Minta revisi</button>
+                                <button className={adminDangerButtonClass} name="decision" value="reject"><XCircle size={16} />Tolak</button>
                             </div>
                         </form>
                     ) : null}
@@ -219,7 +219,7 @@ export default async function ReviewBatchPanel({
                             {context}
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div>
-                                    <div className="text-sm font-black text-slate-900">Langkah 3 · Terbitkan</div>
+                                    <h3 className="text-sm font-black text-slate-900">Langkah 3 · Terbitkan</h3>
                                     <p className="mt-0.5 text-xs font-medium text-slate-500">
                                         {summary.approved > 0 ? `${summary.approved} soal siap terbit.` : 'Belum ada soal approved di batch ini.'}
                                     </p>

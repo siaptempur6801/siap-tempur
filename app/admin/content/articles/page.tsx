@@ -9,13 +9,15 @@ import ArticleStatusActions from '@/components/admin/ArticleStatusActions'
 import AdminListToolbar from '@/components/admin/AdminListToolbar'
 import AdminPagination from '@/components/admin/AdminPagination'
 import {
-    AdminBadge,
     AdminCard,
     AdminEmptyState,
+    AdminPage,
     AdminPageHeader,
+    AdminStatusBadge,
     adminPrimaryButtonClass,
     adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
+import { adminStatusLabel } from '@/lib/admin-format'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,24 +53,7 @@ type SearchParams = {
     page?: string
 }
 
-/** Label status yang bisa dibaca admin, bukan nilai kolomnya. */
-const STATUS_LABELS: Record<string, string> = {
-    draft: 'Draf',
-    published: 'Terbit',
-    archived: 'Diarsipkan',
-}
-
-const STATUS_VARIANT: Record<string, 'neutral' | 'green' | 'yellow' | 'blue'> = {
-    draft: 'yellow',
-    published: 'green',
-    archived: 'neutral',
-}
-
 const STATUS_OPTIONS = ['draft', 'published', 'archived'] as const
-
-function statusLabel(status: string) {
-    return STATUS_LABELS[status] || status
-}
 
 export default async function AdminArticlesPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
     const params = await searchParams
@@ -122,7 +107,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
     const hasFilter = Boolean(search || status)
 
     return (
-        <div className="space-y-6 pb-10">
+        <AdminPage>
             <AdminPageHeader
                 title="Articles"
                 description="Kelola draft, publikasi, dan arsip artikel sesuai permission konten. Editor fokus pada artikelnya sendiri; reviewer dapat membaca draft yang perlu dipublikasikan."
@@ -139,7 +124,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
                 pathname="/admin/content/articles"
                 search={search}
                 status={status}
-                statusOptions={STATUS_OPTIONS.map((option) => ({ value: option, label: statusLabel(option) }))}
+                statusOptions={STATUS_OPTIONS.map((option) => ({ value: option, label: adminStatusLabel(option) }))}
                 placeholder="Cari judul atau slug artikel…"
                 resultCount={total}
                 contextHidden={false}
@@ -162,13 +147,13 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
                                     <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                                         <div className="min-w-0 flex-1">
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <AdminBadge variant={STATUS_VARIANT[article.status] ?? 'neutral'}>{statusLabel(article.status)}</AdminBadge>
-                                                <span className="text-xs font-semibold text-slate-400">{(article.author_id && authorById.get(article.author_id)) || 'Penulis'} · Diperbarui {formatArticleDate(article.updated_at)}</span>
+                                                <AdminStatusBadge status={article.status}/>
+                                                <span className="text-xs font-semibold text-slate-500">{(article.author_id && authorById.get(article.author_id)) || 'Penulis'} · Diperbarui {formatArticleDate(article.updated_at)}</span>
                                             </div>
                                             <h3 className="mt-3 text-lg font-black text-slate-950 sm:text-xl">{article.title}</h3>
                                             <p className="mt-1 text-xs font-bold text-blue-600">/blog/{article.slug}</p>
                                             {article.excerpt ? <p className="mt-3 max-w-3xl text-sm font-medium leading-6 text-slate-600">{article.excerpt}</p> : null}
-                                            {article.published_at ? <p className="mt-2 text-xs font-medium text-slate-400">Terbit {formatArticleDate(article.published_at)}</p> : null}
+                                            {article.published_at ? <p className="mt-2 text-xs font-medium text-slate-500">Terbit {formatArticleDate(article.published_at)}</p> : null}
                                         </div>
 
                                         <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-sm xl:justify-end">
@@ -203,7 +188,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
                     <AdminPagination pathname="/admin/content/articles" params={filters} summary={summary} noun="artikel"/>
                 ) : null}
             </AdminCard>
-        </div>
+        </AdminPage>
     )
 }
 

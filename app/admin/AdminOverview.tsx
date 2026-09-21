@@ -18,10 +18,14 @@ import {
     AdminCard,
     AdminEmptyState,
     AdminMetric,
+    AdminPage,
     AdminPageHeader,
     AdminSectionHeading,
+    AdminStatusBadge,
+    AdminTh,
     adminPrimaryButtonClass,
     adminSecondaryButtonClass,
+    adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import { adminV2Service, type WorkspaceSection } from '@/src/services/admin-v2.service'
 import { contentReviewService } from '@/src/services/content-review.service'
@@ -57,39 +61,6 @@ function s(value: unknown) {
 
 function lower(value: unknown) {
     return s(value).toLowerCase()
-}
-
-function statusVariant(value: unknown): 'neutral' | 'blue' | 'green' | 'yellow' | 'orange' | 'red' | 'violet' {
-    switch (lower(value)) {
-        case 'published':
-        case 'approved':
-        case 'active': return 'green'
-        case 'submitted':
-        case 'editorial_review': return 'yellow'
-        case 'academic_review': return 'violet'
-        case 'technical_qa': return 'blue'
-        case 'revision_required': return 'orange'
-        case 'rejected':
-        case 'failed': return 'red'
-        default: return 'neutral'
-    }
-}
-
-function prettyStatus(value: unknown) {
-    const raw = lower(value)
-    const labels: Record<string, string> = {
-        draft: 'Draft',
-        submitted: 'Editorial Review',
-        editorial_review: 'Editorial Review',
-        academic_review: 'Academic Review',
-        technical_qa: 'Technical QA',
-        revision_required: 'Perlu Revisi',
-        approved: 'Approved',
-        published: 'Published',
-        rejected: 'Rejected',
-        active: 'Active',
-    }
-    return labels[raw] || s(value) || 'Unknown'
 }
 
 function contextHref(path: string, program: string, track: string, extra?: Record<string, string>) {
@@ -190,15 +161,16 @@ export default async function AdminOverview({ params }: { params: SearchParams }
     ].filter(Boolean) as Array<{ title: string; headline: string; icon: typeof FileQuestion; tone: string; badges: Array<{ variant: 'green' | 'neutral' | 'blue' | 'orange'; text: string }> }>
 
     return (
-        <div className="space-y-6">
+        <AdminPage>
             <AdminPageHeader
                 title="Dashboard"
                 description={`Ringkasan operasional ${program} / ${track}. Hanya modul yang menjadi tanggung jawab peran Anda yang ditampilkan.`}
+                steps={canReviewQueue ? ['Cek besar konten yang perlu perhatian', 'Kerjakan antrean review', 'Lanjutkan peran lain lewat quick actions'] : ['Pahami angka di kartu Anda', 'Lanjutkan pekerjaan lewat quick actions']}
                 action={canReviewQueue ? <Link href={contextHref('/admin/content/review', program, track, { new: '1' })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}
             />
 
             {canContent ? (
-                <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <section className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
                     <AdminMetric label="Perlu perhatian" value={needsAttention} helper="Review + revisi" icon={<RefreshCcw size={18}/>} tone={needsAttention ? 'red' : 'green'}/>
                     <AdminMetric label="Editorial" value={editorial} helper="Menunggu editorial" icon={<Clock3 size={18}/>} tone="yellow"/>
                     <AdminMetric label="Academic" value={academic} helper="Menunggu akademik" icon={<ClipboardCheck size={18}/>} tone="violet"/>
@@ -220,8 +192,8 @@ export default async function AdminOverview({ params }: { params: SearchParams }
                         {queue.length ? (
                             <div className="overflow-x-auto">
                                 <table className="w-full min-w-[720px] text-left text-sm">
-                                    <thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
-                                        <tr><th className="px-5 py-3">Soal</th><th className="px-4 py-3">Mata pelajaran</th><th className="px-4 py-3">Tahap</th><th className="px-4 py-3">Versi</th><th className="px-5 py-3 text-right">Aksi</th></tr>
+                                    <thead className={adminTableHeadClass}>
+                                        <tr><AdminTh>Soal</AdminTh><AdminTh>Mata pelajaran</AdminTh><AdminTh>Tahap</AdminTh><AdminTh>Versi</AdminTh><AdminTh align="right">Aksi</AdminTh></tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {queue.map((row) => {
@@ -230,16 +202,16 @@ export default async function AdminOverview({ params }: { params: SearchParams }
                                                 <tr key={s(row.id)} className="transition hover:bg-slate-50/70">
                                                     <td className="px-5 py-4"><div className="font-extrabold text-slate-900">{s(row.question_code) || 'Tanpa kode'}</div><div className="mt-1 max-w-md truncate text-xs font-medium text-slate-500">{s(row.stem)}</div></td>
                                                     <td className="px-4 py-4 font-semibold text-slate-600">{subject?.name || subject?.code || '—'}</td>
-                                                    <td className="px-4 py-4"><AdminBadge variant={statusVariant(row.status)}>{prettyStatus(row.status)}</AdminBadge></td>
+                                                    <td className="px-4 py-4"><AdminStatusBadge status={row.status}/></td>
                                                     <td className="px-4 py-4 font-bold text-slate-500">v{s(row.version) || '1'}</td>
-                                                    <td className="px-5 py-4 text-right"><Link className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-700" href={contextHref('/admin/content/review', program, track, { question: s(row.id) })}>Buka <ArrowRight size={14}/></Link></td>
+                                                    <td className="px-5 py-4 text-right"><Link className="inline-flex items-center gap-1.5 text-xs font-extrabold text-blue-600 hover:text-blue-700" aria-label={`Buka review ${s(row.question_code) || 'soal tanpa kode'}`} href={contextHref('/admin/content/review', program, track, { question: s(row.id) })}>Buka <ArrowRight size={14}/></Link></td>
                                                 </tr>
                                             )
                                         })}
                                     </tbody>
                                 </table>
                             </div>
-                        ) : <div className="p-8 text-center text-sm font-semibold text-slate-500">Tidak ada content yang membutuhkan tindakan untuk context ini.</div>}
+                        ) : <AdminEmptyState title="Tidak ada pekerjaan content" description="Tidak ada content yang membutuhkan tindakan untuk context ini. Antrean akan terisi saat ada soal yang dikirim untuk review."/>}
                     </AdminCard>
                 ) : (
                     <AdminCard><AdminEmptyState title="Tidak ada antrean content" description="Peran Anda tidak mencakup pekerjaan content, jadi tidak ada antrean yang perlu ditampilkan di sini."/></AdminCard>
@@ -274,7 +246,7 @@ export default async function AdminOverview({ params }: { params: SearchParams }
                         return (
                             <AdminCard key={card.title} className="p-5">
                                 <div className="flex items-center justify-between">
-                                    <div><div className="text-xs font-bold uppercase tracking-wide text-slate-400">{card.title}</div><div className="mt-1 text-lg font-black">{card.headline}</div></div>
+                                    <div><div className="text-xs font-bold uppercase tracking-wide text-slate-500">{card.title}</div><div className="mt-1 text-lg font-black">{card.headline}</div></div>
                                     <Icon className={card.tone} size={22}/>
                                 </div>
                                 <div className="mt-4 flex flex-wrap gap-2">{card.badges.map((badge) => <AdminBadge key={badge.text} variant={badge.variant}>{badge.text}</AdminBadge>)}</div>
@@ -283,6 +255,6 @@ export default async function AdminOverview({ params }: { params: SearchParams }
                     })}
                 </section>
             ) : null}
-        </div>
+        </AdminPage>
     )
 }

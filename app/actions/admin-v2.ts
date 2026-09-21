@@ -5,9 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
-import { adminV2Service, type AdminQuestionOptionInput } from '@/src/services/admin-v2.service'
+import { adminV2Service } from '@/src/services/admin-v2.service'
 import { auditAdminAction } from '@/lib/audit-log'
-import { parseQuestionOptions as parseQuestionOptionRows } from '@/lib/question-options'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
 function text(form: FormData, key: string) {
@@ -59,17 +58,6 @@ function jakartaIso(form: FormData, key: string) {
     const parsed = new Date(normalized)
     if (Number.isNaN(parsed.getTime())) throw new Error(`${key.toUpperCase()}_INVALID`)
     return parsed.toISOString()
-}
-
-/**
- * Membaca payload opsi dari `QuestionOptionsEditor`.
- *
- * Parsernya tinggal di `lib/question-options.ts` — modul murni yang juga dipakai
- * halaman untuk menyerialkan opsi yang sudah ada, sehingga format 7 field tidak
- * bisa lagi menyimpang antara penulis dan pembaca.
- */
-function parseQuestionOptions(raw: string): AdminQuestionOptionInput[] {
-    return parseQuestionOptionRows(raw)
 }
 
 function errorMessage(error: unknown) {
@@ -481,65 +469,4 @@ export async function saveExamSectionAction(form: FormData) {
         after: { question_count: nullableNumber(form, 'question_count'), passing_score: nullableNumber(form, 'passing_score') },
     }, failure)
     finish('exams', 'Section exam tersimpan.', context, failure, examId || null)
-}
-
-export async function saveQuestionAction(form: FormData) {
-    let failure: unknown = null
-    const context = catalogContext(form)
-    const requestedId = nullableText(form, 'id')
-    let savedId = requestedId
-    let actorId = ''
-    try {
-        const authorization = await actor(PERMISSIONS.QUESTION_MANAGE)
-        actorId = authorization.userId
-        savedId = await adminV2Service.saveQuestion({
-            id: requestedId,
-            subjectCode: text(form, 'subject_code'),
-            questionType: text(form, 'question_type') || 'single_choice',
-            stem: text(form, 'stem'),
-            difficulty: text(form, 'difficulty') || 'medium',
-            status: text(form, 'status') || 'draft',
-            sourceReference: nullableText(form, 'source_reference'),
-            options: parseQuestionOptions(text(form, 'options')),
-            actorId: authorization.userId,
-            changeReason: nullableText(form, 'change_reason'),
-            context,
-        })
-    } catch (error) { failure = error }
-    // Perubahan soal mencakup kunci jawaban — perubahan yang paling perlu
-    // dipertanggungjawabkan di seluruh panel ini.
-    await auditAdminV2Action({
-        actorId,
-        action: requestedId ? 'UPDATE_QUESTION' : 'CREATE_QUESTION',
-        entityType: 'question',
-        entityId: savedId,
-        label: text(form, 'stem').slice(0, 80),
-        after: {
-            subject_code: text(form, 'subject_code'),
-            question_type: text(form, 'question_type') || 'single_choice',
-            status: text(form, 'status') || 'draft',
-            change_reason: nullableText(form, 'change_reason'),
-        },
-    }, failure)
-    finish('questions', 'Soal tersimpan dan version history diperbarui.', context, failure, savedId)
-}
-
-export async function archiveQuestionAction(form: FormData) {
-    let failure: unknown = null
-    const context = catalogContext(form)
-    const questionId = text(form, 'id')
-    let actorId = ''
-    try {
-        const authorization = await actor(PERMISSIONS.QUESTION_MANAGE)
-        actorId = authorization.userId
-        await adminV2Service.archiveQuestion(questionId)
-    } catch (error) { failure = error }
-    await auditAdminV2Action({
-        actorId,
-        action: 'ARCHIVE_QUESTION',
-        entityType: 'question',
-        entityId: questionId,
-        after: { status: 'archived' },
-    }, failure)
-    finish('questions', 'Soal diarsipkan.', context, failure)
 }

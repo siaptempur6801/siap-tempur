@@ -8,16 +8,7 @@ import { authorizationService, AuthorizationError } from '@/src/services/authori
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
-type ParsedOption = {
-    key: string
-    content: string
-    score: number | null
-    isCorrect: boolean | null
-    sortOrder: number
-    responseGroup: string | null
-    responseGroupOrder: number | null
-    imageUrl: string | null
-}
+import { parseQuestionOptions } from '@/lib/question-options'
 
 function text(form: FormData, key: string) {
     const value = form.get(key)
@@ -41,38 +32,6 @@ function contextFrom(form: FormData): ProgramTrackContext {
         programCode: (text(form, 'program_code') || 'CPNS').toUpperCase(),
         trackCode: (text(form, 'track_code') || 'SKD').toUpperCase(),
     }
-}
-
-function parseQuestionOptions(raw: string): ParsedOption[] {
-    const rows = raw
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-
-    return rows.map((line, index) => {
-        const [keyRaw, contentRaw, scoreRaw, correctRaw, groupRaw, groupOrderRaw, imageUrlRaw] = line.split('|').map((part) => part.trim())
-        if (!keyRaw || !contentRaw) throw new Error(`OPTION_LINE_${index + 1}_INVALID`)
-        const score = scoreRaw === '' || scoreRaw === undefined ? null : Number(scoreRaw)
-        if (score !== null && !Number.isFinite(score)) throw new Error(`OPTION_SCORE_${index + 1}_INVALID`)
-        const correct = correctRaw?.toLowerCase()
-        const isCorrect = correct === undefined || correct === ''
-            ? null
-            : ['true', '1', 'yes', 'ya'].includes(correct)
-        const responseGroupOrder = groupOrderRaw === '' || groupOrderRaw === undefined ? null : Number(groupOrderRaw)
-        if (responseGroupOrder !== null && (!Number.isInteger(responseGroupOrder) || responseGroupOrder < 1)) {
-            throw new Error(`OPTION_GROUP_ORDER_${index + 1}_INVALID`)
-        }
-        return {
-            key: keyRaw.toUpperCase(),
-            content: contentRaw,
-            score,
-            isCorrect,
-            sortOrder: index + 1,
-            responseGroup: groupRaw || null,
-            responseGroupOrder,
-            imageUrl: imageUrlRaw || null,
-        }
-    })
 }
 
 async function requireAny(permissions: PermissionCode[]) {

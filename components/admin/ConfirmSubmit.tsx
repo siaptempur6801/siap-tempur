@@ -1,6 +1,6 @@
 'use client'
 
-import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactElement } from 'react'
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactElement } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { adminDangerButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 
@@ -63,12 +63,44 @@ export default function ConfirmSubmit({
 }) {
     const [open, setOpen] = useState(false)
     const confirmRef = useRef<HTMLButtonElement>(null)
+    const dialogRef = useRef<HTMLDivElement>(null)
+    const titleId = useId()
+    const triggerRef = useRef<HTMLElement | null>(null)
 
     // Fokus dipindahkan ke tombol konfirmasi saat dialog terbuka: pengguna
-    // keyboard tidak boleh tertinggal di belakang dialog.
+    // keyboard tidak boleh tertinggal di belakang dialog. Saat tertutup, fokus
+    // dikembalikan ke trigger — tanpa ini keyboard users "jatuh" ke <body>.
     useEffect(() => {
-        if (open) confirmRef.current?.focus()
+        if (open) {
+            triggerRef.current = document.activeElement as HTMLElement | null
+            confirmRef.current?.focus()
+        } else if (triggerRef.current?.isConnected) {
+            triggerRef.current.focus()
+            triggerRef.current = null
+        }
     }, [open])
+
+    // Trap Tab di dalam dialog: role="alertdialog" tanpa trap membuat fokus
+    // melompat ke halaman di belakang overlay.
+    function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+        if (event.key === 'Escape') {
+            setOpen(false)
+            return
+        }
+        if (event.key !== 'Tab' || !dialogRef.current) return
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        const active = document.activeElement
+        if (event.shiftKey && active === first) {
+            event.preventDefault()
+            last.focus()
+        } else if (!event.shiftKey && active === last) {
+            event.preventDefault()
+            first.focus()
+        }
+    }
 
     const triggerNode = isValidElement(trigger)
         ? cloneElement(trigger, {
@@ -92,20 +124,19 @@ export default function ConfirmSubmit({
                     }}
                 >
                     <div
+                        ref={dialogRef}
                         role="alertdialog"
                         aria-modal="true"
-                        aria-label={title}
+                        aria-labelledby={titleId}
                         className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-lg"
-                        onKeyDown={(event) => {
-                            if (event.key === 'Escape') setOpen(false)
-                        }}
+                        onKeyDown={handleKeyDown}
                     >
                         <div className="flex items-start gap-3 p-5">
                             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700">
                                 <AlertTriangle size={18}/>
                             </span>
                             <div className="min-w-0">
-                                <h2 className="text-base font-black text-slate-950">{title}</h2>
+                                <h2 id={titleId} className="text-base font-black text-slate-950">{title}</h2>
                                 <p className="mt-1.5 text-sm font-medium leading-6 text-slate-600">{message}</p>
                                 {detail ? (
                                     <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">{detail}</p>

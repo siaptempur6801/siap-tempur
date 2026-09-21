@@ -1,20 +1,26 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { Coins, Plus, Search, Ticket, TriangleAlert, UserCheck, Wallet } from 'lucide-react'
+import { Coins, Plus, Ticket, UserCheck, Wallet } from 'lucide-react'
 import {
     AdminBadge,
     AdminCard,
     AdminEmptyState,
+    AdminFeedbackBanner,
     AdminMetric,
+    AdminPage,
     AdminPageHeader,
     AdminSectionHeading,
-    adminButtonClass,
-
+    AdminStatusBadge,
+    AdminTh,
     adminInputClass,
     adminPrimaryButtonClass,
     adminSecondaryButtonClass,
+    adminTableHeadClass,
 } from '@/components/admin/AdminUi'
+import AdminListToolbar from '@/components/admin/AdminListToolbar'
+import AdminPagination from '@/components/admin/AdminPagination'
 import { cn } from '@/lib/utils'
+import { adminPageSummary, parseAdminPage } from '@/lib/admin-pagination'
+import { formatDateTime, formatDate, formatNumber } from '@/lib/admin-format'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import {
@@ -49,36 +55,27 @@ type SearchParams = {
     user?: string
     status?: string
     voucher?: string
+    wallet_page?: string
+    entitlement_page?: string
     ok?: string
     error?: string
 }
 
 const WALLET_TYPES = ['exam_token_cpns', 'exam_token_tka', 'exam_token'] as const
 
-function fmt(value: string | null) {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' }).format(date)
+const LIST_PAGE_SIZE = 50
+
+function parseListPage(value: string | undefined) {
+    const page = parseAdminPage(value)
+    return { page, offset: (page - 1) * LIST_PAGE_SIZE }
 }
 
-function fmtDate(value: string | null) {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeZone: 'Asia/Jakarta' }).format(date)
-}
-
-function number(value: number) {
-    return new Intl.NumberFormat('id-ID').format(value)
-}
-
-const STATUS_VARIANT: Record<string, 'green' | 'neutral' | 'red' | 'orange'> = {
-    active: 'green',
-    expired: 'neutral',
-    revoked: 'red',
-    pending: 'orange',
-}
+const ENTITLEMENT_STATUS_OPTIONS = [
+    { value: 'active', label: 'Aktif' },
+    { value: 'expired', label: 'Kedaluwarsa' },
+    { value: 'revoked', label: 'Dicabut' },
+    { value: 'pending', label: 'Menunggu' },
+] as const
 
 export default async function AdminEntitlementsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
     const params = await searchParams
@@ -86,7 +83,12 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
     const permissions = new Set(authorization.permissions)
 
     if (!permissions.has(PERMISSIONS.ENTITLEMENT_MANAGE)) {
-        redirect('/cpns/dashboard?admin=no-access')
+        return (
+            <AdminPage>
+                <AdminPageHeader title="Entitlements" description="Kelola token ujian, voucher, dan pass yang dimiliki pengguna."/>
+                <AdminCard><AdminEmptyState title="Akses tidak tersedia" description="Akun ini tidak memiliki permission entitlement.manage."/></AdminCard>
+            </AdminPage>
+        )
     }
 
     const actorId = authorization.userId
@@ -94,9 +96,9 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
 
     const [overview, wallets, vouchers, entitlements, transactions] = await Promise.all([
         adminPlatformService.getEntitlementOverview(),
-        adminPlatformService.listWallets({ search: params.q || null, walletType: params.wallet_type || null, limit: 50 }),
+        adminPlatformService.listWallets({ search: params.q || null, walletType: params.wallet_type || null, limit: 50, offset: parseListPage(params.wallet_page).offset }),
         adminPlatformService.listVouchers(),
-        adminPlatformService.listEntitlements({ status: params.status || null, limit: 50 }),
+        adminPlatformService.listEntitlements({ status: params.status || null, limit: 50, offset: parseListPage(params.entitlement_page).offset }),
         selectedUserId
             ? adminPlatformService.listWalletTransactions({ userId: selectedUserId, limit: 25 })
             : Promise.resolve({ transactions: [], total: 0 }),
@@ -120,40 +122,36 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
     )
 
     return (
-        <div className="space-y-5 pb-10">
+        <AdminPage>
             <AdminPageHeader
                 title="Entitlements"
-                description="Kelola token ujian, voucher, dan pass yang dimiliki pengguna. Setiap penyesuaian saldo tercatat permanen di riwayat dompet."
+                description="Kelola token ujian, voucher, dan pass yang dimiliki pengguna. Semua penyalur token lewat voucher dan penyesuaian saldo tercatat permanen di buku besar dompet."
+                steps={['Cek token & voucher yang tersedia', 'Bagikan token lewat voucher', 'Sesuaikan saldo dompet bila perlu', 'Cek pass pengguna']}
             />
 
-            {(params.ok || params.error) ? (
-                <div role="status" className={cn('flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-bold shadow-sm', params.error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800')}>
-                    {params.error ? <TriangleAlert className="mt-0.5 shrink-0" size={17}/> : null}
-                    <span>{params.error || params.ok}</span>
-                </div>
-            ) : null}
+            <AdminFeedbackBanner ok={params.ok} error={params.error}/>
 
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                <AdminMetric label="Total token" value={number(totalBalance)} helper="Seluruh tipe dompet" icon={<Coins size={18}/>} tone="green"/>
-                <AdminMetric label="Dompet" value={number(overview.wallets.reduce((sum, wallet) => sum + wallet.wallets, 0))} helper={`${overview.wallets.length} tipe`} icon={<Wallet size={18}/>} tone="blue"/>
-                <AdminMetric label="Voucher aktif" value={overview.vouchers_active} helper={`${overview.vouchers_total} voucher total`} icon={<Ticket size={18}/>} tone="violet"/>
-                <AdminMetric label="Klaim voucher" value={number(overview.voucher_claims)} helper="Sepanjang waktu" icon={<UserCheck size={18}/>} tone="neutral"/>
-                <AdminMetric label="Pass aktif" value={overview.entitlements_active} helper={`${overview.entitlements_total} entitlement`} icon={<Coins size={18}/>} tone={overview.entitlements_active > 0 ? 'green' : 'neutral'}/>
+                <AdminMetric label="Total token" value={formatNumber(totalBalance)} helper="Seluruh tipe dompet" icon={<Coins size={18}/>} tone="green"/>
+                <AdminMetric label="Dompet" value={formatNumber(overview.wallets.reduce((sum, wallet) => sum + wallet.wallets, 0))} helper={`${overview.wallets.length} tipe`} icon={<Wallet size={18}/>} tone="blue"/>
+                <AdminMetric label="Voucher aktif" value={formatNumber(overview.vouchers_active)} helper={`${formatNumber(overview.vouchers_total)} voucher total`} icon={<Ticket size={18}/>} tone="violet"/>
+                <AdminMetric label="Klaim voucher" value={formatNumber(overview.voucher_claims)} helper="Sepanjang waktu" icon={<UserCheck size={18}/>} tone="neutral"/>
+                <AdminMetric label="Pass aktif" value={formatNumber(overview.entitlements_active)} helper={`${formatNumber(overview.entitlements_total)} entitlement`} icon={<Coins size={18}/>} tone={overview.entitlements_active > 0 ? 'green' : 'neutral'}/>
             </section>
 
             {overview.wallets.length > 0 ? (
                 <AdminCard className="p-5">
-                    <AdminSectionHeading title="Saldo per tipe dompet" description="Token yang beredar dan belum terpakai."/>
+                    <AdminSectionHeading step={1} title="Saldo per tipe dompet" description="Token yang beredar dan belum terpakai."/>
                     <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         {overview.wallets.map((wallet) => (
                             <div key={wallet.wallet_type} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                                <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">{walletTypeLabel(wallet.wallet_type)}</div>
+                                <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{walletTypeLabel(wallet.wallet_type)}</div>
                                 <div className="mt-1 flex items-baseline gap-2">
-                                    <span className="text-2xl font-black text-slate-900">{number(wallet.balance)}</span>
-                                    <span className="text-xs font-bold text-slate-400">token</span>
+                                    <span className="text-2xl font-black text-slate-900">{formatNumber(wallet.balance)}</span>
+                                    <span className="text-xs font-bold text-slate-500">token</span>
                                 </div>
-                                <div className="mt-1 text-xs font-semibold text-slate-500">{number(wallet.wallets)} dompet</div>
-                                <div className="mt-1 font-mono text-[10px] font-semibold text-slate-400">{wallet.wallet_type}</div>
+                                <div className="mt-1 text-xs font-semibold text-slate-500">{formatNumber(wallet.wallets)} dompet</div>
+                                <div className="mt-1 font-mono text-[10px] font-semibold text-slate-500">{wallet.wallet_type}</div>
                             </div>
                         ))}
                     </div>
@@ -163,7 +161,7 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
             {/* ---------------------------------------------------------- voucher */}
             <AdminCard className="overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5">
-                    <AdminSectionHeading title="Voucher" description="Kuota token yang bisa diklaim pengguna dengan kode."/>
+                    <AdminSectionHeading step={2} title="Voucher" description="Kuota token yang bisa diklaim pengguna dengan kode."/>
                     <Link className={adminPrimaryButtonClass} href="/admin/entitlements?voucher=new"><Plus size={16}/>Voucher baru</Link>
                 </div>
 
@@ -172,20 +170,20 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                         {hidden}
                         <input type="hidden" name="voucher_id" value={editingVoucher?.id ?? ''}/>
                         <label className="space-y-1.5 lg:col-span-1">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Kode</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Kode</span>
                             <input className={adminInputClass} name="code" required defaultValue={editingVoucher?.code ?? ''} placeholder="PROMO-2026"/>
-                            <span className="block text-[11px] font-medium text-slate-400">3–32 karakter: A–Z, 0–9, _ atau -</span>
+                            <span className="block text-[11px] font-medium text-slate-500">3–32 karakter: A–Z, 0–9, _ atau -</span>
                         </label>
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Kuota token</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Kuota token</span>
                             <input className={adminInputClass} name="quota_amount" type="number" min="1" required defaultValue={editingVoucher?.quota_amount ?? 10}/>
                         </label>
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Batas pemakaian</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Batas pemakaian</span>
                             <input className={adminInputClass} name="max_uses" type="number" min="1" required defaultValue={editingVoucher?.max_uses ?? 100}/>
                         </label>
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Berlaku untuk</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Berlaku untuk</span>
                             <select className={adminInputClass} name="wallet_type" defaultValue={editingVoucher?.wallet_type ?? ''}>
                                 <option value="">Semua program</option>
                                 <option value="exam_token_cpns">Token CPNS</option>
@@ -193,10 +191,10 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                             </select>
                         </label>
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Kedaluwarsa</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Kedaluwarsa</span>
                             <input className={adminInputClass} name="expires_at" type="date" defaultValue={editingVoucher?.expires_at ? editingVoucher.expires_at.slice(0, 10) : ''}/>
                         </label>
-                        <label className="flex items-center gap-2 pt-6">
+                        <label className="flex items-center gap-2 lg:pt-6">
                             <input type="checkbox" name="is_active" defaultChecked={editingVoucher ? editingVoucher.is_active : true} className="h-4 w-4 rounded border-slate-300"/>
                             <span className="text-sm font-bold text-slate-700">Aktif</span>
                         </label>
@@ -215,15 +213,15 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[900px] text-left text-sm">
-                            <thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                            <thead className={adminTableHeadClass}>
                                 <tr>
-                                    <th className="px-5 py-3">Kode</th>
-                                    <th className="px-4 py-3">Kuota</th>
-                                    <th className="px-4 py-3">Pemakaian</th>
-                                    <th className="px-4 py-3">Token diberikan</th>
-                                    <th className="px-4 py-3">Berlaku</th>
-                                    <th className="px-4 py-3">Kedaluwarsa</th>
-                                    <th className="px-5 py-3 text-right">Aksi</th>
+                                    <AdminTh>Kode</AdminTh>
+                                    <AdminTh align="right">Kuota</AdminTh>
+                                    <AdminTh align="right">Pemakaian</AdminTh>
+                                    <AdminTh align="right">Token diberikan</AdminTh>
+                                    <AdminTh>Berlaku</AdminTh>
+                                    <AdminTh>Kedaluwarsa</AdminTh>
+                                    <AdminTh align="right">Aksi</AdminTh>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -233,16 +231,16 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                                             <div className="font-mono text-sm font-black text-slate-900">{voucher.code}</div>
                                             <AdminBadge variant={voucher.is_active ? 'green' : 'neutral'} className="mt-1">{voucher.is_active ? 'Aktif' : 'Nonaktif'}</AdminBadge>
                                         </td>
-                                        <td className="px-4 py-4 font-bold text-slate-700">{number(voucher.quota_amount)}</td>
-                                        <td className="px-4 py-4 font-bold text-slate-600">{voucher.used_count} / {voucher.max_uses}</td>
+                                        <td className="px-4 py-4 text-right font-bold tabular-nums text-slate-700">{formatNumber(voucher.quota_amount)}</td>
+                                        <td className="px-4 py-4 text-right font-bold tabular-nums text-slate-600">{voucher.used_count} / {voucher.max_uses}</td>
                                         <td className="px-4 py-4">
-                                            <div className="font-bold text-emerald-700">{number(voucher.tokens_granted)}</div>
+                                            <div className="text-right font-bold tabular-nums text-emerald-700">{formatNumber(voucher.tokens_granted)}</div>
                                             {voucher.tokens_source === 'estimated' ? (
                                                 <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600" title="Klaim ini diwarisi dari migrasi legacy dan tidak punya baris di buku besar dompet, jadi angkanya diperkirakan dari klaim × kuota.">perkiraan</div>
                                             ) : null}
                                         </td>
                                         <td className="px-4 py-4 font-medium text-slate-500">{voucher.wallet_type ? walletTypeLabel(voucher.wallet_type) : 'Semua program'}</td>
-                                        <td className="px-4 py-4 font-medium text-slate-500">{fmtDate(voucher.expires_at)}</td>
+                                        <td className="px-4 py-4 font-medium text-slate-500">{formatDate(voucher.expires_at)}</td>
                                         <td className="px-5 py-4 text-right">
                                             <Link className="text-xs font-extrabold text-blue-600 hover:text-blue-700" href={`/admin/entitlements?${(() => { const query = new URLSearchParams(backQuery); query.set('voucher', voucher.id); return query.toString() })()}`}>Ubah</Link>
                                         </td>
@@ -257,21 +255,25 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
             {/* ----------------------------------------------------------- dompet */}
             <AdminCard className="overflow-hidden">
                 <div className="border-b border-slate-200 p-5">
-                    <AdminSectionHeading title="Dompet pengguna" description="Cari pengguna, periksa saldonya, lalu sesuaikan bila perlu."/>
-                    <form className="mt-4 grid gap-3 md:grid-cols-[minmax(220px,1.6fr)_1fr_auto]" method="get">
-                        <label className="relative">
-                            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-                            <input className={`${adminInputClass} pl-9`} name="q" defaultValue={params.q || ''} placeholder="Cari nama atau email..." aria-label="Cari pengguna"/>
-                        </label>
-                        <select className={adminInputClass} name="wallet_type" defaultValue={params.wallet_type || ''} aria-label="Filter tipe dompet">
-                            <option value="">Semua tipe dompet</option>
-                            {WALLET_TYPES.map((type) => <option key={type} value={type}>{walletTypeLabel(type)}</option>)}
-                        </select>
-                        <div className="flex gap-2">
-                            <button className={adminButtonClass}>Cari</button>
-                            <Link className={adminSecondaryButtonClass} href="/admin/entitlements">Reset</Link>
-                        </div>
-                    </form>
+                    <AdminSectionHeading step={3} title="Dompet pengguna" description="Cari pengguna, periksa saldonya, lalu sesuaikan bila perlu."/>
+                    <div className="mt-4">
+                        <AdminListToolbar
+                            pathname="/admin/entitlements"
+                            search={params.q || ''}
+                            placeholder="Cari nama atau email..."
+                            resultCount={wallets.total}
+                            hiddenFields={{ status: params.status, voucher: params.voucher }}
+                            selects={[
+                                {
+                                    name: 'wallet_type',
+                                    ariaLabel: 'Filter tipe dompet',
+                                    placeholder: 'Semua tipe dompet',
+                                    defaultValue: params.wallet_type || '',
+                                    options: WALLET_TYPES.map((type) => ({ value: type, label: walletTypeLabel(type) })),
+                                },
+                            ]}
+                        />
+                    </div>
                 </div>
 
                 {wallets.wallets.length === 0 ? (
@@ -279,13 +281,13 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[820px] text-left text-sm">
-                            <thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                            <thead className={adminTableHeadClass}>
                                 <tr>
-                                    <th className="px-5 py-3">Pengguna</th>
-                                    <th className="px-4 py-3">Tipe</th>
-                                    <th className="px-4 py-3 text-right">Saldo</th>
-                                    <th className="px-4 py-3">Diperbarui</th>
-                                    <th className="px-5 py-3 text-right">Aksi</th>
+                                    <AdminTh>Pengguna</AdminTh>
+                                    <AdminTh>Tipe</AdminTh>
+                                    <AdminTh align="right">Saldo</AdminTh>
+                                    <AdminTh>Diperbarui</AdminTh>
+                                    <AdminTh align="right">Aksi</AdminTh>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -297,9 +299,9 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                                         </td>
                                         <td className="px-4 py-4 font-semibold text-slate-600">{walletTypeLabel(wallet.wallet_type)}</td>
                                         <td className="px-4 py-4 text-right">
-                                            <span className={cn('text-base font-black', wallet.balance > 0 ? 'text-emerald-700' : 'text-slate-400')}>{number(wallet.balance)}</span>
+                                            <span className={cn('text-base font-black tabular-nums', wallet.balance > 0 ? 'text-emerald-700' : 'text-slate-500')}>{formatNumber(wallet.balance)}</span>
                                         </td>
-                                        <td className="px-4 py-4 font-medium text-slate-500">{fmt(wallet.updated_at)}</td>
+                                        <td className="px-4 py-4 font-medium text-slate-500">{formatDateTime(wallet.updated_at)}</td>
                                         <td className="px-5 py-4 text-right">
                                             <Link className="text-xs font-extrabold text-blue-600 hover:text-blue-700" href={`/admin/entitlements?${(() => { const query = new URLSearchParams(backQuery); query.set('user', wallet.user_id); return query.toString() })()}`}>Kelola</Link>
                                         </td>
@@ -310,11 +312,20 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                     </div>
                 )}
 
+                {wallets.wallets.length > 0 && wallets.total > LIST_PAGE_SIZE ? (
+                    <AdminPagination
+                        pathname="/admin/entitlements"
+                        params={{ q: params.q, wallet_type: params.wallet_type, status: params.status, user: params.user }}
+                        summary={adminPageSummary(parseListPage(params.wallet_page).page, wallets.wallets.length, wallets.total)}
+                        noun="dompet"
+                    />
+                ) : null}
+
                 {selectedUserId ? (
                     <div className="border-t border-slate-200 bg-slate-50/70 p-5">
                         <AdminSectionHeading
                             title="Riwayat & penyesuaian"
-                            description={selectedWallet ? `${selectedWallet.full_name} · ${walletTypeLabel(selectedWallet.wallet_type)} · saldo ${number(selectedWallet.balance)}` : 'Pengguna ini belum punya dompet; penyesuaian pertama akan membuatnya.'}
+                            description={selectedWallet ? `${selectedWallet.full_name} · ${walletTypeLabel(selectedWallet.wallet_type)} · saldo ${formatNumber(selectedWallet.balance)}` : 'Pengguna ini belum punya dompet; penyesuaian pertama akan membuatnya.'}
                             action={<Link className="text-sm font-extrabold text-slate-500 hover:text-slate-800" href={`/admin/entitlements?${backQuery.toString()}`}>Tutup</Link>}
                         />
 
@@ -328,18 +339,18 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                                 {hidden}
                                 <input type="hidden" name="user_id" value={selectedUserId}/>
                                 <label className="space-y-1.5">
-                                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Jumlah</span>
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Jumlah</span>
                                     <input className={adminInputClass} name="amount" type="number" required placeholder="mis. 10 atau -5"/>
-                                    <span className="block text-[11px] font-medium text-slate-400">Positif menambah, negatif mengurangi. Maks 1.000.000.</span>
+                                    <span className="block text-[11px] font-medium text-slate-500">Positif menambah, negatif mengurangi. Maks 1.000.000.</span>
                                 </label>
                                 <label className="space-y-1.5">
-                                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Tipe dompet</span>
-                                    <select className={adminInputClass} name="wallet_type" defaultValue={selectedWallet?.wallet_type ?? (params.wallet_type || 'exam_token_cpns')} aria-label="Tipe dompet">
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Tipe dompet</span>
+                                    <select className={adminInputClass} name="wallet_type" defaultValue={selectedWallet?.wallet_type ?? (params.wallet_type || 'exam_token_cpns')} >
                                         {WALLET_TYPES.map((type) => <option key={type} value={type}>{walletTypeLabel(type)}</option>)}
                                     </select>
                                 </label>
                                 <label className="space-y-1.5">
-                                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Alasan (wajib)</span>
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Alasan (wajib)</span>
                                     <input className={adminInputClass} name="reason" required minLength={3} placeholder="mis. kompensasi gangguan tryout"/>
                                 </label>
                                 <div className="flex items-end">
@@ -349,7 +360,7 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                         )}
 
                         <div className="mt-4">
-                            <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Riwayat transaksi ({transactions.total})</div>
+                            <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Riwayat transaksi ({transactions.total})</div>
                             {transactions.transactions.length === 0 ? (
                                 <p className="mt-2 text-sm font-semibold text-slate-500">Belum ada transaksi untuk pengguna ini.</p>
                             ) : (
@@ -358,11 +369,11 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                                         <div key={tx.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                                             <div className="min-w-0">
                                                 <div className="text-sm font-extrabold text-slate-800">{transactionSourceLabel(tx.source_type)}</div>
-                                                <div className="mt-0.5 text-xs font-medium text-slate-400">{fmt(tx.created_at)}</div>
+                                                <div className="mt-0.5 text-xs font-medium text-slate-500">{formatDateTime(tx.created_at)}</div>
                                             </div>
                                             <div className="flex items-center gap-4">
                                                 <span className={cn('font-mono text-sm font-black', tx.amount > 0 ? 'text-emerald-700' : 'text-red-600')}>{tx.amount > 0 ? '+' : ''}{tx.amount}</span>
-                                                <span className="text-xs font-bold text-slate-400">saldo {number(tx.balance_after)}</span>
+                                                <span className="text-xs font-bold text-slate-500">saldo {formatNumber(tx.balance_after)}</span>
                                             </div>
                                         </div>
                                     ))}
@@ -376,18 +387,17 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
             {/* ------------------------------------------------------------- pass */}
             <AdminCard className="overflow-hidden">
                 <div className="border-b border-slate-200 p-5">
-                    <AdminSectionHeading title="Pass & entitlement" description="Akses fitur yang dimiliki pengguna, biasanya berasal dari pembelian atau event."/>
-                    <form className="mt-4 flex flex-wrap gap-3" method="get">
-                        {params.q ? <input type="hidden" name="q" value={params.q}/> : null}
-                        <select className={`${adminInputClass} max-w-56`} name="status" defaultValue={params.status || ''} aria-label="Filter status">
-                            <option value="">Semua status</option>
-                            <option value="active">Aktif</option>
-                            <option value="expired">Kedaluwarsa</option>
-                            <option value="revoked">Dicabut</option>
-                            <option value="pending">Menunggu</option>
-                        </select>
-                        <button className={adminButtonClass}>Terapkan</button>
-                    </form>
+                    <AdminSectionHeading step={4} title="Pass & entitlement" description="Akses fitur yang dimiliki pengguna, biasanya berasal dari pembelian atau event."/>
+                    <div className="mt-4">
+                        <AdminListToolbar
+                            pathname="/admin/entitlements"
+                            search=""
+                            status={params.status || ''}
+                            statusOptions={ENTITLEMENT_STATUS_OPTIONS}
+                            resultCount={entitlements.total}
+                            hiddenFields={{ q: params.q, wallet_type: params.wallet_type }}
+                        />
+                    </div>
                 </div>
 
                 {entitlements.entitlements.length === 0 ? (
@@ -395,14 +405,14 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[900px] text-left text-sm">
-                            <thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                            <thead className={adminTableHeadClass}>
                                 <tr>
-                                    <th className="px-5 py-3">Pengguna</th>
-                                    <th className="px-4 py-3">Fitur</th>
-                                    <th className="px-4 py-3">Sumber</th>
-                                    <th className="px-4 py-3">Pemakaian</th>
-                                    <th className="px-4 py-3">Berlaku sampai</th>
-                                    <th className="px-5 py-3">Status</th>
+                                    <AdminTh>Pengguna</AdminTh>
+                                    <AdminTh>Fitur</AdminTh>
+                                    <AdminTh>Sumber</AdminTh>
+                                    <AdminTh align="right">Pemakaian</AdminTh>
+                                    <AdminTh>Berlaku sampai</AdminTh>
+                                    <AdminTh>Status</AdminTh>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -414,28 +424,40 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="font-semibold text-slate-700">{item.feature_name || item.feature_code || '—'}</div>
-                                            {item.feature_code ? <div className="font-mono text-[10px] font-semibold text-slate-400">{item.feature_code}</div> : null}
+                                            {item.feature_code ? <div className="font-mono text-[10px] font-semibold text-slate-500">{item.feature_code}</div> : null}
                                         </td>
                                         <td className="px-4 py-4 font-medium text-slate-500">{item.source_type || '—'}</td>
                                         <td className="px-4 py-4 font-bold text-slate-600">
                                             {item.usage_count}{item.usage_limit == null ? '' : ` / ${item.usage_limit}`}
                                         </td>
-                                        <td className="px-4 py-4 font-medium text-slate-500">{fmtDate(item.expires_at)}</td>
-                                        <td className="px-5 py-4"><AdminBadge variant={STATUS_VARIANT[item.status] || 'neutral'}>{entitlementStatusLabel(item.status)}</AdminBadge></td>
+                                        <td className="px-4 py-4 font-medium text-slate-500">{formatDate(item.expires_at)}</td>
+                                        <td className="px-5 py-4"><AdminStatusBadge status={item.status} label={entitlementStatusLabel(item.status)}/></td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
                 )}
+
+                {entitlements.entitlements.length > 0 && entitlements.total > LIST_PAGE_SIZE ? (
+                    <AdminPagination
+                        pathname="/admin/entitlements"
+                        params={{ q: params.q, wallet_type: params.wallet_type, status: params.status }}
+                        summary={adminPageSummary(parseListPage(params.entitlement_page).page, entitlements.entitlements.length, entitlements.total)}
+                        noun="entitlement"
+                    />
+                ) : null}
             </AdminCard>
 
-            <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold leading-6 text-slate-500">
-                Halaman ini memerlukan permission <code className="font-mono">entitlement.manage</code>.
-                Setiap penyesuaian saldo menulis baris <code className="font-mono">wallet_transactions</code> dengan sumber
-                {' '}<code className="font-mono">admin_adjustment</code>, sehingga riwayatnya tidak bisa hilang.
-                Penyesuaian dompet sendiri ditolak oleh database.
-            </p>
-        </div>
+            <details className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-500">
+                <summary className="cursor-pointer select-none">Catatan teknis</summary>
+                <p className="mt-2 leading-6">
+                    Halaman ini memerlukan permission <code className="font-mono">entitlement.manage</code>.
+                    Setiap penyesuaian saldo menulis baris <code className="font-mono">wallet_transactions</code> dengan sumber
+                    {' '}<code className="font-mono">admin_adjustment</code>, sehingga riwayatnya tidak bisa hilang.
+                    Penyesuaian dompet sendiri ditolak oleh database.
+                </p>
+            </details>
+        </AdminPage>
     )
 }

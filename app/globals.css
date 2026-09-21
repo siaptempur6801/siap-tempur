@@ -219,6 +219,7 @@
   --color-brand-blue: var(--brand-blue);
   --color-brand-amber: var(--brand-amber);
   --color-brand-peach: var(--brand-peach);
+  --color-brand-admin-canvas: var(--brand-admin-canvas);
   --color-brand-paper: var(--brand-paper);
   --color-brand-paper-strong: var(--brand-paper-strong);
   --color-brand-ink-soft: var(--brand-ink-100);
@@ -262,6 +263,8 @@
   --brand-white: #ffffff;
   --brand-paper: #fbfaf7;
   --brand-paper-strong: #f4f1ea;
+  /* Kanvas Admin Workspace — biru keabuan dingin, kontras dengan paper hangat produk. */
+  --brand-admin-canvas: #f4f7fb;
 
   /* Netral navy — dipakai untuk gray & slate */
   --brand-ink-50: oklch(0.984 0.005 250);

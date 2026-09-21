@@ -3,6 +3,9 @@
 import { useActionState, useState } from 'react'
 import { AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatDateTime, formatLocalDateTimeInput } from '@/lib/admin-format'
+import { adminInputClass, adminPrimaryButtonClass } from '@/components/admin/AdminUi'
+import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
 import {
     durationMinutes,
     templateComposition,
@@ -31,21 +34,6 @@ import {
  */
 
 const IDLE: ComposeActionResult = { status: 'idle' }
-
-function fmt(value: string | null) {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' }).format(date)
-}
-
-/** Nilai untuk `<input type="datetime-local">` dalam WIB. */
-function localDateTime(value: string | null) {
-    if (!value) return ''
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return ''
-    return new Date(date.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 16)
-}
 
 export default function BatchExamPanel({
     batchId,
@@ -77,9 +65,9 @@ export default function BatchExamPanel({
 
     return (
         <div className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-white p-4">
-            <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+            <h3 className="flex items-center gap-2 text-sm font-black text-slate-900">
                 <ClipboardList size={16}/>Ujian batch ini
-            </div>
+            </h3>
 
             {templates.length === 0 ? (
                 <p className="text-xs font-medium leading-5 text-slate-500">
@@ -92,9 +80,9 @@ export default function BatchExamPanel({
                         {hiddenContext}
                         <input type="hidden" name="template_name" value={selectedTemplate?.name ?? ''}/>
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Template</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Template</span>
                             <select
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                className={adminInputClass}
                                 name="template_id"
                                 value={selectedTemplateId}
                                 onChange={(event) => setSelectedTemplateId(event.target.value)}
@@ -108,16 +96,16 @@ export default function BatchExamPanel({
                             </select>
                         </label>
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Judul ujian</span>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Judul ujian</span>
                             <input
-                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                                className={adminInputClass}
                                 name="title"
                                 placeholder={selectedTemplate?.name ?? 'Ujian Instansi'}
                             />
                         </label>
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Status exam</span>
-                            <select className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" name="exam_status" defaultValue="draft" aria-label="Status exam">
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Status exam</span>
+                            <select className={adminInputClass} name="exam_status" defaultValue="draft" aria-label="Status exam">
                                 <option value="draft">Draft</option>
                                 <option value="active">Aktif</option>
                             </select>
@@ -139,12 +127,12 @@ export default function BatchExamPanel({
                         ) : null}
 
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Buka (WIB)</span>
-                            <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" type="datetime-local" name="starts_at"/>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Buka (WIB)</span>
+                            <input className={adminInputClass} type="datetime-local" name="starts_at"/>
                         </label>
                         <label className="space-y-1.5">
-                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Tutup (WIB)</span>
-                            <input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" type="datetime-local" name="due_at"/>
+                            <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Tutup (WIB)</span>
+                            <input className={adminInputClass} type="datetime-local" name="due_at"/>
                         </label>
                         <label className="flex items-center gap-2 pt-6">
                             <input type="checkbox" name="is_active" defaultChecked className="h-4 w-4 rounded border-slate-300"/>
@@ -152,7 +140,7 @@ export default function BatchExamPanel({
                         </label>
 
                         <div className="flex flex-wrap items-center gap-2 lg:col-span-3">
-                            <button disabled={composing} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+                            <button disabled={composing} className={adminPrimaryButtonClass}>
                                 <Sparkles size={15}/>{composing ? 'Membentuk…' : 'Bentuk & jadwalkan'}
                             </button>
                             <span className="text-[11px] font-medium text-slate-500">
@@ -211,7 +199,7 @@ export default function BatchExamPanel({
 
             {/* ------------------------------------------------ daftar ujian */}
             <div className="border-t border-slate-200 pt-3">
-                <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Ujian terjadwal ({assignments.length})</div>
+                <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Ujian terjadwal ({assignments.length})</div>
                 {assignments.length === 0 ? (
                     <p className="mt-2 text-xs font-medium leading-5 text-slate-500">
                         Belum ada ujian untuk batch ini. Bentuk exam dari template di atas, lalu isi jadwalnya.
@@ -231,7 +219,7 @@ export default function BatchExamPanel({
                                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-slate-500">
                                             <span>{assignment.question_count} soal</span>
                                             <span>{assignment.attempt_count} pengerjaan</span>
-                                            <span className="inline-flex items-center gap-1"><CalendarClock size={11}/>{fmt(assignment.starts_at)} — {fmt(assignment.due_at)}</span>
+                                            <span className="inline-flex items-center gap-1"><CalendarClock size={11}/>{formatDateTime(assignment.starts_at)} — {formatDateTime(assignment.due_at)}</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
@@ -240,8 +228,8 @@ export default function BatchExamPanel({
                                             <input type="hidden" name="assignment_id" value={assignment.id}/>
                                             <input type="hidden" name="exam_id" value={assignment.exam_id}/>
                                             <input type="hidden" name="template_id" value={assignment.template_id ?? ''}/>
-                                            <input type="hidden" name="starts_at" value={localDateTime(assignment.starts_at)}/>
-                                            <input type="hidden" name="due_at" value={localDateTime(assignment.due_at)}/>
+                                            <input type="hidden" name="starts_at" value={formatLocalDateTimeInput(assignment.starts_at)}/>
+                                            <input type="hidden" name="due_at" value={formatLocalDateTimeInput(assignment.due_at)}/>
                                             <input type="hidden" name="is_active" value={assignment.is_active ? 'on' : ''}/>
                                             <input type="hidden" name="notes" value={assignment.notes ?? ''}/>
                                             <button className="text-[11px] font-extrabold text-blue-600 hover:text-blue-700">
@@ -256,7 +244,13 @@ export default function BatchExamPanel({
                                                 {hiddenContext}
                                                 <input type="hidden" name="exam_id" value={assignment.exam_id}/>
                                                 <input type="hidden" name="exam_title" value={assignment.exam_title ?? ''}/>
-                                                <button className="text-[11px] font-extrabold text-red-600 hover:text-red-700">Hapus exam</button>
+                                                <ConfirmSubmit
+                                                    title="Hapus exam?"
+                                                    message={`Exam “${assignment.exam_title || 'tanpa judul'}” akan dihapus permanen dari batch ini.`}
+                                                    detail="Ujian, jadwalnya, dan assignment peserta ikut terhapus. Tindakan ini tidak dapat dibatalkan."
+                                                    confirmLabel="Hapus exam"
+                                                    trigger={<button type="button" className="text-[11px] font-extrabold text-red-600 hover:text-red-700">Hapus exam</button>}
+                                                />
                                             </form>
                                         ) : null}
                                     </div>
@@ -271,12 +265,12 @@ export default function BatchExamPanel({
                                     <input type="hidden" name="exam_id" value={assignment.exam_id}/>
                                     <input type="hidden" name="template_id" value={assignment.template_id ?? ''}/>
                                     <label className="space-y-1">
-                                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Buka (WIB)</span>
-                                        <input className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs" type="datetime-local" name="starts_at" defaultValue={localDateTime(assignment.starts_at)}/>
+                                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Buka (WIB)</span>
+                                        <input className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs" type="datetime-local" name="starts_at" defaultValue={formatLocalDateTimeInput(assignment.starts_at)}/>
                                     </label>
                                     <label className="space-y-1">
-                                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Tutup (WIB)</span>
-                                        <input className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs" type="datetime-local" name="due_at" defaultValue={localDateTime(assignment.due_at)}/>
+                                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Tutup (WIB)</span>
+                                        <input className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs" type="datetime-local" name="due_at" defaultValue={formatLocalDateTimeInput(assignment.due_at)}/>
                                     </label>
                                     <div className="flex items-end gap-2">
                                         <label className="flex items-center gap-1.5">

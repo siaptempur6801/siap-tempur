@@ -26,6 +26,7 @@ type AdminModalProps = {
     children: ReactNode
     defaultOpen?: boolean
     closeHref?: string
+    confirmUnsaved?: boolean
     size?: keyof typeof sizes
 }
 
@@ -39,6 +40,7 @@ export default function AdminModal({
     defaultOpen = false,
     closeHref,
     size = 'lg',
+    confirmUnsaved = false,
 }: AdminModalProps) {
     const dialogRef = useRef<HTMLDialogElement>(null)
     const [open, setOpen] = useState(defaultOpen)
@@ -59,6 +61,8 @@ export default function AdminModal({
     }, [open])
 
     function closeModal() {
+        if (confirmUnsaved && dialogRef.current?.querySelector('[data-pending="true"]')) return
+        if (confirmUnsaved && dialogRef.current?.querySelector('[data-dirty="true"]') && !window.confirm('Ada perubahan yang belum disimpan. Tutup form?')) return
         setOpen(false)
         if (defaultOpen && closeHref) router.replace(closeHref, { scroll: false })
     }
@@ -74,7 +78,7 @@ export default function AdminModal({
                         triggerVariants[triggerVariant],
                     )}
                 >
-                    {triggerIcon ?? <Plus size={16}/>} {triggerLabel}
+                    {triggerIcon ?? <Plus size={16} aria-hidden="true"/>} {triggerLabel}
                 </button>
             ) : null}
 

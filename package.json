@@ -16,7 +16,8 @@
     "cpns:legacy:stage": "node scripts/migrate_cpns_legacy_reviewed_to_schema_v2.mjs",
     "cpns:legacy:repair-inline-assets": "node scripts/repair_cpns_legacy_inline_asset_urls.mjs",
     "cpns:legacy:import:staging": "node scripts/migrate_cpns_legacy_reviewed_to_schema_v2.mjs --import-reviewed && npm run cpns:legacy:repair-inline-assets",
-    "db:types:staging": "supabase gen types typescript --project-id lpgrivowdcepcxradavu --schema public > types/database.types.ts"
+    "db:types:staging": "supabase gen types typescript --project-id lpgrivowdcepcxradavu --schema public > types/database.types.ts",
+    "test:question-bank": "node scripts/test-question-bank.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

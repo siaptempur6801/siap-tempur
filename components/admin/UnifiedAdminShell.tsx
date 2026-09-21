@@ -225,7 +225,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
                     {collapsed ? null : (
                         <div className="min-w-0 flex-1">
                             <p className="truncate text-xs font-extrabold text-white">{displayName}</p>
-                            <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-wide text-slate-400" title={roleTitle}>{roleLabel}</p>
+                            <p className="mt-0.5 truncate text-[10px] font-bold uppercase tracking-wide text-slate-500" title={roleTitle}>{roleLabel}</p>
                         </div>
                     )}
                 </div>
@@ -235,7 +235,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
     )
 
     return (
-        <div className="min-h-screen bg-[#f4f7fb] font-body text-slate-950">
+        <div className="min-h-screen bg-brand-admin-canvas font-body text-slate-950">
             <aside className={cn('fixed inset-y-0 left-0 z-50 hidden transition-[width] duration-200 md:block', collapsed ? 'w-[76px]' : 'w-[260px]')}>{sidebar}</aside>
 
             {mobileOpen ? <div className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)}><aside className="h-full w-[280px]" onClick={(event) => event.stopPropagation()}>{sidebar}</aside></div> : null}
@@ -266,7 +266,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
                         <div className="hidden items-center gap-3 sm:flex">
                             <div className="text-right">
                                 <div className="max-w-40 truncate text-xs font-extrabold text-slate-900">{displayName}</div>
-                                <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400" title={roleTitle}>{roleLabel}</div>
+                                <div className="text-[10px] font-bold uppercase tracking-wide text-slate-500" title={roleTitle}>{roleLabel}</div>
                             </div>
                             <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-slate-100 text-center text-sm font-black leading-9 text-slate-700 ring-1 ring-slate-200">
                                 {profile?.avatar_url ? <Image src={profile.avatar_url} alt="Avatar admin" fill className="object-cover" sizes="36px"/> : user.email?.[0]?.toUpperCase() || 'A'}
@@ -275,7 +275,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
                     </div>
                 </header>
 
-                <main className="mx-auto w-full max-w-[1600px] px-4 py-5 pb-24 sm:px-6 sm:py-7 lg:px-8 lg:pb-8">{children}</main>
+                <main className="mx-auto w-full max-w-7xl px-4 py-6 pb-28 sm:px-6 sm:py-8 lg:px-8 lg:pb-12">{children}</main>
             </div>
 
             <nav aria-label="Akses cepat" className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-slate-200 bg-white/95 px-2 shadow-[0_-6px_20px_rgba(13,43,69,0.06)] backdrop-blur-xl md:hidden">

@@ -1,19 +1,25 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { Check, Search, ShieldCheck, UserCheck, UserX, Users } from 'lucide-react'
+import { Check, ShieldCheck, UserCheck, UserX, Users } from 'lucide-react'
 import {
     AdminBadge,
     AdminCard,
     AdminEmptyState,
+    AdminFeedbackBanner,
     AdminMetric,
+    AdminPage,
     AdminPageHeader,
     AdminSectionHeading,
-    adminButtonClass,
+    AdminStatusBadge,
+    AdminTh,
     adminInputClass,
     adminSecondaryButtonClass,
+    adminTableHeadClass,
 } from '@/components/admin/AdminUi'
+import AdminListToolbar from '@/components/admin/AdminListToolbar'
+import AdminPagination from '@/components/admin/AdminPagination'
 import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
-import { cn } from '@/lib/utils'
+import { ADMIN_PAGE_SIZE, adminOffset, adminPageHref, adminPageSummary, adminPageSummaryLabel, adminTotalPages, parseAdminPage } from '@/lib/admin-pagination'
+import { formatDateTime } from '@/lib/admin-format'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import {
@@ -47,22 +53,16 @@ type SearchParams = {
     q?: string
     role?: string
     status?: string
+    page?: string
     ok?: string
     error?: string
 }
 
-const STATUS_VARIANT: Record<string, 'green' | 'neutral' | 'red'> = {
-    active: 'green',
-    inactive: 'neutral',
-    suspended: 'red',
-}
-
-function fmt(value: string | null) {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeZone: 'Asia/Jakarta' }).format(date)
-}
+const USER_STATUS_OPTIONS = [
+    { value: 'active', label: 'Aktif' },
+    { value: 'inactive', label: 'Nonaktif' },
+    { value: 'suspended', label: 'Ditangguhkan' },
+] as const
 
 export default async function AdminUsersPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
     const params = await searchParams
@@ -73,13 +73,22 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
     const canManageStatus = permissions.has(PERMISSIONS.USER_MANAGE)
     const canManageRoles = permissions.has(PERMISSIONS.ROLE_MANAGE)
 
-    if (!canRead) redirect('/cpns/dashboard?admin=no-access')
+    if (!canRead) {
+        return (
+            <AdminPage>
+                <AdminPageHeader title="Users & Roles" description="Cari pengguna, lihat perannya, dan kelola akses akun."/>
+                <AdminCard><AdminEmptyState title="Akses tidak tersedia" description="Akun ini tidak memiliki permission user.read atau user.manage."/></AdminCard>
+            </AdminPage>
+        )
+    }
 
+    const page = parseAdminPage(params.page)
     const filters = {
         search: params.q || null,
         role: params.role || null,
         status: params.status || null,
-        limit: 100,
+        limit: ADMIN_PAGE_SIZE,
+        offset: adminOffset(page),
     }
 
     const [directory, roles] = await Promise.all([
@@ -87,72 +96,74 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
         adminDirectoryService.listRoles(),
     ])
 
+    const summary = adminPageSummary(page, directory.users.length, directory.total)
     const activeCount = directory.users.filter((user) => user.status === 'active').length
     const privilegedCount = directory.users.filter((user) => user.roles.length > 0).length
     const hiddenParams = { q: params.q || '', role: params.role || '', status: params.status || '' }
 
     return (
-        <div className="space-y-5 pb-10">
+        <AdminPage>
             <AdminPageHeader
                 title="Users & Roles"
                 description="Cari pengguna, lihat perannya, dan kelola akses. Setiap perubahan ditegakkan di database, termasuk penjagaan agar admin tidak mengunci akunnya sendiri."
+                steps={['Cari pengguna', 'Beri peran atau ubah statusnya', 'Pantau pemegang peran di bawah']}
             />
 
-            {(params.ok || params.error) ? (
-                <div role="status" className={cn('rounded-xl border px-4 py-3 text-sm font-bold shadow-sm', params.error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800')}>
-                    {params.error || params.ok}
-                </div>
-            ) : null}
+            <AdminFeedbackBanner ok={params.ok} error={params.error}/>
 
             <section className="grid gap-3 sm:grid-cols-3">
                 <AdminMetric label="Pengguna" value={directory.total} helper="Sesuai filter" icon={<Users size={18}/>} tone="blue"/>
-                <AdminMetric label="Aktif" value={activeCount} helper="Dari yang termuat" icon={<UserCheck size={18}/>} tone="green"/>
-                <AdminMetric label="Punya peran" value={privilegedCount} helper="Pemegang akses admin" icon={<ShieldCheck size={18}/>} tone="violet"/>
+                <AdminMetric label="Aktif" value={activeCount} helper="Dari baris halaman ini" icon={<UserCheck size={18}/>} tone="green"/>
+                <AdminMetric label="Punya peran" value={privilegedCount} helper="Dari baris halaman ini" icon={<ShieldCheck size={18}/>} tone="violet"/>
             </section>
 
-            <AdminCard className="p-4">
-                <form className="grid gap-3 md:grid-cols-[minmax(220px,1.6fr)_1fr_1fr_auto]" method="get">
-                    <label className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-                        <input className={`${adminInputClass} pl-9`} name="q" defaultValue={params.q || ''} placeholder="Cari nama atau email..." aria-label="Cari pengguna"/>
-                    </label>
-                    <select className={adminInputClass} name="role" defaultValue={params.role || ''} aria-label="Filter peran">
-                        <option value="">Semua peran</option>
-                        {roles.map((role) => <option key={role.code} value={role.code}>{roleLabel(role.code)}</option>)}
-                    </select>
-                    <select className={adminInputClass} name="status" defaultValue={params.status || ''} aria-label="Filter status">
-                        <option value="">Semua status</option>
-                        <option value="active">Aktif</option>
-                        <option value="inactive">Nonaktif</option>
-                        <option value="suspended">Ditangguhkan</option>
-                    </select>
-                    <div className="flex gap-2">
-                        <button className={adminButtonClass}>Terapkan</button>
-                        <Link className={adminSecondaryButtonClass} href="/admin/users">Reset</Link>
-                    </div>
-                </form>
-            </AdminCard>
+            <AdminListToolbar
+                pathname="/admin/users"
+                search={params.q || ''}
+                status={params.status || ''}
+                statusOptions={USER_STATUS_OPTIONS}
+                placeholder="Cari nama atau email..."
+                resultCount={directory.total}
+                selects={[
+                    {
+                        name: 'role',
+                        ariaLabel: 'Filter peran',
+                        placeholder: 'Semua peran',
+                        defaultValue: params.role || '',
+                        options: roles.map((role) => ({ value: role.code, label: roleLabel(role.code) })),
+                    },
+                ]}
+            />
 
             <AdminCard className="overflow-hidden">
                 <div className="border-b border-slate-200 p-5">
                     <AdminSectionHeading
+                        step={1}
                         title="Daftar pengguna"
-                        description={`${directory.users.length} dari ${directory.total} pengguna ditampilkan.`}
+                        description={adminPageSummaryLabel(summary, 'pengguna')}
                     />
                 </div>
                 {directory.users.length === 0 ? (
-                    <AdminEmptyState title="Tidak ada pengguna" description="Tidak ada pengguna yang cocok dengan filter ini. Coba ubah kata kunci, peran, atau status."/>
+                    page > 1 && summary.page > adminTotalPages(summary.total) ? (
+                        <AdminEmptyState
+                            title={`Tidak ada pengguna di halaman ${page}`}
+                            description={`Daftar hanya punya ${adminTotalPages(summary.total)} halaman. Kembali ke halaman pertama atau ubah pencarian.`}
+                            action={<Link className={adminSecondaryButtonClass} href={adminPageHref('/admin/users', hiddenParams, adminTotalPages(summary.total))}>Ke halaman terakhir</Link>}
+                        />
+                    ) : (
+                        <AdminEmptyState title="Tidak ada pengguna" description="Tidak ada pengguna yang cocok dengan filter ini. Coba ubah kata kunci, peran, atau status."/>
+                    )
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[980px] text-left text-sm">
-                            <thead className="bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                            <thead className={adminTableHeadClass}>
                                 <tr>
-                                    <th className="px-5 py-3">Pengguna</th>
-                                    <th className="px-4 py-3">Peran</th>
-                                    <th className="px-4 py-3">Status</th>
-                                    <th className="px-4 py-3">Attempt</th>
-                                    <th className="px-4 py-3">Masuk terakhir</th>
-                                    <th className="px-5 py-3 text-right">Tindakan</th>
+                                    <AdminTh>Pengguna</AdminTh>
+                                    <AdminTh>Peran</AdminTh>
+                                    <AdminTh>Status</AdminTh>
+                                    <AdminTh>Attempt</AdminTh>
+                                    <AdminTh>Masuk terakhir</AdminTh>
+                                    <AdminTh align="right">Tindakan</AdminTh>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -161,12 +172,12 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                         <td className="px-5 py-4">
                                             <div className="font-extrabold text-slate-900">{user.full_name}</div>
                                             <div className="mt-0.5 text-xs font-medium text-slate-500">{user.email || 'Email tidak tersedia'}</div>
-                                            <div className="mt-0.5 text-[11px] font-medium text-slate-400">Terdaftar {fmt(user.created_at)}</div>
+                                            <div className="mt-0.5 text-[11px] font-medium text-slate-500">Terdaftar {formatDateTime(user.created_at)}</div>
                                         </td>
                                         <td className="px-4 py-4">
                                             <div className="flex flex-wrap gap-1.5">
                                                 {user.roles.length === 0 ? <span className="text-xs font-bold text-slate-400">Tanpa peran</span> : user.roles.map((role) => (
-                                                    <span key={role} className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-700">
+                                                    <AdminBadge key={role} variant="violet" className="gap-1 py-0.5">
                                                         {roleLabel(role)}
                                                         {canManageRoles ? (
                                                             <form action={revokeUserRoleAction} className="inline-flex">
@@ -183,15 +194,15 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                                                         />
                                                             </form>
                                                         ) : null}
-                                                    </span>
+                                                    </AdminBadge>
                                                 ))}
                                             </div>
                                         </td>
                                         <td className="px-4 py-4">
-                                            <AdminBadge variant={STATUS_VARIANT[user.status] || 'neutral'}>{userStatusLabel(user.status)}</AdminBadge>
+                                            <AdminStatusBadge status={user.status} label={userStatusLabel(user.status)}/>
                                         </td>
-                                        <td className="px-4 py-4 font-bold text-slate-600">{user.attempt_count}</td>
-                                        <td className="px-4 py-4 font-medium text-slate-500">{fmt(user.last_sign_in_at)}</td>
+                                        <td className="px-4 py-4 font-bold tabular-nums text-slate-600">{user.attempt_count}</td>
+                                        <td className="px-4 py-4 font-medium text-slate-500">{formatDateTime(user.last_sign_in_at)}</td>
                                         <td className="px-5 py-4">
                                             <div className="flex flex-col items-end gap-2">
                                                 {canManageRoles ? (
@@ -206,7 +217,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                                                                 <option key={role.code} value={role.code}>{roleLabel(role.code)}</option>
                                                             ))}
                                                         </select>
-                                                        <button className={`${adminButtonClass} h-9 min-h-0 px-3 text-xs`}><Check size={14}/>Beri</button>
+                                                        <button className={`${adminSecondaryButtonClass} h-9 min-h-0 px-3 text-xs`}><Check size={14}/>Beri</button>
                                                     </form>
                                                 ) : null}
                                                 {canManageStatus ? (
@@ -238,17 +249,21 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                         </table>
                     </div>
                 )}
+
+                {directory.users.length > 0 ? (
+                    <AdminPagination pathname="/admin/users" params={hiddenParams} summary={summary} noun="pengguna"/>
+                ) : null}
             </AdminCard>
 
             <AdminCard className="p-5">
-                <AdminSectionHeading title="Peran & permission" description="Komposisi peran yang tersedia. Perubahan peran di atas mengikuti daftar ini."/>
+                <AdminSectionHeading step={2} title="Peran & permission" description="Komposisi peran yang tersedia. Perubahan peran di atas mengikuti daftar ini."/>
                 <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {roles.map((role) => (
                         <div key={role.code} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                             <div className="flex items-start justify-between gap-2">
                                 <div>
                                     <div className="text-sm font-black text-slate-900">{roleLabel(role.code)}</div>
-                                    <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{role.code}</div>
+                                    <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{role.code}</div>
                                 </div>
                                 <AdminBadge variant={role.holder_count > 0 ? 'blue' : 'neutral'}>{role.holder_count} pemegang</AdminBadge>
                             </div>
@@ -264,11 +279,14 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
             </AdminCard>
 
             {!canManageRoles ? (
-                <p className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-500">
-                    Memberi atau mencabut peran memerlukan permission <code className="font-mono">role.manage</code>, yang hanya dimiliki SUPER_ADMIN.
-                    {canManageStatus ? ' Anda tetap dapat mengubah status akun.' : ''}
-                </p>
+                <details className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-500">
+                    <summary className="cursor-pointer select-none">Catatan akses</summary>
+                    <p className="mt-2 leading-6">
+                        Memberi atau mencabut peran memerlukan permission <code className="font-mono">role.manage</code>, yang hanya dimiliki SUPER_ADMIN.
+                        {canManageStatus ? ' Anda tetap dapat mengubah status akun.' : ''}
+                    </p>
+                </details>
             ) : null}
-        </div>
+        </AdminPage>
     )
 }

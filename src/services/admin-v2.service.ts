@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json } from '@/types/database.types'
 import { env } from '@/lib/env'
@@ -10,21 +9,6 @@ import {
     CPNS_SKD_CONTEXT,
     type ProgramTrackContext,
 } from '@/src/services/catalog-context.service'
-
-export type AdminQuestionOptionInput = {
-    key: string
-    content: string
-    isCorrect: boolean | null
-    score: number | null
-    sortOrder: number
-    responseGroup?: string | null
-    responseGroupOrder?: number | null
-    /**
-     * URL gambar opsi. Opsional supaya pemanggil lama tetap kompilasi, tetapi
-     * jalur Question Bank maupun Content Workspace kini sama-sama mengisinya.
-     */
-    imageUrl?: string | null
-}
 
 function slugify(value: string) {
     return value
@@ -70,48 +54,6 @@ function normalizeEventFlyerUrl(value?: string | null) {
     } catch {
         throw new Error('EVENT_FLYER_URL_INVALID')
     }
-}
-
-function validateQuestionOptions(questionType: string, options: AdminQuestionOptionInput[]) {
-    if (options.length < 2) throw new Error('QUESTION_OPTIONS_REQUIRED')
-    const normalizedKeys = options.map((option) => option.key.trim().toUpperCase())
-    if (new Set(normalizedKeys).size !== normalizedKeys.length) throw new Error('QUESTION_OPTION_KEYS_DUPLICATE')
-    if (options.some((option) => !option.content.trim())) throw new Error('QUESTION_OPTION_CONTENT_REQUIRED')
-    if (options.some((option) => option.score !== null && (!Number.isFinite(option.score) || option.score < 0))) {
-        throw new Error('QUESTION_OPTION_SCORE_INVALID')
-    }
-
-    const type = questionType.toLowerCase()
-    if (type === 'single_choice') {
-        if (options.filter((option) => option.isCorrect === true).length !== 1) {
-            throw new Error('QUESTION_CORRECT_OPTION_REQUIRED')
-        }
-        return
-    }
-    if (type === 'multiple_choice') {
-        if (options.filter((option) => option.isCorrect === true).length < 1) {
-            throw new Error('QUESTION_CORRECT_OPTION_REQUIRED')
-        }
-        return
-    }
-    if (type === 'category') {
-        const grouped = new Map<string, AdminQuestionOptionInput[]>()
-        for (const option of options) {
-            const group = option.responseGroup?.trim()
-            if (!group) throw new Error('QUESTION_RESPONSE_GROUP_REQUIRED')
-            const rows = grouped.get(group) ?? []
-            rows.push(option)
-            grouped.set(group, rows)
-        }
-        if (grouped.size === 0) throw new Error('QUESTION_RESPONSE_GROUP_REQUIRED')
-        for (const rows of grouped.values()) {
-            if (rows.filter((option) => option.isCorrect === true).length !== 1) {
-                throw new Error('QUESTION_RESPONSE_GROUP_CORRECT_REQUIRED')
-            }
-        }
-        return
-    }
-    throw new Error('QUESTION_TYPE_INVALID')
 }
 
 /**
@@ -229,13 +171,20 @@ export class AdminV2Service {
      */
     async listDomainPage(
         domain: AdminDomainList,
-        options: { context?: ProgramTrackContext; search?: string | null; status?: string | null; page?: number | null; id?: string | null } = {},
+        options: { context?: ProgramTrackContext; search?: string | null; status?: string | null; subject?: string | null; page?: number | null; id?: string | null } = {},
     ) {
         const spec = ADMIN_DOMAIN_LISTS[domain]
         const admin = await createV2AdminClient()
         const catalog = await this.getCatalog(options.context)
         const search = (options.search ?? '').trim()
         const status = (options.status ?? '').trim()
+        const subject = (options.subject ?? '').trim()
+        // Hanya tabel yang punya kolom `subject_id` (questions) yang boleh
+        // memakai filter ini; kode tak dikenal berarti filter tanpa hasil,
+        // bukan error — admin salah mengetik kode masih melihat halaman.
+        const subjectId = subject
+            ? (catalog.subjects.find((row) => row.code.toLowerCase() === subject.toLowerCase())?.id ?? '00000000-0000-0000-0000-000000000000')
+            : ''
 
         /** Filter yang berlaku untuk perhitungan total maupun pengambilan baris. */
         const applyFilters = <T extends { eq: (column: string, value: string) => T; or: (expression: string) => T }>(builder: T): T => {
@@ -249,6 +198,9 @@ export class AdminV2Service {
             // PostgREST menolaknya.
             if (options.id) query = query.eq('id', options.id)
             if (status) query = query.eq('status', status)
+            if (subject && spec.table === 'questions') {
+                query = (query as unknown as { eq: (column: string, value: string) => T }).eq('subject_id', subjectId) as T
+            }
             if (search) {
                 // Kolom pencarian ditentukan per domain supaya tidak menabrak
                 // kolom yang tidak ada.
@@ -270,7 +222,7 @@ export class AdminV2Service {
          */
         let clampTo: number | null = null
         if (!options.id) {
-            const total = await this.countDomainRows(domain, { context: options.context, search, status })
+            const total = await this.countDomainRows(domain, { context: options.context, search, status, subject: subject && spec.table === 'questions' ? subjectId : '' })
             const requested = Math.max(1, Math.floor(options.page ?? 1))
             const lastPage = adminTotalPages(total)
             if (requested > lastPage) return { rows: [], total, lastPage, clampTo: lastPage }
@@ -302,7 +254,7 @@ export class AdminV2Service {
      */
     private async countDomainRows(
         domain: AdminDomainList,
-        options: { context?: ProgramTrackContext; search?: string; status?: string },
+        options: { context?: ProgramTrackContext; search?: string; status?: string; subject?: string },
     ): Promise<number> {
         const spec = ADMIN_DOMAIN_LISTS[domain]
         const admin = await createV2AdminClient()
@@ -314,6 +266,9 @@ export class AdminV2Service {
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
         if (options.status) query = query.eq('status', options.status)
+        if (options.subject) {
+            query = (query as unknown as { eq: (column: string, value: string) => typeof query }).eq('subject_id', options.subject) as typeof query
+        }
         if (options.search) {
             query = query.or(spec.searchColumns.map((column) => `${column}.ilike.%${escapePostgrestValue(options.search!)}%`).join(','))
         }
@@ -908,210 +863,6 @@ export class AdminV2Service {
         return String(data.id)
     }
 
-    async saveQuestion(input: {
-        id?: string | null
-        subjectCode: string
-        questionType?: string
-        stem: string
-        difficulty: string
-        status: string
-        sourceReference?: string | null
-        options?: AdminQuestionOptionInput[]
-        actorId: string
-        changeReason?: string | null
-        context?: ProgramTrackContext
-    }) {
-        const admin = await createV2AdminClient()
-        const untyped = await createAdminClient()
-        const catalog = await this.getCatalog(input.context)
-        const subject = catalog.subjects.find((row) => row.code === input.subjectCode)
-        if (!subject) throw new Error('SUBJECT_INVALID')
-        if (!input.stem.trim()) throw new Error('QUESTION_STEM_REQUIRED')
-        const questionType = (input.questionType || 'single_choice').trim().toLowerCase()
-        const options = input.options ?? []
-
-        if (!input.id && options.length < 2) throw new Error('QUESTION_OPTIONS_REQUIRED')
-        if (options.length > 0) validateQuestionOptions(questionType, options)
-
-        if (!input.id) {
-            const questionCode = `ADM-${catalog.track.code}-${input.subjectCode}-${Date.now()}-${randomUUID().slice(0, 4).toUpperCase()}`
-            const { data: question, error: questionError } = await admin
-                .from('questions')
-                .insert({
-                    question_code: questionCode,
-                    program_id: catalog.program.id,
-                    track_id: catalog.track.id,
-                    subject_id: subject.id,
-                    question_type: questionType,
-                    stem: input.stem.trim(),
-                    difficulty: input.difficulty,
-                    source_type: 'internal',
-                    source_reference: input.sourceReference?.trim() || null,
-                    status: input.status,
-                    version: 1,
-                    author_id: input.actorId,
-                    reviewer_id: input.status.toLowerCase() === 'published' ? input.actorId : null,
-                    published_at: input.status.toLowerCase() === 'published' ? nowIso() : null,
-                })
-                .select('id')
-                .single()
-            if (questionError) throw questionError
-            const questionId = String(question.id)
-
-            const { error: optionError } = await untyped.from('question_options').insert(
-                options.map((option) => ({
-                    question_id: questionId,
-                    option_key: option.key.trim().toUpperCase(),
-                    content: option.content.trim(),
-                    is_correct: option.isCorrect,
-                    score: option.score,
-                    sort_order: option.sortOrder,
-                    response_group: option.responseGroup?.trim() || null,
-                    response_group_order: option.responseGroupOrder ?? null,
-                    image_url: option.imageUrl?.trim() || null,
-                }))
-            )
-            if (optionError) {
-                await admin.from('questions').delete().eq('id', questionId)
-                throw optionError
-            }
-            return questionId
-        }
-
-        const [{ data: currentQuestion, error: currentError }, { data: currentOptions, error: currentOptionError }] = await Promise.all([
-            admin.from('questions').select('*').eq('id', input.id).maybeSingle(),
-            untyped.from('question_options').select('id, option_key, content, is_correct, score, sort_order, response_group, response_group_order, image_url').eq('question_id', input.id).order('sort_order'),
-        ])
-        if (currentError) throw currentError
-        if (currentOptionError) throw currentOptionError
-        if (!currentQuestion) throw new Error('QUESTION_NOT_FOUND')
-        if (!sameId(currentQuestion.program_id, catalog.program.id) || !sameId(currentQuestion.track_id, catalog.track.id)) {
-            throw new Error('QUESTION_CATALOG_MISMATCH')
-        }
-
-        const normalizedSourceReference = input.sourceReference?.trim() || null
-        const questionChanged =
-            !sameId(currentQuestion.subject_id, subject.id) ||
-            String(currentQuestion.question_type ?? 'single_choice') !== questionType ||
-            String(currentQuestion.stem ?? '') !== input.stem.trim() ||
-            String(currentQuestion.difficulty ?? '') !== input.difficulty ||
-            String(currentQuestion.status ?? '') !== input.status ||
-            (currentQuestion.source_reference ?? null) !== normalizedSourceReference
-
-        const submittedOptions = options.map((option) => ({
-            key: option.key.trim().toUpperCase(),
-            content: option.content.trim(),
-            isCorrect: option.isCorrect,
-            score: option.score === null ? null : Number(option.score),
-            sortOrder: option.sortOrder,
-            responseGroup: option.responseGroup?.trim() || null,
-            responseGroupOrder: option.responseGroupOrder ?? null,
-            imageUrl: option.imageUrl?.trim() || null,
-        }))
-        const persistedOptions = (currentOptions ?? []).map((option) => ({
-            key: String(option.option_key ?? '').trim().toUpperCase(),
-            content: String(option.content ?? '').trim(),
-            isCorrect: option.is_correct,
-            score: option.score === null ? null : Number(option.score),
-            sortOrder: Number(option.sort_order),
-            responseGroup: option.response_group ? String(option.response_group) : null,
-            responseGroupOrder: option.response_group_order === null ? null : Number(option.response_group_order),
-            imageUrl: option.image_url ? String(option.image_url) : null,
-        }))
-        const optionsChanged = options.length > 0 && JSON.stringify(submittedOptions) !== JSON.stringify(persistedOptions)
-
-        if (!questionChanged && !optionsChanged) return input.id
-
-        if (optionsChanged || String(currentQuestion.question_type ?? 'single_choice') !== questionType) {
-            const { data: activeReferences, error: referenceError } = await admin
-                .from('attempt_questions')
-                .select('id, attempt_id, exam_attempts!inner(status)')
-                .eq('question_id', input.id)
-                .in('exam_attempts.status', ['created', 'CREATED', 'in_progress', 'IN_PROGRESS'])
-                .limit(1)
-            if (referenceError) throw referenceError
-            if ((activeReferences ?? []).length > 0) throw new Error('QUESTION_LOCKED_BY_ACTIVE_ATTEMPT')
-        }
-
-        const snapshot: Json = JSON.parse(JSON.stringify({
-            question: currentQuestion,
-            options: currentOptions ?? [],
-        })) as Json
-        const nextVersion = Number(currentQuestion.version ?? 1) + 1
-        const { error: versionError } = await admin.from('question_versions').insert({
-            question_id: input.id,
-            version: Number(currentQuestion.version ?? 1),
-            snapshot,
-            changed_by: input.actorId,
-            change_reason: input.changeReason?.trim() || 'Admin update',
-        })
-        if (versionError && versionError.code !== '23505') throw versionError
-
-        const { error: questionError } = await admin
-            .from('questions')
-            .update({
-                subject_id: subject.id,
-                question_type: questionType,
-                stem: input.stem.trim(),
-                difficulty: input.difficulty,
-                source_reference: normalizedSourceReference,
-                status: input.status,
-                version: nextVersion,
-                reviewer_id: input.status.toLowerCase() === 'published' ? input.actorId : currentQuestion.reviewer_id,
-                published_at: input.status.toLowerCase() === 'published'
-                    ? currentQuestion.published_at || nowIso()
-                    : currentQuestion.published_at,
-                updated_at: nowIso(),
-            })
-            .eq('id', input.id)
-        if (questionError) throw questionError
-
-        if (optionsChanged) {
-            const submittedKeys = new Set(options.map((option) => option.key.trim().toUpperCase()))
-            const staleOptionIds = (currentOptions ?? [])
-                .filter((row) => !submittedKeys.has(String(row.option_key).toUpperCase()))
-                .map((row) => row.id)
-            if (staleOptionIds.length > 0) {
-                const { error: deleteError } = await untyped.from('question_options').delete().in('id', staleOptionIds)
-                if (deleteError) throw deleteError
-            }
-
-            for (const option of options) {
-                const optionKey = option.key.trim().toUpperCase()
-                const existing = (currentOptions ?? []).find((row) => String(row.option_key).toUpperCase() === optionKey)
-                const payload = {
-                    content: option.content.trim(),
-                    is_correct: option.isCorrect,
-                    score: option.score,
-                    sort_order: option.sortOrder,
-                    response_group: option.responseGroup?.trim() || null,
-                    response_group_order: option.responseGroupOrder ?? null,
-                    image_url: option.imageUrl?.trim() || null,
-                }
-                if (existing) {
-                    const { error } = await untyped.from('question_options').update(payload).eq('id', existing.id)
-                    if (error) throw error
-                } else {
-                    const { error } = await untyped.from('question_options').insert({
-                        question_id: input.id,
-                        option_key: optionKey,
-                        ...payload,
-                    })
-                    if (error) throw error
-                }
-            }
-        }
-        return input.id
-    }
-
-    async archiveQuestion(questionId: string) {
-        const admin = await createV2AdminClient()
-        const { error } = await admin
-            .from('questions')
-            .update({ status: 'archived', updated_at: nowIso() })
-            .eq('id', questionId)
-        if (error) throw error
-    }
 }
 
 export const adminV2Service = new AdminV2Service()

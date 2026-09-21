@@ -1,18 +1,20 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { ScrollText, Search } from 'lucide-react'
+import { ScrollText } from 'lucide-react'
 import {
     AdminBadge,
     AdminCard,
     AdminEmptyState,
+    AdminFeedbackBanner,
     AdminMetric,
+    AdminPage,
     AdminPageHeader,
     AdminSectionHeading,
-    adminButtonClass,
-    adminInputClass,
     adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
-import { cn } from '@/lib/utils'
+import AdminListToolbar from '@/components/admin/AdminListToolbar'
+import AdminPagination from '@/components/admin/AdminPagination'
+import { adminOffset, adminPageHref, adminPageSummary, adminTotalPages, parseAdminPage } from '@/lib/admin-pagination'
+import { formatDateTime } from '@/lib/admin-format'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminDirectoryService } from '@/src/services/admin-directory.service'
@@ -40,15 +42,6 @@ type SearchParams = {
     error?: string
 }
 
-const PAGE_SIZE = 50
-
-function fmt(value: string | null) {
-    if (!value) return '—'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '—'
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta' }).format(date)
-}
-
 function preview(value: unknown) {
     if (value == null) return ''
     try {
@@ -58,52 +51,52 @@ function preview(value: unknown) {
     }
 }
 
+const AUDIT_PAGE_SIZE = 50
+
 export default async function AdminAuditPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
     const params = await searchParams
     const authorization = await authorizationService.requireAuthenticated()
     const permissions = new Set(authorization.permissions)
 
     if (!permissions.has(PERMISSIONS.AUDIT_READ)) {
-        redirect('/cpns/dashboard?admin=no-access')
+        return (
+            <AdminPage>
+                <AdminPageHeader title="Audit Log" description="Jejak tindakan yang tercatat otomatis oleh trigger dan fungsi workflow. Hanya-baca."/>
+                <AdminCard><AdminEmptyState title="Akses tidak tersedia" description="Akun ini tidak memiliki permission audit.read."/></AdminCard>
+            </AdminPage>
+        )
     }
 
-    const page = Math.max(Number(params.page ?? '1') || 1, 1)
-    const offset = (page - 1) * PAGE_SIZE
+    const page = parseAdminPage(params.page)
+    const offset = adminOffset(page, AUDIT_PAGE_SIZE)
 
     const [result, facets] = await Promise.all([
         adminDirectoryService.listAuditLogs({
             action: params.action || null,
             entityType: params.entity || null,
-            limit: PAGE_SIZE,
+            limit: AUDIT_PAGE_SIZE,
             offset,
         }),
         adminDirectoryService.getAuditFacets(),
     ])
 
-    const totalPages = Math.max(Math.ceil(result.total / PAGE_SIZE), 1)
+    const filterParams = { action: params.action || '', entity: params.entity || '' }
+    // Halaman ini memakai 50 baris/halaman; tanpa argumen ke-4 ringkasan jatuh
+    // ke default 25, sehingga rentang "Menampilkan 26–50" salah dan totalPages
+    // pager menjadi dua kali lipat.
+    const summary = adminPageSummary(page, result.logs.length, result.total, AUDIT_PAGE_SIZE)
+    const totalPages = adminTotalPages(result.total, AUDIT_PAGE_SIZE)
     const hasFilter = Boolean(params.action || params.entity)
 
-    function pageHref(target: number) {
-        const query = new URLSearchParams()
-        if (params.action) query.set('action', params.action)
-        if (params.entity) query.set('entity', params.entity)
-        if (target > 1) query.set('page', String(target))
-        const suffix = query.toString()
-        return suffix ? `/admin/audit?${suffix}` : '/admin/audit'
-    }
-
     return (
-        <div className="space-y-5 pb-10">
+        <AdminPage>
             <AdminPageHeader
                 title="Audit Log"
                 description="Jejak tindakan yang tercatat otomatis oleh trigger dan fungsi workflow. Hanya-baca."
+                steps={['Filter aksi atau entitas', 'Buka payload bila perlu', 'Lanjut ke halaman lain lewat pager']}
             />
 
-            {(params.ok || params.error) ? (
-                <div role="status" className={cn('rounded-xl border px-4 py-3 text-sm font-bold shadow-sm', params.error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800')}>
-                    {params.error || params.ok}
-                </div>
-            ) : null}
+            <AdminFeedbackBanner ok={params.ok} error={params.error}/>
 
             <section className="grid gap-3 sm:grid-cols-3">
                 <AdminMetric label="Total catatan" value={result.total} helper="Seluruh audit log" icon={<ScrollText size={18}/>} tone="blue"/>
@@ -111,38 +104,49 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                 <AdminMetric label="Jenis entitas" value={facets.entityTypes.length} helper="Nilai unik" icon={<ScrollText size={18}/>} tone="neutral"/>
             </section>
 
-            <AdminCard className="p-4">
-                <form className="grid gap-3 md:grid-cols-[1fr_1fr_auto]" method="get">
-                    <label className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16}/>
-                        <select className={`${adminInputClass} pl-9`} name="action" defaultValue={params.action || ''} aria-label="Filter aksi">
-                            <option value="">Semua aksi</option>
-                            {facets.actions.map((action) => <option key={action} value={action}>{action}</option>)}
-                        </select>
-                    </label>
-                    <select className={adminInputClass} name="entity" defaultValue={params.entity || ''} aria-label="Filter entitas">
-                        <option value="">Semua entitas</option>
-                        {facets.entityTypes.map((entity) => <option key={entity} value={entity}>{entity}</option>)}
-                    </select>
-                    <div className="flex gap-2">
-                        <button className={adminButtonClass}>Terapkan</button>
-                        <Link className={adminSecondaryButtonClass} href="/admin/audit">Reset</Link>
-                    </div>
-                </form>
-            </AdminCard>
+            <AdminListToolbar
+                pathname="/admin/audit"
+                search=""
+                resultCount={result.total}
+                selects={[
+                    {
+                        name: 'action',
+                        ariaLabel: 'Filter aksi',
+                        placeholder: 'Semua aksi',
+                        defaultValue: params.action || '',
+                        options: facets.actions.map((action) => ({ value: action, label: action })),
+                    },
+                    {
+                        name: 'entity',
+                        ariaLabel: 'Filter entitas',
+                        placeholder: 'Semua entitas',
+                        defaultValue: params.entity || '',
+                        options: facets.entityTypes.map((entity) => ({ value: entity, label: entity })),
+                    },
+                ]}
+            />
 
             <AdminCard className="overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5">
                     <AdminSectionHeading
+                        step={1}
                         title="Jejak terbaru"
                         description={hasFilter ? `${result.total} catatan sesuai filter.` : `${result.total} catatan, terbaru lebih dulu.`}
                     />
                     <AdminBadge>{result.logs.length} di halaman ini</AdminBadge>
                 </div>
 
-                {result.logs.length === 0 ? (
-                    <AdminEmptyState title="Tidak ada catatan" description="Tidak ada audit log yang cocok dengan filter ini. Coba kosongkan filter."/>
-                ) : (
+                        {result.logs.length === 0 ? (
+                            <AdminEmptyState
+                                title={hasFilter || page > 1 ? 'Tidak ada catatan' : 'Belum ada catatan audit'}
+                                description={page > 1 && result.logs.length === 0 && page > totalPages
+                                    ? `Daftar hanya punya ${totalPages} halaman. Nomor halaman di alamat mungkin sudah usang.`
+                                    : hasFilter
+                                        ? 'Tidak ada audit log yang cocok dengan filter ini. Coba kosongkan filter.'
+                                        : 'Audit log muncul otomatis saat ada tindakan administratif yang terekam.'}
+                                action={page > totalPages ? <Link className={adminSecondaryButtonClass} href={adminPageHref('/admin/audit', filterParams, totalPages)}>Ke halaman terakhir</Link> : undefined}
+                            />
+                        ) : (
                     <div className="divide-y divide-slate-100">
                         {result.logs.map((log) => (
                             <div key={log.id} className="p-5 transition hover:bg-slate-50/60">
@@ -153,15 +157,15 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                                             <AdminBadge variant="blue">{log.entity_type}</AdminBadge>
                                         </div>
                                         <div className="mt-1.5 text-xs font-medium text-slate-500">
-                                            {fmt(log.created_at)} · {log.actor_name || 'Sistem'}
+                                            {formatDateTime(log.created_at)} · {log.actor_name || 'Sistem'}
                                             {log.entity_id ? <> · <span className="font-mono">{log.entity_id.slice(0, 8)}…</span></> : null}
                                         </div>
                                     </div>
-                                    <span className="font-mono text-[11px] font-bold text-slate-300">#{log.id}</span>
+                                    <span className="font-mono text-[11px] font-bold text-slate-500">#{log.id}</span>
                                 </div>
                                 {(log.old_data != null || log.new_data != null) ? (
                                     <details className="mt-3">
-                                        <summary className="cursor-pointer text-[11px] font-extrabold uppercase tracking-wide text-slate-400 hover:text-slate-600">Lihat payload</summary>
+                                        <summary className="cursor-pointer text-[11px] font-extrabold uppercase tracking-wide text-slate-500 hover:text-slate-600">Lihat payload</summary>
                                         <div className="mt-2 grid gap-2 lg:grid-cols-2">
                                             {log.old_data != null ? (
                                                 <div>
@@ -183,14 +187,16 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                     </div>
                 )}
 
-                {totalPages > 1 ? (
-                    <div className="flex items-center justify-between gap-3 border-t border-slate-200 p-4">
-                        {page > 1 ? <Link className={adminSecondaryButtonClass} href={pageHref(page - 1)}>Sebelumnya</Link> : <span/>}
-                        <span className="text-xs font-bold text-slate-500">Halaman {page} dari {totalPages}</span>
-                        {page < totalPages ? <Link className={adminSecondaryButtonClass} href={pageHref(page + 1)}>Berikutnya</Link> : <span/>}
-                    </div>
+                {result.logs.length > 0 || page > totalPages ? (
+                    <AdminPagination
+                        pathname="/admin/audit"
+                        params={{ action: params.action, entity: params.entity }}
+                        summary={summary}
+                        noun="catatan"
+                        className="border-t border-slate-200"
+                    />
                 ) : null}
             </AdminCard>
-        </div>
+        </AdminPage>
     )
 }

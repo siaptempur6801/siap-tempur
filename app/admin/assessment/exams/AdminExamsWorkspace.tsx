@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { Archive, Layers3 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminExamsService } from '@/src/services/admin-exams.service'
@@ -16,7 +15,11 @@ import {
   AdminBadge,
   AdminCard,
   AdminEmptyState,
+  AdminField,
+  AdminFeedbackBanner,
+  AdminPage,
   AdminPageHeader,
+  AdminStatusBadge,
   adminDangerButtonClass,
   adminInputClass,
   adminPrimaryButtonClass,
@@ -29,26 +32,6 @@ export type AdminExamsSearchParams = {
   edit?: string
   program?: string
   track?: string
-}
-
-function statusVariant(value: string): 'neutral' | 'blue' | 'green' | 'yellow' | 'red' {
-  switch (value.toLowerCase()) {
-    case 'active': return 'green'
-    case 'draft':
-    case 'scheduled': return 'yellow'
-    case 'archived': return 'neutral'
-    case 'failed': return 'red'
-    default: return 'blue'
-  }
-}
-
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
-  return (
-    <label className={cn('space-y-1.5', className)}>
-      <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">{label}</span>
-      {children}
-    </label>
-  )
 }
 
 function ContextFields({ program, track }: { program: string; track: string }) {
@@ -79,10 +62,10 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
   const canExams = permissions.has(PERMISSIONS.EXAM_MANAGE)
   if (!canExams) {
     return (
-      <div className="space-y-6 pb-10">
+      <AdminPage>
         <AdminPageHeader title="Exams" description="Kelola konfigurasi exam dan section untuk context aktif."/>
         <AdminCard><AdminEmptyState title="Akses tidak tersedia" description="Akun ini tidak memiliki permission exam.manage."/></AdminCard>
-      </div>
+      </AdminPage>
     )
   }
 
@@ -118,21 +101,17 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
   ) : null
 
   return (
-    <div className="space-y-6 pb-10">
+    <AdminPage>
       <AdminPageHeader
         title="Exams"
         description={`Kelola exam untuk ${data.catalog.program.name} / ${data.catalog.track.name}. Drill berfokus pada satu submateri; Full Tryout menggunakan sections.`}
         action={pageAction}
       />
 
-      {params.ok || params.error ? (
-        <div role="status" className={cn('rounded-xl border px-4 py-3 text-sm font-bold shadow-sm', params.error ? 'border-red-200 bg-red-50 text-red-800' : 'border-emerald-200 bg-emerald-50 text-emerald-800')}>
-          {params.error || params.ok}
-        </div>
-      ) : null}
+      <AdminFeedbackBanner ok={params.ok} error={params.error}/>
 
       {data.exams.length ? (
-        <section className="space-y-3">
+        <section className="space-y-5">
           {data.exams.map((exam) => {
             const examType = typeById.get(exam.exam_type_id)
             const typeCode = examType?.code ?? '?'
@@ -149,7 +128,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-extrabold text-slate-900">{exam.title}</span>
                       <AdminBadge variant={isDrill ? 'violet' : 'blue'}>{typeCode}</AdminBadge>
-                      <AdminBadge variant={statusVariant(exam.status)}>{exam.status}</AdminBadge>
+                      <AdminStatusBadge status={exam.status}/>
                     </div>
                     {isDrill ? (
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
@@ -166,7 +145,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                   </div>
 
                   <div className="flex shrink-0 flex-wrap gap-2">
-                    <Link className={adminSecondaryButtonClass} href={workspaceHref(program, track, exam.id)}>Edit</Link>
+                    <Link className={adminSecondaryButtonClass} href={workspaceHref(program, track, exam.id)} aria-label={`Edit exam ${exam.title}`}>Edit</Link>
                     <form action={archiveAdminExamAction}>
                       <ContextFields program={program} track={track}/>
                       <input type="hidden" name="id" value={exam.id}/>
@@ -198,17 +177,17 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                       <form action={saveAdminExamSectionAction} className="grid gap-4 md:grid-cols-2">
                         <ContextFields program={program} track={track}/>
                         <input type="hidden" name="exam_id" value={exam.id}/>
-                        <Field label="Mapel / Subtes">
+                        <AdminField label="Mapel / Subtes">
                           <select className={adminInputClass} name="subject_code">
                             <option value="">Tanpa mapel</option>
                             {data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}
                           </select>
-                        </Field>
-                        <Field label="Judul"><input className={adminInputClass} name="title" required/></Field>
-                        <Field label="Urutan"><input className={adminInputClass} name="sort_order" type="number" defaultValue={sections.length + 1}/></Field>
-                        <Field label="Jumlah soal"><input className={adminInputClass} name="question_count" type="number" min="1"/></Field>
-                        <Field label="Durasi (detik)"><input className={adminInputClass} name="duration_seconds" type="number" min="1"/></Field>
-                        <Field label="Passing score"><input className={adminInputClass} name="passing_score" type="number" min="0"/></Field>
+                        </AdminField>
+                        <AdminField label="Judul"><input className={adminInputClass} name="title" required/></AdminField>
+                        <AdminField label="Urutan"><input className={adminInputClass} name="sort_order" type="number" defaultValue={sections.length + 1}/></AdminField>
+                        <AdminField label="Jumlah soal"><input className={adminInputClass} name="question_count" type="number" min="1"/></AdminField>
+                        <AdminField label="Durasi (detik)"><input className={adminInputClass} name="duration_seconds" type="number" min="1"/></AdminField>
+                        <AdminField label="Passing score"><input className={adminInputClass} name="passing_score" type="number" min="0"/></AdminField>
                         <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}>Tambah section</button></div>
                       </form>
                     </AdminModal>
@@ -221,6 +200,6 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
       ) : (
         <AdminCard><AdminEmptyState title="Belum ada exam" description="Gunakan tombol Buat exam. Untuk Drill, pilih Subtes lalu Submateri yang akan diperdalam."/></AdminCard>
       )}
-    </div>
+    </AdminPage>
   )
 }

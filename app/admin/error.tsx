@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { AlertTriangle, LayoutDashboard, RefreshCw } from 'lucide-react'
-import { AdminCard, adminPrimaryButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { AdminPage, AdminCard, adminPrimaryButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 
 /**
  * Error boundary untuk seluruh permukaan admin.
@@ -36,7 +36,7 @@ export default function AdminError({
     const isDev = process.env.NODE_ENV === 'development'
 
     return (
-        <div className="space-y-5 pb-10">
+        <AdminPage>
             <AdminCard className="p-6">
                 <p className="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-red-700">
                     <AlertTriangle size={14}/> Halaman admin gagal dimuat
@@ -58,14 +58,14 @@ export default function AdminError({
 
                 <dl className="mt-6 grid gap-3 border-t border-slate-200 pt-5 text-xs sm:grid-cols-2">
                     <div>
-                        <dt className="font-extrabold uppercase tracking-wide text-slate-400">Yang bisa dicoba</dt>
+                        <dt className="font-extrabold uppercase tracking-wide text-slate-500">Yang bisa dicoba</dt>
                         <dd className="mt-1 font-medium leading-5 text-slate-600">
                             Muat ulang sekali lagi, lalu buka menu lain di sidebar. Bila hanya satu halaman yang gagal,
                             lanjutkan pekerjaan lewat menu yang lain dan laporkan halaman tersebut.
                         </dd>
                     </div>
                     <div>
-                        <dt className="font-extrabold uppercase tracking-wide text-slate-400">Saat melaporkan</dt>
+                        <dt className="font-extrabold uppercase tracking-wide text-slate-500">Saat melaporkan</dt>
                         <dd className="mt-1 font-medium leading-5 text-slate-600">
                             Sertakan <span className="font-mono">digest</span> di bawah — itu cara tercepat menemukan
                             jejak kegagalan ini di log server.
@@ -84,6 +84,6 @@ export default function AdminError({
                     </details>
                 ) : null}
             </AdminCard>
-        </div>
+        </AdminPage>
     )
 }

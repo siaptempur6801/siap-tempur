@@ -63,7 +63,7 @@ export default function EventFlyerField({ defaultValue }: { defaultValue?: strin
         <div className="space-y-3 md:col-span-2">
             <input type="hidden" name="flyer_image_url" value={flyerUrl}/>
             <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Foto / flyer event</p>
+                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Foto / flyer event</p>
                 <p className="mt-1 text-xs font-medium text-slate-500">Rasio poster 4:5, JPG/PNG/WebP, maksimal 4 MB.</p>
             </div>
 

@@ -33,6 +33,7 @@
 .agent/
 .agents/
 .codex/
+.commandcode/
 supabase/.temp/
 testsprite_tests/tmp/*
 !testsprite_tests/tmp/prd_files/

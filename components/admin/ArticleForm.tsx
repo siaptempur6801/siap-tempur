@@ -10,6 +10,7 @@ import type { ArticleActionState } from '@/app/actions/articles'
 import ArticleRichTextEditor from './ArticleRichTextEditor'
 import {
     AdminCard,
+    AdminPage,
     AdminPageHeader,
     adminInputClass,
     adminPrimaryButtonClass,
@@ -40,7 +41,7 @@ function SubmitButton() {
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
-    return <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">{children}</span>
+    return <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{children}</span>
 }
 
 export default function ArticleForm({ title, action, defaultValues }: ArticleFormProps) {
@@ -82,7 +83,7 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
     }
 
     return (
-        <div className="mx-auto max-w-5xl space-y-6 pb-10">
+        <AdminPage className="mx-auto max-w-5xl">
             <AdminPageHeader
                 title={title}
                 description="Tulis dan simpan sebagai draft terlebih dahulu. Status publikasi dikelola dari daftar Articles sesuai permission akun."
@@ -95,21 +96,21 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
 
                     <div className="grid gap-5 md:grid-cols-2">
                         <label className="space-y-1.5"><FieldLabel>Judul</FieldLabel><input name="title" value={articleTitle} onChange={(event) => setArticleTitle(event.target.value)} required minLength={3} maxLength={160} className={adminInputClass}/></label>
-                        <label className="space-y-1.5"><FieldLabel>Slug</FieldLabel><input name="slug" value={slug} onChange={(event) => setSlug(event.target.value)} required minLength={3} maxLength={180} placeholder="contoh-artikel-cpns" className={adminInputClass}/><span className="block text-xs font-medium text-slate-400">URL publik: /blog/{slug || 'slug-artikel'}</span></label>
+                        <label className="space-y-1.5"><FieldLabel>Slug</FieldLabel><input name="slug" value={slug} onChange={(event) => setSlug(event.target.value)} required minLength={3} maxLength={180} placeholder="contoh-artikel-cpns" className={adminInputClass}/><span className="block text-xs font-medium text-slate-500">URL publik: /blog/{slug || 'slug-artikel'}</span></label>
                     </div>
 
                     <div className="grid gap-5 md:grid-cols-2">
                         <label className="space-y-1.5"><FieldLabel>Kategori</FieldLabel><input name="category" value={category} onChange={(event) => setCategory(event.target.value)} maxLength={80} placeholder="Tips, Berita, Strategi SKD" className={adminInputClass}/></label>
-                        <label className="space-y-1.5"><FieldLabel>Cover image</FieldLabel><div className="flex flex-col gap-2 sm:flex-row"><button type="button" onClick={() => coverInputRef.current?.click()} disabled={isUploadingCover} className={adminSecondaryButtonClass}>{isUploadingCover ? <Loader2 size={16} className="animate-spin"/> : <ImageIcon size={16}/>}Upload</button><input name="cover_image_url" type="url" value={coverImageUrl} onChange={(event) => setCoverImageUrl(event.target.value)} placeholder="https://... atau klik Upload" className={adminInputClass}/></div><input type="file" ref={coverInputRef} onChange={handleCoverUpload} accept="image/jpeg, image/png, image/webp, image/gif" className="hidden"/><span className="block text-xs font-medium text-slate-400">JPG, PNG, WebP, atau GIF. Maksimal 2MB.</span></label>
+                        <label className="space-y-1.5"><FieldLabel>Cover image</FieldLabel><div className="flex flex-col gap-2 sm:flex-row"><button type="button" onClick={() => coverInputRef.current?.click()} disabled={isUploadingCover} className={adminSecondaryButtonClass}>{isUploadingCover ? <Loader2 size={16} className="animate-spin"/> : <ImageIcon size={16}/>}Upload</button><input name="cover_image_url" type="url" value={coverImageUrl} onChange={(event) => setCoverImageUrl(event.target.value)} placeholder="https://... atau klik Upload" className={adminInputClass}/></div><input type="file" ref={coverInputRef} onChange={handleCoverUpload} accept="image/jpeg, image/png, image/webp, image/gif" className="hidden"/><span className="block text-xs font-medium text-slate-500">JPG, PNG, WebP, atau GIF. Maksimal 2MB.</span></label>
                     </div>
 
-                    <label className="block space-y-1.5"><FieldLabel>Ringkasan</FieldLabel><textarea name="excerpt" value={excerpt} onChange={(event) => setExcerpt(event.target.value)} maxLength={320} rows={3} className={`${adminInputClass} resize-y`}/><span className="block text-right text-xs font-medium text-slate-400">{excerpt.length}/320</span></label>
+                    <label className="block space-y-1.5"><FieldLabel>Ringkasan</FieldLabel><textarea name="excerpt" value={excerpt} onChange={(event) => setExcerpt(event.target.value)} maxLength={320} rows={3} className={`${adminInputClass} resize-y`}/><span className="block text-right text-xs font-medium text-slate-500">{excerpt.length}/320</span></label>
 
                     <label className="block space-y-1.5"><FieldLabel>Konten artikel</FieldLabel><ArticleRichTextEditor content={content} onChange={setContent}/><input type="hidden" name="content" value={content}/></label>
 
                     <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-end"><Link href="/admin/content/articles" className={adminSecondaryButtonClass}>Batal</Link><SubmitButton/></div>
                 </form>
             </AdminCard>
-        </div>
+        </AdminPage>
     )
 }

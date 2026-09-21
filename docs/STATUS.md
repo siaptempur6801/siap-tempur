@@ -1,7 +1,7 @@
 # STATUS — Siap Tempur
 
 > **Ini satu-satunya sumber kebenaran status project.**
-> Terakhir diperbarui: **2026-09-16**
+> Terakhir diperbarui: **2026-09-21**
 > Dokumen roadmap/checklist lama bersifat **historis** dan tidak boleh dijadikan acuan status — lihat [Peta dokumen](#peta-dokumen).
 
 ---
@@ -56,6 +56,71 @@ Di luar cakupan (ditunda): TKA SD, TKA SMA/SMK, B2B sekolah.
 | 6. TKA SD hardening | ⏸ ditunda |
 | 7. TKA SMA | ⏸ ditunda |
 | 8. Platform expansion (B2B, notifikasi, analytics) | ⏸ ditunda |
+
+---
+
+## Question Bank hardening — 2026-09-21
+
+**Kode, staging, dan produksi: migration terverifikasi ter-apply. Kode dirilis lewat commit ini;
+domain publik tetap ditahan (dark launch).**
+Migration: `supabase/migrations/20260921062621_question_bank_atomic_editor.sql`, tercatat di ledger
+**staging `lpgrivowdcepcxradavu` dan produksi `llnttutwhtvxtdktiizo`**. Verifikasi read-only ke
+produksi (2026-09-21): ledger 179 = 179 file repo tanpa selisih; kelima fungsi Question Bank ada
+dengan signature dan mode keamanan sama; **md5 `pg_get_functiondef` identik dengan staging**; ACL
+produksi: `anon` tidak dapat execute, `authenticated` dapat execute wrapper. Tidak ada fallback ke
+penyimpanan non-atomik.
+
+Perbaikan:
+- Transport opsi JSON tanpa mengubah `|`, rumus, baris baru, Unicode, gambar, nilai null, atau skor 0.
+  Review Workspace memakai parser/serializer yang sama; payload pipe lama tetap dapat dibaca.
+- Detail editor dibaca melalui satu RPC terotorisasi, terlepas dari pagination/filter daftar.
+  ID tidak ditemukan menampilkan pesan; opsi tersimpan tidak diganti opsi contoh.
+  Filter kode mapel tidak dikenal memakai UUID kosong yang valid agar tidak memicu error database.
+- Mutasi soal, opsi, pembahasan, materi, versi, dan audit berada dalam satu transaksi.
+  Row lock + versi + `updated_at` menolak konflik; ID opsi yang masih ada dipertahankan.
+- Actor berasal dari sesi, permission global dan status akun dicek di DB. Publikasi memerlukan
+  `content.publish` dan status approved melalui workflow resmi. Konten review/approved/published
+  terkunci; revisi memerlukan kembali ke draf. Arsip/revisi memeriksa konteks dan concurrency token.
+- Form mencakup pembahasan, stimulus, materi, level kognitif, estimasi waktu, sumber, alasan perubahan,
+  pratinjau rumus/gambar dan riwayat versi. Error mempertahankan input; snapshot editor tidak berubah
+  diam-diam ketika Server Action merender ulang RSC setelah konflik. Pending/konfirmasi tutup form
+  dan pemeliharaan filter, mapel, kata kunci, serta halaman telah diuji.
+
+Verifikasi selesai:
+- Lint tanpa error/warning, typecheck, **601 unit test / 79 file**, build lolos.
+- Build tetap memiliki warning lama di `lib/event-certificate-pdf.ts` tentang tracing filesystem;
+  warning konfigurasi Vitest lama juga masih ada. Keduanya di luar perubahan Question Bank.
+- `npm run test:question-bank`: seluruh gate DB + browser lulus pada aplikasi lokal port 3105
+  yang terhubung staging. CPNS serta TKA SD/SMP/SMA; single/multiple/category; akses anonim/FINANCE;
+  konteks silang; dua penyimpanan bersamaan; audit/versi/ID opsi; edit di luar hasil daftar;
+  validasi gagal lalu simpan ulang; konflik dua tab tetap mempertahankan input;
+  buat soal melalui browser; konfirmasi unsaved; invalid ID; filter mapel tidak dikenal; workflow review tiga tahap sampai
+  publikasi dan revisi kembali ke draf. Fixture milik run dibersihkan di `finally`.
+- Chromium desktop 1440 px, tablet 1024 px, mobile 390 px: tidak ada overflow halaman/modal;
+  tidak ada page error / console error pada alur yang diuji, pratinjau dirender.
+- Uji SQL dalam transaksi **ROLLBACK**: kegagalan audit di langkah akhir membatalkan soal, opsi,
+  dan version history; pengeditan saat attempt aktif ditolak; manager tanpa `content.publish`
+  tidak dapat menerbitkan; akun suspended ditolak; pergantian mapel melepas pemetaan materi
+  dari mapel sebelumnya dan menyimpan materi utama baru dalam satu transaksi.
+- ACL diverifikasi: wrapper public SECURITY INVOKER, fungsi privileged di app_private,
+  search_path kosong, anon tidak dapat execute. Security advisor tidak melaporkan objek Question Bank
+  baru; **64 temuan lain di staging masih ada** dan bukan scope hardening ini.
+
+Cakupan ini bukan klaim bebas bug untuk seluruh platform atau seluruh browser. Yang belum
+diverifikasi: CI remote untuk perubahan ini dan browser selain Chromium. Database produksi sudah
+diverifikasi untuk migration (lihat di atas).
+
+File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ada dipertahankan):
+- `app/actions/question-bank.ts`, `app/actions/admin-v2.ts`, `app/actions/content-review.ts`
+- `app/admin/AdminOperationsWorkspace.tsx`, `app/admin/content/questions/page.tsx`,
+  `app/admin/content/review/page.tsx`
+- `components/admin/QuestionBankForm.tsx`, `components/admin/QuestionOptionsEditor.tsx`,
+  `components/admin/AdminModal.tsx`
+- `lib/question-bank.ts`, `lib/question-options.ts`
+- `src/services/question-bank.service.ts`, `src/services/admin-v2.service.ts`
+- `types/database.types.ts`, migration di atas
+- `tests/unit/question-bank.test.ts`, `tests/unit/admin-question-options.test.ts`
+- `scripts/test-question-bank.mjs`, `package.json`, `docs/STATUS.md`
 
 ---
 

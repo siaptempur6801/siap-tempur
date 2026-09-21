@@ -7,19 +7,9 @@ import {
     serializeQuestionOption,
 } from '@/lib/question-options'
 
-/**
- * Kontrak payload opsi soal.
- *
- * Format `key|content|score|isCorrect|responseGroup|groupOrder|imageUrl` adalah
- * jembatan antara `QuestionOptionsEditor` (klien) dan server action. Dua bug
- * nyata yang mendasari test ini:
- *
- * 1. `app/actions/admin-v2.ts` hanya membaca ENAM field, sehingga `imageUrl`
- *    yang dikirim editor dibuang tanpa pesan — gambar opsi hilang saat disimpan
- *    dari Question Bank. Jalur Content Workspace sudah lama membacanya.
- * 2. Question Bank masih memakai textarea mentah berisi format tersebut,
- *    padahal `docs/ADMIN_UI_UX_STANDARD.md` §7 melarang mengekspos format
- *    storage sebagai input utama dan editor terstruktur sudah tersedia.
+/** JSON is the canonical lossless editor transport. Legacy pipe payloads remain
+ * readable for already-open forms during rollout. Both Question Bank and Review
+ * Workspace use this contract, including images, null scores and category groups.
  */
 
 const repoRoot = resolve(__dirname, '../..')
@@ -93,7 +83,7 @@ describe('parseQuestionOptions', () => {
 })
 
 describe('serializeOptionRows', () => {
-    it('menyusun tujuh field dari baris question_options', () => {
+    it('menyusun payload JSON dari baris question_options', () => {
         const raw = serializeOptionRows([
             {
                 option_key: 'A',
@@ -105,19 +95,18 @@ describe('serializeOptionRows', () => {
                 image_url: 'https://contoh.test/a.png',
             },
         ])
-        expect(raw).toBe('A|Ibu kota Indonesia|5|true|GEO|1|https://contoh.test/a.png')
+        expect(parseQuestionOptions(raw)[0]).toMatchObject({ key: 'A', content: 'Ibu kota Indonesia', score: 5, isCorrect: true, responseGroup: 'GEO', responseGroupOrder: 1, imageUrl: 'https://contoh.test/a.png' })
     })
 
-    it('null menjadi field kosong, bukan teks "null"', () => {
+    it('null dipertahankan sebagai null', () => {
         const raw = serializeOptionRows([
             { option_key: 'B', content: 'Pilihan B', score: null, is_correct: false, response_group: null, response_group_order: null, image_url: null },
         ])
-        expect(raw).toBe('B|Pilihan B||false|||')
-        expect(raw).not.toContain('null')
+        expect(parseQuestionOptions(raw)[0]).toMatchObject({ key: 'B', score: null, responseGroup: null, imageUrl: null })
     })
 
-    it('baris kosong menghasilkan string kosong', () => {
-        expect(serializeOptionRows([])).toBe('')
+    it('baris kosong menghasilkan array kosong', () => {
+        expect(parseQuestionOptions(serializeOptionRows([]))).toEqual([])
     })
 })
 
@@ -151,7 +140,7 @@ describe('round-trip editor ↔ server', () => {
         })
     })
 
-    it('serializeQuestionOption membuang pemisah "|" agar baris tidak pecah', () => {
+    it('serializeQuestionOption mempertahankan pemisah sebagai konten', () => {
         const line = serializeQuestionOption({
             key: 'a',
             content: 'satu|dua',
@@ -160,13 +149,13 @@ describe('round-trip editor ↔ server', () => {
             responseGroup: 'G|1',
             imageUrl: 'https://contoh.test/a|b.png',
         })
-        expect(line.split('|')).toHaveLength(7)
+        expect(parseQuestionOptions(line)[0]).toMatchObject({ content: 'satu|dua', responseGroup: 'G|1', imageUrl: 'https://contoh.test/a|b.png' })
         expect(parseQuestionOptions(line)).toHaveLength(1)
     })
 })
 
 describe('Question Bank memakai editor terstruktur', () => {
-    const workspace = source('app/admin/AdminOperationsWorkspace.tsx')
+    const workspace = source('components/admin/QuestionBankForm.tsx')
 
     it('merender QuestionOptionsEditor', () => {
         expect(workspace).toMatch(/import\s+QuestionOptionsEditor\s+from\s+'@\/components\/admin\/QuestionOptionsEditor'/)

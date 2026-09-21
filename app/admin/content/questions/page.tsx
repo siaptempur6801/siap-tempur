@@ -1,3 +1,5 @@
+export const metadata = { title: 'Question Bank | Admin Siap Tempur' }
+
 import AdminOperationsWorkspace from '@/app/admin/AdminOperationsWorkspace'
 
 export const dynamic = 'force-dynamic'

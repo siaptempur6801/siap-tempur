@@ -4,6 +4,7 @@ import { useActionState, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toCsvWithColumns, safeFileName } from '@/lib/csv'
+import { adminDangerButtonClass, adminPrimaryButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 import {
     IMPORT_STATUS_LABELS,
     PARTICIPANT_IMPORT_COLUMNS,
@@ -108,11 +109,11 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
                     </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => download(`template-peserta-${safeFileName(batchCode)}.csv`, templateCsv)} className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                    <button type="button" onClick={() => download(`template-peserta-${safeFileName(batchCode)}.csv`, templateCsv)} className={`${adminSecondaryButtonClass} min-h-9 px-3 text-xs`}>
                         <Download size={14}/>Template
                     </button>
                     {preview && preview.error > 0 ? (
-                        <button type="button" onClick={() => download(`kesalahan-impor-${safeFileName(batchCode)}.csv`, errorFileCsv(preview))} className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 text-xs font-bold text-red-700 hover:bg-red-100">
+                        <button type="button" onClick={() => download(`kesalahan-impor-${safeFileName(batchCode)}.csv`, errorFileCsv(preview))} className={`${adminDangerButtonClass} min-h-9 px-3 text-xs`}>
                             <Download size={14}/>Berkas kesalahan
                         </button>
                     ) : null}
@@ -120,16 +121,16 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
             </div>
 
             <details className="mt-3">
-                <summary className="cursor-pointer text-[11px] font-extrabold uppercase tracking-wide text-slate-400 hover:text-slate-600">Kolom yang dikenali</summary>
+                <summary className="cursor-pointer text-[11px] font-extrabold uppercase tracking-wide text-slate-500 hover:text-slate-600">Kolom yang dikenali</summary>
                 <dl className="mt-2 grid gap-1 sm:grid-cols-2">
                     {PARTICIPANT_IMPORT_COLUMNS.map((column) => (
                         <div key={column} className="flex gap-2 text-[11px] leading-5">
                             <dt className="font-mono font-bold text-slate-600">{column}</dt>
-                            <dd className="font-medium text-slate-400">{PARTICIPANT_IMPORT_COLUMN_LABELS[column]}</dd>
+                            <dd className="font-medium text-slate-500">{PARTICIPANT_IMPORT_COLUMN_LABELS[column]}</dd>
                         </div>
                     ))}
                 </dl>
-                <p className="mt-2 text-[11px] font-medium leading-5 text-slate-400">
+                <p className="mt-2 text-[11px] font-medium leading-5 text-slate-500">
                     Pemisah koma maupun titik koma dikenali, begitu juga berkas ekspor Excel dengan BOM.
                     Baris dengan kode/email/HP yang sama tidak akan digandakan.
                 </p>
@@ -166,15 +167,15 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
                             if (file) void readFile(file)
                         }}
                     />
-                    <button type="button" onClick={() => fileInput.current?.click()} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50">
+                    <button type="button" onClick={() => fileInput.current?.click()} className={adminSecondaryButtonClass}>
                         <Upload size={15}/>Pilih berkas CSV
                     </button>
                     {fileName ? <span className="text-xs font-semibold text-slate-500">{fileName}</span> : null}
-                    {csv ? <span className="text-xs font-medium text-slate-400">{csv.split(/\r?\n/).filter((line) => line.trim()).length} baris terbaca</span> : null}
+                    {csv ? <span className="text-xs font-medium text-slate-500">{csv.split(/\r?\n/).filter((line) => line.trim()).length} baris terbaca</span> : null}
                 </div>
 
                 <label className="block space-y-1.5">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">Atau tempel isi CSV</span>
+                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Atau tempel isi CSV</span>
                     <textarea
                         value={csv}
                         onChange={(event) => { setCsv(event.target.value); setFileName('') }}
@@ -183,7 +184,7 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
                     />
                 </label>
 
-                <button type="submit" disabled={pending || !csv.trim()} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="submit" disabled={pending || !csv.trim()} className={adminSecondaryButtonClass}>
                     {previewPending ? 'Memeriksa…' : 'Periksa dulu'}
                 </button>
             </form>
@@ -191,7 +192,7 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
             <form action={commitAction} className="mt-3 flex flex-wrap items-center gap-2">
                 <input type="hidden" name="batch_id" value={batchId}/>
                 <input type="hidden" name="csv" value={csv}/>
-                <button type="submit" disabled={pending || !csv.trim() || hasBlockingErrors} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="submit" disabled={pending || !csv.trim() || hasBlockingErrors} className={adminPrimaryButtonClass}>
                     {commitPending ? 'Mengimpor…' : 'Impor sekarang'}
                 </button>
                 {hasBlockingErrors ? (
@@ -226,7 +227,7 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
                             { label: 'Perlu diperbaiki', value: preview.error, tone: preview.error > 0 ? 'text-red-600' : 'text-slate-400' },
                         ].map((metric) => (
                             <div key={metric.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">{metric.label}</div>
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{metric.label}</div>
                                 <div className={cn('mt-1 text-lg font-black', metric.tone)}>{metric.value}</div>
                             </div>
                         ))}
@@ -234,7 +235,7 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
 
                     <div className="max-h-80 overflow-auto rounded-xl border border-slate-200">
                         <table className="w-full min-w-[720px] text-left text-sm">
-                            <thead className="sticky top-0 bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                            <thead className="sticky top-0 bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
                                 <tr>
                                     <th className="px-3 py-2">Baris</th>
                                     <th className="px-3 py-2">Status</th>

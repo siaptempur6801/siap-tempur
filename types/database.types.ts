@@ -767,6 +767,14 @@ export type Database = {
         }
         Views: { [_ in never]: never }
         Functions: {
+            get_question_bank_editor: {
+                Args: { p_program: string; p_track: string; p_id?: string | null }
+                Returns: Json
+            }
+            mutate_question_bank: {
+                Args: { p_payload: Json }
+                Returns: Json
+            }
             /**
              * Entri ini ditulis tangan, bukan hasil `supabase gen types`.
              * Karena bagian lain masih `GenericTable`, SETIAP nama RPC yang dipakai
