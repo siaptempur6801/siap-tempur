@@ -281,6 +281,22 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   (2026-09-21, GO eksplisit; ledger via `migration repair`). Verifikasi produksi: parity 12/12,
   `review-draft-concurrency` tetap 5/5, 978 soal tidak berubah, 0 fungsi uji tertinggal.
 
+### Kebijakan penugasan reviewer — aturan C (2026-09-22)
+- Permission baru `content.assign` (ADMIN/SUPER_ADMIN) memisahkan **menugaskan ke orang lain**
+  (aksi manajerial) dari **klaim untuk diri sendiri**.
+- `assign_question_reviewer`: klaim diri cukup `content.review`; menugaskan/memindahkan ke orang lain
+  wajib `content.assign`/`question.manage`; review yang dipegang reviewer lain tidak bisa direbut lewat
+  klaim diri. `claim_pilot_review_stage` (klaim massal) sudah self-only dan tidak berubah.
+- UI: reviewer melihat tombol **"Klaim untuk saya"**; dropdown **"Tugaskan"** hanya untuk pemegang
+  assign/manage. Aksi menolak lebih awal dengan pesan yang jelas bila reviewer mencoba menugaskan orang lain.
+- Migration `20260922010000_review_assign_policy_v1.sql` — **ter-apply di staging**; **produksi
+  menunggu GO**.
+- Verifikasi `scripts/db-verify/review-assign-policy.sql` **6/6**: manager assign ok; reviewer assign
+  ke orang lain ditolak; reviewer klaim diri ok; reviewer rebut review ditolak; manager pindahkan ok;
+  grant `content.assign` ke non-manager = 0. Gate Review 5 passed exit 0.
+- Catatan: `content.publish` masih dimiliki CONTENT_REVIEWER (belum dipisah ke manager) — keputusan
+  produk terpisah, belum diubah.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
@@ -297,7 +313,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **628 unit test / 85 file** · build lolos.
+- Lint 0/0 · typecheck · **632 unit test / 86 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -316,7 +332,8 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `tests/e2e/specs/7-content-review-workflow.spec.ts`, `tests/unit/postgrest-filter.test.ts`,
 `tests/unit/review-draft-concurrency.test.ts`, `tests/unit/review-batch-n1.test.ts`,
 `tests/unit/content-review-counts.test.ts`, `tests/unit/admin-audit-label.test.ts`,
-`docs/STATUS.md`.
+`tests/unit/review-assign-policy.test.ts`, `supabase/migrations/20260922010000_*.sql`,
+`scripts/db-verify/review-assign-policy.sql`, `src/auth/permissions.ts`, `docs/STATUS.md`.
 
 ---
 

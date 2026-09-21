@@ -51,11 +51,10 @@ async function openQuestion(page: Page, questionId: string) {
     expect(previewTop).toBeLessThan(actionTop)
 }
 
-async function assignToReviewer(page: Page, reviewerId: string) {
-    const select = page.locator('select[name="reviewer_id"]')
-    await expect(select).toBeVisible()
-    await select.selectOption(reviewerId)
-    await followServerAction(page, page.getByRole('button', { name: 'Tugaskan', exact: true }))
+async function assignToReviewer(page: Page) {
+    // Aturan C: CONTENT_REVIEWER hanya bisa mengklaim untuk dirinya sendiri;
+    // dropdown "Tugaskan" hanya untuk pemegang content.assign/question.manage.
+    await followServerAction(page, page.getByRole('button', { name: 'Klaim untuk saya', exact: true }))
     await expect(page.getByText('Reviewer berhasil ditugaskan.')).toBeVisible()
 }
 
@@ -171,15 +170,15 @@ test('author → reviewer → editorial → academic → technical QA → publis
     if (evidenceDir) await reviewerPage.screenshot({ path: path.join(evidenceDir, 'review-mobile.png'), fullPage: false })
     await reviewerPage.setViewportSize({ width: 1440, height: 900 })
 
-    await assignToReviewer(reviewerPage, users.reviewer.userId)
+    await assignToReviewer(reviewerPage)
     await approveStage(reviewerPage, 'Editorial E2E approved')
     await expect(reviewerPage.getByText('Academic Review', { exact: true }).last()).toBeVisible()
 
-    await assignToReviewer(reviewerPage, users.reviewer.userId)
+    await assignToReviewer(reviewerPage)
     await approveStage(reviewerPage, 'Academic E2E approved')
     await expect(reviewerPage.getByText('Technical QA', { exact: true }).last()).toBeVisible()
 
-    await assignToReviewer(reviewerPage, users.reviewer.userId)
+    await assignToReviewer(reviewerPage)
     await approveStage(reviewerPage, 'Technical QA E2E approved')
     await expect(reviewerPage.getByText('Disetujui', { exact: true }).last()).toBeVisible()
 

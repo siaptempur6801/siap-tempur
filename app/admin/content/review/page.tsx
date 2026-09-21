@@ -225,9 +225,16 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
         && ['draft', 'revision_required'].includes(lower(selected?.status))
         && (permissions.has(PERMISSIONS.CONTENT_UPDATE) || permissions.has(PERMISSIONS.CONTENT_CREATE) || canManageQuestions)
         && (currentActorIsAuthor || canManageQuestions)
-    const canAssign = Boolean(selected?.current_stage)
+    // Aturan C: menugaskan ke orang lain = aksi manajerial; reviewer hanya
+    // mengklaim untuk dirinya sendiri.
+    const canAssignOthers = Boolean(selected?.current_stage)
         && Boolean(pendingReview)
-        && (permissions.has(PERMISSIONS.CONTENT_REVIEW) || canManageQuestions)
+        && (permissions.has(PERMISSIONS.CONTENT_ASSIGN) || canManageQuestions)
+    const canClaim = Boolean(selected?.current_stage)
+        && Boolean(pendingReview)
+        && !pendingReview?.reviewer_id
+        && permissions.has(PERMISSIONS.CONTENT_REVIEW)
+        && !currentActorIsAuthor
     const canReview = Boolean(selected?.current_stage)
         && permissions.has(PERMISSIONS.CONTENT_REVIEW)
         && s(selected?.reviewer_id) === authorization.userId
@@ -235,13 +242,15 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
     const canPublish = lower(selected?.status) === 'approved' && permissions.has(PERMISSIONS.CONTENT_PUBLISH)
     const nextActionCopy = canReview
         ? 'Periksa isi soal di atas, tulis catatan bila perlu, lalu pilih keputusan review.'
-        : canAssign
+        : canAssignOthers
             ? `Pilih reviewer untuk tahap ${stageLabel(selected?.current_stage)}.`
-            : canSubmit
-                ? 'Pastikan draf lengkap, lalu kirim ke Editorial Review.'
-                : canPublish
-                    ? 'Seluruh tahap review selesai. Soal siap diterbitkan.'
-                    : 'Tidak ada tindakan yang perlu Anda lakukan pada tahap ini.'
+            : canClaim
+                ? `Klaim review tahap ${stageLabel(selected?.current_stage)} untuk diri Anda, lalu beri keputusan.`
+                : canSubmit
+                    ? 'Pastikan draf lengkap, lalu kirim ke Editorial Review.'
+                    : canPublish
+                        ? 'Seluruh tahap review selesai. Soal siap diterbitkan.'
+                        : 'Tidak ada tindakan yang perlu Anda lakukan pada tahap ini.'
     const primaryNode = data.knowledgeMappings.find((row) => lower(row.relation_type) === 'primary') as Row | undefined
 
     const visibleQuestions = data.questions
@@ -404,7 +413,9 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                                     <p className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-bold leading-6 text-blue-900">{nextActionCopy}</p>
                                     {canSubmit ? <form action={submitContentQuestionAction}><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><button className={adminPrimaryButtonClass}><Send size={16}/>Kirim ke Editorial Review</button></form> : null}
 
-                                    {canAssign ? <form action={assignContentReviewerAction} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><label htmlFor="assign-reviewer-select" className="block text-xs font-extrabold uppercase tracking-wide text-slate-500">Pilih reviewer</label><div className="mt-2 flex flex-col gap-2 sm:flex-row"><select id="assign-reviewer-select" className={adminInputClass} name="reviewer_id" required defaultValue={s(pendingReview?.reviewer_id)}><option value="">Pilih reviewer</option>{data.reviewers.filter((reviewer) => s(reviewer.id) !== s(selected.author_id)).map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name}</option>)}</select><button className={adminPrimaryButtonClass}><UserCheck size={16}/>Tugaskan</button></div></form> : null}
+                                    {canAssignOthers ? <form action={assignContentReviewerAction} className="rounded-xl border border-slate-200 bg-slate-50 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><label htmlFor="assign-reviewer-select" className="block text-xs font-extrabold uppercase tracking-wide text-slate-500">Pilih reviewer</label><div className="mt-2 flex flex-col gap-2 sm:flex-row"><select id="assign-reviewer-select" className={adminInputClass} name="reviewer_id" required defaultValue={s(pendingReview?.reviewer_id)}><option value="">Pilih reviewer</option>{data.reviewers.filter((reviewer) => s(reviewer.id) !== s(selected.author_id)).map((reviewer) => <option key={reviewer.id} value={reviewer.id}>{reviewer.full_name}</option>)}</select><button className={adminPrimaryButtonClass}><UserCheck size={16}/>Tugaskan</button></div></form> : null}
+
+                                    {canClaim && !canAssignOthers ? <form action={assignContentReviewerAction} className="rounded-xl border border-blue-200 bg-blue-50/60 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><input type="hidden" name="reviewer_id" value={authorization.userId}/><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-medium leading-6 text-slate-600">Belum ada reviewer untuk tahap ini. Klaim untuk mulai memeriksa.</p><button className={adminPrimaryButtonClass}><UserCheck size={16}/>Klaim untuk saya</button></div></form> : null}
 
                                     {Boolean(selected.current_stage) && !pendingReview ? <p className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm font-bold text-orange-800">Stage aktif tidak memiliki pending review. Periksa workflow history.</p> : null}
 

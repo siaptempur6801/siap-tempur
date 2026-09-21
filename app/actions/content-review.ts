@@ -67,6 +67,7 @@ function friendlyError(error: unknown) {
         'Author cannot review their own question': 'Author tidak boleh mereview soalnya sendiri.',
         'Target user is not an active content reviewer': 'Reviewer tujuan tidak aktif atau tidak memiliki permission review.',
         'Question is not assigned to current reviewer': 'Soal ini tidak ditugaskan kepada reviewer yang sedang login.',
+        'Review is already assigned to another reviewer': 'Review ini sudah dipegang reviewer lain. Hanya admin yang dapat memindahkannya.',
         'Only approved questions can be published': 'Hanya soal approved yang dapat dipublish.',
         QUESTION_VERSION_CONFLICT: 'Soal sudah berubah sejak form ini dibuka. Muat ulang halaman, lalu terapkan perubahan Anda pada versi terbaru.',
         QUESTION_VERSION_INVALID: 'Versi soal tidak valid. Muat ulang halaman sebelum menyimpan.',
@@ -172,9 +173,16 @@ export async function assignContentReviewerAction(form: FormData) {
     let failure: unknown = null
     try {
         await validateCsrf()
-        await requireAny([PERMISSIONS.CONTENT_REVIEW, PERMISSIONS.QUESTION_MANAGE])
+        const authorization = await requireAny([PERMISSIONS.CONTENT_REVIEW, PERMISSIONS.CONTENT_ASSIGN, PERMISSIONS.QUESTION_MANAGE])
         const reviewerId = text(form, 'reviewer_id')
         if (!reviewerId) throw new Error('Reviewer wajib dipilih.')
+        // Menugaskan ke orang lain adalah aksi manajerial; reviewer hanya boleh
+        // mengklaim untuk dirinya sendiri (aturan C).
+        const canAssignOthers = authorization.permissions.includes(PERMISSIONS.CONTENT_ASSIGN)
+            || authorization.permissions.includes(PERMISSIONS.QUESTION_MANAGE)
+        if (reviewerId !== authorization.userId && !canAssignOthers) {
+            throw new AuthorizationError('Menugaskan reviewer lain membutuhkan permission content.assign.')
+        }
         const client = await createClient()
         const { error } = await client.rpc('assign_question_reviewer', {
             p_question_id: questionId,

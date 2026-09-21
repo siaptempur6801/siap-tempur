@@ -1,6 +1,7 @@
 export const PERMISSIONS = {
     ADMIN_ACCESS: 'admin.access',
     AUDIT_READ: 'audit.read',
+    CONTENT_ASSIGN: 'content.assign',
     CONTENT_CREATE: 'content.create',
     CONTENT_PUBLISH: 'content.publish',
     CONTENT_READ: 'content.read',
