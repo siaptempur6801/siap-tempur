@@ -102,11 +102,13 @@ Perbaikan:
   bukan daftar berkas manual — dua berkas yang sebelumnya lolos (`QuestionBankForm`, `AdminModal`)
   kini tertutup.
 - **Katalog editor dimuat malas (P3).** `get_question_bank_editor` mengembalikan seluruh stimulus
-  satu track; terukur di staging **SD 1.036 kB · SMP 1.027 kB** (SMA/SKD 0) dan sebelumnya dipanggil
-  di setiap pemuatan halaman daftar. Kini `QuestionBankEditorModal` memuatnya saat modal dibuka
-  (trigger "Tambah soal" atau `defaultOpen` dari `?edit=`), memakai sesi pengguna langsung ke RPC;
-  halaman daftar tidak lagi membayar payload itu. `AdminModal` mendapat `onOpen` (sekali, termasuk
-  saat `defaultOpen`). Dikunci 2 unit test.
+  satu track dan sebelumnya dipanggil di setiap pemuatan halaman daftar. Kini
+  `QuestionBankEditorModal` memuatnya saat modal dibuka (trigger "Tambah soal" atau `defaultOpen`
+  dari `?edit=`), memakai sesi pengguna langsung ke RPC; halaman daftar tidak lagi membayar payload
+  itu. `AdminModal` mendapat `onOpen` (sekali, termasuk saat `defaultOpen`). Dikunci 2 unit test.
+  **Koreksi angka:** pengukuran awal menyebut ~1 MB per track — itu artefak join (konten terkalikan
+  jumlah knowledge node). Angka benar: **24 kB (SD) · 18 kB (SMP)**, jadi ini efisiensi arsitektur,
+  bukan penyelamat payload besar.
 - Dead code dibuang: `listQuestionOptions` (service) dan `serializeQuestionOption` (hanya dipakai
   test) beserta union tipe `question_options` di `listRowsForIds`.
 
@@ -175,6 +177,68 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
 - `tests/e2e/specs/20-instansi-join.spec.ts`, `tests/e2e/specs/21-instansi-exam.spec.ts`,
   `tests/e2e/admin-roles.ts`
 - `scripts/test-question-bank.mjs`, `.github/workflows/question-bank-staging-e2e.yml`, `package.json`, `docs/STATUS.md`
+
+---
+
+## Review Queue hardening — 2026-09-21
+
+**Staging: terverifikasi. Produksi: migration BELUM di-apply (butuh GO).**
+
+### P1-b — pencarian aman + pengukuran payload
+- `escapePostgrestValue` dipindah ke satu modul bersama `lib/postgrest-filter.ts` dan dipakai
+  `admin-v2.service` (produk/exam/soal) serta `content-review.service`. Sebelumnya pencarian review
+  hanya membuang `%_`, sehingga `,()` dari kata kunci bisa mengubah bentuk ekspresi `or=(...)`
+  PostgREST. Dikunci unit test, termasuk kontrak "kedua service memakai helper bersama".
+- **Payload detail TIDAK dibatasi — dan memang tidak perlu (dengan bukti).**
+  `get_content_question_detail` mengembalikan `versions` tanpa batas dan `stimulus_candidates`
+  sampai 100. Pengukuran staging: `question_versions` 662 baris dengan **maksimum 1 versi per soal
+  (~2 kB/soal)**; stimulus per subject maksimum **18 kB**. Batas buatan tidak ditambahkan karena
+  tidak ada masalah yang bisa dibuktikan; dicatat sebagai kandidat bila data tumbuh.
+
+### P1-a — optimistic concurrency + ID opsi (migration)
+- `save_question_draft` kini menerima `p_expected_version` + `p_expected_updated_at`, membandingkannya
+  di bawah row lock, dan menolak token basi dengan `QUESTION_VERSION_CONFLICT`. Sebelumnya dua editor
+  dapat saling menimpa tanpa peringatan (last-write-wins).
+- Opsi di-upsert `on conflict (question_id, option_key)`; ID opsi yang masih ada dipertahankan
+  (sebelumnya seluruh opsi dihapus lalu disisipkan ulang).
+- Migration `20260921120000_review_queue_draft_concurrency_v1.sql` **ter-apply di staging** dan
+  tercatat di ledger (via `migration repair`). **Produksi belum.**
+- Verifikasi SQL rollback `scripts/db-verify/review-draft-concurrency.sql` — 5 pemeriksaan:
+  `draft v1` → simpan kedua `v2`; ID opsi dipertahankan `true`; token basi `QUESTION_VERSION_CONFLICT`;
+  token untuk soal baru `QUESTION_VERSION_INVALID`.
+- **Sisa risiko:** saat konflik, halaman review memuat ulang dan input form hilang (form di-render
+  server), berbeda dari Question Bank yang membekukan snapshot di klien. Pesan galat menyuruh
+  menerapkan ulang pada versi terbaru.
+
+### Harness & higiene yang ditemukan saat verifikasi
+- Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
+  locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
+  kini "Disetujui"/"Terbit", Server Action dengan JS menjawab 200 (bukan 303), dan checkbox jawaban
+  benar tidak pernah default A. Semua diperbaiki.
+- Emulator `ci-helper` belum membersihkan artifact content editor (soal CWS-*) dan baris review
+  (`content_reviews.reviewer_id` RESTRICT), sehingga cleanup gagal "Database error deleting user".
+  Disamakan dengan Edge Function; `supabase/functions/ci-e2e-user` ikut ditambal
+  (**belum di-deploy** — perlu keputusan deploy terpisah).
+- `run-gate.mjs`: `stopAll` kini SIGKILL setelah grace period — emulator pernah tertinggal hidup,
+  memegang port 54399, dan membuat run berikutnya memakai kode LAMA (verifikasi menyesatkan).
+  Kegagalan hapus user CI tidak lagi senyap (sebelumnya dihitung sebagai "N user dihapus").
+- Higiene staging: 7 exam draft CI (2026-09-19) + sisa user `ci-*` dihapus; kini **0 user ci-*** dan
+  **0 soal CWS E2E**.
+
+### Verifikasi
+- Lint 0/0 · typecheck · **615 unit test / 83 file** · build lolos.
+- Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
+  (setup + 3 spec + cleanup); port dibersihkan setelah run.
+- Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
+- Gate admin: hijau terakhir 60 passed; perubahan ini tidak menyentuh permukaan admin.
+
+File: `lib/postgrest-filter.ts` (baru), `src/services/admin-v2.service.ts`,
+`src/services/content-review.service.ts`, `app/actions/content-review.ts`,
+`app/admin/content/review/page.tsx`, `supabase/migrations/20260921120000_*.sql`,
+`scripts/db-verify/review-draft-concurrency.sql`, `scripts/local-gates/ci-helper.mjs`,
+`scripts/local-gates/run-gate.mjs`, `supabase/functions/ci-e2e-user/index.ts`,
+`tests/e2e/specs/7-content-review-workflow.spec.ts`, `tests/unit/postgrest-filter.test.ts`,
+`tests/unit/review-draft-concurrency.test.ts`, `docs/STATUS.md`.
 
 ---
 

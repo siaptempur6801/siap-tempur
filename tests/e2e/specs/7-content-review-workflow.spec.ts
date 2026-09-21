@@ -15,7 +15,7 @@ async function login(page: Page, user: UserMeta) {
     await page.goto(`/login?returnTo=${encodeURIComponent(workspaceReturnTo)}`)
     await page.locator('input[type="email"]').fill(user.email)
     await page.locator('input[type="password"]').fill(user.password)
-    await page.getByRole('button', { name: /Masuk|Login/i }).click()
+    await page.getByRole('button', { name: 'Masuk', exact: true }).click()
     await page.waitForURL(/\/admin\/content\/review/)
 }
 
@@ -27,7 +27,9 @@ async function followServerAction(page: Page, trigger: Locator) {
 
     await trigger.click()
     const response = await responsePromise
-    expect(response.status()).toBe(303)
+    // Server Action dengan JS aktif dijawab 200 (redirect ditangani router di
+    // klien); jawaban 303 hanya untuk submit tanpa JS. Keduanya sukses.
+    expect([200, 303]).toContain(response.status())
 
     const actionRedirect = response.headers()['x-action-redirect']
     expect(actionRedirect).toBeTruthy()
@@ -97,7 +99,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await editorPage.goto('/admin/content/review?program=TKA&track=SMP&new=1')
     await expect(editorPage).toHaveURL(/\/admin\/content\/review/)
     await expect(editorPage.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
-    await expect(editorPage.getByRole('banner').getByText('CONTENT_EDITOR', { exact: true })).toBeVisible()
+    await expect(editorPage.getByRole('banner').getByText('Editor Konten', { exact: true })).toBeVisible()
 
     const createSection = editorPage.locator('section').filter({
         has: editorPage.getByRole('heading', { name: 'Buat draft soal' }),
@@ -116,6 +118,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await form.getByLabel('Isi opsi B').fill('Distraktor satu')
     await form.getByLabel('Isi opsi C').fill('Distraktor dua')
     await form.getByLabel('Isi opsi D').fill('Distraktor tiga')
+    await form.getByLabel('Jawaban benar A').check()
     await expect(form.getByLabel('Jawaban benar A')).toBeChecked()
     await form.getByLabel('Pembahasan').fill('Pembahasan E2E: pilihan A adalah jawaban yang benar.')
     await followServerAction(editorPage, form.getByRole('button', { name: 'Simpan draft' }))
@@ -137,7 +140,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     const reviewerPage = await reviewerContext.newPage()
     await login(reviewerPage, users.reviewer)
     await openQuestion(reviewerPage, questionId)
-    await expect(reviewerPage.getByRole('banner').getByText('CONTENT_REVIEWER', { exact: true })).toBeVisible()
+    await expect(reviewerPage.getByRole('banner').getByText('Reviewer Konten', { exact: true })).toBeVisible()
 
     await assignToReviewer(reviewerPage, users.reviewer.userId)
     await approveStage(reviewerPage, 'Editorial E2E approved')
@@ -149,11 +152,11 @@ test('author → reviewer → editorial → academic → technical QA → publis
 
     await assignToReviewer(reviewerPage, users.reviewer.userId)
     await approveStage(reviewerPage, 'Technical QA E2E approved')
-    await expect(reviewerPage.getByText('Approved', { exact: true }).last()).toBeVisible()
+    await expect(reviewerPage.getByText('Disetujui', { exact: true }).last()).toBeVisible()
 
     await followServerAction(reviewerPage, reviewerPage.getByRole('button', { name: 'Publish Question' }))
     await expect(reviewerPage.getByText('Soal berhasil dipublish.')).toBeVisible()
-    await expect(reviewerPage.getByText('Published', { exact: true }).last()).toBeVisible()
+    await expect(reviewerPage.getByText('Terbit', { exact: true }).last()).toBeVisible()
 
     const reviewRounds = reviewerPage.getByRole('heading', { name: 'Review Rounds' }).locator('xpath=ancestor::section[1]')
     await expect(reviewRounds).toContainText('Round 1 · Editorial Review')

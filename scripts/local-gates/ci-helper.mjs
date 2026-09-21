@@ -152,6 +152,56 @@ async function deleteUserFully(userId) {
     if (error && !String(error.message).toLowerCase().includes('not found')) throw error
 }
 
+/**
+ * Baris review yang ditinggalkan user CI.
+ *
+ * `content_reviews.reviewer_id` dan `questions.reviewer_id` memakai ON DELETE
+ * RESTRICT, sehingga reviewer CI tidak pernah bisa dihapus — profil gagal
+ * dihapus, lalu `auth.admin.deleteUser` gagal "Database error deleting user".
+ */
+async function cleanupReviewerArtifacts(userId) {
+    const { error: reviewError } = await admin.from('content_reviews').delete().eq('reviewer_id', userId)
+    if (reviewError) throw reviewError
+    const { error: questionError } = await admin.from('questions').update({ reviewer_id: null }).eq('reviewer_id', userId)
+    if (questionError) throw questionError
+}
+
+/**
+ * Artifact content editor: soal CWS-* yang dibuat user CI.
+ *
+ * Cerminan `cleanupContentEditorArtifacts` di `supabase/functions/ci-e2e-user`.
+ * Tanpa ini, `auth.admin.deleteUser` gagal "Database error deleting user" karena
+ * `questions.author_id` masih mereferensikan user tersebut.
+ */
+async function cleanupContentEditorArtifacts(userId) {
+    const { data: questions, error: questionError } = await admin
+        .from('questions')
+        .select('id')
+        .eq('author_id', userId)
+        .like('question_code', 'CWS-%')
+    if (questionError) throw questionError
+    const questionIds = (questions ?? []).map((row) => String(row.id))
+    if (questionIds.length === 0) return
+
+    // Soal yang sudah dipakai exam/attempt bukan artifact CI — jangan dihapus.
+    const [{ count: examRefs, error: examRefError }, { count: attemptRefs, error: attemptRefError }] = await Promise.all([
+        admin.from('exam_question_items').select('id', { count: 'exact', head: true }).in('question_id', questionIds),
+        admin.from('attempt_questions').select('id', { count: 'exact', head: true }).in('question_id', questionIds),
+    ])
+    if (examRefError) throw examRefError
+    if (attemptRefError) throw attemptRefError
+    if ((examRefs ?? 0) > 0 || (attemptRefs ?? 0) > 0) throw new Error('CI_CONTENT_CLEANUP_OPERATIONAL_REFERENCE')
+
+    for (const step of [
+        () => admin.from('content_reviews').delete().eq('entity_type', 'question').in('entity_id', questionIds),
+        () => admin.from('audit_logs').delete().eq('entity_type', 'question').in('entity_id', questionIds),
+        () => admin.from('questions').delete().in('id', questionIds),
+    ]) {
+        const { error } = await step()
+        if (error) throw error
+    }
+}
+
 async function getUserOrNull(userId) {
     const { data, error } = await admin.auth.admin.getUserById(userId)
     if (error) {
@@ -194,6 +244,8 @@ async function ciUser(body) {
         const user = await getUserOrNull(userId)
         if (!user) return json(200, { ok: true, alreadyDeleted: true })
         if (user.user_metadata?.ci_e2e !== true || !CI_TKA_EMAIL.test(user.email ?? '')) return json(403, { error: 'CI_USER_DELETE_FORBIDDEN' })
+        if (user.user_metadata?.ci_kind === 'content_editor') await cleanupContentEditorArtifacts(userId)
+        await cleanupReviewerArtifacts(userId)
         await deleteUserFully(userId)
         return json(200, { ok: true })
     }

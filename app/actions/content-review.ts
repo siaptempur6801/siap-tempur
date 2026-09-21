@@ -66,6 +66,8 @@ function friendlyError(error: unknown) {
         'Target user is not an active content reviewer': 'Reviewer tujuan tidak aktif atau tidak memiliki permission review.',
         'Question is not assigned to current reviewer': 'Soal ini tidak ditugaskan kepada reviewer yang sedang login.',
         'Only approved questions can be published': 'Hanya soal approved yang dapat dipublish.',
+        QUESTION_VERSION_CONFLICT: 'Soal sudah berubah sejak form ini dibuka. Muat ulang halaman, lalu terapkan perubahan Anda pada versi terbaru.',
+        QUESTION_VERSION_INVALID: 'Versi soal tidak valid. Muat ulang halaman sebelum menyimpan.',
     }
     return known[message] || message
 }
@@ -97,6 +99,14 @@ export async function saveContentDraftAction(form: FormData) {
             ? [PERMISSIONS.CONTENT_UPDATE, PERMISSIONS.QUESTION_MANAGE]
             : [PERMISSIONS.CONTENT_CREATE, PERMISSIONS.QUESTION_MANAGE])
 
+        // Token concurrency wajib untuk soal yang sudah ada; nilai aslinya
+        // berasal dari input tersembunyi yang dirender halaman.
+        const expectedVersion = nullableNumber(form, 'expected_version')
+        const expectedUpdatedAt = nullableText(form, 'expected_updated_at')
+        if (questionId && (expectedVersion === null || !Number.isInteger(expectedVersion) || expectedVersion < 1 || !expectedUpdatedAt)) {
+            throw new Error('QUESTION_VERSION_INVALID')
+        }
+
         const options = parseQuestionOptions(text(form, 'options')).map((option) => ({
             key: option.key,
             content: option.content,
@@ -125,6 +135,8 @@ export async function saveContentDraftAction(form: FormData) {
             p_knowledge_node_id: nullableText(form, 'knowledge_node_id'),
             p_options: options,
             p_change_reason: nullableText(form, 'change_reason'),
+            p_expected_version: questionId ? expectedVersion : null,
+            p_expected_updated_at: questionId ? expectedUpdatedAt : null,
         })
         if (error) throw new Error(error.message)
         if (data && typeof data === 'object' && !Array.isArray(data) && typeof data.question_id === 'string') {

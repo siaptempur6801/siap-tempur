@@ -233,6 +233,20 @@ async function cleanupContentEditorArtifacts(admin: ReturnType<typeof adminClien
   }
 }
 
+/**
+ * Baris review yang ditinggalkan user CI.
+ *
+ * `content_reviews.reviewer_id` dan `questions.reviewer_id` memakai ON DELETE
+ * RESTRICT, sehingga reviewer CI tidak pernah bisa dihapus: profil gagal
+ * dihapus, lalu `auth.admin.deleteUser` gagal "Database error deleting user".
+ */
+async function cleanupReviewerArtifacts(admin: ReturnType<typeof adminClient>, userId: string) {
+  const { error: reviewError } = await admin.from('content_reviews').delete().eq('reviewer_id', userId)
+  if (reviewError) throw reviewError
+  const { error: questionError } = await admin.from('questions').update({ reviewer_id: null }).eq('reviewer_id', userId)
+  if (questionError) throw questionError
+}
+
 async function cleanup(body: Body) {
   const userId = body.userId ?? ''
   if (!UUID.test(userId)) return json({ error: 'CI_USER_ID_INVALID' }, 400)
@@ -252,6 +266,7 @@ async function cleanup(body: Body) {
   if (user?.user_metadata?.ci_kind === 'content_editor') {
     await cleanupContentEditorArtifacts(admin, userId)
   }
+  await cleanupReviewerArtifacts(admin, userId)
 
   const { error: auditActorError } = await admin.from('audit_logs').delete().eq('actor_user_id', userId)
   if (auditActorError) throw auditActorError

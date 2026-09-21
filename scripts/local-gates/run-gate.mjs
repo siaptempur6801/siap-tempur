@@ -68,6 +68,21 @@ const GATES = {
         env: { E2E_ADMIN_STAGING: '1', E2E_REMOTE_BASE_URL: '1' },
     },
     /**
+     * Gate Review Queue (Content Review Workspace).
+     *
+     * Workflow GitHub-nya (`content-review-staging-e2e.yml`) memakai runner
+     * self-hosted macOS yang sedang offline, jadi gate lokal ini yang dipakai
+     * untuk memverifikasi alur review: setup user via emulator `ci-e2e-user`,
+     * lalu spec `7-content-review-workflow`.
+     */
+    review: {
+        project: '--project=chromium-content-review-staging',
+        serviceRoleKey: SERVICE_ROLE,
+        appBaseUrl: BASE_URL,
+        manageApp: true,
+        env: { E2E_CONTENT_REVIEW_STAGING: '1', E2E_REMOTE_BASE_URL: '1' },
+    },
+    /**
      * Gate paritas skema: membandingkan objek skema runtime staging vs produksi.
      *
      * KENAPA PENTING
@@ -111,6 +126,19 @@ function stopAll() {
     for (const child of children) {
         try { child.kill('SIGTERM') } catch { /* sudah mati */ }
     }
+    // Jangan tinggalkan proses yang tidak merespons SIGTERM: emulator ci-helper
+    // pernah tetap hidup dan run berikutnya memakai kode LAMA (port sudah
+    // dipegang), sehingga hasil verifikasi menyesatkan.
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            for (const child of children) {
+                try {
+                    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL')
+                } catch { /* sudah mati */ }
+            }
+            resolve()
+        }, 600)
+    })
 }
 
 /**
@@ -137,6 +165,17 @@ async function cleanStagingLeftovers() {
     const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 })
     const targets = (data?.users ?? []).filter((user) => /^ci-/.test(user.email ?? ''))
     for (const user of targets) {
+        // Artifact content editor: soal CWS-* yang ditulis user CI harus dihapus
+        // lebih dulu, karena `questions.author_id` memblokir penghapusan profil
+        // (dulu gagal SENYAP: hitungan "N user dihapus" menyesatkan).
+        const { data: authored } = await admin.from('questions').select('id').eq('author_id', user.id).like('question_code', 'CWS-%')
+        const authoredIds = (authored ?? []).map((row) => row.id)
+        if (authoredIds.length > 0) {
+            await admin.from('content_reviews').delete().eq('entity_type', 'question').in('entity_id', authoredIds)
+            await admin.from('audit_logs').delete().eq('entity_type', 'question').in('entity_id', authoredIds)
+            const { error: questionError } = await admin.from('questions').delete().in('id', authoredIds)
+            if (questionError) console.warn(`[gate] soal CWS ${user.email} gagal dihapus: ${questionError.message}`)
+        }
         const { data: attempts } = await admin.from('exam_attempts').select('id').eq('user_id', user.id)
         const attemptIds = (attempts ?? []).map((row) => row.id)
         if (attemptIds.length > 0) {
@@ -154,8 +193,16 @@ async function cleanStagingLeftovers() {
         ]) {
             await admin.from(table).delete().eq(column, user.id)
         }
-        await admin.from('profiles').delete().eq('id', user.id)
-        await admin.auth.admin.deleteUser(user.id).catch(() => undefined)
+        // Reviewer CI meninggalkan baris `content_reviews` (RESTRICT) dan
+        // `questions.reviewer_id`; keduanya menahan penghapusan profil.
+        await admin.from('content_reviews').delete().eq('reviewer_id', user.id)
+        await admin.from('questions').update({ reviewer_id: null }).eq('reviewer_id', user.id)
+        const { error: profileError } = await admin.from('profiles').delete().eq('id', user.id)
+        if (profileError) console.warn(`[gate] profil ${user.email} gagal dihapus: ${profileError.message}`)
+        const { error: authError } = await admin.auth.admin.deleteUser(user.id)
+        if (authError && !String(authError.message).toLowerCase().includes('not found')) {
+            console.warn(`[gate] user ${user.email} gagal dihapus: ${authError.message}`)
+        }
     }
     await admin.from('feature_flags').update({ enabled: false, rollout_percentage: 0 }).eq('key', 'tka.smp.monetization_enforcement')
     console.log(`[gate] pembersihan staging selesai (${targets.length} user ci-* dihapus)`)
@@ -270,6 +317,6 @@ try {
         }
     }
 } finally {
-    stopAll()
+    await stopAll()
 }
 process.exit(failed === 0 ? 0 : 1)
