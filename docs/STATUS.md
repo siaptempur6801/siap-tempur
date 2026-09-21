@@ -85,6 +85,11 @@ Perbaikan:
   pratinjau rumus/gambar dan riwayat versi. Error mempertahankan input; snapshot editor tidak berubah
   diam-diam ketika Server Action merender ulang RSC setelah konflik. Pending/konfirmasi tutup form
   dan pemeliharaan filter, mapel, kata kunci, serta halaman telah diuji.
+- Penyederhanaan UI (2026-09-22): editor dibagi menjadi tiga bagian yang mudah dipindai — Konteks,
+  Isi & jawaban, dan Kelengkapan — dengan indikator kesiapan serta action bar pratinjau/simpan yang
+  tetap terlihat. Tombol simpan memakai validasi native form secara eksplisit agar penyimpanan kedua
+  setelah validasi gagal tetap konsisten. Desktop, tablet, dan mobile 390 px terverifikasi tanpa
+  overflow.
 - Error validasi server kini tampil di **setiap field yang terlihat** (tipe, tingkat kesulitan, materi,
   stimulus, sumber, level kognitif, estimasi waktu) dan terhubung `aria-describedby`; isu pada token
   identitas tersembunyi (`id`/`program`/`track`/`expectedVersion`/`expectedUpdatedAt`) dinaikkan menjadi
@@ -182,7 +187,14 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
 
 ## Review Queue hardening — 2026-09-21
 
-**Staging: terverifikasi. Produksi: migration BELUM di-apply (butuh GO).**
+**Kode, staging, dan produksi: migration terverifikasi ter-apply.**
+
+Penyederhanaan UI (2026-09-22): halaman memperlihatkan alur `Pilih soal → Periksa isi → Ambil
+tindakan`, progres Editorial/Academic/Technical QA/Terbit, dan tugas berikutnya pada setiap baris.
+Detail soal ditempatkan sebelum kartu tindakan. Pada mobile, memilih soal langsung memusatkan layar
+ke detail dan menyediakan tombol kembali ke antrean; filter/ringkasan disembunyikan selama detail
+aktif. Gate Review lulus 5/5 pada build production lokal, termasuk deep-link mobile 390 px dan
+assertion tanpa overflow horizontal.
 
 ### P1-b — pencarian aman + pengukuran payload
 - `escapePostgrestValue` dipindah ke satu modul bersama `lib/postgrest-filter.ts` dan dipakai
@@ -820,4 +832,3 @@ pengguna login, nama tautan duplikat, dan target sentuh kecil.
 - `/admin/product` bukan rute yang ada — itu kesalahan daftar rute di harness, bukan tautan mati.
 - Sisa P3: tabel admin memakai banyak tautan "Edit" per baris (lazim, konteks dari baris) dan
   `skdMap`/kartu fitur punya label berulang yang sudah diberi `aria-label`.
-

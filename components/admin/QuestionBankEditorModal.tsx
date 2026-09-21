@@ -62,9 +62,9 @@ export default function QuestionBankEditorModal({ program, track, editId, subjec
     return (
         <AdminModal
             key={editId || 'new'}
-            title={question ? 'Detail & edit soal' : 'Tambah soal'}
-            description="Simpan draf, periksa pratinjau, lalu ajukan melalui alur review."
-            triggerLabel={question ? 'Buka soal' : 'Tambah soal'}
+            title={question || editId ? 'Detail & edit soal' : 'Tambah soal'}
+            description="Ikuti tiga bagian singkat: tentukan konteks, isi soal, lalu lengkapi metadata."
+            triggerLabel={question || editId ? 'Buka soal' : 'Tambah soal'}
             defaultOpen={Boolean(editId)}
             closeHref={closeHref}
             size="wide"

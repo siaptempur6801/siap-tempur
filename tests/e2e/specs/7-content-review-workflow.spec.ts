@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { mkdirSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -44,13 +45,17 @@ async function openQuestion(page: Page, questionId: string) {
     await page.goto(`/admin/content/review?program=TKA&track=SMP&question=${encodeURIComponent(questionId)}`)
     await expect(page).toHaveURL(/\/admin\/content\/review/)
     await expect(page.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
+    await expect(page.getByRole('list', { name: 'Progres review' })).toBeVisible()
+    const previewTop = await page.getByRole('heading', { name: 'Periksa isi soal' }).evaluate((element) => element.getBoundingClientRect().top)
+    const actionTop = await page.getByRole('heading', { name: 'Tindakan berikutnya' }).evaluate((element) => element.getBoundingClientRect().top)
+    expect(previewTop).toBeLessThan(actionTop)
 }
 
 async function assignToReviewer(page: Page, reviewerId: string) {
     const select = page.locator('select[name="reviewer_id"]')
     await expect(select).toBeVisible()
     await select.selectOption(reviewerId)
-    await followServerAction(page, page.getByRole('button', { name: 'Assign', exact: true }))
+    await followServerAction(page, page.getByRole('button', { name: 'Tugaskan', exact: true }))
     await expect(page.getByText('Reviewer berhasil ditugaskan.')).toBeVisible()
 }
 
@@ -58,7 +63,7 @@ async function approveStage(page: Page, note: string) {
     const notes = page.locator('textarea[name="notes"]')
     await expect(notes).toBeVisible()
     await notes.fill(note)
-    await followServerAction(page, page.getByRole('button', { name: 'Approve', exact: true }))
+    await followServerAction(page, page.getByRole('button', { name: 'Setujui', exact: true }))
     await expect(page.getByText('Keputusan review tersimpan.')).toBeVisible()
 }
 
@@ -133,7 +138,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
 
     await followServerAction(editorPage, editorPage.getByRole('button', { name: /Kirim ke Editorial Review/ }))
     await expect(editorPage.getByText('Soal dikirim ke Editorial Review.')).toBeVisible()
-    await expect(editorPage.getByRole('button', { name: 'Approve', exact: true })).toHaveCount(0)
+    await expect(editorPage.getByRole('button', { name: 'Setujui', exact: true })).toHaveCount(0)
     await editorContext.close()
 
     const reviewerContext = await browser.newContext()
@@ -141,6 +146,19 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await login(reviewerPage, users.reviewer)
     await openQuestion(reviewerPage, questionId)
     await expect(reviewerPage.getByRole('banner').getByText('Reviewer Konten', { exact: true })).toBeVisible()
+    const evidenceDir = process.env.REVIEW_EVIDENCE_DIR
+    if (evidenceDir) {
+        mkdirSync(evidenceDir, { recursive: true })
+        await reviewerPage.screenshot({ path: path.join(evidenceDir, 'review-desktop.png'), fullPage: false })
+    }
+    await reviewerPage.setViewportSize({ width: 390, height: 844 })
+    await reviewerPage.reload()
+    await expect(reviewerPage.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
+    await expect(reviewerPage.getByRole('link', { name: 'Kembali ke antrean', exact: true })).toBeVisible()
+    await expect(reviewerPage.getByRole('heading', { name: 'Review Queue', exact: true })).toBeHidden()
+    expect(await reviewerPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    if (evidenceDir) await reviewerPage.screenshot({ path: path.join(evidenceDir, 'review-mobile.png'), fullPage: false })
+    await reviewerPage.setViewportSize({ width: 1440, height: 900 })
 
     await assignToReviewer(reviewerPage, users.reviewer.userId)
     await approveStage(reviewerPage, 'Editorial E2E approved')
