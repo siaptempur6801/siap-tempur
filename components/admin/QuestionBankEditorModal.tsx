@@ -22,7 +22,7 @@ type Props = {
  * Modal Question Bank yang memuat katalognya malas (lazy).
  *
  * `get_question_bank_editor` mengembalikan SELURUH stimulus satu track beserta
- * isinya — terukur ~1 MB untuk track SD/SMP di staging. Sebelumnya RPC itu
+ * isinya — terukur ~24 kB konten stimulus per track SD/SMP di staging. Sebelumnya RPC itu
  * dipanggil di setiap pemuatan halaman daftar, padahal formnya tertutup dan
  * stimulus hanya dipakai untuk dropdown/preview. Kini katalog dimuat saat modal
  * benar-benar dibuka: dari trigger (soal baru) atau saat mount bila URL sudah

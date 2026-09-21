@@ -32,7 +32,8 @@ type AdminModalProps = {
     /**
      * Dipanggil saat trigger diklik, SEBELUM modal terbuka.
      *
-     * Dipakai modal yang isinya dimuat malas (mis. katalog Question Bank ~1 MB):
+     * Dipakai modal yang isinya dimuat malas (mis. katalog Question Bank yang
+     * menarik seluruh stimulus satu track):
      * anak modal sudah dirender di server, jadi pemuatan harus dipicu dari sini.
      */
     onOpen?: () => void

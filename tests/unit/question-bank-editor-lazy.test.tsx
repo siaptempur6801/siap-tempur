@@ -22,8 +22,8 @@ import QuestionBankEditorModal from '@/components/admin/QuestionBankEditorModal'
 
 /**
  * Katalog editor (`get_question_bank_editor`) mengembalikan seluruh stimulus satu
- * track — terukur ~1 MB untuk SD/SMP. Kontraknya: halaman daftar TIDAK memanggil
- * RPC itu; modal memuatnya saat dibuka.
+ * track — terukur ~24 kB konten per track SD/SMP. Kontraknya: halaman daftar TIDAK
+ * memanggil RPC itu; modal memuatnya saat dibuka.
  */
 const repoRoot = resolve(__dirname, '../..')
 function source(relativePath: string) {

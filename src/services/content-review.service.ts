@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/utils/supabase/server'
+import { escapePostgrestValue } from '@/lib/postgrest-filter'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
 export type ReviewWorkspaceFilters = {
@@ -292,7 +293,9 @@ export class ContentReviewService {
         }
         if (filters.status) questionQuery = questionQuery.eq('status', filters.status)
         if (filters.q?.trim()) {
-            const term = filters.q.trim().replace(/[%_]/g, '')
+            // `,()` bisa mengubah bentuk ekspresi `or=(...)` PostgREST; helper
+            // bersama juga membuang wildcard `%` yang diketik admin.
+            const term = escapePostgrestValue(filters.q)
             if (term) questionQuery = questionQuery.or(`question_code.ilike.%${term}%,stem.ilike.%${term}%`)
         }
 

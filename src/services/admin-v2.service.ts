@@ -1,3 +1,4 @@
+import { escapePostgrestValue } from '@/lib/postgrest-filter'
 import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json } from '@/types/database.types'
 import { env } from '@/lib/env'
@@ -111,18 +112,6 @@ const ADMIN_DOMAIN_LISTS: Record<AdminDomainList, {
         orderColumn: 'updated_at',
         orderAscending: false,
     },
-}
-
-/**
- * Membersihkan nilai pencarian sebelum dipakai di dalam ekspresi `or` PostgREST.
- *
- * `or=(...)` memakai koma sebagai pemisah kondisi dan tanda kurung sebagai
- * pengelompok, jadi nilai yang mengandung keduanya bisa mengubah bentuk filter —
- * bukan sekadar gagal. Karakter liarnya juga dibuang supaya `%` yang diketik
- * admin tidak berubah menjadi wildcard tak terbatas.
- */
-function escapePostgrestValue(value: string) {
-    return value.replace(/[,()*%\\]/g, ' ').trim()
 }
 
 export class AdminV2Service {

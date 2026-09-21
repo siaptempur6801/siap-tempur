@@ -272,7 +272,8 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
     /**
      * Soal yang sedang diedit — hanya id valid yang benar-benar ditemukan.
      *
-     * Katalog editor (stimulus + materi; terukur ~1 MB untuk track SD/SMP) TIDAK
+     * Katalog editor (stimulus + materi; terukur ~24 kB konten stimulus per track
+     * SD/SMP) TIDAK
      * dimuat di sini lagi: `QuestionBankEditorModal` memuatnya saat modal dibuka,
      * sehingga halaman daftar tidak membayar payload itu.
      */
