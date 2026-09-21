@@ -289,8 +289,11 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   klaim diri. `claim_pilot_review_stage` (klaim massal) sudah self-only dan tidak berubah.
 - UI: reviewer melihat tombol **"Klaim untuk saya"**; dropdown **"Tugaskan"** hanya untuk pemegang
   assign/manage. Aksi menolak lebih awal dengan pesan yang jelas bila reviewer mencoba menugaskan orang lain.
-- Migration `20260922010000_review_assign_policy_v1.sql` — **ter-apply di staging**; **produksi
-  menunggu GO**.
+- Migration `20260922010000_review_assign_policy_v1.sql` — **ter-apply di staging DAN produksi**
+  (GO 2026-09-22; ledger via `migration repair`). Verifikasi produksi: permission `content.assign`
+  hanya di ADMIN/SUPER_ADMIN, guard baru (`v_can_assign_others`, pesan rebut) ada di definisi fungsi,
+  ledger tercatat. `db-verify` produksi melaporkan **skipped** karena belum ada pengguna
+  `content.review` tanpa `question.manage` — jalur 6/6 dijalankan penuh di staging.
 - Verifikasi `scripts/db-verify/review-assign-policy.sql` **6/6**: manager assign ok; reviewer assign
   ke orang lain ditolak; reviewer klaim diri ok; reviewer rebut review ditolak; manager pindahkan ok;
   grant `content.assign` ke non-manager = 0. Gate Review 5 passed exit 0.
