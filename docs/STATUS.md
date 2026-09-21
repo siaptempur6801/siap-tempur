@@ -210,6 +210,20 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   server), berbeda dari Question Bank yang membekukan snapshot di klien. Pesan galat menyuruh
   menerapkan ulang pada versi terbaru.
 
+### P2-a — paginasi antrean + filter di database
+- Antrean review kini **25 baris/halaman** dengan `total` exact (sebelumnya jendela
+  250 baris tanpa jalan menuju sisanya; staging CPNS/SKD 573 soal, TKA/SMP 300).
+- Filter `stage` diterjemahkan ke status (`editorial` = submitted + editorial_review)
+  dan filter `reviewer`/`unassigned` memakai `questions.reviewer_id` — semuanya
+  berjalan di database, bukan atas jendela. Kode mapel tak dikenal memakai UUID
+  kosong yang valid.
+- `unassigned`, `assignedToMe`, dan angka per tahap kini **exact agregat**, bukan
+  hasil menghitung baris yang tampil; dashboard memakai angka yang sama dan hanya
+  menarik 6 baris antrean.
+- Deep link `?question=` ke soal di luar halaman tetap memuat soal itu (dipakai
+  "Buka alur review" dari Question Bank); id non-UUID tidak menyentuh query.
+- Verifikasi: **623 unit test / 83 file**; gate Review 5 passed exit 0.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status

@@ -1,24 +1,16 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 /**
- * Regresi: angka `counts` dihitung sebagai AGREGAT SELURUH TABEL.
+ * Kontrak service Review Queue:
+ *   1. Hitungan status adalah AGREGAT SELURUH TABEL (`count: exact, head: true`),
+ *      tidak pernah dibatasi `limit`.
+ *   2. Filter stage/reviewer berjalan di DATABASE (bukan atas jendela), dan
+ *      daftar antrean berhalaman 25 baris dengan `total` exact.
+ *   3. Deep link `?question=` ke soal di luar halaman tetap memuat soal itu.
  *
- * Bug nyata yang dikunci di sini: sebelumnya `counts` dihitung dari array
- * `questions` hasil query daftar yang dibatasi `.limit(250)`. Pada context
- * dengan lebih dari 250 soal — dan diurutkan `updated_at desc` — jendela itu
- * hanya memuat sebagian status, sehingga angkanya menyesatkan admin.
- *
- * Terukur di staging sebelum perbaikan:
- *   CPNS/SKD : total dilaporkan 250 (sebenarnya 573), published 0 (sebenarnya 140)
- *   TKA/SMP  : total dilaporkan 250 (sebenarnya 300), published 250 (sebenarnya 300)
- * TKA/SD tidak terpengaruh (213 soal, di bawah batas) — dan tetap sama sesudahnya.
- *
- * Kontrak yang dijaga test ini:
- *   1. Hitungan memakai `count: 'exact', head: true` — tidak menarik baris.
- *   2. Hitungan TIDAK dikenai `.limit()` — inilah inti perbaikannya.
- *   3. Setiap status dihitung dengan filter status yang benar.
- *   4. `unassigned` tetap dibatasi pada soal yang dimuat (satu-satunya angka
- *      yang memang bermakna per-jendela).
+ * Bug nyata yang dikunci: dulu `counts` dihitung dari array `.limit(250)`
+ * (CPNS/SKD 573 soal → published dilaporkan 0 padahal 140), dan filter
+ * stage/reviewer diterapkan di aplikasi sehingga soal ke-251 tidak terjangkau.
  */
 
 const fromMock = vi.fn()
@@ -36,10 +28,20 @@ type Call = {
     head?: boolean
     status?: string
     limited?: boolean
+    limit?: number
     inIds?: string[]
+    isNull?: string
+    orExpression?: string
+    eq?: Record<string, string>
+    range?: [number, number]
 }
 
 const calls: Call[] = []
+const state = {
+    questionCount: 60,
+    questionRows: [{ id: 'q-1', question_code: 'Q-1', subject_id: 's-1', status: 'draft', version: 1, stem: 'soal' }] as Array<Record<string, unknown>>,
+    offPageRow: null as Record<string, unknown> | null,
+}
 
 /**
  * Builder rantai Supabase tiruan yang mencatat BENTUK query (bukan hasilnya).
@@ -57,33 +59,50 @@ function makeBuilder(table: string) {
             return builder
         },
         eq: (column: string, value: string) => {
+            record.eq = { ...(record.eq ?? {}), [column]: value }
             if (column === 'status') record.status = value
             return builder
         },
-        in: (_column: string, values: string[]) => {
+        in: (column: string, values: string[]) => {
             record.inIds = values
+            record.eq = { ...(record.eq ?? {}), [`in:${column}`]: values.join(',') }
+            return builder
+        },
+        is: (column: string) => {
+            record.isNull = column
+            return builder
+        },
+        or: (expression: string) => {
+            record.orExpression = expression
             return builder
         },
         order: () => builder,
-        limit: () => {
+        limit: (value: number) => {
             record.limited = true
+            record.limit = value
+            return builder
+        },
+        range: (from: number, to: number) => {
+            record.range = [from, to]
             return builder
         },
         maybeSingle: async () => {
             calls.push({ ...record })
             if (table === 'programs') return { data: { id: 'prog-1', code: 'CPNS', name: 'CPNS' }, error: null }
             if (table === 'tracks') return { data: { id: 'track-1', code: 'SKD', name: 'SKD' }, error: null }
+            if (table === 'questions' && record.eq?.id) return { data: state.offPageRow, error: null }
             return { data: null, error: null }
         },
         single: async () => ({ data: null, error: null }),
         then: (resolve: (value: unknown) => unknown) => {
             calls.push({ ...record })
-            // `questions` mengembalikan satu baris supaya jalur yang bergantung
-            // pada daftar soal (mis. review per pertanyaan) benar-benar berjalan.
-            const payload =
-                table === 'questions'
-                    ? { data: [{ id: 'q-1', question_code: 'Q-1', subject_id: 's-1', status: 'draft', version: 1, stem: 'soal' }], error: null, count: 1 }
-                    : { data: [], error: null, count: 0 }
+            const payload = table === 'questions'
+                ? {
+                    data: record.head ? null : state.questionRows,
+                    error: null,
+                    count: state.questionCount,
+                }
+                : { data: [], error: null, count: 0 }
             return Promise.resolve(payload).then(resolve)
         },
     })
@@ -93,6 +112,9 @@ function makeBuilder(table: string) {
 
 beforeEach(() => {
     calls.length = 0
+    state.questionCount = 60
+    state.questionRows = [{ id: 'q-1', question_code: 'Q-1', subject_id: 's-1', status: 'draft', version: 1, stem: 'soal' }]
+    state.offPageRow = null
     fromMock.mockReset()
     fromMock.mockImplementation((table: string) => makeBuilder(table))
 })
@@ -100,16 +122,15 @@ beforeEach(() => {
 const { contentReviewService } = await import('@/src/services/content-review.service')
 
 const CONTEXT = { programCode: 'CPNS', trackCode: 'SKD' }
+const questionCalls = () => calls.filter((c) => c.table === 'questions')
+const exactQuestionCounts = () => questionCalls().filter((c) => c.count === 'exact' && c.head)
 
 describe('getReviewSummary — hitungan agregat', () => {
     it('memakai count exact head-only, bukan menarik baris', async () => {
         await contentReviewService.getReviewSummary(CONTEXT)
 
-        // Hitungan STATUS pada `questions` harus head-only: tidak ada baris yang
-        // ditarik hanya untuk menghitung.
-        const questionCounts = calls.filter((c) => c.table === 'questions' && c.count === 'exact')
-        expect(questionCounts.length).toBeGreaterThanOrEqual(4)
-        for (const call of questionCounts) {
+        expect(exactQuestionCounts().length).toBeGreaterThanOrEqual(4)
+        for (const call of exactQuestionCounts()) {
             expect(call.head).toBe(true)
         }
     })
@@ -117,45 +138,108 @@ describe('getReviewSummary — hitungan agregat', () => {
     it('TIDAK membatasi hitungan dengan limit — inti perbaikan', async () => {
         await contentReviewService.getReviewSummary(CONTEXT)
 
-        // Query daftar soal memang dibatasi 250; hitungan TIDAK boleh ikut.
-        const limitedCountCalls = calls.filter((c) => c.table === 'questions' && c.count === 'exact' && c.limited)
+        const limitedCountCalls = exactQuestionCounts().filter((c) => c.limited)
         expect(limitedCountCalls).toEqual([])
 
-        // Sebaliknya, harus ADA query daftar yang dibatasi (jendela review queue).
-        expect(calls.some((c) => c.table === 'questions' && c.limited && !c.count)).toBe(true)
+        // Dashboard hanya menarik 6 baris antrean, bukan 250.
+        const rowsCall = questionCalls().find((c) => c.limited && !c.count)
+        expect(rowsCall?.limit).toBe(6)
     })
 
     it('memfilter setiap status dengan nilai yang benar', async () => {
         await contentReviewService.getReviewSummary(CONTEXT)
 
-        const statuses = calls
-            .filter((c) => c.table === 'questions' && c.count === 'exact')
-            .map((c) => c.status)
+        const statuses = exactQuestionCounts().map((c) => c.status)
         expect(statuses).toContain('published')
         expect(statuses).toContain('approved')
         expect(statuses).toContain('revision_required')
+        expect(statuses).toContain('academic_review')
+        expect(statuses).toContain('technical_qa')
         // Satu hitungan total tanpa filter status.
         expect(statuses).toContain(undefined)
     })
+
+    it('menghitung tahap editorial dan unassigned di database', async () => {
+        await contentReviewService.getReviewSummary(CONTEXT)
+
+        expect(exactQuestionCounts().some((c) => c.inIds?.join(',') === 'submitted,editorial_review')).toBe(true)
+        expect(exactQuestionCounts().some((c) => c.isNull === 'reviewer_id')).toBe(true)
+    })
 })
 
-describe('getWorkspaceData — unassigned tetap per-jendela', () => {
-    it('membatasi hitungan unassigned pada soal yang dimuat', async () => {
+describe('getWorkspaceData — paginasi & filter di database', () => {
+    it('meminta 25 baris dengan range dan count exact', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT, { page: 2 })
+
+        const rowsCall = questionCalls().find((c) => !c.head && c.range)
+        expect(rowsCall?.range).toEqual([25, 49])
+        expect(rowsCall?.count).toBe('exact')
+    })
+
+    it('menerjemahkan filter stage ke status di database', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT, { stage: 'editorial' })
+
+        const stageCalls = questionCalls().filter((c) => c.inIds?.join(',') === 'submitted,editorial_review')
+        expect(stageCalls.length).toBeGreaterThan(0)
+        // Berlaku untuk hitungan total maupun permintaan baris.
+        expect(stageCalls.some((c) => c.head)).toBe(true)
+        expect(stageCalls.some((c) => !c.head)).toBe(true)
+    })
+
+    it('filter unassigned memakai status tahap + reviewer_id null', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT, { reviewer: 'unassigned' })
+
+        expect(questionCalls().some((c) => c.isNull === 'reviewer_id' && c.inIds?.join(',') === 'submitted,editorial_review,academic_review,technical_qa')).toBe(true)
+    })
+
+    it('filter reviewer memakai kolom reviewer_id', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT, { reviewer: 'user-1' })
+
+        expect(questionCalls().some((c) => c.eq?.reviewer_id === 'user-1')).toBe(true)
+    })
+
+    it('kode mapel tidak dikenal memakai UUID kosong yang valid', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT, { subject: 'TIDAK-ADA' })
+
+        expect(questionCalls().some((c) => c.eq?.subject_id === '00000000-0000-0000-0000-000000000000')).toBe(true)
+    })
+
+    it('halaman melewati jumlah baris tidak menjalankan query baris', async () => {
+        state.questionCount = 10
+
+        const data = await contentReviewService.getWorkspaceData(CONTEXT, { page: 99 })
+
+        expect(data.clampTo).toBe(1)
+        expect(data.questions).toEqual([])
+        expect(questionCalls().some((c) => c.range)).toBe(false)
+    })
+
+    it('deep link ke soal di luar halaman tetap memuat soal itu', async () => {
+        const offPageId = '11111111-1111-1111-1111-111111111111'
+        state.offPageRow = { id: offPageId, question_code: 'Q-OFF', subject_id: 's-1', status: 'draft', version: 3, stem: 'soal lain' }
+
+        const data = await contentReviewService.getWorkspaceData(CONTEXT, {}, offPageId)
+
+        expect(data.selectedId).toBe(offPageId)
+        expect(data.selectedQuestion?.question_code).toBe('Q-OFF')
+        expect(questionCalls().some((c) => c.eq?.id === offPageId)).toBe(true)
+    })
+
+    it('id soal yang bukan UUID tidak menyentuh query', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT, {}, 'bukan-uuid')
+
+        expect(questionCalls().some((c) => c.eq?.id === 'bukan-uuid')).toBe(false)
+    })
+})
+
+describe('getWorkspaceData — pending review hanya untuk baris yang tampil', () => {
+    it('content_reviews di-query dengan daftar entity_id halaman', async () => {
         await contentReviewService.getWorkspaceData(CONTEXT)
 
-        // `content_reviews` hanya boleh di-query dengan daftar entity_id,
-        // karena "belum ditugaskan" hanya bermakna untuk soal yang punya review.
         const reviewCalls = calls.filter((c) => c.table === 'content_reviews')
         expect(reviewCalls.length).toBeGreaterThan(0)
         for (const call of reviewCalls) {
             expect(Array.isArray(call.inIds)).toBe(true)
         }
-    })
-
-    it('tetap memakai agregat untuk status pada halaman review', async () => {
-        await contentReviewService.getWorkspaceData(CONTEXT)
-
-        const limitedCountCalls = calls.filter((c) => c.table === 'questions' && c.count === 'exact' && c.limited)
-        expect(limitedCountCalls).toEqual([])
     })
 })

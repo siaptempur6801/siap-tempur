@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/utils/supabase/server'
 import { escapePostgrestValue } from '@/lib/postgrest-filter'
+import { ADMIN_PAGE_SIZE, adminOffset, adminTotalPages } from '@/lib/admin-pagination'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
 export type ReviewWorkspaceFilters = {
@@ -8,7 +9,34 @@ export type ReviewWorkspaceFilters = {
     stage?: string | null
     reviewer?: string | null
     q?: string | null
+    /** Nomor halaman daftar antrean (25 baris/halaman). */
+    page?: number | null
+    /** Reviewer yang sedang login — untuk hitungan "ditugaskan ke saya". */
+    assignee?: string | null
 }
+
+/** UUID valid yang tidak akan cocok dengan baris mana pun. */
+const NO_MATCH_ID = '00000000-0000-0000-0000-000000000000'
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Peta tahap review → status `questions`.
+ *
+ * `submitted` dan `editorial_review` sama-sama tahap editorial (submitted
+ * berarti belum diklaim reviewer, editorial_review sudah). Peta ini yang
+ * memungkinkan filter tahap berjalan di database, bukan atas jendela yang
+ * sudah terpotong.
+ */
+const STAGE_STATUSES: Record<string, readonly string[]> = {
+    editorial: ['submitted', 'editorial_review'],
+    academic: ['academic_review'],
+    technical_qa: ['technical_qa'],
+}
+
+const REVIEW_STAGE_STATUSES = ['submitted', 'editorial_review', 'academic_review', 'technical_qa'] as const
+
+const QUEUE_COLUMNS = 'id, question_code, subject_id, question_type, stem, difficulty, cognitive_level, source_reference, estimated_seconds, status, version, author_id, reviewer_id, stimulus_id, stimulus_order, published_at, created_at, updated_at'
 
 type Row = Record<string, unknown>
 type WorkspaceQuestion = Row & {
@@ -112,27 +140,6 @@ async function resolveCatalog(context: ProgramTrackContext) {
     }
 }
 
-async function listActiveContexts() {
-    const client = await createClient()
-    const { data: programs, error: programError } = await client.from('programs').select('id, code, name').order('code')
-    if (programError) throw programError
-    const programIds = (programs ?? []).map((row) => row.id)
-    if (programIds.length === 0) return []
-    const { data: tracks, error: trackError } = await client.from('tracks').select('id, program_id, code, name').in('program_id', programIds).order('code')
-    if (trackError) throw trackError
-    const programById = new Map((programs ?? []).map((program) => [String(program.id), program]))
-    return (tracks ?? []).flatMap((track) => {
-        const program = programById.get(String(track.program_id))
-        if (!program) return []
-        return [{
-            programCode: String(program.code),
-            programName: String(program.name),
-            trackCode: String(track.code),
-            trackName: String(track.name),
-        }]
-    })
-}
-
 async function listContentPeople(): Promise<ContentPerson[]> {
     const client = await createClient()
     const { data, error } = await client.rpc('list_content_people')
@@ -169,22 +176,14 @@ export class ContentReviewService {
      *   Sekarang dihitung dengan `count: 'exact', head: true` per status, tanpa
      *   menarik satu baris pun. Satu query per status, dijalankan paralel.
      *
-     * `total` adalah jumlah seluruh soal pada context ini, terlepas dari filter
-     * yang sedang aktif — sama seperti sebelumnya, di mana `total` dihitung
-     * setelah filter stage/reviewer diterapkan. Perhatikan bahwa filter
-     * stage/reviewer tetap TIDAK memengaruhi angka status (perilaku lama yang
-     * dipertahankan), sedangkan filter subject/status/q memang mempersempit
-     * `questions` di `getWorkspaceData` — dan sejak perubahan ini tidak lagi
-     * mempersempit `counts`.
-     *
-     * `unassigned` tetap dihitung dari review yang benar-benar tertunda pada
-     * jendela soal yang dimuat, karena "belum ditugaskan" hanya bermakna untuk
-     * soal yang punya review pending. Artinya angka ini memang dibatasi
-     * `p_limit` — perilaku yang sama seperti sebelumnya.
+     * `unassigned` dan `assignedToMe` juga exact: soal pada tahap review yang
+     * `reviewer_id`-nya kosong / milik aktor. Sebelumnya `unassigned` dihitung
+     * dari jendela soal yang dimuat, sehingga angkanya ikut berubah saat
+     * paginasi — padahal angkanya harus tetap.
      */
     private async countQuestionsByStatus(
         catalog: { program: { id: string }; track: { id: string } },
-        unassignedWithinQuestionIds: string[],
+        options: { assignee?: string | null } = {},
     ) {
         const client = await createClient()
         const base = () => client
@@ -192,40 +191,34 @@ export class ContentReviewService {
             .select('id', { count: 'exact', head: true })
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
+        const inStage = () => base().in('status', REVIEW_STAGE_STATUSES)
 
-        const [total, published, approved, revisionRequired, pendingReviews] = await Promise.all([
+        const [total, published, approved, revisionRequired, editorial, academic, technical, unassigned, assignedToMe] = await Promise.all([
             base(),
             base().eq('status', 'published'),
             base().eq('status', 'approved'),
             base().eq('status', 'revision_required'),
-            unassignedWithinQuestionIds.length
-                ? client
-                    .from('content_reviews')
-                    .select('entity_id, reviewer_id', { count: 'exact' })
-                    .eq('entity_type', 'question')
-                    .eq('status', 'pending')
-                    .in('entity_id', unassignedWithinQuestionIds)
-                : Promise.resolve({ data: [], error: null, count: 0 }),
+            base().in('status', STAGE_STATUSES.editorial),
+            base().eq('status', 'academic_review'),
+            base().eq('status', 'technical_qa'),
+            inStage().is('reviewer_id', null),
+            options.assignee ? inStage().eq('reviewer_id', options.assignee) : Promise.resolve({ count: 0, error: null }),
         ])
 
-        for (const result of [total, published, approved, revisionRequired, pendingReviews]) {
+        for (const result of [total, published, approved, revisionRequired, editorial, academic, technical, unassigned, assignedToMe]) {
             if (result.error) throw result.error
         }
 
-        // Selaras dengan perhitungan lama di `getWorkspaceData`: satu review
-        // pending tanpa reviewer = satu soal belum ditugaskan.
-        const unassigned = new Set(
-            (pendingReviews.data ?? [])
-                .filter((row) => !row.reviewer_id)
-                .map((row) => String(row.entity_id)),
-        ).size
-
         return {
             total: total.count ?? 0,
-            unassigned,
+            unassigned: unassigned.count ?? 0,
+            assignedToMe: assignedToMe.count ?? 0,
             published: published.count ?? 0,
             approved: approved.count ?? 0,
             revisionRequired: revisionRequired.count ?? 0,
+            editorial: editorial.count ?? 0,
+            academic: academic.count ?? 0,
+            technical: technical.count ?? 0,
         }
     }
 
@@ -252,21 +245,20 @@ export class ContentReviewService {
         const client = await createClient()
         const catalog = await resolveCatalog(context)
 
-        // Kolom minimum yang benar-benar dibaca dashboard. `updated_at` tetap
-        // diperlukan karena urutannya menentukan isi jendela 250 baris yang
-        // dipakai untuk "Review queue" dan hitungan tahap review.
+        // Dashboard hanya butuh 6 baris antrean; angka per tahap dihitung exact
+        // oleh `countQuestionsByStatus`, bukan dari jendela seperti sebelumnya.
         const { data, error } = await client
             .from('questions')
             .select('id, question_code, subject_id, status, version, stem')
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
             .order('updated_at', { ascending: false })
-            .limit(250)
+            .limit(6)
         if (error) throw error
 
         const questions = (data ?? []) as Row[]
         const subjectById = new Map(catalog.subjects.map((subject) => [String(subject.id), subject]))
-        const counts = await this.countQuestionsByStatus(catalog, questions.map((row) => stringValue(row.id)))
+        const counts = await this.countQuestionsByStatus(catalog)
 
         return { catalog, questions, subjectById, counts }
     }
@@ -279,45 +271,118 @@ export class ContentReviewService {
         const client = await createClient()
         const catalog = await resolveCatalog(context)
 
-        let questionQuery = client
-            .from('questions')
-            .select('id, question_code, subject_id, question_type, stem, difficulty, cognitive_level, source_reference, estimated_seconds, status, version, author_id, reviewer_id, stimulus_id, stimulus_order, published_at, created_at, updated_at')
-            .eq('program_id', catalog.program.id)
-            .eq('track_id', catalog.track.id)
-            .order('updated_at', { ascending: false })
-            .limit(250)
+        // Kode mapel tidak dikenal → UUID valid yang tidak cocok dengan apa pun
+        // (bukan `uuid = ''` yang ditolak PostgREST).
+        const subjectId = filters.subject
+            ? catalog.subjects.find((row) => row.code.toLowerCase() === filters.subject!.trim().toLowerCase())?.id ?? NO_MATCH_ID
+            : null
 
-        if (filters.subject) {
-            const subject = catalog.subjects.find((row) => row.code === filters.subject)
-            if (subject) questionQuery = questionQuery.eq('subject_id', subject.id)
+        type QueueChain = {
+            eq: (column: string, value: string) => QueueChain
+            in: (column: string, values: readonly string[]) => QueueChain
+            is: (column: string, value: null) => QueueChain
+            or: (expression: string) => QueueChain
         }
-        if (filters.status) questionQuery = questionQuery.eq('status', filters.status)
-        if (filters.q?.trim()) {
-            // `,()` bisa mengubah bentuk ekspresi `or=(...)` PostgREST; helper
-            // bersama juga membuang wildcard `%` yang diketik admin.
-            const term = escapePostgrestValue(filters.q)
-            if (term) questionQuery = questionQuery.or(`question_code.ilike.%${term}%,stem.ilike.%${term}%`)
+        /**
+         * Seluruh filter berjalan di database.
+         *
+         * Sebelumnya `stage` dan `reviewer` disaring di aplikasi atas jendela 250
+         * baris, sehingga "N soal sesuai filter" hanya berlaku untuk jendela itu
+         * dan soal ke-251 tidak terjangkau. `questions.reviewer_id` adalah cermin
+         * reviewer pada review pending (di-set `assign_question_reviewer`,
+         * dikosongkan `submit_question_for_review`/`review_question_stage`),
+         * sehingga filter reviewer dapat memakai kolom itu.
+         */
+        const applyFilters = (builder: QueueChain): QueueChain => {
+            let query = builder
+                .eq('program_id', catalog.program.id)
+                .eq('track_id', catalog.track.id)
+            if (subjectId) query = query.eq('subject_id', subjectId)
+            if (filters.status) query = query.eq('status', filters.status)
+            const stageStatuses = filters.stage ? STAGE_STATUSES[filters.stage] : undefined
+            if (stageStatuses) query = query.in('status', stageStatuses)
+            if (filters.reviewer === 'unassigned') {
+                query = query.in('status', REVIEW_STAGE_STATUSES).is('reviewer_id', null)
+            } else if (filters.reviewer) {
+                query = query.eq('reviewer_id', filters.reviewer)
+            }
+            if (filters.q?.trim()) {
+                // `,()` bisa mengubah bentuk ekspresi `or=(...)` PostgREST; helper
+                // bersama juga membuang wildcard `%` yang diketik admin.
+                const term = escapePostgrestValue(filters.q)
+                if (term) query = query.or(`question_code.ilike.%${term}%,stem.ilike.%${term}%`)
+            }
+            return query
         }
 
-        const { data: questionRows, error: questionError } = await questionQuery
-        if (questionError) throw questionError
-        const baseQuestions = (questionRows ?? []) as Row[]
-        const questionIds = baseQuestions.map((row) => stringValue(row.id))
+        const page = Math.max(1, Math.floor(filters.page ?? 1))
+        const countQuery = applyFilters(client.from('questions').select('id', { count: 'exact', head: true }) as unknown as QueueChain)
+        const countResult = await (countQuery as unknown as PromiseLike<{ count: number | null; error: unknown }>)
+        if (countResult.error) throw countResult.error
+        const total = countResult.count ?? 0
+        const lastPage = adminTotalPages(total)
+        // Nomor halaman di luar jangkauan: PostgREST menolak `Range` melewati
+        // jumlah baris (PGRST103), jadi permintaan baris tidak dijalankan.
+        const clampTo = page > lastPage ? lastPage : null
 
-        const { data: reviewRows, error: reviewError } = questionIds.length
+        let baseQuestions: Row[] = []
+        if (!clampTo) {
+            const rowsQuery = applyFilters(client.from('questions').select(QUEUE_COLUMNS, { count: 'exact' }) as unknown as QueueChain) as unknown as {
+                order: (column: string, options: { ascending: boolean }) => { range: (from: number, to: number) => PromiseLike<{ data: unknown; error: unknown }> }
+            }
+            const { data, error } = await rowsQuery
+                .order('updated_at', { ascending: false })
+                .range(adminOffset(page), adminOffset(page) + ADMIN_PAGE_SIZE - 1)
+            if (error) throw error
+            baseQuestions = (data ?? []) as Row[]
+        }
+
+        const toWorkspaceQuestion = (row: Row): WorkspaceQuestion => ({
+            ...row,
+            id: row.id,
+            subject_id: row.subject_id,
+            question_code: row.question_code,
+            stem: row.stem,
+            status: row.status,
+            version: row.version,
+            author_id: row.author_id,
+            reviewer_id: row.reviewer_id,
+            current_stage: reviewStageFromStatus(row.status),
+            pending_review: null,
+        })
+
+        const questions = baseQuestions.map(toWorkspaceQuestion)
+
+        // Deep link (`?question=`) bisa menunjuk soal di luar halaman ini — mis.
+        // dari Question Bank "Buka alur review". Muat barisnya terpisah; hanya id
+        // berbentuk UUID yang boleh menyentuh query.
+        let offPageSelected: WorkspaceQuestion | null = null
+        if (selectedQuestionId && UUID_PATTERN.test(selectedQuestionId) && !questions.some((row) => sameId(row.id, selectedQuestionId))) {
+            const { data: one, error: oneError } = await client
+                .from('questions')
+                .select(QUEUE_COLUMNS)
+                .eq('program_id', catalog.program.id)
+                .eq('track_id', catalog.track.id)
+                .eq('id', selectedQuestionId)
+                .maybeSingle()
+            if (oneError) throw oneError
+            if (one) offPageSelected = toWorkspaceQuestion(one as Row)
+        }
+
+        const reviewIds = [...questions.map((row) => stringValue(row.id)), ...(offPageSelected ? [stringValue(offPageSelected.id)] : [])]
+        const { data: reviewRows, error: reviewError } = reviewIds.length
             ? await client
                 .from('content_reviews')
                 .select('id, entity_id, reviewer_id, status, notes, review_stage, question_version, review_round, assigned_at, started_at, completed_at, created_at, updated_at')
                 .eq('entity_type', 'question')
-                .in('entity_id', questionIds)
+                .in('entity_id', reviewIds)
                 .order('review_round', { ascending: false })
                 .order('created_at', { ascending: false })
             : { data: [], error: null }
         if (reviewError) throw reviewError
 
-        const reviews = (reviewRows ?? []) as Row[]
         const reviewsByQuestion = new Map<string, Row[]>()
-        for (const review of reviews) {
+        for (const review of (reviewRows ?? []) as Row[]) {
             const id = stringValue(review.entity_id)
             const rows = reviewsByQuestion.get(id) ?? []
             rows.push(review)
@@ -329,38 +394,18 @@ export class ContentReviewService {
             const pending = rows.find((row) => lower(row.status) === 'pending')
             if (pending) pendingByQuestion.set(id, pending)
         }
-
-        let questions: WorkspaceQuestion[] = baseQuestions.map((row) => ({
-            ...row,
-            id: row.id,
-            subject_id: row.subject_id,
-            question_code: row.question_code,
-            stem: row.stem,
-            status: row.status,
-            version: row.version,
-            author_id: row.author_id,
-            reviewer_id: row.reviewer_id,
-            current_stage: reviewStageFromStatus(row.status),
-            pending_review: pendingByQuestion.get(stringValue(row.id)) ?? null,
-        }))
-
-        if (filters.stage) questions = questions.filter((row) => row.current_stage === filters.stage)
-        if (filters.reviewer === 'unassigned') {
-            questions = questions.filter((row) => row.pending_review && !row.pending_review.reviewer_id)
-        } else if (filters.reviewer) {
-            questions = questions.filter((row) => row.pending_review && sameId(row.pending_review.reviewer_id, filters.reviewer))
-        }
+        for (const row of questions) row.pending_review = pendingByQuestion.get(stringValue(row.id)) ?? null
+        if (offPageSelected) offPageSelected.pending_review = pendingByQuestion.get(stringValue(offPageSelected.id)) ?? null
 
         const people = await listContentPeople()
         const profileById = new Map(people.map((person) => [person.id, person]))
         const reviewerCandidates = people.filter((person) => person.can_review)
 
-        const selectedId = selectedQuestionId && questions.some((row) => sameId(row.id, selectedQuestionId))
-            ? selectedQuestionId
-            : questions[0] ? stringValue(questions[0].id) : null
-        const selectedQuestion = selectedId
-            ? questions.find((row) => sameId(row.id, selectedId)) ?? null
-            : null
+        const selectedQuestion = offPageSelected
+            ?? (selectedQuestionId ? questions.find((row) => sameId(row.id, selectedQuestionId)) ?? null : null)
+            ?? questions[0]
+            ?? null
+        const selectedId = selectedQuestion ? stringValue(selectedQuestion.id) : null
 
         let options: Row[] = []
         let explanation: Row | null = null
@@ -391,15 +436,11 @@ export class ContentReviewService {
         }
 
         const subjectById = new Map(catalog.subjects.map((subject) => [String(subject.id), subject]))
-        // Agregat seluruh tabel — lihat `countQuestionsByStatus`. Sebelumnya
-        // angka ini dihitung dari array `questions` yang sudah difilter dan
-        // dibatasi 250 baris, sehingga pada context dengan >250 soal angkanya
-        // salah (mis. `published = 0` padahal ada 140).
-        const counts = await this.countQuestionsByStatus(catalog, questions.map((row) => stringValue(row.id)))
+        // Agregat seluruh tabel — lihat `countQuestionsByStatus`.
+        const counts = await this.countQuestionsByStatus(catalog, { assignee: filters.assignee ?? null })
 
         return {
             catalog,
-            contexts: await listActiveContexts(),
             filters,
             questions,
             selectedQuestion,
@@ -418,6 +459,10 @@ export class ContentReviewService {
             profileById,
             subjectById,
             counts,
+            page,
+            total,
+            lastPage,
+            clampTo,
         }
     }
 }

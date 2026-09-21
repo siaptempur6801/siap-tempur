@@ -116,10 +116,12 @@ export default async function AdminOverview({ params }: { params: SearchParams }
     const program = review?.catalog.program.code ?? context.programCode
     const track = review?.catalog.track.code ?? context.trackCode
     const questions = (review?.questions ?? []) as Row[]
-    const editorial = questions.filter((row) => ['submitted', 'editorial_review'].includes(lower(row.status))).length
-    const academic = questions.filter((row) => lower(row.status) === 'academic_review').length
-    const technical = questions.filter((row) => lower(row.status) === 'technical_qa').length
-    const revision = questions.filter((row) => lower(row.status) === 'revision_required').length
+    // Angka per tahap exact dari agregat (`countQuestionsByStatus`), bukan hasil
+    // menghitung 6 baris antrean yang tampil di dashboard.
+    const editorial = review?.counts.editorial ?? 0
+    const academic = review?.counts.academic ?? 0
+    const technical = review?.counts.technical ?? 0
+    const revision = review?.counts.revisionRequired ?? 0
     const needsAttention = editorial + academic + technical + revision
     const exams = workspace?.exams ?? []
     const products = workspace?.products ?? []

@@ -34,6 +34,8 @@ import {
     adminWarningButtonClass,
 } from '@/components/admin/AdminUi'
 import AdminListToolbar from '@/components/admin/AdminListToolbar'
+import AdminPagination from '@/components/admin/AdminPagination'
+import { adminPageHref, adminPageSummary, parseAdminPage } from '@/lib/admin-pagination'
 import { adminStatusLabel, adminStatusVariant, formatDateTime } from '@/lib/admin-format'
 import { cn } from '@/lib/utils'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -67,6 +69,8 @@ type SearchParams = {
     new?: string
     ok?: string
     error?: string
+    /** Nomor halaman antrean (25 baris/halaman). */
+    page?: string
 }
 
 function s(value: unknown) {
@@ -100,7 +104,7 @@ function stageLabel(stage: unknown) {
 function workspaceHref(params: SearchParams, overrides: Partial<SearchParams> = {}) {
     const merged = { ...params, ...overrides }
     const query = new URLSearchParams()
-    for (const key of ['program', 'track', 'subject', 'status', 'stage', 'reviewer', 'q', 'question', 'new'] as const) {
+    for (const key of ['program', 'track', 'subject', 'status', 'stage', 'reviewer', 'q', 'question', 'new', 'page'] as const) {
         const value = merged[key]
         if (value) query.set(key, value)
     }
@@ -153,6 +157,8 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
         stage: params.stage || null,
         reviewer: params.reviewer || null,
         q: params.q || null,
+        page: parseAdminPage(params.page),
+        assignee: authorization.userId,
     }, params.question || null)
 
     const program = data.catalog.program.code
@@ -183,13 +189,12 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
     const primaryNode = data.knowledgeMappings.find((row) => lower(row.relation_type) === 'primary') as Row | undefined
 
     const visibleQuestions = data.questions
-    const assignedToMe = visibleQuestions.filter((row) => {
-        const pending = row.pending_review
-        return Boolean(pending && s(pending.reviewer_id) === authorization.userId)
-    }).length
-    const editorialCount = visibleQuestions.filter((row) => ['submitted', 'editorial_review'].includes(lower(row.status))).length
-    const academicCount = visibleQuestions.filter((row) => lower(row.status) === 'academic_review').length
-    const technicalCount = visibleQuestions.filter((row) => lower(row.status) === 'technical_qa').length
+    // Angka-angka ini exact (agregat seluruh tabel), bukan hasil menghitung
+    // jendela daftar — lihat `countQuestionsByStatus`.
+    const assignedToMe = data.counts.assignedToMe
+    const editorialCount = data.counts.editorial
+    const academicCount = data.counts.academic
+    const technicalCount = data.counts.technical
 
     const createNew = params.new === '1'
     const activeSubjectCode = params.subject || data.catalog.subjects[0]?.code || ''
@@ -280,9 +285,15 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)]">
                 <AdminCard className="overflow-hidden xl:sticky xl:top-[88px]">
-                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5"><div><h2 className="text-sm font-black text-slate-950">Review Queue</h2><p className="text-xs font-medium text-slate-500">{visibleQuestions.length} soal sesuai filter</p></div><AdminBadge>{data.counts.unassigned} unassigned</AdminBadge></div>
+                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5"><div><h2 className="text-sm font-black text-slate-950">Review Queue</h2><p className="text-xs font-medium text-slate-500">{data.total} soal sesuai filter</p></div><AdminBadge>{data.counts.unassigned} unassigned</AdminBadge></div>
                     <div className="max-h-[calc(100vh-270px)] overflow-y-auto">
-                        {visibleQuestions.length === 0 ? <AdminEmptyState title="Queue kosong" description="Tidak ada soal untuk filter ini. Coba ubah subject, status, reviewer, atau kata kunci."/> : visibleQuestions.map((question) => {
+                        {visibleQuestions.length === 0 ? (data.clampTo ? (
+                            <AdminEmptyState
+                                title="Tidak ada soal di halaman ini"
+                                description={`Daftar hanya punya ${data.lastPage} halaman. Nomor halaman di alamat mungkin sudah usang.`}
+                                action={<Link className={adminSecondaryButtonClass} href={adminPageHref('/admin/content/review', { ...params, program, track, question: undefined }, data.lastPage)}>Ke halaman {data.lastPage}</Link>}
+                            />
+                        ) : <AdminEmptyState title="Queue kosong" description="Tidak ada soal untuk filter ini. Coba ubah subject, status, reviewer, atau kata kunci."/>) : visibleQuestions.map((question) => {
                             const id = s(question.id)
                             const active = id === data.selectedId
                             const subject = data.subjectById.get(s(question.subject_id))
@@ -295,6 +306,14 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                             )
                         })}
                     </div>
+                    {data.total > 0 ? (
+                        <AdminPagination
+                            pathname="/admin/content/review"
+                            params={{ program, track, subject: params.subject || '', status: params.status || '', stage: params.stage || '', reviewer: params.reviewer || '', q: params.q || '' }}
+                            summary={adminPageSummary(data.page, visibleQuestions.length, data.total)}
+                            noun="soal"
+                        />
+                    ) : null}
                 </AdminCard>
 
                 <main className="min-w-0 space-y-5">
