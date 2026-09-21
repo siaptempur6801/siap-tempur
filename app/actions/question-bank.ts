@@ -2,9 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { z } from 'zod'
 import { validateCsrf } from '@/lib/csrf'
-import { questionBankSchema, questionBankReturnUrl, validateBankOptions, type QuestionBankState } from '@/lib/question-bank'
+import { questionBankSchema, questionBankWorkflowSchema, questionBankReturnUrl, validateBankOptions, type QuestionBankState } from '@/lib/question-bank'
 import { questionBankService } from '@/src/services/question-bank.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -51,11 +50,9 @@ export async function questionBankWorkflowAction(_previous: QuestionBankState, f
     try {
         await validateCsrf()
         await authorizationService.requirePermission(PERMISSIONS.QUESTION_MANAGE)
-        const input = z.object({
-            id: z.uuid(), program: z.enum(['CPNS', 'TKA']), track: z.enum(['SKD', 'SD', 'SMP', 'SMA']),
-            expectedVersion: z.coerce.number().int().min(1), expectedUpdatedAt: z.string().min(1),
-            operation: z.enum(['publish', 'archive', 'revise']), changeReason: z.string().trim().min(1).max(2000),
-        }).parse(Object.fromEntries(form))
+        const parsed = questionBankWorkflowSchema.safeParse(Object.fromEntries(form))
+        if (!parsed.success) return { error: 'Data tindakan tidak valid. Muat ulang soal sebelum mencoba lagi.' }
+        const input = parsed.data
         if (input.operation === 'publish') await authorizationService.requirePermission(PERMISSIONS.CONTENT_PUBLISH)
         await questionBankService.mutate(input)
     } catch (error) { return errorState(error) }

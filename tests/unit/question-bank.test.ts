@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { serializeOptionRows, parseQuestionOptions } from '@/lib/question-options'
-import { validateBankOptions, questionBankReturnUrl, questionBankSchema } from '@/lib/question-bank'
+import { validateBankOptions, questionBankReturnUrl, questionBankSchema, questionBankWorkflowSchema, isIsoTimestamp } from '@/lib/question-bank'
 
 const options = [
     { key: 'A', content: 'Nilai |x|\n\\frac{1}{2} 😀', score: 1, isCorrect: true },
@@ -48,5 +48,21 @@ describe('Question Bank lossless payload and validation', () => {
         expect(questionBankSchema.safeParse(input).success).toBe(true)
         expect(questionBankSchema.safeParse({ ...input, track: 'SMP' }).success).toBe(false)
         expect(questionBankSchema.safeParse({ ...input, id: '438b18d9-0d22-4411-8c2b-e11ed6380720' }).success).toBe(false)
+        expect(questionBankSchema.safeParse({ ...input, id: '438b18d9-0d22-4411-8c2b-e11ed6380720', expectedVersion: 1, expectedUpdatedAt: '2026-09-21T06:26:21.123456+00:00' }).success).toBe(true)
+    })
+    it('accepts only ISO 8601 timestamps as the concurrency token', () => {
+        for (const value of ['2026-09-21T06:26:21.123456+00:00', '2026-09-21T06:26:21+07:00', '2026-09-21T06:26:21Z']) expect(isIsoTimestamp(value)).toBe(true)
+        for (const value of ['21 Sep 2026', '2026-09-21', '09/21/2026', '', 'besok']) expect(isIsoTimestamp(value)).toBe(false)
+        const input = { id: '', program: 'CPNS', track: 'SKD', subject: 'TIU', questionType: 'single_choice', stem: 'Q', difficulty: 'medium', explanation: '', sourceReference: '', cognitiveLevel: '', estimatedSeconds: '', stimulusId: '', knowledgeNodeId: '', changeReason: 'test', expectedVersion: 1, expectedUpdatedAt: '21 Sep 2026', options: JSON.stringify(options) }
+        expect(questionBankSchema.safeParse({ ...input, id: '438b18d9-0d22-4411-8c2b-e11ed6380720' }).success).toBe(false)
+    })
+    it('workflow payload rejects loose timestamps, missing id, and empty reason', () => {
+        const base = { id: '438b18d9-0d22-4411-8c2b-e11ed6380720', program: 'CPNS', track: 'SKD', expectedVersion: 1, expectedUpdatedAt: '2026-09-21T06:26:21.123456+00:00', operation: 'archive', changeReason: 'rapikan' }
+        expect(questionBankWorkflowSchema.safeParse(base).success).toBe(true)
+        expect(questionBankWorkflowSchema.safeParse({ ...base, expectedUpdatedAt: '21 Sep 2026' }).success).toBe(false)
+        expect(questionBankWorkflowSchema.safeParse({ ...base, expectedUpdatedAt: '' }).success).toBe(false)
+        expect(questionBankWorkflowSchema.safeParse({ ...base, expectedVersion: 0 }).success).toBe(false)
+        expect(questionBankWorkflowSchema.safeParse({ ...base, changeReason: '   ' }).success).toBe(false)
+        expect(questionBankWorkflowSchema.safeParse({ ...base, operation: 'delete' }).success).toBe(false)
     })
 })

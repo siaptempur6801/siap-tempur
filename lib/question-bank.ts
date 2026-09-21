@@ -2,6 +2,21 @@ import { z } from 'zod'
 import { parseQuestionOptions } from '@/lib/question-options'
 
 const optionalId = z.union([z.uuid(), z.literal('')]).transform((v) => v || null)
+
+/**
+ * Timestamp ISO 8601 yang benar-benar dikirim Postgres (`to_jsonb(timestamptz)`),
+ * mis. `2026-09-21T06:26:21.123456+00:00`.
+ *
+ * Sebelumnya token concurrency hanya diuji `Date.parse()`, yang menerima format
+ * longgar seperti `21 Sep 2026` — lolos di aplikasi lalu gagal saat di-cast ke
+ * `timestamptz` di RPC, dan admin hanya melihat pesan generik. Pola ini adalah
+ * format tunggal yang boleh masuk; sisanya ditolak sebelum menyentuh database.
+ */
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}(?::?\d{2})?)$/
+export function isIsoTimestamp(value: string) {
+    return ISO_TIMESTAMP.test(value) && Number.isFinite(Date.parse(value))
+}
+
 export const questionBankSchema = z.object({
     id: optionalId,
     program: z.enum(['CPNS', 'TKA']), track: z.enum(['SKD', 'SD', 'SMP', 'SMA']),
@@ -14,11 +29,18 @@ export const questionBankSchema = z.object({
     estimatedSeconds: z.union([z.literal(''), z.coerce.number().int().min(1).max(86400)]),
     stimulusId: optionalId, knowledgeNodeId: optionalId,
     changeReason: z.string().trim().min(1, 'Alasan perubahan wajib diisi.').max(2000),
-    expectedVersion: z.coerce.number().int().min(0), expectedUpdatedAt: z.string().max(60),
+    expectedVersion: z.coerce.number().int().min(0), expectedUpdatedAt: z.string().trim().max(60),
     options: z.string().max(300000),
 }).superRefine((v, ctx) => {
     if ((v.program === 'CPNS') !== (v.track === 'SKD')) ctx.addIssue({ code: 'custom', path: ['track'], message: 'Program dan jenjang tidak cocok.' })
-    if (v.id && (v.expectedVersion < 1 || !Number.isFinite(Date.parse(v.expectedUpdatedAt)))) ctx.addIssue({ code: 'custom', path: ['expectedVersion'], message: 'Versi soal tidak valid. Muat ulang soal.' })
+    if (v.id && (v.expectedVersion < 1 || !isIsoTimestamp(v.expectedUpdatedAt))) ctx.addIssue({ code: 'custom', path: ['expectedVersion'], message: 'Versi soal tidak valid. Muat ulang soal.' })
+})
+
+/** Payload tindakan workflow (`publish`/`archive`/`revise`) dari form tersembunyi. */
+export const questionBankWorkflowSchema = z.object({
+    id: z.uuid(), program: z.enum(['CPNS', 'TKA']), track: z.enum(['SKD', 'SD', 'SMP', 'SMA']),
+    expectedVersion: z.coerce.number().int().min(1), expectedUpdatedAt: z.string().trim().max(60).refine(isIsoTimestamp, 'Versi soal tidak valid. Muat ulang soal.'),
+    operation: z.enum(['publish', 'archive', 'revise']), changeReason: z.string().trim().min(1).max(2000),
 })
 
 export type QuestionBankValues = z.input<typeof questionBankSchema>

@@ -87,9 +87,13 @@ Perbaikan:
   dan pemeliharaan filter, mapel, kata kunci, serta halaman telah diuji.
 
 Verifikasi selesai:
-- Lint tanpa error/warning, typecheck, **601 unit test / 79 file**, build lolos.
+- Lint tanpa error/warning, typecheck, **603 unit test / 79 file**, build lolos.
 - Build tetap memiliki warning lama di `lib/event-certificate-pdf.ts` tentang tracing filesystem;
   warning konfigurasi Vitest lama juga masih ada. Keduanya di luar perubahan Question Bank.
+- Hardening lanjutan (2026-09-21): token concurrency `expectedUpdatedAt` kini hanya menerima ISO 8601
+  yang benar-benar dikirim Postgres (`isIsoTimestamp` di `lib/question-bank.ts`); format longgar
+  seperti `21 Sep 2026` ditolak sebelum menyentuh RPC. Schema tindakan workflow dipindah ke
+  `questionBankWorkflowSchema` agar dapat diuji — 2 unit test baru.
 - `npm run test:question-bank`: seluruh gate DB + browser lulus pada aplikasi lokal port 3105
   yang terhubung staging. CPNS serta TKA SD/SMP/SMA; single/multiple/category; akses anonim/FINANCE;
   konteks silang; dua penyimpanan bersamaan; audit/versi/ID opsi; edit di luar hasil daftar;
@@ -106,6 +110,12 @@ Verifikasi selesai:
   search_path kosong, anon tidak dapat execute. Security advisor tidak melaporkan objek Question Bank
   baru; **64 temuan lain di staging masih ada** dan bukan scope hardening ini.
 
+**Gate CI (2026-09-21):** `.github/workflows/question-bank-staging-e2e.yml` menjalankan
+`npm run test:question-bank` pada PR/dispatch yang menyentuh berkas Question Bank, di runner
+GitHub-hosted dengan secret staging yang sudah ada; aplikasi dibangun lalu dijalankan di
+`127.0.0.1:3105`. **Belum pernah dieksekusi** karena GitHub Actions masih terblokir billing
+(lihat Blocker eksternal); jalankan `workflow_dispatch` setelah billing pulih.
+
 Cakupan ini bukan klaim bebas bug untuk seluruh platform atau seluruh browser. Yang belum
 diverifikasi: CI remote untuk perubahan ini dan browser selain Chromium. Database produksi sudah
 diverifikasi untuk migration (lihat di atas).
@@ -120,7 +130,7 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
 - `src/services/question-bank.service.ts`, `src/services/admin-v2.service.ts`
 - `types/database.types.ts`, migration di atas
 - `tests/unit/question-bank.test.ts`, `tests/unit/admin-question-options.test.ts`
-- `scripts/test-question-bank.mjs`, `package.json`, `docs/STATUS.md`
+- `scripts/test-question-bank.mjs`, `.github/workflows/question-bank-staging-e2e.yml`, `package.json`, `docs/STATUS.md`
 
 ---
 
