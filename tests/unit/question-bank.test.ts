@@ -33,6 +33,17 @@ describe('Question Bank lossless payload and validation', () => {
     it('rejects script, insecure and credential-containing image URLs', () => {
         for (const imageUrl of ['javascript:alert(1)', 'http://example.org/a.png', 'https://user:pass@example.org/a.png']) expect(() => validateBankOptions('single_choice', JSON.stringify([{ ...options[0], imageUrl }, options[1]]))).toThrow()
     })
+    it('image URLs reject everything the RPC rejects and additionally forbid credentials', () => {
+        const withImage = (imageUrl: string) => JSON.stringify([{ ...options[0], imageUrl }, options[1]])
+        for (const imageUrl of ['https://example.org/a.png', 'https://example.org/a?q=1|2', 'https://example.org', 'https://example.org/x#f', 'https://example.org/a/b.png']) {
+            expect(validateBankOptions('single_choice', withImage(imageUrl))).toHaveLength(2)
+        }
+        // Tiga pertama ditolak RPC; URL berkredensial diterima regex SQL yang bisa
+        // mundur, tetapi sisi aplikasi sengaja lebih ketat (lihat lib/question-options.ts).
+        for (const imageUrl of ['HTTPS://example.org/a.png', 'https://example.org/a b.png', 'https://example.org/a\tb.png', 'http://example.org/a.png', 'https://', 'https://user:pass@example.org/a.png', `https://example.org/${'a'.repeat(2000)}`]) {
+            expect(() => validateBankOptions('single_choice', withImage(imageUrl)), imageUrl).toThrow()
+        }
+    })
     it('return URL always stays on Question Bank and preserves filters', () => {
         const form = new FormData()
         for (const [key, value] of Object.entries({ program: 'TKA', track: 'SMP', q: '|x|', status: 'draft', subject: 'MAT', page: '4' })) form.set(`return_${key}`, value)

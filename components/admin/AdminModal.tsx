@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Plus, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { useAdminConfirm } from '@/components/admin/useAdminConfirm'
 
 const triggerVariants = {
     primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500/20',
@@ -47,6 +48,7 @@ export default function AdminModal({
     const router = useRouter()
     const titleId = useId()
     const descriptionId = useId()
+    const { confirm, dialog } = useAdminConfirm()
 
     useEffect(() => {
         setOpen(defaultOpen)
@@ -60,9 +62,18 @@ export default function AdminModal({
         if (!open && dialog.open) dialog.close()
     }, [open])
 
-    function closeModal() {
+    async function closeModal() {
         if (confirmUnsaved && dialogRef.current?.querySelector('[data-pending="true"]')) return
-        if (confirmUnsaved && dialogRef.current?.querySelector('[data-dirty="true"]') && !window.confirm('Ada perubahan yang belum disimpan. Tutup form?')) return
+        if (confirmUnsaved && dialogRef.current?.querySelector('[data-dirty="true"]')) {
+            const confirmed = await confirm({
+                title: 'Tutup form?',
+                message: 'Ada perubahan yang belum disimpan.',
+                detail: 'Perubahan yang belum disimpan akan hilang bila form ditutup.',
+                confirmLabel: 'Tutup tanpa simpan',
+                danger: true,
+            })
+            if (!confirmed) return
+        }
         setOpen(false)
         if (defaultOpen && closeHref) router.replace(closeHref, { scroll: false })
     }
@@ -117,6 +128,7 @@ export default function AdminModal({
                         {children}
                     </div>
                 </div>
+                {dialog}
             </dialog>
         </>
     )

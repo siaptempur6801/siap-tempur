@@ -151,21 +151,19 @@ export async function removeFirstParticipant(page: Page) {
     await dialog.waitFor({ state: 'visible', timeout: 30_000 })
     await dialog.getByRole('button', { name: 'Keluarkan peserta', exact: true }).click()
 
-    // Aksi tidak terkirim berarti tombol konfirmasi tidak benar-benar mengirim
-    // form server action (pernah terjadi: React menolak submit native). Gagalkan
-    // dengan pesan yang jelas alih-alih menunggu 30 detik lalu menyalahkan baris.
-    await page.waitForTimeout(1500)
-    const stillThere = await trigger.count()
-    if (stillThere >= before) {
+    // Dialog menutup SEGERA saat dikonfirmasi, jauh sebelum Server Action selesai
+    // (staging nyata: 1,5–3 detik per aksi). Karena itu yang ditunggu adalah
+    // barisnya benar-benar berkurang. Versi sebelumnya memakai timeout tetap 1,5
+    // detik lalu menyimpulkan "konfirmasi tidak mengirim" — pada aksi yang lambat
+    // itu salah: trace menunjukkan POST-nya terkirim dan masih in-flight ketika
+    // test menyerah.
+    try {
+        await expect(trigger).toHaveCount(before - 1, { timeout: 30_000 })
+    } catch {
+        // Pesan yang membedakan "tombol konfirmasi tidak mengirim" (pernah
+        // terjadi: React menolak submit native) dari penolakan produk.
         const status = await page.locator('[role="status"], [role="alert"]').first().textContent().catch(() => '')
-        throw new Error(`Konfirmasi tidak mengubah daftar peserta (baris tetap ${stillThere}). Pesan di layar: ${JSON.stringify((status || '').slice(0, 160))}`)
+        throw new Error(`Konfirmasi tidak mengubah daftar peserta (baris tetap ${await trigger.count()}). Pesan di layar: ${JSON.stringify((status || '').slice(0, 160))}`)
     }
-
-    // Dialog menutup dirinya SEGERA saat dikonfirmasi, jauh sebelum Server Action
-    // selesai. Menunggu dialog tersembunyi saja membuat pemanggil berjalan lebih
-    // cepat daripada server: hitungan baris berikutnya masih membaca baris lama,
-    // loop berhenti, dan peserta yang tersisa tidak pernah dikeluarkan. Karena
-    // itu yang ditunggu adalah barisnya benar-benar berkurang.
-    await expect(trigger).toHaveCount(before - 1, { timeout: 30_000 })
     return true
 }

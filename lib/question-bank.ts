@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { parseQuestionOptions } from '@/lib/question-options'
+import { isHttpsImageUrl, parseQuestionOptions } from '@/lib/question-options'
 
 const optionalId = z.union([z.uuid(), z.literal('')]).transform((v) => v || null)
 
@@ -89,8 +89,7 @@ export function validateBankOptions(type: string, raw: string) {
         if (!o.content.trim() || o.content.length > 20000) throw new Error('Isi setiap opsi wajib diisi, maksimal 20.000 karakter.')
         if (o.score !== null && (o.score < 0 || o.score > 99999999.99 || Math.abs(o.score * 100 - Math.round(o.score * 100)) > 0.00001)) throw new Error('Skor harus positif atau nol, maksimal dua angka desimal.')
         if (o.responseGroup && o.responseGroup.length > 200) throw new Error('Nama kategori terlalu panjang.')
-        if (o.imageUrl && (o.imageUrl.length > 2000 || !/^https:\/\//i.test(o.imageUrl))) throw new Error('URL gambar harus menggunakan https.')
-        if (o.imageUrl) { try { const url = new URL(o.imageUrl); if (url.username || url.password) throw new Error() } catch { throw new Error('URL gambar tidak valid.') } }
+        if (o.imageUrl && (o.imageUrl.length > 2000 || !isHttpsImageUrl(o.imageUrl))) throw new Error('URL gambar harus https tanpa kredensial, spasi, atau karakter yang ditolak database.')
     }
     const correct = options.filter((o) => o.isCorrect === true).length
     if (type === 'single_choice' && correct !== 1) throw new Error('Pilihan tunggal harus memiliki tepat satu jawaban benar.')

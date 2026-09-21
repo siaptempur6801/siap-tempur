@@ -53,7 +53,7 @@ test.describe('Instansi — self-onboarding peserta', () => {
             await page.getByPlaceholder('Budi Santoso').fill('PIC E2E')
             await page.getByRole('button', { name: 'Buat instansi', exact: true }).click()
 
-            await expect(page.getByRole('status')).toContainText('disimpan', { timeout: 30_000 })
+            await expect(page.getByRole('status').filter({ hasText: 'disimpan' })).toContainText('disimpan', { timeout: 30_000 })
             // Membuat instansi langsung membuka detailnya, supaya langkah
             // berikutnya (membuat batch) bisa dikerjakan tanpa mencari lagi.
             await expect(page.getByRole('heading', { name: `Ubah Instansi E2E ${orgCode}`, exact: true })).toBeVisible()
@@ -95,7 +95,7 @@ test.describe('Instansi — self-onboarding peserta', () => {
                 await participantPage.getByPlaceholder('mis. Bidang Kepegawaian').fill('Bidang Uji')
                 await participantPage.getByRole('button', { name: 'Gabung ke batch ini', exact: true }).click()
 
-                await expect(participantPage.getByRole('status')).toContainText('Berhasil bergabung', { timeout: 30_000 })
+                await expect(participantPage.getByRole('status').filter({ hasText: 'Berhasil bergabung' })).toContainText('Berhasil bergabung', { timeout: 30_000 })
 
                 // Bergabung ULANG harus idempoten — halaman menampilkan bahwa ia
                 // sudah terdaftar, bukan membuat baris peserta kedua.
@@ -160,7 +160,7 @@ test.describe('Instansi — self-onboarding peserta', () => {
                 // pembersihan gagal dan menyisakan instansi sampah di staging —
                 // itulah cara 36 instansi uji menumpuk dan akhirnya membuat gate
                 // berikutnya merah karena datanya sudah terlalu kotor.
-                await expect(page.getByRole('status')).toContainText(
+                await expect(page.getByRole('status').filter({ hasText: /dihapus|masih punya peserta/ })).toContainText(
                     new RegExp(`Instansi E2E ${orgCode} dihapus\\.|masih punya peserta`),
                     { timeout: 30_000 },
                 )
@@ -310,7 +310,7 @@ test.describe('Instansi — bulk import peserta', () => {
                 // Pesan sukses lengkap dipakai, BUKAN sekadar kata "dihapus":
                 // pesan GALAT berbunyi "...tidak bisa dihapus...", sehingga
                 // assertion longgar akan lolos justru ketika pembersihan gagal.
-                await expect(page.getByRole('status')).toContainText(`Instansi Import ${orgCode} dihapus.`, { timeout: 30_000 })
+                await expect(page.getByRole('status').filter({ hasText: 'dihapus' })).toContainText(`Instansi Import ${orgCode} dihapus.`, { timeout: 30_000 })
             }
             await cleanupRoleUser(supabaseUrl, admin.userId)
         }

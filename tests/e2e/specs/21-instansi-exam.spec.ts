@@ -122,15 +122,20 @@ test.describe('Instansi — template ujian & assignment', () => {
                 // terhapus bersama instansinya.
                 await page.getByRole('link', { name: 'Lihat peserta', exact: true }).first().click()
                 await page.getByRole('button', { name: 'Hapus exam', exact: true }).click()
+                // Fase 2 memindahkan "Hapus exam" ke ConfirmSubmit: klik pertama membuka
+                // dialog, klik konfirmasi di dalamnya yang mengirim form.
+                const deleteExamDialog = page.getByRole('alertdialog')
+                await expect(deleteExamDialog).toBeVisible()
+                await deleteExamDialog.getByRole('button', { name: 'Hapus exam', exact: true }).click()
                 // Pola pesan sukses, BUKAN tebakan judul: exam mewarisi nama template
                 // ketika kolom judul dibiarkan kosong, dan menebak judul membuat test
                 // gagal justru setelah penghapusannya berhasil.
-                await expect(page.getByRole('status')).toHaveText(/^Exam .+ dihapus\.$/, { timeout: 30_000 })
+                await expect(page.getByRole('status').filter({ hasText: 'dihapus' })).toHaveText(/^Exam .+ dihapus\.$/, { timeout: 30_000 })
 
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
                 // Dua hasil sah: terhapus, atau ditolak karena masih ada peserta
                 // yang sudah mengerjakan ujian (penjaga produk, bukan kegagalan).
-                await expect(page.getByRole('status')).toContainText(
+                await expect(page.getByRole('status').filter({ hasText: /dihapus|masih punya peserta/ })).toContainText(
                     /dihapus\.|masih punya peserta/,
                     { timeout: 30_000 },
                 )
@@ -253,7 +258,7 @@ test.describe('Instansi — monitoring & export', () => {
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
                 // Sama seperti spec join: penolakan "masih punya peserta" adalah
                 // penjaga produk yang sah, bukan kegagalan pembersihan.
-                await expect(page.getByRole('status')).toContainText(
+                await expect(page.getByRole('status').filter({ hasText: /dihapus|masih punya peserta/ })).toContainText(
                     /dihapus\.|masih punya peserta/,
                     { timeout: 30_000 },
                 )

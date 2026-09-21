@@ -12,6 +12,29 @@ export type QuestionOptionInput = {
     imageUrl: string | null
 }
 
+/**
+ * Kontrak URL gambar opsi — cermin regex di RPC `mutate_question_bank`:
+ * `^https://[^/@[:space:]]+([/:?#][^[:space:]]*)?$`
+ *
+ * Sebelumnya sisi aplikasi memakai `/^https:\/\//i` + `new URL()`, yang menerima
+ * hal berbeda dari SQL: skema huruf besar (`HTTPS://`) dan spasi/tab di path
+ * (URL parser menghapusnya). Akibatnya form menerima nilai yang lalu ditolak RPC
+ * dengan pesan generik. Pola ini menyamakan sisi aplikasi dengan SQL.
+ *
+ * Catatan asimetri yang diketahui: regex SQL bisa "mundur" (`user` + `:pass@host`)
+ * sehingga URL berkredensial ikut cocok di sana. Sisi aplikasi sengaja **lebih
+ * ketat** — memeriksa authority secara terpisah — karena arah drift yang
+ * berbahaya adalah "form menerima, RPC menolak". Memperketat SQL menuntut
+ * migration baru; belum dilakukan.
+ */
+const HTTPS_IMAGE_PATTERN = /^https:\/\/[^/@\s]+(?:[/:?#][^\s]*)?$/
+
+export function isHttpsImageUrl(value: string): boolean {
+    if (!HTTPS_IMAGE_PATTERN.test(value)) return false
+    const authority = value.slice('https://'.length).split(/[/?#]/, 1)[0]
+    return !authority.includes('@')
+}
+
 
 export function serializeQuestionOption(option: {
     key: unknown; content: unknown; score: unknown; isCorrect: unknown;

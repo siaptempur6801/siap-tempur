@@ -89,9 +89,21 @@ Perbaikan:
   stimulus, sumber, level kognitif, estimasi waktu) dan terhubung `aria-describedby`; isu pada token
   identitas tersembunyi (`id`/`program`/`track`/`expectedVersion`/`expectedUpdatedAt`) dinaikkan menjadi
   pesan tingkat atas agar tidak ada "isian ditandai" tanpa tanda di layar. Dikunci 1 unit test.
+- Tipe `category`: field `responseGroup` tampil langsung di luar "Pengaturan lanjutan" dan `required`;
+  petunjuk aturan (minimal dua kelompok, tiap kelompok ≥2 opsi dan tepat satu jawaban benar) muncul
+  saat tipe dipilih. Dikunci 2 unit test render.
+- URL gambar opsi memakai satu kontrak `isHttpsImageUrl` (`lib/question-options.ts`) yang mencerminkan
+  regex RPC; sisi aplikasi sengaja **lebih ketat** — URL berkredensial ditolak. **Utang:** regex SQL
+  bisa *backtracking* (`user` + `:pass@host`) sehingga RPC masih menerima kredensial; memperketatnya
+  menuntut migration baru (belum dilakukan).
+- `window.confirm` dihapus dari seluruh permukaan admin: `AdminConfirmDialog` + `useAdminConfirm`
+  (overlay, focus trap, Escape, pemulihan fokus); `ConfirmSubmit` memakai shell yang sama tanpa
+  mengubah kontrak submit-nya. Uji regresi kini memindai `components/admin/**` + `app/admin/**`,
+  bukan daftar berkas manual — dua berkas yang sebelumnya lolos (`QuestionBankForm`, `AdminModal`)
+  kini tertutup.
 
 Verifikasi selesai:
-- Lint tanpa error/warning, typecheck, **604 unit test / 79 file**, build lolos.
+- Lint tanpa error/warning, typecheck, **607 unit test / 80 file**, build lolos.
 - Build tetap memiliki warning lama di `lib/event-certificate-pdf.ts` tentang tracing filesystem;
   warning konfigurasi Vitest lama juga masih ada. Keduanya di luar perubahan Question Bank.
 - Hardening lanjutan (2026-09-21): token concurrency `expectedUpdatedAt` kini hanya menerima ISO 8601
@@ -106,6 +118,12 @@ Verifikasi selesai:
   publikasi dan revisi kembali ke draf. Fixture milik run dibersihkan di `finally`.
 - Chromium desktop 1440 px, tablet 1024 px, mobile 390 px: tidak ada overflow halaman/modal;
   tidak ada page error / console error pada alur yang diuji, pratinjau dirender.
+- Gate admin lokal (`node scripts/local-gates/run-gate.mjs admin`): **60 passed, exit 0**. Dua spec
+  instansi diperbaiki karena commit Fase 2 menambahkan dialog konfirmasi pada "Hapus exam" dan
+  `role="status"` ringkasan filter: spec kini menekan tombol konfirmasi, mempersempit locator status,
+  dan helper `removeFirstParticipant` menunggu baris benar-benar berkurang — timeout tetap 1,5 detik
+  terbukti salah (trace menunjukkan POST konfirmasi masih in-flight). 11 instansi uji tertinggal dari
+  run gagal dibersihkan; staging kembali 0 instansi uji.
 - Uji SQL dalam transaksi **ROLLBACK**: kegagalan audit di langkah akhir membatalkan soal, opsi,
   dan version history; pengeditan saat attempt aktif ditolak; manager tanpa `content.publish`
   tidak dapat menerbitkan; akun suspended ditolak; pergantian mapel melepas pemetaan materi
@@ -129,11 +147,15 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
 - `app/admin/AdminOperationsWorkspace.tsx`, `app/admin/content/questions/page.tsx`,
   `app/admin/content/review/page.tsx`
 - `components/admin/QuestionBankForm.tsx`, `components/admin/QuestionOptionsEditor.tsx`,
-  `components/admin/AdminModal.tsx`
+  `components/admin/AdminModal.tsx`, `components/admin/AdminConfirmDialog.tsx` (baru),
+  `components/admin/useAdminConfirm.tsx` (baru), `components/admin/ConfirmSubmit.tsx`
 - `lib/question-bank.ts`, `lib/question-options.ts`
 - `src/services/question-bank.service.ts`, `src/services/admin-v2.service.ts`
 - `types/database.types.ts`, migration di atas
-- `tests/unit/question-bank.test.ts`, `tests/unit/admin-question-options.test.ts`
+- `tests/unit/question-bank.test.ts`, `tests/unit/question-bank-category-editor.test.tsx` (baru),
+  `tests/unit/admin-question-options.test.ts`, `tests/unit/admin-confirm-submit.test.ts`
+- `tests/e2e/specs/20-instansi-join.spec.ts`, `tests/e2e/specs/21-instansi-exam.spec.ts`,
+  `tests/e2e/admin-roles.ts`
 - `scripts/test-question-bank.mjs`, `.github/workflows/question-bank-staging-e2e.yml`, `package.json`, `docs/STATUS.md`
 
 ---

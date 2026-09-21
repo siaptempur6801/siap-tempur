@@ -2,11 +2,13 @@
 
 import { startTransition, useActionState, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { saveQuestionBankAction, questionBankWorkflowAction } from '@/app/actions/question-bank'
-import { serializeOptionRows, parseQuestionOptions } from '@/lib/question-options'
+import { serializeOptionRows, parseQuestionOptions, isHttpsImageUrl } from '@/lib/question-options'
 import type { QuestionBankDetail, QuestionBankState } from '@/lib/question-bank'
 import QuestionOptionsEditor from '@/components/admin/QuestionOptionsEditor'
+import { useAdminConfirm } from '@/components/admin/useAdminConfirm'
 import { AdminField, adminInputClass, adminPrimaryButtonClass, adminSecondaryButtonClass, adminDangerButtonClass } from '@/components/admin/AdminUi'
 
 const MathRenderer = dynamic(() => import('@/components/MathRenderer'), { loading: () => <p>Memuat pratinjau…</p> })
@@ -21,6 +23,7 @@ export function QuestionBankWorkflow({ question, program, track, returnFilters, 
     question: Record<string, unknown>; program: string; track: string; returnFilters: Record<string, string>; canPublish: boolean;
 }) {
     const [state, action, pending] = useActionState(questionBankWorkflowAction, {} as QuestionBankState)
+    const { confirm, dialog } = useAdminConfirm()
     const [operation, setOperation] = useState('')
     const status = text(question.status)
     const operations = [
@@ -31,7 +34,7 @@ export function QuestionBankWorkflow({ question, program, track, returnFilters, 
     if (!operations.length) return null
     return <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
         <p className="text-sm font-semibold">Publikasi membutuhkan persetujuan review. Soal terbit harus kembali ke draf sebelum direvisi.</p>
-        <div className="flex flex-wrap gap-2">{operations.map((op) => <button key={op.value} type="button" disabled={pending} className={op.value === 'archive' ? adminDangerButtonClass : adminSecondaryButtonClass} onClick={(event) => { const dialog = event.currentTarget.closest('dialog'); if (dialog?.querySelector('[data-pending="true"]')) return; if (dialog?.querySelector('[data-dirty="true"]') && !window.confirm('Perubahan isi belum disimpan. Lanjut mengubah status versi tersimpan?')) return; setOperation(op.value) }}>{op.label}</button>)}</div>
+        <div className="flex flex-wrap gap-2">{operations.map((op) => <button key={op.value} type="button" disabled={pending} className={op.value === 'archive' ? adminDangerButtonClass : adminSecondaryButtonClass} onClick={async (event) => { const dialogEl = event.currentTarget.closest('dialog'); if (dialogEl?.querySelector('[data-pending="true"]')) return; if (dialogEl?.querySelector('[data-dirty="true"]') && !(await confirm({ title: 'Ubah status soal?', message: 'Perubahan isi belum disimpan.', detail: 'Tindakan ini memakai versi soal yang tersimpan di database, bukan isi form yang belum disimpan.', confirmLabel: 'Lanjut ubah status', danger: true }))) return; setOperation(op.value) }}>{op.label}</button>)}</div>
         {operation ? <form onSubmit={(event) => {
             event.preventDefault()
             const form = new FormData(event.currentTarget)
@@ -44,6 +47,7 @@ export function QuestionBankWorkflow({ question, program, track, returnFilters, 
             <button className={adminPrimaryButtonClass} disabled={pending}>{pending ? 'Memproses…' : 'Konfirmasi tindakan'}</button>
             <button type="button" disabled={pending} className={`${adminSecondaryButtonClass} ml-2`} onClick={() => setOperation('')}>Batal</button>
         </form> : null}
+        {dialog}
     </div>
 }
 
@@ -62,6 +66,8 @@ export default function QuestionBankForm({ detail: incomingDetail, subjects, pro
     const [detail] = useState(incomingDetail)
     const q = detail.question
     const [state, action, pending] = useActionState(saveQuestionBankAction, {} as QuestionBankState)
+    const router = useRouter()
+    const { confirm, dialog } = useAdminConfirm()
     const [dirty, setDirty] = useState(false)
     const [preview, setPreview] = useState(false)
     const [values, setValues] = useState({
@@ -91,7 +97,7 @@ export default function QuestionBankForm({ detail: incomingDetail, subjects, pro
     try { previewOptions = parseQuestionOptions(options) } catch { /* Form shows invalid option errors when submitted. */ }
     const stimulus = detail.stimuli.find((s) => s.id === values.stimulusId)
     return <div className="space-y-5">
-        {q ? <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>{text(q.question_code)} · Versi {text(q.version)} · {editable ? 'Dapat diedit' : 'Konten terkunci'}</span><Link className={adminSecondaryButtonClass} href={reviewHref} onClick={(event) => { if (dirty && !window.confirm('Ada perubahan yang belum disimpan. Buka alur review?')) event.preventDefault() }}>Buka alur review</Link></div> : null}
+        {q ? <div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>{text(q.question_code)} · Versi {text(q.version)} · {editable ? 'Dapat diedit' : 'Konten terkunci'}</span><Link className={adminSecondaryButtonClass} href={reviewHref} onClick={(event) => { if (!dirty) return; event.preventDefault(); void (async () => { if (await confirm({ title: 'Buka alur review?', message: 'Ada perubahan yang belum disimpan.', detail: 'Perubahan yang belum disimpan akan hilang bila halaman alur review dibuka.', confirmLabel: 'Buka alur review' })) router.push(reviewHref) })() }}>Buka alur review</Link></div> : null}
         {!editable ? <p className="rounded-xl bg-blue-50 p-3 text-sm text-blue-900">Konten dikunci selama review dan setelah disetujui. Gunakan alur review atau kembalikan ke draf untuk melakukan perubahan.</p> : null}
         <form onSubmit={(event) => {
             event.preventDefault()
@@ -99,7 +105,7 @@ export default function QuestionBankForm({ detail: incomingDetail, subjects, pro
             startTransition(() => action(form))
         }} data-dirty={dirty || undefined} data-pending={pending || undefined} className="space-y-5">
             <Identity question={q} program={program} track={track}/><ReturnFields filters={returnFilters}/>
-            {state.error ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{state.error}</p>{state.conflict ? <button type="button" className={`${adminSecondaryButtonClass} mt-2`} onClick={() => { if (window.confirm('Muat ulang akan mengganti input dengan versi terbaru. Sudah menyalin perubahan Anda?')) window.location.reload() }}>Muat versi terbaru</button> : null}</div> : null}
+            {state.error ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><p>{state.error}</p>{state.conflict ? <button type="button" className={`${adminSecondaryButtonClass} mt-2`} onClick={() => { void (async () => { if (await confirm({ title: 'Muat versi terbaru?', message: 'Muat ulang akan mengganti input dengan versi terbaru dari database.', detail: 'Salin perubahan Anda terlebih dahulu; isi form ini akan hilang.', confirmLabel: 'Muat ulang', danger: true })) window.location.reload() })() }}>Muat versi terbaru</button> : null}</div> : null}
             <fieldset disabled={!editable || pending} className="grid min-w-0 gap-4 md:grid-cols-2">
                 <legend className="mb-3 font-bold">Isi & klasifikasi soal</legend>
                 <AdminField label="Mapel / Subtes" fieldId="qb-subject" error={state.fields?.subject} hint="Mengganti mapel akan melepas stimulus dan pemetaan materi dari mapel sebelumnya."><select {...input('subject')} className={adminInputClass} required><option value="">Pilih mapel</option>{subjects.map((s) => <option key={s.id} value={s.code}>{s.code} · {s.name}</option>)}</select></AdminField>
@@ -125,9 +131,10 @@ export default function QuestionBankForm({ detail: incomingDetail, subjects, pro
             <h3 className="font-bold">Pratinjau soal</h3>
             {stimulus ? <div className="border-b pb-3"><MathRenderer text={stimulus.content || ''}/>{stimulus.image_url ? <MathRenderer text={`[[image:${stimulus.image_url}]]`}/> : null}</div> : null}
             <MathRenderer text={values.stem}/>
-            {previewOptions.map((o, i) => <div key={i} className="rounded-lg border bg-white p-3"><b>{o.key}{o.isCorrect ? ' · Jawaban benar' : ''}{o.responseGroup ? ` · ${o.responseGroup}` : ''}</b><MathRenderer text={o.content}/>{o.imageUrl && /^https:\/\//.test(o.imageUrl) ? <MathRenderer text={`[[image:${o.imageUrl}]]`}/> : null}</div>)}
+            {previewOptions.map((o, i) => <div key={i} className="rounded-lg border bg-white p-3"><b>{o.key}{o.isCorrect ? ' · Jawaban benar' : ''}{o.responseGroup ? ` · ${o.responseGroup}` : ''}</b><MathRenderer text={o.content}/>{o.imageUrl && isHttpsImageUrl(o.imageUrl) ? <MathRenderer text={`[[image:${o.imageUrl}]]`}/> : null}</div>)}
             <h4 className="font-bold">Pembahasan</h4><MathRenderer text={values.explanation || 'Belum diisi.'}/>
         </section> : null}
         {detail.versions.length ? <details className="rounded-xl border p-4"><summary className="cursor-pointer font-semibold">Riwayat versi (20 terbaru)</summary><ul className="mt-3 space-y-2 text-sm">{detail.versions.map((v) => <li key={v.version}>Versi {v.version} · {v.change_reason || 'Tanpa catatan'} · {new Date(v.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}</li>)}</ul></details> : null}
+        {dialog}
     </div>
 }

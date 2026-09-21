@@ -55,6 +55,11 @@ async function databaseTests() {
  assert.ok((await client.rpc('mutate_question_bank',{p_payload:{...change,operation:'publish'}})).error);console.log('PASS unreviewed publication rejected');
  assert.ok((await client.rpc('mutate_question_bank',{p_payload:{...change,options:[]}})).error);
  assert.deepEqual((await load()).question,updated.question);console.log('PASS invalid update does not change data');
+ for(const imageUrl of ['HTTPS://example.org/a.png','https://example.org/a b.png']) {
+   const rejected=await client.rpc('mutate_question_bank',{p_payload:{...payload,options:[{...payload.options[0],imageUrl},payload.options[1]]}});
+   assert.ok(rejected.error,`image URL harus ditolak SQL: ${imageUrl}`);
+ }
+ console.log('PASS image URL contract matches SQL');
  const archived=check(await client.rpc('mutate_question_bank',{p_payload:{...change,operation:'archive'}}));assert.equal(archived.status,'archived');
  const revised=check(await client.rpc('mutate_question_bank',{p_payload:{...change,operation:'revise',expectedVersion:archived.version,expectedUpdatedAt:archived.updated_at}}));assert.equal(revised.status,'draft');console.log('PASS archive and restore draft');
  const audits=check(await admin.from('audit_logs').select('action').eq('entity_id',saved.id));assert.ok(audits.some(a=>a.action==='CREATE_QUESTION'));assert.ok(audits.some(a=>a.action==='UPDATE_QUESTION'));assert.ok(audits.some(a=>a.action==='ARCHIVE_QUESTION'));console.log('PASS transaction audit trail');
@@ -101,7 +106,9 @@ async function browserTests(f) {
  for(const letter of ['A','B','C','D']) await page.getByLabel('Isi opsi '+letter,{exact:true}).fill(letter+' |x|\nbaris kedua');
  await page.getByLabel('Jawaban benar A',{exact:true}).check();
  await page.getByLabel('Pembahasan',{exact:true}).fill('Pembahasan dibuat lewat browser.');
- page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'Tutup modal',exact:true}).click();
+ await page.getByRole('button',{name:'Tutup modal',exact:true}).click();
+ const closeConfirm=page.getByRole('alertdialog');await expect(closeConfirm).toBeVisible();
+ await closeConfirm.getByRole('button',{name:'Batal',exact:true}).click();await expect(closeConfirm).toHaveCount(0);
  await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('Pertanyaan',{exact:true})).toHaveValue('QA browser-created |x|');
  await page.getByRole('button',{name:'Simpan draf',exact:true}).click();await page.waitForURL(u=>u.searchParams.has('ok'));
  const created=check(await admin.from('questions').select('id,status').eq('author_id',f.users[0].id).eq('stem','QA browser-created |x|').single());assert.equal(created.status,'draft');

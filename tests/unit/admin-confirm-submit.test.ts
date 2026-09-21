@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -55,6 +55,25 @@ function source(relativePath: string) {
 function countMatches(text: string, pattern: RegExp) {
     return (text.match(pattern) ?? []).length
 }
+
+/**
+ * Seluruh permukaan admin, bukan hanya daftar pemasang yang dirawat manual.
+ *
+ * Versi pertama uji ini hanya memeriksa enam berkas `CONSUMERS`; `QuestionBankForm`
+ * dan `AdminModal` lahir setelahnya dan lolos membawa `window.confirm`. Dengan
+ * memindai direktori, berkas baru otomatis ikut terjaga.
+ */
+function collectAdminSurfaces(directory: string): string[] {
+    const files: string[] = []
+    for (const entry of readdirSync(resolve(repoRoot, directory), { withFileTypes: true })) {
+        const relative = `${directory}/${entry.name}`
+        if (entry.isDirectory()) files.push(...collectAdminSurfaces(relative))
+        else if (/\.tsx?$/.test(entry.name)) files.push(relative)
+    }
+    return files
+}
+
+const ADMIN_SURFACE_FILES = [...collectAdminSurfaces('components/admin'), ...collectAdminSurfaces('app/admin')]
 
 describe('ConfirmSubmit', () => {
     it('menerima elemen lewat slot `trigger`, bukan fungsi', () => {
@@ -114,11 +133,11 @@ describe('pemasangan dialog di halaman admin', () => {
         })
     }
 
-    it('tidak ada lagi `window.confirm` di permukaan admin', () => {
-        for (const file of CONSUMERS) {
-            const text = source(file)
+    it('tidak ada lagi `window.confirm` di seluruh permukaan admin', () => {
+        expect(ADMIN_SURFACE_FILES.length).toBeGreaterThan(20)
+        for (const file of ADMIN_SURFACE_FILES) {
             // Komentar yang menyebut window.confirm tidak dihitung.
-            const withoutComments = text.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '')
+            const withoutComments = stripComments(source(file))
             expect(withoutComments, `${file} masih memakai window.confirm`).not.toContain('window.confirm')
         }
     })
