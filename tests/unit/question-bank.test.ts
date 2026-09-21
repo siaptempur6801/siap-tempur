@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { serializeOptionRows, parseQuestionOptions } from '@/lib/question-options'
-import { validateBankOptions, questionBankReturnUrl, questionBankSchema, questionBankWorkflowSchema, isIsoTimestamp } from '@/lib/question-bank'
+import { validateBankOptions, questionBankReturnUrl, questionBankSchema, questionBankWorkflowSchema, questionBankFieldErrors, isIsoTimestamp } from '@/lib/question-bank'
 
 const options = [
     { key: 'A', content: 'Nilai |x|\n\\frac{1}{2} 😀', score: 1, isCorrect: true },
@@ -64,5 +64,11 @@ describe('Question Bank lossless payload and validation', () => {
         expect(questionBankWorkflowSchema.safeParse({ ...base, expectedVersion: 0 }).success).toBe(false)
         expect(questionBankWorkflowSchema.safeParse({ ...base, changeReason: '   ' }).success).toBe(false)
         expect(questionBankWorkflowSchema.safeParse({ ...base, operation: 'delete' }).success).toBe(false)
+    })
+    it('maps visible field issues inline and hidden identity issues to a top-level error', () => {
+        expect(questionBankFieldErrors([{ path: ['stem'], message: 'Pertanyaan wajib diisi.' }])).toEqual({ error: 'Periksa isian yang ditandai.', fields: { stem: 'Pertanyaan wajib diisi.' } })
+        expect(questionBankFieldErrors([{ path: ['expectedVersion'], message: 'Versi soal tidak valid. Muat ulang soal.' }])).toEqual({ error: 'Versi atau konteks soal tidak valid. Muat ulang halaman, lalu coba lagi.' })
+        expect(questionBankFieldErrors([{ path: ['expectedUpdatedAt'], message: 'x' }, { path: ['subject'], message: 'y' }])).toEqual({ error: 'Versi atau konteks soal tidak valid. Muat ulang halaman, lalu coba lagi.', fields: { subject: 'y' } })
+        expect(questionBankFieldErrors([{ path: ['stem'], message: 'pertama' }, { path: ['stem'], message: 'kedua' }])).toEqual({ error: 'Periksa isian yang ditandai.', fields: { stem: 'pertama' } })
     })
 })

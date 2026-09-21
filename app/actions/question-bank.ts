@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { validateCsrf } from '@/lib/csrf'
-import { questionBankSchema, questionBankWorkflowSchema, questionBankReturnUrl, validateBankOptions, type QuestionBankState } from '@/lib/question-bank'
+import { questionBankFieldErrors, questionBankSchema, questionBankWorkflowSchema, questionBankReturnUrl, validateBankOptions, type QuestionBankState } from '@/lib/question-bank'
 import { questionBankService } from '@/src/services/question-bank.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -35,7 +35,7 @@ export async function saveQuestionBankAction(_previous: QuestionBankState, form:
         await validateCsrf()
         await authorizationService.requirePermission(PERMISSIONS.QUESTION_MANAGE)
         const parsed = questionBankSchema.safeParse(Object.fromEntries(form))
-        if (!parsed.success) return { error: 'Periksa isian yang ditandai.', fields: Object.fromEntries(parsed.error.issues.map((i) => [i.path[0], i.message])) }
+        if (!parsed.success) return questionBankFieldErrors(parsed.error.issues)
         let options
         try { options = validateBankOptions(parsed.data.questionType, parsed.data.options) }
         catch (error) { return { error: 'Periksa pilihan jawaban.', fields: { options: error instanceof Error ? error.message : 'Opsi tidak valid.' } } }

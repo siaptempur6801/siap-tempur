@@ -85,9 +85,13 @@ Perbaikan:
   pratinjau rumus/gambar dan riwayat versi. Error mempertahankan input; snapshot editor tidak berubah
   diam-diam ketika Server Action merender ulang RSC setelah konflik. Pending/konfirmasi tutup form
   dan pemeliharaan filter, mapel, kata kunci, serta halaman telah diuji.
+- Error validasi server kini tampil di **setiap field yang terlihat** (tipe, tingkat kesulitan, materi,
+  stimulus, sumber, level kognitif, estimasi waktu) dan terhubung `aria-describedby`; isu pada token
+  identitas tersembunyi (`id`/`program`/`track`/`expectedVersion`/`expectedUpdatedAt`) dinaikkan menjadi
+  pesan tingkat atas agar tidak ada "isian ditandai" tanpa tanda di layar. Dikunci 1 unit test.
 
 Verifikasi selesai:
-- Lint tanpa error/warning, typecheck, **603 unit test / 79 file**, build lolos.
+- Lint tanpa error/warning, typecheck, **604 unit test / 79 file**, build lolos.
 - Build tetap memiliki warning lama di `lib/event-certificate-pdf.ts` tentang tracing filesystem;
   warning konfigurasi Vitest lama juga masih ada. Keduanya di luar perubahan Question Bank.
 - Hardening lanjutan (2026-09-21): token concurrency `expectedUpdatedAt` kini hanya menerima ISO 8601

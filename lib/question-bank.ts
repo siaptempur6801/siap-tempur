@@ -45,6 +45,33 @@ export const questionBankWorkflowSchema = z.object({
 
 export type QuestionBankValues = z.input<typeof questionBankSchema>
 export type QuestionBankState = { error?: string; fields?: Record<string, string>; conflict?: boolean }
+
+/**
+ * Field identitas yang dikirim sebagai input tersembunyi dan tidak dapat diedit
+ * admin. Kegagalannya tidak boleh dipetakan ke `fields`: form hanya menandai
+ * input yang terlihat, sehingga error itu akan tampil sebagai "Periksa isian
+ * yang ditandai" tanpa satu pun tanda di layar — jalan buntu.
+ */
+const QUESTION_BANK_IDENTITY_FIELDS = new Set(['id', 'program', 'track', 'expectedVersion', 'expectedUpdatedAt'])
+
+/**
+ * Memetakan isu zod menjadi state form Question Bank.
+ *
+ * Isu pada field yang terlihat menjadi `fields` (ditampilkan di dekat input);
+ * isu identitas tersembunyi menjadi pesan tingkat atas yang meminta muat ulang.
+ */
+export function questionBankFieldErrors(issues: ReadonlyArray<{ path: PropertyKey[]; message: string }>): QuestionBankState {
+    const fields: Record<string, string> = {}
+    let identityMessage: string | null = null
+    for (const issue of issues) {
+        const key = String(issue.path[0] ?? '')
+        if (QUESTION_BANK_IDENTITY_FIELDS.has(key)) identityMessage ??= issue.message
+        else if (key && !fields[key]) fields[key] = issue.message
+    }
+    const hasFields = Object.keys(fields).length > 0
+    if (identityMessage) return { error: 'Versi atau konteks soal tidak valid. Muat ulang halaman, lalu coba lagi.', ...(hasFields ? { fields } : {}) }
+    return { error: 'Periksa isian yang ditandai.', fields }
+}
 export type QuestionBankChoice = { id: string; subject_id: string; name?: string; title?: string; content?: string; image_url?: string | null }
 export type QuestionBankDetail = {
     question: Record<string, unknown> | null; options: Record<string, unknown>[];
