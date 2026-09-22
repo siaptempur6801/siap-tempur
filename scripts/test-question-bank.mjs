@@ -104,7 +104,7 @@ async function browserTests(f) {
  await page.goto(base+`/admin/content/questions?program=CPNS&track=SKD&q=${f.placeholder.question_code}`);
  await expect(page.getByText('Placeholder riwayat',{exact:true})).toBeVisible();
  await expect(page.getByText('Terkunci',{exact:true})).toBeVisible();
- await expect(page.getByRole('link',{name:`Edit soal ${f.placeholder.question_code}`})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:`Ubah soal ${f.placeholder.question_code}`})).toHaveCount(0);
  await page.goto(base+`/admin/content/questions?program=CPNS&track=SKD&edit=${f.placeholder.id}`);
  const placeholderDialog=page.getByRole('dialog');
  await expect(placeholderDialog.getByText(/placeholder riwayat/i).first()).toBeVisible();

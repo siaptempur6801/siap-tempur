@@ -351,6 +351,20 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
 - Sisa (P3): "Edit"/"Archive" pada baris daftar masih Inggris (dipakai luas — butuh keputusan),
   blank vs `—`, `entity_type` mentah di `/admin/audit`.
 
+### P3 audit tampilan — istilah baris, opsi mentah, jenis entitas (2026-09-22)
+- Aksi baris daftar memakai istilah Indonesia: **"Ubah"/"Arsipkan"** (products/events/questions/exams/
+  articles), judul modal "Ubah product/event", konfirmasi "Produk … akan diarsipkan"; artikel
+  "Terbitkan"/"Tarik dari terbit".
+- Opsi select tidak lagi menampilkan nilai mentah: status event/sesi (Terjadwal/Berlangsung/Selesai/
+  Diarsipkan) dan status produk (Draf/Aktif/Diarsipkan).
+- `/admin/audit`: `adminEntityTypeLabel` dipakai di tabel dan label opsi filter (nilai filter tetap
+  mentah); helper label baru mengembalikan `—` untuk nilai kosong.
+- Dikunci 3 unit test: label entitas, tidak ada `<option>nilai_mentah</option>`, tidak ada `>Edit<`/`>Archive<`.
+- Spec 10 + gate QB disesuaikan. Verifikasi: **646 unit test / 90 file**; gate admin 60 passed;
+  gate Review 5 passed; gate QB lulus.
+- Catatan: "Products/Exams/Articles" sebagai judul halaman/nav sengaja dibiarkan (nama modul) — hanya
+  aksi dan nilai data yang diseragamkan.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
@@ -367,7 +381,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **643 unit test / 90 file** · build lolos.
+- Lint 0/0 · typecheck · **646 unit test / 90 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -388,7 +402,8 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `tests/unit/content-review-counts.test.ts`, `tests/unit/admin-audit-label.test.ts`,
 `tests/unit/review-assign-policy.test.ts`, `lib/question-source.ts` (baru),
 `tests/unit/question-source-placeholder.test.ts` (baru), `tests/unit/review-options-preserved.test.ts` (baru), `tests/unit/admin-product-status-case.test.ts` (baru), `tests/unit/admin-display-labels.test.ts` (baru),
-`components/admin/ReviewQuestionFields.tsx`,
+`components/admin/ReviewQuestionFields.tsx`, `components/admin/ArticleStatusActions.tsx`,
+`app/admin/assessment/exams/AdminExamsWorkspace.tsx`, `app/admin/audit/page.tsx`,
 `tests/e2e/specs/10-admin-workspace-authenticated.spec.ts`,
 `supabase/migrations/20260922010000_*.sql`,
 `scripts/db-verify/review-assign-policy.sql`, `src/auth/permissions.ts`, `docs/STATUS.md`.

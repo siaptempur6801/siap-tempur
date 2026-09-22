@@ -1,5 +1,12 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { adminProductTypeLabel, adminQuestionTypeLabel, adminStatusLabel } from '@/lib/admin-format'
+import { adminEntityTypeLabel, adminProductTypeLabel, adminQuestionTypeLabel, adminStatusLabel } from '@/lib/admin-format'
+
+const repoRoot = resolve(__dirname, '../..')
+function source(relativePath: string) {
+    return readFileSync(resolve(repoRoot, relativePath), 'utf8')
+}
 
 /**
  * Audit tampilan: nilai teknis/mentah yang bocor ke layar admin.
@@ -33,5 +40,30 @@ describe('label tampilan admin', () => {
         expect(adminProductTypeLabel('EVENT_TICKET')).toBe('Tiket event')
         expect(adminProductTypeLabel('NEW_THING')).toBe('new thing')
         expect(adminProductTypeLabel(undefined)).toBe('—')
+    })
+
+    it('jenis entitas audit dilabeli; nilai filter tetap mentah di value', () => {
+        expect(adminEntityTypeLabel('question')).toBe('Soal')
+        expect(adminEntityTypeLabel('organization_participant')).toBe('Peserta instansi')
+        expect(adminEntityTypeLabel('payment')).toBe('Pembayaran')
+        expect(adminEntityTypeLabel('baru_saja')).toBe('baru saja')
+        expect(adminEntityTypeLabel('')).toBe('—')
+    })
+
+    it('tidak ada select admin yang menampilkan nilai mentah sebagai label', () => {
+        for (const file of ['app/admin/AdminOperationsWorkspace.tsx', 'app/admin/assessment/exams/AdminExamsWorkspace.tsx']) {
+            expect(source(file), file).not.toMatch(/<option>[a-z_]+<\/option>/)
+        }
+    })
+
+    it('aksi baris daftar memakai istilah Indonesia', () => {
+        for (const file of [
+            'app/admin/AdminOperationsWorkspace.tsx',
+            'app/admin/assessment/exams/AdminExamsWorkspace.tsx',
+            'app/admin/content/articles/page.tsx',
+        ]) {
+            expect(source(file), file).not.toMatch(/>Edit</)
+            expect(source(file), file).not.toMatch(/>Archive</)
+        }
     })
 })

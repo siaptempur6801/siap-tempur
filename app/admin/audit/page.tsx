@@ -14,7 +14,7 @@ import {
 import AdminListToolbar from '@/components/admin/AdminListToolbar'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { adminOffset, adminPageHref, adminPageSummary, adminTotalPages, parseAdminPage } from '@/lib/admin-pagination'
-import { adminAuditLabel, formatDateTime } from '@/lib/admin-format'
+import { adminAuditLabel, adminEntityTypeLabel, formatDateTime } from '@/lib/admin-format'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminDirectoryService } from '@/src/services/admin-directory.service'
@@ -121,7 +121,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                         ariaLabel: 'Filter entitas',
                         placeholder: 'Semua entitas',
                         defaultValue: params.entity || '',
-                        options: facets.entityTypes.map((entity) => ({ value: entity, label: entity })),
+                        options: facets.entityTypes.map((entity) => ({ value: entity, label: adminEntityTypeLabel(entity) })),
                     },
                 ]}
             />
@@ -154,7 +154,7 @@ export default async function AdminAuditPage({ searchParams }: { searchParams: P
                                     <div className="min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
                                             <span className="text-xs font-black text-slate-900" title={log.action}>{adminAuditLabel(log.action)}</span>
-                                            <AdminBadge variant="blue">{log.entity_type}</AdminBadge>
+                                            <AdminBadge variant="blue"><span title={log.entity_type}>{adminEntityTypeLabel(log.entity_type)}</span></AdminBadge>
                                         </div>
                                         <div className="mt-1.5 text-xs font-medium text-slate-500">
                                             {formatDateTime(log.created_at)} · {log.actor_name || 'Sistem'}

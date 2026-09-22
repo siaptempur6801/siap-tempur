@@ -33,8 +33,8 @@ export default function ArticleStatusActions({ articleId, status, canPublish, ca
 
     return (
         <div className="flex flex-wrap gap-2">
-            {canPublish && status !== 'published' && status !== 'archived' ? <button type="button" disabled={isPending} onClick={() => runAction(() => publishArticle(articleId))} className={adminPrimaryButtonClass}>Publish</button> : null}
-            {canPublish && status === 'published' ? <button type="button" disabled={isPending} onClick={() => runAction(() => unpublishArticle(articleId))} className={adminSecondaryButtonClass}>Unpublish</button> : null}
+            {canPublish && status !== 'published' && status !== 'archived' ? <button type="button" disabled={isPending} onClick={() => runAction(() => publishArticle(articleId))} className={adminPrimaryButtonClass}>Terbitkan</button> : null}
+            {canPublish && status === 'published' ? <button type="button" disabled={isPending} onClick={() => runAction(() => unpublishArticle(articleId))} className={adminSecondaryButtonClass}>Tarik dari terbit</button> : null}
             {canArchive && status !== 'archived' ? (
                 <ConfirmSubmit
                     message="Arsipkan artikel ini?"

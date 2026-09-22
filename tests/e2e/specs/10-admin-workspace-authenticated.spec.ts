@@ -273,7 +273,7 @@ test.describe('Admin destructive action confirmation', () => {
     await page.goto('/admin/commerce/products?program=CPNS&track=SKD')
     await expect(page.locator('main h1')).toHaveText('Products')
     await expect(page.getByText('Halaman ini belum bisa dibuka.', { exact: true })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Archive', exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Arsipkan', exact: true }).first()).toBeVisible()
   })
 })
 
@@ -357,7 +357,7 @@ test.describe('Admin content modules after legacy tree removal', () => {
     // Halaman listing tidak boleh kosong karena error. Kalau ada artikel, salah
     // satunya harus menautkan ke editor; kalau tidak ada, harus tampil empty state
     // yang jujur — bukan halaman kosong tanpa penjelasan.
-    const editLinks = page.getByRole('link', { name: 'Edit', exact: true })
+    const editLinks = page.getByRole('link', { name: 'Ubah', exact: true })
     if (await editLinks.count() === 0) {
       await expect(page.getByText('Belum ada artikel', { exact: true })).toBeVisible()
     } else {

@@ -145,7 +145,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                   </div>
 
                   <div className="flex shrink-0 flex-wrap gap-2">
-                    <Link className={adminSecondaryButtonClass} href={workspaceHref(program, track, exam.id)} aria-label={`Edit exam ${exam.title}`}>Edit</Link>
+                    <Link className={adminSecondaryButtonClass} href={workspaceHref(program, track, exam.id)} aria-label={`Ubah exam ${exam.title}`}>Ubah</Link>
                     <form action={archiveAdminExamAction}>
                       <ContextFields program={program} track={track}/>
                       <input type="hidden" name="id" value={exam.id}/>
@@ -155,7 +155,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                           ? 'Drill ini tidak lagi muncul di jalur belajar peserta.'
                           : `${sections.length} section dan pengaturannya tetap tersimpan, tetapi exam tidak lagi ditawarkan ke peserta.`}
                         confirmLabel="Arsipkan exam"
-                      trigger={<button type="button" className={adminDangerButtonClass}><Archive size={14}/>Archive</button>}
+                      trigger={<button type="button" className={adminDangerButtonClass}><Archive size={14}/>Arsipkan</button>}
                       />
                     </form>
                   </div>

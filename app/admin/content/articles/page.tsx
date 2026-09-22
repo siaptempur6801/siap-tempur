@@ -158,7 +158,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
 
                                         <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-sm xl:justify-end">
                                             {article.status === 'published' ? <Link href={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer" className={adminSecondaryButtonClass}><Eye size={16}/>Lihat</Link> : null}
-                                            {canEdit ? <Link href={`/admin/content/articles/${article.id}/edit`} className={adminSecondaryButtonClass}>Edit</Link> : null}
+                                            {canEdit ? <Link href={`/admin/content/articles/${article.id}/edit`} className={adminSecondaryButtonClass}>Ubah</Link> : null}
                                             <ArticleStatusActions articleId={article.id} status={article.status} canPublish={canPublish} canArchive={canArchive} canDelete={isAdmin && article.status !== 'published'}/>
                                         </div>
                                     </div>

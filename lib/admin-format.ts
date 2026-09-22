@@ -204,6 +204,34 @@ export function adminProductTypeLabel(value: unknown): string {
     return PRODUCT_TYPE_LABELS[raw] ?? raw.replace(/_/g, ' ').toLowerCase()
 }
 
+/** Label jenis entitas audit untuk `/admin/audit` (nilai filter tetap mentah). */
+const ENTITY_TYPE_LABELS: Record<string, string> = {
+    question: 'Soal',
+    content_review: 'Review konten',
+    article: 'Artikel',
+    product: 'Produk',
+    event: 'Event',
+    exam: 'Ujian',
+    order: 'Pesanan',
+    payment: 'Pembayaran',
+    organization: 'Instansi',
+    organization_participant: 'Peserta instansi',
+    organization_batch: 'Batch instansi',
+    user: 'Pengguna',
+    profile: 'Profil',
+    role: 'Peran',
+    wallet: 'Dompet',
+    voucher: 'Voucher',
+    settings: 'Pengaturan',
+    system_setting: 'Pengaturan',
+}
+
+export function adminEntityTypeLabel(value: unknown): string {
+    const raw = String(value ?? '')
+    if (!raw) return '—'
+    return ENTITY_TYPE_LABELS[raw] ?? raw.replace(/_/g, ' ')
+}
+
 /**
  * Label manusiawi untuk `audit_logs.action`.
  *
