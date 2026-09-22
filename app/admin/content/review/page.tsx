@@ -39,6 +39,7 @@ import AdminListToolbar from '@/components/admin/AdminListToolbar'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { adminPageHref, adminPageSummary, parseAdminPage } from '@/lib/admin-pagination'
 import { adminAuditLabel, adminStatusLabel, adminStatusVariant, formatDateTime } from '@/lib/admin-format'
+import { isLegacyHistoryPlaceholder } from '@/lib/question-source'
 import { cn } from '@/lib/utils'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
@@ -170,6 +171,7 @@ function ReviewProgress({ question }: { question: Row }) {
 }
 
 function queueTaskLabel(question: Row) {
+    if (isLegacyHistoryPlaceholder(question.source_type)) return 'Placeholder riwayat'
     const pending = question.pending_review as Row | null | undefined
     if (question.current_stage && !pending?.reviewer_id) return 'Pilih reviewer'
     if (question.current_stage) return `Review ${stageLabel(question.current_stage)}`
@@ -211,36 +213,39 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
     const program = data.catalog.program.code
     const track = data.catalog.track.code
     const selected = data.selectedQuestion as Row | null
+    const placeholder = isLegacyHistoryPlaceholder(selected?.source_type)
     const pendingReview = selected?.pending_review && typeof selected.pending_review === 'object' ? selected.pending_review as Row : null
     const author = selected ? data.profileById.get(s(selected.author_id)) : null
     const assignedReviewer = selected?.reviewer_id ? data.profileById.get(s(selected.reviewer_id)) : null
     const currentActorIsAuthor = selected ? s(selected.author_id) === authorization.userId : false
     const canManageQuestions = permissions.has(PERMISSIONS.QUESTION_MANAGE)
     const canCreate = permissions.has(PERMISSIONS.CONTENT_CREATE) || canManageQuestions
-    const canEdit = Boolean(selected)
+    const canEdit = !placeholder && Boolean(selected)
         && ['draft', 'revision_required', 'rejected'].includes(lower(selected?.status))
         && (permissions.has(PERMISSIONS.CONTENT_UPDATE) || canManageQuestions)
         && (currentActorIsAuthor || canManageQuestions)
-    const canSubmit = Boolean(selected)
+    const canSubmit = !placeholder && Boolean(selected)
         && ['draft', 'revision_required'].includes(lower(selected?.status))
         && (permissions.has(PERMISSIONS.CONTENT_UPDATE) || permissions.has(PERMISSIONS.CONTENT_CREATE) || canManageQuestions)
         && (currentActorIsAuthor || canManageQuestions)
     // Aturan C: menugaskan ke orang lain = aksi manajerial; reviewer hanya
     // mengklaim untuk dirinya sendiri.
-    const canAssignOthers = Boolean(selected?.current_stage)
+    const canAssignOthers = !placeholder && Boolean(selected?.current_stage)
         && Boolean(pendingReview)
         && (permissions.has(PERMISSIONS.CONTENT_ASSIGN) || canManageQuestions)
-    const canClaim = Boolean(selected?.current_stage)
+    const canClaim = !placeholder && Boolean(selected?.current_stage)
         && Boolean(pendingReview)
         && !pendingReview?.reviewer_id
         && permissions.has(PERMISSIONS.CONTENT_REVIEW)
         && !currentActorIsAuthor
-    const canReview = Boolean(selected?.current_stage)
+    const canReview = !placeholder && Boolean(selected?.current_stage)
         && permissions.has(PERMISSIONS.CONTENT_REVIEW)
         && s(selected?.reviewer_id) === authorization.userId
         && !currentActorIsAuthor
-    const canPublish = lower(selected?.status) === 'approved' && permissions.has(PERMISSIONS.CONTENT_PUBLISH)
-    const nextActionCopy = canReview
+    const canPublish = !placeholder && lower(selected?.status) === 'approved' && permissions.has(PERMISSIONS.CONTENT_PUBLISH)
+    const nextActionCopy = placeholder
+        ? 'Placeholder riwayat attempt lama — tidak ada tindakan yang tersedia dan soal ini tidak dapat diedit.'
+        : canReview
         ? 'Periksa isi soal di atas, tulis catatan bila perlu, lalu pilih keputusan review.'
         : canAssignOthers
             ? `Pilih reviewer untuk tahap ${stageLabel(selected?.current_stage)}.`
@@ -367,10 +372,11 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                             const active = id === data.selectedId
                             const subject = data.subjectById.get(s(question.subject_id))
                             const pending = question.pending_review
+                            const rowPlaceholder = isLegacyHistoryPlaceholder(question.source_type)
                             return (
                                 <Link key={id} href={workspaceHref({ ...params, program, track }, { question: id, new: undefined })} aria-current={active ? 'true' : undefined} className={cn('block border-b border-slate-100 px-4 py-3.5 transition last:border-b-0', active ? 'bg-blue-50/80 shadow-[inset_3px_0_0_#2563eb]' : 'bg-white hover:bg-slate-50')}>
-                                    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black text-slate-900">{s(question.question_code) || 'Tanpa kode'}</span><span className="text-[10px] font-bold text-slate-500">{s(subject?.code)} · v{n(question.version)}</span></div><p className="mt-1.5 line-clamp-2 text-sm font-semibold leading-5 text-slate-700">{s(question.stem)}</p></div><AdminBadge variant={adminStatusVariant(question.status)}>{adminStatusLabel(question.status)}</AdminBadge></div>
-                                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-slate-500"><span>{Boolean(question.current_stage) ? stageLabel(question.current_stage) : adminStatusLabel(question.status)}{Boolean(pending) ? ` · ${pending?.reviewer_id ? profileName(data.profileById.get(s(pending.reviewer_id)), 'Assigned') : 'Belum ada reviewer'}` : ''}</span><span className="rounded-full bg-slate-100 px-2 py-1 font-extrabold text-slate-700">{queueTaskLabel(question)}</span></div>
+                                    <div className="flex items-start justify-between gap-3"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black text-slate-900">{s(question.question_code) || 'Tanpa kode'}</span><span className="text-[10px] font-bold text-slate-500">{s(subject?.code)} · v{n(question.version)}</span></div><p className="mt-1.5 line-clamp-2 text-sm font-semibold leading-5 text-slate-700">{rowPlaceholder ? 'Penampung riwayat attempt lama.' : s(question.stem)}</p></div>{rowPlaceholder ? <AdminBadge variant="orange">Placeholder</AdminBadge> : <AdminBadge variant={adminStatusVariant(question.status)}>{adminStatusLabel(question.status)}</AdminBadge>}</div>
+                                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-slate-500"><span>{rowPlaceholder ? 'Tidak dapat diedit' : <>{Boolean(question.current_stage) ? stageLabel(question.current_stage) : adminStatusLabel(question.status)}{Boolean(pending) ? ` · ${pending?.reviewer_id ? profileName(data.profileById.get(s(pending.reviewer_id)), 'Assigned') : 'Belum ada reviewer'}` : ''}</>}</span><span className="rounded-full bg-slate-100 px-2 py-1 font-extrabold text-slate-700">{queueTaskLabel(question)}</span></div>
                                 </Link>
                             )
                         })}
@@ -393,10 +399,11 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                             <AdminCard className="p-5">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                     <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black uppercase tracking-wide text-blue-600">{s(data.subjectById.get(s(selected.subject_id))?.code)}</span><span className="text-xs font-bold text-slate-500">{s(selected.question_type)} · v{n(selected.version)}</span></div><h2 className="mt-1 text-xl font-black text-slate-950">{s(selected.question_code) || 'Soal tanpa kode'}</h2><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-500"><span>Penulis: <b className="text-slate-700">{profileName(author)}</b></span><span>Reviewer: <b className="text-slate-700">{profileName(assignedReviewer)}</b></span><span>Diperbarui: {formatDateTime(selected.updated_at)}</span></div></div>
-                                    <AdminBadge variant={adminStatusVariant(selected.status)}>{adminStatusLabel(selected.status)}</AdminBadge>
+                                    {placeholder ? <AdminBadge variant="orange">Placeholder riwayat</AdminBadge> : <AdminBadge variant={adminStatusVariant(selected.status)}>{adminStatusLabel(selected.status)}</AdminBadge>}
                                 </div>
                                 <ReviewProgress question={selected}/>
                             </AdminCard>
+                            {placeholder ? <div role="note" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-900">Soal ini <b>placeholder riwayat</b> dari cutover Schema V2: penampung riwayat pengerjaan peserta lama, tanpa opsi jawaban, dan tidak dapat diedit. <b>Jangan dihapus</b> — ratusan baris attempt lama merujuk ke sini.</div> : null}
 
                             <AdminCard className="p-5">
                                 <AdminSectionHeading title="Periksa isi soal" description="Baca pertanyaan, jawaban, dan pembahasan sebelum mengambil tindakan." step={2}/>

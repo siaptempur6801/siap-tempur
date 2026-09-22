@@ -5,6 +5,7 @@ import AdminModal from '@/components/admin/AdminModal'
 import QuestionBankForm, { QuestionBankWorkflow } from '@/components/admin/QuestionBankForm'
 import { adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 import { createClient } from '@/lib/utils/supabase/client'
+import { isLegacyHistoryPlaceholder } from '@/lib/question-source'
 import type { QuestionBankDetail } from '@/lib/question-bank'
 
 type Props = {
@@ -59,11 +60,12 @@ export default function QuestionBankEditorModal({ program, track, editId, subjec
     // URL sudah menentukan soal yang diedit → modal terbuka sejak render pertama
     // dan `onOpen` dari AdminModal yang memicu pemuatan (lihat komentar di sana).
     const question = detail?.question ?? null
+    const placeholder = isLegacyHistoryPlaceholder(question?.source_type)
     return (
         <AdminModal
             key={editId || 'new'}
-            title={question || editId ? 'Detail & edit soal' : 'Tambah soal'}
-            description="Ikuti tiga bagian singkat: tentukan konteks, isi soal, lalu lengkapi metadata."
+            title={placeholder ? 'Placeholder riwayat' : question || editId ? 'Detail & edit soal' : 'Tambah soal'}
+            description={placeholder ? 'Soal penampung riwayat attempt lama — tidak dapat diedit.' : 'Ikuti tiga bagian singkat: tentukan konteks, isi soal, lalu lengkapi metadata.'}
             triggerLabel={question || editId ? 'Buka soal' : 'Tambah soal'}
             defaultOpen={Boolean(editId)}
             closeHref={closeHref}
@@ -72,10 +74,17 @@ export default function QuestionBankEditorModal({ program, track, editId, subjec
             onOpen={() => { if (!detail) void load() }}
         >
             {detail ? (
-                <>
-                    <QuestionBankForm key={question ? String(question.id) : 'new'} detail={detail} program={program} track={track} subjects={subjects} returnFilters={returnFilters}/>
-                    {question ? <div className="mt-5"><QuestionBankWorkflow question={question} program={program} track={track} returnFilters={returnFilters} canPublish={canPublish}/></div> : null}
-                </>
+                placeholder ? (
+                    <div role="note" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold leading-6 text-amber-900">
+                        Soal ini adalah <b>placeholder riwayat</b>: dibuat saat cutover Schema V2 sebagai penampung riwayat pengerjaan peserta lama,
+                        jadi tidak punya opsi jawaban dan tidak dapat diedit. <b>Jangan dihapus</b> — ratusan baris riwayat attempt merujuk ke sini.
+                    </div>
+                ) : (
+                    <>
+                        <QuestionBankForm key={question ? String(question.id) : 'new'} detail={detail} program={program} track={track} subjects={subjects} returnFilters={returnFilters}/>
+                        {question ? <div className="mt-5"><QuestionBankWorkflow question={question} program={program} track={track} returnFilters={returnFilters} canPublish={canPublish}/></div> : null}
+                    </>
+                )
             ) : error ? (
                 <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
                     <p>{error}</p>

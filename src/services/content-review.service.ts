@@ -36,7 +36,7 @@ const STAGE_STATUSES: Record<string, readonly string[]> = {
 
 const REVIEW_STAGE_STATUSES = ['submitted', 'editorial_review', 'academic_review', 'technical_qa'] as const
 
-const QUEUE_COLUMNS = 'id, question_code, subject_id, question_type, stem, difficulty, cognitive_level, source_reference, estimated_seconds, status, version, author_id, reviewer_id, stimulus_id, stimulus_order, published_at, created_at, updated_at'
+const QUEUE_COLUMNS = 'id, question_code, subject_id, question_type, stem, difficulty, cognitive_level, source_type, source_reference, estimated_seconds, status, version, author_id, reviewer_id, stimulus_id, stimulus_order, published_at, created_at, updated_at'
 
 type Row = Record<string, unknown>
 type WorkspaceQuestion = Row & {

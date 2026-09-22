@@ -78,6 +78,20 @@ async function databaseTests() {
  const categoryQuestion=check(await client.rpc('mutate_question_bank',{p_payload:{...payload,questionType:'category',options:category}}));fixtures.questions.push(categoryQuestion.id);
  assert.ok((await client.rpc('mutate_question_bank',{p_payload:{...payload,questionType:'category'}})).error);
  console.log('PASS TKA SD/SMP/SMA, multiple choice and category contracts');
+ // Fixture placeholder riwayat: staging tidak punya baris seperti ini (produksi
+ // punya 2 dari cutover), jadi dibuat untuk run ini agar jalur "ditandai dan
+ // tidak dapat diedit" benar-benar diuji, bukan hanya diasumsikan.
+ const cpnsProgram=check(await admin.from('programs').select('id').eq('code','CPNS').single());
+ const skdTrack=check(await admin.from('tracks').select('id').eq('program_id',cpnsProgram.id).eq('code','SKD').single());
+ const skdSubject=check(await admin.from('subjects').select('id').eq('track_id',skdTrack.id).limit(1).single());
+ const placeholder=check(await admin.from('questions').insert({
+   question_code:`LEGACY-HISTORY-QA-${crypto.randomUUID().slice(0,8).toUpperCase()}`,
+   program_id:cpnsProgram.id,track_id:skdTrack.id,subject_id:skdSubject.id,
+   question_type:'single_choice',stem:'[Legacy history placeholder] QA fixture',
+   difficulty:'medium',status:'draft',version:1,author_id:fixtures.users[0].id,
+   source_type:'legacy_history_placeholder',
+ }).select('id,question_code').single());
+ fixtures.questions.push(placeholder.id);fixtures.placeholder=placeholder;
  fixtures.saved=await load();fixtures.payload=payload;return fixtures;
 }
 async function browserTests(f) {
@@ -85,6 +99,17 @@ async function browserTests(f) {
  const browser=await launchBrowser();const context=await browser.newContext({viewport:{width:1440,height:1000}});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error') errors.push(m.text())});
  await page.goto(base+'/login?returnTo=%2Fadmin%2Fcontent%2Fquestions');await page.locator('input[type=email]').fill(f.users[0].email);await page.locator('input[type=password]').fill(f.users[0].password);await page.getByRole('button',{name:'Masuk',exact:true}).click();await page.waitForURL(/\/admin\/content\/questions/);await expect(page).toHaveTitle(/Question Bank/); console.log('PASS login and page identity');
  await page.goto(base+'/admin/content/questions?program=CPNS&track=SKD&subject=UNKNOWN');await expect(page.getByRole('heading',{name:'Question Bank',exact:true})).toBeVisible();await expect(page.getByText('Terjadi kesalahan',{exact:true})).not.toBeVisible();console.log('PASS unknown subject filter stays usable');
+ // Placeholder riwayat: ditandai, tanpa tautan Edit, dan modalnya menampilkan
+ // penjelasan alih-alih form yang bisa disimpan.
+ await page.goto(base+`/admin/content/questions?program=CPNS&track=SKD&q=${f.placeholder.question_code}`);
+ await expect(page.getByText('Placeholder riwayat',{exact:true})).toBeVisible();
+ await expect(page.getByText('Terkunci',{exact:true})).toBeVisible();
+ await expect(page.getByRole('link',{name:`Edit soal ${f.placeholder.question_code}`})).toHaveCount(0);
+ await page.goto(base+`/admin/content/questions?program=CPNS&track=SKD&edit=${f.placeholder.id}`);
+ const placeholderDialog=page.getByRole('dialog');
+ await expect(placeholderDialog.getByText(/placeholder riwayat/i).first()).toBeVisible();
+ await expect(placeholderDialog.getByLabel('Pertanyaan',{exact:true})).toHaveCount(0);
+ console.log('PASS legacy placeholder ditandai dan tidak dapat diedit');
  await expect(page.locator('main h1')).toHaveText('Question Bank');
  // Deliberately absent from the filtered list, reproducing the previous fallback-answer corruption.
  const edit=base+`/admin/content/questions?program=CPNS&track=SKD&q=does-not-match&page=99&subject=TIU&edit=${f.questions[0]}`;

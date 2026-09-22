@@ -300,6 +300,19 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
 - Catatan: `content.publish` masih dimiliki CONTENT_REVIEWER (belum dipisah ke manager) — keputusan
   produk terpisah, belum diubah.
 
+### Placeholder riwayat ditandai (2026-09-22)
+- Produksi punya 2 soal `LEGACY-HISTORY-SKD-TIU/TWK` (`source_type=legacy_history_placeholder`,
+  tanpa opsi/kunci) — penampung riwayat attempt lama (399 + 6 `attempt_questions`), **tidak boleh
+  dihapus**. Sebelumnya keduanya tampil seperti draft biasa yang "belum lengkap".
+- Daftar **Question Bank** dan **Review Queue** kini menandainya dengan badge "Placeholder riwayat",
+  menggantikan badge status, dan mematikan tombol Edit ("Terkunci"). Deep link `?edit=` menampilkan
+  penjelasan, bukan form yang bisa disimpan.
+- Fixture placeholder ditambahkan ke gate QB (staging tidak punya baris seperti ini) supaya jalur ini
+  diuji — badge muncul, tanpa tautan Edit, modal menampilkan penjelasan. Fixture dibersihkan di `finally`.
+- Verifikasi: 635 unit test / 87 file; gate QB lulus; gate Review 5 passed exit 0.
+- Catatan: blokir ini di lapisan UI/daftar; RPC tidak menolak pengeditan placeholder (belum ada
+  migration untuk itu).
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
@@ -316,7 +329,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **632 unit test / 86 file** · build lolos.
+- Lint 0/0 · typecheck · **635 unit test / 87 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -335,7 +348,8 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `tests/e2e/specs/7-content-review-workflow.spec.ts`, `tests/unit/postgrest-filter.test.ts`,
 `tests/unit/review-draft-concurrency.test.ts`, `tests/unit/review-batch-n1.test.ts`,
 `tests/unit/content-review-counts.test.ts`, `tests/unit/admin-audit-label.test.ts`,
-`tests/unit/review-assign-policy.test.ts`, `supabase/migrations/20260922010000_*.sql`,
+`tests/unit/review-assign-policy.test.ts`, `lib/question-source.ts` (baru),
+`tests/unit/question-source-placeholder.test.ts` (baru), `supabase/migrations/20260922010000_*.sql`,
 `scripts/db-verify/review-assign-policy.sql`, `src/auth/permissions.ts`, `docs/STATUS.md`.
 
 ---

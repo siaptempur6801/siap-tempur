@@ -107,7 +107,7 @@ const ADMIN_DOMAIN_LISTS: Record<AdminDomainList, {
     },
     questions: {
         table: 'questions',
-        select: 'id, question_code, subject_id, question_type, stem, difficulty, source_reference, status, version, author_id, reviewer_id, published_at, updated_at',
+        select: 'id, question_code, subject_id, question_type, stem, difficulty, source_type, source_reference, status, version, author_id, reviewer_id, published_at, updated_at',
         searchColumns: ['question_code', 'stem'],
         orderColumn: 'updated_at',
         orderAscending: false,
