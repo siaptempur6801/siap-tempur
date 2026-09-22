@@ -419,8 +419,13 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   setiap isi opsi (`QuestionOptionsEditor`); snippet disisipkan di posisi kursor dan dirender
   `MathRenderer`/KaTeX yang sudah ada — pratinjau soal langsung menampilkan hasilnya.
 - Gate QB menambah langkah klik tombol "Pecahan" dan memastikan `\frac` masuk ke textarea.
-- Verifikasi: **673 unit test / 93 file**; gate QB lulus; gate Review 5 passed.
-- Sisa opsional: tempel dari clipboard & drag-drop, kompresi gambar di klien.
+- **Sisa opsional selesai (2026-09-22):** tempel (Ctrl/Cmd+V) & tarik-lepas gambar pada Pertanyaan,
+  Pembahasan, dan isi opsi — memakai jalur unggah yang sama dengan tombol (validasi + kompresi);
+  event non-gambar dibiarkan lewat. **Kompresi klien:** berkas >512 KB diperkecil ke maks 1600 px dan
+  di-encode WebP, GIF dilewati agar animasinya tidak hilang, berkas mentah boleh sampai 8 MB.
+  Terverifikasi di gate: **1,02 MB → 81 KB**.
+- Verifikasi: **679 unit test / 93 file**; gate QB lulus (unggah, drop, rumus, kompresi); gate Review
+  5 passed; staging 0 sisa berkas uji.
 
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
@@ -438,7 +443,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **673 unit test / 93 file** · build lolos.
+- Lint 0/0 · typecheck · **679 unit test / 93 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -463,7 +468,8 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `components/admin/AdminListToolbar.tsx`, `lib/question-media.ts` (baru),
 `components/admin/QuestionImageButton.tsx` (baru), `components/admin/QuestionRichTextField.tsx` (baru),
 `components/admin/ArticleRichTextEditor.tsx`, `lib/latex-snippets.ts` (baru),
-`components/admin/FormulaToolbar.tsx` (baru), `supabase/migrations/20260922120000_*.sql`,
+`components/admin/FormulaToolbar.tsx` (baru), `lib/question-media-client.ts` (baru),
+`components/admin/useImagePasteDrop.ts` (baru), `supabase/migrations/20260922120000_*.sql`,
 `app/admin/assessment/exams/AdminExamsWorkspace.tsx`, `app/admin/audit/page.tsx`,
 `tests/e2e/specs/10-admin-workspace-authenticated.spec.ts`,
 `supabase/migrations/20260922010000_*.sql`,

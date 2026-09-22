@@ -153,6 +153,28 @@ async function browserTests(f) {
  await uploadDialog.getByRole('button',{name:'Sisipkan rumus: Pecahan',exact:true}).first().click();
  await expect.poll(async()=>uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue(),{timeout:10000}).toContain('\\frac');
  console.log('PASS toolbar rumus menyisipkan di pertanyaan');
+ // Tarik-lepas gambar ke textarea pertanyaan (jalur sama dengan tombol).
+ const pngBase64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+ const dropTransfer=await uploadDialog.evaluateHandle((_element,base64)=>{const dataTransfer=new DataTransfer();const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));dataTransfer.items.add(new File([bytes],'drop.png',{type:'image/png'}));return dataTransfer},pngBase64);
+ await uploadDialog.getByLabel('Pertanyaan',{exact:true}).dispatchEvent('drop',{dataTransfer:dropTransfer});
+ await expect.poll(async()=>((await uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue()).match(/\[\[image:/g)||[]).length,{timeout:30000}).toBeGreaterThanOrEqual(2);
+ console.log('PASS tarik-lepas gambar ke pertanyaan');
+ // Kompresi klien: screenshot penuh halaman biasanya >512 KB -> tersimpan lebih kecil.
+ const bigFixture=path.join(os.tmpdir(), `qb-upload-big-${Date.now()}.png`);
+ const bigContext=await browser.newContext({viewport:{width:1440,height:1000},deviceScaleFactor:2,storageState:await context.storageState()});
+ const bigPage=await bigContext.newPage();
+ await bigPage.goto(base+'/admin/content/questions?program=CPNS&track=SKD');
+ await bigPage.screenshot({path:bigFixture, fullPage:true});
+ await bigContext.close();
+ const bigSize=fs.statSync(bigFixture).size;
+ await uploadDialog.locator('input[data-upload-target="stem"]').setInputFiles(bigFixture);
+ await expect.poll(async()=>((await uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue()).match(/\[\[image:/g)||[]).length,{timeout:30000}).toBeGreaterThanOrEqual(3);
+ if(bigSize>512*1024){
+   const {data:stored}=await admin.storage.from('question-images').list(`questions/${f.users[0].id}`);
+   const newest=(stored||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];
+   assert.ok(newest&&Number(newest.metadata?.size)<bigSize,`kompresi harus mengecilkan ${bigSize} -> ${newest?.metadata?.size}`);
+   console.log(`PASS kompresi gambar ${bigSize} -> ${newest.metadata.size} byte`);
+ }else{ console.log(`SKIP kompresi (fixture ${bigSize} byte, di bawah ambang 512 KB)`); }
  console.log('PASS unggah gambar pertanyaan & opsi');
  const authState = await context.storageState();
  console.log('Console errors:',JSON.stringify(errors));expect(errors).toEqual([]);await browser.close(); return authState;

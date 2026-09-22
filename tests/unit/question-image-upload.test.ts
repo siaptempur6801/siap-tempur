@@ -61,3 +61,23 @@ describe('tahap B — toolbar rumus', () => {
         expect(source('components/admin/QuestionOptionsEditor.tsx')).toContain('insertLatexSnippet')
     })
 })
+
+describe('sisa opsional — paste/drag-drop & kompresi', () => {
+    it('tombol dan field memakai jalur unggah bersama (validasi + kompresi)', () => {
+        expect(source('components/admin/QuestionImageButton.tsx')).toContain('uploadQuestionImage')
+        const client = source('lib/question-media-client.ts')
+        expect(client).toContain('compressQuestionImage')
+        expect(client).toContain('validateQuestionImageInput')
+        expect(client).toContain('validateQuestionImage(')
+    })
+
+    it('field soal dan isi opsi menerima tempel & tarik-lepas gambar', () => {
+        for (const file of ['components/admin/QuestionRichTextField.tsx', 'components/admin/QuestionOptionsEditor.tsx']) {
+            expect(source(file), file).toContain('useImagePasteDrop')
+        }
+        const hook = source('components/admin/useImagePasteDrop.ts')
+        expect(hook).toContain('onPaste')
+        expect(hook).toContain('onDrop')
+        expect(hook).toContain('image/')
+    })
+})

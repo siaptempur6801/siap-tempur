@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+    compressedFileName,
+    compressionScale,
     insertAtSelection,
     questionImageExtension,
     questionImageMarkup,
     questionImagePath,
+    shouldCompressQuestionImage,
     validateQuestionImage,
+    validateQuestionImageInput,
 } from '@/lib/question-media'
 
 /**
@@ -22,6 +26,38 @@ describe('validateQuestionImage', () => {
         expect(validateQuestionImage({ size: 1024, type: 'image/svg+xml' })).toContain('JPG')
         expect(validateQuestionImage({ size: 3 * 1024 * 1024, type: 'image/png' })).toContain('2 MB')
         expect(validateQuestionImage({ size: 0, type: 'image/png' })).toContain('kosong')
+    })
+})
+
+describe('kompresi gambar (bagian murni)', () => {
+    it('berkas mentah boleh sampai 8 MB — hasil kompresi yang divalidasi ketat', () => {
+        expect(validateQuestionImageInput({ size: 5 * 1024 * 1024, type: 'image/jpeg' })).toBeNull()
+        expect(validateQuestionImageInput({ size: 9 * 1024 * 1024, type: 'image/jpeg' })).toContain('8 MB')
+        expect(validateQuestionImageInput({ size: 1024, type: 'application/pdf' })).toContain('JPG')
+    })
+
+    it('skala hanya mengecil dan tidak pernah melewati sisi terpanjang', () => {
+        expect(compressionScale(3200, 1600)).toBe(0.5)
+        expect(compressionScale(1600, 3200)).toBe(0.5)
+        expect(compressionScale(800, 600)).toBe(1)
+        expect(compressionScale(1600, 1600)).toBe(1)
+        expect(compressionScale(0, 0)).toBe(1)
+    })
+
+    it('nama hasil kompresi aman dan berekstensi webp', () => {
+        expect(compressedFileName('Foto Soal (1).PNG')).toBe('Foto-Soal--1-.webp')
+        expect(compressedFileName('')).toBe('gambar.webp')
+        // Nama berbahaya tidak boleh membawa path apa pun.
+        const sanitized = compressedFileName('../../etc/passwd')
+        expect(sanitized.endsWith('.webp')).toBe(true)
+        expect(sanitized).not.toContain('/')
+        expect(sanitized).not.toContain('..')
+    })
+
+    it('GIF tidak dikompres agar animasinya tidak hilang; gambar kecil dilewati', () => {
+        expect(shouldCompressQuestionImage({ size: 2 * 1024 * 1024, type: 'image/gif' })).toBe(false)
+        expect(shouldCompressQuestionImage({ size: 100 * 1024, type: 'image/png' })).toBe(false)
+        expect(shouldCompressQuestionImage({ size: 2 * 1024 * 1024, type: 'image/png' })).toBe(true)
     })
 })
 

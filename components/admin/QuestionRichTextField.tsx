@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import FormulaToolbar from '@/components/admin/FormulaToolbar'
 import QuestionImageButton from '@/components/admin/QuestionImageButton'
+import { useImagePasteDrop } from '@/components/admin/useImagePasteDrop'
 import { adminInputClass, adminLabelClass } from '@/components/admin/AdminUi'
 import { insertAtSelection, questionImageMarkup } from '@/lib/question-media'
 import type { LatexSnippet } from '@/lib/latex-snippets'
@@ -52,6 +53,7 @@ export default function QuestionRichTextField({
     const controlled = value !== undefined
     const current = controlled ? value : internal
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const { dragging, handlers } = useImagePasteDrop(insertImage)
 
     function setValue(next: string) {
         if (!controlled) setInternal(next)
@@ -105,8 +107,10 @@ export default function QuestionRichTextField({
                 aria-label={label}
                 aria-describedby={[hintId, errorId].filter(Boolean).join(' ') || undefined}
                 aria-invalid={error ? true : undefined}
-                className={cn(adminInputClass, minHeight, 'resize-y')}
+                {...handlers}
+                className={cn(adminInputClass, minHeight, 'resize-y', dragging && 'border-blue-400 ring-4 ring-blue-500/10')}
             />
+            {dragging ? <span className="block text-xs font-bold text-blue-700">Lepaskan gambar untuk mengunggah…</span> : null}
             {error ? <span id={errorId} role="alert" className="block text-xs font-bold text-red-700">{error}</span> : null}
         </div>
     )

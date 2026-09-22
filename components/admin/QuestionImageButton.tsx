@@ -4,13 +4,8 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { ImagePlus, Loader2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/utils/supabase/client'
-import {
-    QUESTION_IMAGE_ACCEPT,
-    QUESTION_IMAGE_BUCKET,
-    questionImagePath,
-    validateQuestionImage,
-} from '@/lib/question-media'
+import { QUESTION_IMAGE_ACCEPT } from '@/lib/question-media'
+import { uploadQuestionImage } from '@/lib/question-media-client'
 import { adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 import { cn } from '@/lib/utils'
 
@@ -46,24 +41,9 @@ export default function QuestionImageButton({
     const [uploading, setUploading] = useState(false)
 
     async function handleFile(file: File) {
-        const invalid = validateQuestionImage(file)
-        if (invalid) {
-            toast.error(invalid)
-            return
-        }
         try {
             setUploading(true)
-            const supabase = createClient()
-            const { data: { user }, error: userError } = await supabase.auth.getUser()
-            if (userError || !user) throw new Error('Sesi login tidak valid. Masuk ulang lalu coba lagi.')
-            const path = questionImagePath(user.id, file, crypto.randomUUID())
-            const { error: uploadError } = await supabase.storage.from(QUESTION_IMAGE_BUCKET).upload(path, file, {
-                cacheControl: '31536000',
-                upsert: false,
-            })
-            if (uploadError) throw new Error(uploadError.message)
-            const { data } = supabase.storage.from(QUESTION_IMAGE_BUCKET).getPublicUrl(path)
-            onUploaded(data.publicUrl)
+            onUploaded(await uploadQuestionImage(file))
             toast.success('Gambar diunggah.')
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Gagal mengunggah gambar.')

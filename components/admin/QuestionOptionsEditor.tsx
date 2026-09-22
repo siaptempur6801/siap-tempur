@@ -5,6 +5,7 @@ import { parseQuestionOptions } from '@/lib/question-options'
 import { Plus, Trash2 } from 'lucide-react'
 import { adminInputClass, adminLabelClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 import FormulaToolbar from '@/components/admin/FormulaToolbar'
+import { useImagePasteDrop } from '@/components/admin/useImagePasteDrop'
 import QuestionImageButton from '@/components/admin/QuestionImageButton'
 import { insertLatexSnippet, type LatexSnippet } from '@/lib/latex-snippets'
 
@@ -76,6 +77,7 @@ function OptionContentField({ row, index, update }: {
     row: OptionRow; index: number; update: (index: number, patch: Partial<OptionRow>) => void;
 }) {
     const textareaRef = useRef<HTMLTextAreaElement>(null)
+    const { dragging, handlers } = useImagePasteDrop((url) => update(index, { imageUrl: url }))
     function insert(snippet: LatexSnippet) {
         const element = textareaRef.current
         const start = element?.selectionStart ?? row.content.length
@@ -90,7 +92,7 @@ function OptionContentField({ row, index, update }: {
     return (
         <div className="space-y-1">
             <span className={adminLabelClass}>Isi opsi {row.key || index + 1}</span>
-            <textarea ref={textareaRef} className={`${adminInputClass} min-h-11 resize-y`} value={row.content} onChange={(event) => update(index, { content: event.target.value })} aria-label={`Isi opsi ${row.key || index + 1}`} required/>
+            <textarea ref={textareaRef} {...handlers} className={`${adminInputClass} min-h-11 resize-y ${dragging ? 'border-blue-400 ring-4 ring-blue-500/10' : ''}`} value={row.content} onChange={(event) => update(index, { content: event.target.value })} aria-label={`Isi opsi ${row.key || index + 1}`} required/>
             <FormulaToolbar compact onInsert={insert}/>
         </div>
     )
