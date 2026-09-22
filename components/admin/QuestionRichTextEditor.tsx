@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type Editor, type NodeViewProps } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 import { Node, mergeAttributes } from '@tiptap/core'
 import { InlineMath, BlockMath } from 'react-katex'
 import 'katex/dist/katex.min.css'
-import { Bold, ImagePlus, Italic, List, ListOrdered, Loader2 } from 'lucide-react'
+import { Bold, Check, ImagePlus, Italic, List, ListOrdered, Loader2, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import FormulaToolbar from '@/components/admin/FormulaToolbar'
 import { adminLabelClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
@@ -25,24 +25,145 @@ import { cn } from '@/lib/utils'
  * (`<span data-latex>`, `<div data-latex-block>`, `<img>`), dan renderer
  * (`MathRenderer`) mendukung format itu sekaligus format lama.
  *
+ * Rumus adalah node `atom` (tidak bisa diketik langsung seperti teks), jadi
+ * **klik rumus membuka editor LaTeX** untuk mengubah isinya; hasilnya langsung
+ * dirender ulang. Snippet dari toolbar membawa `autoEdit` sehingga editor
+ * LaTeX-nya terbuka otomatis (mis. mengisi placeholder `{}` pada pecahan).
+ *
  * Dua tata letak:
  *   - penuh (default) untuk Pertanyaan/Pembahasan — label, tombol teks, daftar;
  *   - `compact` untuk isi opsi — tanpa label sendiri (dipakai induk), toolbar
  *     ringkas, dan tinggi satu baris.
  */
 
-function MathInlineView({ node }: NodeViewProps) {
+const MATH_ERROR_COLOR = '#dc2626'
+
+function MathEditor({ latex, block, onApply, onCancel, onDelete }: {
+    latex: string
+    block: boolean
+    onApply: (next: string) => void
+    onCancel: () => void
+    onDelete: () => void
+}) {
+    const [draft, setDraft] = useState(latex)
+    const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
+
+    useLayoutEffect(() => {
+        const element = inputRef.current
+        if (!element) return
+        element.focus()
+        // Kursor diletakkan di placeholder `{}` pertama (mis. `\frac{}{}`) agar
+        // penulis bisa langsung mengetik isinya; tanpa placeholder, di akhir.
+        const placeholder = latex.indexOf('{}')
+        const caret = placeholder >= 0 ? placeholder + 1 : latex.length
+        element.setSelectionRange(caret, caret)
+    }, [latex])
+
+    const stop = (event: React.SyntheticEvent) => event.stopPropagation()
+
     return (
-        <NodeViewWrapper as="span" className="inline-block align-middle">
-            <InlineMath math={String(node.attrs.latex ?? '')}/>
+        <span
+            className={cn(
+                'inline-flex flex-wrap items-center gap-1 rounded-lg border border-blue-300 bg-blue-50/70 p-1 align-middle',
+                block && 'w-full flex-col items-stretch',
+            )}
+            contentEditable={false}
+            onMouseDown={stop}
+        >
+            {block ? (
+                <textarea
+                    ref={inputRef as React.Ref<HTMLTextAreaElement>}
+                    value={draft}
+                    rows={2}
+                    spellCheck={false}
+                    aria-label="LaTeX rumus (blok)"
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Escape') { event.preventDefault(); onCancel() }
+                        if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); onApply(draft.trim()) }
+                    }}
+                    className="w-full rounded border border-slate-300 px-2 py-1 font-mono text-xs text-slate-900"
+                />
+            ) : (
+                <input
+                    ref={inputRef as React.Ref<HTMLInputElement>}
+                    value={draft}
+                    spellCheck={false}
+                    aria-label="LaTeX rumus"
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Enter') { event.preventDefault(); onApply(draft.trim()) }
+                        if (event.key === 'Escape') { event.preventDefault(); onCancel() }
+                    }}
+                    className="w-44 rounded border border-slate-300 px-2 py-1 font-mono text-xs text-slate-900"
+                />
+            )}
+            <span className="inline-flex items-center gap-1">
+                <button type="button" onClick={() => onApply(draft.trim())} aria-label="Terapkan rumus" title="Terapkan (Enter)" className="flex h-7 w-7 items-center justify-center rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"><Check size={14}/></button>
+                <button type="button" onClick={onCancel} aria-label="Batal mengubah rumus" title="Batal (Esc)" className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"><X size={14}/></button>
+                <button type="button" onClick={onDelete} aria-label="Hapus rumus" title="Hapus rumus" className="flex h-7 w-7 items-center justify-center rounded-md border border-red-100 bg-white text-red-500 hover:bg-red-50"><Trash2 size={14}/></button>
+            </span>
+            {block ? (
+                <span className="block w-full overflow-x-auto rounded bg-white/70 px-2 py-1 text-center text-sm">
+                    {draft.trim() ? <BlockMath math={draft} errorColor={MATH_ERROR_COLOR}/> : <span className="text-xs font-semibold text-slate-400">Pratinjau rumus tampil di sini.</span>}
+                </span>
+            ) : null}
+        </span>
+    )
+}
+
+function MathInlineView({ node, updateAttributes, deleteNode, editor }: NodeViewProps) {
+    const latex = String(node.attrs.latex ?? '')
+    const editable = editor.isEditable
+    // Snippet baru membawa `autoEdit`; nilai awal state dibaca saat mount agar
+    // popover langsung terbuka tanpa setState di dalam efek (aturan lint React).
+    const [editing, setEditing] = useState(() => Boolean(node.attrs.autoEdit) && editor.isEditable)
+    const autoEdit = Boolean(node.attrs.autoEdit)
+
+    useEffect(() => {
+        if (autoEdit) updateAttributes({ autoEdit: false })
+    }, [autoEdit, updateAttributes])
+
+    if (editing && editable) {
+        return (
+            <NodeViewWrapper as="span" className="inline-block align-middle">
+                <MathEditor latex={latex} block={false}
+                    onApply={(next) => { setEditing(false); editor.commands.focus(); if (next) updateAttributes({ latex: next }); else deleteNode() }}
+                    onCancel={() => { setEditing(false); editor.commands.focus() }}
+                    onDelete={() => { deleteNode(); editor.commands.focus() }}/>
+            </NodeViewWrapper>
+        )
+    }
+    return (
+        <NodeViewWrapper as="span" className={cn('inline-block rounded px-0.5 align-middle', editable && 'cursor-pointer hover:bg-blue-50 hover:ring-2 hover:ring-blue-200')} title={editable ? 'Klik untuk mengubah rumus' : undefined} onClick={() => { if (editable) setEditing(true) }}>
+            <InlineMath math={latex} errorColor={MATH_ERROR_COLOR}/>
         </NodeViewWrapper>
     )
 }
 
-function MathBlockView({ node }: NodeViewProps) {
+function MathBlockView({ node, updateAttributes, deleteNode, editor }: NodeViewProps) {
+    const latex = String(node.attrs.latex ?? '')
+    const editable = editor.isEditable
+    const [editing, setEditing] = useState(() => Boolean(node.attrs.autoEdit) && editor.isEditable)
+    const autoEdit = Boolean(node.attrs.autoEdit)
+
+    useEffect(() => {
+        if (autoEdit) updateAttributes({ autoEdit: false })
+    }, [autoEdit, updateAttributes])
+
+    if (editing && editable) {
+        return (
+            <NodeViewWrapper as="div" className="my-2">
+                <MathEditor latex={latex} block
+                    onApply={(next) => { setEditing(false); editor.commands.focus(); if (next) updateAttributes({ latex: next }); else deleteNode() }}
+                    onCancel={() => { setEditing(false); editor.commands.focus() }}
+                    onDelete={() => { deleteNode(); editor.commands.focus() }}/>
+            </NodeViewWrapper>
+        )
+    }
     return (
-        <NodeViewWrapper as="div" className="my-2 overflow-x-auto">
-            <BlockMath math={String(node.attrs.latex ?? '')}/>
+        <NodeViewWrapper as="div" className={cn('my-2 overflow-x-auto rounded', editable && 'cursor-pointer hover:bg-blue-50 hover:ring-2 hover:ring-blue-200')} title={editable ? 'Klik untuk mengubah rumus' : undefined} onClick={() => { if (editable) setEditing(true) }}>
+            <BlockMath math={latex} errorColor={MATH_ERROR_COLOR}/>
         </NodeViewWrapper>
     )
 }
@@ -53,7 +174,11 @@ const MathInline = Node.create({
     inline: true,
     atom: true,
     addAttributes() {
-        return { latex: { default: '' } }
+        return {
+            latex: { default: '' },
+            /** Penanda sekali pakai agar editor LaTeX terbuka setelah snippet disisipkan. */
+            autoEdit: { default: false, rendered: false },
+        }
     },
     parseHTML() {
         return [{
@@ -74,7 +199,11 @@ const MathBlock = Node.create({
     group: 'block',
     atom: true,
     addAttributes() {
-        return { latex: { default: '' } }
+        return {
+            latex: { default: '' },
+            /** Penanda sekali pakai agar editor LaTeX terbuka setelah snippet disisipkan. */
+            autoEdit: { default: false, rendered: false },
+        }
     },
     parseHTML() {
         return [{
@@ -156,23 +285,6 @@ export default function QuestionRichTextEditor({
     const rootRef = useRef<HTMLDivElement>(null)
     const heightClass = minHeight ?? (compact ? 'min-h-11' : 'min-h-36')
 
-    /**
-     * Lapor perubahan untuk aksi programatik (unggah gambar, tombol rumus).
-     *
-     * `onUpdate` hanya melapor saat editor fokus; aksi lewat tombol/file input
-     * tidak selalu memindahkan fokus ke ProseMirror, sehingga tanpa jalur ini
-     * form induk menganggap tidak ada perubahan (dirty hilang, JSON opsi tetap
-     * kosong).
-     */
-    function publish() {
-        const instance = editorRef.current
-        if (!instance?.isEditable) return
-        const next = instance.getHTML()
-        setHtml(next)
-        setMissing(false)
-        onValueChange?.(next)
-    }
-
     async function insertImageFromFile(file: File) {
         try {
             setUploading(true)
@@ -184,7 +296,6 @@ export default function QuestionRichTextEditor({
                 // (dua unggahan beruntun sebelumnya saling menggantikan).
                 const { from, to } = editor.state.selection
                 editor.chain().focus().insertContentAt(from === to ? from : to, { type: 'image', attrs: { src: url, alt: '' } }).run()
-                publish()
             }
             toast.success('Gambar diunggah.')
         } catch (uploadError) {
@@ -217,16 +328,36 @@ export default function QuestionRichTextEditor({
             },
         },
         onUpdate: ({ editor: instance }) => {
-            const next = instance.getHTML()
-            // Nilai tersembunyi selalu disinkronkan, tetapi "perubahan pengguna"
-            // hanya dilaporkan saat editor benar-benar fokus & editable —
-            // normalisasi dokumen saat mount tidak boleh menandai form dirty
-            // (dulu itu memicu dialog konfirmasi sebelum admin mengubah apa pun).
-            setHtml(next)
+            // Nilai tersembunyi selalu disinkronkan; pelaporan ke form induk
+            // ditangani efek "reportedRef" di bawah.
+            setHtml(instance.getHTML())
             setMissing(false)
-            if (instance.isEditable && instance.isFocused) onValueChange?.(next)
         },
     })
+
+    /**
+     * Lapor perubahan dokumen ke form induk.
+     *
+     * Tidak memakai `editor.isFocused`: aksi programatik (unggah gambar, tombol
+     * rumus, popover LaTeX) tidak selalu memindahkan fokus ke ProseMirror —
+     * dulu perubahan seperti itu tidak terlaporkan sehingga form tidak "dirty"
+     * dan JSON opsi tetap kosong. Normalisasi dokumen saat mount disaring
+     * dengan mencatat HTML awal sebagai baseline, supaya membuka soal lama
+     * tidak langsung menandai form berubah.
+     */
+    const reportedRef = useRef<string | null>(null)
+    useEffect(() => {
+        if (!editor) return
+        if (reportedRef.current === null) {
+            reportedRef.current = editor.getHTML()
+            return
+        }
+        if (!editor.isEditable) return
+        const next = editor.getHTML()
+        if (next === reportedRef.current) return
+        reportedRef.current = next
+        onValueChange?.(next)
+    }, [editor, html, editable, onValueChange])
 
     useEffect(() => {
         editorRef.current = editor ?? null
@@ -280,10 +411,11 @@ export default function QuestionRichTextEditor({
 
     function insertSnippet(snippet: LatexSnippet) {
         if (!editor) return
+        // `autoEdit` membuka editor LaTeX node baru supaya placeholder `{}`
+        // (mis. `\frac{}{}`) bisa langsung diisi, tanpa klik rumus dulu.
         editor.chain().focus().insertContent(snippet.block
-            ? { type: 'mathBlock', attrs: { latex: snippet.latex } }
-            : { type: 'mathInline', attrs: { latex: snippet.latex } }).run()
-        publish()
+            ? { type: 'mathBlock', attrs: { latex: snippet.latex, autoEdit: true } }
+            : { type: 'mathInline', attrs: { latex: snippet.latex, autoEdit: true } }).run()
     }
 
     const errorId = fieldId && error ? `${fieldId}-error` : undefined

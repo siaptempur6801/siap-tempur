@@ -160,11 +160,26 @@ async function browserTests(f) {
  await optionRow.locator('input[data-upload-target="option-content-A"]').setInputFiles(pngFixture);
  await expect.poll(async()=>JSON.parse(await uploadDialog.locator('input[name=options]').inputValue())[0].content||'',{timeout:30000}).toContain('<img');
  await optionRow.getByRole('button',{name:'Sisipkan rumus: Akar',exact:true}).click();
- await expect.poll(async()=>JSON.parse(await uploadDialog.locator('input[name=options]').inputValue())[0].content||'',{timeout:10000}).toContain('data-latex');
+ const optionLatex=optionRow.getByLabel('LaTeX rumus',{exact:true});
+ await expect(optionLatex).toBeVisible();
+ await optionLatex.fill('\\sqrt{16}');
+ await optionLatex.press('Enter');
+ await expect.poll(async()=>JSON.parse(await uploadDialog.locator('input[name=options]').inputValue())[0].content||'',{timeout:10000}).toContain('data-latex="\\sqrt{16}"');
  console.log('PASS isi opsi menerima gambar & rumus lewat editor ringkas');
  await uploadDialog.getByRole('button',{name:'Sisipkan rumus: Pecahan',exact:true}).first().click();
+ const stemLatex=uploadDialog.getByLabel('LaTeX rumus',{exact:true}).first();
+ await expect(stemLatex).toBeVisible();
+ await stemLatex.fill('\\frac{1}{2}');
+ await stemLatex.press('Enter');
  await expect(uploadDialog.locator('.katex').first()).toBeVisible();
- await expect.poll(async()=>stemHtml(uploadDialog),{timeout:10000}).toContain('data-latex');
+ await expect.poll(async()=>stemHtml(uploadDialog),{timeout:10000}).toContain('data-latex="\\frac{1}{2}"');
+ await uploadDialog.getByRole('button',{name:'Sisipkan rumus: Matriks 2×2',exact:true}).first().click();
+ const blockLatex=uploadDialog.getByLabel('LaTeX rumus (blok)').first();
+ await expect(blockLatex).toBeVisible();
+ await blockLatex.fill('\\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}');
+ await blockLatex.press('Control+Enter');
+ await expect.poll(async()=>stemHtml(uploadDialog),{timeout:10000}).toContain('data-latex-block');
+ console.log('PASS rumus bisa diubah isinya (auto-edit snippet + klik-edit)');
  console.log('PASS unggah gambar pertanyaan & opsi lewat tombol + toolbar rumus');
 
  // 2) Tarik-lepas gambar ke pertanyaan (jalur sama dengan tombol).

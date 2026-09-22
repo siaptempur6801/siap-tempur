@@ -51,14 +51,14 @@ describe('tahap B — toolbar rumus', () => {
     it('editor soal, editor opsi, dan form review memakai FormulaToolbar', () => {
         expect(source('components/admin/QuestionRichTextEditor.tsx')).toContain('FormulaToolbar')
         expect(source('components/admin/QuestionOptionsEditor.tsx')).toContain('QuestionRichTextEditor')
-        expect(source('components/admin/QuestionRichTextField.tsx')).toContain('FormulaToolbar')
+        expect(source('app/admin/content/review/page.tsx')).toContain('QuestionRichTextEditor')
     })
 
     it('snippet disisipkan sebagai node rumus di editor visual', () => {
         const editor = source('components/admin/QuestionRichTextEditor.tsx')
         expect(editor).toContain('insertSnippet')
         expect(editor).toContain('snippet.latex')
-        expect(source('components/admin/QuestionRichTextField.tsx')).toContain('snippet.cursorBack')
+        expect(editor).not.toContain('snippet.cursorBack')
     })
 })
 
@@ -77,12 +77,9 @@ describe('sisa opsional — paste/drag-drop & kompresi', () => {
         expect(editor).toContain('handleDropCapture')
         expect(editor).toContain('onPasteCapture')
         expect(editor).toContain('onDropCapture')
-        const fallback = source('components/admin/QuestionRichTextField.tsx')
-        expect(fallback).toContain('useImagePasteDrop')
-        const hook = source('components/admin/useImagePasteDrop.ts')
-        expect(hook).toContain('onPaste')
-        expect(hook).toContain('onDrop')
-        expect(hook).toContain('image/')
+        // Field textarea lama (QuestionRichTextField + useImagePasteDrop) sudah
+        // dihapus; jalur tempel/drop hanya ada di editor visual.
+        expect(editor).toContain("candidate.type.startsWith('image/')")
     })
 })
 
@@ -121,6 +118,16 @@ describe('editor visual soal (WYSIWYG)', () => {
         const page = source('app/admin/content/review/page.tsx')
         expect(page).toContain('QuestionRichTextEditor')
         expect(page).not.toContain('QuestionRichTextField')
+    })
+
+    it('rumus bisa diklik untuk diubah isinya (bukan node mati)', () => {
+        const editor = source('components/admin/QuestionRichTextEditor.tsx')
+        expect(editor).toContain('Klik untuk mengubah rumus')
+        expect(editor).toContain('LaTeX rumus')
+        expect(editor).toContain('updateAttributes')
+        expect(editor).toContain('deleteNode')
+        expect(editor).toContain('autoEdit')
+        expect(editor).toContain('errorColor')
     })
 
     it('editor ringkas menyembunyikan daftar dan menaruh tombol gambar di toolbar', () => {

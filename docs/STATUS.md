@@ -443,15 +443,23 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   (tanpa daftar; tombol gambar ikon di toolbar) dan menyimpan HTML di dalam JSON `options`.
   Soal lama yang belum disentuh tetap utuh — hidden `options` tidak berubah sampai penulis
   mengedit baris tersebut; begitu diedit, baris itu dinormalkan ke HTML (`<p>…</p>`).
-- Dua jebakan yang ditutup saat integrasi: (1) aksi programatik (unggah gambar, tombol rumus)
-  kini melapor eksplisit ke form (`publish()`) karena `onUpdate` hanya melapor saat editor fokus;
-  (2) div `contenteditable` diberi `role="textbox"` eksplisit agar Chrome mengeksposnya sebagai
-  field teks (pembaca layar + locator role). `required` pada editor dijaga di event submit form.
-- Verifikasi: **687 unit test / 93 file**; gate QB lulus (unggah/drop/rumus + kompresi 3,44 MB →
-  756 KB + isi opsi HTML/gambar/rumus + workflow publish/revise); gate Review 5 passed; gate admin
-  60 passed.
-- Tahap berikutnya (opsional): pindah `QuestionRichTextField` yang kini tak terpakai, dan
-  normalisasi HTML massal untuk soal lama bila diinginkan.
+- **Rumus bisa diubah isinya.** Node rumus adalah `atom` (tidak bisa diketik seperti teks), jadi
+  klik rumus membuka editor LaTeX (Enter = terapkan, Esc = batal, tombol hapus; kursor otomatis
+  di placeholder `{}` pertama), dan snippet dari toolbar membawa `autoEdit` sehingga popover
+  langsung terbuka — mis. `a/b` → isi pembilang/penyebut, `matriks` → ubah angka, dengan pratinjau
+  langsung untuk rumus blok. LaTeX tidak valid dirender merah (`errorColor`), bukan crash.
+- Dua jebakan yang ditutup saat integrasi: (1) pelaporan perubahan ke form induk tidak lagi
+  bergantung pada fokus editor (dulu aksi programatik seperti unggah gambar/tombol rumus tak
+  terlaporkan → form tidak "dirty", JSON opsi kosong) — kini baseline HTML awal dicatat dan
+  setiap perubahan dokumen setelahnya dilaporkan; (2) div `contenteditable` diberi
+  `role="textbox"` eksplisit agar Chrome mengeksposnya sebagai field teks (pembaca layar +
+  locator role). `required` pada editor dijaga di event submit form.
+- Verifikasi: **688 unit test / 93 file**; gate QB lulus (unggah/drop/rumus + **ubah isi rumus
+  inline & blok** + kompresi 3,44 MB → 756 KB + isi opsi HTML/gambar/rumus + workflow
+  publish/revise); gate Review 5 passed; gate admin 60 passed.
+- `QuestionRichTextField` + `useImagePasteDrop` (jalur textarea lama) **dihapus**; seluruh
+  penulisan soal lewat editor visual.
+- Tahap berikutnya (opsional): normalisasi HTML massal untuk soal lama bila diinginkan.
 
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
@@ -469,7 +477,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **687 unit test / 93 file** · build lolos.
+- Lint 0/0 · typecheck · **688 unit test / 93 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
