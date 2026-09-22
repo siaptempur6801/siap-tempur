@@ -45,10 +45,11 @@ export function questionImageMarkup(url: string): string {
 /**
  * Menyisipkan teks pada posisi kursor/selection sebuah textarea.
  *
- * Dipakai tombol "Sisipkan gambar" agar markup masuk di tempat penulis menulis,
- * bukan selalu di akhir. Kursor dikembalikan tepat setelah sisipan.
+ * Dipakai tombol "Sisipkan gambar"/"rumus" agar teks masuk di tempat penulis
+ * menulis, bukan selalu di akhir. `cursorBack` menggeser kursor mundur dari
+ * akhir sisipan — dipakai snippet rumus agar kursor berhenti di dalam `{}`.
  */
-export function insertAtSelection(value: string, selectionStart: number, selectionEnd: number, insertion: string): { value: string; cursor: number } {
+export function insertAtSelection(value: string, selectionStart: number, selectionEnd: number, insertion: string, cursorBack = 0): { value: string; cursor: number } {
     const start = Math.max(0, Math.min(selectionStart, value.length))
     const end = Math.max(start, Math.min(selectionEnd, value.length))
     const before = value.slice(0, start)
@@ -56,5 +57,6 @@ export function insertAtSelection(value: string, selectionStart: number, selecti
     const needsLeadingSpace = before.length > 0 && !/\s$/.test(before) && !before.endsWith('>')
     const prefix = needsLeadingSpace ? ' ' : ''
     const next = `${before}${prefix}${insertion}${after}`
-    return { value: next, cursor: before.length + prefix.length + insertion.length }
+    const cursor = Math.max(before.length + prefix.length, before.length + prefix.length + insertion.length - Math.max(0, cursorBack))
+    return { value: next, cursor }
 }

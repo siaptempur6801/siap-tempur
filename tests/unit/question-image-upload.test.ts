@@ -47,3 +47,17 @@ describe('upload gambar soal', () => {
         expect(button).toContain('data-upload-target')
     })
 })
+
+describe('tahap B — toolbar rumus', () => {
+    it('field teks soal dan editor opsi memakai FormulaToolbar', () => {
+        expect(source('components/admin/QuestionRichTextField.tsx')).toContain('FormulaToolbar')
+        expect(source('components/admin/QuestionOptionsEditor.tsx')).toContain('FormulaToolbar')
+    })
+
+    it('snippet disisipkan lewat helper yang menempatkan kursor', () => {
+        const field = source('components/admin/QuestionRichTextField.tsx')
+        expect(field).toContain('insertSnippet')
+        expect(field).toContain('snippet.cursorBack')
+        expect(source('components/admin/QuestionOptionsEditor.tsx')).toContain('insertLatexSnippet')
+    })
+})

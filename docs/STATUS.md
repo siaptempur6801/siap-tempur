@@ -405,9 +405,22 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   Pratinjau memakai `MathRenderer` yang sudah ada.
 - Gate QB menambah langkah unggah nyata (pertanyaan + opsi) dan membersihkan berkas storage di `finally`;
   staging 0 sisa berkas uji.
-- Migration `20260922120000_question_image_upload_v1.sql` **ter-apply di staging**; **produksi menunggu GO**.
+- Migration `20260922120000_question_image_upload_v1.sql` **ter-apply di staging DAN produksi**
+  (GO 2026-09-22; ledger via `migration repair`). Verifikasi produksi: policy
+  `question_images_content_upload` + `question_images_content_delete` ada, policy lama yang memeriksa
+  `profiles.role` hilang.
 - Verifikasi: **666 unit test / 92 file**; gate QB lulus; gate Review 5 passed; gate admin 60 passed.
-- Tahap B (toolbar snippet rumus LaTeX) belum dikerjakan.
+
+### Tahap B — toolbar snippet rumus (2026-09-22)
+- `lib/latex-snippets.ts`: 18 snippet (pecahan, akar, pangkat, indeks, operator × ÷ ± ≤ ≥ ≠, simbol
+  π α θ ∞, serta integral/sigma/limit/matriks sebagai blok `$$…$$`) dengan `cursorBack` agar kursor
+  berhenti di dalam `{}` siap diketik.
+- `FormulaToolbar` dipakai di Pertanyaan & Pembahasan (`QuestionRichTextField`) dan versi ringkas di
+  setiap isi opsi (`QuestionOptionsEditor`); snippet disisipkan di posisi kursor dan dirender
+  `MathRenderer`/KaTeX yang sudah ada — pratinjau soal langsung menampilkan hasilnya.
+- Gate QB menambah langkah klik tombol "Pecahan" dan memastikan `\frac` masuk ke textarea.
+- Verifikasi: **673 unit test / 93 file**; gate QB lulus; gate Review 5 passed.
+- Sisa opsional: tempel dari clipboard & drag-drop, kompresi gambar di klien.
 
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
@@ -425,7 +438,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **666 unit test / 92 file** · build lolos.
+- Lint 0/0 · typecheck · **673 unit test / 93 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -449,7 +462,8 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `components/admin/ReviewQuestionFields.tsx`, `components/admin/ArticleStatusActions.tsx`,
 `components/admin/AdminListToolbar.tsx`, `lib/question-media.ts` (baru),
 `components/admin/QuestionImageButton.tsx` (baru), `components/admin/QuestionRichTextField.tsx` (baru),
-`components/admin/ArticleRichTextEditor.tsx`, `supabase/migrations/20260922120000_*.sql`,
+`components/admin/ArticleRichTextEditor.tsx`, `lib/latex-snippets.ts` (baru),
+`components/admin/FormulaToolbar.tsx` (baru), `supabase/migrations/20260922120000_*.sql`,
 `app/admin/assessment/exams/AdminExamsWorkspace.tsx`, `app/admin/audit/page.tsx`,
 `tests/e2e/specs/10-admin-workspace-authenticated.spec.ts`,
 `supabase/migrations/20260922010000_*.sql`,

@@ -1,10 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { parseQuestionOptions } from '@/lib/question-options'
 import { Plus, Trash2 } from 'lucide-react'
 import { adminInputClass, adminLabelClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import FormulaToolbar from '@/components/admin/FormulaToolbar'
 import QuestionImageButton from '@/components/admin/QuestionImageButton'
+import { insertLatexSnippet, type LatexSnippet } from '@/lib/latex-snippets'
 
  type OptionRow = {
     /**
@@ -62,6 +64,36 @@ function nextKey(rows: OptionRow[]) {
         if (!used.has(key)) return key
     }
     return String(rows.length + 1)
+}
+
+/**
+ * Isi opsi + toolbar rumus ringkas.
+ *
+ * Ref textarea disimpan per baris supaya snippet disisipkan di posisi kursor
+ * baris yang sedang ditulis, bukan di akhir.
+ */
+function OptionContentField({ row, index, update }: {
+    row: OptionRow; index: number; update: (index: number, patch: Partial<OptionRow>) => void;
+}) {
+    const textareaRef = useRef<HTMLTextAreaElement>(null)
+    function insert(snippet: LatexSnippet) {
+        const element = textareaRef.current
+        const start = element?.selectionStart ?? row.content.length
+        const end = element?.selectionEnd ?? row.content.length
+        const { value, cursor } = insertLatexSnippet(row.content, start, end, snippet)
+        update(index, { content: value })
+        requestAnimationFrame(() => {
+            element?.focus()
+            element?.setSelectionRange(cursor, cursor)
+        })
+    }
+    return (
+        <div className="space-y-1">
+            <span className={adminLabelClass}>Isi opsi {row.key || index + 1}</span>
+            <textarea ref={textareaRef} className={`${adminInputClass} min-h-11 resize-y`} value={row.content} onChange={(event) => update(index, { content: event.target.value })} aria-label={`Isi opsi ${row.key || index + 1}`} required/>
+            <FormulaToolbar compact onInsert={insert}/>
+        </div>
+    )
 }
 
 /**
@@ -154,10 +186,7 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
                                 <span className={adminLabelClass}>Kode</span>
                                 <input className={adminInputClass} required maxLength={16} value={row.key} onChange={(event) => update(index, { key: event.target.value.slice(0, 16) })} aria-label={`Kode opsi ${index + 1}`} />
                             </label>
-                            <label className="space-y-1">
-                                <span className={adminLabelClass}>Isi opsi {row.key || index + 1}</span>
-                                <textarea className={`${adminInputClass} min-h-11 resize-y`} value={row.content} onChange={(event) => update(index, { content: event.target.value })} aria-label={`Isi opsi ${row.key || index + 1}`} required />
-                            </label>
+                            <OptionContentField row={row} index={index} update={update}/>
                             <label className="space-y-1">
                                 <span className={adminLabelClass}>Skor</span>
                                 <input className={adminInputClass} inputMode="decimal" value={row.score} onChange={(event) => update(index, { score: event.target.value })} aria-label={`Skor opsi ${row.key || index + 1}`} placeholder="Opsional" />

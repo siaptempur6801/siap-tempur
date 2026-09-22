@@ -150,6 +150,9 @@ async function browserTests(f) {
  await expect.poll(async()=>uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue(),{timeout:30000}).toContain('[[image:https://');
  await uploadDialog.locator('input[data-upload-target="option-A"]').setInputFiles(pngFixture);
  await expect.poll(async()=>{const rows=JSON.parse(await uploadDialog.locator('input[name=options]').inputValue());return rows[0].imageUrl||''},{timeout:30000}).toMatch(/^https:\/\//);
+ await uploadDialog.getByRole('button',{name:'Sisipkan rumus: Pecahan',exact:true}).first().click();
+ await expect.poll(async()=>uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue(),{timeout:10000}).toContain('\\frac');
+ console.log('PASS toolbar rumus menyisipkan di pertanyaan');
  console.log('PASS unggah gambar pertanyaan & opsi');
  const authState = await context.storageState();
  console.log('Console errors:',JSON.stringify(errors));expect(errors).toEqual([]);await browser.close(); return authState;

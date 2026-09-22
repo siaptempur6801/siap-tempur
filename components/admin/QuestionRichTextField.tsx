@@ -1,9 +1,11 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import FormulaToolbar from '@/components/admin/FormulaToolbar'
 import QuestionImageButton from '@/components/admin/QuestionImageButton'
 import { adminInputClass, adminLabelClass } from '@/components/admin/AdminUi'
 import { insertAtSelection, questionImageMarkup } from '@/lib/question-media'
+import type { LatexSnippet } from '@/lib/latex-snippets'
 import { cn } from '@/lib/utils'
 
 /**
@@ -56,16 +58,24 @@ export default function QuestionRichTextField({
         onValueChange?.(next)
     }
 
-    function insertImage(url: string) {
+    function insertText(insertion: string, cursorBack = 0) {
         const element = textareaRef.current
         const start = element?.selectionStart ?? current.length
         const end = element?.selectionEnd ?? current.length
-        const { value: next, cursor } = insertAtSelection(current, start, end, questionImageMarkup(url))
+        const { value: next, cursor } = insertAtSelection(current, start, end, insertion, cursorBack)
         setValue(next)
         requestAnimationFrame(() => {
             element?.focus()
             element?.setSelectionRange(cursor, cursor)
         })
+    }
+
+    function insertImage(url: string) {
+        insertText(questionImageMarkup(url))
+    }
+
+    function insertSnippet(snippet: LatexSnippet) {
+        insertText(snippet.insert, snippet.cursorBack ?? 0)
     }
 
     const errorId = fieldId && error ? `${fieldId}-error` : undefined
@@ -83,6 +93,7 @@ export default function QuestionRichTextField({
                 />
             </div>
             {hint ? <span id={hintId} className="block text-xs font-medium leading-5 text-slate-500">{hint}</span> : null}
+            <FormulaToolbar onInsert={insertSnippet}/>
             <textarea
                 ref={textareaRef}
                 name={name}
