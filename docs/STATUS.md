@@ -313,6 +313,16 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
 - Catatan: blokir ini di lapisan UI/daftar; RPC tidak menolak pengeditan placeholder (belum ada
   migration untuk itu).
 
+### Perbaikan regresi: opsi tersimpan hilang di form edit (2026-09-22)
+- Saat editor opsi dipindah ke `ReviewQuestionFields` (P2-c), prop `defaultValue` ikut hilang sehingga
+  form edit menampilkan **opsi contoh kosong A–D** alih-alih opsi tersimpan. Data di database tidak
+  rusak (server menolak simpan dengan isi kosong), tetapi admin tidak bisa melihat/menyunting opsi.
+  Ditemukan dari laporan pemilik produk saat memeriksa `TWK-000460` (DB lengkap: 5 opsi A–E).
+- `ReviewQuestionFields` menerima `optionsDefaultValue`; form edit mengirim
+  `serializeOptionRows(data.options)`.
+- Dikunci: 2 unit test + gate Review kini memeriksa nilai opsi A/D dan checkbox "Jawaban benar A"
+  setelah draft dibuat. 637 unit test / 88 file.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
@@ -329,7 +339,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **635 unit test / 87 file** · build lolos.
+- Lint 0/0 · typecheck · **637 unit test / 88 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -349,7 +359,8 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `tests/unit/review-draft-concurrency.test.ts`, `tests/unit/review-batch-n1.test.ts`,
 `tests/unit/content-review-counts.test.ts`, `tests/unit/admin-audit-label.test.ts`,
 `tests/unit/review-assign-policy.test.ts`, `lib/question-source.ts` (baru),
-`tests/unit/question-source-placeholder.test.ts` (baru), `supabase/migrations/20260922010000_*.sql`,
+`tests/unit/question-source-placeholder.test.ts` (baru), `tests/unit/review-options-preserved.test.ts` (baru),
+`supabase/migrations/20260922010000_*.sql`,
 `scripts/db-verify/review-assign-policy.sql`, `src/auth/permissions.ts`, `docs/STATUS.md`.
 
 ---

@@ -133,6 +133,11 @@ test('author → reviewer → editorial → academic → technical QA → publis
 
     await expect(editorPage.getByRole('heading', { name: 'Edit draft / revisi' })).toBeVisible()
     await expect(editorPage.getByLabel('Pertanyaan')).toHaveValue(uniqueStem)
+    // Regresi: form edit pernah menampilkan opsi contoh kosong (A–D) alih-alih
+    // opsi tersimpan setelah editor dipindah ke ReviewQuestionFields.
+    await expect(editorPage.getByLabel('Isi opsi A')).toHaveValue('Jawaban benar')
+    await expect(editorPage.getByLabel('Isi opsi D')).toHaveValue('Distraktor tiga')
+    await expect(editorPage.getByLabel('Jawaban benar A')).toBeChecked()
     await expect(editorPage.getByLabel('Pembahasan')).toHaveValue('Pembahasan E2E: pilihan A adalah jawaban yang benar.')
 
     await followServerAction(editorPage, editorPage.getByRole('button', { name: /Kirim ke Editorial Review/ }))

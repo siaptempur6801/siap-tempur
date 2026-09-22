@@ -1,3 +1,4 @@
+import { serializeOptionRows } from '@/lib/question-options'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
@@ -443,7 +444,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                                             <input type="hidden" name="expected_version" value={s(selected.version)}/>
                                             <input type="hidden" name="expected_updated_at" value={s(selected.updated_at)}/>
                                             <AdminField label="Subject"><select className={adminInputClass} name="subject_code" required defaultValue={s(data.subjectById.get(s(selected.subject_id))?.code)}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
-                                            <ReviewQuestionFields defaultType={s(selected.question_type)} middle={<>
+                                            <ReviewQuestionFields defaultType={s(selected.question_type)} optionsDefaultValue={serializeOptionRows(data.options)} middle={<>
                                                 <AdminField label="Pertanyaan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="stem" required defaultValue={s(selected.stem)}/></AdminField>
                                                 <AdminField label="Difficulty"><select className={adminInputClass} name="difficulty" defaultValue={s(selected.difficulty)}><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></AdminField>
                                                 <AdminField label="Cognitive level"><input className={adminInputClass} name="cognitive_level" defaultValue={s(selected.cognitive_level)}/></AdminField>

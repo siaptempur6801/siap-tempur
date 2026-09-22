@@ -16,7 +16,7 @@ import { AdminField, adminInputClass } from '@/components/admin/AdminUi'
  * FRAGMENT (tanpa pembungkus DOM), jadi anak-anaknya tetap menjadi grid item
  * form induk — urutan dan tata letaknya tidak berubah.
  */
-export default function ReviewQuestionFields({ defaultType, middle }: { defaultType?: string; middle: ReactNode }) {
+export default function ReviewQuestionFields({ defaultType, optionsDefaultValue, middle }: { defaultType?: string; optionsDefaultValue?: string; middle: ReactNode }) {
     const [questionType, setQuestionType] = useState(defaultType || 'single_choice')
     return (
         <>
@@ -28,7 +28,7 @@ export default function ReviewQuestionFields({ defaultType, middle }: { defaultT
                 </select>
             </AdminField>
             {middle}
-            <QuestionOptionsEditor questionType={questionType}/>
+            <QuestionOptionsEditor defaultValue={optionsDefaultValue} questionType={questionType}/>
         </>
     )
 }
