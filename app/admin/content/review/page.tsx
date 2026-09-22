@@ -18,7 +18,7 @@ import MathRenderer from '@/components/MathRenderer'
 import ReviewBatchPanel from '@/components/admin/ReviewBatchPanel'
 import ReviewDraftForm from '@/components/admin/ReviewDraftForm'
 import ReviewQuestionFields from '@/components/admin/ReviewQuestionFields'
-import QuestionRichTextField from '@/components/admin/QuestionRichTextField'
+import QuestionRichTextEditor from '@/components/admin/QuestionRichTextEditor'
 import { DEFAULT_REVIEW_BATCH_CODE } from '@/lib/review-batch'
 import {
     AdminBadge,
@@ -348,13 +348,13 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                         <HiddenContext program={program} track={track}/>
                         <AdminField label="Mapel / subtes"><select className={adminInputClass} name="subject_code" required defaultValue={activeSubjectCode}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
                         <ReviewQuestionFields middle={<>
-                            <QuestionRichTextField name="stem" label="Pertanyaan" className="lg:col-span-2" required placeholder="Tulis pertanyaan dengan jelas..." minHeight="min-h-32"/>
+                            <QuestionRichTextEditor name="stem" label="Pertanyaan" className="lg:col-span-2" required placeholder="Tulis pertanyaan dengan jelas..." minHeight="min-h-32"/>
                             <AdminField label="Tingkat kesulitan"><select className={adminInputClass} name="difficulty" defaultValue="medium"><option value="easy">Mudah</option><option value="medium">Sedang</option><option value="hard">Sulit</option></select></AdminField>
                             <AdminField label="Level kognitif"><input className={adminInputClass} name="cognitive_level" placeholder="application / reasoning"/></AdminField>
                             <AdminField label="Estimasi detik"><input className={adminInputClass} type="number" min="1" name="estimated_seconds" placeholder="60"/></AdminField>
                             <AdminField label="Sumber / referensi"><input className={adminInputClass} name="source_reference" placeholder="Sumber atau referensi"/></AdminField>
                         </>}/>
-                        <QuestionRichTextField name="explanation" label="Pembahasan" className="lg:col-span-2" placeholder="Tulis alasan jawaban dan konsep yang diuji..." minHeight="min-h-32"/>
+                        <QuestionRichTextEditor name="explanation" label="Pembahasan" className="lg:col-span-2" placeholder="Tulis alasan jawaban dan konsep yang diuji..." minHeight="min-h-32"/>
                         <AdminField label="Alasan / catatan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Draf awal dari Reviewer Workspace"/></AdminField>
                         <div className="flex flex-wrap gap-2 lg:col-span-2"><button className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Simpan draft</button><Link href={workspaceHref({ program, track })} className={adminSecondaryButtonClass}>Batal</Link></div>
                     </ReviewDraftForm>
@@ -448,7 +448,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                                             <input type="hidden" name="expected_updated_at" value={s(selected.updated_at)}/>
                                             <AdminField label="Mapel / subtes"><select className={adminInputClass} name="subject_code" required defaultValue={s(data.subjectById.get(s(selected.subject_id))?.code)}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
                                             <ReviewQuestionFields defaultType={s(selected.question_type)} optionsDefaultValue={serializeOptionRows(data.options)} middle={<>
-                                                <QuestionRichTextField name="stem" label="Pertanyaan" className="lg:col-span-2" required defaultValue={s(selected.stem)} minHeight="min-h-32"/>
+                                                <QuestionRichTextEditor name="stem" label="Pertanyaan" className="lg:col-span-2" required defaultValue={s(selected.stem)} minHeight="min-h-32"/>
                                                 <AdminField label="Tingkat kesulitan"><select className={adminInputClass} name="difficulty" defaultValue={s(selected.difficulty)}><option value="easy">Mudah</option><option value="medium">Sedang</option><option value="hard">Sulit</option></select></AdminField>
                                                 <AdminField label="Level kognitif"><input className={adminInputClass} name="cognitive_level" defaultValue={s(selected.cognitive_level)}/></AdminField>
                                                 <AdminField label="Estimasi detik"><input className={adminInputClass} type="number" min="1" name="estimated_seconds" defaultValue={s(selected.estimated_seconds)}/></AdminField>
@@ -456,7 +456,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                                                 <AdminField label="Stimulus"><select className={adminInputClass} name="stimulus_id" defaultValue={s(selected.stimulus_id)}><option value="">Tanpa stimulus</option>{data.stimulusCandidates.map((stimulus) => <option key={s(stimulus.id)} value={s(stimulus.id)}>{s(stimulus.stimulus_code)} · {s(stimulus.title) || s(stimulus.content).slice(0, 60)}</option>)}</select></AdminField>
                                                 <AdminField label="Materi utama"><select className={adminInputClass} name="knowledge_node_id" defaultValue={primaryNode ? s(primaryNode.knowledge_node_id) : ''}><option value="">Belum dipetakan</option>{data.subjectKnowledgeNodes.map((node) => <option key={s(node.id)} value={s(node.id)}>{'—'.repeat(Math.min(n(node.depth), 4))} {s(node.name)}</option>)}</select></AdminField>
                                             </>}/>
-                                            <QuestionRichTextField name="explanation" label="Pembahasan" className="lg:col-span-2" defaultValue={s(data.explanation?.content)} minHeight="min-h-32"/>
+                                            <QuestionRichTextEditor name="explanation" label="Pembahasan" className="lg:col-span-2" defaultValue={s(data.explanation?.content)} minHeight="min-h-32"/>
                                             <AdminField label="Alasan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Pembaruan dari Reviewer Workspace"/></AdminField>
                                             <div className="lg:col-span-2"><button className={adminPrimaryButtonClass}>Simpan perubahan</button></div>
                                         </ReviewDraftForm>

@@ -36,7 +36,7 @@ describe('upload gambar soal', () => {
 
     it('form soal dan review memakai field dengan tombol sisipkan gambar', () => {
         expect(source('components/admin/QuestionBankForm.tsx')).toContain('QuestionRichTextEditor')
-        expect(source('app/admin/content/review/page.tsx')).toContain('QuestionRichTextField')
+        expect(source('app/admin/content/review/page.tsx')).toContain('QuestionRichTextEditor')
     })
 
     it('editor opsi memakai tombol unggah gambar', () => {
@@ -48,16 +48,17 @@ describe('upload gambar soal', () => {
 })
 
 describe('tahap B — toolbar rumus', () => {
-    it('field teks soal dan editor opsi memakai FormulaToolbar', () => {
+    it('editor soal, editor opsi, dan form review memakai FormulaToolbar', () => {
+        expect(source('components/admin/QuestionRichTextEditor.tsx')).toContain('FormulaToolbar')
+        expect(source('components/admin/QuestionOptionsEditor.tsx')).toContain('QuestionRichTextEditor')
         expect(source('components/admin/QuestionRichTextField.tsx')).toContain('FormulaToolbar')
-        expect(source('components/admin/QuestionOptionsEditor.tsx')).toContain('FormulaToolbar')
     })
 
-    it('snippet disisipkan lewat helper yang menempatkan kursor', () => {
-        const field = source('components/admin/QuestionRichTextField.tsx')
-        expect(field).toContain('insertSnippet')
-        expect(field).toContain('snippet.cursorBack')
-        expect(source('components/admin/QuestionOptionsEditor.tsx')).toContain('insertLatexSnippet')
+    it('snippet disisipkan sebagai node rumus di editor visual', () => {
+        const editor = source('components/admin/QuestionRichTextEditor.tsx')
+        expect(editor).toContain('insertSnippet')
+        expect(editor).toContain('snippet.latex')
+        expect(source('components/admin/QuestionRichTextField.tsx')).toContain('snippet.cursorBack')
     })
 })
 
@@ -70,10 +71,14 @@ describe('sisa opsional — paste/drag-drop & kompresi', () => {
         expect(client).toContain('validateQuestionImage(')
     })
 
-    it('field soal dan isi opsi menerima tempel & tarik-lepas gambar', () => {
-        for (const file of ['components/admin/QuestionRichTextField.tsx', 'components/admin/QuestionOptionsEditor.tsx']) {
-            expect(source(file), file).toContain('useImagePasteDrop')
-        }
+    it('editor soal menerima tempel & tarik-lepas gambar', () => {
+        const editor = source('components/admin/QuestionRichTextEditor.tsx')
+        expect(editor).toContain('handlePasteCapture')
+        expect(editor).toContain('handleDropCapture')
+        expect(editor).toContain('onPasteCapture')
+        expect(editor).toContain('onDropCapture')
+        const fallback = source('components/admin/QuestionRichTextField.tsx')
+        expect(fallback).toContain('useImagePasteDrop')
         const hook = source('components/admin/useImagePasteDrop.ts')
         expect(hook).toContain('onPaste')
         expect(hook).toContain('onDrop')
@@ -102,5 +107,25 @@ describe('editor visual soal (WYSIWYG)', () => {
         expect(editor).toContain('handlePaste')
         expect(editor).toContain('handleDrop')
         expect(editor).toContain("name={name}")
+    })
+
+    it('isi opsi memakai editor visual ringkas tanpa input tersembunyi sendiri', () => {
+        const options = source('components/admin/QuestionOptionsEditor.tsx')
+        expect(options).toContain('<QuestionRichTextEditor')
+        expect(options).toContain('compact')
+        expect(options).toContain('hiddenInput={false}')
+        expect(options).not.toContain('<textarea')
+    })
+
+    it('form Review memakai editor visual, bukan textarea', () => {
+        const page = source('app/admin/content/review/page.tsx')
+        expect(page).toContain('QuestionRichTextEditor')
+        expect(page).not.toContain('QuestionRichTextField')
+    })
+
+    it('editor ringkas menyembunyikan daftar dan menaruh tombol gambar di toolbar', () => {
+        const editor = source('components/admin/QuestionRichTextEditor.tsx')
+        expect(editor).toContain('compact ?')
+        expect(editor).toContain('<FormulaToolbar compact={compact}')
     })
 })

@@ -113,7 +113,7 @@ async function browserTests(f) {
  await expect(page.locator('main h1')).toHaveText('Question Bank');
  // Deliberately absent from the filtered list, reproducing the previous fallback-answer corruption.
  const edit=base+`/admin/content/questions?program=CPNS&track=SKD&q=does-not-match&page=99&subject=TIU&edit=${f.questions[0]}`;
- await page.goto(edit);let dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog.getByRole('navigation',{name:'Bagian form soal'})).toBeVisible();await expect(dialog.getByLabel('Isi opsi A',{exact:true})).toHaveValue('|x|\nA');console.log('PASS guided editor and edit outside current list preserve original options');
+ await page.goto(edit);let dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog.getByRole('navigation',{name:'Bagian form soal'})).toBeVisible();await expect(dialog.getByLabel('Isi opsi A',{exact:true})).toContainText(/\|x\|\s*A/);assert.equal(JSON.parse(await dialog.locator('input[name=options]').inputValue())[0].content,'|x|\nA');console.log('PASS guided editor and edit outside current list preserve original options');
  await dialog.getByLabel('Pertanyaan',{exact:true}).fill('Browser QA');await dialog.getByLabel('Alasan perubahan',{exact:true}).fill('Browser regression');
  await dialog.getByLabel('Jawaban benar A',{exact:true}).uncheck();await dialog.getByRole('button',{name:'Simpan draf',exact:true}).click();await expect(dialog.getByRole('alert').filter({hasText:'tepat satu'})).toBeVisible();await expect(dialog.getByLabel('Pertanyaan',{exact:true})).toContainText('Browser QA');console.log('PASS server validation retains entered text');
  await expect(dialog.getByRole('button',{name:'Simpan draf',exact:true})).toBeEnabled();await dialog.getByLabel('Jawaban benar A',{exact:true}).check();await expect.poll(async()=>JSON.parse(await dialog.locator('input[name=options]').inputValue())[0].isCorrect).toBe(true);await dialog.getByRole('button',{name:'Pratinjau',exact:true}).click();await expect(dialog.getByRole('heading',{name:'Periksa tampilan sebelum disimpan'})).toBeVisible();await expect(dialog.getByText('Memuat pratinjau…',{exact:true})).toHaveCount(0);await page.screenshot({path:path.join(evidenceDir, 'validation-preview.png')});
@@ -129,7 +129,7 @@ async function browserTests(f) {
  await page.goto(base+'/admin/content/questions?program=CPNS&track=SKD');
  await page.getByRole('button',{name:'Tambah soal',exact:true}).click();
  await page.getByLabel('Pertanyaan',{exact:true}).fill('QA browser-created |x|');
- for(const letter of ['A','B','C','D']) await page.getByLabel('Isi opsi '+letter,{exact:true}).fill(letter+' |x|\nbaris kedua');
+ for(const letter of ['A','B','C','D']) await page.getByLabel('Isi opsi '+letter,{exact:true}).fill(letter+' |x|');
  await page.getByLabel('Jawaban benar A',{exact:true}).check();
  await page.getByLabel('Pembahasan',{exact:true}).fill('Pembahasan dibuat lewat browser.');
  await page.getByRole('button',{name:'Tutup modal',exact:true}).click();
@@ -138,6 +138,7 @@ async function browserTests(f) {
  await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('Pertanyaan',{exact:true})).toContainText('QA browser-created |x|');
  await page.getByRole('button',{name:'Simpan draf',exact:true}).click();await page.waitForURL(u=>u.searchParams.has('ok'));
  const created=check(await admin.from('questions').select('id,status').eq('author_id',f.users[0].id).like('stem','%QA browser-created |x|%').single());assert.equal(created.status,'draft');
+ const createdOption=check(await admin.from('question_options').select('content').eq('question_id',created.id).eq('option_key','A').single());assert.equal(createdOption.content,'<p>A |x|</p>');console.log('PASS isi opsi tersimpan sebagai HTML editor');
  console.log('PASS browser creation and unsaved-close protection');
  // Unggah gambar: pertanyaan & opsi (bucket question-images, folder questions/<uid>).
  // Setiap alur memakai modal BARU agar hitungan gambar tidak dipengaruhi unggahan sebelumnya.
@@ -155,6 +156,12 @@ async function browserTests(f) {
  await expect.poll(async()=>imageCount(uploadDialog),{timeout:30000}).toBeGreaterThanOrEqual(1);
  await uploadDialog.locator('input[data-upload-target="option-A"]').setInputFiles(pngFixture);
  await expect.poll(async()=>{const rows=JSON.parse(await uploadDialog.locator('input[name=options]').inputValue());return rows[0].imageUrl||''},{timeout:30000}).toMatch(/^https:\/\//);
+ const optionRow=uploadDialog.locator('[data-option-row="A"]');
+ await optionRow.locator('input[data-upload-target="option-content-A"]').setInputFiles(pngFixture);
+ await expect.poll(async()=>JSON.parse(await uploadDialog.locator('input[name=options]').inputValue())[0].content||'',{timeout:30000}).toContain('<img');
+ await optionRow.getByRole('button',{name:'Sisipkan rumus: Akar',exact:true}).click();
+ await expect.poll(async()=>JSON.parse(await uploadDialog.locator('input[name=options]').inputValue())[0].content||'',{timeout:10000}).toContain('data-latex');
+ console.log('PASS isi opsi menerima gambar & rumus lewat editor ringkas');
  await uploadDialog.getByRole('button',{name:'Sisipkan rumus: Pecahan',exact:true}).first().click();
  await expect(uploadDialog.locator('.katex').first()).toBeVisible();
  await expect.poll(async()=>stemHtml(uploadDialog),{timeout:10000}).toContain('data-latex');

@@ -1,13 +1,11 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { parseQuestionOptions } from '@/lib/question-options'
 import { Plus, Trash2 } from 'lucide-react'
 import { adminInputClass, adminLabelClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
-import FormulaToolbar from '@/components/admin/FormulaToolbar'
-import { useImagePasteDrop } from '@/components/admin/useImagePasteDrop'
 import QuestionImageButton from '@/components/admin/QuestionImageButton'
-import { insertLatexSnippet, type LatexSnippet } from '@/lib/latex-snippets'
+import QuestionRichTextEditor from '@/components/admin/QuestionRichTextEditor'
 
  type OptionRow = {
     /**
@@ -68,32 +66,28 @@ function nextKey(rows: OptionRow[]) {
 }
 
 /**
- * Isi opsi + toolbar rumus ringkas.
+ * Isi opsi dengan editor visual ringkas.
  *
- * Ref textarea disimpan per baris supaya snippet disisipkan di posisi kursor
- * baris yang sedang ditulis, bukan di akhir.
+ * Rumus dan gambar tampil langsung; nilai disimpan sebagai HTML di dalam JSON
+ * `options` (`<input type="hidden" name="options">`), sehingga editor ini tidak
+ * merender input tersembunyi sendiri (`hiddenInput={false}`).
  */
-function OptionContentField({ row, index, update }: {
-    row: OptionRow; index: number; update: (index: number, patch: Partial<OptionRow>) => void;
+function OptionContentField({ row, index, update, editable }: {
+    row: OptionRow; index: number; update: (index: number, patch: Partial<OptionRow>) => void; editable: boolean;
 }) {
-    const textareaRef = useRef<HTMLTextAreaElement>(null)
-    const { dragging, handlers } = useImagePasteDrop((url) => update(index, { imageUrl: url }))
-    function insert(snippet: LatexSnippet) {
-        const element = textareaRef.current
-        const start = element?.selectionStart ?? row.content.length
-        const end = element?.selectionEnd ?? row.content.length
-        const { value, cursor } = insertLatexSnippet(row.content, start, end, snippet)
-        update(index, { content: value })
-        requestAnimationFrame(() => {
-            element?.focus()
-            element?.setSelectionRange(cursor, cursor)
-        })
-    }
+    const suffix = row.key || index + 1
     return (
         <div className="space-y-1">
-            <span className={adminLabelClass}>Isi opsi {row.key || index + 1}</span>
-            <textarea ref={textareaRef} {...handlers} className={`${adminInputClass} min-h-11 resize-y ${dragging ? 'border-blue-400 ring-4 ring-blue-500/10' : ''}`} value={row.content} onChange={(event) => update(index, { content: event.target.value })} aria-label={`Isi opsi ${row.key || index + 1}`} required/>
-            <FormulaToolbar compact onInsert={insert}/>
+            <span className={adminLabelClass}>Isi opsi {suffix}</span>
+            <QuestionRichTextEditor
+                compact
+                hiddenInput={false}
+                name={`option-content-${suffix}`}
+                label={`Isi opsi ${suffix}`}
+                defaultValue={row.content}
+                onValueChange={(html) => update(index, { content: html })}
+                editable={editable}
+            />
         </div>
     )
 }
@@ -128,8 +122,8 @@ function OptionAdvancedFields({ row, index, update, requiredGroup }: {
     )
 }
 
-export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan jawaban', onChange, questionType = 'multiple_choice' }: {
-    defaultValue?: string; label?: string; onChange?: (payload: string) => void; questionType?: string;
+export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan jawaban', onChange, questionType = 'multiple_choice', editable = true }: {
+    defaultValue?: string; label?: string; onChange?: (payload: string) => void; questionType?: string; editable?: boolean;
 }) {
     const [rows, setRows] = useState<OptionRow[]>(() => parseDefaultValue(defaultValue))
     const isCategory = questionType === 'category'
@@ -182,13 +176,13 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
 
             <div className="space-y-3">
                 {rows.map((row, index) => (
-                    <div key={row.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <div key={row.id} data-option-row={row.key} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
                         <div className="grid gap-3 md:grid-cols-[88px_minmax(0,1fr)_120px_110px_auto] md:items-end">
                             <label className="space-y-1">
                                 <span className={adminLabelClass}>Kode</span>
                                 <input className={adminInputClass} required maxLength={16} value={row.key} onChange={(event) => update(index, { key: event.target.value.slice(0, 16) })} aria-label={`Kode opsi ${index + 1}`} />
                             </label>
-                            <OptionContentField row={row} index={index} update={update}/>
+                            <OptionContentField row={row} index={index} update={update} editable={editable}/>
                             <label className="space-y-1">
                                 <span className={adminLabelClass}>Skor</span>
                                 <input className={adminInputClass} inputMode="decimal" value={row.score} onChange={(event) => update(index, { score: event.target.value })} aria-label={`Skor opsi ${row.key || index + 1}`} placeholder="Opsional" />

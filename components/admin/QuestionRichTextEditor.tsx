@@ -18,12 +18,17 @@ import type { LatexSnippet } from '@/lib/latex-snippets'
 import { cn } from '@/lib/utils'
 
 /**
- * Editor visual soal (Pertanyaan/Pembahasan).
+ * Editor visual soal (Pertanyaan/Pembahasan/isi opsi).
  *
  * Rumus dan gambar tampil langsung sebagai hasil render — penulis tidak pernah
  * melihat `$...$` atau `[[image:...]]`. Format simpan tetap HTML
  * (`<span data-latex>`, `<div data-latex-block>`, `<img>`), dan renderer
  * (`MathRenderer`) mendukung format itu sekaligus format lama.
+ *
+ * Dua tata letak:
+ *   - penuh (default) untuk Pertanyaan/Pembahasan — label, tombol teks, daftar;
+ *   - `compact` untuk isi opsi — tanpa label sendiri (dipakai induk), toolbar
+ *     ringkas, dan tinggi satu baris.
  */
 
 function MathInlineView({ node }: NodeViewProps) {
@@ -117,8 +122,11 @@ export default function QuestionRichTextEditor({
     error,
     fieldId,
     className,
-    minHeight = 'min-h-36',
+    minHeight,
     editable = true,
+    compact = false,
+    required = false,
+    hiddenInput = true,
 }: {
     name: string
     label: string
@@ -132,12 +140,38 @@ export default function QuestionRichTextEditor({
     minHeight?: string
     /** False = read-only (soal terkunci/approval). */
     editable?: boolean
+    /** True = tata letak ringkas untuk isi opsi (tanpa label, toolbar kecil). */
+    compact?: boolean
+    /** True = form dicegah tersubmit saat konten masih kosong. */
+    required?: boolean
+    /** False = tidak merender `<input type="hidden" name>`; nilai dibawa field lain (mis. JSON opsi). */
+    hiddenInput?: boolean
 }) {
     const initialHtml = useMemo(() => questionTextToEditorHtml(defaultValue), [defaultValue])
     const [html, setHtml] = useState(initialHtml)
     const [uploading, setUploading] = useState(false)
+    const [missing, setMissing] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const editorRef = useRef<Editor | null>(null)
+    const rootRef = useRef<HTMLDivElement>(null)
+    const heightClass = minHeight ?? (compact ? 'min-h-11' : 'min-h-36')
+
+    /**
+     * Lapor perubahan untuk aksi programatik (unggah gambar, tombol rumus).
+     *
+     * `onUpdate` hanya melapor saat editor fokus; aksi lewat tombol/file input
+     * tidak selalu memindahkan fokus ke ProseMirror, sehingga tanpa jalur ini
+     * form induk menganggap tidak ada perubahan (dirty hilang, JSON opsi tetap
+     * kosong).
+     */
+    function publish() {
+        const instance = editorRef.current
+        if (!instance?.isEditable) return
+        const next = instance.getHTML()
+        setHtml(next)
+        setMissing(false)
+        onValueChange?.(next)
+    }
 
     async function insertImageFromFile(file: File) {
         try {
@@ -150,6 +184,7 @@ export default function QuestionRichTextEditor({
                 // (dua unggahan beruntun sebelumnya saling menggantikan).
                 const { from, to } = editor.state.selection
                 editor.chain().focus().insertContentAt(from === to ? from : to, { type: 'image', attrs: { src: url, alt: '' } }).run()
+                publish()
             }
             toast.success('Gambar diunggah.')
         } catch (uploadError) {
@@ -172,7 +207,12 @@ export default function QuestionRichTextEditor({
         content: initialHtml,
         editorProps: {
             attributes: {
-                class: cn('px-3 py-2.5 text-sm font-medium leading-7 text-slate-900 outline-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5', minHeight),
+                class: cn('px-3 py-2.5 text-sm font-medium leading-7 text-slate-900 outline-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:my-1 [&_img]:max-w-full', heightClass),
+                // Tanpa role eksplisit, Chromium mengekspos div contenteditable
+                // sebagai `generic` — pembaca layar dan locator role=textbox
+                // (dipakai spec review) tidak menemukannya sebagai field teks.
+                role: 'textbox',
+                'aria-multiline': 'true',
                 'aria-label': label,
             },
         },
@@ -183,6 +223,7 @@ export default function QuestionRichTextEditor({
             // normalisasi dokumen saat mount tidak boleh menandai form dirty
             // (dulu itu memicu dialog konfirmasi sebelum admin mengubah apa pun).
             setHtml(next)
+            setMissing(false)
             if (instance.isEditable && instance.isFocused) onValueChange?.(next)
         },
     })
@@ -194,6 +235,25 @@ export default function QuestionRichTextEditor({
     useEffect(() => {
         editor?.setEditable(editable)
     }, [editor, editable])
+
+    /**
+     * Pengganti atribut `required` untuk contenteditable: browser tidak bisa
+     * memvalidasi div, jadi form dicegat saat submit. Tanpa ini field `required`
+     * di form Review (yang mengandalkan validasi native) kehilangan penjagaannya.
+     */
+    useEffect(() => {
+        if (!required || !editor) return
+        const form = rootRef.current?.closest('form')
+        if (!form) return
+        const guard = (event: SubmitEvent) => {
+            if (!editor.isEmpty) return
+            event.preventDefault()
+            setMissing(true)
+            editor.commands.focus()
+        }
+        form.addEventListener('submit', guard)
+        return () => form.removeEventListener('submit', guard)
+    }, [required, editor])
 
     function firstImage(files: FileList | null | undefined) {
         return Array.from(files ?? []).find((candidate) => candidate.type.startsWith('image/'))
@@ -223,28 +283,30 @@ export default function QuestionRichTextEditor({
         editor.chain().focus().insertContent(snippet.block
             ? { type: 'mathBlock', attrs: { latex: snippet.latex } }
             : { type: 'mathInline', attrs: { latex: snippet.latex } }).run()
+        publish()
     }
 
     const errorId = fieldId && error ? `${fieldId}-error` : undefined
     const hintId = fieldId && hint ? `${fieldId}-hint` : undefined
+    const message = error ?? (missing ? 'Wajib diisi sebelum menyimpan.' : undefined)
 
     return (
-        <div className={cn('block space-y-1.5', className)}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className={adminLabelClass}>{label}</span>
-                <span className="inline-flex items-center gap-1.5">
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept={QUESTION_IMAGE_ACCEPT}
-                        className="hidden"
-                        aria-label={`Unggah gambar untuk ${label.toLowerCase()}`}
-                        data-upload-target={name}
-                        onChange={(event) => {
-                            const file = event.target.files?.[0]
-                            if (file) void insertImageFromFile(file)
-                        }}
-                    />
+        <div ref={rootRef} className={cn('block', compact ? 'space-y-1' : 'space-y-1.5', className)}>
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept={QUESTION_IMAGE_ACCEPT}
+                className="hidden"
+                aria-label={`Unggah gambar untuk ${label.toLowerCase()}`}
+                data-upload-target={name}
+                onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) void insertImageFromFile(file)
+                }}
+            />
+            {!compact ? (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className={adminLabelClass}>{label}</span>
                     <button
                         type="button"
                         disabled={uploading}
@@ -255,31 +317,47 @@ export default function QuestionRichTextEditor({
                         {uploading ? <Loader2 className="animate-spin" size={15}/> : <ImagePlus size={15}/>}
                         <span>Sisipkan gambar</span>
                     </button>
-                </span>
-            </div>
+                </div>
+            ) : null}
             {hint ? <span id={hintId} className="block text-xs font-medium leading-5 text-slate-500">{hint}</span> : null}
             <div
                 className="overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10"
                 onPasteCapture={handlePasteCapture}
                 onDropCapture={handleDropCapture}
             >
-                <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/70 p-2">
+                <div className={cn('flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/70', compact ? 'p-1.5' : 'p-2')}>
                     {editor ? (
                         <>
                             <ToolbarButton title="Tebal" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={15}/></ToolbarButton>
                             <ToolbarButton title="Miring" active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={15}/></ToolbarButton>
-                            <ToolbarButton title="Daftar butir" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={15}/></ToolbarButton>
-                            <ToolbarButton title="Daftar nomor" active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={15}/></ToolbarButton>
+                            {!compact ? (
+                                <>
+                                    <ToolbarButton title="Daftar butir" active={editor.isActive('bulletList')} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={15}/></ToolbarButton>
+                                    <ToolbarButton title="Daftar nomor" active={editor.isActive('orderedList')} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={15}/></ToolbarButton>
+                                </>
+                            ) : null}
                             <div className="mx-1 h-6 w-px bg-slate-200"/>
                         </>
                     ) : null}
-                    <FormulaToolbar onInsert={insertSnippet}/>
+                    <FormulaToolbar compact={compact} onInsert={insertSnippet}/>
+                    {compact ? (
+                        <button
+                            type="button"
+                            disabled={uploading}
+                            onClick={() => fileInputRef.current?.click()}
+                            title={`Sisipkan gambar ke ${label.toLowerCase()}`}
+                            aria-label={`Sisipkan gambar ke ${label.toLowerCase()}`}
+                            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        >
+                            {uploading ? <Loader2 className="animate-spin" size={13}/> : <ImagePlus size={13}/>}
+                        </button>
+                    ) : null}
                 </div>
                 <EditorContent editor={editor}/>
             </div>
-            {error ? <span id={errorId} role="alert" className="block text-xs font-bold text-red-700">{error}</span> : null}
-            {placeholder && editor?.isEmpty ? <span className="sr-only">{placeholder}</span> : null}
-            <input type="hidden" name={name} value={html}/>
+            {message ? <span id={errorId} role="alert" className="block text-xs font-bold text-red-700">{message}</span> : null}
+            {!compact && placeholder && editor?.isEmpty ? <span className="sr-only">{placeholder}</span> : null}
+            {hiddenInput ? <input type="hidden" name={name} value={html}/> : null}
         </div>
     )
 }

@@ -439,9 +439,19 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   6 ber-`$`, 7 ber-gambar, **0 campuran HTML+math**).
 - Editor read-only saat soal terkunci; update inisialisasi tidak lagi menandai form "dirty" (dulu
   memicu dialog konfirmasi sebelum admin mengubah apa pun).
-- Verifikasi: **684 unit test / 93 file**; gate QB lulus (unggah/drop/rumus + kompresi 3,44 MB →
-  756 KB + workflow publish/revise); gate Review 5 passed; gate admin 60 passed.
-- Tahap berikutnya: editor yang sama untuk **isi opsi** dan form **Review Queue**.
+- **Isi opsi & form Review Queue kini memakai editor yang sama.** Isi opsi memakai mode ringkas
+  (tanpa daftar; tombol gambar ikon di toolbar) dan menyimpan HTML di dalam JSON `options`.
+  Soal lama yang belum disentuh tetap utuh — hidden `options` tidak berubah sampai penulis
+  mengedit baris tersebut; begitu diedit, baris itu dinormalkan ke HTML (`<p>…</p>`).
+- Dua jebakan yang ditutup saat integrasi: (1) aksi programatik (unggah gambar, tombol rumus)
+  kini melapor eksplisit ke form (`publish()`) karena `onUpdate` hanya melapor saat editor fokus;
+  (2) div `contenteditable` diberi `role="textbox"` eksplisit agar Chrome mengeksposnya sebagai
+  field teks (pembaca layar + locator role). `required` pada editor dijaga di event submit form.
+- Verifikasi: **687 unit test / 93 file**; gate QB lulus (unggah/drop/rumus + kompresi 3,44 MB →
+  756 KB + isi opsi HTML/gambar/rumus + workflow publish/revise); gate Review 5 passed; gate admin
+  60 passed.
+- Tahap berikutnya (opsional): pindah `QuestionRichTextField` yang kini tak terpakai, dan
+  normalisasi HTML massal untuk soal lama bila diinginkan.
 
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
@@ -459,7 +469,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **684 unit test / 93 file** · build lolos.
+- Lint 0/0 · typecheck · **687 unit test / 93 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -486,7 +496,8 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `components/admin/ArticleRichTextEditor.tsx`, `lib/latex-snippets.ts` (baru),
 `components/admin/FormulaToolbar.tsx` (baru), `lib/question-media-client.ts` (baru),
 `components/admin/useImagePasteDrop.ts` (baru), `components/admin/QuestionRichTextEditor.tsx` (baru),
-`components/MathRenderer.tsx`, `lib/question-rich-text.ts`, `supabase/migrations/20260922120000_*.sql`,
+`components/admin/QuestionOptionsEditor.tsx`, `components/MathRenderer.tsx`, `lib/question-rich-text.ts`,
+`supabase/migrations/20260922120000_*.sql`,
 `app/admin/assessment/exams/AdminExamsWorkspace.tsx`, `app/admin/audit/page.tsx`,
 `tests/e2e/specs/10-admin-workspace-authenticated.spec.ts`,
 `supabase/migrations/20260922010000_*.sql`,
