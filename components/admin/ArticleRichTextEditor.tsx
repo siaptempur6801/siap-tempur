@@ -98,9 +98,9 @@ function ImageButton({ editor }: { editor: Editor }) {
       if (userError || !user) throw new Error('Sesi login tidak valid')
       const fileExt = file.name.split('.').pop() || 'png'
       const fileName = `articles/${user.id}/content-${Date.now()}-${crypto.randomUUID()}.${fileExt}`
-      const { error: uploadError } = await supabase.storage.from('question-images').upload(fileName, file)
+      const { error: uploadError } = await supabase.storage.from('article-images').upload(fileName, file)
       if (uploadError) throw new Error(uploadError.message)
-      const { data } = supabase.storage.from('question-images').getPublicUrl(fileName)
+      const { data } = supabase.storage.from('article-images').getPublicUrl(fileName)
       editor.chain().focus().setImage({ src: data.publicUrl }).run()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gagal mengupload gambar')

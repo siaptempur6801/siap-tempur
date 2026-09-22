@@ -139,6 +139,18 @@ async function browserTests(f) {
  await page.getByRole('button',{name:'Simpan draf',exact:true}).click();await page.waitForURL(u=>u.searchParams.has('ok'));
  const created=check(await admin.from('questions').select('id,status').eq('author_id',f.users[0].id).eq('stem','QA browser-created |x|').single());assert.equal(created.status,'draft');
  console.log('PASS browser creation and unsaved-close protection');
+ // Unggah gambar: pertanyaan & opsi (bucket question-images, folder questions/<uid>).
+ const pngFixture=path.join(os.tmpdir(), `qb-upload-${Date.now()}.png`);
+ fs.writeFileSync(pngFixture, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64'));
+ await page.goto(base+'/admin/content/questions?program=CPNS&track=SKD');
+ await page.getByRole('button',{name:'Tambah soal',exact:true}).click();
+ const uploadDialog=page.getByRole('dialog');
+ await uploadDialog.getByLabel('Pertanyaan',{exact:true}).fill('Uji unggah gambar');
+ await uploadDialog.locator('input[data-upload-target="stem"]').setInputFiles(pngFixture);
+ await expect.poll(async()=>uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue(),{timeout:30000}).toContain('[[image:https://');
+ await uploadDialog.locator('input[data-upload-target="option-A"]').setInputFiles(pngFixture);
+ await expect.poll(async()=>{const rows=JSON.parse(await uploadDialog.locator('input[name=options]').inputValue());return rows[0].imageUrl||''},{timeout:30000}).toMatch(/^https:\/\//);
+ console.log('PASS unggah gambar pertanyaan & opsi');
  const authState = await context.storageState();
  console.log('Console errors:',JSON.stringify(errors));expect(errors).toEqual([]);await browser.close(); return authState;
 }
@@ -174,6 +186,8 @@ async function cleanup() {
         check(await admin.from('questions').delete().in('id',questions))
     }
     for(const id of ids) {
+        const {data: uploaded}=await admin.storage.from('question-images').list(`questions/${id}`)
+        if(uploaded?.length) await admin.storage.from('question-images').remove(uploaded.map(f=>`questions/${id}/${f.name}`))
         const wallets=check(await admin.from('wallets').select('id').eq('user_id',id)).map(w=>w.id)
         if(wallets.length) check(await admin.from('wallet_transactions').delete().in('wallet_id',wallets))
         for(const [table,column] of [['audit_logs','actor_user_id'],['user_roles','user_id'],['user_tracks','user_id'],['wallets','user_id']]) check(await admin.from(table).delete().eq(column,id))

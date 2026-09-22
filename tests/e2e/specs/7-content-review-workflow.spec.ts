@@ -113,7 +113,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
 
     await form.getByLabel('Mapel / subtes').selectOption('BIN')
     await form.getByLabel('Tipe soal').selectOption('single_choice')
-    await form.getByLabel('Pertanyaan').fill(uniqueStem)
+    await form.getByRole('textbox', { name: 'Pertanyaan', exact: true }).fill(uniqueStem)
     await form.getByLabel('Tingkat kesulitan').selectOption('medium')
     await form.getByLabel('Level kognitif').fill('application')
     await form.getByLabel('Estimasi detik').fill('60')
@@ -124,7 +124,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await form.getByLabel('Isi opsi D').fill('Distraktor tiga')
     await form.getByLabel('Jawaban benar A').check()
     await expect(form.getByLabel('Jawaban benar A')).toBeChecked()
-    await form.getByLabel('Pembahasan').fill('Pembahasan E2E: pilihan A adalah jawaban yang benar.')
+    await form.getByRole('textbox', { name: 'Pembahasan', exact: true }).fill('Pembahasan E2E: pilihan A adalah jawaban yang benar.')
     await followServerAction(editorPage, form.getByRole('button', { name: 'Simpan draft' }))
     await expect(editorPage.getByText('Draft soal tersimpan.')).toBeVisible()
 
@@ -132,13 +132,13 @@ test('author → reviewer → editorial → academic → technical QA → publis
     expect(questionId).toMatch(/^[0-9a-f-]{36}$/i)
 
     await expect(editorPage.getByRole('heading', { name: 'Ubah draf / revisi' })).toBeVisible()
-    await expect(editorPage.getByLabel('Pertanyaan')).toHaveValue(uniqueStem)
+    await expect(editorPage.getByRole('textbox', { name: 'Pertanyaan', exact: true })).toHaveValue(uniqueStem)
     // Regresi: form edit pernah menampilkan opsi contoh kosong (A–D) alih-alih
     // opsi tersimpan setelah editor dipindah ke ReviewQuestionFields.
     await expect(editorPage.getByLabel('Isi opsi A')).toHaveValue('Jawaban benar')
     await expect(editorPage.getByLabel('Isi opsi D')).toHaveValue('Distraktor tiga')
     await expect(editorPage.getByLabel('Jawaban benar A')).toBeChecked()
-    await expect(editorPage.getByLabel('Pembahasan')).toHaveValue('Pembahasan E2E: pilihan A adalah jawaban yang benar.')
+    await expect(editorPage.getByRole('textbox', { name: 'Pembahasan', exact: true })).toHaveValue('Pembahasan E2E: pilihan A adalah jawaban yang benar.')
 
     await followServerAction(editorPage, editorPage.getByRole('button', { name: /Kirim ke Editorial Review/ }))
     await expect(editorPage.getByText('Soal dikirim ke Editorial Review.')).toBeVisible()

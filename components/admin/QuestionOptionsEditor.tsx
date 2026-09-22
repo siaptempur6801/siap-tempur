@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { parseQuestionOptions } from '@/lib/question-options'
 import { Plus, Trash2 } from 'lucide-react'
 import { adminInputClass, adminLabelClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import QuestionImageButton from '@/components/admin/QuestionImageButton'
 
  type OptionRow = {
     /**
@@ -86,7 +87,7 @@ function OptionAdvancedFields({ row, index, update, requiredGroup }: {
                 <input className={adminInputClass} inputMode="numeric" value={row.responseGroupOrder} onChange={(event) => update(index, { responseGroupOrder: event.target.value })} aria-label={`Group order ${suffix}`}/>
             </label>
             <label className="space-y-1">
-                <span className={adminLabelClass}>URL gambar (https)</span>
+                <span className={adminLabelClass}>URL gambar (manual)</span>
                 <input type="url" className={adminInputClass} value={row.imageUrl} onChange={(event) => update(index, { imageUrl: event.target.value })} aria-label={`Image URL ${suffix}`}/>
             </label>
         </div>
@@ -165,7 +166,7 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
                                 <input type="checkbox" checked={row.isCorrect === true} onChange={(event) => update(index, { isCorrect: event.target.checked })} aria-label={`Jawaban benar ${row.key || index + 1}`} className="h-4 w-4 rounded border-slate-300 text-blue-600" />
                                 Benar
                             </label>
-                            <button type="button" onClick={() => removeRow(index)} disabled={rows.length <= 2} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30" aria-label={`Hapus opsi ${row.key || index + 1}`}><Trash2 size={16}/></button>
+                            <div className="flex items-center gap-1.5"><QuestionImageButton compact ariaLabel={`Gambar opsi ${row.key || index + 1}`} value={row.imageUrl || null} onUploaded={(url) => update(index, { imageUrl: url })} onClear={() => update(index, { imageUrl: '' })} testId={`option-${row.key || index + 1}`}/><button type="button" onClick={() => removeRow(index)} disabled={rows.length <= 2} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30" aria-label={`Hapus opsi ${row.key || index + 1}`}><Trash2 size={16}/></button></div>
                         </div>
 
                         {isCategory ? (

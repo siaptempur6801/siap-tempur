@@ -391,6 +391,24 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   dari commit `565db82`.
 - Verifikasi: **653 unit test / 90 file**; gate Review 5 passed; gate admin 60 passed.
 
+### Tahap A — upload gambar soal & opsi (2026-09-22)
+- Bucket `question-images` dipakai untuk gambar soal: policy baru `question_images_content_upload`
+  (folder `questions/<uid>/`, permission `content.create`/`content.update`/`question.manage`) plus policy
+  hapus untuk berkas sendiri. Policy lama yang memeriksa kolom `profiles.role` (sudah dihapus di
+  Schema V2) dibuang.
+- **Bug diperbaiki:** `ArticleRichTextEditor` mengunggah ke bucket `question-images` dengan folder
+  `articles/` — selalu gagal; kini memakai bucket `article-images` seperti `ArticleForm`.
+- Helper murni `lib/question-media.ts`: validasi (2 MB, jpg/png/webp/gif), path per pengguna, markup
+  `[[image:url]]`, dan penyisipan di posisi kursor — dikunci 11 unit test + 4 kontrak.
+- UI: `QuestionRichTextField` (tombol "Sisipkan gambar" pada Pertanyaan & Pembahasan; dipakai Question
+  Bank **dan** Review Queue) dan `QuestionImageButton` (unggah + pratinjau + hapus pada setiap opsi).
+  Pratinjau memakai `MathRenderer` yang sudah ada.
+- Gate QB menambah langkah unggah nyata (pertanyaan + opsi) dan membersihkan berkas storage di `finally`;
+  staging 0 sisa berkas uji.
+- Migration `20260922120000_question_image_upload_v1.sql` **ter-apply di staging**; **produksi menunggu GO**.
+- Verifikasi: **666 unit test / 92 file**; gate QB lulus; gate Review 5 passed; gate admin 60 passed.
+- Tahap B (toolbar snippet rumus LaTeX) belum dikerjakan.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
@@ -407,7 +425,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **653 unit test / 90 file** · build lolos.
+- Lint 0/0 · typecheck · **666 unit test / 92 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -429,7 +447,9 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `tests/unit/review-assign-policy.test.ts`, `lib/question-source.ts` (baru),
 `tests/unit/question-source-placeholder.test.ts` (baru), `tests/unit/review-options-preserved.test.ts` (baru), `tests/unit/admin-product-status-case.test.ts` (baru), `tests/unit/admin-display-labels.test.ts` (baru),
 `components/admin/ReviewQuestionFields.tsx`, `components/admin/ArticleStatusActions.tsx`,
-`components/admin/AdminListToolbar.tsx`,
+`components/admin/AdminListToolbar.tsx`, `lib/question-media.ts` (baru),
+`components/admin/QuestionImageButton.tsx` (baru), `components/admin/QuestionRichTextField.tsx` (baru),
+`components/admin/ArticleRichTextEditor.tsx`, `supabase/migrations/20260922120000_*.sql`,
 `app/admin/assessment/exams/AdminExamsWorkspace.tsx`, `app/admin/audit/page.tsx`,
 `tests/e2e/specs/10-admin-workspace-authenticated.spec.ts`,
 `supabase/migrations/20260922010000_*.sql`,
