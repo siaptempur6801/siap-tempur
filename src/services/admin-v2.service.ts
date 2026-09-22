@@ -83,6 +83,14 @@ const ADMIN_DOMAIN_LISTS: Record<AdminDomainList, {
     searchColumns: readonly string[]
     orderColumn: string
     orderAscending: boolean
+    /**
+     * Bentuk kanonik kolom `status` domain ini.
+     *
+     * `products`/`product_prices` memakai HURUF BESAR (dikunci CHECK constraint
+     * `status = upper(status)`), tabel lain huruf kecil. Filter yang tidak
+     * menyesuaikan diri akan selalu mengembalikan nol baris.
+     */
+    statusCase: 'upper' | 'lower'
 }> = {
     products: {
         table: 'products',
@@ -90,6 +98,7 @@ const ADMIN_DOMAIN_LISTS: Record<AdminDomainList, {
         searchColumns: ['code', 'name', 'description'],
         orderColumn: 'updated_at',
         orderAscending: false,
+        statusCase: 'upper',
     },
     events: {
         table: 'events',
@@ -97,6 +106,7 @@ const ADMIN_DOMAIN_LISTS: Record<AdminDomainList, {
         searchColumns: ['code', 'title', 'slug'],
         orderColumn: 'starts_at',
         orderAscending: false,
+        statusCase: 'lower',
     },
     exams: {
         table: 'exams',
@@ -104,6 +114,7 @@ const ADMIN_DOMAIN_LISTS: Record<AdminDomainList, {
         searchColumns: ['title', 'slug'],
         orderColumn: 'updated_at',
         orderAscending: false,
+        statusCase: 'lower',
     },
     questions: {
         table: 'questions',
@@ -111,6 +122,7 @@ const ADMIN_DOMAIN_LISTS: Record<AdminDomainList, {
         searchColumns: ['question_code', 'stem'],
         orderColumn: 'updated_at',
         orderAscending: false,
+        statusCase: 'lower',
     },
 }
 
@@ -186,7 +198,7 @@ export class AdminV2Service {
             // diperiksa sebagai nilai truthy: `''` akan menjadi `uuid = ''` dan
             // PostgREST menolaknya.
             if (options.id) query = query.eq('id', options.id)
-            if (status) query = query.eq('status', status)
+            if (status) query = query.eq('status', spec.statusCase === 'upper' ? status.toUpperCase() : status)
             if (subject && spec.table === 'questions') {
                 query = (query as unknown as { eq: (column: string, value: string) => T }).eq('subject_id', subjectId) as T
             }
@@ -254,7 +266,7 @@ export class AdminV2Service {
             .select('id', { count: 'exact', head: true })
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
-        if (options.status) query = query.eq('status', options.status)
+        if (options.status) query = query.eq('status', spec.statusCase === 'upper' ? options.status.toUpperCase() : options.status)
         if (options.subject) {
             query = (query as unknown as { eq: (column: string, value: string) => typeof query }).eq('subject_id', options.subject) as typeof query
         }
@@ -453,6 +465,12 @@ export class AdminV2Service {
         if (!validNonNegative(input.tokenGrant)) throw new Error('TOKEN_GRANT_INVALID')
         if (!validPositive(input.durationDays)) throw new Error('PRODUCT_DURATION_INVALID')
 
+        // `products`/`product_prices` memakai HURUF BESAR (dikunci CHECK
+        // constraint `status = upper(status)`), sedangkan nilai dari form huruf
+        // kecil — tanpa normalisasi ini simpan produk gagal check_violation.
+        const status = input.status.trim().toUpperCase()
+        if (!['DRAFT', 'ACTIVE', 'ARCHIVED'].includes(status)) throw new Error('PRODUCT_STATUS_INVALID')
+
         let productId = input.id ?? null
         if (productId) {
             const { data: current, error: currentError } = await admin
@@ -472,7 +490,7 @@ export class AdminV2Service {
                     description: input.description?.trim() || null,
                     product_type: input.productType,
                     duration_days: input.durationDays ?? null,
-                    status: input.status,
+                    status,
                     updated_at: nowIso(),
                 })
                 .eq('id', productId)
@@ -488,7 +506,7 @@ export class AdminV2Service {
                     program_id: catalog.program.id,
                     track_id: catalog.track.id,
                     duration_days: input.durationDays ?? null,
-                    status: input.status,
+                    status,
                 })
                 .select('id')
                 .single()
@@ -499,7 +517,7 @@ export class AdminV2Service {
         if (input.price !== null && input.price !== undefined) {
             const { error: deactivateError } = await admin
                 .from('product_prices')
-                .update({ status: 'inactive', ends_at: nowIso() })
+                .update({ status: 'INACTIVE', ends_at: nowIso() })
                 .eq('product_id', productId)
                 .in('status', ['active', 'ACTIVE'])
                 .is('ends_at', null)

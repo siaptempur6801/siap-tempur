@@ -120,9 +120,9 @@ function PermissionEmpty({ permission }: { permission: string }) {
  */
 const DOMAIN_STATUS_OPTIONS: Record<'products' | 'events' | 'questions', ReadonlyArray<{ value: string; label: string }>> = {
     products: [
-        { value: 'draft', label: 'Draf' },
-        { value: 'active', label: 'Aktif' },
-        { value: 'archived', label: 'Diarsipkan' },
+        { value: 'DRAFT', label: 'Draf' },
+        { value: 'ACTIVE', label: 'Aktif' },
+        { value: 'ARCHIVED', label: 'Diarsipkan' },
     ],
     events: [
         { value: 'draft', label: 'Draf' },
@@ -351,7 +351,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                     <AdminField label="Kode"><input className={adminInputClass} name="code" required defaultValue={s(editedProduct?.code)} placeholder={`${program}_${track}_PRODUCT`}/></AdminField>
                     <AdminField label="Nama"><input className={adminInputClass} name="name" required defaultValue={s(editedProduct?.name)}/></AdminField>
                     <AdminField label="Jenis"><select className={adminInputClass} name="product_type" defaultValue={s(editedProduct?.product_type) || 'PASS'}><option>TOKEN_PACK</option><option>PASS</option><option>EVENT_TICKET</option></select></AdminField>
-                    <AdminField label="Status"><select className={adminInputClass} name="status" defaultValue={s(editedProduct?.status) || 'draft'}><option value="draft">Draft</option><option value="active">Active</option><option value="archived">Archived</option></select></AdminField>
+                    <AdminField label="Status"><select className={adminInputClass} name="status" defaultValue={s(editedProduct?.status) || 'DRAFT'}><option value="DRAFT">Draft</option><option value="ACTIVE">Active</option><option value="ARCHIVED">Archived</option></select></AdminField>
                     <AdminField label="Harga"><input className={adminInputClass} name="price" type="number" min="0" defaultValue={editedProductPrice ? s(editedProductPrice.amount) : ''}/></AdminField>
                     <input type="hidden" name="current_price" value={editedProductPrice ? s(editedProductPrice.amount) : ''}/>
                     <AdminField label="Token grant"><input className={adminInputClass} name="token_grant" type="number" min="0" defaultValue={editedProduct ? grantByProduct.get(s(editedProduct.id)) ?? 0 : ''}/></AdminField>

@@ -322,13 +322,20 @@ test.describe('Admin content modules after legacy tree removal', () => {
     // Panel review massal untuk batch CPNS. Alur review normal hanya satu soal
     // per form; panel ini yang memakai RPC massal (`claim_pilot_review_stage` +
     // `bulk_review_pilot_stage`) sehingga satu batch 80 soal tidak perlu ~1.700
-    // klik. Yang dibuktikan di sini adalah panelnya benar-benar terpasang di
-    // halaman kanonik pada konteks CPNS/SKD — bukan sekadar ada di dalam repo.
+    // klik. Sejak alur disederhanakan, panel ini berada di mode khusus yang
+    // dibuka lewat tombol "Buka review massal" (`?bulk=1`) — yang dibuktikan di
+    // sini adalah panelnya benar-benar terpasang di halaman kanonik pada konteks
+    // CPNS/SKD, bukan sekadar ada di dalam repo.
+    await page.getByRole('link', { name: 'Buka review massal', exact: true }).click()
+    await expect(page).toHaveURL(/[?&]bulk=1/)
     await expect(page.getByRole('heading', { name: 'Review massal — batch' })).toBeVisible()
     await expect(page.getByText('cpns-full-tryout-1', { exact: true })).toBeVisible()
     await expect(page.getByText('Sebaran status', { exact: true })).toBeVisible()
     await expect(page.getByText('Belum ada reviewer', { exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Siapkan & klaim' })).toBeVisible()
+    // Langkah 1 selalu tampil untuk pemegang content.review; label tombolnya
+    // mengikuti keadaan batch (siapkan draft vs sudah disiapkan semua).
+    await expect(page.getByRole('heading', { name: 'Langkah 1 · Siapkan & klaim' })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^(Siapkan \d+ soal|Sudah disiapkan)$/ })).toBeVisible()
     await expectNoHorizontalOverflow(page)
   })
 

@@ -323,6 +323,20 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
 - Dikunci: 2 unit test + gate Review kini memeriksa nilai opsi A/D dan checkbox "Jawaban benar A"
   setelah draft dibuat. 637 unit test / 88 file.
 
+### P1 audit tampilan — status produk huruf besar (2026-09-22)
+- `products`/`product_prices` memakai **HURUF BESAR** (dikunci CHECK `status = upper(status)`), tetapi
+  form, filter, dan penulisan memakai huruf kecil. Akibatnya: filter "Aktif" **selalu 0 baris**
+  (0 baris `active` vs 15 `ACTIVE`), simpan/edit produk gagal `check_violation` 23514, dan harga lama
+  dinonaktifkan dengan `inactive` yang juga melanggar constraint.
+- Perbaikan: `ADMIN_DOMAIN_LISTS.products.statusCase = 'upper'` (filter + hitungan menyesuaikan),
+  `saveProduct` menormalkan `input.status.trim().toUpperCase()` + validasi `DRAFT/ACTIVE/ARCHIVED`,
+  deaktivasi harga memakai `INACTIVE`, opsi form/filter memakai nilai uppercase.
+- Bukti langsung (transaksi rollback): tulis `active` ditolak 23514; `ACTIVE`/`INACTIVE` lolos.
+- Dikunci 3 unit test. Spec 10 juga diperbarui mengikuti alur review massal baru (panel di balik
+  `?bulk=1`, tombol langkah 1 dinamis) — **gate admin 60 passed, exit 0**.
+- Sisa temuan audit tampilan (P2, belum dikerjakan): label `settlement` mentah, tipe soal/produk
+  mentah, campur bahasa tombol/label.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
@@ -339,7 +353,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **637 unit test / 88 file** · build lolos.
+- Lint 0/0 · typecheck · **640 unit test / 89 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -359,7 +373,8 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `tests/unit/review-draft-concurrency.test.ts`, `tests/unit/review-batch-n1.test.ts`,
 `tests/unit/content-review-counts.test.ts`, `tests/unit/admin-audit-label.test.ts`,
 `tests/unit/review-assign-policy.test.ts`, `lib/question-source.ts` (baru),
-`tests/unit/question-source-placeholder.test.ts` (baru), `tests/unit/review-options-preserved.test.ts` (baru),
+`tests/unit/question-source-placeholder.test.ts` (baru), `tests/unit/review-options-preserved.test.ts` (baru), `tests/unit/admin-product-status-case.test.ts` (baru),
+`tests/e2e/specs/10-admin-workspace-authenticated.spec.ts`,
 `supabase/migrations/20260922010000_*.sql`,
 `scripts/db-verify/review-assign-policy.sql`, `src/auth/permissions.ts`, `docs/STATUS.md`.
 
