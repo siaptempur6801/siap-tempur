@@ -427,6 +427,43 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 
 ---
 
+## Operasi data produksi — 2026-09-22
+
+Dijalankan atas instruksi pemilik produk, dengan backup baris sebelum perubahan di luar repo
+(`backup-legacy-products.json`, `backup-legacy-order-items.json`, `backup-legacy-questions.json`,
+`backup-qa-exams.json`).
+
+### Produk legacy dibersihkan (26 → 16 produk)
+- 11 produk `LEGACY_*` (4 event ticket + 7 paket) semuanya dirujuk **322 `order_items`**
+  (FK `ON DELETE RESTRICT`), milik 322 order pelanggan (50 lunas) — tidak bisa dihapus tanpa merusak
+  riwayat.
+- Solusi: satu produk dipakai ulang sebagai **`LEGACY_HISTORY_PLACEHOLDER`**
+  ([Legacy] Riwayat pembelian, `ARCHIVED`); 307 item dialihkan ke sana (15 sudah di sana → 322), lalu
+  **10 produk legacy dihapus**.
+- Validasi: `order_items` 332 · `orders` 332 · `profiles` 429 — **tidak berubah**. Produk kini
+  15 katalog `ACTIVE` + 1 placeholder. Riwayat pelanggan aman (halaman transaksi CPNS hanya
+  menampilkan `TOKEN_PACK`; legacy memang tidak pernah tampil).
+
+### Soal legacy diterbitkan (353 soal)
+- **353 draft legacy CPNS/SKD diterbitkan lewat alur resmi** (submit → assign → approve Editorial →
+  Academic → Technical QA → publish), bukan update status langsung. Semua `single_choice` dengan
+  **tepat 1 kunci** (divalidasi sebelum eksekusi); **353/353 berhasil, 0 gagal**, masing-masing
+  meninggalkan 3 review round + audit (akun SUPER_ADMIN sebagai reviewer/approver).
+- Kapasitas terbit CPNS/SKD kini **TWK 237 · TIU 113 · TKP 113** (kebutuhan section 30/35/45).
+- 232 soal legacy lain **sudah terbit sejak cutover Agustus** tanpa jejak review (dipublikasikan
+  migrasi); dibiarkan apa adanya — di luar operasi ini.
+- Backup status sebelum perubahan tersimpan (`backup-legacy-questions.json`); pembalikan bisa lewat
+  alur `revise` bila diperlukan.
+
+### Artefak dev dibersihkan dari produksi
+- **9 exam `[QA]` dihapus** (8 `archived` + `[QA] TKA SD E2E` draft) — semuanya 0 attempt/sesi/
+  assignment, termasuk 3 item `[CONTOH]` di dalamnya.
+- **11 soal `[CONTOH]` TKA-SD-BIND tidak dihapus** (dipakai 83 riwayat attempt + 3 exam item) — tetap
+  `archived`, di luar pool peserta.
+- **Aturan:** konten dev/coba-coba hanya di staging, tidak dimasukkan ke produksi.
+
+---
+
 ## 5. Goal aktif
 
 1. **Product Experience V1.1** — UI/UX, UX writing, copywriting, GTM (GitHub issue #21–#24).
