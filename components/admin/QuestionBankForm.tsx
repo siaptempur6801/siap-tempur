@@ -9,7 +9,7 @@ import { saveQuestionBankAction, questionBankWorkflowAction } from '@/app/action
 import { serializeOptionRows, parseQuestionOptions, isHttpsImageUrl } from '@/lib/question-options'
 import type { QuestionBankDetail, QuestionBankState } from '@/lib/question-bank'
 import QuestionOptionsEditor from '@/components/admin/QuestionOptionsEditor'
-import QuestionRichTextField from '@/components/admin/QuestionRichTextField'
+import QuestionRichTextEditor from '@/components/admin/QuestionRichTextEditor'
 import { useAdminConfirm } from '@/components/admin/useAdminConfirm'
 import { AdminField, adminInputClass, adminPrimaryButtonClass, adminSecondaryButtonClass, adminDangerButtonClass } from '@/components/admin/AdminUi'
 
@@ -153,9 +153,9 @@ export default function QuestionBankForm({ detail: incomingDetail, subjects, pro
                 </EditorSection>
                 <EditorSection id="qb-step-content" step={2} title="Tulis soal dan jawaban" description="Tulis pertanyaan, lengkapi pilihan, lalu tandai jawaban yang benar.">
                     <div className="grid gap-4">
-                        <QuestionRichTextField name="stem" label="Pertanyaan" fieldId="qb-stem" error={state.fields?.stem} hint="Rumus dapat ditulis dengan $...$; gambar disisipkan lewat tombol. Baris baru dan simbol dipertahankan." value={values.stem} onValueChange={(value) => update('stem', value)} required minHeight="min-h-36"/>
+                        <QuestionRichTextEditor name="stem" label="Pertanyaan" fieldId="qb-stem" error={state.fields?.stem} hint="Rumus dan gambar disisipkan lewat tombol, lalu tampil langsung. Baris baru dan simbol dipertahankan." defaultValue={text(q?.stem)} onValueChange={(value) => update('stem', value)} editable={editable && !pending} minHeight="min-h-36"/>
                         <div onChange={() => setDirty(true)}><QuestionOptionsEditor defaultValue={detail.question ? serializeOptionRows(detail.options) : undefined} questionType={values.questionType} onChange={setOptions}/>{state.fields?.options ? <p role="alert" className="mt-2 text-sm font-bold text-red-700">{state.fields.options}</p> : null}</div>
-                        <QuestionRichTextField name="explanation" label="Pembahasan" fieldId="qb-explanation" error={state.fields?.explanation} hint="Jelaskan alasan jawaban benar agar soal siap dipelajari peserta." value={values.explanation} onValueChange={(value) => update('explanation', value)} minHeight="min-h-28"/>
+                        <QuestionRichTextEditor name="explanation" label="Pembahasan" fieldId="qb-explanation" error={state.fields?.explanation} hint="Jelaskan alasan jawaban benar agar soal siap dipelajari peserta." defaultValue={detail.explanation} onValueChange={(value) => update('explanation', value)} editable={editable && !pending} minHeight="min-h-28"/>
                     </div>
                 </EditorSection>
                 <EditorSection id="qb-step-complete" step={3} title="Lengkapi metadata" description="Tambahkan pemetaan dan catatan perubahan agar soal mudah dilacak.">

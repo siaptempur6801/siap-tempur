@@ -35,9 +35,8 @@ describe('upload gambar soal', () => {
     })
 
     it('form soal dan review memakai field dengan tombol sisipkan gambar', () => {
-        for (const file of ['components/admin/QuestionBankForm.tsx', 'app/admin/content/review/page.tsx']) {
-            expect(source(file), file).toContain('QuestionRichTextField')
-        }
+        expect(source('components/admin/QuestionBankForm.tsx')).toContain('QuestionRichTextEditor')
+        expect(source('app/admin/content/review/page.tsx')).toContain('QuestionRichTextField')
     })
 
     it('editor opsi memakai tombol unggah gambar', () => {
@@ -79,5 +78,29 @@ describe('sisa opsional — paste/drag-drop & kompresi', () => {
         expect(hook).toContain('onPaste')
         expect(hook).toContain('onDrop')
         expect(hook).toContain('image/')
+    })
+})
+
+describe('editor visual soal (WYSIWYG)', () => {
+    it('Question Bank memakai editor visual, bukan textarea', () => {
+        const form = source('components/admin/QuestionBankForm.tsx')
+        expect(form).toContain('QuestionRichTextEditor')
+        expect(form).not.toContain('QuestionRichTextField')
+    })
+
+    it('renderer peserta mendukung node rumus & gambar editor', () => {
+        const renderer = source('components/MathRenderer.tsx')
+        expect(renderer).toContain('parseRichTextSegments')
+        expect(renderer).toContain("'img'")
+        expect(renderer).toContain('data-latex')
+    })
+
+    it('editor menyimpan HTML, read-only saat terkunci, dan menerima paste/drop', () => {
+        const editor = source('components/admin/QuestionRichTextEditor.tsx')
+        expect(editor).toContain('data-latex')
+        expect(editor).toContain('setEditable')
+        expect(editor).toContain('handlePaste')
+        expect(editor).toContain('handleDrop')
+        expect(editor).toContain("name={name}")
     })
 })

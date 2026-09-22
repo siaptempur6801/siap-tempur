@@ -12,15 +12,21 @@ export type LatexSnippet = {
     label: string
     /** Nama untuk tooltip & aria-label. */
     title: string
-    /** Teks yang disisipkan, sudah termasuk pembungkus `$`/`$$`. */
+    /** Teks yang disisipkan ke textarea, sudah termasuk pembungkus `$`/`$$`. */
     insert: string
+    /** LaTeX murni tanpa pembungkus — dipakai editor visual (node rumus). */
+    latex: string
+    /** True bila rumus blok (`$$…$$`). */
+    block: boolean
     /** Karakter mundur dari akhir sisipan tempat kursor diletakkan. */
     cursorBack?: number
     /** Snippet lanjutan hanya ditampilkan pada toolbar penuh. */
     advanced?: boolean
 }
 
-export const LATEX_SNIPPETS: readonly LatexSnippet[] = [
+type LatexSnippetSource = Omit<LatexSnippet, 'latex' | 'block'>
+
+const LATEX_SNIPPET_SOURCE: readonly LatexSnippetSource[] = [
     { label: 'a/b', title: 'Pecahan', insert: '$\\frac{}{}$', cursorBack: 4 },
     { label: '√', title: 'Akar', insert: '$\\sqrt{}$', cursorBack: 2 },
     { label: 'x²', title: 'Pangkat', insert: '$x^{}$', cursorBack: 2 },
@@ -40,6 +46,12 @@ export const LATEX_SNIPPETS: readonly LatexSnippet[] = [
     { label: 'lim', title: 'Limit', insert: '$$\\lim_{x \\to 0} f(x)$$', advanced: true },
     { label: 'matriks', title: 'Matriks 2×2', insert: '$$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$$', advanced: true },
 ]
+
+export const LATEX_SNIPPETS: readonly LatexSnippet[] = LATEX_SNIPPET_SOURCE.map((snippet) => ({
+    ...snippet,
+    latex: snippet.insert.replace(/^\$+/, '').replace(/\$+$/, ''),
+    block: snippet.insert.startsWith('$$'),
+}))
 
 /** Snippet yang ditampilkan pada toolbar ringkas (di dalam baris opsi). */
 export function compactLatexSnippets(): readonly LatexSnippet[] {

@@ -114,15 +114,15 @@ async function browserTests(f) {
  // Deliberately absent from the filtered list, reproducing the previous fallback-answer corruption.
  const edit=base+`/admin/content/questions?program=CPNS&track=SKD&q=does-not-match&page=99&subject=TIU&edit=${f.questions[0]}`;
  await page.goto(edit);let dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();await expect(dialog.getByRole('navigation',{name:'Bagian form soal'})).toBeVisible();await expect(dialog.getByLabel('Isi opsi A',{exact:true})).toHaveValue('|x|\nA');console.log('PASS guided editor and edit outside current list preserve original options');
- await dialog.getByLabel('Pertanyaan',{exact:true}).fill('Browser QA |x|\n$\\frac{1}{2}$');await dialog.getByLabel('Alasan perubahan',{exact:true}).fill('Browser regression');
- await dialog.getByLabel('Jawaban benar A',{exact:true}).uncheck();await dialog.getByRole('button',{name:'Simpan draf',exact:true}).click();await expect(dialog.getByRole('alert').filter({hasText:'tepat satu'})).toBeVisible();await expect(dialog.getByLabel('Pertanyaan',{exact:true})).toHaveValue('Browser QA |x|\n$\\frac{1}{2}$');console.log('PASS server validation retains entered text');
+ await dialog.getByLabel('Pertanyaan',{exact:true}).fill('Browser QA');await dialog.getByLabel('Alasan perubahan',{exact:true}).fill('Browser regression');
+ await dialog.getByLabel('Jawaban benar A',{exact:true}).uncheck();await dialog.getByRole('button',{name:'Simpan draf',exact:true}).click();await expect(dialog.getByRole('alert').filter({hasText:'tepat satu'})).toBeVisible();await expect(dialog.getByLabel('Pertanyaan',{exact:true})).toContainText('Browser QA');console.log('PASS server validation retains entered text');
  await expect(dialog.getByRole('button',{name:'Simpan draf',exact:true})).toBeEnabled();await dialog.getByLabel('Jawaban benar A',{exact:true}).check();await expect.poll(async()=>JSON.parse(await dialog.locator('input[name=options]').inputValue())[0].isCorrect).toBe(true);await dialog.getByRole('button',{name:'Pratinjau',exact:true}).click();await expect(dialog.getByRole('heading',{name:'Periksa tampilan sebelum disimpan'})).toBeVisible();await expect(dialog.getByText('Memuat pratinjau…',{exact:true})).toHaveCount(0);await page.screenshot({path:path.join(evidenceDir, 'validation-preview.png')});
  const invalidFields=await dialog.locator('form').first().evaluate(form=>Array.from(form.elements).filter(el=>'checkValidity' in el&&!el.checkValidity()).map(el=>el.getAttribute('aria-label')||el.getAttribute('name')||el.tagName));assert.deepEqual(invalidFields,[]);
  await dialog.getByRole('button',{name:'Simpan draf',exact:true}).click();try{await page.waitForURL(u=>!u.searchParams.has('edit')&&u.searchParams.has('ok'),{timeout:10000})}catch(error){throw Error(`Save did not redirect. URL=${page.url()} alerts=${JSON.stringify(await dialog.getByRole('alert').allTextContents())} buttonDisabled=${await dialog.getByRole('button',{name:'Simpan draf',exact:true}).isDisabled()}`,{cause:error})}const url=new URL(page.url());expect(url.searchParams.get('page')).toBe('99');expect(url.searchParams.get('q')).toBe('does-not-match');expect(url.searchParams.get('subject')).toBe('TIU');console.log('PASS save preserves search, subject and page');
  // Both tabs open the same version; the second save must keep its unsaved changes.
  await page.goto(edit);await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByRole('navigation',{name:'Bagian form soal'})).toBeVisible();await page.screenshot({path:path.join(evidenceDir, 'desktop.png')});const other=await context.newPage();await other.goto(edit);await expect(other.getByRole('dialog')).toBeVisible();
  await page.getByLabel('Pertanyaan',{exact:true}).fill('Winner edit');await page.getByLabel('Alasan perubahan',{exact:true}).fill('First tab');await page.getByRole('button',{name:'Simpan draf',exact:true}).click();await page.waitForURL(u=>u.searchParams.has('ok'));
- await other.getByLabel('Pertanyaan',{exact:true}).fill('My unsaved second-tab work');await other.getByLabel('Alasan perubahan',{exact:true}).fill('Second tab');await other.getByRole('button',{name:'Simpan draf',exact:true}).click();await expect(other.getByRole('dialog').getByRole('alert')).toContainText('sudah berubah', { timeout: 30000 });await expect(other.getByLabel('Pertanyaan',{exact:true})).toHaveValue('My unsaved second-tab work');console.log('PASS browser conflict keeps unsaved work');await other.close();
+ await other.getByLabel('Pertanyaan',{exact:true}).fill('My unsaved second-tab work');await other.getByLabel('Alasan perubahan',{exact:true}).fill('Second tab');await other.getByRole('button',{name:'Simpan draf',exact:true}).click();await expect(other.getByRole('dialog').getByRole('alert')).toContainText('sudah berubah', { timeout: 30000 });await expect(other.getByLabel('Pertanyaan',{exact:true})).toContainText('My unsaved second-tab work');console.log('PASS browser conflict keeps unsaved work');await other.close();
  for(const width of [390,1024]) {await page.setViewportSize({width,height:844});await page.goto(edit);await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByRole('navigation',{name:'Bagian form soal'})).toBeVisible();const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);expect(overflow).toBe(false);const modalOverflow=await page.getByRole('dialog').evaluate(e=>e.scrollWidth>e.clientWidth);expect(modalOverflow).toBe(false);await page.screenshot({path:path.join(evidenceDir, `${width}.png`)});console.log('PASS responsive viewport',width);}
  await page.goto(base+'/admin/content/questions?program=CPNS&track=SKD&edit=invalid');await expect(page.getByRole('alert').filter({hasText:'Soal tidak ditemukan'})).toBeVisible();await expect(page.getByRole('dialog')).not.toBeVisible();console.log('PASS invalid ID cannot silently open replacement form');
 
@@ -135,46 +135,51 @@ async function browserTests(f) {
  await page.getByRole('button',{name:'Tutup modal',exact:true}).click();
  const closeConfirm=page.getByRole('alertdialog');await expect(closeConfirm).toBeVisible();
  await closeConfirm.getByRole('button',{name:'Batal',exact:true}).click();await expect(closeConfirm).toHaveCount(0);
- await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('Pertanyaan',{exact:true})).toHaveValue('QA browser-created |x|');
+ await expect(page.getByRole('dialog')).toBeVisible();await expect(page.getByLabel('Pertanyaan',{exact:true})).toContainText('QA browser-created |x|');
  await page.getByRole('button',{name:'Simpan draf',exact:true}).click();await page.waitForURL(u=>u.searchParams.has('ok'));
- const created=check(await admin.from('questions').select('id,status').eq('author_id',f.users[0].id).eq('stem','QA browser-created |x|').single());assert.equal(created.status,'draft');
+ const created=check(await admin.from('questions').select('id,status').eq('author_id',f.users[0].id).like('stem','%QA browser-created |x|%').single());assert.equal(created.status,'draft');
  console.log('PASS browser creation and unsaved-close protection');
  // Unggah gambar: pertanyaan & opsi (bucket question-images, folder questions/<uid>).
+ // Setiap alur memakai modal BARU agar hitungan gambar tidak dipengaruhi unggahan sebelumnya.
  const pngFixture=path.join(os.tmpdir(), `qb-upload-${Date.now()}.png`);
  fs.writeFileSync(pngFixture, Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64'));
- await page.goto(base+'/admin/content/questions?program=CPNS&track=SKD');
- await page.getByRole('button',{name:'Tambah soal',exact:true}).click();
- const uploadDialog=page.getByRole('dialog');
+ const pngBase64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+ const openCreateDialog=async()=>{await page.goto(base+'/admin/content/questions?program=CPNS&track=SKD');await page.getByRole('button',{name:'Tambah soal',exact:true}).click();return page.getByRole('dialog')};
+ const stemHtml=async(dialog)=>dialog.locator('input[name=stem]').inputValue();
+ const imageCount=async(dialog)=>((await stemHtml(dialog)).match(/<img/g)||[]).length;
+
+ // 1) Tombol: unggah ke pertanyaan, ke opsi, lalu sisipkan rumus.
+ let uploadDialog=await openCreateDialog();
  await uploadDialog.getByLabel('Pertanyaan',{exact:true}).fill('Uji unggah gambar');
  await uploadDialog.locator('input[data-upload-target="stem"]').setInputFiles(pngFixture);
- await expect.poll(async()=>uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue(),{timeout:30000}).toContain('[[image:https://');
+ await expect.poll(async()=>imageCount(uploadDialog),{timeout:30000}).toBeGreaterThanOrEqual(1);
  await uploadDialog.locator('input[data-upload-target="option-A"]').setInputFiles(pngFixture);
  await expect.poll(async()=>{const rows=JSON.parse(await uploadDialog.locator('input[name=options]').inputValue());return rows[0].imageUrl||''},{timeout:30000}).toMatch(/^https:\/\//);
  await uploadDialog.getByRole('button',{name:'Sisipkan rumus: Pecahan',exact:true}).first().click();
- await expect.poll(async()=>uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue(),{timeout:10000}).toContain('\\frac');
- console.log('PASS toolbar rumus menyisipkan di pertanyaan');
- // Tarik-lepas gambar ke textarea pertanyaan (jalur sama dengan tombol).
- const pngBase64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
- const dropTransfer=await uploadDialog.evaluateHandle((_element,base64)=>{const dataTransfer=new DataTransfer();const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));dataTransfer.items.add(new File([bytes],'drop.png',{type:'image/png'}));return dataTransfer},pngBase64);
- await uploadDialog.getByLabel('Pertanyaan',{exact:true}).dispatchEvent('drop',{dataTransfer:dropTransfer});
- await expect.poll(async()=>((await uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue()).match(/\[\[image:/g)||[]).length,{timeout:30000}).toBeGreaterThanOrEqual(2);
+ await expect(uploadDialog.locator('.katex').first()).toBeVisible();
+ await expect.poll(async()=>stemHtml(uploadDialog),{timeout:10000}).toContain('data-latex');
+ console.log('PASS unggah gambar pertanyaan & opsi lewat tombol + toolbar rumus');
+
+ // 2) Tarik-lepas gambar ke pertanyaan (jalur sama dengan tombol).
+ uploadDialog=await openCreateDialog();
+ await uploadDialog.getByLabel('Pertanyaan',{exact:true}).fill('Uji drop gambar');
+ await uploadDialog.getByLabel('Pertanyaan',{exact:true}).evaluate((element,base64)=>{const dataTransfer=new DataTransfer();const bytes=Uint8Array.from(atob(base64),c=>c.charCodeAt(0));dataTransfer.items.add(new File([bytes],'drop.png',{type:'image/png'}));element.dispatchEvent(new DragEvent('drop',{dataTransfer,bubbles:true,cancelable:true}));},pngBase64);
+ await expect.poll(async()=>imageCount(uploadDialog),{timeout:30000}).toBeGreaterThanOrEqual(1);
  console.log('PASS tarik-lepas gambar ke pertanyaan');
- // Kompresi klien: screenshot penuh halaman biasanya >512 KB -> tersimpan lebih kecil.
+
+ // 3) Kompresi klien: gambar 1000x1000 ber-noise (>512 KB) harus jadi WebP lebih kecil.
+ uploadDialog=await openCreateDialog();
+ await uploadDialog.getByLabel('Pertanyaan',{exact:true}).fill('Uji kompresi gambar');
  const bigFixture=path.join(os.tmpdir(), `qb-upload-big-${Date.now()}.png`);
- const bigContext=await browser.newContext({viewport:{width:1440,height:1000},deviceScaleFactor:2,storageState:await context.storageState()});
- const bigPage=await bigContext.newPage();
- await bigPage.goto(base+'/admin/content/questions?program=CPNS&track=SKD');
- await bigPage.screenshot({path:bigFixture, fullPage:true});
- await bigContext.close();
+ const bigBase64=await page.evaluate(()=>{const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=1000;const context=canvas.getContext('2d');const image=context.createImageData(1000,1000);for(let i=0;i<image.data.length;i+=4){image.data[i]=Math.floor(Math.random()*256);image.data[i+1]=Math.floor(Math.random()*256);image.data[i+2]=Math.floor(Math.random()*256);image.data[i+3]=255}context.putImageData(image,0,0);return canvas.toDataURL('image/png').split(',')[1]});
+ fs.writeFileSync(bigFixture,Buffer.from(bigBase64,'base64'));
  const bigSize=fs.statSync(bigFixture).size;
  await uploadDialog.locator('input[data-upload-target="stem"]').setInputFiles(bigFixture);
- await expect.poll(async()=>((await uploadDialog.getByLabel('Pertanyaan',{exact:true}).inputValue()).match(/\[\[image:/g)||[]).length,{timeout:30000}).toBeGreaterThanOrEqual(3);
- if(bigSize>512*1024){
-   const {data:stored}=await admin.storage.from('question-images').list(`questions/${f.users[0].id}`);
-   const newest=(stored||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];
-   assert.ok(newest&&Number(newest.metadata?.size)<bigSize,`kompresi harus mengecilkan ${bigSize} -> ${newest?.metadata?.size}`);
-   console.log(`PASS kompresi gambar ${bigSize} -> ${newest.metadata.size} byte`);
- }else{ console.log(`SKIP kompresi (fixture ${bigSize} byte, di bawah ambang 512 KB)`); }
+ await expect.poll(async()=>stemHtml(uploadDialog),{timeout:60000}).toContain('.webp');
+ const {data:stored}=await admin.storage.from('question-images').list(`questions/${f.users[0].id}`);
+ const newest=(stored||[]).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];
+ assert.ok(newest&&Number(newest.metadata?.size)<bigSize,`kompresi harus mengecilkan ${bigSize} -> ${newest?.metadata?.size}`);
+ console.log(`PASS kompresi gambar ${bigSize} -> ${newest.metadata.size} byte`);
  console.log('PASS unggah gambar pertanyaan & opsi');
  const authState = await context.storageState();
  console.log('Console errors:',JSON.stringify(errors));expect(errors).toEqual([]);await browser.close(); return authState;
@@ -190,7 +195,7 @@ async function workflowTests(f,authState) {
 
  const browser=await launchBrowser(); const context=await browser.newContext({storageState:authState}); const page=await context.newPage();
  await page.goto(base+`/admin/content/questions?program=CPNS&track=SKD&edit=${id}`);
- const dialog=page.getByRole('dialog'); await expect(dialog.getByLabel('Pertanyaan',{exact:true})).toBeDisabled();
+ const dialog=page.getByRole('dialog'); await expect(dialog.getByLabel('Pertanyaan',{exact:true})).toHaveAttribute('contenteditable','false');
  await dialog.getByRole('button',{name:'Terbitkan soal',exact:true}).click();await dialog.getByLabel('Alasan tindakan').fill('QA publish approved');
  await dialog.getByRole('button',{name:'Konfirmasi tindakan',exact:true}).click();await page.waitForURL(u=>u.searchParams.has('ok'));
  assert.equal(check(await author.rpc('get_question_bank_editor',{p_program:'CPNS',p_track:'SKD',p_id:id})).question.status,'published');
