@@ -302,8 +302,9 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                     program={program}
                     track={track}
                     search={params.q || ''}
-                    status={params.status || ''}
-                    statusOptions={REVIEW_STATUS_OPTIONS.map((status) => ({ value: status, label: adminStatusLabel(status) }))}
+                status={params.status || ''}
+                statusOptions={[...REVIEW_STATUS_OPTIONS.map((status) => ({ value: status, label: adminStatusLabel(status) })), { value: 'all', label: 'Semua status' }]}
+                statusPlaceholder="Perlu tindakan"
                     placeholder="Cari kode atau isi soal..."
                     resultCount={visibleQuestions.length}
                     selects={[

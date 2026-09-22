@@ -36,6 +36,16 @@ const STAGE_STATUSES: Record<string, readonly string[]> = {
 
 const REVIEW_STAGE_STATUSES = ['submitted', 'editorial_review', 'academic_review', 'technical_qa'] as const
 
+/**
+ * Status yang masih "perlu tindakan" — default antrean.
+ *
+ * Antrean review adalah daftar kerja: soal yang sudah `published`/`archived`
+ * tidak perlu muncul lagi (dulu ikut tampil dan setelah backfill publish 353
+ * soal legacy, antrean tenggelam oleh konten selesai). Untuk melihat semuanya,
+ * pilih filter "Semua status" (`status=all`).
+ */
+const ACTIONABLE_STATUSES = ['draft', 'submitted', 'editorial_review', 'academic_review', 'technical_qa', 'revision_required', 'approved', 'rejected'] as const
+
 const QUEUE_COLUMNS = 'id, question_code, subject_id, question_type, stem, difficulty, cognitive_level, source_type, source_reference, estimated_seconds, status, version, author_id, reviewer_id, stimulus_id, stimulus_order, published_at, created_at, updated_at'
 
 type Row = Record<string, unknown>
@@ -252,6 +262,7 @@ export class ContentReviewService {
             .select('id, question_code, subject_id, status, version, stem')
             .eq('program_id', catalog.program.id)
             .eq('track_id', catalog.track.id)
+            .in('status', ACTIONABLE_STATUSES)
             .order('updated_at', { ascending: false })
             .limit(6)
         if (error) throw error
@@ -298,7 +309,14 @@ export class ContentReviewService {
                 .eq('program_id', catalog.program.id)
                 .eq('track_id', catalog.track.id)
             if (subjectId) query = query.eq('subject_id', subjectId)
-            if (filters.status) query = query.eq('status', filters.status)
+            if (filters.status === 'all') {
+                // Semua status, termasuk terbit/arsip (pilihan eksplisit).
+            } else if (filters.status) {
+                query = query.eq('status', filters.status)
+            } else {
+                // Default antrean: hanya yang perlu tindakan.
+                query = query.in('status', ACTIONABLE_STATUSES)
+            }
             const stageStatuses = filters.stage ? STAGE_STATUSES[filters.stage] : undefined
             if (stageStatuses) query = query.in('status', stageStatuses)
             if (filters.reviewer === 'unassigned') {

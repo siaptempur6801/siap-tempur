@@ -106,7 +106,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await expect(editorPage.getByRole('banner').getByText('Editor Konten', { exact: true })).toBeVisible()
 
     const createSection = editorPage.locator('section').filter({
-        has: editorPage.getByRole('heading', { name: 'Buat draft soal' }),
+        has: editorPage.getByRole('heading', { name: 'Buat draf soal' }),
     })
     await expect(createSection).toBeVisible()
     const form = createSection.locator('form')
@@ -192,14 +192,14 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await expect(reviewerPage.getByText('Terbit', { exact: true }).last()).toBeVisible()
 
     const reviewRounds = reviewerPage.getByRole('heading', { name: 'Riwayat review' }).locator('xpath=ancestor::section[1]')
-    await expect(reviewRounds).toContainText('Round 1 · Editorial Review')
+    await expect(reviewRounds).toContainText('Putaran 1 · Editorial Review')
     await expect(reviewRounds).toContainText('Editorial E2E approved')
-    await expect(reviewRounds).toContainText('Round 1 · Academic Review')
+    await expect(reviewRounds).toContainText('Putaran 1 · Academic Review')
     await expect(reviewRounds).toContainText('Academic E2E approved')
-    await expect(reviewRounds).toContainText('Round 1 · Technical QA')
+    await expect(reviewRounds).toContainText('Putaran 1 · Technical QA')
     await expect(reviewRounds).toContainText('Technical QA E2E approved')
 
-    const auditTrail = reviewerPage.getByRole('heading', { name: 'Audit Trail' }).locator('xpath=ancestor::section[1]')
+    const auditTrail = reviewerPage.getByRole('heading', { name: 'Jejak audit' }).locator('xpath=ancestor::section[1]')
     // Label manusiawi; kode aksi mentah tetap tersedia lewat atribut title.
     await expect(auditTrail).toContainText('Soal diterbitkan')
     await expect(auditTrail).toContainText('Review disetujui')

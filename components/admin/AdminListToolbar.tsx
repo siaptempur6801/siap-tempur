@@ -31,6 +31,7 @@ export default function AdminListToolbar({
     search,
     status,
     statusOptions = [],
+    statusPlaceholder = 'Semua status',
     placeholder,
     resultCount,
     program,
@@ -44,6 +45,13 @@ export default function AdminListToolbar({
     /** Tidak diberikan atau tanpa opsi → select status disembunyikan. */
     status?: string
     statusOptions?: ReadonlyArray<{ value: string; label: string }>
+    /**
+     * Label opsi kosong pada select status.
+     *
+     * Antrean kerja memakai "Perlu tindakan" (default-nya mengecualikan status
+     * selesai), sementara daftar lain memakai "Semua status".
+     */
+    statusPlaceholder?: string
     /** Tanpa `placeholder`, input pencarian disembunyikan (daftar select-only). */
     placeholder?: string
     /** Jumlah hasil dengan filter aktif; dipakai di keterangan filter. */
@@ -99,7 +107,7 @@ export default function AdminListToolbar({
                 ))}
                 {hasStatus ? (
                     <select className={adminInputClass} name="status" defaultValue={status ?? ''} aria-label="Filter status">
-                        <option value="">Semua status</option>
+                        <option value="">{statusPlaceholder}</option>
                         {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                 ) : null}

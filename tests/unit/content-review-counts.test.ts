@@ -232,6 +232,40 @@ describe('getWorkspaceData — paginasi & filter di database', () => {
     })
 })
 
+describe('getWorkspaceData — antrean hanya berisi yang perlu tindakan', () => {
+    it('tanpa filter status: mengecualikan terbit dan arsip', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT)
+
+        const rowsCall = questionCalls().find((c) => !c.head && c.range)
+        expect(rowsCall?.inIds).toContain('draft')
+        expect(rowsCall?.inIds).not.toContain('published')
+        expect(rowsCall?.inIds).not.toContain('archived')
+    })
+
+    it('status=all: tanpa filter status sama sekali', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT, { status: 'all' })
+
+        const rowsCall = questionCalls().find((c) => !c.head && c.range)
+        expect(rowsCall?.inIds).toBeUndefined()
+        expect(rowsCall?.eq?.status).toBeUndefined()
+    })
+
+    it('status eksplisit tetap difilter persis', async () => {
+        await contentReviewService.getWorkspaceData(CONTEXT, { status: 'published' })
+
+        const rowsCall = questionCalls().find((c) => !c.head && c.range)
+        expect(rowsCall?.eq?.status).toBe('published')
+    })
+
+    it('antrean dashboard juga mengecualikan status selesai', async () => {
+        await contentReviewService.getReviewSummary(CONTEXT)
+
+        const rowsCall = questionCalls().find((c) => c.limited && !c.count)
+        expect(rowsCall?.inIds).not.toContain('published')
+        expect(rowsCall?.inIds).not.toContain('archived')
+    })
+})
+
 describe('getWorkspaceData — pending review hanya untuk baris yang tampil', () => {
     it('content_reviews di-query dengan daftar entity_id halaman', async () => {
         await contentReviewService.getWorkspaceData(CONTEXT)

@@ -382,6 +382,15 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **60 passed, exit 0** mencakup 14 route, role, alur form, serta overflow mobile 390 px dan tablet
   1024 px. Warning tracing `lib/event-certificate-pdf.ts` tetap warning lama di luar scope.
 
+### Antrean review hanya berisi yang perlu tindakan (2026-09-22)
+- Setelah backfill 353 soal legacy terbit, antrean tenggelam oleh soal selesai. Default antrean kini
+  **"Perlu tindakan"**: semua status kecuali `published`/`archived`. Filter eksplisit **"Semua status"**
+  (`status=all`) tetap tersedia; antrean 6 baris di dashboard memakai aturan yang sama.
+- `AdminListToolbar` mendapat `statusPlaceholder`; halaman review menambah opsi `all`.
+- Spec 7 disesuaikan dengan label hasil polish (Buat draf soal, Putaran N, Jejak audit) yang tertinggal
+  dari commit `565db82`.
+- Verifikasi: **653 unit test / 90 file**; gate Review 5 passed; gate admin 60 passed.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status
@@ -398,7 +407,7 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
   **0 soal CWS E2E**.
 
 ### Verifikasi
-- Lint 0/0 · typecheck · **646 unit test / 90 file** · build lolos.
+- Lint 0/0 · typecheck · **653 unit test / 90 file** · build lolos.
 - Gate Review lokal (gate baru `node scripts/local-gates/run-gate.mjs review`): **5 passed, exit 0**
   (setup + 3 spec + cleanup); port dibersihkan setelah run.
 - Gate Question Bank: lulus penuh (regresi `lib/postgrest-filter` di jalur pencarian admin).
@@ -420,6 +429,7 @@ File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format
 `tests/unit/review-assign-policy.test.ts`, `lib/question-source.ts` (baru),
 `tests/unit/question-source-placeholder.test.ts` (baru), `tests/unit/review-options-preserved.test.ts` (baru), `tests/unit/admin-product-status-case.test.ts` (baru), `tests/unit/admin-display-labels.test.ts` (baru),
 `components/admin/ReviewQuestionFields.tsx`, `components/admin/ArticleStatusActions.tsx`,
+`components/admin/AdminListToolbar.tsx`,
 `app/admin/assessment/exams/AdminExamsWorkspace.tsx`, `app/admin/audit/page.tsx`,
 `tests/e2e/specs/10-admin-workspace-authenticated.spec.ts`,
 `supabase/migrations/20260922010000_*.sql`,
