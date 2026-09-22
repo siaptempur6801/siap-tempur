@@ -203,6 +203,18 @@ yang akan diproses tampil pada setiap tombol, sedangkan langkah yang sudah seles
 Alur produksi 80 soal diverifikasi penuh dalam transaksi rollback: submit 80, klaim dan approve
 Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80 draft.
 
+Kejelasan review massal (2026-09-23): panel menjelaskan fungsinya sendiri lewat blok **"Apa ini?"**
+(jalur cepat satu batch; keputusan tetap milik manusia; tidak menembus workflow; hanya soal batch
+ini yang tersentuh), menyebut posisi tahap (`Langkah 2 · Tahap 2 dari 3 — Akademik`, peta
+`STAGE_NUMBER` di `lib/review-batch.ts`), dan tombol terbit menyebut jumlah (`Terbitkan N soal`).
+Ditambah daftar **"Soal di batch ini"** dengan badge status + tautan `Periksa` per soal supaya
+reviewer bisa spot-check sebelum memutuskan puluhan soal sekaligus. Keputusan destruktif
+(Tolak / Minta revisi) kini melewati dialog konfirmasi yang menyebut jumlah dan akibatnya serta
+**wajib bercatatan** — dijaga ganda: klien (`components/admin/ReviewBatchStageForm.tsx`) dan server
+(`CATATAN_WAJIB` di `app/actions/content-review-batch.ts`), karena input klien tidak dipercaya.
+Verifikasi: **691 unit test / 93 file**; gate admin 60 passed (termasuk assertion panel baru);
+gate Review 5 passed.
+
 ### P1-b — pencarian aman + pengukuran payload
 - `escapePostgrestValue` dipindah ke satu modul bersama `lib/postgrest-filter.ts` dan dipakai
   `admin-v2.service` (produk/exam/soal) serta `content-review.service`. Sebelumnya pencarian review

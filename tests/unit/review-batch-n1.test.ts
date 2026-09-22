@@ -32,3 +32,31 @@ describe('aksi massal Review Queue', () => {
         expect(action).not.toContain("rpc('publish_question'")
     })
 })
+
+/**
+ * Kejelasan fungsi panel review massal. Panel ini menyentuh puluhan soal per
+ * klik, jadi tiga hal harus bisa dilihat pengguna tanpa membaca kode:
+ * apa fungsinya, sedang di tahap mana, dan berapa soal yang akan diterbitkan.
+ */
+describe('kejelasan panel review massal', () => {
+    const panel = source('components/admin/ReviewBatchPanel.tsx')
+    const stageForm = source('components/admin/ReviewBatchStageForm.tsx')
+
+    it('panel menjelaskan apa ini, posisi tahap, dan jumlah yang diterbitkan', () => {
+        expect(panel).toContain('Apa ini?')
+        expect(panel).toContain('STAGE_NUMBER[summary.activeStage]')
+        expect(panel).toContain('Terbitkan {summary.approved} soal')
+        expect(panel).toContain('Soal di batch ini')
+        expect(panel).toContain('AdminStatusBadge')
+    })
+
+    it('aksi destruktif massal dikonfirmasi dan catatan wajib diisi', () => {
+        expect(stageForm).toContain('useAdminConfirm')
+        expect(stageForm).toContain('Catatan wajib diisi')
+        expect(stageForm).toContain("value=\"reject\"")
+        expect(stageForm).toContain("value=\"revision_required\"")
+        // Pengaman server tetap ada meski klien sudah mencegah.
+        expect(action).toContain('CATATAN_WAJIB')
+        expect(action).toContain('Catatan wajib diisi untuk Tolak atau Minta revisi.')
+    })
+})

@@ -3,6 +3,8 @@ import {
     activeStageFor,
     activeStagesFor,
     nextStep,
+    REVIEW_STAGE_TOTAL,
+    STAGE_NUMBER,
     summarizeBatch,
     SUBMITTABLE_STATUSES,
     type BatchRow,
@@ -31,6 +33,15 @@ function legacyImportedBatch(size = 80): BatchRow[] {
         authorId: AUTHOR,
     }))
 }
+
+describe('nomor tahap', () => {
+    it('memberi posisi 1-3 untuk label "Tahap X dari 3"', () => {
+        expect(REVIEW_STAGE_TOTAL).toBe(3)
+        expect(STAGE_NUMBER.editorial).toBe(1)
+        expect(STAGE_NUMBER.academic).toBe(2)
+        expect(STAGE_NUMBER.technical_qa).toBe(3)
+    })
+})
 
 describe('activeStageFor', () => {
     it('memetakan setiap status review ke tahapnya', () => {

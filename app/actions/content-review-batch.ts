@@ -95,6 +95,7 @@ function friendlyError(error: unknown) {
         'Only approved questions can be published': 'Hanya soal berstatus approved yang dapat diterbitkan.',
         'Pending review still exists': 'Masih ada review yang menggantung pada soal ini.',
         'Invalid review decision': 'Keputusan review tidak valid.',
+        CATATAN_WAJIB: 'Catatan wajib diisi untuk Tolak atau Minta revisi.',
     }
     return known[message] || message
 }
@@ -219,6 +220,12 @@ export async function reviewReviewBatchStageAction(form: FormData) {
         const batch = batchFrom(form)
         if (!['approve', 'revision_required', 'reject'].includes(decision)) {
             throw new Error('Keputusan review tidak valid.')
+        }
+        // Keputusan destruktif massal wajib beralasan — jejaknya dibaca penulis
+        // dan reviewer tahap berikutnya. Klien sudah mencegahnya; server tetap
+        // memeriksa karena input klien tidak boleh dipercaya.
+        if (decision !== 'approve' && !notes) {
+            throw new Error('CATATAN_WAJIB')
         }
 
         const client = await createClient()

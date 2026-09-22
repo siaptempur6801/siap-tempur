@@ -68,6 +68,16 @@ export const STAGE_LABEL: Record<ReviewStage, string> = {
     technical_qa: 'QA Teknis',
 }
 
+/** Jumlah tahap review dalam satu siklus penuh. */
+export const REVIEW_STAGE_TOTAL = 3
+
+/** Posisi tahap 1-3, dipakai teks "Tahap X dari 3" di panel review massal. */
+export const STAGE_NUMBER: Record<ReviewStage, number> = {
+    editorial: 1,
+    academic: 2,
+    technical_qa: 3,
+}
+
 /** Status soal -> tahap review yang sedang berjalan. */
 const STAGE_BY_STATUS: Record<string, ReviewStage> = {
     submitted: 'editorial',

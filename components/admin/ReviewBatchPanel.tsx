@@ -1,5 +1,7 @@
-import { CheckCircle2, ClipboardCheck, Clock3, Send, ShieldCheck, Sparkles, UserCheck, XCircle } from 'lucide-react'
-import { AdminBadge, AdminCard, adminDangerButtonClass, adminInputClass, adminPrimaryButtonClass, adminSecondaryButtonClass, adminSuccessButtonClass, adminWarningButtonClass } from '@/components/admin/AdminUi'
+import Link from 'next/link'
+import { ClipboardCheck, Clock3, Send, ShieldCheck, Sparkles, UserCheck } from 'lucide-react'
+import { AdminBadge, AdminCard, AdminStatusBadge, adminPrimaryButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import ReviewBatchStageForm from '@/components/admin/ReviewBatchStageForm'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/utils/supabase/server'
 import {
@@ -8,6 +10,7 @@ import {
     STATUS_LABEL,
     STATUS_ORDER,
     STAGE_LABEL,
+    STAGE_NUMBER,
     summarizeBatch,
     type BatchSummary,
 } from '@/lib/review-batch'
@@ -35,23 +38,49 @@ function stepClass(active: boolean) {
     return cn('flex gap-2 rounded-lg px-2 py-1', active ? 'bg-blue-50 text-blue-800' : '')
 }
 
-async function loadBatchSummary(batch: string, actorId: string): Promise<BatchSummary> {
+type BatchQuestion = {
+    id: string
+    code: string
+    status: string
+}
+
+/**
+ * Ringkasan batch + daftar soalnya.
+ *
+ * Daftar dipakai bagian "Soal di batch ini": reviewer perlu bisa spot-check
+ * soal satu per satu sebelum memutuskan puluhan sekaligus.
+ */
+async function loadBatchSummary(batch: string, actorId: string): Promise<{ summary: BatchSummary; questions: BatchQuestion[] }> {
     const client = await createClient()
     const { data, error } = await client
         .from('questions')
-        .select('status, reviewer_id, author_id')
+        .select('id, question_code, status, reviewer_id, author_id')
         .contains('response_config', { pilotBatch: batch })
         .limit(500)
 
     if (error) throw error
-    return summarizeBatch(
-        (data ?? []).map((row) => ({
+    const rows = data ?? []
+    return {
+        summary: summarizeBatch(
+            rows.map((row) => ({
+                status: String(row.status ?? ''),
+                reviewerId: row.reviewer_id == null ? null : String(row.reviewer_id),
+                authorId: row.author_id == null ? null : String(row.author_id),
+            })),
+            actorId,
+        ),
+        questions: rows.map((row) => ({
+            id: String(row.id),
+            code: String(row.question_code ?? ''),
             status: String(row.status ?? ''),
-            reviewerId: row.reviewer_id == null ? null : String(row.reviewer_id),
-            authorId: row.author_id == null ? null : String(row.author_id),
         })),
-        actorId,
-    )
+    }
+}
+
+/** Urut sesuai alur review, lalu kode soal, agar daftar tidak melompat-lompat. */
+function orderQuestions(questions: BatchQuestion[]) {
+    const order = STATUS_ORDER as readonly string[]
+    return [...questions].sort((a, b) => (order.indexOf(a.status) - order.indexOf(b.status)) || a.code.localeCompare(b.code))
 }
 
 export default async function ReviewBatchPanel({
@@ -76,15 +105,16 @@ export default async function ReviewBatchPanel({
         <p className="mt-1 text-sm font-medium text-amber-800">Minta peran Reviewer Konten atau permission publish kepada administrator.</p>
     </AdminCard>
 
-    let summary: BatchSummary
+    let loaded: { summary: BatchSummary; questions: BatchQuestion[] }
     try {
-        summary = await loadBatchSummary(batch, actorId)
+        loaded = await loadBatchSummary(batch, actorId)
     } catch {
         return <AdminCard className="border-red-200 bg-red-50 p-5">
             <h2 className="font-black text-red-900">Review massal tidak dapat dimuat</h2>
             <p className="mt-1 text-sm font-medium text-red-800">Muat ulang halaman. Jika tetap gagal, pastikan akun memiliki permission review konten.</p>
         </AdminCard>
     }
+    const { summary, questions } = loaded
     if (summary.total === 0) return <AdminCard className="border-amber-200 bg-amber-50 p-5">
         <h2 className="font-black text-amber-900">Belum ada soal dalam batch</h2>
         <p className="mt-1 text-sm font-medium text-amber-800">Batch {batch} belum berisi soal yang disiapkan untuk review massal.</p>
@@ -122,6 +152,25 @@ export default async function ReviewBatchPanel({
                     </p>
                 </div>
                 {summary.isDone ? <AdminBadge variant="green">Batch selesai terbit</AdminBadge> : null}
+            </div>
+
+            <div className="border-b border-slate-200 bg-slate-50/70 px-5 py-4">
+                <h3 className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Apa ini?</h3>
+                <ul className="mt-2 grid gap-2 text-xs font-medium leading-5 text-slate-600 sm:grid-cols-3 sm:gap-4">
+                    <li>
+                        <b className="text-slate-900">Jalur cepat satu batch.</b> Tiga langkah, satu klik per tahap —
+                        menggantikan alur satu-form-per-soal yang butuh ratusan klik untuk satu set tryout.
+                    </li>
+                    <li>
+                        <b className="text-slate-900">Keputusan tetap milik Anda.</b> Tidak ada status yang ditembus dan
+                        tidak ada persetujuan otomatis; Setujui/Revisi/Tolak selalu diklik eksplisit dan tetap lewat
+                        aturan resmi (permission, author ≠ reviewer, penjaga workflow).
+                    </li>
+                    <li>
+                        <b className="text-slate-900">Hanya batch ini.</b> Yang tersentuh hanya soal berpenanda batch ini
+                        yang ditugaskan kepada Anda; soal lain di antrean tidak ikut berubah.
+                    </li>
+                </ul>
             </div>
 
             <div className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
@@ -185,36 +234,17 @@ export default async function ReviewBatchPanel({
                     ) : null}
 
                     {canReview && summary.activeStage ? (
-                        <form action={reviewReviewBatchStageAction} className={cn('rounded-xl border p-4', focus === 2 ? 'border-blue-300 bg-blue-50/60' : 'border-blue-200 bg-blue-50/40')}>
-                            {context}
-                            <input type="hidden" name="stage" value={summary.activeStage} />
-                            <h3 className="text-sm font-black text-slate-900">
-                                {summary.activeStages.length > 1
-                                    ? `Langkah 2 · Putuskan tahap aktif (${summary.activeStages.map((stage) => STAGE_LABEL[stage]).join(' + ')})`
-                                    : `Langkah 2 · Putuskan tahap ${STAGE_LABEL[summary.activeStage]}`}
-                            </h3>
-                            <p className="mt-0.5 text-xs font-medium text-slate-500">
-                                Berlaku untuk {active} soal pada tahap aktif. Setiap soal naik SATU tahap, lalu
-                                klaim reviewer dikosongkan — panel ini mengklaim ulang otomatis, jadi satu klik per tahap.
-                            </p>
-                            {summary.activeStages.length > 1 ? (
-                                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-5 text-amber-800">
-                                    Batch tidak seragam: {summary.activeStages.map((stage) => STAGE_LABEL[stage]).join(' dan ')} berjalan
-                                    bersamaan. Satu klik memajukan setiap soal satu tahap sesuai posisinya masing-masing — batch akan
-                                    menyeragamkan diri setelah beberapa klik.
-                                </p>
-                            ) : null}
-                            <textarea
-                                className={`${adminInputClass} mt-3 min-h-20 resize-y`}
-                                name="notes"
-                                placeholder="Catatan review untuk seluruh batch (opsional)..."
-                            />
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <button className={adminSuccessButtonClass} name="decision" value="approve"><CheckCircle2 size={16} />Setujui {active} soal</button>
-                                <button className={adminWarningButtonClass} name="decision" value="revision_required"><Clock3 size={16} />Revisi {active} soal</button>
-                                <button className={adminDangerButtonClass} name="decision" value="reject"><XCircle size={16} />Tolak {active} soal</button>
-                            </div>
-                        </form>
+                        <ReviewBatchStageForm
+                            action={reviewReviewBatchStageAction}
+                            batch={batch}
+                            program={program}
+                            track={track}
+                            stage={summary.activeStage}
+                            stageNumber={STAGE_NUMBER[summary.activeStage]}
+                            activeCount={active}
+                            activeStages={summary.activeStages}
+                            highlight={focus === 2}
+                        />
                     ) : null}
 
                     {canReview && !summary.activeStage && !summary.needsPrepare && !summary.isDone ? (
@@ -236,10 +266,37 @@ export default async function ReviewBatchPanel({
                                         {summary.approved > 0 ? `${summary.approved} soal siap terbit.` : 'Belum ada soal approved di batch ini.'}
                                     </p>
                                 </div>
-                                <button className={adminSecondaryButtonClass} disabled={summary.approved === 0}><ShieldCheck size={15} />Terbitkan batch</button>
+                                <button className={adminSecondaryButtonClass} disabled={summary.approved === 0}><ShieldCheck size={15} />Terbitkan {summary.approved} soal</button>
                             </div>
                         </form>
                     ) : null}
+                </div>
+            </div>
+
+            <div id="review-batch-questions" className="border-t border-slate-200 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-black text-slate-900">
+                        Soal di batch ini <span className="font-bold text-slate-500">({questions.length})</span>
+                    </h3>
+                    <p className="text-xs font-medium text-slate-500">
+                        Spot-check satu per satu dulu bila perlu — keputusan massal tidak menghalangi pemeriksaan.
+                    </p>
+                </div>
+                <div className="mt-3 max-h-64 space-y-1.5 overflow-y-auto pr-1">
+                    {orderQuestions(questions).map((question) => (
+                        <div key={question.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
+                            <span className="min-w-0 truncate font-mono text-xs font-bold text-slate-700">{question.code || question.id.slice(0, 8)}</span>
+                            <span className="flex items-center gap-2">
+                                <AdminStatusBadge status={question.status} />
+                                <Link
+                                    className="text-xs font-bold text-blue-700 hover:underline"
+                                    href={`/admin/content/review?${new URLSearchParams({ program, track, question: question.id }).toString()}`}
+                                >
+                                    Periksa
+                                </Link>
+                            </span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </AdminCard>

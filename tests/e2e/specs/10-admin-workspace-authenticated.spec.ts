@@ -336,6 +336,14 @@ test.describe('Admin content modules after legacy tree removal', () => {
     // mengikuti keadaan batch (siapkan draft vs sudah disiapkan semua).
     await expect(page.getByRole('heading', { name: 'Langkah 1 · Siapkan & klaim' })).toBeVisible()
     await expect(page.getByRole('button', { name: /^(Siapkan \d+ soal|Sudah disiapkan)$/ })).toBeVisible()
+    // Panel menjelaskan fungsinya sendiri (bukan sekadar tiga tombol), menyebut
+    // posisi tahap, dan menyediakan daftar soal untuk spot-check sebelum
+    // memutuskan puluhan soal sekaligus.
+    await expect(page.getByText('Apa ini?', { exact: true })).toBeVisible()
+    await expect(page.getByText('Keputusan tetap milik Anda.', { exact: false })).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Soal di batch ini/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Periksa' }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Terbitkan \d+ soal$/ })).toBeVisible()
     await expectNoHorizontalOverflow(page)
   })
 
