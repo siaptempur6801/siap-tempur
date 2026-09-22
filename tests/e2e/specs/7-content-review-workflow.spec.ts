@@ -111,13 +111,13 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await expect(createSection).toBeVisible()
     const form = createSection.locator('form')
 
-    await form.getByLabel('Subject').selectOption('BIN')
+    await form.getByLabel('Mapel / subtes').selectOption('BIN')
     await form.getByLabel('Tipe soal').selectOption('single_choice')
     await form.getByLabel('Pertanyaan').fill(uniqueStem)
-    await form.getByLabel('Difficulty').selectOption('medium')
-    await form.getByLabel('Cognitive level').fill('application')
+    await form.getByLabel('Tingkat kesulitan').selectOption('medium')
+    await form.getByLabel('Level kognitif').fill('application')
     await form.getByLabel('Estimasi detik').fill('60')
-    await form.getByLabel('Source reference').fill('CI reviewer workspace')
+    await form.getByLabel('Sumber / referensi').fill('CI reviewer workspace')
     await form.getByLabel('Isi opsi A').fill('Jawaban benar')
     await form.getByLabel('Isi opsi B').fill('Distraktor satu')
     await form.getByLabel('Isi opsi C').fill('Distraktor dua')
@@ -131,7 +131,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     const questionId = new URL(editorPage.url()).searchParams.get('question') || ''
     expect(questionId).toMatch(/^[0-9a-f-]{36}$/i)
 
-    await expect(editorPage.getByRole('heading', { name: 'Edit draft / revisi' })).toBeVisible()
+    await expect(editorPage.getByRole('heading', { name: 'Ubah draf / revisi' })).toBeVisible()
     await expect(editorPage.getByLabel('Pertanyaan')).toHaveValue(uniqueStem)
     // Regresi: form edit pernah menampilkan opsi contoh kosong (A–D) alih-alih
     // opsi tersimpan setelah editor dipindah ke ReviewQuestionFields.
@@ -187,7 +187,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await approveStage(reviewerPage, 'Technical QA E2E approved')
     await expect(reviewerPage.getByText('Disetujui', { exact: true }).last()).toBeVisible()
 
-    await followServerAction(reviewerPage, reviewerPage.getByRole('button', { name: 'Publish Question' }))
+    await followServerAction(reviewerPage, reviewerPage.getByRole('button', { name: 'Terbitkan soal' }))
     await expect(reviewerPage.getByText('Soal berhasil dipublish.')).toBeVisible()
     await expect(reviewerPage.getByText('Terbit', { exact: true }).last()).toBeVisible()
 

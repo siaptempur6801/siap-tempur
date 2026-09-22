@@ -165,8 +165,43 @@ export function adminStatusLabel(value: unknown): string {
         not_started: 'Belum mulai',
         in_progress: 'Mengerjakan',
         paid: 'Lunas',
+        // Status pembayaran Midtrans (sebelumnya tampil mentah dalam bahasa Inggris).
+        settlement: 'Selesai',
+        capture: 'Tertangkap',
+        deny: 'Ditolak bank',
+        expire: 'Kedaluwarsa',
+        cancel: 'Dibatalkan',
+        refund: 'Dana dikembalikan',
+        partial_refund: 'Dana dikembalikan sebagian',
+        chargeback: 'Sengketa bank',
     }
     return labels[status] || raw || '—'
+}
+
+/** Label tipe soal untuk daftar/detail admin. */
+const QUESTION_TYPE_LABELS: Record<string, string> = {
+    single_choice: 'Pilihan tunggal',
+    multiple_choice: 'Pilihan majemuk',
+    category: 'Kategori',
+}
+
+export function adminQuestionTypeLabel(value: unknown): string {
+    const raw = String(value ?? '')
+    if (!raw) return '—'
+    return QUESTION_TYPE_LABELS[raw] ?? raw.replace(/_/g, ' ')
+}
+
+/** Label jenis produk untuk daftar admin. */
+const PRODUCT_TYPE_LABELS: Record<string, string> = {
+    TOKEN_PACK: 'Paket token',
+    PASS: 'Langganan (pass)',
+    EVENT_TICKET: 'Tiket event',
+}
+
+export function adminProductTypeLabel(value: unknown): string {
+    const raw = String(value ?? '')
+    if (!raw) return '—'
+    return PRODUCT_TYPE_LABELS[raw] ?? raw.replace(/_/g, ' ').toLowerCase()
 }
 
 /**

@@ -39,7 +39,7 @@ import {
 import AdminListToolbar from '@/components/admin/AdminListToolbar'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { adminPageHref, adminPageSummary, parseAdminPage } from '@/lib/admin-pagination'
-import { adminAuditLabel, adminStatusLabel, adminStatusVariant, formatDateTime } from '@/lib/admin-format'
+import { adminAuditLabel, adminQuestionTypeLabel, adminStatusLabel, adminStatusVariant, formatDateTime } from '@/lib/admin-format'
 import { isLegacyHistoryPlaceholder } from '@/lib/question-source'
 import { cn } from '@/lib/utils'
 import { PERMISSIONS } from '@/src/auth/permissions'
@@ -343,13 +343,13 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                     </div>
                     <ReviewDraftForm action={saveContentDraftAction} className="grid gap-4 p-5 lg:grid-cols-2">
                         <HiddenContext program={program} track={track}/>
-                        <AdminField label="Subject"><select className={adminInputClass} name="subject_code" required defaultValue={activeSubjectCode}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
+                        <AdminField label="Mapel / subtes"><select className={adminInputClass} name="subject_code" required defaultValue={activeSubjectCode}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
                         <ReviewQuestionFields middle={<>
                             <AdminField label="Pertanyaan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="stem" required placeholder="Tulis pertanyaan dengan jelas..."/></AdminField>
-                            <AdminField label="Difficulty"><select className={adminInputClass} name="difficulty" defaultValue="medium"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></AdminField>
-                            <AdminField label="Cognitive level"><input className={adminInputClass} name="cognitive_level" placeholder="application / reasoning"/></AdminField>
+                            <AdminField label="Tingkat kesulitan"><select className={adminInputClass} name="difficulty" defaultValue="medium"><option value="easy">Mudah</option><option value="medium">Sedang</option><option value="hard">Sulit</option></select></AdminField>
+                            <AdminField label="Level kognitif"><input className={adminInputClass} name="cognitive_level" placeholder="application / reasoning"/></AdminField>
                             <AdminField label="Estimasi detik"><input className={adminInputClass} type="number" min="1" name="estimated_seconds" placeholder="60"/></AdminField>
-                            <AdminField label="Source reference"><input className={adminInputClass} name="source_reference" placeholder="Sumber atau referensi"/></AdminField>
+                            <AdminField label="Sumber / referensi"><input className={adminInputClass} name="source_reference" placeholder="Sumber atau referensi"/></AdminField>
                         </>}/>
                         <AdminField label="Pembahasan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="explanation" placeholder="Tulis alasan jawaban dan konsep yang diuji..."/></AdminField>
                         <AdminField label="Alasan / catatan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Initial draft from Content Workspace"/></AdminField>
@@ -399,7 +399,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                         <>
                             <AdminCard className="p-5">
                                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                    <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black uppercase tracking-wide text-blue-600">{s(data.subjectById.get(s(selected.subject_id))?.code)}</span><span className="text-xs font-bold text-slate-500">{s(selected.question_type)} · v{n(selected.version)}</span></div><h2 className="mt-1 text-xl font-black text-slate-950">{s(selected.question_code) || 'Soal tanpa kode'}</h2><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-500"><span>Penulis: <b className="text-slate-700">{profileName(author)}</b></span><span>Reviewer: <b className="text-slate-700">{profileName(assignedReviewer)}</b></span><span>Diperbarui: {formatDateTime(selected.updated_at)}</span></div></div>
+                                    <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-xs font-black uppercase tracking-wide text-blue-600">{s(data.subjectById.get(s(selected.subject_id))?.code)}</span><span className="text-xs font-bold text-slate-500">{adminQuestionTypeLabel(selected.question_type)} · v{n(selected.version)}</span></div><h2 className="mt-1 text-xl font-black text-slate-950">{s(selected.question_code) || 'Soal tanpa kode'}</h2><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-slate-500"><span>Penulis: <b className="text-slate-700">{profileName(author)}</b></span><span>Reviewer: <b className="text-slate-700">{profileName(assignedReviewer)}</b></span><span>Diperbarui: {formatDateTime(selected.updated_at)}</span></div></div>
                                     {placeholder ? <AdminBadge variant="orange">Placeholder riwayat</AdminBadge> : <AdminBadge variant={adminStatusVariant(selected.status)}>{adminStatusLabel(selected.status)}</AdminBadge>}
                                 </div>
                                 <ReviewProgress question={selected}/>
@@ -431,27 +431,27 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
                                     {Boolean(selected.current_stage) && !canReview && Boolean(selected.reviewer_id) ? <p className="text-sm font-medium leading-6 text-slate-500">Tahap ini ditugaskan ke <b className="text-slate-800">{profileName(assignedReviewer)}</b>. Hanya reviewer tersebut yang dapat memberikan keputusan.</p> : null}
                                     {currentActorIsAuthor && Boolean(selected.current_stage) ? <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">Self-review diblok. Author tidak dapat mereview soal sendiri.</div> : null}
-                                    {canPublish ? <form action={publishContentQuestionAction}><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><button className={adminPrimaryButtonClass}><ShieldCheck size={16}/>Publish Question</button></form> : null}
+                                    {canPublish ? <form action={publishContentQuestionAction}><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><button className={adminPrimaryButtonClass}><ShieldCheck size={16}/>Terbitkan soal</button></form> : null}
                                 </div>
                             </AdminCard>
 
                             {canEdit ? (
                                 <section className="rounded-2xl border border-orange-200 bg-white shadow-sm">
                                     <details open>
-                                        <summary className="cursor-pointer list-none border-b border-slate-200 p-5"><div><h3 className="text-base font-black text-slate-950">Edit draft / revisi</h3><p className="mt-1 text-sm font-medium text-slate-500">Ubah content dan klasifikasi. Simpan sebelum mengirim kembali ke review.</p></div></summary>
+                                        <summary className="cursor-pointer list-none border-b border-slate-200 p-5"><div><h3 className="text-base font-black text-slate-950">Ubah draf / revisi</h3><p className="mt-1 text-sm font-medium text-slate-500">Ubah content dan klasifikasi. Simpan sebelum mengirim kembali ke review.</p></div></summary>
                                         <ReviewDraftForm action={saveContentDraftAction} className="grid gap-4 p-5 lg:grid-cols-2">
                                             <HiddenContext program={program} track={track}/><input type="hidden" name="id" value={s(selected.id)}/>
                                             <input type="hidden" name="expected_version" value={s(selected.version)}/>
                                             <input type="hidden" name="expected_updated_at" value={s(selected.updated_at)}/>
-                                            <AdminField label="Subject"><select className={adminInputClass} name="subject_code" required defaultValue={s(data.subjectById.get(s(selected.subject_id))?.code)}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
+                                            <AdminField label="Mapel / subtes"><select className={adminInputClass} name="subject_code" required defaultValue={s(data.subjectById.get(s(selected.subject_id))?.code)}>{data.catalog.subjects.map((subject) => <option key={subject.id} value={subject.code}>{subject.code} · {subject.name}</option>)}</select></AdminField>
                                             <ReviewQuestionFields defaultType={s(selected.question_type)} optionsDefaultValue={serializeOptionRows(data.options)} middle={<>
                                                 <AdminField label="Pertanyaan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="stem" required defaultValue={s(selected.stem)}/></AdminField>
-                                                <AdminField label="Difficulty"><select className={adminInputClass} name="difficulty" defaultValue={s(selected.difficulty)}><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></AdminField>
-                                                <AdminField label="Cognitive level"><input className={adminInputClass} name="cognitive_level" defaultValue={s(selected.cognitive_level)}/></AdminField>
+                                                <AdminField label="Tingkat kesulitan"><select className={adminInputClass} name="difficulty" defaultValue={s(selected.difficulty)}><option value="easy">Mudah</option><option value="medium">Sedang</option><option value="hard">Sulit</option></select></AdminField>
+                                                <AdminField label="Level kognitif"><input className={adminInputClass} name="cognitive_level" defaultValue={s(selected.cognitive_level)}/></AdminField>
                                                 <AdminField label="Estimasi detik"><input className={adminInputClass} type="number" min="1" name="estimated_seconds" defaultValue={s(selected.estimated_seconds)}/></AdminField>
-                                                <AdminField label="Source reference"><input className={adminInputClass} name="source_reference" defaultValue={s(selected.source_reference)}/></AdminField>
+                                                <AdminField label="Sumber / referensi"><input className={adminInputClass} name="source_reference" defaultValue={s(selected.source_reference)}/></AdminField>
                                                 <AdminField label="Stimulus"><select className={adminInputClass} name="stimulus_id" defaultValue={s(selected.stimulus_id)}><option value="">Tanpa stimulus</option>{data.stimulusCandidates.map((stimulus) => <option key={s(stimulus.id)} value={s(stimulus.id)}>{s(stimulus.stimulus_code)} · {s(stimulus.title) || s(stimulus.content).slice(0, 60)}</option>)}</select></AdminField>
-                                                <AdminField label="Primary knowledge node"><select className={adminInputClass} name="knowledge_node_id" defaultValue={primaryNode ? s(primaryNode.knowledge_node_id) : ''}><option value="">Belum dipetakan</option>{data.subjectKnowledgeNodes.map((node) => <option key={s(node.id)} value={s(node.id)}>{'—'.repeat(Math.min(n(node.depth), 4))} {s(node.name)}</option>)}</select></AdminField>
+                                                <AdminField label="Materi utama"><select className={adminInputClass} name="knowledge_node_id" defaultValue={primaryNode ? s(primaryNode.knowledge_node_id) : ''}><option value="">Belum dipetakan</option>{data.subjectKnowledgeNodes.map((node) => <option key={s(node.id)} value={s(node.id)}>{'—'.repeat(Math.min(n(node.depth), 4))} {s(node.name)}</option>)}</select></AdminField>
                                             </>}/>
                                             <AdminField label="Pembahasan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="explanation" defaultValue={s(data.explanation?.content)}/></AdminField>
                                             <AdminField label="Alasan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Content workspace update"/></AdminField>

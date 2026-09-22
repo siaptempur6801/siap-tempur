@@ -22,9 +22,9 @@ export default function ReviewQuestionFields({ defaultType, optionsDefaultValue,
         <>
             <AdminField label="Tipe soal">
                 <select className={adminInputClass} name="question_type" value={questionType} onChange={(event) => setQuestionType(event.target.value)}>
-                    <option value="single_choice">Single choice</option>
-                    <option value="multiple_choice">Multiple choice</option>
-                    <option value="category">Category</option>
+                    <option value="single_choice">Pilihan tunggal</option>
+                    <option value="multiple_choice">Pilihan majemuk</option>
+                    <option value="category">Kategori</option>
                 </select>
             </AdminField>
             {middle}
