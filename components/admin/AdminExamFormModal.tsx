@@ -9,6 +9,7 @@ import {
   adminInputClass,
   adminPrimaryButtonClass,
 } from '@/components/admin/AdminUi'
+import { adminExamTypeLabel, adminStatusLabel } from '@/lib/admin-format'
 
 export type ExamFormExam = {
   id: string
@@ -111,9 +112,9 @@ export default function AdminExamFormModal({
 
   return (
     <AdminModal
-      title={editedExam ? 'Edit exam' : 'Buat exam'}
-      description={isDrill ? 'Drill adalah latihan pendalaman satu submateri. Question pool dibatasi oleh knowledge node yang dipilih.' : 'Konfigurasi exam untuk context aktif.'}
-      triggerLabel="Buat exam"
+      title={editedExam ? 'Ubah ujian' : 'Buat ujian'}
+      description={isDrill ? 'Latihan materi digunakan untuk mendalami satu submateri. Soal dibatasi oleh materi yang dipilih.' : 'Konfigurasi ujian untuk konteks aktif.'}
+      triggerLabel="Buat ujian"
       defaultOpen={Boolean(editedExam)}
       closeHref={closeHref}
       size="xl"
@@ -123,13 +124,13 @@ export default function AdminExamFormModal({
         <input type="hidden" name="track_code" value={track}/>
         {editedExam ? <input type="hidden" name="id" value={editedExam.id}/> : null}
 
-        <FormSection title="Identitas" description="Tipe exam menentukan bentuk pengerjaan; tipe tidak dapat diubah setelah exam dibuat.">
-          <AdminField label="Tipe exam">
+        <FormSection title="Identitas" description="Tipe ujian menentukan bentuk pengerjaan dan tidak dapat diubah setelah ujian dibuat.">
+          <AdminField label="Tipe ujian">
             {editedExam ? (
               <>
                 <input type="hidden" name="exam_type_code" value={examTypeCode}/>
                 <div className="flex min-h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700">
-                  {examTypeCode} · {examTypes.find((type) => type.code === examTypeCode)?.name}
+                  {adminExamTypeLabel(examTypeCode)}
                 </div>
               </>
             ) : (
@@ -145,17 +146,14 @@ export default function AdminExamFormModal({
                   }
                 }}
               >
-                {examTypes.map((type) => <option key={type.id} value={type.code}>{type.code} · {type.name}</option>)}
+                {examTypes.map((type) => <option key={type.id} value={type.code}>{adminExamTypeLabel(type.code)}</option>)}
               </select>
             )}
           </AdminField>
 
-          <AdminField label="Status" hint="Draft tidak terlihat peserta; Active langsung ditawarkan.">
+          <AdminField label="Status" hint="Draf tidak terlihat peserta; Aktif langsung ditawarkan.">
             <select className={adminInputClass} name="status" defaultValue={editedExam?.status || 'draft'}>
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="archived">Archived</option>
+              {['draft', 'active', 'scheduled', 'archived'].map((status) => <option key={status} value={status}>{adminStatusLabel(status)}</option>)}
             </select>
           </AdminField>
 
@@ -169,7 +167,7 @@ export default function AdminExamFormModal({
                 setManualTitle(true)
                 setTitle(event.target.value)
               }}
-              placeholder={isDrill ? generatedDrillTitle(subjectByCode.get(subjectCode), selectedNode) : 'Judul exam'}
+              placeholder={isDrill ? generatedDrillTitle(subjectByCode.get(subjectCode), selectedNode) : 'Judul ujian'}
             />
           </AdminField>
 
@@ -179,13 +177,13 @@ export default function AdminExamFormModal({
         </FormSection>
 
         {isDrill ? (
-          <FormSection title="Fokus Drill" description="Drill mengambil soal dari satu submateri; blueprint dan section internal dibuat otomatis.">
+        <FormSection title="Fokus latihan" description="Latihan mengambil soal dari satu submateri; cetak biru dan bagian internal dibuat otomatis.">
             <div className="md:col-span-2 rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white"><BookOpen size={18}/></div>
                 <div>
                   <div className="font-extrabold text-blue-950">Drill = pendalaman submateri</div>
-                  <p className="mt-1 text-sm font-medium leading-6 text-blue-800">Pilih subtes seperti TWK/TIU/TKP, lalu pilih submaterinya. Sistem membuat satu blueprint dan satu section internal otomatis; admin tidak perlu menambah section Drill manual.</p>
+                  <p className="mt-1 text-sm font-medium leading-6 text-blue-800">Pilih subtes seperti TWK/TIU/TKP, lalu pilih submaterinya. Sistem membuat satu cetak biru dan satu bagian internal secara otomatis.</p>
                 </div>
               </div>
             </div>
@@ -212,10 +210,10 @@ export default function AdminExamFormModal({
 
             {/* Field ini berisi badge + meta tambahan di bawah select, jadi dibungkus
                 div (bukan label) agar klik badge tidak memicu select. */}
-            <AdminField label="Submateri / Knowledge Node" as="div">
+            <AdminField label="Submateri" as="div">
               <select
                 className={adminInputClass}
-                aria-label="Submateri / Knowledge Node"
+                aria-label="Submateri"
                 name="knowledge_node_id"
                 value={selectedNode?.id ?? ''}
                 onChange={(event) => {
@@ -244,7 +242,7 @@ export default function AdminExamFormModal({
             <AdminField
               label="Jumlah soal Drill"
               fieldId="exam-question-count"
-              error={poolTooSmall ? 'Jumlah soal melebihi pool submateri.' : undefined}
+              error={poolTooSmall ? 'Jumlah soal melebihi soal yang tersedia pada submateri.' : undefined}
             >
               <input
                 className={adminInputClass}
@@ -260,19 +258,19 @@ export default function AdminExamFormModal({
           </FormSection>
         ) : null}
 
-        <FormSection title="Pengerjaan" description="Aturan dasar saat peserta mengerjakan exam ini.">
+        <FormSection title="Pengerjaan" description="Aturan dasar saat peserta mengerjakan ujian ini.">
           <AdminField label="Durasi (detik)" hint="1200 detik = 20 menit.">
             <input className={adminInputClass} name="duration_seconds" type="number" min="1" required defaultValue={editedExam?.duration_seconds ?? (isDrill ? 1200 : '')}/>
           </AdminField>
 
-          <AdminField label="Attempt limit" hint="Berapa kali peserta boleh mengerjakan.">
+          <AdminField label="Batas percobaan" hint="Berapa kali peserta boleh mengerjakan.">
             <input className={adminInputClass} name="attempt_limit" type="number" min="1" required defaultValue={editedExam?.attempt_limit ?? 1}/>
           </AdminField>
 
           <AdminField label="Urutan soal">
             <select className={adminInputClass} name="question_order" defaultValue={editedExam?.question_order || 'random'}>
-              <option value="random">Random</option>
-              <option value="fixed">Fixed</option>
+              <option value="random">Acak</option>
+              <option value="fixed">Tetap</option>
             </select>
           </AdminField>
         </FormSection>
@@ -280,13 +278,13 @@ export default function AdminExamFormModal({
         <FormSection title="Akses & token" description="Token hanya ditarik untuk akses berbayar; biarkan 0 untuk akses gratis.">
           <AdminField label="Akses">
             <select className={adminInputClass} name="access_type" defaultValue={editedExam?.access_type || 'FREE'}>
-              <option value="FREE">FREE</option>
-              <option value="FREEMIUM">FREEMIUM</option>
-              <option value="PREMIUM">PREMIUM</option>
+              <option value="FREE">Gratis</option>
+              <option value="FREEMIUM">Freemium</option>
+              <option value="PREMIUM">Premium</option>
             </select>
           </AdminField>
 
-          <AdminField label="Token cost" hint="0 untuk akses gratis.">
+          <AdminField label="Biaya token" hint="0 untuk akses gratis.">
             <input className={adminInputClass} name="token_cost" type="number" min="0" defaultValue={editedExam?.token_cost ?? 0}/>
           </AdminField>
         </FormSection>
@@ -295,7 +293,7 @@ export default function AdminExamFormModal({
 
         <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4">
           <button className={adminPrimaryButtonClass} disabled={poolTooSmall || (isDrill && !selectedNode)}>
-            <Save size={16}/>{editedExam ? 'Simpan perubahan' : 'Simpan exam'}
+            <Save size={16}/>{editedExam ? 'Simpan perubahan' : 'Simpan ujian'}
           </button>
         </div>
       </form>

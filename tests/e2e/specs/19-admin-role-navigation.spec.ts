@@ -86,7 +86,7 @@ test.describe('Alur peran Admin Workspace', () => {
             // Label peran dibaca manusia, bukan kode mentah.
             await expect(page.getByText('Admin', { exact: true }).first()).toBeVisible()
             // Dashboard ADMIN memang menampilkan antrean content.
-            await expect(page.getByText('Review queue', { exact: true })).toBeVisible()
+            await expect(page.getByText('Antrean review', { exact: true })).toBeVisible()
             await expect(page.getByText('Perlu perhatian', { exact: true })).toBeVisible()
         } finally {
             await cleanupRoleUser(supabaseUrl, user.userId)
@@ -105,13 +105,13 @@ test.describe('Alur peran Admin Workspace', () => {
 
             // Dashboard-nya juga harus sadar-peran: FINANCE tidak boleh disuguhi
             // metrik review content maupun antreannya.
-            await expect(page.getByText('Review queue', { exact: true })).toHaveCount(0)
+            await expect(page.getByText('Antrean review', { exact: true })).toHaveCount(0)
             await expect(page.getByText('Perlu perhatian', { exact: true })).toHaveCount(0)
-            await expect(page.getByText('Tidak ada antrean content', { exact: true })).toBeVisible()
+            await expect(page.getByText('Tidak ada antrean konten', { exact: true })).toBeVisible()
             // Quick action yang ditawarkan hanya yang bisa dipakai.
-            await expect(page.getByRole('link', { name: 'Order & pembayaran', exact: true })).toBeVisible()
-            await expect(page.getByRole('link', { name: 'Question bank', exact: true })).toHaveCount(0)
-            await expect(page.getByRole('link', { name: 'Kelola exam', exact: true })).toHaveCount(0)
+            await expect(page.getByRole('link', { name: 'Pesanan & pembayaran', exact: true })).toBeVisible()
+            await expect(page.getByRole('link', { name: 'Bank soal', exact: true })).toHaveCount(0)
+            await expect(page.getByRole('link', { name: 'Kelola ujian', exact: true })).toHaveCount(0)
 
             // Entitlements harus benar-benar membuka — inilah pekerjaan FINANCE
             // yang sebelumnya hanya bisa dilakukan lewat SQL langsung.

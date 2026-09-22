@@ -204,6 +204,20 @@ export function adminProductTypeLabel(value: unknown): string {
     return PRODUCT_TYPE_LABELS[raw] ?? raw.replace(/_/g, ' ').toLowerCase()
 }
 
+/** Label tipe ujian untuk kartu dan form admin. */
+const EXAM_TYPE_LABELS: Record<string, string> = {
+    DRILL: 'Latihan materi',
+    MINI_TRYOUT: 'Mini Tryout',
+    FULL_TRYOUT: 'Tryout lengkap',
+    EVENT: 'Ujian event',
+}
+
+export function adminExamTypeLabel(value: unknown): string {
+    const raw = String(value ?? '')
+    if (!raw) return '—'
+    return EXAM_TYPE_LABELS[raw] ?? raw.replace(/_/g, ' ').toLowerCase()
+}
+
 /** Label jenis entitas audit untuk `/admin/audit` (nilai filter tetap mentah). */
 const ENTITY_TYPE_LABELS: Record<string, string> = {
     question: 'Soal',

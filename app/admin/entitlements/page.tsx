@@ -426,7 +426,7 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                                             <div className="font-semibold text-slate-700">{item.feature_name || item.feature_code || '—'}</div>
                                             {item.feature_code ? <div className="font-mono text-[10px] font-semibold text-slate-500">{item.feature_code}</div> : null}
                                         </td>
-                                        <td className="px-4 py-4 font-medium text-slate-500">{item.source_type || '—'}</td>
+                                        <td className="px-4 py-4 font-medium text-slate-500">{item.source_type ? transactionSourceLabel(item.source_type) : '—'}</td>
                                         <td className="px-4 py-4 font-bold text-slate-600">
                                             {item.usage_count}{item.usage_limit == null ? '' : ` / ${item.usage_limit}`}
                                         </td>

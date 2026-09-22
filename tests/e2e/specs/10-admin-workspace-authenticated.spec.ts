@@ -28,7 +28,7 @@ test.describe('Authenticated Admin Workspace closure', () => {
 
     await expectAdminModule(page, '/admin/content/questions', 'Question Bank')
     await expectAdminModule(page, '/admin/content/articles', 'Articles')
-    await expectAdminModule(page, '/admin/assessment/exams', 'Exams')
+    await expectAdminModule(page, '/admin/assessment/exams', 'Ujian')
     await expectAdminModule(page, '/admin/assessment/events', 'Events')
     await expectAdminModule(page, '/admin/commerce/products', 'Products')
     await expectAdminModule(page, '/admin/commerce', 'Orders & Payments')
@@ -86,17 +86,17 @@ test.describe('Authenticated Admin Workspace closure', () => {
 
   test('Exam modal exposes canonical Drill subject → knowledge-node contract', async ({ page }) => {
     await page.goto('/admin/assessment/exams?program=CPNS&track=SKD')
-    await expect(page.locator('main h1')).toHaveText('Exams')
+    await expect(page.locator('main h1')).toHaveText('Ujian')
 
-    await page.getByRole('button', { name: 'Buat exam', exact: true }).click()
+    await page.getByRole('button', { name: 'Buat ujian', exact: true }).click()
     const dialog = page.getByRole('dialog')
-    await expect(dialog.getByRole('heading', { name: 'Buat exam', exact: true })).toBeVisible()
+    await expect(dialog.getByRole('heading', { name: 'Buat ujian', exact: true })).toBeVisible()
 
     const examType = dialog.locator('select[name="exam_type_code"]')
     await examType.selectOption('DRILL')
     await expect(dialog.getByText('Drill = pendalaman submateri', { exact: true })).toBeVisible()
     await expect(dialog.getByText('Subtes', { exact: true })).toBeVisible()
-    await expect(dialog.getByText('Submateri / Knowledge Node', { exact: true })).toBeVisible()
+    await expect(dialog.getByText('Submateri', { exact: true })).toBeVisible()
     await expect(dialog.locator('select[name="subject_code"]')).toBeVisible()
     await expect(dialog.locator('select[name="knowledge_node_id"]')).toBeVisible()
     await expect(dialog.locator('input[name="question_count"]')).toBeVisible()
@@ -122,7 +122,7 @@ test.describe('Authenticated Admin Workspace closure', () => {
 
     await page.goto('/cpns/admin/tryout-config')
     await expect(page).toHaveURL(/\/admin\/assessment\/exams/)
-    await expect(page.locator('main h1')).toHaveText('Exams')
+    await expect(page.locator('main h1')).toHaveText('Ujian')
 
     await page.goto('/cpns/admin/event')
     await expect(page).toHaveURL(/\/admin\/assessment\/events/)
@@ -157,7 +157,7 @@ test.describe('Authenticated Admin Workspace closure', () => {
     await page.getByLabel('Tutup menu').last().click()
 
     await page.goto('/admin/assessment/exams?program=CPNS&track=SKD')
-    await expect(page.locator('main h1')).toHaveText('Exams')
+    await expect(page.locator('main h1')).toHaveText('Ujian')
     await expectNoHorizontalOverflow(page)
   })
 })
@@ -182,7 +182,7 @@ const ADMIN_ROUTES: Array<{ path: string; heading: string }> = [
   { path: '/admin/content/questions', heading: 'Question Bank' },
   { path: '/admin/content/review', heading: 'Reviewer Workspace' },
   { path: '/admin/content/articles', heading: 'Articles' },
-  { path: '/admin/assessment/exams', heading: 'Exams' },
+  { path: '/admin/assessment/exams', heading: 'Ujian' },
   { path: '/admin/assessment/events', heading: 'Events' },
   { path: '/admin/commerce/products', heading: 'Products' },
   { path: '/admin/commerce', heading: 'Orders & Payments' },

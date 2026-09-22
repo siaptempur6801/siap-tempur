@@ -365,6 +365,23 @@ Editorial/Academic/QA masing-masing 80, publish 80, lalu kembali utuh menjadi 80
 - Catatan: "Products/Exams/Articles" sebagai judul halaman/nav sengaja dibiarkan (nama modul) — hanya
   aksi dan nilai data yang diseragamkan.
 
+### P4 audit tampilan — konsistensi alur admin lintas modul (2026-09-22)
+- Tipe ujian tidak lagi menampilkan kode database `DRILL`/`MINI_TRYOUT`/`FULL_TRYOUT`/`EVENT`;
+  kartu dan form memakai label manusiawi. Istilah utama halaman ujian diseragamkan menjadi Ujian,
+  Bagian, Batas percobaan, Biaya token, Nilai kelulusan, dan jumlah soal tersedia.
+- Form produk memakai label Paket token/Langganan/Tiket event sambil mempertahankan nilai backend;
+  sumber entitlement `order_item` tampil sebagai "Pembelian produk".
+- Reviewer Workspace memakai istilah Indonesia untuk draf, antrean, riwayat review, jejak audit,
+  dan riwayat versi. Tombol review massal hanya muncul bagi role dengan `content.review` atau
+  `content.publish`; deep-link tanpa izin kembali ke antrean biasa.
+- Pergantian Program/Track sekarang membuang `bulk` dan `page`, sehingga mode review massal atau
+  halaman lama tidak aktif kembali secara tidak sengaja di konteks baru.
+- Dashboard dirapikan menjadi Konten/Ujian/Produk, Antrean review, Konteks aktif, dan Aksi cepat.
+  Tidak ada perubahan schema atau migration.
+- Verifikasi: lint dan typecheck lulus; **649 unit test / 90 file**; build produksi lulus; gate admin
+  **60 passed, exit 0** mencakup 14 route, role, alur form, serta overflow mobile 390 px dan tablet
+  1024 px. Warning tracing `lib/event-certificate-pdf.ts` tetap warning lama di luar scope.
+
 ### Harness & higiene yang ditemukan saat verifikasi
 - Spec `7-content-review-workflow` basi dan tidak pernah berjalan (runner self-hosted offline):
   locator login cocok ganda, label peran kini manusiawi ("Editor Konten"/"Reviewer Konten"), status

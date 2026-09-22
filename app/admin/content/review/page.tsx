@@ -272,15 +272,16 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
     // Panel review massal hanya relevan untuk batch CPNS/SKD yang sedang
     // dikerjakan. Konteks lain tidak perlu query tambahan.
     const isBatchContext = program === 'CPNS' && track === 'SKD'
-    const bulkMode = isBatchContext && params.bulk === '1'
+    const canUseBulk = permissions.has(PERMISSIONS.CONTENT_REVIEW) || permissions.has(PERMISSIONS.CONTENT_PUBLISH)
+    const bulkMode = isBatchContext && params.bulk === '1' && canUseBulk
 
     return (
         <AdminPage>
             <AdminPageHeader
                 title="Reviewer Workspace"
-                description={`Kelola soal ${program} / ${track} dari draft sampai published dalam satu antrian kerja. Context dapat diganti dari header admin.`}
+                description={`Kelola soal ${program} / ${track} dari draf sampai terbit dalam satu antrean kerja. Konteks dapat diganti dari header admin.`}
                 steps={bulkMode ? ['Siapkan soal', 'Review 3 tahap', 'Terbitkan'] : ['Pilih soal', 'Periksa isi', 'Ambil tindakan']}
-                action={<div className="flex flex-wrap items-center gap-2">{bulkMode ? <Link href={workspaceHref({ ...params, program, track }, { bulk: undefined })} className={adminSecondaryButtonClass}><ArrowLeft size={16}/>Kembali ke antrean</Link> : <Link href={workspaceHref({ program: 'CPNS', track: 'SKD', bulk: '1' })} className={adminSecondaryButtonClass}><Sparkles size={16}/>Buka review massal</Link>}{canCreate && !bulkMode ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}</div>}
+                action={<div className="flex flex-wrap items-center gap-2">{bulkMode ? <Link href={workspaceHref({ ...params, program, track }, { bulk: undefined })} className={adminSecondaryButtonClass}><ArrowLeft size={16}/>Kembali ke antrean</Link> : canUseBulk ? <Link href={workspaceHref({ program: 'CPNS', track: 'SKD', bulk: '1' })} className={adminSecondaryButtonClass}><Sparkles size={16}/>Buka review massal</Link> : null}{canCreate && !bulkMode ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}</div>}
             />
 
             <AdminFeedbackBanner ok={params.ok} error={params.error}/>
@@ -338,7 +339,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
             {!bulkMode && createNew && canCreate ? (
                 <section className="rounded-2xl border border-blue-200 bg-white shadow-sm ring-4 ring-blue-50">
                     <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5">
-                        <div><h2 className="text-lg font-black text-slate-950">Buat draft soal</h2><p className="mt-1 text-sm font-medium text-slate-500">Isi content utama dulu. Klasifikasi dan opsi disimpan sebagai satu draft transactional.</p></div>
+                        <div><h2 className="text-lg font-black text-slate-950">Buat draf soal</h2><p className="mt-1 text-sm font-medium text-slate-500">Isi konten utama terlebih dahulu. Klasifikasi dan opsi disimpan bersama dalam satu transaksi.</p></div>
                         <Link className="text-sm font-extrabold text-slate-500 hover:text-slate-800" href={workspaceHref({ program, track })}>Tutup</Link>
                     </div>
                     <ReviewDraftForm action={saveContentDraftAction} className="grid gap-4 p-5 lg:grid-cols-2">
@@ -352,7 +353,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                             <AdminField label="Sumber / referensi"><input className={adminInputClass} name="source_reference" placeholder="Sumber atau referensi"/></AdminField>
                         </>}/>
                         <AdminField label="Pembahasan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="explanation" placeholder="Tulis alasan jawaban dan konsep yang diuji..."/></AdminField>
-                        <AdminField label="Alasan / catatan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Initial draft from Content Workspace"/></AdminField>
+                        <AdminField label="Alasan / catatan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Draf awal dari Reviewer Workspace"/></AdminField>
                         <div className="flex flex-wrap gap-2 lg:col-span-2"><button className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Simpan draft</button><Link href={workspaceHref({ program, track })} className={adminSecondaryButtonClass}>Batal</Link></div>
                     </ReviewDraftForm>
                 </section>
@@ -360,7 +361,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
             {!bulkMode ? <div className="grid items-start gap-5 xl:grid-cols-[minmax(360px,0.72fr)_minmax(0,1.28fr)]">
                 <AdminCard className={cn('overflow-hidden xl:sticky xl:top-[88px]', selected ? 'hidden xl:block' : '')}>
-                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5"><div><h2 className="text-sm font-black text-slate-950">Review Queue</h2><p className="text-xs font-medium text-slate-500">{data.total} soal sesuai filter</p></div><AdminBadge>{data.counts.unassigned} belum ditugaskan</AdminBadge></div>
+                    <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3.5"><div><h2 className="text-sm font-black text-slate-950">Antrean review</h2><p className="text-xs font-medium text-slate-500">{data.total} soal sesuai filter</p></div><AdminBadge>{data.counts.unassigned} belum ditugaskan</AdminBadge></div>
                     <div className="max-h-[calc(100vh-270px)] overflow-y-auto">
                         {visibleQuestions.length === 0 ? (data.clampTo ? (
                             <AdminEmptyState
@@ -425,7 +426,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
                                     {canClaim && !canAssignOthers ? <form action={assignContentReviewerAction} className="rounded-xl border border-blue-200 bg-blue-50/60 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><input type="hidden" name="reviewer_id" value={authorization.userId}/><div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm font-medium leading-6 text-slate-600">Belum ada reviewer untuk tahap ini. Klaim untuk mulai memeriksa.</p><button className={adminPrimaryButtonClass}><UserCheck size={16}/>Klaim untuk saya</button></div></form> : null}
 
-                                    {Boolean(selected.current_stage) && !pendingReview ? <p className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm font-bold text-orange-800">Stage aktif tidak memiliki pending review. Periksa workflow history.</p> : null}
+                                    {Boolean(selected.current_stage) && !pendingReview ? <p className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm font-bold text-orange-800">Tahap aktif tidak memiliki review yang menunggu. Periksa riwayat alur.</p> : null}
 
                                     {canReview ? <form action={decideContentReviewAction} className="rounded-xl border border-blue-200 bg-blue-50/50 p-4"><HiddenContext program={program} track={track}/><input type="hidden" name="question_id" value={s(selected.id)}/><AdminField label="Catatan reviewer"><textarea className={`${adminInputClass} min-h-24 resize-y`} name="notes" placeholder="Tuliskan alasan keputusan agar penulis atau reviewer berikutnya memahami konteks..."/></AdminField><div className="mt-3 flex flex-wrap gap-2"><button className={adminSuccessButtonClass} name="decision" value="approve"><CheckCircle2 size={16}/>Setujui</button><button className={adminWarningButtonClass} name="decision" value="revision_required"><Clock3 size={16}/>Minta revisi</button><button className={adminDangerButtonClass} name="decision" value="reject"><XCircle size={16}/>Tolak</button></div></form> : null}
 
@@ -438,7 +439,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                             {canEdit ? (
                                 <section className="rounded-2xl border border-orange-200 bg-white shadow-sm">
                                     <details open>
-                                        <summary className="cursor-pointer list-none border-b border-slate-200 p-5"><div><h3 className="text-base font-black text-slate-950">Ubah draf / revisi</h3><p className="mt-1 text-sm font-medium text-slate-500">Ubah content dan klasifikasi. Simpan sebelum mengirim kembali ke review.</p></div></summary>
+                                        <summary className="cursor-pointer list-none border-b border-slate-200 p-5"><div><h3 className="text-base font-black text-slate-950">Ubah draf / revisi</h3><p className="mt-1 text-sm font-medium text-slate-500">Ubah konten dan klasifikasi. Simpan sebelum mengirim kembali ke review.</p></div></summary>
                                         <ReviewDraftForm action={saveContentDraftAction} className="grid gap-4 p-5 lg:grid-cols-2">
                                             <HiddenContext program={program} track={track}/><input type="hidden" name="id" value={s(selected.id)}/>
                                             <input type="hidden" name="expected_version" value={s(selected.version)}/>
@@ -454,7 +455,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                                                 <AdminField label="Materi utama"><select className={adminInputClass} name="knowledge_node_id" defaultValue={primaryNode ? s(primaryNode.knowledge_node_id) : ''}><option value="">Belum dipetakan</option>{data.subjectKnowledgeNodes.map((node) => <option key={s(node.id)} value={s(node.id)}>{'—'.repeat(Math.min(n(node.depth), 4))} {s(node.name)}</option>)}</select></AdminField>
                                             </>}/>
                                             <AdminField label="Pembahasan" className="lg:col-span-2"><textarea className={`${adminInputClass} min-h-32 resize-y`} name="explanation" defaultValue={s(data.explanation?.content)}/></AdminField>
-                                            <AdminField label="Alasan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Content workspace update"/></AdminField>
+                                            <AdminField label="Alasan perubahan" className="lg:col-span-2"><input className={adminInputClass} name="change_reason" defaultValue="Pembaruan dari Reviewer Workspace"/></AdminField>
                                             <div className="lg:col-span-2"><button className={adminPrimaryButtonClass}>Simpan perubahan</button></div>
                                         </ReviewDraftForm>
                                     </details>
@@ -463,19 +464,19 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
 
                             <section className="grid gap-5 lg:grid-cols-2">
                                 <AdminCard className="min-w-0 p-5">
-                                    <AdminSectionHeading title="Review Rounds" description="Keputusan reviewer per tahap dan versi soal."/>
-                                    <div className="mt-4 space-y-3">{data.currentReviews.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada review round.</p> : data.currentReviews.map((review) => <div key={s(review.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5"><div className="flex flex-wrap items-center justify-between gap-2"><b className="text-sm text-slate-900">Round {n(review.review_round)} · {stageLabel(review.review_stage)}</b><AdminBadge variant={adminStatusVariant(review.status)}>{adminStatusLabel(review.status)}</AdminBadge></div><div className="mt-1 text-xs font-medium text-slate-500">Reviewer: {profileName(data.profileById.get(s(review.reviewer_id)))} · Version {s(review.question_version) || '—'} · {formatDateTime(review.completed_at || review.updated_at)}</div>{Boolean(review.notes) ? <div className="mt-2 rounded-lg bg-white p-2.5 text-sm font-medium leading-6 text-slate-700 ring-1 ring-slate-200">{s(review.notes)}</div> : null}</div>)}</div>
+                                    <AdminSectionHeading title="Riwayat review" description="Keputusan reviewer per tahap dan versi soal."/>
+                                    <div className="mt-4 space-y-3">{data.currentReviews.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada riwayat review.</p> : data.currentReviews.map((review) => <div key={s(review.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3.5"><div className="flex flex-wrap items-center justify-between gap-2"><b className="text-sm text-slate-900">Putaran {n(review.review_round)} · {stageLabel(review.review_stage)}</b><AdminBadge variant={adminStatusVariant(review.status)}>{adminStatusLabel(review.status)}</AdminBadge></div><div className="mt-1 text-xs font-medium text-slate-500">Reviewer: {profileName(data.profileById.get(s(review.reviewer_id)))} · Versi {s(review.question_version) || '—'} · {formatDateTime(review.completed_at || review.updated_at)}</div>{Boolean(review.notes) ? <div className="mt-2 rounded-lg bg-white p-2.5 text-sm font-medium leading-6 text-slate-700 ring-1 ring-slate-200">{s(review.notes)}</div> : null}</div>)}</div>
                                 </AdminCard>
 
                                 <AdminCard className="min-w-0 p-5">
-                                    <AdminSectionHeading title="Audit Trail" description="Riwayat aksi pada soal ini."/>
-                                    <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{data.auditLogs.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada audit action untuk soal ini.</p> : data.auditLogs.map((log) => <div key={s(log.id)} className="rounded-xl border border-slate-200 p-3"><div className="text-sm font-extrabold text-slate-800" title={s(log.action)}>{adminAuditLabel(log.action)}</div><div className="mt-1 text-xs font-medium text-slate-500">{formatDateTime(log.created_at)} · {profileName(data.profileById.get(s(log.actor_user_id)), 'System')}</div></div>)}</div>
+                                    <AdminSectionHeading title="Jejak audit" description="Riwayat aksi pada soal ini."/>
+                                    <div className="mt-4 max-h-80 space-y-2 overflow-y-auto">{data.auditLogs.length === 0 ? <p className="text-sm font-medium text-slate-500">Belum ada aksi audit untuk soal ini.</p> : data.auditLogs.map((log) => <div key={s(log.id)} className="rounded-xl border border-slate-200 p-3"><div className="text-sm font-extrabold text-slate-800" title={s(log.action)}>{adminAuditLabel(log.action)}</div><div className="mt-1 text-xs font-medium text-slate-500">{formatDateTime(log.created_at)} · {profileName(data.profileById.get(s(log.actor_user_id)), 'Sistem')}</div></div>)}</div>
                                 </AdminCard>
                             </section>
 
                             <AdminCard className="min-w-0 p-5">
-                                <AdminSectionHeading title="Question version history" description="Snapshot perubahan disimpan untuk audit dan rollback content."/>
-                                <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">{data.versions.length === 0 ? <p className="text-sm font-medium text-slate-500">Snapshot version belum tersedia.</p> : data.versions.map((version) => <details key={s(version.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-sm font-extrabold text-slate-800">v{n(version.version)} · {formatDateTime(version.created_at)} · {s(version.change_reason) || 'Tanpa catatan'}</summary><pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-[11px] text-slate-200">{JSON.stringify(version.snapshot, null, 2)}</pre></details>)}</div>
+                                <AdminSectionHeading title="Riwayat versi soal" description="Salinan perubahan disimpan untuk audit dan pemulihan konten."/>
+                                <div className="mt-4 max-h-96 space-y-2 overflow-y-auto">{data.versions.length === 0 ? <p className="text-sm font-medium text-slate-500">Salinan versi belum tersedia.</p> : data.versions.map((version) => <details key={s(version.id)} className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-sm font-extrabold text-slate-800">v{n(version.version)} · {formatDateTime(version.created_at)} · {s(version.change_reason) || 'Tanpa catatan'}</summary><pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-slate-950 p-3 text-[11px] text-slate-200">{JSON.stringify(version.snapshot, null, 2)}</pre></details>)}</div>
                             </AdminCard>
                         </>
                     ) : null}

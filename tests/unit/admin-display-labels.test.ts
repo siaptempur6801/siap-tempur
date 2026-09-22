@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { adminEntityTypeLabel, adminProductTypeLabel, adminQuestionTypeLabel, adminStatusLabel } from '@/lib/admin-format'
+import { adminEntityTypeLabel, adminExamTypeLabel, adminProductTypeLabel, adminQuestionTypeLabel, adminStatusLabel } from '@/lib/admin-format'
 
 const repoRoot = resolve(__dirname, '../..')
 function source(relativePath: string) {
@@ -42,6 +42,15 @@ describe('label tampilan admin', () => {
         expect(adminProductTypeLabel(undefined)).toBe('—')
     })
 
+    it('tipe ujian dilabeli tanpa mengekspos kode database', () => {
+        expect(adminExamTypeLabel('DRILL')).toBe('Latihan materi')
+        expect(adminExamTypeLabel('MINI_TRYOUT')).toBe('Mini Tryout')
+        expect(adminExamTypeLabel('FULL_TRYOUT')).toBe('Tryout lengkap')
+        expect(adminExamTypeLabel('EVENT')).toBe('Ujian event')
+        expect(adminExamTypeLabel('NEW_TYPE')).toBe('new type')
+        expect(adminExamTypeLabel(null)).toBe('—')
+    })
+
     it('jenis entitas audit dilabeli; nilai filter tetap mentah di value', () => {
         expect(adminEntityTypeLabel('question')).toBe('Soal')
         expect(adminEntityTypeLabel('organization_participant')).toBe('Peserta instansi')
@@ -51,9 +60,23 @@ describe('label tampilan admin', () => {
     })
 
     it('tidak ada select admin yang menampilkan nilai mentah sebagai label', () => {
-        for (const file of ['app/admin/AdminOperationsWorkspace.tsx', 'app/admin/assessment/exams/AdminExamsWorkspace.tsx']) {
+        for (const file of ['app/admin/AdminOperationsWorkspace.tsx', 'app/admin/assessment/exams/AdminExamsWorkspace.tsx', 'components/admin/AdminExamFormModal.tsx']) {
             expect(source(file), file).not.toMatch(/<option>[a-z_]+<\/option>/)
+            expect(source(file), file).not.toMatch(/<option>[A-Z_]+<\/option>/)
         }
+    })
+
+    it('pergantian konteks menghapus mode dan halaman yang sudah tidak valid', () => {
+        const shell = source('components/admin/UnifiedAdminShell.tsx')
+        expect(shell).toContain("'bulk', 'page'")
+    })
+
+    it('sumber entitlement memakai label manusiawi', () => {
+        const service = source('src/services/admin-platform.service.ts')
+        const page = source('app/admin/entitlements/page.tsx')
+        expect(service).toContain("order_item: 'Pembelian produk'")
+        expect(page).toContain('transactionSourceLabel(item.source_type)')
+        expect(page).not.toContain("{item.source_type || '—'}")
     })
 
     it('aksi baris daftar memakai istilah Indonesia', () => {

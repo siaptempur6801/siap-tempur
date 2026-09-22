@@ -338,27 +338,27 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
     if (mode === 'products' && canProducts) {
         pageAction = (
             <AdminModal
-                title={editedProduct ? 'Ubah product' : 'Tambah product'}
-                description={editedProduct ? 'Perbarui product tanpa meninggalkan catalog.' : 'Buat product baru untuk context aktif.'}
-                triggerLabel="Tambah product"
+                title={editedProduct ? 'Ubah produk' : 'Tambah produk'}
+                description={editedProduct ? 'Perbarui produk tanpa meninggalkan katalog.' : 'Buat produk baru untuk konteks aktif.'}
+                triggerLabel="Tambah produk"
                 defaultOpen={Boolean(editedProduct)}
                 closeHref={closeHref}
                 size="xl"
             >
                 <form key={editedProduct ? `product-${s(editedProduct.id)}-${s(editedProduct.updated_at)}` : `product-new-${program}-${track}`} action={saveProductAction} className="grid gap-4 md:grid-cols-2">
                     <ContextFields program={program} track={track}/>
-                    {editedProduct && <input type="hidden" name="id" value={s(editedProduct.id)}/>} 
+                    {editedProduct && <input type="hidden" name="id" value={s(editedProduct.id)}/>}
                     <AdminField label="Kode"><input className={adminInputClass} name="code" required defaultValue={s(editedProduct?.code)} placeholder={`${program}_${track}_PRODUCT`}/></AdminField>
                     <AdminField label="Nama"><input className={adminInputClass} name="name" required defaultValue={s(editedProduct?.name)}/></AdminField>
-                    <AdminField label="Jenis"><select className={adminInputClass} name="product_type" defaultValue={s(editedProduct?.product_type) || 'PASS'}><option>TOKEN_PACK</option><option>PASS</option><option>EVENT_TICKET</option></select></AdminField>
+                    <AdminField label="Jenis"><select className={adminInputClass} name="product_type" defaultValue={s(editedProduct?.product_type) || 'PASS'}><option value="TOKEN_PACK">Paket token</option><option value="PASS">Langganan (pass)</option><option value="EVENT_TICKET">Tiket event</option></select></AdminField>
                     <AdminField label="Status"><select className={adminInputClass} name="status" defaultValue={s(editedProduct?.status) || 'DRAFT'}><option value="DRAFT">Draf</option><option value="ACTIVE">Aktif</option><option value="ARCHIVED">Diarsipkan</option></select></AdminField>
                     <AdminField label="Harga"><input className={adminInputClass} name="price" type="number" min="0" defaultValue={editedProductPrice ? s(editedProductPrice.amount) : ''}/></AdminField>
                     <input type="hidden" name="current_price" value={editedProductPrice ? s(editedProductPrice.amount) : ''}/>
-                    <AdminField label="Token grant"><input className={adminInputClass} name="token_grant" type="number" min="0" defaultValue={editedProduct ? grantByProduct.get(s(editedProduct.id)) ?? 0 : ''}/></AdminField>
+                    <AdminField label="Token yang diberikan"><input className={adminInputClass} name="token_grant" type="number" min="0" defaultValue={editedProduct ? grantByProduct.get(s(editedProduct.id)) ?? 0 : ''}/></AdminField>
                     <AdminField label="Durasi hari"><input className={adminInputClass} name="duration_days" type="number" min="1" defaultValue={s(editedProduct?.duration_days)}/></AdminField>
                     <AdminField label="Deskripsi"><input className={adminInputClass} name="description" defaultValue={s(editedProduct?.description)}/></AdminField>
                     <input type="hidden" name="currency" value="IDR"/>
-                    <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}><Save size={16}/>{editedProduct ? 'Simpan perubahan' : 'Simpan product'}</button></div>
+                    <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}><Save size={16}/>{editedProduct ? 'Simpan perubahan' : 'Simpan produk'}</button></div>
                 </form>
             </AdminModal>
         )
@@ -376,7 +376,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
             >
                 <form key={editedEvent ? `event-${s(editedEvent.id)}-${s(editedEvent.status)}-${s(editedEvent.starts_at)}` : `event-new-${program}-${track}`} action={saveEventAction} className="grid gap-4 md:grid-cols-2">
                     <ContextFields program={program} track={track}/>
-                    {editedEvent && <input type="hidden" name="id" value={s(editedEvent.id)}/>} 
+                    {editedEvent && <input type="hidden" name="id" value={s(editedEvent.id)}/>}
                     <AdminField label="Kode"><input className={adminInputClass} name="code" required defaultValue={s(editedEvent?.code)}/></AdminField>
                     <AdminField label="Judul"><input className={adminInputClass} name="title" required defaultValue={s(editedEvent?.title)}/></AdminField>
                     <AdminField label="Slug"><input className={adminInputClass} name="slug" defaultValue={s(editedEvent?.slug)}/></AdminField>
@@ -411,7 +411,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
         <AdminPage>
             <AdminPageHeader
                 title={ADMIN_OPERATIONS_PAGE_COPY[mode].title}
-                description={`${ADMIN_OPERATIONS_PAGE_COPY[mode].description} Context aktif: ${workspace.catalog.program.name} / ${workspace.catalog.track.name}.`}
+                description={`${ADMIN_OPERATIONS_PAGE_COPY[mode].description} Konteks aktif: ${workspace.catalog.program.name} / ${workspace.catalog.track.name}.`}
                 steps={ADMIN_OPERATIONS_WORKFLOW[mode]}
                 action={pageAction}
             />
@@ -429,7 +429,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                     resultCount={pageSummary?.total ?? products.length}
                 />
                 <AdminCard className="overflow-hidden">
-                    <div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Product catalog" description={pageSummary ? adminPageSummaryLabel(pageSummary, 'product', 'produk') : `${products.length} product pada context aktif.`}/></div>
+                    <div className="border-b border-slate-200 p-5"><AdminSectionHeading title="Katalog produk" description={pageSummary ? adminPageSummaryLabel(pageSummary, 'produk', 'produk') : `${products.length} produk pada konteks aktif.`}/></div>
                     {products.length ? <div className="divide-y divide-slate-100">{products.map((row) => {
                         const id = s(row.id)
                         const price = priceByProduct.get(id)
@@ -439,7 +439,7 @@ export default async function AdminOperationsWorkspace({ mode, searchParams }: {
                         </div>
                     })}</div> : pageOutOfRange ? (
                         <PageOutOfRange lastPage={pageSummary?.totalPages ?? 1} href={adminPageHref(pathname, activeFilters, pageSummary?.totalPages ?? 1)} noun="product"/>
-                    ) : <AdminEmptyState title="Tidak ada product" description={(activeFilters.q || activeFilters.status) ? 'Tidak ada product yang cocok dengan filter ini. Coba ubah kata kunci atau status, atau tekan Reset.' : 'Gunakan tombol Tambah product untuk membuat product pertama.'}/>}
+                    ) : <AdminEmptyState title="Tidak ada produk" description={(activeFilters.q || activeFilters.status) ? 'Tidak ada produk yang cocok dengan filter ini. Coba ubah kata kunci atau status, atau tekan Reset.' : 'Gunakan tombol Tambah produk untuk membuat produk pertama.'}/>}
                     {pageSummary && (products.length > 0 || pageOutOfRange) ? (
                         <AdminPagination pathname={pathname} params={activeFilters} summary={pageSummary} noun="product" plural="produk"/>
                     ) : null}

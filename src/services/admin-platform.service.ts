@@ -414,6 +414,7 @@ export const TRANSACTION_SOURCE_LABELS: Record<string, string> = {
     legacy_migration_opening_balance: 'Saldo awal migrasi',
     admin_adjustment: 'Penyesuaian admin',
     order: 'Pembelian',
+    order_item: 'Pembelian produk',
     refund: 'Pengembalian',
 }
 

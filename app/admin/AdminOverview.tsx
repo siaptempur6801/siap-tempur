@@ -135,30 +135,30 @@ export default async function AdminOverview({ params }: { params: SearchParams }
     const queue = questions.filter((row) => ['submitted', 'editorial_review', 'academic_review', 'technical_qa', 'revision_required'].includes(lower(row.status))).slice(0, 6)
 
     const quickActions = [
-        canReviewQueue ? { href: contextHref('/admin/content/review', program, track), label: 'Buka review queue', icon: ClipboardCheck } : null,
-        canQuestionBank ? { href: contextHref('/admin/content/questions', program, track), label: 'Question bank', icon: FileQuestion } : null,
-        canExams ? { href: contextHref('/admin/assessment/exams', program, track), label: 'Kelola exam', icon: CalendarDays } : null,
-        canProducts ? { href: contextHref('/admin/commerce/products', program, track), label: 'Kelola product', icon: Package } : null,
-        canCommerce ? { href: contextHref('/admin/commerce', program, track), label: 'Order & pembayaran', icon: CreditCard } : null,
+        canReviewQueue ? { href: contextHref('/admin/content/review', program, track), label: 'Buka antrean review', icon: ClipboardCheck } : null,
+        canQuestionBank ? { href: contextHref('/admin/content/questions', program, track), label: 'Bank soal', icon: FileQuestion } : null,
+        canExams ? { href: contextHref('/admin/assessment/exams', program, track), label: 'Kelola ujian', icon: CalendarDays } : null,
+        canProducts ? { href: contextHref('/admin/commerce/products', program, track), label: 'Kelola produk', icon: Package } : null,
+        canCommerce ? { href: contextHref('/admin/commerce', program, track), label: 'Pesanan & pembayaran', icon: CreditCard } : null,
         canPeople ? { href: '/admin/users', label: 'Kelola pengguna', icon: Users } : null,
         canReports ? { href: contextHref('/admin/reports', program, track), label: 'Lihat laporan', icon: BarChart3 } : null,
     ].filter(Boolean) as Array<{ href: string; label: string; icon: typeof ClipboardCheck }>
 
     const summaryCards = [
-        canContent ? { title: 'Content', headline: `${questions.length} soal termuat`, icon: FileQuestion, tone: 'text-blue-500', badges: [
-            { variant: 'green' as const, text: `${review?.counts.published ?? 0} published` },
-            { variant: 'green' as const, text: `${review?.counts.approved ?? 0} approved` },
+        canContent ? { title: 'Konten', headline: `${questions.length} soal termuat`, icon: FileQuestion, tone: 'text-blue-500', badges: [
+            { variant: 'green' as const, text: `${review?.counts.published ?? 0} terbit` },
+            { variant: 'green' as const, text: `${review?.counts.approved ?? 0} disetujui` },
             { variant: 'orange' as const, text: `${review?.counts.revisionRequired ?? 0} revisi` },
         ] } : null,
-        canExams || canEvents ? { title: 'Assessment', headline: `${exams.length} exam`, icon: CalendarDays, tone: 'text-blue-500', badges: [
-            { variant: 'green' as const, text: `${activeExams} active` },
-            { variant: 'neutral' as const, text: `${draftExams} draft` },
+        canExams || canEvents ? { title: 'Ujian', headline: `${exams.length} ujian`, icon: CalendarDays, tone: 'text-blue-500', badges: [
+            { variant: 'green' as const, text: `${activeExams} aktif` },
+            { variant: 'neutral' as const, text: `${draftExams} draf` },
             { variant: 'blue' as const, text: `${activeEvents} event aktif` },
         ] } : null,
-        canProducts || canCommerce ? { title: 'Commerce', headline: `${products.length} product`, icon: Package, tone: 'text-emerald-500', badges: [
-            { variant: 'green' as const, text: `${activeProducts} active` },
-            { variant: 'neutral' as const, text: `${draftProducts} draft` },
-            { variant: 'blue' as const, text: `${orders.length} order terbaru` },
+        canProducts || canCommerce ? { title: 'Perdagangan', headline: `${products.length} produk`, icon: Package, tone: 'text-emerald-500', badges: [
+            { variant: 'green' as const, text: `${activeProducts} aktif` },
+            { variant: 'neutral' as const, text: `${draftProducts} draf` },
+            { variant: 'blue' as const, text: `${orders.length} pesanan terbaru` },
         ] } : null,
     ].filter(Boolean) as Array<{ title: string; headline: string; icon: typeof FileQuestion; tone: string; badges: Array<{ variant: 'green' | 'neutral' | 'blue' | 'orange'; text: string }> }>
 
@@ -186,8 +186,8 @@ export default async function AdminOverview({ params }: { params: SearchParams }
                     <AdminCard className="overflow-hidden">
                         <div className="border-b border-slate-200 p-5">
                             <AdminSectionHeading
-                                title="Review queue"
-                                description="Pekerjaan content yang paling baru dan membutuhkan tindakan."
+                                title="Antrean review"
+                                description="Pekerjaan konten terbaru yang membutuhkan tindakan."
                                 action={<Link className="text-sm font-extrabold text-blue-600 hover:text-blue-700" href={contextHref('/admin/content/review', program, track)}>Lihat semua →</Link>}
                             />
                         </div>
@@ -213,15 +213,15 @@ export default async function AdminOverview({ params }: { params: SearchParams }
                                     </tbody>
                                 </table>
                             </div>
-                        ) : <AdminEmptyState title="Tidak ada pekerjaan content" description="Tidak ada content yang membutuhkan tindakan untuk context ini. Antrean akan terisi saat ada soal yang dikirim untuk review."/>}
+                        ) : <AdminEmptyState title="Tidak ada pekerjaan konten" description="Tidak ada konten yang membutuhkan tindakan untuk konteks ini. Antrean akan terisi saat ada soal yang dikirim untuk review."/>}
                     </AdminCard>
                 ) : (
-                    <AdminCard><AdminEmptyState title="Tidak ada antrean content" description="Peran Anda tidak mencakup pekerjaan content, jadi tidak ada antrean yang perlu ditampilkan di sini."/></AdminCard>
+                    <AdminCard><AdminEmptyState title="Tidak ada antrean konten" description="Peran Anda tidak mencakup pekerjaan konten, jadi tidak ada antrean yang perlu ditampilkan di sini."/></AdminCard>
                 )}
 
                 <div className="space-y-6">
                     <AdminCard className="p-5">
-                        <AdminSectionHeading title="Context aktif" description="Semua modul mengikuti program dan track ini."/>
+                        <AdminSectionHeading title="Konteks aktif" description="Semua modul mengikuti program dan jalur ini."/>
                         <div className="mt-4 grid grid-cols-2 gap-3">
                             <div className="rounded-xl bg-blue-50 p-3"><div className="text-[11px] font-bold uppercase tracking-wide text-blue-500">Program</div><div className="mt-1 text-lg font-black text-blue-950">{program}</div></div>
                             <div className="rounded-xl bg-blue-50 p-3"><div className="text-[11px] font-bold uppercase tracking-wide text-blue-500">Track</div><div className="mt-1 text-lg font-black text-blue-950">{track}</div></div>
@@ -229,7 +229,7 @@ export default async function AdminOverview({ params }: { params: SearchParams }
                     </AdminCard>
                     {quickActions.length ? (
                         <AdminCard className="p-5">
-                            <AdminSectionHeading title="Quick actions" description="Jalur tercepat ke pekerjaan yang paling sering dilakukan peran Anda."/>
+                            <AdminSectionHeading title="Aksi cepat" description="Jalur tercepat ke pekerjaan yang paling sering dilakukan peran Anda."/>
                             <div className="mt-4 grid gap-2">
                                 {quickActions.map((action) => {
                                     const Icon = action.icon

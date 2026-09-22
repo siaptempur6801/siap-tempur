@@ -59,10 +59,10 @@ function friendlyError(error: unknown) {
       : 'Jumlah soal Drill melebihi pool soal submateri yang tersedia.'
   }
   const friendly: Record<string, string> = {
-    EXAM_TYPE_INVALID: 'Tipe exam tidak valid.',
+    EXAM_TYPE_INVALID: 'Tipe ujian tidak valid.',
     EXAM_TITLE_REQUIRED: 'Judul exam wajib diisi.',
     EXAM_DURATION_INVALID: 'Durasi exam harus lebih dari 0 detik.',
-    EXAM_ATTEMPT_LIMIT_INVALID: 'Attempt limit harus lebih dari 0.',
+    EXAM_ATTEMPT_LIMIT_INVALID: 'Batas percobaan harus lebih dari 0.',
     EXAM_TOKEN_COST_INVALID: 'Biaya token exam tidak valid.',
     SUBJECT_INVALID: 'Subtes tidak valid untuk context aktif.',
     DRILL_KNOWLEDGE_NODE_INVALID: 'Submateri Drill tidak cocok dengan subtes yang dipilih.',

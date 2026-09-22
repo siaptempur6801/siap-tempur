@@ -170,7 +170,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await reviewerPage.reload()
     await expect(reviewerPage.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
     await expect(reviewerPage.getByRole('link', { name: 'Kembali ke antrean', exact: true })).toBeVisible()
-    await expect(reviewerPage.getByRole('heading', { name: 'Review Queue', exact: true })).toBeHidden()
+    await expect(reviewerPage.getByRole('heading', { name: 'Antrean review', exact: true })).toBeHidden()
     expect(await reviewerPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     if (evidenceDir) await reviewerPage.screenshot({ path: path.join(evidenceDir, 'review-mobile.png'), fullPage: false })
     await reviewerPage.setViewportSize({ width: 1440, height: 900 })
@@ -191,7 +191,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await expect(reviewerPage.getByText('Soal berhasil dipublish.')).toBeVisible()
     await expect(reviewerPage.getByText('Terbit', { exact: true }).last()).toBeVisible()
 
-    const reviewRounds = reviewerPage.getByRole('heading', { name: 'Review Rounds' }).locator('xpath=ancestor::section[1]')
+    const reviewRounds = reviewerPage.getByRole('heading', { name: 'Riwayat review' }).locator('xpath=ancestor::section[1]')
     await expect(reviewRounds).toContainText('Round 1 · Editorial Review')
     await expect(reviewRounds).toContainText('Editorial E2E approved')
     await expect(reviewRounds).toContainText('Round 1 · Academic Review')

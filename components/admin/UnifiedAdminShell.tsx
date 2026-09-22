@@ -184,7 +184,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
         const next = new URLSearchParams(searchParams.toString())
         next.set('program', program)
         next.set('track', track)
-        for (const key of ['subject', 'status', 'stage', 'reviewer', 'q', 'question', 'new', 'edit', 'ok', 'error']) next.delete(key)
+        for (const key of ['subject', 'status', 'stage', 'reviewer', 'q', 'question', 'new', 'edit', 'bulk', 'page', 'ok', 'error']) next.delete(key)
         router.push(`${pathname}?${next.toString()}`)
         setMobileOpen(false)
     }
@@ -259,7 +259,7 @@ export default function UnifiedAdminShell({ children, user, profile, roles, perm
                                     {tracks.map((track) => <option key={track} value={track}>{track}</option>)}
                                 </select>
                             </label>
-                            <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-700 xl:inline">Context aktif</span>
+                            <span className="hidden rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-extrabold text-emerald-700 xl:inline">Konteks aktif</span>
                             {hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" compact />}
                         </div>
 

@@ -25,6 +25,7 @@ import {
   adminPrimaryButtonClass,
   adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
+import { adminExamTypeLabel } from '@/lib/admin-format'
 
 export type AdminExamsSearchParams = {
   ok?: string
@@ -63,7 +64,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
   if (!canExams) {
     return (
       <AdminPage>
-        <AdminPageHeader title="Exams" description="Kelola konfigurasi exam dan section untuk context aktif."/>
+        <AdminPageHeader title="Ujian" description="Kelola konfigurasi ujian dan bagian untuk konteks aktif."/>
         <AdminCard><AdminEmptyState title="Akses tidak tersedia" description="Akun ini tidak memiliki permission exam.manage."/></AdminCard>
       </AdminPage>
     )
@@ -103,8 +104,8 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
   return (
     <AdminPage>
       <AdminPageHeader
-        title="Exams"
-        description={`Kelola exam untuk ${data.catalog.program.name} / ${data.catalog.track.name}. Drill berfokus pada satu submateri; Full Tryout menggunakan sections.`}
+        title="Ujian"
+        description={`Kelola ujian untuk ${data.catalog.program.name} / ${data.catalog.track.name}. Latihan materi berfokus pada satu submateri; tryout lengkap menggunakan beberapa bagian.`}
         action={pageAction}
       />
 
@@ -127,7 +128,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-extrabold text-slate-900">{exam.title}</span>
-                      <AdminBadge variant={isDrill ? 'violet' : 'blue'}>{typeCode}</AdminBadge>
+                      <AdminBadge variant={isDrill ? 'violet' : 'blue'}>{adminExamTypeLabel(typeCode)}</AdminBadge>
                       <AdminStatusBadge status={exam.status}/>
                     </div>
                     {isDrill ? (
@@ -135,26 +136,26 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                         <AdminBadge variant="blue">{drillSubject?.code ?? '?'} → {drillNode?.name ?? 'Submateri belum terhubung'}</AdminBadge>
                         <span>{drillRule?.questionCount ?? 0} soal Drill</span>
                         <span>·</span>
-                        <span>pool {drillNode?.availableQuestionCount ?? 0} soal</span>
+                        <span>{drillNode?.availableQuestionCount ?? 0} soal tersedia</span>
                         <span>·</span>
                         <span>{exam.duration_seconds ?? 0} detik</span>
                       </div>
                     ) : (
-                      <p className="mt-1 text-xs font-semibold text-slate-500">{sections.length} section · token {exam.token_cost}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">{sections.length} bagian · {exam.token_cost} token</p>
                     )}
                   </div>
 
                   <div className="flex shrink-0 flex-wrap gap-2">
-                    <Link className={adminSecondaryButtonClass} href={workspaceHref(program, track, exam.id)} aria-label={`Ubah exam ${exam.title}`}>Ubah</Link>
+                    <Link className={adminSecondaryButtonClass} href={workspaceHref(program, track, exam.id)} aria-label={`Ubah ujian ${exam.title}`}>Ubah</Link>
                     <form action={archiveAdminExamAction}>
                       <ContextFields program={program} track={track}/>
                       <input type="hidden" name="id" value={exam.id}/>
                       <ConfirmSubmit
-                        message={`Exam “${exam.title}” akan diarsipkan.`}
+                        message={`Ujian “${exam.title}” akan diarsipkan.`}
                         detail={isDrill
                           ? 'Drill ini tidak lagi muncul di jalur belajar peserta.'
-                          : `${sections.length} section dan pengaturannya tetap tersimpan, tetapi exam tidak lagi ditawarkan ke peserta.`}
-                        confirmLabel="Arsipkan exam"
+                          : `${sections.length} bagian dan pengaturannya tetap tersimpan, tetapi ujian tidak lagi ditawarkan ke peserta.`}
+                        confirmLabel="Arsipkan ujian"
                       trigger={<button type="button" className={adminDangerButtonClass}><Archive size={14}/>Arsipkan</button>}
                       />
                     </form>
@@ -163,17 +164,17 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
 
                 {isDrill ? (
                   <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/60 px-4 py-3 text-sm font-medium leading-6 text-blue-900">
-                    <div className="flex items-start gap-2"><Layers3 size={16} className="mt-1 shrink-0"/><span><strong>Section Drill dikelola otomatis.</strong> Fokus exam mengikuti knowledge node <strong>{drillNode?.name ?? '—'}</strong>; soal di-materialize dari node tersebut dan turunannya.</span></div>
+                    <div className="flex items-start gap-2"><Layers3 size={16} className="mt-1 shrink-0"/><span><strong>Bagian latihan dikelola otomatis.</strong> Fokus ujian mengikuti materi <strong>{drillNode?.name ?? '—'}</strong>; soal diambil dari materi tersebut dan turunannya.</span></div>
                   </div>
                 ) : (
                   <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex min-w-0 flex-wrap gap-2">
                       {sections.length ? sections.map((section) => (
                         <AdminBadge key={section.id}>{subjectById.get(section.subject_id ?? '')?.code ?? '-'} · {section.question_count ?? 0} soal</AdminBadge>
-                      )) : <span className="text-sm font-medium text-slate-500">Belum ada section.</span>}
+                      )) : <span className="text-sm font-medium text-slate-500">Belum ada bagian.</span>}
                     </div>
 
-                    <AdminModal title="Tambah section" description={`Tambahkan section ke ${exam.title}.`} triggerLabel="Tambah section" triggerVariant="secondary" size="lg">
+                    <AdminModal title="Tambah bagian" description={`Tambahkan bagian ke ${exam.title}.`} triggerLabel="Tambah bagian" triggerVariant="secondary" size="lg">
                       <form action={saveAdminExamSectionAction} className="grid gap-4 md:grid-cols-2">
                         <ContextFields program={program} track={track}/>
                         <input type="hidden" name="exam_id" value={exam.id}/>
@@ -187,8 +188,8 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
                         <AdminField label="Urutan"><input className={adminInputClass} name="sort_order" type="number" defaultValue={sections.length + 1}/></AdminField>
                         <AdminField label="Jumlah soal"><input className={adminInputClass} name="question_count" type="number" min="1"/></AdminField>
                         <AdminField label="Durasi (detik)"><input className={adminInputClass} name="duration_seconds" type="number" min="1"/></AdminField>
-                        <AdminField label="Passing score"><input className={adminInputClass} name="passing_score" type="number" min="0"/></AdminField>
-                        <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}>Tambah section</button></div>
+                        <AdminField label="Nilai kelulusan"><input className={adminInputClass} name="passing_score" type="number" min="0"/></AdminField>
+                        <div className="md:col-span-2 flex justify-end border-t border-slate-100 pt-4"><button className={adminPrimaryButtonClass}>Tambah bagian</button></div>
                       </form>
                     </AdminModal>
                   </div>
@@ -198,7 +199,7 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
           })}
         </section>
       ) : (
-        <AdminCard><AdminEmptyState title="Belum ada exam" description="Gunakan tombol Buat exam. Untuk Drill, pilih Subtes lalu Submateri yang akan diperdalam."/></AdminCard>
+        <AdminCard><AdminEmptyState title="Belum ada ujian" description="Gunakan tombol Buat ujian. Untuk latihan materi, pilih subtes lalu submateri yang akan diperdalam."/></AdminCard>
       )}
     </AdminPage>
   )
