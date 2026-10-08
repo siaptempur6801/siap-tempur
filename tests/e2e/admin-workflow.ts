@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { expect,type Page } from '@playwright/test'
 export async function openAssessmentDistribution(page:Page,examId?:string,program='CPNS',track='SKD') {
  await page.goto(`/admin/assessments?program=${program}&track=${track}${examId?`&assessment=${examId}&tab=distribution`:''}`)
- if(!examId) {await page.locator('tr[data-assessment-id]').filter({hasText:'Siap'}).first().getByRole('link',{name:'Lihat',exact:true}).click();await page.getByRole('link',{name:'Distribution',exact:true}).click()}
+ if(!examId) {await page.locator('tr[data-assessment-id]').filter({hasText:'Siap'}).first().getByRole('link',{name:'Lihat',exact:true}).click();await page.getByRole('navigation',{name:'Bagian workspace'}).getByRole('link',{name:'Distribusi',exact:true}).click()}
 }
 export async function createWorkflowEvent(page:Page,title:string,code:string,examId:string,program:string,track:string,wib:(minutes:number)=>string) {
  await openAssessmentDistribution(page,examId,program,track)
@@ -11,8 +11,13 @@ export async function createWorkflowEvent(page:Page,title:string,code:string,exa
  await expect(page.locator('input[name="next_exam_id"]')).toHaveValue(examId)
  const form=page.locator('form').filter({has:page.locator('input[name="code"]')})
  await form.locator('[name="code"]').fill(code);await form.locator('[name="title"]').fill(title);await form.locator('[name="status"]').selectOption('live')
- await form.locator('[name="registration_start"]').fill(wib(-60));await form.locator('[name="registration_end"]').fill(wib(120));await form.locator('[name="starts_at"]').fill(wib(-30));await form.locator('[name="ends_at"]').fill(wib(240));await form.locator('[name="capacity"]').fill('20')
- await form.getByRole('button',{name:'Review Event',exact:true}).click();await form.getByRole('button',{name:'Buat Event',exact:true}).click()
+ await form.getByRole('button',{name:'Lanjut',exact:true}).click()
+ await form.locator('[name="registration_start"]').fill(wib(-60));await form.locator('[name="registration_end"]').fill(wib(120));await form.locator('[name="capacity"]').fill('20')
+ await form.getByRole('button',{name:'Lanjut',exact:true}).click()
+ await form.locator('[name="starts_at"]').fill(wib(-30));await form.locator('[name="ends_at"]').fill(wib(240))
+ await form.getByRole('button',{name:'Lanjut',exact:true}).click()
+ await expect(form.getByRole('group',{name:'Tinjau event',exact:true})).toBeVisible()
+ await form.getByRole('button',{name:'Buat Event',exact:true}).click()
  await expect(page.getByRole('status').filter({hasText:'Event tersimpan.'})).toBeVisible({timeout:30000})
  const eventId=adminUrlState(page.url()).get('event');if(!eventId)throw new Error('Event context was lost after create')
  return eventId

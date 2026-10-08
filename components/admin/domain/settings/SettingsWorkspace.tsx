@@ -20,6 +20,7 @@ AdminTh,
 adminDangerButtonClass,
 adminInputClass,
 adminSecondaryButtonClass,
+adminTableActionClass,
 adminTableHeadClass
 } from '@/components/admin/AdminUi'
 import AdminWorkspaceTabs from '@/components/admin/AdminWorkspaceTabs'
@@ -170,7 +171,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                                         </details>
                                     ) : null}
                                 </div>
-                                <Link className="inline-flex min-h-8 items-center rounded-lg text-xs font-semibold text-info hover:text-info" href={`/admin/settings?flag=${flag.id}`} aria-label={`Ubah flag ${flag.key || flag.id}`}>Ubah</Link>
+                                <Link className={adminTableActionClass} href={`/admin/settings?flag=${flag.id}`} aria-label={`Ubah flag ${flag.key || flag.id}`}>Ubah</Link>
                             </div>
                         ))}
                     </div>
@@ -214,7 +215,7 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
                                         </div>
                                         <div className="mt-1 break-all font-mono text-[11px] font-semibold text-muted-foreground">{template.template_url || 'URL belum diisi'}</div>
                                     </div>
-                                    <Link className="inline-flex min-h-8 items-center rounded-lg text-xs font-semibold text-info hover:text-info" href={`/admin/settings?template=${template.id}`} aria-label={`Ubah template ${template.name || template.id}`}>Ubah</Link>
+                                    <Link className={adminTableActionClass} href={`/admin/settings?template=${template.id}`} aria-label={`Ubah template ${template.name || template.id}`}>Ubah</Link>
                                 </div>
 
                                 {editingTemplate?.id === template.id ? (

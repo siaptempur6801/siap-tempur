@@ -48,15 +48,21 @@ export class AdminEventManagementService {
         }
 
         if (input.id) {
-            const { data: current, error: currentError } = await admin
-                .from('events')
-                .select('id, program_id, track_id')
-                .eq('id', input.id)
-                .maybeSingle()
+            const [{ data: current, error: currentError }, { data: sessions, error: sessionsError }] = await Promise.all([
+                admin.from('events').select('id, program_id, track_id').eq('id', input.id).maybeSingle(),
+                admin.from('event_sessions').select('starts_at, ends_at, status').eq('event_id', input.id),
+            ])
             if (currentError) throw currentError
+            if (sessionsError) throw sessionsError
             if (!current || !sameId(current.program_id, catalog.program.id) || !sameId(current.track_id, catalog.track.id)) {
                 throw new Error('EVENT_CATALOG_MISMATCH')
             }
+            const hasSessionOutsideNewSchedule = (sessions || []).some((session) =>
+                !['archived', 'cancelled'].includes(String(session.status).toLowerCase())
+                && (Date.parse(String(session.starts_at)) < Date.parse(input.startsAt)
+                    || Date.parse(String(session.ends_at)) > Date.parse(input.endsAt))
+            )
+            if (hasSessionOutsideNewSchedule) throw new Error('EVENT_TIME_CONFLICTS_WITH_SESSION')
             const { error } = await admin.from('events').update(payload).eq('id', input.id)
             if (error) throw error
             return input.id
@@ -113,6 +119,13 @@ export class AdminEventManagementService {
             status: input.status,
         }
         if (input.id) {
+            const { data: currentSession, error: sessionError } = await admin
+                .from('event_sessions')
+                .select('id, event_id')
+                .eq('id', input.id)
+                .maybeSingle()
+            if (sessionError) throw sessionError
+            if (!currentSession || !sameId(currentSession.event_id, input.eventId)) throw new Error('EVENT_SESSION_MISMATCH')
             const { error } = await admin.from('event_sessions').update(payload).eq('id', input.id)
             if (error) throw error
             return input.id
@@ -120,6 +133,33 @@ export class AdminEventManagementService {
         const { data, error } = await admin.from('event_sessions').insert(payload).select('id').single()
         if (error) throw error
         return String(data.id)
+    }
+
+    async deleteEventSession(input: { eventId: string; sessionId: string; context?: ProgramTrackContext }) {
+        const admin = await createV2AdminClient()
+        const untyped = await createAdminClient()
+        const catalog = await getAdminCatalog(input.context)
+        const [{ data: event, error: eventError }, { data: session, error: sessionError }] = await Promise.all([
+            admin.from('events').select('id, program_id, track_id').eq('id', input.eventId).maybeSingle(),
+            admin.from('event_sessions').select('id, event_id').eq('id', input.sessionId).maybeSingle(),
+        ])
+        if (eventError) throw eventError
+        if (sessionError) throw sessionError
+        if (!event) throw new Error('EVENT_NOT_FOUND')
+        if (!sameId(event.program_id, catalog.program.id) || !sameId(event.track_id, catalog.track.id)) throw new Error('EVENT_CATALOG_MISMATCH')
+        if (!session || !sameId(session.event_id, input.eventId)) throw new Error('EVENT_SESSION_MISMATCH')
+
+        const [{ count: registrations, error: registrationsError }, { count: tickets, error: ticketsError }] = await Promise.all([
+            untyped.from('event_registrations').select('id', { count: 'exact', head: true }).eq('session_id', input.sessionId),
+            untyped.from('event_products').select('product_id', { count: 'exact', head: true }).eq('session_id', input.sessionId),
+        ])
+        if (registrationsError) throw registrationsError
+        if (ticketsError) throw ticketsError
+        if ((registrations ?? 0) > 0) throw new Error('EVENT_SESSION_HAS_REGISTRATIONS')
+        if ((tickets ?? 0) > 0) throw new Error('EVENT_SESSION_HAS_TICKETS')
+
+        const { error } = await admin.from('event_sessions').delete().eq('id', input.sessionId).eq('event_id', input.eventId)
+        if (error) throw error
     }
 
     async linkEventProduct(input: { eventId: string; sessionId: string; productId: string; status?: string }) {

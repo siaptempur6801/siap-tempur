@@ -12,7 +12,7 @@ const aliases: Array<[string, string]> = [
   ['/admin/content/articles/create', '/admin/content/articles/new'],
 ]
 const assessmentViews = ['questions', 'configuration', 'distribution', 'results']
-const eventViews = ['participants', 'leaderboard', 'settings']
+const eventViews = ['participants', 'monitoring', 'leaderboard', 'settings']
 const organizationViews = ['participants', 'batches', 'assignments', 'settings']
 const batchViews = ['overview', 'participants', 'assignments', 'settings']
 const userViews = ['roles', 'entitlements', 'orders', 'activity']
@@ -31,10 +31,10 @@ export function adminRouteState(pathname: string): AdminRouteState | null {
     if (!rest.length) return state(workspace)
     if (rest.length === 1 && rest[0] === 'new') return state(workspace, { new: '1' })
     if (!id(rest[0])) return null
-    if (resource === 'events' && rest[1] === 'monitoring') return monitor(rest.slice(2), { event: rest[0] })
     if (rest.length === 1) return state(workspace, { [key]: rest[0] })
     if (rest.length === 2 && rest[1] === 'edit') return state(workspace, { [key]: rest[0], edit: rest[0] })
     if (rest.length === 2 && (resource === 'assessments' ? assessmentViews : eventViews).includes(rest[1])) return state(workspace, { [key]: rest[0], tab: rest[1] })
+    if (resource === 'events' && rest.length === 3 && rest[1] === 'monitoring' && rest[2] === 'reports') return state('events', { event: rest[0], tab: 'monitoring', monitoring_section: 'reports' })
     return null
   }
   if (resource === 'organizations') {
@@ -114,11 +114,11 @@ export function adminHref(href: string, depth = 0): string {
     if (creating) path += '/new'
     else if (selected || editing) path += `/${segment((selected || editing)!)}${editing ? '/edit' : tab && assessmentViews.includes(tab) ? `/${tab}` : ''}`
   } else if (parsed?.workspace === 'events') {
-    const creating = take('new') === '1', editing = take('edit'), selected = take('event') || editing || take('session_event'), tab = take('tab') || (editing ? 'settings' : '')
+    const creating = take('new') === '1', editing = take('edit'), selected = take('event') || editing || take('session_event'), tab = take('tab') || (editing ? 'settings' : ''), monitoringSection = take('monitoring_section')
     q.delete('edit'); q.delete('session_event')
     path = '/admin/events'
     if (creating) path += '/new'
-    else if (selected) path += `/${segment(selected)}${tab && eventViews.includes(tab) ? `/${tab}` : ''}`
+    else if (selected) path += `/${segment(selected)}${tab && eventViews.includes(tab) ? `/${tab}` : ''}${tab === 'monitoring' && monitoringSection === 'reports' ? '/reports' : ''}`
   } else if (parsed?.workspace === 'organizations') {
     const creating = take('new') === '1', org = take('org'), batch = take('batch'), tab = take('tab')
     path = '/admin/organizations'
@@ -149,7 +149,7 @@ export function adminHref(href: string, depth = 0): string {
     const event = take('event'), org = take('org'), batch = take('batch'), assignment = take('assignment')
     const reports = parsed.workspace === 'reports'
     path = '/admin/monitoring'
-    if (event) path = `/admin/events/${segment(event)}/monitoring`
+    if (event) q.set('event', event)
     else if (org && batch) path = `/admin/organizations/${segment(org)}/batches/${segment(batch)}${assignment ? `/assignments/${segment(assignment)}` : ''}/monitoring`
     else { if (org) q.set('org', org); if (batch) q.set('batch', batch); if (assignment) q.set('assignment', assignment) }
     if (reports) path += '/reports'

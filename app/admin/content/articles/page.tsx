@@ -5,9 +5,11 @@ AdminCard,
 AdminEmptyState,
 AdminPage,
 AdminPageHeader,
+AdminRowActions,
 AdminStatusBadge,AdminTh,
 adminPrimaryButtonClass,
 adminSecondaryButtonClass,
+adminTableActionClass,
 adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import ArticleStatusActions from '@/components/admin/ArticleStatusActions'
@@ -20,7 +22,7 @@ import { formatArticleDate } from '@/lib/articles'
 import { createClient } from '@/lib/utils/supabase/server'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
-import { Eye,Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Link from '@/components/admin/navigation/AdminLink'
 
 export const dynamic = 'force-dynamic'
@@ -142,7 +144,24 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
                     <AdminDataTable caption="Articles" className="min-w-[850px]"><thead className={adminTableHeadClass}><tr>{['Title','Category','Status','Author / Editor','Updated','Actions'].map(h=><AdminTh key={h}>{h}</AdminTh>)}</tr></thead><tbody>{rows.map(article=>{
                         const ownsEditableDraft=article.author_id===authorization.userId&&article.status!=='published'
                         const canEdit=canUpdate&&(isAdmin || ownsEditableDraft),canArchive=canEdit
-                        return <tr key={article.id}><td className="max-w-md"><p className="font-medium">{article.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">/blog/{article.slug}</p></td><td>{article.category || 'Tanpa kategori'}</td><td><AdminStatusBadge status={article.status}/></td><td>{(article.author_id&&authorById.get(article.author_id)) || 'Penulis'}</td><td className="whitespace-nowrap text-xs">{formatArticleDate(article.updated_at)}</td><td><div className="flex gap-2">{canEdit&&<Link href={`/admin/content/articles/${article.id}/edit?${new URLSearchParams({returnTo:`/admin/content/articles?${new URLSearchParams(filters)}`})}`} className={adminSecondaryButtonClass}>Ubah</Link>}<details><summary className={`${adminSecondaryButtonClass} cursor-pointer`}>Lainnya</summary><div className="mt-2 flex flex-col gap-2">{article.status==='published'&&<Link href={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer" className={adminSecondaryButtonClass}><Eye size={14}/>Preview</Link>}<ArticleStatusActions articleId={article.id} status={article.status} canPublish={canPublish} canArchive={canArchive} canDelete={isAdmin&&article.status!=='published'}/></div></details></div></td></tr>
+                        return (
+                            <tr key={article.id}>
+                                <td className="max-w-md">
+                                    <p className="font-medium">{article.title}</p>
+                                    <p className="mt-1 truncate text-xs text-muted-foreground">/blog/{article.slug}</p>
+                                </td>
+                                <td>{article.category || 'Tanpa kategori'}</td>
+                                <td><AdminStatusBadge status={article.status}/></td>
+                                <td>{(article.author_id && authorById.get(article.author_id)) || 'Penulis'}</td>
+                                <td className="whitespace-nowrap text-xs">{formatArticleDate(article.updated_at)}</td>
+                                <td>
+                                    <AdminRowActions>
+                                        {canEdit ? <Link href={`/admin/content/articles/${article.id}/edit?${new URLSearchParams({returnTo:`/admin/content/articles?${new URLSearchParams(filters)}`})}`} className={adminTableActionClass}>Ubah</Link> : null}
+                                        <ArticleStatusActions articleId={article.id} title={article.title} previewHref={article.status === 'published' ? `/blog/${article.slug}` : undefined} status={article.status} canPublish={canPublish} canArchive={canArchive} canDelete={isAdmin && article.status !== 'published'}/>
+                                    </AdminRowActions>
+                                </td>
+                            </tr>
+                        )
                     })}</tbody></AdminDataTable>
                 ) : error ? null : outOfRange ? (
                     <AdminEmptyState

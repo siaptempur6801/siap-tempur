@@ -66,7 +66,16 @@ export async function assessmentOptions(filters: { search?: string; domain?: str
     const domain = (r.programs as unknown as { code: string }).code
     const level = (r.tracks as unknown as { code: string }).code
     const type = (r.exam_types as unknown as { code: string }).code
-    return { id: String(r.id), title: String(r.title), domain, level, type, status: String(r.status), durationSeconds: Number(r.duration_seconds || 0), questionCount: (r.exam_sections as unknown as { question_count: number }[]).reduce((sum, s) => sum + Number(s.question_count || 0), 0), eligible: eligible.has(String(r.id)), reason: eligible.has(String(r.id)) ? undefined : ['draft', 'archived'].includes(String(r.status).toLowerCase()) ? `${String(r.status).toLowerCase() === 'draft' ? 'Draft' : 'Archived'} — belum dapat digunakan` : 'Konfigurasi atau soal belum tersedia' }
+    const status = String(r.status).toLowerCase()
+    const ready = eligible.has(String(r.id))
+    const reason = ready
+      ? undefined
+      : status === 'draft'
+        ? 'Masih berstatus Draft dan belum dapat digunakan.'
+        : status === 'archived'
+          ? 'Assessment sudah diarsipkan dan tidak dapat digunakan.'
+          : 'Periksa kelengkapan soal dan konfigurasi assessment.'
+    return { id: String(r.id), title: String(r.title), domain, level, type, status: String(r.status), durationSeconds: Number(r.duration_seconds || 0), questionCount: (r.exam_sections as unknown as { question_count: number }[]).reduce((sum, s) => sum + Number(s.question_count || 0), 0), eligible: ready, reason }
   })
   return { options, total: count ?? 0, page }
 }

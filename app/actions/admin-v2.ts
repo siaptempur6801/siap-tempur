@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/utils/supabase/server'
 
 import { adminReturnUrl } from '@/lib/admin-return-url'
+import { adminRouteState } from '@/lib/admin-routes'
 import { assessmentCatalogService } from '@/src/services/assessment-catalog.service'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
@@ -76,6 +77,7 @@ function errorMessage(error: unknown) {
         PRODUCT_DURATION_INVALID: 'Durasi produk harus lebih dari 0 hari.',
         EVENT_FIELDS_REQUIRED: 'Data event belum lengkap.',
         EVENT_TIME_INVALID: 'Waktu selesai event harus setelah waktu mulai.',
+        EVENT_TIME_CONFLICTS_WITH_SESSION: 'Jadwal event harus mencakup semua sesi aktif. Perbarui jadwal sesi terlebih dahulu.',
         EVENT_REGISTRATION_TIME_INVALID: 'Rentang waktu registrasi event tidak valid.',
         EVENT_FLYER_URL_INVALID: 'URL foto event tidak valid. Upload ulang melalui form event.',
         EVENT_SESSION_TIME_INVALID: 'Waktu sesi tidak valid.',
@@ -83,6 +85,8 @@ function errorMessage(error: unknown) {
         EVENT_SESSION_CAPACITY_INVALID: 'Kapasitas sesi harus lebih dari 0.',
         EVENT_SESSION_NAME_REQUIRED: 'Nama sesi event wajib diisi.',
         EVENT_SESSION_MISMATCH: 'Sesi tidak berasal dari event yang dipilih.',
+        EVENT_SESSION_HAS_REGISTRATIONS: 'Sesi tidak dapat dihapus karena sudah memiliki peserta terdaftar. Sesi ini perlu dipertahankan untuk riwayat event.',
+        EVENT_SESSION_HAS_TICKETS: 'Sesi tidak dapat dihapus karena masih terhubung ke produk tiket. Lepaskan tiket dari sesi terlebih dahulu.',
         EVENT_NOT_FOUND: 'Event tidak ditemukan.',
         EVENT_CATALOG_MISMATCH: 'Event tidak berada pada program/track yang sedang aktif.',
         EVENT_EXAM_MISMATCH: 'Assessment harus berasal dari domain dan level event yang sama.',
@@ -336,8 +340,24 @@ export async function saveEventAction(form: FormData) {
     if (text(form, 'workflow') === '1') {
         revalidatePath('/admin/events')
         const target = new URL(adminReturnUrl(form.get('return_to'), `/admin/events?${contextQuery(context)}`), 'http://admin.local')
-        if (savedId) { target.searchParams.set('program',context.programCode); target.searchParams.set('track',context.trackCode); target.pathname = '/admin/events'; target.searchParams.set('event', savedId); target.searchParams.set('tab', failure ? 'settings' : 'overview'); target.searchParams.delete('new'); target.searchParams.delete('edit') }
-        if (failure) target.searchParams.set('error', errorMessage(failure)); else target.searchParams.set('ok', 'Event tersimpan. Pantau peserta atau lengkapi pengaturan sesi.')
+        if (savedId) {
+            const returnState = adminRouteState(target.pathname)
+            const returnsToCurrentEvent = returnState?.workspace === 'events' && returnState.context.event === savedId
+            const returnTab = returnsToCurrentEvent ? returnState.context.tab || 'overview' : 'overview'
+            const settingsSection = returnsToCurrentEvent && returnTab === 'settings'
+                ? target.searchParams.get('settings_section') || 'event'
+                : null
+            target.pathname = '/admin/events'
+            target.searchParams.set('program', context.programCode)
+            target.searchParams.set('track', context.trackCode)
+            target.searchParams.set('event', savedId)
+            target.searchParams.set('tab', failure ? 'settings' : returnTab)
+            target.searchParams.delete('new')
+            target.searchParams.delete('edit')
+            if (settingsSection) target.searchParams.set('settings_section', settingsSection)
+            else target.searchParams.delete('settings_section')
+        }
+        if (failure) target.searchParams.set('error', errorMessage(failure)); else target.searchParams.set('ok', requestedId ? 'Perubahan event tersimpan.' : 'Event tersimpan.')
         redirect(`${target.pathname}${target.search}`)
     }
     if (failure) {
@@ -424,6 +444,33 @@ export async function saveEventSessionAction(form: FormData) {
         session_event: eventId,
         exam: examId,
     } : {})
+}
+
+export async function deleteEventSessionAction(form: FormData) {
+    let failure: unknown = null
+    const context = catalogContext(form)
+    const eventId = text(form, 'event_id')
+    const sessionId = text(form, 'id')
+    let actorId = ''
+    try {
+        const authorization = await actor(PERMISSIONS.EVENT_MANAGE)
+        actorId = authorization.userId
+        await adminEventManagementService.deleteEventSession({ eventId, sessionId, context })
+    } catch (error) { failure = error }
+    await auditAdminV2Action({
+        actorId,
+        action: 'DELETE_EVENT_SESSION',
+        entityType: 'event_session',
+        entityId: sessionId,
+        before: { event_id: eventId },
+    }, failure)
+    if (text(form, 'return_to')) {
+        revalidatePath('/admin/events')
+        const target = new URL(adminReturnUrl(form.get('return_to'), '/admin/events'), 'http://admin.local')
+        target.searchParams.set(failure ? 'error' : 'ok', failure ? errorMessage(failure) : 'Sesi event dihapus.')
+        redirect(`${target.pathname}${target.search}`)
+    }
+    finish('events', 'Sesi event dihapus.', context, failure, eventId || null)
 }
 
 export async function linkEventProductAction(form: FormData) {

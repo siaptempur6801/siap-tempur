@@ -49,6 +49,8 @@ export default async function AssessmentDetail({
 }: AssessmentWorkspaceProps & { selected: AssessmentWorkspaceProps['data']['exams'][number] }) {
   const typeById = new Map(data.catalog.examTypes.map((t) => [t.id, t]))
   const exam = selected
+  const status = exam.status.toLowerCase()
+  const isPublished = ['active', 'scheduled', 'published'].includes(status)
   const tab = params.edit ? 'configuration' : params.tab || 'overview'
   const ready = readiness.get(exam.id)!
   const sections = data.examSections.filter((s) => s.exam_id === exam.id)
@@ -57,6 +59,7 @@ export default async function AssessmentDetail({
     1,
     Math.min(10000, Number.parseInt(params.question_page || '1', 10) || 1)
   )
+  const questionContextHref = `${detailHref('questions')}${questionPage > 1 ? `&question_page=${questionPage}` : ''}`
   const preview =
     tab === 'questions' && permissions.has(PERMISSIONS.QUESTION_MANAGE)
       ? await assessmentQuestionPreview(
@@ -86,74 +89,60 @@ export default async function AssessmentDetail({
         title={exam.title}
         description={`${program} · ${track} · ${adminExamTypeLabel(typeById.get(exam.exam_type_id)?.code)}`}
         action={
-          <Link
-            className={adminPrimaryButtonClass}
-            href={detailHref(
-              ['active', 'scheduled', 'published', 'ready'].includes(exam.status.toLowerCase())
-                ? 'distribution'
-                : 'configuration'
-            )}
-          >
-            {['active', 'scheduled', 'published', 'ready'].includes(exam.status.toLowerCase())
-              ? 'Distribusikan'
-              : 'Siapkan Assessment'}
-          </Link>
+          isPublished ? (
+            <Link className={adminPrimaryButtonClass} href={detailHref('distribution')}>
+              Distribusikan
+            </Link>
+          ) : ['draft', 'ready'].includes(status) && ready.ready ? (
+            <form action={publishAdminExamAction}>
+              <input type="hidden" name="id" value={exam.id} />
+              <input type="hidden" name="program_code" value={program} />
+              <input type="hidden" name="track_code" value={track} />
+              <input type="hidden" name="return_to" value={detailHref('distribution')} />
+              <AdminSubmitButton pendingLabel="Mempublikasikan...">Publish Assessment</AdminSubmitButton>
+            </form>
+          ) : status === 'archived' ? undefined : (
+            <Link className={adminPrimaryButtonClass} href={detailHref('configuration')}>
+              Siapkan Assessment
+            </Link>
+          )
         }
       />
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
         <AdminStatusBadge status={exam.status} />
-        <Link className={adminSecondaryButtonClass} href={listHref}>
-          Kembali ke Assessment
-        </Link>
-        <Link className={adminSecondaryButtonClass} href={detailHref('questions')}>
-          Kelola Soal / Preview
-        </Link>
-        {['draft', 'ready'].includes(exam.status.toLowerCase()) && (
-          <form action={publishAdminExamAction}>
-            <input type="hidden" name="id" value={exam.id} />
-            <input type="hidden" name="program_code" value={program} />
-            <input type="hidden" name="track_code" value={track} />
-            <input type="hidden" name="return_to" value={detailHref('distribution')} />
-            <AdminSubmitButton
-              disabled={!ready.ready}
-              variant="secondary"
-              pendingLabel="Publishing..."
+        {status !== 'archived' && (
+          <details className="relative">
+            <summary className={`${adminSecondaryButtonClass} list-none cursor-pointer [&::-webkit-details-marker]:hidden`}>Lainnya</summary>
+            <form
+              action={archiveAdminExamAction}
+              className="absolute right-0 z-10 mt-2 rounded-lg border bg-card p-3"
             >
-              Publish Assessment
-            </AdminSubmitButton>
-          </form>
+              <input type="hidden" name="id" value={exam.id} />
+              <input type="hidden" name="program_code" value={program} />
+              <input type="hidden" name="track_code" value={track} />
+              <input type="hidden" name="return_to" value={detailHref('overview')} />
+              <ConfirmSubmit
+                message={`Arsipkan ${exam.title}?`}
+                confirmLabel="Arsipkan Assessment"
+                trigger={
+                  <button type="button" className={adminSecondaryButtonClass}>
+                    Arsipkan
+                  </button>
+                }
+              />
+            </form>
+          </details>
         )}
-        <details className="relative">
-          <summary className={adminSecondaryButtonClass}>Lainnya</summary>
-          <form
-            action={archiveAdminExamAction}
-            className="absolute right-0 z-10 mt-2 rounded-lg border bg-card p-3"
-          >
-            <input type="hidden" name="id" value={exam.id} />
-            <input type="hidden" name="program_code" value={program} />
-            <input type="hidden" name="track_code" value={track} />
-            <input type="hidden" name="return_to" value={detailHref('overview')} />
-            <ConfirmSubmit
-              message={`Arsipkan ${exam.title}?`}
-              confirmLabel="Arsipkan Assessment"
-              trigger={
-                <button type="button" className={adminSecondaryButtonClass}>
-                  Arsipkan
-                </button>
-              }
-            />
-          </form>
-        </details>
       </div>
       <AdminFeedbackBanner ok={params.ok} error={params.error} />
       <AdminTabs
         active={tab}
         tabs={[
-          ['overview', 'Overview'],
-          ['questions', 'Questions'],
-          ['configuration', 'Configuration'],
-          ['distribution', 'Distribution'],
-          ['results', 'Results']
+          ['overview', 'Ringkasan'],
+          ['questions', 'Soal'],
+          ['configuration', 'Konfigurasi'],
+          ['distribution', 'Distribusi'],
+          ['results', 'Hasil']
         ].map(([id, label]) => ({ id, label, href: detailHref(id) }))}
       />
       {tab === 'overview' && (
@@ -211,7 +200,7 @@ export default async function AssessmentDetail({
                 {permissions.has(PERMISSIONS.QUESTION_MANAGE) && (
                   <Link
                     className={adminSecondaryButtonClass}
-                    href={`/admin/content/questions?${new URLSearchParams({ program, track, subject: data.catalog.subjects.find((subject) => subject.id === s.subject_id)?.code || '', returnTo: detailHref('questions') })}`}
+                    href={`/admin/content/questions?${new URLSearchParams({ program, track, subject: data.catalog.subjects.find((subject) => subject.id === s.subject_id)?.code || '', returnTo: questionContextHref })}`}
                   >
                     Lihat Pool Soal
                   </Link>
@@ -294,7 +283,7 @@ export default async function AssessmentDetail({
                       <td className="px-5">
                         <Link
                           className={adminSecondaryButtonClass}
-                          href={`/admin/content/questions?${new URLSearchParams({ program, track, edit: String(q.id), returnTo: detailHref('questions') })}`}
+                          href={`/admin/content/questions?${new URLSearchParams({ program, track, edit: String(q.id), returnTo: questionContextHref })}`}
                         >
                           Lihat Soal
                         </Link>

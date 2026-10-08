@@ -2,7 +2,7 @@ import { adminStatusLabel,adminStatusVariant } from '@/lib/admin-format'
 import { Badge } from '@/components/ui/Badge'
 import { cn } from '@/lib/utils'
 import { AlertTriangle,CheckCircle2,Inbox,Info } from 'lucide-react'
-import { cloneElement,type ReactElement,type ReactNode } from 'react'
+import { cloneElement,isValidElement,type ReactElement,type ReactNode,useId } from 'react'
 
 /** Shared native-control styles keep server actions and URL forms unchanged. */
 export const adminInputClass = 'admin-input w-full rounded-md border border-border bg-card px-3 text-sm font-normal text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground'
@@ -15,6 +15,16 @@ export const adminSecondaryButtonClass = `${adminActionClass} border border-bord
 export const adminDangerButtonClass = `${adminActionClass} border border-danger-border bg-danger-muted text-danger hover:bg-danger-muted/80`
 export const adminSuccessButtonClass = `${adminActionClass} border border-success-border bg-success-muted text-success hover:bg-success-muted/80`
 export const adminWarningButtonClass = `${adminActionClass} border border-warning-border bg-warning-muted text-warning hover:bg-warning-muted/80`
+
+/** Compact, consistent action link/button for an admin table row. */
+export const adminTableActionClass = `${adminActionClass} h-7 min-h-7 border border-border bg-card px-2.5 py-1 text-xs text-foreground hover:bg-muted max-md:h-9 max-md:min-h-9`
+/** Square, compact overflow action for dense admin table rows. */
+export const adminTableIconActionClass = 'admin-action admin-table-icon-action inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-card !p-0 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:h-9 max-md:w-9'
+
+/** Shared alignment and spacing for every table row's actions. */
+export function AdminRowActions({ children, className }: { children: ReactNode; className?: string }) {
+    return <div className={cn('admin-table-row-actions flex min-h-7 items-center justify-start gap-2 max-md:min-h-9', className)}>{children}</div>
+}
 
 export function AdminCard({ children, className }: { children: ReactNode; className?: string }) {
     return <section className={cn('rounded-lg border border-border bg-card ', className)}>{children}</section>
@@ -50,20 +60,31 @@ export function AdminField({
     as?: 'label' | 'div'
     className?: string
 }) {
-    const hintId = fieldId && hint ? `${fieldId}-hint` : undefined
-    const errorId = fieldId && error ? `${fieldId}-error` : undefined
+    const generatedId = useId()
+    const controlElement = isValidElement<{ id?: string; 'aria-describedby'?: string; 'aria-invalid'?: boolean }>(children)
+        ? children as ReactElement<{ id?: string; 'aria-describedby'?: string; 'aria-invalid'?: boolean }>
+        : null
+    const controlId = fieldId || controlElement?.props.id || generatedId
+    const hintId = hint ? `${controlId}-hint` : undefined
+    const errorId = error ? `${controlId}-error` : undefined
     const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined
-    const Wrapper = as
+    const controlDescribedBy = [controlElement?.props['aria-describedby'], describedBy].filter(Boolean).join(' ') || undefined
+    const control = controlElement
+        ? cloneElement(controlElement, {
+            ...(!controlElement.props.id ? { id: controlId } : {}),
+            ...(controlDescribedBy ? { 'aria-describedby': controlDescribedBy } : {}),
+            ...(error ? { 'aria-invalid': true } : {}),
+        })
+        : children
     return (
-        <Wrapper className={cn('block space-y-1.5', className)}>
-            <span className={adminLabelClass}>{label}</span>
+        <div className={cn('block space-y-1.5', className)}>
+            {as === 'label'
+                ? <label htmlFor={controlId} className={adminLabelClass}>{label}</label>
+                : <span className={adminLabelClass}>{label}</span>}
             {hint ? <span id={hintId} className="block text-xs font-medium leading-5 text-muted-foreground">{hint}</span> : null}
-            {describedBy ? cloneElement(children as ReactElement<{ 'aria-describedby'?: string; 'aria-invalid'?: boolean }>, {
-                'aria-describedby': describedBy,
-                'aria-invalid': error ? true : undefined,
-            }) : children}
+            {control}
             {error ? <span id={errorId} role="alert" className="block text-xs font-medium text-danger">{error}</span> : null}
-        </Wrapper>
+        </div>
     )
 }
 
@@ -142,7 +163,7 @@ export function AdminStatusBadge({
 }) {
     return (
         <AdminBadge variant={adminStatusVariant(status)} className={className}>
-            {['active','live','scheduled','draft','closed','ended','archived'].includes(String(status).toLowerCase()) ? adminStatusLabel(status) : label ?? adminStatusLabel(status)}
+            {label ?? adminStatusLabel(status)}
         </AdminBadge>
     )
 }

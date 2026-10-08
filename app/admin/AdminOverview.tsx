@@ -91,13 +91,19 @@ export default async function AdminOverview({
       href: href('/admin/events', { event: String(e.id), tab: 'settings' })
     }))
   ].filter(Boolean)
+  const canManageQuestions = permissions.has(PERMISSIONS.QUESTION_MANAGE)
+  const canCreateContent = permissions.has(PERMISSIONS.CONTENT_CREATE)
   const action = data.canExams ? (
     <Link className={adminPrimaryButtonClass} href={href('/admin/assessments', { new: '1' })}>
       Buat Assessment
     </Link>
-  ) : permissions.has(PERMISSIONS.CONTENT_CREATE) ? (
+  ) : canManageQuestions ? (
+    <Link className={adminPrimaryButtonClass} href={href('/admin/content/questions', { new: '1' })}>
+      Tambah soal
+    </Link>
+  ) : canCreateContent ? (
     <Link className={adminPrimaryButtonClass} href={href('/admin/content/review', { new: '1' })}>
-      Buat soal
+      Buat draf soal
     </Link>
   ) : undefined
   return (

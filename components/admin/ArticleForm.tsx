@@ -99,7 +99,7 @@ export default function ArticleForm({ title, action, defaultValues, returnTo }: 
             />
 
             <section>
-                <form data-admin-form action={formAction}>
+                <form data-admin-form className="admin-article-form" action={formAction}>
                     <input type="hidden" name="return_to" value={returnTo}/>
                     {state.message ? <div role="alert" className="rounded-lg border border-danger-border bg-danger-muted px-4 py-3 text-sm font-medium text-danger">{state.message}</div> : null}
 

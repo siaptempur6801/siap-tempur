@@ -26,11 +26,11 @@ function wibInput(minutesFromNow: number) {
 async function createEvent(page: Page, title: string, code: string, examId: string, program: 'CPNS' | 'TKA', track: 'SKD' | 'SMP', record: (id: string) => void) {
     const eventId = await createWorkflowEvent(page,title,code,examId,program,track,wibInput)
     record(eventId)
-    await page.getByRole('link',{name:'Pantau Peserta',exact:true}).click()
+    await page.getByRole('navigation',{name:'Bagian workspace'}).getByRole('link',{name:'Monitoring',exact:true}).click()
     await expect(page).toHaveURL(new RegExp(`/admin/events/${eventId}/monitoring(?:\\?|$)`))
-    await expect(page.locator('main h1')).toHaveText('Monitoring Peserta', { timeout: 30_000 })
+    await expect(page.getByRole('heading',{name:'Monitoring event',exact:true})).toBeVisible({ timeout: 30_000 })
     await page.goBack()
-    await expect(page.getByRole('link',{name:'Pantau Peserta',exact:true})).toBeVisible()
+    await expect(page.getByRole('navigation',{name:'Bagian workspace'}).getByRole('link',{name:'Monitoring',exact:true})).toBeVisible()
     return eventId
 }
 

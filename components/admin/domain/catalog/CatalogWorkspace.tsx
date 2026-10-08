@@ -59,7 +59,7 @@ export default async function AdminResourceWorkspace({ mode, searchParams }: { m
   }
   return <AdminPage>
     <AdminBreadcrumbs items={[{label:mode === 'questions' ? 'Content' : 'Commerce'},{label:title}]}/>
-    <AdminPageHeader title={title} description={mode === 'questions' ? 'Kelola soal, taksonomi, dan review konten.' : 'Kelola manfaat, harga, dan kesiapan produk.'} action={<Link className={adminPrimaryButtonClass} href={`${closeHref}&new=1`}>{mode === 'products' ? 'Tambah produk' : 'Tambah soal'}</Link>}/>
+    <AdminPageHeader title={title} description={mode === 'questions' ? `Kelola soal, taksonomi, dan review konten · ${program} / ${track}.` : 'Kelola manfaat, harga, dan kesiapan produk.'} action={<Link className={adminPrimaryButtonClass} href={`${closeHref}&new=1`}>{mode === 'products' ? 'Tambah produk' : 'Tambah soal'}</Link>}/>
     <AdminFeedbackBanner ok={params.ok} error={params.error}/>
     {mode === 'products' ? <AdminProductsPanel canProducts program={program} track={track} pathname={pathname} activeFilters={activeFilters} pageSummary={pageSummary} pageOutOfRange={Boolean(domainPage.clampTo)} products={domainPage.rows} priceByProduct={priceByProduct} grantByProduct={grantByProduct} editHref={editHref}/> : <AdminQuestionsPanel canQuestions program={program} track={track} pathname={pathname} activeFilters={activeFilters} pageSummary={pageSummary} pageOutOfRange={Boolean(domainPage.clampTo)} questions={domainPage.rows} missingQuestion={false} workspace={workspace} params={params} subjectById={new Map(workspace.catalog.subjects.map(subject=>[subject.id,subject]))} editHref={editHref}/>}
   </AdminPage>

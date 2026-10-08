@@ -120,7 +120,7 @@ export default function QuestionBankForm({ detail: incomingDetail, subjects, pro
         <form ref={formRef} onSubmit={(event) => {
             event.preventDefault()
             submitDraft()
-        }} data-admin-form data-dirty={dirty || undefined} data-pending={pending || undefined} className="space-y-5">
+        }} data-admin-form data-dirty={dirty || undefined} data-pending={pending || undefined} className="admin-question-form space-y-5">
             <Identity question={q} program={program} track={track}/><ReturnFields filters={returnFilters}/>
             {state.error ? <div role="alert" className="rounded-lg border border-danger-border bg-danger-muted p-4 text-sm text-danger"><p>{state.error}</p>{state.conflict ? <button type="button" className={`${adminSecondaryButtonClass} mt-2`} onClick={() => { void (async () => { if (await confirm({ title: 'Muat versi terbaru?', message: 'Muat ulang akan mengganti input dengan versi terbaru dari database.', detail: 'Salin perubahan Anda terlebih dahulu; isi form ini akan hilang.', confirmLabel: 'Muat ulang', danger: true })) window.location.reload() })() }}>Muat versi terbaru</button> : null}</div> : null}
             <nav aria-label="Bagian form soal" className="grid gap-2 sm:grid-cols-3">
@@ -133,15 +133,15 @@ export default function QuestionBankForm({ detail: incomingDetail, subjects, pro
             <fieldset disabled={!editable || pending} className="min-w-0 space-y-4">
                 <legend className="sr-only">Isi dan klasifikasi soal</legend>
                 <AdminFormSection id="qb-step-context" title="Tentukan konteks" description="Pilih mapel, tipe jawaban, tingkat kesulitan, dan stimulus sebelum menulis soal.">
-                    <div className="grid gap-4 sm:col-span-2 md:grid-cols-2">
-                        <AdminField label="Mapel / Subtes" fieldId="qb-subject" error={state.fields?.subject} hint="Mengganti mapel akan melepas stimulus dan pemetaan materi dari mapel sebelumnya."><select {...input('subject')} className={adminInputClass} required><option value="">Pilih mapel</option>{subjects.map((s) => <option key={s.id} value={s.code}>{s.code} · {s.name}</option>)}</select></AdminField>
-                        <AdminField label="Tipe jawaban" fieldId="qb-questionType" error={state.fields?.questionType}><select {...input('questionType')} className={adminInputClass}><option value="single_choice">Pilihan tunggal</option><option value="multiple_choice">Pilihan majemuk</option><option value="category">Kategori / benar-salah</option></select></AdminField>
+                    <div className="grid min-w-0 grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2">
+                        <AdminField label="Mapel / Subtes" fieldId="qb-subject" error={state.fields?.subject} hint="Menentukan subtes dan pemetaan materi yang tersedia."><select {...input('subject')} className={adminInputClass} required><option value="">Pilih mapel</option>{subjects.map((s) => <option key={s.id} value={s.code}>{s.code} · {s.name}</option>)}</select></AdminField>
+                        <AdminField label="Tipe jawaban" fieldId="qb-questionType" error={state.fields?.questionType} hint="Menentukan cara peserta menjawab soal."><select {...input('questionType')} className={adminInputClass}><option value="single_choice">Pilihan tunggal</option><option value="multiple_choice">Pilihan majemuk</option><option value="category">Kategori / benar-salah</option></select></AdminField>
                         <AdminField label="Tingkat kesulitan" fieldId="qb-difficulty" error={state.fields?.difficulty}><select {...input('difficulty')} className={adminInputClass}><option value="easy">Mudah</option><option value="medium">Sedang</option><option value="hard">Sulit</option></select></AdminField>
                         <AdminField label="Stimulus" fieldId="qb-stimulusId" error={state.fields?.stimulusId}><select {...input('stimulusId')} className={adminInputClass}><option value="">Tanpa stimulus</option>{detail.stimuli.filter((s) => s.subject_id === subjectId).map((s) => <option key={s.id} value={s.id}>{s.title || s.content?.slice(0, 100) || s.id}</option>)}</select></AdminField>
                     </div>
                 </AdminFormSection>
                 <AdminFormSection id="qb-step-content" title="Tulis soal dan jawaban" description="Tulis pertanyaan, lengkapi pilihan, lalu tandai jawaban yang benar.">
-                    <div className="grid gap-4 sm:col-span-2">
+                    <div className="grid min-w-0 grid-cols-1 gap-4 sm:col-span-2">
                         <input type="hidden" name="stem" value={values.stem}/>
                         <QuestionRichTextEditor hiddenInput={false} name="stem" label="Pertanyaan" fieldId="qb-stem" error={state.fields?.stem} hint="Rumus dan gambar disisipkan lewat tombol, lalu tampil langsung. Klik rumus untuk mengubah isinya." defaultValue={text(q?.stem)} onValueChange={(value) => update('stem', value)} editable={editable && !pending} minHeight="min-h-36"/>
                         <QuestionOptionsEditor defaultValue={detail.question ? serializeOptionRows(detail.options) : undefined} questionType={values.questionType} editable={editable && !pending} onChange={(payload) => { setDirty(true); setOptions(payload) }}/>{state.fields?.options ? <p role="alert" className="mt-2 text-sm font-medium text-danger">{state.fields.options}</p> : null}
@@ -150,7 +150,7 @@ export default function QuestionBankForm({ detail: incomingDetail, subjects, pro
                     </div>
                 </AdminFormSection>
                 <AdminFormSection id="qb-step-complete" title="Lengkapi metadata" description="Tambahkan pemetaan dan catatan perubahan agar soal mudah dilacak.">
-                    <div className="grid gap-4 sm:col-span-2 md:grid-cols-2">
+                    <div className="grid min-w-0 grid-cols-1 gap-4 sm:col-span-2 sm:grid-cols-2">
                         <AdminField label="Materi utama" fieldId="qb-knowledgeNodeId" error={state.fields?.knowledgeNodeId}><select {...input('knowledgeNodeId')} className={adminInputClass}><option value="">Belum dipetakan</option>{detail.knowledgeNodes.filter((n) => n.subject_id === subjectId).map((n) => <option key={n.id} value={n.id}>{n.name}</option>)}</select></AdminField>
                         <AdminField label="Sumber / referensi" fieldId="qb-sourceReference" error={state.fields?.sourceReference}><input {...input('sourceReference')} className={adminInputClass} maxLength={2000}/></AdminField>
                         <AdminField label="Level kognitif" fieldId="qb-cognitiveLevel" error={state.fields?.cognitiveLevel}><input {...input('cognitiveLevel')} className={adminInputClass} maxLength={100} placeholder="Contoh: penalaran"/></AdminField>

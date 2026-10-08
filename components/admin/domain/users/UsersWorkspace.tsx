@@ -8,10 +8,12 @@ AdminFeedbackBanner,
 AdminMetric,
 AdminPage,
 AdminPageHeader,
+AdminRowActions,
 AdminSectionHeading,
 AdminStatusBadge,
 AdminTh,
 adminSecondaryButtonClass,
+adminTableActionClass,
 adminTableHeadClass
 } from '@/components/admin/AdminUi'
 import AdminWorkspaceTabs from '@/components/admin/AdminWorkspaceTabs'
@@ -84,7 +86,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
             <AdminCard><div className="p-5"><h2 className="text-base font-semibold">Daftar pengguna</h2></div>
                 <AdminDataTable caption="Akses pengguna" className="min-w-[600px]" empty={!result.users.length?{title:'Tidak ada pengguna',description:'Tidak ada pengguna yang cocok dengan pencarian. Ubah kata kunci untuk melanjutkan.'}:undefined}>
                     <thead className={adminTableHeadClass}><tr>{['Name','Entitlements','Actions'].map(label=><AdminTh key={label}>{label}</AdminTh>)}</tr></thead>
-                    <tbody>{result.users.map(user=><tr key={user.id}><td className="font-medium">{user.full_name || user.display_name || 'Pengguna'}</td><td>{counts.get(user.id) || 0} akses aktif</td><td><Link className={adminSecondaryButtonClass} href={`/admin/users/${user.id}?${new URLSearchParams({returnTo:adminPageHref('/admin/users',{q:params.q || ''},page)})}`}>Lihat User</Link></td></tr>)}</tbody>
+                    <tbody>{result.users.map(user=><tr key={user.id}><td className="font-medium">{user.full_name || user.display_name || 'Pengguna'}</td><td>{counts.get(user.id) || 0} akses aktif</td><td><AdminRowActions><Link className={adminTableActionClass} href={`/admin/users/${user.id}?${new URLSearchParams({returnTo:adminPageHref('/admin/users',{q:params.q || ''},page)})}`}>Lihat User</Link></AdminRowActions></td></tr>)}</tbody>
                 </AdminDataTable>
                 <AdminPagination pathname="/admin/users" params={{ q: params.q || '' }} summary={summary} noun="pengguna"/>
             </AdminCard>

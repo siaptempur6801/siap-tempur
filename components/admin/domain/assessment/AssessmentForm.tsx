@@ -5,7 +5,7 @@ import { AdminBadge,AdminField,adminInputClass } from '@/components/admin/AdminU
 import { AdminFormActions } from '@/components/admin/forms/AdminFormActions'
 import { AdminFormSection } from '@/components/admin/forms/AdminFormSection'
 import { adminExamTypeLabel,adminStatusLabel } from '@/lib/admin-format'
-import { BookOpen,Save } from 'lucide-react'
+import { Save } from 'lucide-react'
 import { useMemo,useState } from 'react'
 
 export type ExamFormExam = {
@@ -111,17 +111,17 @@ export default function AssessmentForm({
   }
 
   const form = (
-    <form action={action} data-admin-form>
+    <form action={action} data-admin-form className="flex w-full max-w-4xl flex-col gap-6">
       <input type="hidden" name="return_to" value={returnTo || closeHref} />
       <input type="hidden" name="program_code" value={program} />
       <input type="hidden" name="track_code" value={track} />
       {editedExam ? <input type="hidden" name="id" value={editedExam.id} /> : null}
 
       <AdminFormSection
-        title="Identitas"
-        description="Tipe ujian menentukan bentuk pengerjaan dan tidak dapat diubah setelah ujian dibuat."
+        title="Informasi dasar"
+        description="Tipe assessment menentukan pola pengerjaan dan tidak dapat diubah setelah dibuat."
       >
-        <AdminField label="Tipe ujian">
+        <AdminField label="Jenis assessment">
           {editedExam ? (
             <>
               <input type="hidden" name="exam_type_code" value={examTypeCode} />
@@ -151,35 +151,7 @@ export default function AssessmentForm({
           )}
         </AdminField>
 
-        <AdminField label="Status" hint="Draf tidak terlihat peserta; Aktif langsung ditawarkan.">
-          <select
-            className={adminInputClass}
-            name="status"
-            defaultValue={editedExam?.status || 'draft'}
-          >
-            {[
-              'draft',
-              'active',
-              'scheduled',
-              ...(editedExam?.status === 'archived' ? ['archived'] : [])
-            ].map((status) => (
-              <option
-                key={status}
-                value={status}
-                disabled={
-                  ['active', 'scheduled'].includes(status) &&
-                  !canActivate &&
-                  !isDrill &&
-                  editedExam?.status !== status
-                }
-              >
-                {adminStatusLabel(status)}
-              </option>
-            ))}
-          </select>
-        </AdminField>
-
-        <AdminField label="Judul" className="md:col-span-2">
+        <AdminField label="Nama assessment">
           <input
             className={adminInputClass}
             name="title"
@@ -192,46 +164,41 @@ export default function AssessmentForm({
             placeholder={
               isDrill
                 ? generatedDrillTitle(subjectByCode.get(subjectCode), selectedNode)
-                : 'Judul ujian'
+                : 'Masukkan nama assessment'
             }
           />
         </AdminField>
 
-        <AdminField
-          label="Slug"
-          hint="Kosongkan untuk dibuat otomatis dari judul."
-          className="md:col-span-2"
-        >
-          <input
-            className={adminInputClass}
-            name="slug"
-            defaultValue={editedExam?.slug || ''}
-            placeholder="judul-exam"
-          />
-        </AdminField>
+        <details className="sm:col-span-2">
+          <summary className="w-fit cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring">
+            Pengaturan lanjutan
+          </summary>
+          <div className="mt-3 max-w-lg">
+            <AdminField
+              label="Slug URL"
+              hint="Opsional. Kosongkan agar dibuat otomatis dari nama assessment."
+            >
+              <input
+                className={adminInputClass}
+                name="slug"
+                defaultValue={editedExam?.slug || ''}
+                placeholder="judul-assessment"
+              />
+            </AdminField>
+          </div>
+        </details>
       </AdminFormSection>
 
       {isDrill ? (
         <AdminFormSection
-          title="Fokus latihan"
-          description="Latihan mengambil soal dari satu submateri; cetak biru dan bagian internal dibuat otomatis."
+          title="Pengaturan Drill"
+          description="Tentukan subtes, submateri, dan jumlah soal yang tersedia untuk latihan ini."
         >
-          <div className="md:col-span-2 rounded-lg border border-info-border bg-info-muted/70 p-4">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
-                <BookOpen size={18} />
-              </div>
-              <div>
-                <div className="font-semibold text-blue-950">Drill = pendalaman submateri</div>
-                <p className="mt-1 text-sm font-medium leading-6 text-info">
-                  Pilih subtes seperti TWK/TIU/TKP, lalu pilih submaterinya. Sistem membuat satu
-                  cetak biru dan satu bagian internal secara otomatis.
-                </p>
-              </div>
-            </div>
+          <div className="sm:col-span-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+            Drill mengambil soal dari satu submateri. Bagian assessment dibuat otomatis.
           </div>
 
-          <AdminField label="Subtes">
+          <AdminField label="Subtes / mata pelajaran" className="sm:col-span-2">
             <select
               className={adminInputClass}
               name="subject_code"
@@ -295,7 +262,7 @@ export default function AssessmentForm({
           </AdminField>
 
           <AdminField
-            label="Jumlah soal Drill"
+            label="Jumlah soal"
             fieldId="exam-question-count"
             error={
               poolTooSmall ? 'Jumlah soal melebihi soal yang tersedia pada submateri.' : undefined
@@ -317,10 +284,11 @@ export default function AssessmentForm({
       ) : null}
 
       <AdminFormSection
-        title="Pengerjaan"
-        description="Aturan dasar saat peserta mengerjakan ujian ini."
+        title="Aturan pengerjaan"
+        description="Atur durasi dan cara assessment dikerjakan peserta."
+        columns={3}
       >
-        <AdminField label="Durasi (detik)" hint="1200 detik = 20 menit.">
+        <AdminField label="Durasi (detik)" hint="Contoh: 1200 detik sama dengan 20 menit.">
           <input
             className={adminInputClass}
             name="duration_seconds"
@@ -342,7 +310,7 @@ export default function AssessmentForm({
           />
         </AdminField>
 
-        <AdminField label="Urutan soal">
+        <AdminField label="Urutan soal" hint="Acak soal untuk tiap peserta.">
           <select
             className={adminInputClass}
             name="question_order"
@@ -355,10 +323,10 @@ export default function AssessmentForm({
       </AdminFormSection>
 
       <AdminFormSection
-        title="Akses & token"
-        description="Token hanya ditarik untuk akses berbayar; biarkan 0 untuk akses gratis."
+        title="Akses peserta"
+        description="Pilih model akses dan biaya token yang diperlukan."
       >
-        <AdminField label="Akses">
+        <AdminField label="Akses" hint="Gratis, Freemium, atau Premium.">
           <select
             className={adminInputClass}
             name="access_type"
@@ -370,7 +338,7 @@ export default function AssessmentForm({
           </select>
         </AdminField>
 
-        <AdminField label="Biaya token" hint="0 untuk akses gratis.">
+        <AdminField label="Biaya token" hint="Isi 0 jika assessment tidak memakai token.">
           <input
             className={adminInputClass}
             name="token_cost"
@@ -378,6 +346,45 @@ export default function AssessmentForm({
             min="0"
             defaultValue={editedExam?.token_cost ?? 0}
           />
+        </AdminField>
+      </AdminFormSection>
+
+      <AdminFormSection
+        title="Status"
+        description="Tentukan apakah assessment masih disiapkan atau sudah tersedia untuk peserta."
+        columns={1}
+      >
+        <AdminField
+          label="Ketersediaan"
+          hint="Draft belum tersedia bagi peserta. Status lain mengikuti readiness dan aturan akses."
+        >
+          <select
+            className={adminInputClass}
+            name="status"
+            defaultValue={editedExam?.status || 'draft'}
+          >
+            {[
+              'draft',
+              'ready',
+              'active',
+              'scheduled',
+              ...(editedExam?.status === 'published' ? ['published'] : []),
+              ...(editedExam?.status === 'archived' ? ['archived'] : [])
+            ].map((status) => (
+              <option
+                key={status}
+                value={status}
+                disabled={
+                  ['ready', 'active', 'scheduled', 'published'].includes(status) &&
+                  !canActivate &&
+                  !isDrill &&
+                  editedExam?.status !== status
+                }
+              >
+                {adminStatusLabel(status)}
+              </option>
+            ))}
+          </select>
         </AdminField>
       </AdminFormSection>
 
@@ -390,7 +397,7 @@ export default function AssessmentForm({
       <AdminFormActions cancelHref={closeHref}>
         <AdminSubmitButton disabled={poolTooSmall || (isDrill && !selectedNode)}>
           <Save size={16} />
-          {editedExam ? 'Simpan perubahan' : 'Simpan ujian'}
+          {editedExam ? 'Simpan perubahan' : 'Simpan assessment'}
         </AdminSubmitButton>
       </AdminFormActions>
     </form>

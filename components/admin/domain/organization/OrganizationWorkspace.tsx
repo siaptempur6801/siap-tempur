@@ -13,12 +13,14 @@ AdminEmptyState,
 AdminFeedbackBanner,
 AdminPage,
 AdminPageHeader,
+AdminRowActions,
 AdminSectionHeading,
 AdminStatusBadge,
 AdminTh,
 adminInputClass,
 adminPrimaryButtonClass,
 adminSecondaryButtonClass,
+adminTableActionClass,
 adminTableHeadClass
 } from '@/components/admin/AdminUi'
 import BatchExamPanel from '@/components/admin/BatchExamPanel'
@@ -224,8 +226,8 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                         </td>
                                         <td className="px-4 py-4 text-right font-bold text-foreground">{org.participant_count}</td>
                                         <td className="px-4 py-4"><AdminStatusBadge status={org.status} label={organizationStatusLabel(org.status)}/></td>
-                                        <td className="px-5 py-4 text-right">
-                                            <Link className="text-xs font-semibold text-info hover:text-info" href={orgHref({ org: org.id, batch: undefined, new: undefined })}>Kelola</Link>
+                                        <td className="px-5 py-4">
+                                            <AdminRowActions><Link className={adminTableActionClass} href={orgHref({ org: org.id, batch: undefined, new: undefined })}>Kelola</Link></AdminRowActions>
                                         </td>
                                     </tr>
                                 ))}
@@ -316,7 +318,7 @@ export default async function AdminOrganizationsPage({ searchParams }: { searchP
                                                             <span>{batch.participant_count - batch.linked_count} belum menautkan akun</span>
                                                         </div>
                                                     </div>
-                                                    <Link className="text-xs font-semibold text-info hover:text-info" href={orgHref({ org: editingOrg.id, batch: batch.id, tab: params.exam ? 'assignments' : ['assignments','monitoring'].includes(tab) ? tab : 'participants' })}>
+                                                    <Link className={adminTableActionClass} href={orgHref({ org: editingOrg.id, batch: batch.id, tab: params.exam ? 'assignments' : ['assignments','monitoring'].includes(tab) ? tab : 'participants' })}>
                                                         Lihat peserta
                                                     </Link>
                                                 </div>

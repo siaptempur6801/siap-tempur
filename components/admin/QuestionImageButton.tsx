@@ -73,7 +73,7 @@ export default function QuestionImageButton({
                 onClick={() => inputRef.current?.click()}
                 aria-label={ariaLabel}
                 className={compact
-                    ? 'inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground focus:outline-none focus:ring-4 focus:ring-slate-900/5 disabled:cursor-not-allowed disabled:opacity-40'
+                    ? 'inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground focus:outline-none focus:ring-4 focus:ring-slate-900/5 disabled:cursor-not-allowed disabled:opacity-40'
                     : adminSecondaryButtonClass}
             >
                 {uploading ? <Loader2 className="animate-spin" size={15}/> : <ImagePlus size={15}/>}
@@ -87,7 +87,7 @@ export default function QuestionImageButton({
                         width={36}
                         height={36}
                         unoptimized
-                        className={cn('rounded-lg border border-border object-cover', compact ? 'h-9 w-9' : 'h-10 w-10')}
+                        className={cn('rounded-md border border-border object-cover', compact ? 'h-9 w-9' : 'h-10 w-10')}
                     />
                     {onClear ? (
                         <button

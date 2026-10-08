@@ -49,7 +49,7 @@ test.describe('Instansi — distribusi assessment katalog', () => {
             await loginAs(page, admin, '/admin')
             await page.goto('/admin/assessments?program=CPNS&track=SKD')
             await page.locator('tr[data-assessment-id]').filter({hasText:'Siap'}).first().getByRole('link',{name:'Lihat',exact:true}).click()
-            await page.getByRole('link',{name:'Distribution',exact:true}).click()
+            await page.getByRole('navigation',{name:'Bagian workspace'}).getByRole('link',{name:'Distribusi',exact:true}).click()
             const assignmentLink = page.getByRole('link', { name: 'Tugaskan ke Instansi', exact: true }).first()
             await expect(assignmentLink).toBeVisible()
             const assignmentHref = await assignmentLink.getAttribute('href')

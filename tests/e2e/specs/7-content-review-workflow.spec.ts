@@ -71,7 +71,7 @@ async function approveStage(page: Page, note: string) {
 test('article workspace loads with schema-v2 content permissions', async ({ browser }) => {
     const users = await metadata()
 
-    const editorContext = await browser.newContext()
+    const editorContext = await browser.newContext({ viewport: { width: 1024, height: 900 } })
     const editorPage = await editorContext.newPage()
     await login(editorPage, users.editor)
     await editorPage.goto('/admin/content/articles')

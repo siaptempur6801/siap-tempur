@@ -5,9 +5,10 @@ AdminCard,
 AdminEmptyState,
 AdminPage,
 AdminPageHeader,
+AdminRowActions,
 AdminStatusBadge,
 AdminTh,
-adminSecondaryButtonClass,
+adminTableActionClass,
 adminTableHeadClass
 } from '@/components/admin/AdminUi'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
@@ -129,12 +130,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 </td>
                 <td className="whitespace-nowrap text-xs">{formatDateTime(o.created_at)}</td>
                 <td>
-                  <Link
-                    className={adminSecondaryButtonClass}
+                  <AdminRowActions><Link
+                    className={adminTableActionClass}
                     href={`/admin/commerce/orders/${o.id}?${new URLSearchParams({ returnTo: current })}`}
                   >
                     Lihat Order
-                  </Link>
+                  </Link></AdminRowActions>
                 </td>
               </tr>
             ))}

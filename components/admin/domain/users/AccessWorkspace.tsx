@@ -9,12 +9,14 @@ AdminFeedbackBanner,
 AdminMetric,
 AdminPage,
 AdminPageHeader,
+AdminRowActions,
 AdminSectionHeading,
 AdminStatusBadge,
 AdminTh,
 adminInputClass,
 adminPrimaryButtonClass,
 adminSecondaryButtonClass,
+adminTableActionClass,
 adminTableHeadClass,
 } from '@/components/admin/AdminUi'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
@@ -255,8 +257,8 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                                         </td>
                                         <td className="px-4 py-4 font-medium text-muted-foreground">{voucher.wallet_type ? walletTypeLabel(voucher.wallet_type) : 'Semua program'}</td>
                                         <td className="px-4 py-4 font-medium text-muted-foreground">{formatDate(voucher.expires_at)}</td>
-                                        <td className="px-5 py-4 text-right">
-                                            <Link className="text-xs font-semibold text-info hover:text-info" href={`/admin/users/access?${(() => { const query = new URLSearchParams(backQuery); query.set('voucher', voucher.id); return query.toString() })()}`}>Ubah</Link>
+                                        <td className="px-5 py-4">
+                                            <AdminRowActions><Link className={adminTableActionClass} href={`/admin/users/access?${(() => { const query = new URLSearchParams(backQuery); query.set('voucher', voucher.id); return query.toString() })()}`}>Ubah</Link></AdminRowActions>
                                         </td>
                                     </tr>
                                 ))}
@@ -316,8 +318,8 @@ export default async function AdminEntitlementsPage({ searchParams }: { searchPa
                                             <span className={cn('text-base font-semibold tabular-nums', wallet.balance > 0 ? 'text-success' : 'text-muted-foreground')}>{formatNumber(wallet.balance)}</span>
                                         </td>
                                         <td className="px-4 py-4 font-medium text-muted-foreground">{formatDateTime(wallet.updated_at)}</td>
-                                        <td className="px-5 py-4 text-right">
-                                            <Link className="text-xs font-semibold text-info hover:text-info" href={`/admin/users/access?${(() => { const query = new URLSearchParams(backQuery); query.set('user', wallet.user_id); return query.toString() })()}`}>Kelola</Link>
+                                        <td className="px-5 py-4">
+                                            <AdminRowActions><Link className={adminTableActionClass} href={`/admin/users/access?${(() => { const query = new URLSearchParams(backQuery); query.set('user', wallet.user_id); return query.toString() })()}`}>Kelola</Link></AdminRowActions>
                                         </td>
                                     </tr>
                                 ))}

@@ -80,8 +80,8 @@ function OptionContentField({ row, index, update, editable }: {
 }) {
     const suffix = row.key || index + 1
     return (
-        <div className="space-y-1">
-            <span className={adminLabelClass}>Isi opsi {suffix}</span>
+        <div className="min-w-0 space-y-1">
+            <span className={`${adminLabelClass} block`}>Isi opsi {suffix}</span>
             <QuestionRichTextEditor
                 compact
                 hiddenInput={false}
@@ -108,7 +108,7 @@ function OptionAdvancedFields({ row, index, update, requiredGroup }: {
 }) {
     const suffix = row.key || index + 1
     return (
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="space-y-1">
                 <span className={adminLabelClass}>Response group{requiredGroup ? ' (wajib)' : ''}</span>
                 <input className={adminInputClass} value={row.responseGroup} onChange={(event) => update(index, { responseGroup: event.target.value })} aria-label={`Response group ${suffix}`} required={requiredGroup}/>
@@ -159,7 +159,7 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
     }
 
     return (
-        <fieldset className="space-y-3 rounded-lg border border-border bg-muted/60 p-4 lg:col-span-2">
+        <fieldset className="min-w-0 space-y-3 rounded-lg border border-border bg-muted/60 p-4">
             <legend className="px-1 text-sm font-semibold text-foreground">{label}</legend>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -179,22 +179,27 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
 
             <div className="space-y-3">
                 {rows.map((row, index) => (
-                    <div key={row.id} data-option-row={row.key} className="rounded-lg border border-border bg-card p-3 ">
-                        <div className="grid gap-3 md:grid-cols-[88px_minmax(0,1fr)_120px_110px_auto] md:items-end">
-                            <label className="space-y-1">
+                    <div key={row.id} data-option-row={row.key} className="min-w-0 rounded-lg border border-border bg-card p-3 sm:p-4">
+                        <div className="grid min-w-0 grid-cols-12 items-end gap-x-3 gap-y-3">
+                            <label className="col-span-4 min-w-0 space-y-1 sm:col-span-3 lg:col-span-1">
                                 <span className={adminLabelClass}>Kode</span>
                                 <input className={adminInputClass} required maxLength={16} value={row.key} onChange={(event) => update(index, { key: event.target.value.slice(0, 16) })} aria-label={`Kode opsi ${index + 1}`} />
                             </label>
-                            <OptionContentField row={row} index={index} update={update} editable={editable}/>
-                            <label className="space-y-1">
+                            <div className="col-span-12 min-w-0 lg:col-span-5">
+                                <OptionContentField row={row} index={index} update={update} editable={editable}/>
+                            </div>
+                            <label className="col-span-5 min-w-0 space-y-1 sm:col-span-4 lg:col-span-2">
                                 <span className={adminLabelClass}>Skor</span>
                                 <input className={adminInputClass} inputMode="decimal" value={row.score} onChange={(event) => update(index, { score: event.target.value })} aria-label={`Skor opsi ${row.key || index + 1}`} placeholder="Opsional" />
                             </label>
-                            <label className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm font-medium text-foreground">
+                            <label className="col-span-3 flex min-h-9 min-w-0 items-center gap-1.5 rounded-md border border-border bg-muted px-2 text-sm font-medium text-foreground sm:col-span-5 lg:col-span-2 lg:justify-center lg:px-2">
                                 <input type="checkbox" checked={row.isCorrect === true} onChange={(event) => update(index, { isCorrect: event.target.checked })} aria-label={`Jawaban benar ${row.key || index + 1}`} className="h-4 w-4 rounded border-border text-info" />
                                 Benar
                             </label>
-                            <div className="flex items-center gap-1.5"><QuestionImageButton compact ariaLabel={`Gambar opsi ${row.key || index + 1}`} value={row.imageUrl || null} onUploaded={(url) => update(index, { imageUrl: url })} onClear={() => update(index, { imageUrl: '' })} testId={`option-${row.key || index + 1}`}/><button type="button" onClick={() => removeRow(index)} disabled={rows.length <= 2} className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-danger-border text-red-500 transition hover:bg-danger-muted disabled:cursor-not-allowed disabled:opacity-30" aria-label={`Hapus opsi ${row.key || index + 1}`}><Trash2 size={16}/></button></div>
+                            <div className="col-span-4 flex min-w-0 items-center justify-end gap-1.5 sm:col-span-3 lg:col-span-2">
+                                <QuestionImageButton compact ariaLabel={`Gambar opsi ${row.key || index + 1}`} value={row.imageUrl || null} onUploaded={(url) => update(index, { imageUrl: url })} onClear={() => update(index, { imageUrl: '' })} testId={`option-${row.key || index + 1}`}/>
+                                <button type="button" onClick={() => removeRow(index)} disabled={rows.length <= 2} className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-danger-border text-red-500 transition hover:bg-danger-muted disabled:cursor-not-allowed disabled:opacity-30" aria-label={`Hapus opsi ${row.key || index + 1}`}><Trash2 size={15}/></button>
+                            </div>
                         </div>
 
                         {isCategory ? (

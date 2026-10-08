@@ -1,6 +1,6 @@
 import { adminRoutes } from '@/lib/admin-routes'
 import { saveAdminExamAction } from '@/app/actions/admin-exams'
-import { AdminEmptyState,AdminFeedbackBanner,AdminPage,AdminPageHeader,adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { AdminEmptyState,AdminFeedbackBanner,AdminHint,AdminPage,AdminPageHeader,adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 import AssessmentDetail from '@/components/admin/domain/assessment/AssessmentDetail'
 import AssessmentForm from '@/components/admin/domain/assessment/AssessmentForm'
 import AssessmentList from '@/components/admin/domain/assessment/AssessmentList'
@@ -44,8 +44,8 @@ export default async function AdminExamsWorkspace({ searchParams }: { searchPara
   const eligibleIds = new Set(eligible.map(e=>e.id))
   const selected = data.exams.find(e => e.id === filters.id)
   const newForm = params.new === '1'
-  const form = (exam = selected) => <AssessmentForm key={exam?.id || 'new'} canActivate={exam ? readiness.get(exam.id)?.configurationReady : false} action={saveAdminExamAction} program={program} track={track} examTypes={data.catalog.examTypes} subjects={data.catalog.subjects} knowledgeNodes={data.drillNodes} editedExam={exam} drillRule={data.drillRules.find(r => r.blueprintId === exam?.blueprint_id) || null} closeHref={listHref} returnTo={exam ? href({ assessment: exam.id, tab: 'overview' }) : listHref}/>
-  if (newForm) return <AdminPage><AdminBreadcrumbs items={[{label:'Assessment', href:listHref},{label:'Buat Assessment'}]}/><AdminPageHeader title="Buat Assessment" description={`${program} / ${track}`} action={<Link className={adminSecondaryButtonClass} href={listHref}>Kembali ke Assessment</Link>}/><AdminFeedbackBanner error={params.error}/>{form(undefined)}</AdminPage>
+  const form = (exam = selected) => <AssessmentForm key={exam?.id || 'new'} canActivate={exam ? readiness.get(exam.id)?.configurationReady : false} action={saveAdminExamAction} program={program} track={track} examTypes={data.catalog.examTypes} subjects={data.catalog.subjects} knowledgeNodes={data.drillNodes} editedExam={exam} drillRule={data.drillRules.find(r => r.blueprintId === exam?.blueprint_id) || null} closeHref={exam ? href({ assessment: exam.id, tab: 'overview' }) : listHref} returnTo={exam ? href({ assessment: exam.id, tab: 'overview' }) : listHref}/>
+  if (newForm) return <AdminPage><AdminBreadcrumbs items={[{label:'Assessment', href:listHref},{label:'Buat Assessment'}]}/><AdminPageHeader title="Buat Assessment" description={`${program} · ${track}`}/><AdminFeedbackBanner error={params.error}/><div className="w-full max-w-4xl"><AdminHint>Simpan informasi assessment terlebih dahulu. Pengaturan soal, readiness, dan distribusi dapat dilanjutkan dari halaman detail.</AdminHint></div>{form(undefined)}</AdminPage>
   if (filters.id && !selected) return <AdminPage><AdminBreadcrumbs items={[{label:'Assessment',href:listHref},{label:'Tidak ditemukan'}]}/><AdminEmptyState title="Assessment tidak ditemukan" description="Assessment tidak tersedia dalam konteks ini." action={<Link className={adminSecondaryButtonClass} href={listHref}>Kembali ke Assessment</Link>}/></AdminPage>
   const props = {data,params,program,track,permissions,readiness,eligibleIds,listHref,href,form,filters,listQuery}
   if(selected) return <AssessmentDetail {...props} selected={selected}/>

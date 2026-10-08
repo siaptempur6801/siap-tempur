@@ -36,6 +36,11 @@ type MonitoringProjection = {
  total:number;page:number;summary:{total:number;notStarted:number;inProgress:number;completed:number}
  report:{bands:Array<{label:string;count:number}>;scored:number;completionRate:number|null}
 }
+export type MonitoringSummaryProjection = {
+ total:number
+ summary:{total:number;notStarted:number;inProgress:number;completed:number}
+ report:{bands:Array<{label:string;count:number}>;scored:number;completionRate:number|null}|null
+}
 export async function getAdminMonitoring(params:MonitoringParams) {
  const context=await resolveMonitoringContext(params)
  const db=await createAdminClient()
@@ -47,6 +52,36 @@ export async function getAdminMonitoring(params:MonitoringParams) {
  if(error)throw error
  if(!data)throw new Error('Monitoring tidak tersedia.')
  return {context,...data as MonitoringProjection}
+}
+export async function getAdminMonitoringSummary(params:MonitoringParams,includeReport=true) {
+ const context=await resolveMonitoringContext(params)
+ if(includeReport) await authorizationService.requirePermission(PERMISSIONS.REPORT_READ)
+ const db=await createAdminClient()
+ const scope={
+  p_event_id:context.event?.id || null,p_organization_id:context.organization?.id || null,p_batch_id:context.batch?.id || null,
+  p_assignment_id:context.assignment?.id || null,p_exam_id:params.exam || null
+ }
+ const {data,error}=await db.rpc('admin_monitoring_summary',{...scope,p_include_report:includeReport})
+ if(!error) {
+  if(!data)throw new Error('Ringkasan monitoring tidak tersedia.')
+  return {context,...data as MonitoringSummaryProjection}
+ }
+
+ // Older deployments do not have the aggregate RPC yet. Keep the workspace usable
+ // during rollout, but expose only summary fields and honor REPORT_READ locally.
+ if(error.code!=='PGRST202') throw error
+ const {data:legacy,error:legacyError}=await db.rpc('admin_monitoring_page',{
+  ...scope,p_search:'',p_status:'',p_page:1
+ })
+ if(legacyError) throw legacyError
+ if(!legacy) throw new Error('Ringkasan monitoring tidak tersedia.')
+ const projection=legacy as MonitoringSummaryProjection
+ return {
+  context,
+  total:projection.total,
+  summary:projection.summary,
+  report:includeReport ? projection.report : null,
+ }
 }
 export async function getAdminResult(attemptId:string,contextParams:MonitoringContext) {
  const context=await resolveMonitoringContext(contextParams);const db=await createAdminClient()

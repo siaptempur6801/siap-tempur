@@ -100,6 +100,8 @@ Seluruh tabel admin memakai `AdminDataTable` berbasis Shadcn Table, dengan head/
 
 `AdminTableToolbar` memakai URL untuk search, filter, dan pagination. Detail link serta return URL mempertahankan state daftar. Review dibuka sebagai antrean; detail baru dimuat setelah `question` dipilih secara eksplisit.
 
+Row actions menjaga hierarchy yang sama: satu aksi rutin boleh tampil langsung, sedangkan aksi sekunder berada di menu overflow. Semua kontrol pada tabel dinormalisasi ke tinggi 28 px di desktop dan 36 px di layar kecil; kelompok aksi memakai `AdminRowActions` untuk alignment/gap dan kontrol teks baru memakai `adminTableActionClass`. Tombol overflow memakai `adminTableIconActionClass` dengan wadah persegi 28×28 px / 36×36 px, ikon 18 px, nama aksesibel yang menyebut resource, serta focus ring. Ukuran wadah adalah bagian dari standar; jangan mengatur ukuran ikon sebagai pengganti ukuran tombol.
+
 Gunakan `AdminEmptyState` yang menjelaskan resource, alasan kosong, dan next action. `AdminErrorState` menyebut resource yang gagal serta menyediakan retry. `AdminLoading` memakai skeleton yang sama. Warna status selalu disertai label melalui `AdminStatusBadge`.
 
 ## 7. Forms
@@ -112,6 +114,10 @@ Field teknis advanced dipisahkan dari input utama. Entity dipilih lewat nama/kod
 
 
 ## 8. Workflow & Status
+
+Create Event memakai alur bertahap: Informasi → Assessment & akses → Jadwal → Tinjau. Tahap sebelumnya dapat dibuka kembali, tetapi lanjut ke tahap lain memvalidasi tahap yang dilewati terlebih dahulu. Assessment yang datang dari Distribution tetap terpilih; form menyimpan context dan kembali ke parent dengan filter yang sama. Edit Event memakai struktur yang sama dan sesi tetap dikelola pada bagian terpisah.
+
+Event detail mempertahankan context event di header dan breadcrumb. Aksi utama mengikuti lifecycle: draft melengkapi pengaturan, scheduled mengelola peserta, active membuka monitoring, dan ended membuka hasil. Tab Pengaturan memisahkan Informasi Event dari Sesi & Assessment; katalog assessment baru dimuat saat bagian sesi dibuka.
 
 Status database boleh tetap machine-readable, tetapi UI harus menampilkan label seperti:
 
@@ -175,6 +181,7 @@ Shared components:
 - `AdminPageHeader`, `AdminBreadcrumbs`, `AdminTabs`, `AdminWorkspaceTabs`.
 - `AdminDataTable`, `AdminTableToolbar`, `AdminSearchInput`, `AdminPagination`.
 - `AdminStatusBadge`, `AdminMetric`, `AdminReadinessChecklist`.
+- `AdminRowActions`, `adminTableActionClass`, dan `adminTableIconActionClass` untuk semua row actions.
 - `AdminFormSection`, `AdminField`, `AdminFormActions`, `AdminSubmitButton`.
 - `AdminEmptyState`, `AdminErrorState`, `AdminLoading`, `AdminFeedbackBanner`.
 - `AdminConfirmDialog`, `ConfirmSubmit`, `useAdminConfirm`, `AdminModal` untuk small workflows.

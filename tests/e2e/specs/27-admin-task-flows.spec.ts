@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { expect,test } from '@playwright/test'
 import { createWorkflowEvent } from '../admin-workflow'
 function wib(minutes:number) {return new Date(Date.now()+(minutes+420)*60000).toISOString().slice(0,16)}
+function urlState(value:string) {const url=new URL(value);return `${url.pathname}|${JSON.stringify([...url.searchParams.entries()].sort(([a,av],[b,bv])=>a.localeCompare(b)||av.localeCompare(bv)))}`}
 test.describe.configure({retries:0})
 test('Assessment → Event / Instansi → Monitoring → Result preserves identifiers, filters and Back',async({page},testInfo)=>{
  test.setTimeout(300000)
@@ -19,20 +20,45 @@ test('Assessment → Event / Instansi → Monitoring → Result preserves identi
   const assessmentId=exam.id
   const list=`/admin/assessments?program=CPNS&track=SKD&search=${encodeURIComponent(exam.title)}&type=MINI_TRYOUT&status=active&page=1`
   await page.goto(list);await page.locator(`tr[data-assessment-id="${assessmentId}"]`).getByRole('link',{name:'Lihat',exact:true}).click()
-  await expect(page).toHaveURL(new RegExp(`/admin/assessments/${assessmentId}(?:\\?|$)`));await page.getByRole('link',{name:'Distribution',exact:true}).click()
+  await expect(page).toHaveURL(new RegExp(`/admin/assessments/${assessmentId}(?:\\?|$)`));await page.getByRole('link',{name:'Distribusi',exact:true}).click()
   await expect(page).toHaveURL(/\/distribution(?:\?|$)/);await page.reload();await expect(page.getByRole('link',{name:'Buat Event',exact:true})).toHaveAttribute('data-assessment-id',assessmentId);await page.screenshot({path:testInfo.outputPath('assessment-distribution.png'),fullPage:true})
-  await page.goBack();await expect(page).toHaveURL(new RegExp(`/admin/assessments/${assessmentId}(?:\\?|$)`));await expect(page.locator('html')).toHaveAttribute('data-interaction-guard','ready');await page.getByRole('link',{name:'Kembali ke Assessment',exact:true}).click();await expect(page).not.toHaveURL(/\/assessments\/[^?]+/,{timeout:30000});expect(new URL(page.url()).searchParams.get('search')).toBe(exam.title)
+  await page.goBack();await expect(page).toHaveURL(new RegExp(`/admin/assessments/${assessmentId}(?:\\?|$)`));await expect(page.locator('html')).toHaveAttribute('data-interaction-guard','ready');await page.getByRole('navigation',{name:'Breadcrumb'}).getByRole('link',{name:'Assessment',exact:true}).click();await expect(page).not.toHaveURL(/\/assessments\/[^?]+/,{timeout:30000});expect(new URL(page.url()).searchParams.get('search')).toBe(exam.title)
   eventId=await createWorkflowEvent(page,`${name} Event`,`E2E-P1-${suffix}`,assessmentId,'CPNS','SKD',wib)
   const {data:sessions,error:sessionError}=await db.from('event_sessions').select('id,exam_id,event_id').eq('event_id',eventId);if(sessionError)throw sessionError;expect(sessions).toHaveLength(1);expect(sessions![0].exam_id).toBe(assessmentId)
-  await page.getByRole('link',{name:'Pantau Peserta',exact:true}).click();await expect(page).toHaveURL(/\/monitoring(?:\?|$)/);expect(adminUrlState(page.url()).get('event')).toBe(eventId)
-  await expect(page.locator('main h1')).toHaveText('Monitoring Peserta');await page.screenshot({path:testInfo.outputPath('event-monitoring.png'),fullPage:true})
+  await page.getByRole('link',{name:'Pengaturan',exact:true}).click();await expect(page.getByRole('navigation',{name:'Bagian pengaturan event'})).toBeVisible()
+  await page.screenshot({path:testInfo.outputPath('event-settings.png'),fullPage:true})
+  await page.getByRole('link',{name:'Sesi & assessment',exact:true}).click();await expect(page.getByRole('heading',{name:'Sesi event',exact:true})).toBeVisible();await expect(page.getByText('Maksimal 20 peserta',{exact:true})).toBeVisible();await page.screenshot({path:testInfo.outputPath('event-sessions.png'),fullPage:true})
+  const addSessionDialog=page.getByRole('dialog',{name:'Buat sesi baru'});await page.getByRole('button',{name:'Buat sesi baru',exact:true}).click();await expect(addSessionDialog).toBeVisible();const addAssessmentSelector=addSessionDialog.getByRole('group',{name:'Pilih assessment'});await expect(addAssessmentSelector).toBeVisible();await expect(addAssessmentSelector.getByRole('combobox',{name:'Program'})).toBeVisible();await expect(addAssessmentSelector.getByText('Siap digunakan').first()).toBeVisible();await page.screenshot({path:testInfo.outputPath('event-add-session.png'),fullPage:true});await addSessionDialog.getByRole('button',{name:'Tutup modal'}).click();await expect(addSessionDialog).not.toBeVisible()
+  const editSessionDialog=page.getByRole('dialog',{name:`Ubah sesi: ${name} Event`});await page.getByRole('button',{name:'Ubah sesi',exact:true}).first().click();await expect(editSessionDialog).toBeVisible()
+  const sessionForm=editSessionDialog.locator('form');await expect(sessionForm).toHaveCount(1);await sessionForm.locator('input[name=name]').fill(`${name} Session Updated`);await sessionForm.locator('input[name=capacity]').fill('21');await expect(sessionForm.locator('input[name=name]')).toHaveValue(`${name} Session Updated`);await expect(sessionForm.locator('input[name=capacity]')).toHaveValue('21');await sessionForm.getByRole('button',{name:'Simpan perubahan sesi',exact:true}).click();await expect(page.getByText('Sesi event tersimpan. Pantau peserta dari event ini.')).toBeVisible();const {data:updatedSession,error:updateError}=await db.from('event_sessions').select('name,capacity').eq('id',sessions![0].id).single();if(updateError)throw updateError;expect(updatedSession).toMatchObject({name:`${name} Session Updated`,capacity:21});await page.reload();await expect(page.getByRole('button',{name:'Ubah sesi',exact:true}).first()).toBeVisible();await expect(page.getByText('Maksimal 21 peserta',{exact:true})).toBeVisible()
+  await page.getByRole('link',{name:'Informasi event',exact:true}).click();await expect(page.getByRole('combobox',{name:'Status event',exact:true})).toBeVisible();await expect(page.getByText('Status mengatur tampilan event; jadwal menentukan waktunya.')).toBeVisible()
+  await page.getByRole('link',{name:'Ringkasan',exact:true}).click();await expect(page.locator('main h1')).toHaveText(`${name} Event`)
+  await page.getByRole('navigation',{name:'Bagian workspace'}).getByRole('link',{name:'Monitoring',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/events/${eventId}/monitoring(?:\\?|$)`));expect(adminUrlState(page.url()).get('event')).toBe(eventId)
+  await expect(page.locator('main h1')).toHaveText(`${name} Event`);await expect(page.getByRole('heading',{name:'Monitoring event',exact:true})).toBeVisible();await page.screenshot({path:testInfo.outputPath('event-monitoring.png'),fullPage:true})
+  await page.getByRole('navigation',{name:'Bagian monitoring event'}).getByRole('link',{name:'Laporan',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/events/${eventId}/monitoring/reports(?:\\?|$)`));await expect(page.getByRole('heading',{name:'Distribusi nilai',exact:true})).toBeVisible()
+  await page.getByRole('navigation',{name:'Bagian monitoring event'}).getByRole('link',{name:'Ringkasan',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/events/${eventId}/monitoring(?:\\?|$)`))
   const registration=await db.from('event_registrations').insert({event_id:eventId,session_id:sessions![0].id,user_id:userId,status:'registered',registration_number:`P1-${suffix}`});if(registration.error)throw registration.error
   const eventAttempt=await db.from('exam_attempts').insert({exam_id:assessmentId,user_id:userId,attempt_number:1,status:'completed',source:'b2c',started_at:new Date(Date.now()-60000).toISOString(),submitted_at:new Date().toISOString(),duration_used_seconds:60,total_score:15,metadata:{eventId,eventSessionId:sessions![0].id}}).select('id').single();if(eventAttempt.error)throw eventAttempt.error;attemptIds.push(eventAttempt.data.id)
   const profile=await db.from('profiles').select('full_name').eq('id',userId).single();if(profile.error)throw profile.error
-  await page.goto(`/admin/monitoring?${new URLSearchParams({event:eventId,status:'completed',q:profile.data.full_name,page:'1'})}`)
-  const eventReturn=page.url();await page.getByRole('link',{name:'Lihat Hasil',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/monitoring/results/${eventAttempt.data.id}`));await expect(page.getByRole('navigation',{name:'Breadcrumb'})).toContainText(`${name} Event`)
-  await page.reload();await page.getByRole('link',{name:'← Kembali ke Monitoring',exact:true}).click();await expect(page).toHaveURL(eventReturn)
-  await page.getByRole('link',{name:'Lihat Hasil',exact:true}).click();await expect(page).toHaveURL(/\/admin\/monitoring\/results\//);await page.goBack();await expect(page).toHaveURL(eventReturn)
+  await page.goto(`/admin/events/${eventId}/participants?${new URLSearchParams({program:'CPNS',track:'SKD',participant_status:'completed',participant_search:profile.data.full_name,participant_page:'1'})}`)
+  const eventReturn=page.url();await expect(page.locator('tr[data-participant-id]')).toHaveCount(1);await page.getByRole('link',{name:'Lihat Hasil',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/monitoring/results/${eventAttempt.data.id}`));await expect(page.getByRole('navigation',{name:'Breadcrumb'})).toContainText(`${name} Event`)
+  await page.reload();await page.getByRole('link',{name:'← Kembali ke Monitoring',exact:true}).click();await expect.poll(()=>urlState(page.url())).toBe(urlState(eventReturn))
+  await page.getByRole('link',{name:'Lihat Hasil',exact:true}).click();await expect(page).toHaveURL(/\/admin\/monitoring\/results\//);await page.goBack();await expect.poll(()=>urlState(page.url())).toBe(urlState(eventReturn))
+  const activeStart=new Date(Date.now()-5*60_000).toISOString(),activeEnd=new Date(Date.now()+30*60_000).toISOString()
+  const activate=await db.from('events').update({status:'live',starts_at:activeStart,ends_at:activeEnd}).eq('id',eventId);if(activate.error)throw activate.error
+  const activateSession=await db.from('event_sessions').update({starts_at:activeStart,ends_at:activeEnd}).eq('event_id',eventId);if(activateSession.error)throw activateSession.error
+  await page.goto(`/admin/events/${eventId}`);await page.getByRole('link',{name:'Pantau event',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/events/${eventId}/monitoring(?:\\?|$)`))
+  const endedStart=new Date(Date.now()-2*60*60_000).toISOString(),endedAt=new Date(Date.now()-60*60_000).toISOString()
+  const endEvent=await db.from('events').update({status:'closed',starts_at:endedStart,ends_at:endedAt}).eq('id',eventId);if(endEvent.error)throw endEvent.error
+  const endSession=await db.from('event_sessions').update({starts_at:endedStart,ends_at:endedAt}).eq('event_id',eventId);if(endSession.error)throw endSession.error
+  await page.goto(`/admin/events/${eventId}`);await page.getByRole('link',{name:'Lihat laporan',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/events/${eventId}/monitoring/reports(?:\\?|$)`))
+  for(const viewport of [{width:390,height:844},{width:1024,height:768}]){
+   await page.setViewportSize(viewport)
+   for(const route of [`/admin/events/${eventId}`,`/admin/events/${eventId}/settings`,`/admin/events/${eventId}/settings?settings_section=sessions`,`/admin/events/${eventId}/participants`,`/admin/events/${eventId}/monitoring`,`/admin/events/${eventId}/monitoring/reports`]){
+    await page.goto(route);await expect(page.locator('main h1')).toHaveText(`${name} Event`)
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);expect(overflow,`document overflow at ${viewport.width}px on ${route}`).toBeLessThanOrEqual(1)
+   }
+  }
   // Assessment entry carries the same assessment to an instansi, then the new batch.
   await page.goto(`/admin/assessments?program=CPNS&track=SKD&assessment=${assessmentId}&tab=distribution`)
   await page.getByRole('link',{name:'Tugaskan ke Instansi',exact:true}).click();await expect(page).toHaveURL(/\/admin\/organizations\?/);expect(new URL(page.url()).searchParams.get('exam')).toBe(assessmentId)
@@ -85,7 +111,7 @@ test('Draft assessment publishes into Event without choosing it again',async({pa
   const {data:published}=await db.from('exams').select('status').eq('id',assessmentId).single();expect(published?.status).toBe('active')
   eventId=await createWorkflowEvent(page,`E2E P1 Publish Event ${suffix}`,`E2E-P1-PUB-${suffix}`,assessmentId,'CPNS','SKD',wib)
   const {data:session}=await db.from('event_sessions').select('exam_id').eq('event_id',eventId).single();expect(session?.exam_id).toBe(assessmentId)
-  await page.getByRole('link',{name:'Pantau Peserta',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/events/${eventId}/monitoring(?:\\?|$)`));await expect(page.locator('main h1')).toHaveText('Monitoring Peserta')
+  await page.getByRole('navigation',{name:'Bagian workspace'}).getByRole('link',{name:'Monitoring',exact:true}).click();await expect(page).toHaveURL(new RegExp(`/admin/events/${eventId}/monitoring(?:\\?|$)`));await expect(page.getByRole('heading',{name:'Monitoring event',exact:true})).toBeVisible()
  } finally {
   if(eventId){await db.from('event_sessions').delete().eq('event_id',eventId);await db.from('events').delete().eq('id',eventId)}
   if(assessmentId){await db.from('exam_sections').delete().eq('exam_id',assessmentId);await db.from('exams').delete().eq('id',assessmentId)}
@@ -120,7 +146,7 @@ test('Question and Product detail preserve search, filters and browser Back',asy
  await page.goBack();await expect(page).not.toHaveURL(/\/edit(?:\?|$)/)
  const returned=new URL(page.url());expect(returned.searchParams.get('subject')).toBe('TIU');expect(returned.searchParams.get('status')).toBe('published');expect(returned.searchParams.get('page')).toBe('1')
  await expect(page.locator('main h1')).toHaveText('Question Bank')
- const reviewLink=page.locator(`tr[data-question-id="${id}"]`).getByRole('link',{name:'Review',exact:true})
+ const reviewLink=page.locator(`tr[data-question-id="${id}"]`).getByRole('link',{name:/^Buka review soal /})
  await reviewLink.click();await expect(page).toHaveURL(new RegExp(`/content/review/${id}(?:\\?|$)`));await page.reload();await page.getByRole('link',{name:'Kembali ke Question Bank',exact:true}).click();await expect(page).toHaveURL(/\/admin\/content\/questions\?/);expect(new URL(page.url()).searchParams.get('subject')).toBe('TIU');expect(new URL(page.url()).searchParams.get('status')).toBe('published')
 
  await page.goto('/admin/commerce/products?program=CPNS&track=SKD&status=ACTIVE&page=1')

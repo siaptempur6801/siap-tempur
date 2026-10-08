@@ -8,6 +8,8 @@ describe('admin resource URLs', () => {
     ['/admin/assessment/exams?new=1', '/admin/assessments/new'],
     ['/admin/assessments?edit=a', '/admin/assessments/a/edit'],
     ['/admin/assessment/events?event=e&tab=participants', '/admin/events/e/participants'],
+    ['/admin/events?event=e&tab=monitoring', '/admin/events/e/monitoring'],
+    ['/admin/events?event=e&tab=monitoring&monitoring_section=reports', '/admin/events/e/monitoring/reports'],
     ['/admin/events?edit=e', '/admin/events/e/settings'],
     ['/admin/organizations?org=o&batch=b&tab=assignments', '/admin/organizations/o/batches/b/assignments'],
     ['/admin/organizations?org=o&batch=new', '/admin/organizations/o/batches/new'],
@@ -21,7 +23,7 @@ describe('admin resource URLs', () => {
     ['/admin/audit', '/admin/settings/audit'],
     ['/admin/settings?flag=tka.smp.enabled', '/admin/settings/flags/tka.smp.enabled/edit'],
     ['/admin/reports', '/admin/monitoring/reports'],
-    ['/admin/monitoring?event=e', '/admin/events/e/monitoring'],
+    ['/admin/monitoring?event=e', '/admin/monitoring?event=e'],
     ['/admin/reports?org=o&batch=b&assignment=a', '/admin/organizations/o/batches/b/assignments/a/monitoring/reports'],
     ['/admin/results/a?event=e', '/admin/monitoring/results/a?event=e'],
   ])('redirects %s to %s without a loop', (before, after) => {

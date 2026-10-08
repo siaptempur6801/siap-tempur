@@ -6,15 +6,17 @@ AdminEmptyState,
 AdminFeedbackBanner,
 AdminPage,
 AdminPageHeader,
+AdminRowActions,
 AdminStatusBadge,
 AdminTh,
 adminPrimaryButtonClass,
 adminSecondaryButtonClass,
+adminTableActionClass,
 adminTableHeadClass
 } from '@/components/admin/AdminUi'
 import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
 import { AdminBreadcrumbs } from '@/components/admin/navigation/AdminBreadcrumbs'
-import { adminExamTypeLabel,formatDateTime } from '@/lib/admin-format'
+import { adminExamTypeLabel,adminStatusLabel,formatDateTime } from '@/lib/admin-format'
 import { adminPageSummary } from '@/lib/admin-pagination'
 import Link from '@/components/admin/navigation/AdminLink'
 
@@ -53,7 +55,7 @@ export default function AssessmentList({
         status={params.status}
         statusOptions={['draft', 'ready', 'active', 'scheduled', 'archived'].map((value) => ({
           value,
-          label: value
+          label: adminStatusLabel(value)
         }))}
         program={program}
         track={track}
@@ -61,8 +63,8 @@ export default function AssessmentList({
         selects={[
           {
             name: 'domain',
-            ariaLabel: 'Filter domain',
-            placeholder: 'Domain aktif',
+            ariaLabel: 'Filter program',
+            placeholder: 'Pilih program',
             defaultValue: program,
             options: ['CPNS', 'TKA'].map((value) => ({ value, label: value }))
           },
@@ -78,8 +80,8 @@ export default function AssessmentList({
           },
           {
             name: 'level',
-            ariaLabel: 'Filter level',
-            placeholder: 'Level aktif',
+            ariaLabel: 'Filter jenjang',
+            placeholder: 'Pilih jenjang',
             defaultValue: track,
             options: (program === 'TKA' ? ['SD', 'SMP', 'SMA'] : ['SKD']).map((value) => ({
               value,
@@ -128,12 +130,14 @@ export default function AssessmentList({
                 </td>
                 <td className="whitespace-nowrap px-4 text-xs">{formatDateTime(e.updated_at)}</td>
                 <td className="px-5">
+                  <AdminRowActions>
                   <Link
-                    className={adminSecondaryButtonClass}
+                    className={adminTableActionClass}
                     href={href({ assessment: e.id, tab: 'overview' })}
                   >
                     Lihat
                   </Link>
+                  </AdminRowActions>
                 </td>
               </tr>
             ))}

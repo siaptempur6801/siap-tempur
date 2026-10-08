@@ -259,6 +259,7 @@ describe('adminPathUsesProgramContext — selector hanya di workspace terkait', 
             '/admin/content/questions',
             '/admin/content/review/question-1',
             '/admin/events/event-1',
+            '/admin/events/event-1/monitoring',
             '/admin/commerce/products',
         ]) expect(adminPathUsesProgramContext(path), path).toBe(true)
     })
@@ -266,7 +267,6 @@ describe('adminPathUsesProgramContext — selector hanya di workspace terkait', 
     it('menyembunyikan konteks pada workspace global dan monitoring kontekstual', () => {
         for (const path of [
             '/admin/content/articles',
-            '/admin/events/event-1/monitoring',
             '/admin/organizations',
             '/admin/organizations/org-1/batches/batch-1/monitoring',
             '/admin/monitoring',

@@ -15,6 +15,7 @@ AdminFeedbackBanner,
 AdminField,
 AdminPage,
 AdminPageHeader,
+AdminRowActions,
 AdminSectionHeading,
 AdminStatusBadge,
 AdminTh,
@@ -22,6 +23,7 @@ adminDangerButtonClass,
 adminInputClass,
 adminPrimaryButtonClass,
 adminSecondaryButtonClass,
+adminTableActionClass,
 adminSuccessButtonClass,
 adminTableHeadClass,
 adminWarningButtonClass
@@ -202,10 +204,15 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
         PERMISSIONS.QUESTION_MANAGE,
     ].some((permission) => permissions.has(permission))
     if (!canEnter) redirect('/cpns/dashboard')
+    const canManageQuestions = permissions.has(PERMISSIONS.QUESTION_MANAGE)
 
     const context = {
         programCode: (params.program || 'TKA').toUpperCase(),
         trackCode: (params.track || 'SMP').toUpperCase(),
+    }
+    if (params.new === '1' && canManageQuestions) {
+        const createQuery = new URLSearchParams({ program: context.programCode, track: context.trackCode, new: '1' })
+        redirect(`/admin/content/questions?${createQuery}`)
     }
 
     const blocked = params.view === 'blocked' ? await adminWorkspaceService.listDomainPage('questions',{context,review:'blocked',search:params.q,subject:params.subject,stage:params.stage,reviewer:params.reviewer,page:parseAdminPage(params.page)}) : null
@@ -230,7 +237,6 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
     const author = selected ? data.profileById.get(s(selected.author_id)) : null
     const assignedReviewer = selected?.reviewer_id ? data.profileById.get(s(selected.reviewer_id)) : null
     const currentActorIsAuthor = selected ? s(selected.author_id) === authorization.userId : false
-    const canManageQuestions = permissions.has(PERMISSIONS.QUESTION_MANAGE)
     const canCreate = permissions.has(PERMISSIONS.CONTENT_CREATE) || canManageQuestions
     const canEdit = !placeholder && Boolean(selected)
         && ['draft', 'revision_required', 'rejected'].includes(lower(selected?.status))
@@ -289,7 +295,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
             <AdminPageHeader
                 title="Review"
                 description={`Antrean tugas review konten ${program} / ${track}.`}
-                action={<div className="flex flex-wrap items-center gap-2">{params.returnTo&&<Link href={adminReturnUrl(params.returnTo,'/admin/content/questions')} className={adminSecondaryButtonClass}>Kembali ke Question Bank</Link>}{bulkMode ? <Link href={workspaceHref({ ...params, program, track }, { bulk: undefined })} className={adminSecondaryButtonClass}><ArrowLeft size={16}/>Kembali ke antrean</Link> : canUseBulk ? <Link href={workspaceHref({ program: 'CPNS', track: 'SKD', bulk: '1' })} className={adminSecondaryButtonClass}><Sparkles size={16}/>Buka review massal</Link> : null}{canCreate && !bulkMode && !selected && params.new !== '1' ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat soal</Link> : undefined}</div>}
+                action={<div className="flex flex-wrap items-center gap-2">{params.returnTo&&<Link href={adminReturnUrl(params.returnTo,'/admin/content/questions')} className={adminSecondaryButtonClass}>Kembali ke Question Bank</Link>}{bulkMode ? <Link href={workspaceHref({ ...params, program, track }, { bulk: undefined })} className={adminSecondaryButtonClass}><ArrowLeft size={16}/>Kembali ke antrean</Link> : canUseBulk ? <Link href={workspaceHref({ program: 'CPNS', track: 'SKD', bulk: '1' })} className={adminSecondaryButtonClass}><Sparkles size={16}/>Buka review massal</Link> : null}{canCreate && !canManageQuestions && !bulkMode && !selected && params.new !== '1' ? <Link href={workspaceHref({ ...params, program, track }, { new: '1', question: undefined })} className={adminPrimaryButtonClass}><FilePlus2 size={16}/>Buat draf soal</Link> : undefined}</div>}
             />
 
             <AdminFeedbackBanner ok={params.ok} error={params.error}/>
@@ -367,7 +373,7 @@ export default async function ContentReviewWorkspace({ searchParams }: { searchP
                     <div className="flex items-center justify-between border-b border-border px-4 py-3.5"><div><h2 className="text-sm font-semibold text-foreground">Antrean review</h2><p className="text-xs font-medium text-muted-foreground">{data.total} soal sesuai filter</p></div><AdminBadge>{data.counts.unassigned} belum ditugaskan</AdminBadge></div>
                     <AdminDataTable caption="Antrean Review" className="min-w-[900px]" empty={!visibleQuestions.length?{title:'Queue kosong',description:'Tidak ada soal untuk filter ini. Ubah filter atau ajukan konten untuk review.'}:undefined}><thead className={adminTableHeadClass}><tr>{['Question','Taxonomy','Issue / Next Action','Review State','Updated','Actions'].map(h=><AdminTh key={h}>{h}</AdminTh>)}</tr></thead><tbody>{visibleQuestions.map(question=>{
                         const id=s(question.id),subject=data.subjectById.get(s(question.subject_id)),pending=question.pending_review
-                        return <tr key={id}><td className="max-w-md"><p className="font-medium">{s(question.question_code) || 'Tanpa kode'} · v{n(question.version)}</p><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{s(question.stem).replace(/<[^>]*>/g,' ').slice(0,180)}</p></td><td>{s(subject?.code) || 'Belum ditetapkan'}</td><td className="max-w-xs"><p className="text-xs">{s(pending?.notes) || queueTaskLabel(question)}</p></td><td><AdminStatusBadge status={question.status}/></td><td className="whitespace-nowrap text-xs">{formatDateTime(question.updated_at)}</td><td><Link href={workspaceHref({...params,program,track},{question:id,new:undefined})} className={adminSecondaryButtonClass}>Buka Review</Link></td></tr>
+                        return <tr key={id}><td className="max-w-md"><p className="font-medium">{s(question.question_code) || 'Tanpa kode'} · v{n(question.version)}</p><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{s(question.stem).replace(/<[^>]*>/g,' ').slice(0,180)}</p></td><td>{s(subject?.code) || 'Belum ditetapkan'}</td><td className="max-w-xs"><p className="text-xs">{s(pending?.notes) || queueTaskLabel(question)}</p></td><td><AdminStatusBadge status={question.status}/></td><td className="whitespace-nowrap text-xs">{formatDateTime(question.updated_at)}</td><td><AdminRowActions><Link href={workspaceHref({...params,program,track},{question:id,new:undefined})} className={adminTableActionClass}>Buka Review</Link></AdminRowActions></td></tr>
                     })}</tbody></AdminDataTable>
                     {data.total > 0 ? (
                         <AdminPagination
