@@ -164,10 +164,14 @@ export default async function TkaResultPage({
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                             <Link
-                                href={`${base}/tryout`}
+                                href={result.accessContext === 'organization'
+                                    ? '/cpns/dashboard/assignments'
+                                    : result.accessContext === 'event' ? '/cpns/dashboard/event' : `${base}/tryout`}
                                 className="st-focus inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs md:text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
                             >
-                                <ArrowLeft size={16} /> Kembali ke Tryout
+                                <ArrowLeft size={16} /> {result.accessContext === 'organization'
+                                    ? 'Kembali ke Assignment'
+                                    : result.accessContext === 'event' ? 'Kembali ke Event' : 'Kembali ke Tryout'}
                             </Link>
                         </div>
                         <span className="rounded-full bg-indigo-50 px-3.5 py-1.5 text-xs font-black text-indigo-700 ring-1 ring-indigo-200">

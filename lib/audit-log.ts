@@ -108,7 +108,7 @@ export function redactAuditPayload(payload: Record<string, unknown> | null | und
  * gagal ditulis. Kegagalan tetap terlihat di log server sebagai `logger.error`.
  *
  * `label` adalah nama yang dikenali admin (judul event, nama produk, kode
- * voucher). Ia masuk `new_data.label` supaya `/admin/audit` bisa menampilkan
+ * voucher). Ia masuk `new_data.label` supaya `/admin/settings/audit` bisa menampilkan
  * "apa" yang disentuh, bukan hanya UUID yang tidak berarti bagi pembaca.
  */
 export async function auditAdminAction(params: {

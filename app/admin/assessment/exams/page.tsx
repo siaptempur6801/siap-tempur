@@ -1,9 +1,8 @@
-import AdminExamsWorkspace, { type AdminExamsSearchParams } from '@/app/admin/assessment/exams/AdminExamsWorkspace'
+import { redirect } from 'next/navigation'
+import { adminHref } from '@/lib/admin-routes'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
-export default async function ExamsRoute({ searchParams }: { searchParams: Promise<AdminExamsSearchParams> }) {
+export default async function LegacyPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const params = await searchParams
-  return <AdminExamsWorkspace searchParams={Promise.resolve({ ...params, program: params.program || 'CPNS', track: params.track || 'SKD' })}/>
+  const query = new URLSearchParams(Object.entries(params).flatMap(([key,value]) => value === undefined ? [] : (Array.isArray(value) ? value : [value]).map(v => [key,v])))
+  redirect(adminHref('/admin/assessment/exams' + (query.size ? `?${query}` : '')))
 }

@@ -3,10 +3,10 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Review Queue P1 — kontrak optimistic concurrency dan pelestarian ID opsi.
+ * Review P1 — kontrak optimistic concurrency dan pelestarian ID opsi.
  *
  * Jalur Question Bank sudah dikunci lewat unit test + gate staging; jalur
- * Review Queue memakai RPC berbeda (`save_question_draft`), sehingga
+ * Review memakai RPC berbeda (`save_question_draft`), sehingga
  * kontraknya dikunci di sini: token dikirim form, diperiksa RPC, dan opsi
  * di-upsert alih-alih dihapus massal.
  */
@@ -17,9 +17,9 @@ function source(relativePath: string) {
 
 const migration = source('supabase/migrations/20260921120000_review_queue_draft_concurrency_v1.sql')
 const action = source('app/actions/content-review.ts')
-const page = source('app/admin/content/review/page.tsx')
+const page = source('components/admin/domain/content/ReviewWorkspace.tsx')
 
-describe('Review Queue — concurrency token & ID opsi', () => {
+describe('Review — concurrency token & ID opsi', () => {
     it('RPC membandingkan versi dan updated_at, lalu menolak token basi', () => {
         expect(migration).toContain('p_expected_version integer')
         expect(migration).toContain('p_expected_updated_at timestamptz')

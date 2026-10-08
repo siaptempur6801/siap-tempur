@@ -1,4 +1,4 @@
-import { test as setup } from '@playwright/test'
+import {expect, test as setup} from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -82,6 +82,7 @@ setup('provision disposable ADMIN staging user', async ({ page }) => {
 
     try {
         await page.goto('/login?returnTo=%2Fadmin%3Fprogram%3DCPNS%26track%3DSKD')
+    await expect(page.locator('html')).toHaveAttribute('data-interaction-guard','ready')
         await page.locator('input[type="email"]').fill(email)
         await page.locator('input[type="password"]').fill(password)
         await page.getByRole('button', { name: 'Masuk', exact: true }).click()

@@ -84,10 +84,10 @@ function friendlyError(error: unknown) {
     return known[message] || message
 }
 
-type BackContext = { path: '/admin/entitlements' | '/admin/settings'; params: Record<string, string> }
+type BackContext = { path: '/admin/users/access' | '/admin/settings'; params: Record<string, string> }
 
 function contextFrom(form: FormData, path: BackContext['path']): BackContext {
-    const keys = path === '/admin/entitlements'
+    const keys = path === '/admin/users/access'
         ? ['q', 'wallet_type', 'user', 'status']
         : []
     const params: Record<string, string> = {}
@@ -110,7 +110,7 @@ function backTo(context: BackContext, ok?: string, error?: unknown): never {
 /* ------------------------------------------------------------------ entitlements */
 
 export async function adjustWalletAction(form: FormData) {
-    const back = contextFrom(form, '/admin/entitlements')
+    const back = contextFrom(form, '/admin/users/access')
     let failure: unknown = null
     let summary = ''
     let actorId = ''
@@ -154,7 +154,7 @@ export async function adjustWalletAction(form: FormData) {
 }
 
 export async function upsertVoucherAction(form: FormData) {
-    const back = contextFrom(form, '/admin/entitlements')
+    const back = contextFrom(form, '/admin/users/access')
     let failure: unknown = null
     let code = ''
     let actorId = ''

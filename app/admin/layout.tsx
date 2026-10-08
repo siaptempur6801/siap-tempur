@@ -1,12 +1,12 @@
-import React from 'react'
-import { redirect } from 'next/navigation'
-import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import UnifiedAdminShell from '@/components/admin/UnifiedAdminShell'
-import { createV2Client } from '@/lib/utils/supabase/server'
+import { adminLandingPath,hasAdminSurface } from '@/lib/admin-nav'
+import { createV2Client,getAuthUser } from '@/lib/utils/supabase/server'
 import { authorizationService } from '@/src/services/authorization.service'
 import { getActivePassScopes } from '@/src/services/tempur-pass.service'
-import { adminLandingPath, hasAdminSurface } from '@/lib/admin-nav'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import React from 'react'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -49,7 +49,7 @@ export const revalidate = 0
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
     const supabase = await createV2Client()
     const pathname = (await headers()).get('x-pathname') || '/admin'
-    const { data: { user } } = await supabase.auth.getUser()
+    const { user } = await getAuthUser()
 
     if (!user) {
         redirect(`/login?returnTo=${encodeURIComponent(pathname)}`)

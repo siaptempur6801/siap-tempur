@@ -15,6 +15,7 @@ import {
     Dumbbell,
     Sparkles,
     User,
+    Building2,
 } from 'lucide-react'
 
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
@@ -95,6 +96,7 @@ export default function DashboardShell({
                         <NavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={17} />} label="Belajar" />
                         <NavItem href="/cpns/dashboard/mini-tryout" icon={<ListChecks size={17} />} label="Mini Tryout" />
                         <NavItem href="/cpns/dashboard/tryout" icon={<Target size={17} />} label="Tryout" />
+                        <NavItem href="/cpns/dashboard/assignments" icon={<Building2 size={17} />} label="Assignment Instansi" />
                         <NavItem href="/cpns/dashboard/event" icon={<CalendarDays size={17} />} label="Event" />
                         <NavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={17} />} label="Hasil" />
                     </div>
@@ -180,10 +182,11 @@ export default function DashboardShell({
                 className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-slate-900 bg-[#fbfaf7]/98 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
                 aria-label="Navigasi utama"
             >
-                <div className="grid grid-cols-5 gap-1 px-1.5 py-1.5">
+                <div className="grid grid-cols-6 gap-1 px-1.5 py-1.5">
                     <MobileNavItem href="/cpns/dashboard" icon={<LayoutDashboard size={20} />} label="Beranda" />
                     <MobileNavItem href="/cpns/dashboard/drilling-materi" icon={<Dumbbell size={20} />} label="Belajar" />
                     <MobileNavItem href="/cpns/dashboard/tryout" icon={<Target size={20} />} label="Tryout" />
+                    <MobileNavItem href="/cpns/dashboard/assignments" icon={<Building2 size={20} />} label="Instansi" />
                     <MobileNavItem href="/cpns/dashboard/riwayat" icon={<Clock3 size={20} />} label="Hasil" />
                     <MobileNavItem href="/cpns/dashboard/profile" icon={<User size={20} />} label="Profil" />
                 </div>

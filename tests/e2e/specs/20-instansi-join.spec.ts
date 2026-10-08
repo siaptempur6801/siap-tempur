@@ -1,3 +1,4 @@
+import { adminUrlState } from '../admin-workflow'
 import { expect, test } from '@playwright/test'
 import { cleanupRoleUser, loginAs, provisionRoleUser, removeFirstParticipant, requireEnv } from '../admin-roles'
 
@@ -40,7 +41,7 @@ test.describe('Instansi — self-onboarding peserta', () => {
             // ---------------------------------------------------- 1. admin
             await loginAs(page, admin, '/admin')
             await page.goto('/admin/organizations')
-            await expect(page.locator('main h1')).toHaveText('Instansi & Batch')
+            await expect(page.locator('main h1')).toHaveText('Instansi')
 
             await page.getByRole('link', { name: 'Instansi baru', exact: true }).click()
             await expect(page.getByRole('heading', { name: 'Instansi baru', exact: true })).toBeVisible()
@@ -56,12 +57,13 @@ test.describe('Instansi — self-onboarding peserta', () => {
             await expect(page.getByRole('status').filter({ hasText: 'disimpan' })).toContainText('disimpan', { timeout: 30_000 })
             // Membuat instansi langsung membuka detailnya, supaya langkah
             // berikutnya (membuat batch) bisa dikerjakan tanpa mencari lagi.
-            await expect(page.getByRole('heading', { name: `Ubah Instansi E2E ${orgCode}`, exact: true })).toBeVisible()
-            orgId = new URL(page.url()).searchParams.get('org') ?? ''
+            await expect(page.getByRole('heading', { name: `Instansi E2E ${orgCode}`, exact: true })).toBeVisible()
+            orgId = adminUrlState(page.url()).get('org') ?? ''
             expect(orgId).not.toBe('')
 
             // ---------------------------------------------------- 2. batch
-            await page.getByRole('link', { name: 'Batch baru', exact: true }).click()
+            if (!await page.getByRole('link', { name: 'Batch baru', exact: true }).count()) await page.getByRole('link',{name:'Batch',exact:true}).click()
+            await page.getByRole('link', { name: 'Batch baru', exact: true }).first().click()
             await page.getByPlaceholder('CPNS 2026 Batch A').fill(`Batch E2E ${batchCode}`)
             await page.getByPlaceholder('CPNS-2026-A').fill(batchCode)
             await page.getByLabel('Status batch').selectOption('active')
@@ -109,7 +111,7 @@ test.describe('Instansi — self-onboarding peserta', () => {
             // Yang diperiksa adalah KEBERADAAN peserta dan status akunnya di mata
             // admin — bukan sekadar angka, karena angka bisa benar tanpa barisnya
             // benar-benar dapat dibuka.
-            await page.goto(`/admin/organizations?org=${orgId}`)
+            await page.goto(`/admin/organizations?org=${orgId}&tab=batches`)
             await page.getByRole('link', { name: 'Lihat peserta', exact: true }).first().click()
             // Dipersempit ke tabel PESERTA: sejak panel monitoring ditambahkan, nama
             // peserta muncul di DUA tabel, sehingga locator tanpa scope melanggar
@@ -127,8 +129,8 @@ test.describe('Instansi — self-onboarding peserta', () => {
             // TIDAK menunggu render — versi pertama blok ini melewatkan pembersihan
             // justru karena itu.
             if (orgId) {
-                await page.goto(`/admin/organizations?org=${orgId}`)
-                await expect(page.getByRole('heading', { name: `Ubah Instansi E2E ${orgCode}`, exact: true })).toBeVisible()
+                await page.goto(`/admin/organizations?org=${orgId}&tab=batches`)
+                await expect(page.getByRole('heading', { name: `Instansi E2E ${orgCode}`, exact: true })).toBeVisible()
 
                 // Peserta dikeluarkan dulu: instansi yang masih punya peserta memang
                 // TIDAK boleh dihapus, dan penjaga itu diuji terpisah.
@@ -148,7 +150,9 @@ test.describe('Instansi — self-onboarding peserta', () => {
                     console.log('[TEST] sisa tombol:', await page.getByRole('button', { name: /^Keluarkan peserta ./ }).count())
                 }
 
+                await page.getByRole('link',{name:'Pengaturan',exact:true}).click()
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
+                await page.getByRole('alertdialog').getByRole('button',{name:'Hapus instansi',exact:true}).click()
                 // DUA hasil yang sah, dan keduanya harus diterima:
                 //
                 // 1. instansi terhapus (jalur normal);
@@ -200,18 +204,19 @@ test.describe('Instansi — bulk import peserta', () => {
             await page.getByPlaceholder('Dinas Pendidikan Kota Medan').fill(`Instansi Import ${orgCode}`)
             await page.getByPlaceholder('DINAS-MEDAN').fill(orgCode)
             await page.getByRole('button', { name: 'Buat instansi', exact: true }).click()
-            await expect(page.getByRole('heading', { name: `Ubah Instansi Import ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
-            orgId = new URL(page.url()).searchParams.get('org') ?? ''
+            await expect(page.getByRole('heading', { name: `Instansi Import ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
+            orgId = adminUrlState(page.url()).get('org') ?? ''
             expect(orgId).not.toBe('')
 
-            await page.getByRole('link', { name: 'Batch baru', exact: true }).click()
+            if (!await page.getByRole('link', { name: 'Batch baru', exact: true }).count()) await page.getByRole('link',{name:'Batch',exact:true}).click()
+            await page.getByRole('link', { name: 'Batch baru', exact: true }).first().click()
             await page.getByPlaceholder('CPNS 2026 Batch A').fill(`Batch Import ${batchCode}`)
             await page.getByPlaceholder('CPNS-2026-A').fill(batchCode)
             await page.getByLabel('Status batch').selectOption('active')
             await page.getByRole('button', { name: 'Buat batch', exact: true }).click()
             await expect(page.locator(`input[aria-label="Tautan undangan Batch Import ${batchCode}"]`)).toBeVisible({ timeout: 30_000 })
 
-            await page.getByRole('link', { name: 'Lihat peserta', exact: true }).first().click()
+            await page.getByRole('link', { name: 'Peserta', exact: true }).click()
             await expect(page.getByText('Impor peserta dari CSV', { exact: true })).toBeVisible()
 
             // ------------------------------------------- periksa: 2 sah, 1 rusak
@@ -276,15 +281,16 @@ test.describe('Instansi — bulk import peserta', () => {
             await expect(importedTable.getByText('Belum', { exact: true }).first()).toBeVisible()
         } finally {
             if (orgId) {
-                await page.goto(`/admin/organizations?org=${orgId}`)
-                await expect(page.getByRole('heading', { name: `Ubah Instansi Import ${orgCode}`, exact: true })).toBeVisible()
+                await page.goto(`/admin/organizations?org=${orgId}&tab=batches`)
+                await expect(page.getByRole('heading', { name: `Instansi Import ${orgCode}`, exact: true })).toBeVisible()
 
                 // Tautan "Lihat peserta" dibaca href-nya lalu dibuka langsung, bukan
                 // diklik sambil menebak state halaman: setelah halaman dimuat ulang,
                 // tautan yang sama bisa berbunyi "Tutup peserta", sehingga mengklik
                 // berdasarkan label membuat cleanup diam-diam tidak berjalan.
-                const href = await page.getByRole('link', { name: 'Lihat peserta', exact: true }).first().getAttribute('href')
-                expect(href, 'tautan "Lihat peserta" tidak ditemukan saat membersihkan').not.toBeNull()
+                const participantToggle = page.getByRole('link', { name: /^(Lihat|Tutup) peserta$/, exact: true }).first()
+                const href = await participantToggle.getAttribute('href')
+                expect(href, 'tautan peserta tidak ditemukan saat membersihkan').not.toBeNull()
                 await page.goto(href as string)
                 // Peserta dipastikan benar-benar terlihat SEBELUM dikeluarkan.
                 // Tanpa penantian ini, loop di bawah dapat berjalan saat tabelnya
@@ -306,7 +312,9 @@ test.describe('Instansi — bulk import peserta', () => {
                     await expect(remove).toHaveCount(before - 1, { timeout: 30_000 })
                 }
 
+                await page.getByRole('link',{name:'Pengaturan',exact:true}).click()
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
+                await page.getByRole('alertdialog').getByRole('button',{name:'Hapus instansi',exact:true}).click()
                 // Pesan sukses lengkap dipakai, BUKAN sekadar kata "dihapus":
                 // pesan GALAT berbunyi "...tidak bisa dihapus...", sehingga
                 // assertion longgar akan lolos justru ketika pembersihan gagal.

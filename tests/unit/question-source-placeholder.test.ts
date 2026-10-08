@@ -23,13 +23,13 @@ describe('placeholder riwayat', () => {
     })
 
     it('dipakai di kedua daftar dan editor Question Bank', () => {
-        for (const file of ['app/admin/AdminOperationsWorkspace.tsx', 'app/admin/content/review/page.tsx', 'components/admin/QuestionBankEditorModal.tsx']) {
+        for (const file of ['components/admin/AdminQuestionsPanel.tsx', 'components/admin/domain/content/ReviewWorkspace.tsx', 'components/admin/QuestionBankEditor.tsx']) {
             expect(source(file), file).toContain('isLegacyHistoryPlaceholder')
         }
     })
 
     it('query kedua daftar mengambil source_type', () => {
-        expect(source('src/services/admin-v2.service.ts')).toMatch(/select: '[^']*source_type[^']*'/)
+        expect(source('src/services/admin-workspace.service.ts')).toMatch(/select: '[^']*source_type[^']*'/)
         expect(source('src/services/content-review.service.ts')).toMatch(/QUEUE_COLUMNS = '[^']*source_type[^']*'/)
     })
 })

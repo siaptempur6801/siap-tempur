@@ -107,7 +107,7 @@ export function validateBankOptions(type: string, raw: string) {
 
 export function questionBankReturnUrl(form: FormData, message?: string) {
     const q = new URLSearchParams()
-    for (const key of ['program', 'track', 'q', 'status', 'subject', 'page']) {
+    for (const key of ['program', 'track', 'q', 'status', 'subject', 'material', 'submaterial', 'review', 'page', 'returnTo']) {
         const value = form.get(`return_${key}`)
         if (typeof value === 'string' && value.length <= 300) q.set(key, value)
     }

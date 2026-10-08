@@ -132,6 +132,10 @@ export default async function TkaLevelPage({
     if (typeError) throw typeError
     if (questionError) throw questionError
 
+    if ((exams ?? []).length === 0) {
+        return <TkaAssessmentUnavailablePage level={level} />
+    }
+
     const examIds = (exams ?? []).map((exam) => String(exam.id))
     const featureIds = Array.from(new Set((exams ?? [])
         .map((exam) => exam.required_feature_id ? String(exam.required_feature_id) : '')
@@ -564,6 +568,20 @@ function TkaComingSoonPage({ level }: { level: TkaLevel }) {
                     </div>
                 </section>
             </div>
+        </main>
+    )
+}
+
+function TkaAssessmentUnavailablePage({ level }: { level: TkaLevel }) {
+    return (
+        <main data-experience-mode="learning" data-program={`tka-${level.toLowerCase()}`} className="min-h-screen bg-[#f8fafc] px-4 py-10 font-body text-slate-950 sm:px-6">
+            <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm sm:p-10">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><School size={23}/></div>
+                <h1 className="mt-4 text-2xl font-black">Assessment TKA {level} belum tersedia</h1>
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-600">Konten ujian untuk jenjang ini sedang disiapkan. Pembelian pass baru tidak tersedia sampai assessment siap.</p>
+                <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">Jika akun Anda sudah memiliki pass TKA {level}, entitlement tetap tersimpan dan tidak dihapus.</p>
+                <Link href="/tka" className="mt-6 inline-flex min-h-11 items-center rounded-xl bg-slate-950 px-5 text-sm font-bold text-white">Kembali ke pilihan jenjang</Link>
+            </section>
         </main>
     )
 }

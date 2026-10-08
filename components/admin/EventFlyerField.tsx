@@ -1,11 +1,11 @@
 'use client'
 
-import Image from 'next/image'
-import { useRef, useState } from 'react'
-import { Image as ImageIcon, Loader2, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { createV2Client } from '@/lib/utils/supabase/client'
 import { adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { createV2Client } from '@/lib/utils/supabase/client'
+import { Image as ImageIcon,Loader2,Trash2 } from 'lucide-react'
+import Image from 'next/image'
+import { useRef,useState } from 'react'
+import { toast } from 'sonner'
 
 const EVENT_FLYER_BUCKET = 'event-flyers'
 const MAX_FILE_SIZE = 4 * 1024 * 1024
@@ -63,12 +63,12 @@ export default function EventFlyerField({ defaultValue }: { defaultValue?: strin
         <div className="space-y-3 md:col-span-2">
             <input type="hidden" name="flyer_image_url" value={flyerUrl}/>
             <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Foto / flyer event</p>
-                <p className="mt-1 text-xs font-medium text-slate-500">Rasio poster 4:5, JPG/PNG/WebP, maksimal 4 MB.</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Foto / flyer event</p>
+                <p className="mt-1 text-xs font-medium text-muted-foreground">Rasio poster 4:5, JPG/PNG/WebP, maksimal 4 MB.</p>
             </div>
 
             {flyerUrl ? (
-                <div className="relative aspect-[4/5] w-full max-w-48 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                <div className="relative aspect-[4/5] w-full max-w-48 overflow-hidden rounded-lg border border-border bg-muted">
                     <Image src={flyerUrl} alt="Preview flyer event" fill sizes="192px" className="object-cover"/>
                 </div>
             ) : (
@@ -76,9 +76,9 @@ export default function EventFlyerField({ defaultValue }: { defaultValue?: strin
                     type="button"
                     onClick={() => inputRef.current?.click()}
                     disabled={uploading}
-                    className="flex aspect-[4/5] w-full max-w-48 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 text-sm font-bold text-slate-500 transition hover:border-slate-400 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="flex aspect-[4/5] w-full max-w-48 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-muted text-sm font-medium text-muted-foreground transition hover:border-slate-400 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    {uploading ? <Loader2 size={24} className="animate-spin"/> : <ImageIcon size={24}/>} 
+                    {uploading ? <Loader2 size={24} className="animate-spin"/> : <ImageIcon size={24}/>}
                     {uploading ? 'Mengupload...' : 'Pilih foto'}
                 </button>
             )}

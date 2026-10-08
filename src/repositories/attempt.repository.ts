@@ -77,6 +77,13 @@ export type AttemptBundle = {
     answers: AttemptAnswerRow[]
 }
 
+export type OrganizationAttemptContext = {
+    organizationId: string
+    batchId: string
+    assignmentId: string
+    participantId: string
+}
+
 export class AttemptRepository {
     async findActiveAttempt(
         userId: string,
@@ -89,6 +96,12 @@ export class AttemptRepository {
             .select('id, exam_id, user_id, attempt_number, status, started_at, submitted_at, duration_used_seconds, total_score, percentage, passed, last_question_position, last_saved_at, metadata')
             .eq('user_id', userId)
             .eq('exam_id', examId)
+            // Direct resume must never adopt a distributed session. Event rows
+            // share the b2c source for historical compatibility, so also require
+            // no event reference; Organization rows have their own source.
+            .filter('source', 'eq', 'b2c')
+            .is('assignment_id', null)
+            .is('metadata->>eventId', null)
             .in('status', ['in_progress', 'IN_PROGRESS', 'created', 'CREATED'])
             .order('created_at', { ascending: false })
             .limit(1)
@@ -109,6 +122,9 @@ export class AttemptRepository {
             .select('id', { count: 'exact', head: true })
             .eq('user_id', userId)
             .eq('exam_id', examId)
+            .filter('source', 'eq', 'b2c')
+            .is('assignment_id', null)
+            .is('metadata->>eventId', null)
         if (error) throw error
         return count ?? 0
     }
@@ -117,8 +133,9 @@ export class AttemptRepository {
         userId: string
         examId: string
         metadata: Json
+        organizationContext?: OrganizationAttemptContext
     }): Promise<AttemptRow> {
-        const admin = await createV2AdminClient()
+        const admin = await createAdminClient()
         const { data: last, error: lastError } = await admin
             .from('exam_attempts')
             .select('attempt_number')
@@ -142,11 +159,80 @@ export class AttemptRepository {
                 started_at: now,
                 last_saved_at: now,
                 metadata: input.metadata,
+                ...(input.organizationContext ? {
+                    source: 'organization',
+                    organization_id: input.organizationContext.organizationId,
+                    batch_id: input.organizationContext.batchId,
+                    assignment_id: input.organizationContext.assignmentId,
+                    participant_id: input.organizationContext.participantId,
+                } : {}),
             })
             .select('id, exam_id, user_id, attempt_number, status, started_at, submitted_at, duration_used_seconds, total_score, percentage, passed, last_question_position, last_saved_at, metadata')
             .single()
         if (error) throw error
         return data as AttemptRow
+    }
+
+    async createAttemptWithQuestions(input: {
+        userId: string
+        examId: string
+        metadata: Json
+        questions: AttemptQuestionSeed[]
+        organizationContext?: OrganizationAttemptContext
+    }): Promise<AttemptRow> {
+        const attempt = await this.createAttempt({
+            userId: input.userId,
+            examId: input.examId,
+            metadata: input.metadata,
+            organizationContext: input.organizationContext,
+        })
+
+        try {
+            await this.addAttemptQuestions(attempt.id, input.questions)
+        } catch (error) {
+            await this.deleteAttempt(attempt.id).catch(() => undefined)
+            throw error
+        }
+
+        return attempt
+    }
+
+    /** The unique-index winner can be visible before its single bulk snapshot insert commits. */
+    async waitForAttemptQuestions(attemptId: string) {
+        const admin = await createV2AdminClient()
+        const deadline = Date.now() + 5_000
+        do {
+            const { data, error } = await admin.from('attempt_questions')
+                .select('id').eq('attempt_id', attemptId).limit(1).maybeSingle()
+            if (error) throw error
+            if (data) return
+            if (Date.now() >= deadline) break
+            await new Promise(resolve => setTimeout(resolve, 100))
+        } while (Date.now() <= deadline)
+        // Do not redirect into an empty session or debit a resumed attempt before it is ready.
+        throw new Error('ATTEMPT_INITIALIZING')
+    }
+
+    /** Add a trusted distribution context to an attempt created by a domain RPC. */
+    async mergeAttemptMetadata(userId: string, attemptId: string, metadata: Record<string, Json>) {
+        const admin = await createV2AdminClient()
+        const { data: attempt, error: readError } = await admin
+            .from('exam_attempts')
+            .select('metadata')
+            .eq('id', attemptId)
+            .eq('user_id', userId)
+            .maybeSingle()
+        if (readError) throw readError
+        if (!attempt) throw new Error('Attempt not found')
+        const current = attempt.metadata && !Array.isArray(attempt.metadata) && typeof attempt.metadata === 'object'
+            ? attempt.metadata as Record<string, Json>
+            : {}
+        const { error } = await admin
+            .from('exam_attempts')
+            .update({ metadata: { ...current, ...metadata } })
+            .eq('id', attemptId)
+            .eq('user_id', userId)
+        if (error) throw error
     }
 
     async addAttemptQuestions(attemptId: string, questions: AttemptQuestionSeed[]) {
@@ -400,6 +486,18 @@ export class AttemptRepository {
             questions: questionRows,
             answers: answerRows,
         }
+    }
+
+    async getAttemptMetadata(userId: string, attemptId: string): Promise<Json | null> {
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('exam_attempts')
+            .select('metadata')
+            .eq('id', attemptId)
+            .eq('user_id', userId)
+            .maybeSingle()
+        if (error) throw error
+        return data?.metadata ?? null
     }
 
     async getAnswerOptionSelections(answerIds: string[]): Promise<AttemptAnswerOptionRow[]> {

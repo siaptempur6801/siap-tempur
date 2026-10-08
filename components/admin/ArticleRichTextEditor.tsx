@@ -1,22 +1,22 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { EditorContent, useEditor, type Editor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Highlight from '@tiptap/extension-highlight'
-import { TextStyle } from '@tiptap/extension-text-style'
-import { Color } from '@tiptap/extension-color'
-import TextAlign from '@tiptap/extension-text-align'
-import Image from '@tiptap/extension-image'
-import Link from '@tiptap/extension-link'
-import {
-  AlignCenter, AlignLeft, AlignRight, Bold, Heading1, Heading2, Heading3,
-  Highlighter, Image as ImageIcon, Italic, Link as LinkIcon, List, ListOrdered,
-  Loader2, Minus, Palette, Pilcrow, Quote, Redo2, RemoveFormatting,
-  Strikethrough, Underline as UnderlineIcon, Undo2,
-} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/utils/supabase/client'
+import { Color } from '@tiptap/extension-color'
+import Highlight from '@tiptap/extension-highlight'
+import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
+import TextAlign from '@tiptap/extension-text-align'
+import { TextStyle } from '@tiptap/extension-text-style'
+import { EditorContent,useEditor,type Editor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import {
+AlignCenter,AlignLeft,AlignRight,Bold,Heading1,Heading2,Heading3,
+Highlighter,Image as ImageIcon,Italic,Link as LinkIcon,List,ListOrdered,
+Loader2,Minus,Palette,Pilcrow,Quote,Redo2,RemoveFormatting,
+Strikethrough,Underline as UnderlineIcon,Undo2,
+} from 'lucide-react'
+import { useCallback,useEffect,useMemo,useRef,useState } from 'react'
 import { toast } from 'sonner'
 
 interface ArticleRichTextEditorProps {
@@ -41,8 +41,8 @@ function ToolbarButton({ onClick, isActive = false, disabled = false, title, chi
   children: React.ReactNode
 }) {
   return <button type="button" onClick={onClick} disabled={disabled} title={title} aria-label={title} className={cn(
-    'flex h-8 w-8 items-center justify-center rounded-lg border text-slate-600 transition focus:outline-none focus:ring-4 focus:ring-blue-500/10',
-    isActive ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-transparent bg-white hover:border-slate-200 hover:bg-slate-100 hover:text-slate-900',
+    'flex h-8 w-8 items-center justify-center rounded-lg border text-muted-foreground transition focus:outline-none focus:ring-4 focus:ring-ring/10',
+    isActive ? 'border-info-border bg-info-muted text-info' : 'border-transparent bg-card hover:border-border hover:bg-muted hover:text-foreground',
     disabled && 'cursor-not-allowed opacity-30',
   )}>{children}</button>
 }
@@ -64,9 +64,9 @@ function ColorPicker({ editor }: { editor: Editor }) {
 
   return <div ref={containerRef} className="relative">
     <ToolbarButton title="Warna teks" isActive={Boolean(currentColor) || isOpen} onClick={() => setIsOpen((value) => !value)}><Palette size={15}/></ToolbarButton>
-    {isOpen ? <div className="absolute left-0 top-full z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-900/10">
-      <div className="mb-2 flex items-center justify-between border-b border-slate-100 pb-2"><span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-500">Warna teks</span><span className="text-[10px] font-bold text-slate-500">{TEXT_COLORS.find((color) => color.value === currentColor)?.label || 'Custom'}</span></div>
-      <div className="grid grid-cols-5 gap-1.5">{TEXT_COLORS.map((color) => <button key={color.label} type="button" title={color.label} aria-label={color.label} onClick={() => { if (color.value) editor.chain().focus().setColor(color.value).run(); else editor.chain().focus().unsetColor().run(); setIsOpen(false) }} className={cn('flex h-8 w-8 items-center justify-center rounded-lg border bg-white transition hover:bg-slate-50', currentColor === color.value ? 'border-blue-400 ring-2 ring-blue-100' : 'border-slate-200')}>{color.value ? <span className="h-5 w-5 rounded-md border border-slate-900/10" style={{ backgroundColor: color.value }}/> : <RemoveFormatting size={15}/>}</button>)}</div>
+    {isOpen ? <div className="absolute left-0 top-full z-50 mt-2 w-52 rounded-lg border border-border bg-card p-3 shadow-xl shadow-slate-900/10">
+      <div className="mb-2 flex items-center justify-between border-b border-border pb-2"><span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Warna teks</span><span className="text-[10px] font-bold text-muted-foreground">{TEXT_COLORS.find((color) => color.value === currentColor)?.label || 'Custom'}</span></div>
+      <div className="grid grid-cols-5 gap-1.5">{TEXT_COLORS.map((color) => <button key={color.label} type="button" title={color.label} aria-label={color.label} onClick={() => { if (color.value) editor.chain().focus().setColor(color.value).run(); else editor.chain().focus().unsetColor().run(); setIsOpen(false) }} className={cn('flex h-8 w-8 items-center justify-center rounded-lg border bg-card transition hover:bg-muted', currentColor === color.value ? 'border-blue-400 ring-2 ring-blue-100' : 'border-border')}>{color.value ? <span className="h-5 w-5 rounded-md border border-slate-900/10" style={{ backgroundColor: color.value }}/> : <RemoveFormatting size={15}/>}</button>)}</div>
     </div> : null}
   </div>
 }
@@ -114,7 +114,7 @@ function ImageButton({ editor }: { editor: Editor }) {
 }
 
 function EditorToolbar({ editor }: { editor: Editor }) {
-  return <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/80 p-2">
+  return <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/80 p-2">
     <ToolbarButton title="Paragraf" isActive={editor.isActive('paragraph') && !editor.isActive('heading')} onClick={() => editor.chain().focus().setParagraph().run()}><Pilcrow size={15}/></ToolbarButton>
     <ToolbarButton title="Heading 1" isActive={editor.isActive('heading', { level: 1 })} onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}><Heading1 size={15}/></ToolbarButton>
     <ToolbarButton title="Heading 2" isActive={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={15}/></ToolbarButton>
@@ -154,8 +154,8 @@ export default function ArticleRichTextEditor({ content, onChange, placeholder =
     StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
     Highlight.configure({ multicolor: false }), TextStyle, Color,
     TextAlign.configure({ types: ['heading', 'paragraph'] }),
-    Image.configure({ inline: false, HTMLAttributes: { class: 'w-full max-h-[420px] rounded-xl border border-slate-200 object-cover shadow-sm my-6' } }),
-    Link.configure({ openOnClick: false, HTMLAttributes: { class: 'font-bold text-blue-600 hover:underline' } }),
+    Image.configure({ inline: false, HTMLAttributes: { class: 'w-full max-h-[420px] rounded-lg border border-border object-cover  my-6' } }),
+    Link.configure({ openOnClick: false, HTMLAttributes: { class: 'font-bold text-info hover:underline' } }),
   ], [])
 
   const editor = useEditor({
@@ -164,11 +164,11 @@ export default function ArticleRichTextEditor({ content, onChange, placeholder =
     onUpdate: handleUpdate,
     immediatelyRender: false,
     editorProps: { attributes: { class:
-      'min-h-[400px] max-w-none prose prose-lg prose-slate whitespace-pre-wrap [tab-size:4] bg-white px-5 py-5 text-slate-900 outline-none sm:px-6 ' +
-      '[&_p]:mb-5 [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:text-3xl [&_h1]:font-black ' +
-      '[&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-2xl [&_h2]:font-black [&_h3]:mb-3 [&_h3]:mt-4 [&_h3]:text-xl [&_h3]:font-black ' +
-      '[&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-1 [&_mark]:bg-amber-100 [&_mark]:px-0.5 ' +
-      '[&_blockquote]:my-5 [&_blockquote]:border-l-4 [&_blockquote]:border-blue-300 [&_blockquote]:bg-blue-50/50 [&_blockquote]:py-2 [&_blockquote]:pl-4 [&_blockquote]:font-semibold [&_img]:h-auto [&_img]:max-w-full' } },
+      'min-h-[400px] max-w-none prose prose-lg prose-slate whitespace-pre-wrap [tab-size:4] bg-card px-5 py-5 text-foreground outline-none sm:px-6 ' +
+      '[&_p]:mb-5 [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:text-3xl [&_h1]:font-semibold ' +
+      '[&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-2xl [&_h2]:font-semibold [&_h3]:mb-3 [&_h3]:mt-4 [&_h3]:text-xl [&_h3]:font-semibold ' +
+      '[&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-1 [&_mark]:bg-warning-muted [&_mark]:px-0.5 ' +
+      '[&_blockquote]:my-5 [&_blockquote]:border-l-4 [&_blockquote]:border-info-border [&_blockquote]:bg-info-muted/50 [&_blockquote]:py-2 [&_blockquote]:pl-4 [&_blockquote]:font-semibold [&_img]:h-auto [&_img]:max-w-full' } },
   })
 
   useEffect(() => {
@@ -178,9 +178,9 @@ export default function ArticleRichTextEditor({ content, onChange, placeholder =
     if (normalizedCurrent !== content) editor.commands.setContent(content || '')
   }, [content, editor])
 
-  if (!editor) return <div className="min-h-[400px] animate-pulse rounded-xl border border-slate-200 bg-slate-50"/>
+  if (!editor) return <div className="min-h-[400px] animate-pulse rounded-lg border border-border bg-muted"/>
 
-  return <div className="overflow-hidden rounded-xl border border-slate-200 bg-white transition focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10">
+  return <div className="overflow-hidden rounded-lg border border-border bg-card transition focus-within:border-primary focus-within:ring-4 focus-within:ring-ring/10">
     <EditorToolbar editor={editor}/><EditorContent editor={editor}/>
     {!content ? <style>{`.tiptap p.is-editor-empty:first-child::before { content: '${placeholder}'; color: #94a3b8; float: left; pointer-events: none; height: 0; }`}</style> : null}
   </div>

@@ -1,7 +1,7 @@
 # STATUS — Siap Tempur
 
 > **Ini satu-satunya sumber kebenaran status project.**
-> Terakhir diperbarui: **2026-09-21**
+> Terakhir diperbarui: **2026-10-07**
 > Dokumen roadmap/checklist lama bersifat **historis** dan tidak boleh dijadikan acuan status — lihat [Peta dokumen](#peta-dokumen).
 
 ---
@@ -14,6 +14,46 @@ Loop produk: **Latihan → ukur kemampuan → temukan kelemahan → perbaiki →
 
 Stack: Next.js 16 (App Router) · TypeScript · Supabase (Auth + Postgres + RLS/RPC + Storage) · Midtrans · Vercel · Playwright + Vitest.
 
+### Product architecture — 2026-10-06
+
+Core learning domains: **CPNS** and **TKA**. Each domain can expose **Tryout**, **Mini Tryout**, and **Drill** through the existing `exams` catalog, with level/track, section, duration, and scoring rules kept in the domain configuration. **Direct**, **Event**, and **Organization** are access/distribution contexts; Event starts reuse the assessment attempt/result engine, and Organization batch assignments reference catalog assessments. Event and Organization do not own question, scoring, or exam-definition engines.
+
+Event starts retain event metadata on the assessment attempt. TKA SMP tryout modes enter the existing section-aware TKA RPC flow; CPNS and drill flows use the shared Schema V2 attempt flow. Organization batch assignments store the existing `exam_id` and validate domain, assessment type, availability, and question content in the assignment RPC. The former organization template tables and records remain for history, but template composition and composed-exam deletion are no longer supported through authenticated RPCs.
+
+Snapshot parsing shared by TKA remedial and wrong-question history is in `src/domain/question-snapshot.ts`. Remedial remains scoped to one source attempt; the wrong-question bank remains a historical aggregation.
+
+The distribution, attempt-context, quota, corrected uniqueness, and Organization reporting migrations are now applied to **staging** (`lpgrivowdcepcxradavu`) and **production** (`llnttutwhtvxtdktiizo`); the per-migration production ledger and checks are recorded in the 2026-10-07 promotion entry below. The P0 security migration is also applied to production. The context RPC resumes attempts by exact Direct/Event/Organization reference; Direct generic lookup excludes distributed attempts. The partial unique index protects one active Direct/Event attempt per exact context while excluding explicitly imported rehearsal history. Organization participant assignment discovery and start/resume use the shared assessment session and result engine. Monitoring/export now select the most recently created organization attempt across assigned assessment types. The application is deployed and healthy at release `37fcab4fd3dfd354c46df2a22eba634d43517f8c`; the public domain is active with limited content, and no global dark-launch mechanism is present. CPNS products remain archived until canonical content is reviewed and released.
+
+**QA follow-up 2026-10-06 (superseded by read-only production recheck below):** Staging authenticated E2E covers CPNS Event full lifecycle, Direct/Event and Event A/B isolation, resume, result and leaderboard source integrity; TKA SMP Full Tryout Event lifecycle; Organization CPNS + TKA SMP Full Tryout discovery/start/autosave/refresh/resume/submit; CPNS monitoring/export consistency; participant cross-org and unassigned-batch denial; and TKA Organization assignment context with unchanged token balance. TKA SMA has no ready assessments; its active PASS offers were archived in staging without removing existing entitlements, and the participant page renders an unavailable state. TKA SD has 5 ready assessments; TKA SMP has 26.
+
+**Pre-hotfix production snapshot 2026-10-06 (historical):** Production read-only SQL found that a normal active profile with no roles could call `get_content_question_detail` for an approved/published question it neither authored nor reviewed. The RPC returned detail despite content/admin permissions being false. Direct `SELECT` on `question_versions` was already denied. Root cause: nullable `author_id`/`reviewer_id` comparisons produce `v_allowed = NULL`; `IF NOT v_allowed` fails open in PL/pgSQL. The production fix and post-migration verification are recorded below.
+
+Earlier staging regression snapshot (superseded by the final re-run below): **Public E2E 42 PASS / 2 SKIP; Admin 60/60 PASS; CPNS 8/8 PASS; TKA SMP 16/16 PASS; Unit 709/709 PASS; Lint, Typecheck, Build, and `git diff --check` PASS.** CPNS E2E includes CPNS/TKA SMP Event and Organization Mini/Drill cells, duplicate Event registration, Direct/Event and Event/Event isolation, dual-organization assignment isolation, zero-token Organization assignment, and TKA total-score monitoring/export consistency. At this point the distinct catalog TKA Drill Direct cell was not yet proven; it passed in the final re-run below. Event timing was then covered in service tests; the final participant UI and actual start-boundary test is recorded below. The universal session restores one-option answers saved in `selected_option_id`; Organization monitoring/export choose the latest attempt by creation time across assessment types.
+
+The earlier remaining-gap list above is historical; the current decision is recorded here. The PRD [`prd-cpns-instansi-managed-service.md`](notes/prd-cpns-instansi-managed-service.md) explicitly scopes Organization MVP to CPNS, requires TWK/TIU/TKP and total CPNS scores, and excludes other exam domains from its initial product scope. TKA Organization section breakdown is therefore **NOT REQUIRED FOR MVP**; keep canonical total-score parity as the reporting gate and track section breakdown as P2 only if a later TKA Organization requirement is approved. No score recalculation is implied by test counts. The production answer-key P0 is now closed after migration and smoke verification; controlled application deployment remains on hold because six application migrations are staging-only. Dark launch stays active.
+
+**P0 hotfix & final P1 closure recheck 2026-10-06:** Staging security migration `20261006135419_harden_nullable_content_question_access_guard.sql` is fail-closed (`coalesce(v_allowed, false)`). Production preflight verified the production target and found the vulnerable guard plus no existing ledger entry for this fix. The same security migration was applied to production at **2026-10-06 16:56:17 UTC** (ledger version `20261006165617`, name `harden_nullable_content_question_access_guard`). Post-migration SQL smoke used an existing active participant identity inside a rolled-back transaction with `SET LOCAL ROLE authenticated`: `public.get_content_question_detail` returned `Question detail access denied`, and direct `SELECT` from `question_versions` was denied. The existing internal SUPER_ADMIN detail-RPC smoke passed. No published production question has both `author_id` and `reviewer_id` NULL, so that exact row fixture was unavailable; the fail-closed expression is covered by the migration contract test and staging verification. A participant start/answer/submit flow was not run on production to avoid changing exam state. P0 is **CLOSED**. The answer-bearing payload was never printed or recorded.
+
+The production migration delta after the hotfix is six staging-only application migrations: `assessment_distribution_contracts`, `attempt_distribution_context_v1`, `context_attempt_quota_boundary`, `enforce_active_b2c_attempt_context_uniqueness`, `fix_org_export_latest_attempt_order`, and `fix_org_monitoring_latest_attempt_order`. They are required before promoting the current staging application because its Event/Organization/session and reporting flows depend on them. No optional migration delta was identified. None of these application migrations was applied in this hotfix. Direct TKA SMP catalog Drill is available through the existing attempt RPC and passed authenticated browser discovery/start/autosave/refresh/resume/completion coverage. Concurrent double-start and double-submit checks passed for Direct, Event, and Organization; Event and Organization race checks resolve to one canonical attempt/result, and Direct CPNS token balance did not incur a second debit on duplicate submit. Event timing passed through participant UI and the actual start Server Action boundary for before/during/after windows. TKA Organization section breakdown is non-blocking P2, not an MVP requirement. Latest staging gates: Public E2E 42 passed / 2 skipped; Admin 60/60; TKA SMP 17/17; CPNS 9/9; Unit 709/709; lint, typecheck, build, and `git diff --check` passed. Application deployment remains on hold until the six application migrations are promoted with a reviewed plan; dark launch remains active.
+
+QA fixture cleanup: Event, registration, attempt, ranking, assignment, and Organization fixtures created by the new staging E2Es are removed in `finally` blocks; temporary admin users are cleaned by the gates. Staging gate cleanup reported 0 leftover `ci-*` users to remove. Disposable TKA participant accounts are also cleaned by the staging helper lifecycle. The production hotfix changed only the security function definition; no production question, answer, result, entitlement, or session data was mutated.
+
+**Controlled production promotion preflight 2026-10-07 — HOLD:** Production target was verified as Siap Tempur project `llnttutwhtvxtdktiizo`; P0 migration is already present (ledger version `20261006165617`). No application migration was applied in this promotion attempt. Read-only preflight found **2 duplicate groups / 2 extra rows** that violate `20261006135702_enforce_active_b2c_attempt_context_uniqueness.sql`: legacy/direct `in_progress` attempts for CPNS assessment `legacy-history-skd-full` and TKA SD assessment `legacy-history-sd-mini`. No user identifiers or answer payloads are recorded here. Do not delete, merge, or alter those historical attempts automatically; agree on a data-owner remediation, resolve only through an approved procedure, then rerun the duplicate preflight before any migration. Other checks found 0 active Organization duplicate groups, 0 missing Organization assignment references, 0 orphan Event/assignment/exam references, and 0 invalid Organization attempt-context rows. There are 478 legacy B2C attempts without explicit context metadata; they are retained and the migration's Direct fallback interprets them as Direct. The assessment-context migration would archive 2 active TKA SMA PASS catalog products because no ready SMA assessment exists; the two products are `TKA_SMA_PASS_30` and `TKA_SMA_PASS_90`. The migration does not delete entitlement rows; the read-only product-feature/source check found 0 matching active entitlement rows for these products. Six application migrations remain unapplied to production, including the uniqueness index migration. Database status is **HOLD**, application deployment is **HOLD**, deployment status is **NOT DEPLOYED**, and dark launch remains **ACTIVE**. Once the duplicate data is handled under an approved plan and preflight is clean, apply migrations one at a time in dependency order and verify each ledger entry and post-check before proceeding.
+
+**Legacy duplicate attempt review 2026-10-07 — no mutation:** Read-only inspection linked the four records to `legacy_prod.test_sessions` / `test_answers`; their metadata identifies them as `production_legacy_rehearsal` imports with `history_class` set. Both archive exams are `draft`, both source sessions in each group are historical `in_progress` rows with no end/submission timestamp, and no canonical result or direct downstream references were found. For CPNS, attempt #1 has 35 imported question/answer rows but 0 selected options; attempt #2 has 35 rows and 34 source selections (33 mapped canonical selections), making #2 the progress-bearing record to preserve. For TKA SD Mini, attempt #1 has 20 rows and 0 selections; attempt #2 has 30 rows and 0 selections, with the later source activity seven seconds after start and both access deadlines long past. These are sequential legacy sessions, not evidence of a current start race. The database has no attempt-status check constraint, but the application and production rows use only `in_progress` and `completed`; marking incomplete legacy history completed would falsify its state, while an `abandoned` status has no established application contract. Therefore no safe status mutation or single active canonical record is established. Preserve all four attempt IDs and their imported answers; data-owner decision is required on the terminal-state contract or uniqueness-index treatment for imported archive history. Full read-only preflight still reports 2 B2C duplicate groups / 2 extra rows; Organization duplicate groups, reference orphans, and invalid Organization contexts are all 0. **Database remains HOLD.**
+
+**Legacy-safe uniqueness follow-up 2026-10-07 — production untouched:** The duplicate rows are historical imports, not operational sessions; `status='in_progress'` alone is not the right uniqueness domain. Their stable explicit classifier is `metadata.migration_source='production_legacy_rehearsal'` (all 476 imported rows have it, including all 50 imported rows still marked in progress; the two unmarked B2C rows are completed). Added `20261006172558_scope_active_b2c_attempt_uniqueness_to_operational_rows.sql`, matching the staging ledger version `20261006172558`; it replaces the B2C partial-index predicate to exclude only this explicit import source while retaining the existing Direct key (`user_id + exam_id + empty event key`) and per-Event key (`user_id + exam_id + eventId`). Missing context is not used as a history heuristic. The separate Organization assignment index is unchanged. Staging has the original uniqueness migration followed by this corrective migration; its corrected unique index is present, unique and valid. Disposable DB probe passed: duplicate legacy rows coexist, modern Direct duplicates reject, Event A/B coexist while same-Event duplicates reject, and Organization assignment A/B coexist while same-assignment duplicates reject. The authenticated CPNS gate passed **9/9**, including two-tab Direct and Event double-start converging to one attempt; Direct token balance was debited once. Focused contract tests passed **2/2** and `git diff --check` passed.
+
+Production read-only dry-run with the corrected predicate: **0 modern duplicate groups / 0 extra modern rows**, **2 legacy duplicate groups / 2 extra legacy rows**, 50 marked legacy active rows excluded, 0 unmarked operational active rows, and 0 currently active rows covered by the new index predicate. The four specified production attempt IDs were re-read and remain `in_progress` with their legacy markers and `updated_at` values intact; no production data or schema was changed. Older 2026-10-07 HOLD notes above describe the pre-correction predicate and are superseded for B2C uniqueness by this entry; unrelated application migrations remain unapplied. **DATABASE: READY FOR MIGRATION PROMOTION (preflight clean for corrected predicate), not applied. APPLICATION: HOLD. DARK LAUNCH: ACTIVE.**
+
+Production promotion sequence for uniqueness: first apply the corrected SQL under its migration name so the valid index exists without touching legacy rows; then apply the original unapplied `20261006135702_enforce_active_b2c_attempt_context_uniqueness.sql`, whose `CREATE UNIQUE INDEX IF NOT EXISTS` will observe the corrected index with the same name and leave it intact while recording the original migration. Do not run the original index migration first, because its old predicate includes the two legacy duplicate groups and will fail. For the full application migration set, apply `assessment_distribution_contracts` → `attempt_distribution_context_v1` → `context_attempt_quota_boundary` → corrected uniqueness SQL → original uniqueness migration (ledger record/no-op) → `fix_org_export_latest_attempt_order` → `fix_org_monitoring_latest_attempt_order`, checking ledger and each postcondition after every step. Production promotion remains a separate authorized task; staging applied order and ledger are verified, but production migrations were not run here.
+
+**Controlled production database promotion 2026-10-07 — complete:** Applied individually to verified production project `llnttutwhtvxtdktiizo`, without `db push`: (1) `assessment_distribution_contracts` — ledger `20261006173714`; (2) `attempt_distribution_context_v1` — `20261006173747`; (3) `context_attempt_quota_boundary` — `20261006173825`; (4) `scope_active_b2c_attempt_uniqueness_to_operational_rows` — `20261006173852`; (5) `enforce_active_b2c_attempt_context_uniqueness` — `20261006173913`; (6) `fix_org_export_latest_attempt_order` — `20261006173941`; (7) `fix_org_monitoring_latest_attempt_order` — `20261006174008`. Each apply succeeded and each entry was verified in the production migration ledger before continuing. The original uniqueness migration was inspected and is `CREATE UNIQUE INDEX IF NOT EXISTS` on the same index name; after applying it, the corrected predicate remained intact.
+
+Post-checks: assignment and context RPCs exist with expected grants and validation; Event validator trigger is enabled; organization attempt index and corrected B2C index are `unique`, `ready`, `valid`, and `live`. The B2C predicate excludes only `metadata.migration_source='production_legacy_rehearsal'`; it does not exclude rows with missing context. Final read-only preflight reports **0 modern B2C duplicate groups / 0 extra rows**, **2 legacy groups / 2 extra rows**, and **0 Organization duplicate groups / 0 extra rows**. Event and Organization assessment references have 0 orphans. There are 0 Organization assignments/attempts, so production reporting sample parity is **NOT RUN — no safe existing fixture**; export and monitoring function definitions were verified scoped by participant, organization, source, and batch, with `created_at` before `attempt_number` in ordering.
+
+The context migration archived `TKA_SMA_PASS_30` and `TKA_SMA_PASS_90` because there are still no ready/usable TKA SMA assessments. Entitlements were not deleted (the production entitlements table had 0 rows). All four legacy attempts remain `in_progress` with their import markers and timestamps unchanged; their 120 attempt-question snapshots remain and there are 0 score rows. No answer content was emitted. Production P0 regression smoke after all migrations: authenticated participant `question_versions` SELECT denied; participant detail RPC denied; existing SUPER_ADMIN detail access passed. Direct assessment content remains resolvable (31 ready CPNS/TKA assessment rows with question content). **DATABASE: READY. APPLICATION: HOLD (not deployed). DARK LAUNCH: ACTIVE.**
+
 ---
 
 ## 2. Environment
@@ -22,11 +62,11 @@ Stack: Next.js 16 (App Router) · TypeScript · Supabase (Auth + Postgres + RLS/
 |---|---|---|---|
 | Local | staging | `npm run dev` | `.env.local` menunjuk staging |
 | Staging | `lpgrivowdcepcxradavu` | Vercel Preview | Sumber rehearse & E2E |
-| Production | `llnttutwhtvxtdktiizo` | **domain publik SENGAJA TIDAK DIAKTIFKAN** | dark launch |
+| Production | `llnttutwhtvxtdktiizo` | **public production aktif** | konten terbatas; CPNS commerce archived |
 
-**Domain publik `siaptempur.id` sengaja tidak dibuka** karena project belum dinilai siap. DNS tetap mengarah ke Vercel, tetapi belum di-assign ke deployment yang hidup (saat ini 404).
+**Status operasional 2026-10-07:** domain publik `siaptempur.id` aktif pada deployment production yang sehat. Tidak ada global dark-launch gate; exposure dikelola per produk/konten. CPNS Pass dan token tetap `ARCHIVED` untuk penjualan baru, legacy CPNS assessments tetap DRAFT, dan canonical assessment belum dibuat. Owner telah menyetujui blueprint 2024, Mini overlap tercatat, Drill parsial 9/28, serta syarat Pass 28/28. Candidate manifest v1 tersedia tetapi seluruh item masih `NEEDS_REVIEW`; jangan membuat/aktifkan assessment dari kandidat sebelum review akademik dan asset check selesai. Lihat [CPNS Production Content Readiness](CPNS_PRODUCTION_CONTENT_READINESS.md).
 
-> Status DB produksi (apakah Schema V2 sudah aktif) **belum diverifikasi** dari repo. Perlu pengecekan read-only di dashboard produksi — lihat [Bagian 7](#7-cara-verifikasi-cepat).
+> **Status terkini 2026-10-06:** runtime Schema V2 aktif di produksi. P0 answer-key ditutup setelah migration `20261006165617` dan smoke participant lulus; lihat bukti migration di Bagian 1 dan 6. Dark launch tetap aktif sambil menunggu promotion aplikasi dan migration dependensinya.
 
 ---
 
@@ -174,7 +214,7 @@ File dalam perubahan Question Bank ini (perubahan admin lokal lain yang sudah ad
   `components/admin/useAdminConfirm.tsx` (baru), `components/admin/QuestionBankEditorModal.tsx` (baru),
   `components/admin/ConfirmSubmit.tsx`
 - `lib/question-bank.ts`, `lib/question-options.ts`
-- `src/services/question-bank.service.ts`, `src/services/admin-v2.service.ts`
+- `src/services/question-bank.service.ts`, `src/services/admin-workspace.service.ts`
 - `types/database.types.ts`, migration di atas
 - `tests/unit/question-bank.test.ts`, `tests/unit/question-bank-category-editor.test.tsx` (baru),
   `tests/unit/question-bank-editor-lazy.test.tsx` (baru),
@@ -217,7 +257,7 @@ gate Review 5 passed.
 
 ### P1-b — pencarian aman + pengukuran payload
 - `escapePostgrestValue` dipindah ke satu modul bersama `lib/postgrest-filter.ts` dan dipakai
-  `admin-v2.service` (produk/exam/soal) serta `content-review.service`. Sebelumnya pencarian review
+  `admin-workspace.service` (produk/exam/soal) serta `content-review.service`. Sebelumnya pencarian review
   hanya membuang `%_`, sehingga `,()` dari kata kunci bisa mengubah bentuk ekspresi `or=(...)`
   PostgREST. Dikunci unit test, termasuk kontrak "kedua service memakai helper bersama".
 - **Payload detail TIDAK dibatasi — dan memang tidak perlu (dengan bukti).**
@@ -496,7 +536,7 @@ gate Review 5 passed.
 - Gate admin: hijau terakhir 60 passed; perubahan ini tidak menyentuh permukaan admin.
 
 File: `lib/postgrest-filter.ts` (baru), `lib/review-batch.ts`, `lib/admin-format.ts`,
-`src/services/admin-v2.service.ts`, `src/services/content-review.service.ts`,
+`src/services/admin-workspace.service.ts`, `src/services/content-review.service.ts`,
 `app/actions/content-review.ts`, `app/actions/content-review-batch.ts`,
 `app/admin/content/review/page.tsx`, `app/admin/AdminOverview.tsx`, `app/admin/audit/page.tsx`,
 `components/admin/ReviewQuestionFields.tsx` (baru), `components/admin/ReviewDraftForm.tsx` (baru),
@@ -573,29 +613,31 @@ Goal berikutnya (belum aktif): **CPNS Instansi Managed Service** (B2B) — PRD d
 
 ---
 
-## 6. Blocker aktif
+## 6. Security status and historical blockers
 
-### P0 — keamanan (kebocoran kunci jawaban)
+### P0 — keamanan (kebocoran kunci jawaban) — CLOSED 2026-10-06
 
-Keduanya **terkonfirmasi AKTIF** di staging (schema dump read-only) **dan di produksi** (query read-only + uji eksploitasi 2026-09-16):
+Snapshot sebelum hotfix dan status verifikasi terkini:
 
 | # | Temuan | Status kode | Status DB |
 |---|---|---|---|
-| P0-1 | `public.get_content_question_detail` bisa dipanggil user login mana pun dan mengembalikan `is_correct`, `score`, `explanation` (guard memakai `status in ('approved','published')`) | ✅ diperbaiki | ✅ **staging 2026-09-16** · ✅ **produksi 2026-09-16** |
-| P0-2 | `GRANT SELECT ON public.question_versions TO authenticated` + policy membuka snapshot jawaban soal approved/published | ✅ diperbaiki | ✅ **staging 2026-09-16** · ✅ **produksi 2026-09-16** |
+| P0-1 | `get_content_question_detail` guard gagal-aman pada nilai authorization NULL | ✅ fail-closed guard di `20261006135419_harden_nullable_content_question_access_guard.sql` | ✅ applied production (ledger `20261006165617`); participant RPC denied; authorized SUPER_ADMIN smoke passed |
+| P0-2 | Direct SELECT pada `question_versions` | ✅ revoke dan policy hardening sebelumnya | ✅ participant SELECT denied setelah hotfix; authenticated grant tidak ada |
 
 **Bukti sebelum perbaikan di produksi (2026-09-16):** guard `VULNERABLE`, grant + policy ada; uji dengan identitas user biasa (transaksi di-rollback) mengembalikan `options`, `explanation`, dan **`is_correct` = true** → kunci jawaban benar-benar terbaca.
 
-**Bukti sesudah perbaikan (staging & produksi):**
+**Bukti historis sesudah perbaikan 2026-09-16 (sebelum nullable-edge hotfix):**
 
 | Skenario | Hasil |
 |---|---|
 | User login biasa (tanpa permission) memanggil `get_content_question_detail` | ❌ `Question detail access denied` (benar) |
 | User login biasa membaca `question_versions` | ❌ `permission denied for table question_versions` (benar) |
-| User dengan `content.read/review/publish` memanggil RPC | ✅ tetap boleh (workspace review tidak rusak) — *diverifikasi di staging; produksi belum punya user ber-role* |
+| User dengan `content.read/review/publish` memanggil RPC | ✅ tetap boleh (workspace review tidak rusak) — *verifikasi staging 2026-09-16; saat itu produksi belum punya user ber-role konten* |
 | Integritas data | ✅ tidak berubah (produksi: 428 profil, 1088 soal sebelum & sesudah) |
 
-- Migration perbaikan: `supabase/migrations/20260916213000_*.sql`, `20260916213100_*.sql` — **sudah di-apply ke staging dan produksi**, tercatat di `supabase_migrations.schema_migrations` masing-masing.
+- Migration perbaikan historis: `supabase/migrations/20260916213000_*.sql`, `20260916213100_*.sql` — tercatat pernah di-apply ke staging dan produksi. Cakupannya tidak menguji actor tanpa permission terhadap soal yang `author_id` dan `reviewer_id`-nya NULL.
+- Nullable guard production smoke (2026-10-06): `question_versions` participant SELECT = denied; participant detail RPC = denied; authorized existing SUPER_ADMIN detail RPC = pass. The production nullable-row fixture is unavailable (no published row has both author and reviewer NULL).
+- Security migration source: `supabase/migrations/20261006135419_harden_nullable_content_question_access_guard.sql`; applied to staging under ledger version `20261006135534` and production under ledger version `20261006165617`. Ledger versions are assigned by the migration service at apply time; the migration name and SQL body match.
 - Regression test: `tests/unit/answer-key-access-contract.test.ts`
 - Catatan: apply memakai `supabase db query --file` karena `supabase db push` tidak bisa jalan (riwayat migrasi tidak sinkron, bagian 8).
 
@@ -807,7 +849,7 @@ audit terhadap staging **8/8 lolos**.
 Domain tidak boleh diaktifkan sebelum **semua** ini hijau:
 
 - [x] P0-1 & P0-2 ditutup **dan diverifikasi di staging** (2026-09-16).
-- [x] P0-1 & P0-2 ditutup **dan diverifikasi di produksi** (2026-09-16).
+- [x] P0-1 RPC answer-key guard lulus verifikasi produksi setelah migration `20261006165617` (2026-10-06).
 - [x] Status produksi diverifikasi (fungsi, grant, policy, feature flag) — 2026-09-16.
 - [x] **Admin produksi ditetapkan** — `SUPER_ADMIN` untuk `halimdirga8@gmail.com` (2026-09-16).
 - [x] **Keputusan flag monetisasi TKA SMP** — diputuskan tetap **ON** (2026-09-16).
@@ -1009,7 +1051,7 @@ jenjang**, plus **bundle lintas jenjang TKA**; pass CPNS **diaktifkan**.
     (termasuk saat melanjutkan attempt yang sudah ada).
   - `src/services/wallet.service.ts` + `src/repositories/wallet.repository.ts` — saldo per program
     (`getBalanceForProgram`, `getTokenWalletTypeForProgram`).
-  - `src/services/commerce.service.ts` + `src/services/admin-v2.service.ts` — tidak lagi hardcode
+  - `src/services/commerce.service.ts` + `src/services/admin-workspace.service.ts` — tidak lagi hardcode
     `wallet_type = 'exam_token'`; grant token mengikuti program produk.
   - `components/profile/AccountProfilePage.tsx` — halaman profil membaca wallet sesuai konteks
     (CPNS vs TKA).

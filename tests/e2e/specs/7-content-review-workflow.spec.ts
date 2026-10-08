@@ -1,3 +1,4 @@
+import { adminUrlState } from '../admin-workflow'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -14,6 +15,7 @@ async function metadata(): Promise<Metadata> {
 
 async function login(page: Page, user: UserMeta) {
     await page.goto(`/login?returnTo=${encodeURIComponent(workspaceReturnTo)}`)
+    await expect(page.locator('html')).toHaveAttribute('data-interaction-guard','ready')
     await page.locator('input[type="email"]').fill(user.email)
     await page.locator('input[type="password"]').fill(user.password)
     await page.getByRole('button', { name: 'Masuk', exact: true }).click()
@@ -44,7 +46,7 @@ async function followServerAction(page: Page, trigger: Locator) {
 async function openQuestion(page: Page, questionId: string) {
     await page.goto(`/admin/content/review?program=TKA&track=SMP&question=${encodeURIComponent(questionId)}`)
     await expect(page).toHaveURL(/\/admin\/content\/review/)
-    await expect(page.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review', exact: true })).toBeVisible()
     await expect(page.getByRole('list', { name: 'Progres review' })).toBeVisible()
     const previewTop = await page.getByRole('heading', { name: 'Periksa isi soal' }).evaluate((element) => element.getBoundingClientRect().top)
     const actionTop = await page.getByRole('heading', { name: 'Tindakan berikutnya' }).evaluate((element) => element.getBoundingClientRect().top)
@@ -102,7 +104,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
 
     await editorPage.goto('/admin/content/review?program=TKA&track=SMP&new=1')
     await expect(editorPage).toHaveURL(/\/admin\/content\/review/)
-    await expect(editorPage.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
+    await expect(editorPage.getByRole('heading', { name: 'Review', exact: true })).toBeVisible()
     await expect(editorPage.getByRole('banner').getByText('Editor Konten', { exact: true })).toBeVisible()
 
     const createSection = editorPage.locator('section').filter({
@@ -128,7 +130,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     await followServerAction(editorPage, form.getByRole('button', { name: 'Simpan draft' }))
     await expect(editorPage.getByText('Draft soal tersimpan.')).toBeVisible()
 
-    const questionId = new URL(editorPage.url()).searchParams.get('question') || ''
+    const questionId = adminUrlState(editorPage.url()).get('question') || ''
     expect(questionId).toMatch(/^[0-9a-f-]{36}$/i)
 
     await expect(editorPage.getByRole('heading', { name: 'Ubah draf / revisi' })).toBeVisible()
@@ -152,7 +154,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     if (evidenceDir) mkdirSync(evidenceDir, { recursive: true })
     await reviewerPage.goto('/admin/content/review?program=TKA&track=SMP')
     await reviewerPage.getByRole('link', { name: 'Buka review massal', exact: true }).click()
-    await expect(reviewerPage).toHaveURL(/program=CPNS.*track=SKD.*bulk=1/)
+    await expect(reviewerPage).toHaveURL(/\/content\/review\/bulk\?program=CPNS&track=SKD/)
     await expect(reviewerPage.getByRole('heading', { name: 'Review massal — batch' })).toBeVisible()
     await expect(reviewerPage.getByRole('button', { name: /Siapkan \d+ soal|Sudah disiapkan/ })).toBeVisible()
     await expect(reviewerPage.getByRole('link', { name: 'Kembali ke antrean', exact: true })).toBeVisible()
@@ -168,7 +170,7 @@ test('author → reviewer → editorial → academic → technical QA → publis
     if (evidenceDir) await reviewerPage.screenshot({ path: path.join(evidenceDir, 'review-desktop.png'), fullPage: false })
     await reviewerPage.setViewportSize({ width: 390, height: 844 })
     await reviewerPage.reload()
-    await expect(reviewerPage.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
+    await expect(reviewerPage.getByRole('heading', { name: 'Review', exact: true })).toBeVisible()
     await expect(reviewerPage.getByRole('link', { name: 'Kembali ke antrean', exact: true })).toBeVisible()
     await expect(reviewerPage.getByRole('heading', { name: 'Antrean review', exact: true })).toBeHidden()
     expect(await reviewerPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
@@ -213,7 +215,7 @@ test('review workspace stays usable on mobile and tablet widths', async ({ brows
     const page = await context.newPage()
     await login(page, users.editor)
 
-    await expect(page.getByRole('heading', { name: 'Reviewer Workspace' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Review', exact: true })).toBeVisible()
     await expect(page.getByLabel('Buka menu')).toBeVisible()
     await expect(page.getByRole('banner').locator('select').nth(0)).toHaveValue('TKA')
     await expect(page.getByRole('banner').locator('select').nth(1)).toHaveValue('SMP')
@@ -222,13 +224,13 @@ test('review workspace stays usable on mobile and tablet widths', async ({ brows
     expect(mobileOverflow).toBe(false)
 
     await page.getByLabel('Buka menu').click()
-    await expect(page.getByRole('link', { name: 'Review Queue', exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Review', exact: true })).toBeVisible()
     const closeMobileMenu = page.getByLabel('Tutup menu').last()
     await expect(closeMobileMenu).toBeVisible()
     await closeMobileMenu.click()
 
     await page.setViewportSize({ width: 1024, height: 768 })
-    await expect(page.getByRole('link', { name: 'Review Queue', exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Review', exact: true })).toBeVisible()
     const tabletOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1)
     expect(tabletOverflow).toBe(false)
 

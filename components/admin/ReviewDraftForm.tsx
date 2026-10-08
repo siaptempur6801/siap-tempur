@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect,useState,type ReactNode } from 'react'
 
 /**
  * Form draft Review Queue dengan penjaga "perubahan belum tersimpan".
@@ -35,7 +35,7 @@ export default function ReviewDraftForm({
     }, [dirty])
 
     return (
-        <form
+        <form data-admin-form
             action={action}
             className={className}
             data-dirty={dirty || undefined}

@@ -1,5 +1,6 @@
 'use server'
 
+import {adminReturnUrl} from '@/lib/admin-return-url'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
@@ -60,16 +61,20 @@ function friendlyError(error: unknown) {
 
 function backTo(searchParams: Record<string, string>, ok?: string, error?: unknown): never {
     revalidatePath('/admin/users')
-    const params = new URLSearchParams(searchParams)
+    const destination=new URL(adminReturnUrl(searchParams.return_to,'/admin/users'),'http://admin.local')
+    const params = new URLSearchParams(searchParams.return_to?destination.search:searchParams)
+    params.delete('return_to')
     params.delete('ok')
     params.delete('error')
     if (ok && !error) params.set('ok', ok)
     if (error) params.set('error', friendlyError(error))
-    redirect(`/admin/users?${params.toString()}`)
+    redirect(`${destination.pathname}?${params.toString()}`)
 }
 
 function contextFrom(form: FormData) {
     return {
+        return_to:text(form,'return_to'),
+        page:text(form,'page'),
         q: text(form, 'q'),
         role: text(form, 'role'),
         status: text(form, 'status'),

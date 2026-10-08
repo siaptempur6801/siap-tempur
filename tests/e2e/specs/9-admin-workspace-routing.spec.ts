@@ -13,18 +13,18 @@ test.describe('Admin Workspace canonical routing', () => {
 
     test('legacy assessment routes resolve to canonical modules', async ({ page }) => {
         await page.goto('/cpns/admin/tryout-config')
-        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fassessment%2Fexams$/)
+        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fassessments$/)
 
         await page.goto('/cpns/admin/event')
-        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fassessment%2Fevents$/)
+        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fevents$/)
     })
 
     test('legacy content routes stay inside canonical Admin Workspace', async ({ page }) => {
         await page.goto('/cpns/admin/create')
-        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fcontent%2Fquestions$/)
+        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fcontent%2Fquestions%2Fnew$/)
 
         await page.goto('/cpns/admin/articles/create')
-        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fcontent%2Farticles%2Fcreate$/)
+        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fcontent%2Farticles%2Fnew$/)
     })
 
     /**
@@ -78,6 +78,6 @@ test.describe('Admin Workspace canonical routing', () => {
         // membawa pathname. Yang penting di sini: tab-nya tetap dipetakan ke modul
         // kanonik yang benar, bukan jatuh ke root admin.
         await page.goto('/cpns/admin?tab=exams&program=TKA&track=SMP')
-        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fassessment%2Fexams$/)
+        await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Fassessments$/)
     })
 })

@@ -37,7 +37,7 @@ interface Props {
     initialMarked: Record<string, boolean>
     endTime?: string // ISO string for tryout mode
     isTryout?: boolean
-    returnTo?: 'tryout' | 'mini-tryout' | 'drilling-materi' | 'event'
+    returnTo?: 'tryout' | 'mini-tryout' | 'drilling-materi' | 'event' | 'organization'
 }
 
 type SessionProgressSnapshot = {
@@ -448,12 +448,14 @@ export default function PracticeSessionClient({
         ? 'full_tryout'
         : returnTo === 'drilling-materi'
             ? 'latihan_fokus'
-            : returnTo === 'event'
-                ? 'event'
-                : 'mini_tryout'
+        : returnTo === 'event'
+            ? 'event'
+            : 'mini_tryout'
     const sessionKindLabelLower = sessionKindLabel.toLowerCase()
     const resultFromQuery = returnTo === 'event'
         ? '?from=event&completed=1'
+        : returnTo === 'organization'
+            ? '?from=organization&completed=1'
         : returnTo === 'drilling-materi'
             ? '?from=drilling-materi&completed=1'
             : returnTo === 'mini-tryout'
@@ -461,6 +463,8 @@ export default function PracticeSessionClient({
                 : '?completed=1'
     const returnPath = returnTo === 'event'
         ? '/cpns/dashboard/event'
+        : returnTo === 'organization'
+            ? '/cpns/dashboard/assignments'
         : returnTo === 'drilling-materi'
             ? '/cpns/dashboard/drilling-materi'
             : returnTo === 'mini-tryout'
@@ -468,6 +472,8 @@ export default function PracticeSessionClient({
                 : '/cpns/dashboard/tryout'
     const returnLocationLabel = returnTo === 'event'
         ? 'halaman event'
+        : returnTo === 'organization'
+            ? 'halaman assignment'
         : returnTo === 'drilling-materi'
             ? 'halaman latihan fokus'
             : returnTo === 'mini-tryout'

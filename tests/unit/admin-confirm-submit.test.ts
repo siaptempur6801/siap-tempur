@@ -40,11 +40,13 @@ const componentCode = stripComments(component)
 
 /** Halaman/komponen yang memasang dialog ini. */
 const CONSUMERS = [
-    'app/admin/AdminOperationsWorkspace.tsx',
-    'app/admin/assessment/exams/AdminExamsWorkspace.tsx',
-    'app/admin/users/page.tsx',
-    'app/admin/settings/page.tsx',
-    'app/admin/organizations/page.tsx',
+    'components/admin/domain/catalog/CatalogWorkspace.tsx',
+    'components/admin/domain/assessment/AssessmentWorkspace.tsx',
+    'components/admin/domain/users/UserAccessForms.tsx',
+    'components/admin/domain/assessment/AssessmentDetail.tsx',
+    'components/admin/domain/organization/AssignmentList.tsx',
+    'components/admin/domain/settings/SettingsWorkspace.tsx',
+    'components/admin/domain/organization/OrganizationWorkspace.tsx',
     'components/admin/ArticleStatusActions.tsx',
 ]
 

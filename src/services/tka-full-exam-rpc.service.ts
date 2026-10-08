@@ -77,6 +77,11 @@ export type TkaFullExamStartResult = {
     resumed: boolean
 }
 
+export type TkaAccessContext =
+    | { type: 'DIRECT' }
+    | { type: 'EVENT'; eventId: string }
+    | { type: 'ORGANIZATION'; assignmentId: string }
+
 function asRecord(value: unknown): RecordValue | null {
     if (!value || Array.isArray(value) || typeof value !== 'object') return null
     return value as RecordValue
@@ -293,30 +298,28 @@ export class TkaFullExamRpcService {
         return data as T
     }
 
-    async startSmpExam(input: { userId: string; examSlug: string }): Promise<TkaFullExamStartResult> {
+    async startSmpExam(input: { userId: string; examSlug: string; context?: TkaAccessContext }): Promise<TkaFullExamStartResult> {
         const supabase = await createV2Client()
         const exam = await configuredExamRepository.findBySlug({
             programCode: 'TKA',
             trackCode: 'SMP',
             slug: input.examSlug,
         }, supabase)
-        if (!exam || !['FULL_TRYOUT', 'MINI_TRYOUT'].includes(exam.examTypeCode)) {
+        if (!exam || !['FULL_TRYOUT', 'MINI_TRYOUT', 'DRILL'].includes(exam.examTypeCode)) {
             throw new Error('Tryout TKA SMP belum aktif.')
         }
 
-        const { data: activeAttempt, error: activeError } = await supabase
-            .from('exam_attempts')
-            .select('id')
-            .eq('exam_id', exam.id)
-            .eq('user_id', input.userId)
-            .eq('status', 'in_progress')
-            .order('attempt_number', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        if (activeError) throw activeError
-        if (activeAttempt?.id) return { attemptId: activeAttempt.id, resumed: true }
-
-        const payload = await this.rpc<StartRpcPayload>('start_exam_attempt', { p_exam_id: exam.id })
+        // Context selection and idempotent resume happen atomically in the RPC.
+        // A client-side user+exam lookup would cross Direct/Event/Organization.
+        const context = input.context ?? { type: 'DIRECT' as const }
+        const payload = await this.rpc<StartRpcPayload>('start_exam_attempt_in_context', {
+            p_exam_id: exam.id,
+            p_context: context.type === 'DIRECT'
+                ? { type: context.type }
+                : context.type === 'EVENT'
+                    ? { type: context.type, event_id: context.eventId }
+                    : { type: context.type, assignment_id: context.assignmentId },
+        })
         if (!payload?.attempt_id) throw new Error('RPC start_exam_attempt tidak mengembalikan attempt id.')
         return { attemptId: payload.attempt_id, resumed: payload.resumed === true }
     }
@@ -405,6 +408,7 @@ export class TkaFullExamRpcService {
             startedAt: state.startedAt,
             submittedAt,
             practiceKind: isMiniTryout ? 'mini_tryout' : 'full_tryout',
+            accessContext: null,
             knowledgeNode: null,
             programCode: 'TKA',
             trackCode: 'SMP',

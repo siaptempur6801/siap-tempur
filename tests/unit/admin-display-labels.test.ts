@@ -43,9 +43,9 @@ describe('label tampilan admin', () => {
     })
 
     it('tipe ujian dilabeli tanpa mengekspos kode database', () => {
-        expect(adminExamTypeLabel('DRILL')).toBe('Latihan materi')
+        expect(adminExamTypeLabel('DRILL')).toBe('Drill')
         expect(adminExamTypeLabel('MINI_TRYOUT')).toBe('Mini Tryout')
-        expect(adminExamTypeLabel('FULL_TRYOUT')).toBe('Tryout lengkap')
+        expect(adminExamTypeLabel('FULL_TRYOUT')).toBe('Tryout')
         expect(adminExamTypeLabel('EVENT')).toBe('Ujian event')
         expect(adminExamTypeLabel('NEW_TYPE')).toBe('new type')
         expect(adminExamTypeLabel(null)).toBe('—')
@@ -60,7 +60,7 @@ describe('label tampilan admin', () => {
     })
 
     it('tidak ada select admin yang menampilkan nilai mentah sebagai label', () => {
-        for (const file of ['app/admin/AdminOperationsWorkspace.tsx', 'app/admin/assessment/exams/AdminExamsWorkspace.tsx', 'components/admin/AdminExamFormModal.tsx']) {
+        for (const file of ['components/admin/domain/catalog/CatalogWorkspace.tsx', 'components/admin/domain/assessment/AssessmentWorkspace.tsx', 'components/admin/domain/assessment/AssessmentForm.tsx']) {
             expect(source(file), file).not.toMatch(/<option>[a-z_]+<\/option>/)
             expect(source(file), file).not.toMatch(/<option>[A-Z_]+<\/option>/)
         }
@@ -73,7 +73,7 @@ describe('label tampilan admin', () => {
 
     it('sumber entitlement memakai label manusiawi', () => {
         const service = source('src/services/admin-platform.service.ts')
-        const page = source('app/admin/entitlements/page.tsx')
+        const page = source('components/admin/domain/users/AccessWorkspace.tsx')
         expect(service).toContain("order_item: 'Pembelian produk'")
         expect(page).toContain('transactionSourceLabel(item.source_type)')
         expect(page).not.toContain("{item.source_type || '—'}")
@@ -81,8 +81,8 @@ describe('label tampilan admin', () => {
 
     it('aksi baris daftar memakai istilah Indonesia', () => {
         for (const file of [
-            'app/admin/AdminOperationsWorkspace.tsx',
-            'app/admin/assessment/exams/AdminExamsWorkspace.tsx',
+            'components/admin/domain/catalog/CatalogWorkspace.tsx',
+            'components/admin/domain/assessment/AssessmentWorkspace.tsx',
             'app/admin/content/articles/page.tsx',
         ]) {
             expect(source(file), file).not.toMatch(/>Edit</)

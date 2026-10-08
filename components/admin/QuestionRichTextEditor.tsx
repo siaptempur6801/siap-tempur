@@ -1,21 +1,21 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { EditorContent, NodeViewWrapper, ReactNodeViewRenderer, useEditor, type Editor, type NodeViewProps } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
-import { Node, mergeAttributes } from '@tiptap/core'
-import { InlineMath, BlockMath } from 'react-katex'
-import 'katex/dist/katex.min.css'
-import { Bold, Check, ImagePlus, Italic, List, ListOrdered, Loader2, Trash2, X } from 'lucide-react'
-import { toast } from 'sonner'
+import { adminLabelClass,adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 import FormulaToolbar from '@/components/admin/FormulaToolbar'
-import { adminLabelClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
-import { questionTextToEditorHtml } from '@/lib/question-rich-text'
+import type { LatexSnippet } from '@/lib/latex-snippets'
 import { QUESTION_IMAGE_ACCEPT } from '@/lib/question-media'
 import { uploadQuestionImage } from '@/lib/question-media-client'
-import type { LatexSnippet } from '@/lib/latex-snippets'
+import { questionTextToEditorHtml } from '@/lib/question-rich-text'
 import { cn } from '@/lib/utils'
+import { Node,mergeAttributes } from '@tiptap/core'
+import Image from '@tiptap/extension-image'
+import { EditorContent,NodeViewWrapper,ReactNodeViewRenderer,useEditor,type Editor,type NodeViewProps } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import 'katex/dist/katex.min.css'
+import { Bold,Check,ImagePlus,Italic,List,ListOrdered,Loader2,Trash2,X } from 'lucide-react'
+import { useEffect,useLayoutEffect,useMemo,useRef,useState } from 'react'
+import { BlockMath,InlineMath } from 'react-katex'
+import { toast } from 'sonner'
 
 /**
  * Editor visual soal (Pertanyaan/Pembahasan/isi opsi).
@@ -64,7 +64,7 @@ function MathEditor({ latex, block, onApply, onCancel, onDelete }: {
     return (
         <span
             className={cn(
-                'inline-flex flex-wrap items-center gap-1 rounded-lg border border-blue-300 bg-blue-50/70 p-1 align-middle',
+                'inline-flex flex-wrap items-center gap-1 rounded-lg border border-info-border bg-info-muted/70 p-1 align-middle',
                 block && 'w-full flex-col items-stretch',
             )}
             contentEditable={false}
@@ -82,7 +82,7 @@ function MathEditor({ latex, block, onApply, onCancel, onDelete }: {
                         if (event.key === 'Escape') { event.preventDefault(); onCancel() }
                         if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); onApply(draft.trim()) }
                     }}
-                    className="w-full rounded border border-slate-300 px-2 py-1 font-mono text-xs text-slate-900"
+                    className="w-full rounded border border-border px-2 py-1 font-mono text-xs text-foreground"
                 />
             ) : (
                 <input
@@ -95,17 +95,17 @@ function MathEditor({ latex, block, onApply, onCancel, onDelete }: {
                         if (event.key === 'Enter') { event.preventDefault(); onApply(draft.trim()) }
                         if (event.key === 'Escape') { event.preventDefault(); onCancel() }
                     }}
-                    className="w-44 rounded border border-slate-300 px-2 py-1 font-mono text-xs text-slate-900"
+                    className="w-44 rounded border border-border px-2 py-1 font-mono text-xs text-foreground"
                 />
             )}
             <span className="inline-flex items-center gap-1">
-                <button type="button" onClick={() => onApply(draft.trim())} aria-label="Terapkan rumus" title="Terapkan (Enter)" className="flex h-7 w-7 items-center justify-center rounded-md border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50"><Check size={14}/></button>
-                <button type="button" onClick={onCancel} aria-label="Batal mengubah rumus" title="Batal (Esc)" className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"><X size={14}/></button>
-                <button type="button" onClick={onDelete} aria-label="Hapus rumus" title="Hapus rumus" className="flex h-7 w-7 items-center justify-center rounded-md border border-red-100 bg-white text-red-500 hover:bg-red-50"><Trash2 size={14}/></button>
+                <button type="button" onClick={() => onApply(draft.trim())} aria-label="Terapkan rumus" title="Terapkan (Enter)" className="flex h-7 w-7 items-center justify-center rounded-md border border-success-border bg-card text-success hover:bg-success-muted"><Check size={14}/></button>
+                <button type="button" onClick={onCancel} aria-label="Batal mengubah rumus" title="Batal (Esc)" className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-muted"><X size={14}/></button>
+                <button type="button" onClick={onDelete} aria-label="Hapus rumus" title="Hapus rumus" className="flex h-7 w-7 items-center justify-center rounded-md border border-danger-border bg-card text-red-500 hover:bg-danger-muted"><Trash2 size={14}/></button>
             </span>
             {block ? (
-                <span className="block w-full overflow-x-auto rounded bg-white/70 px-2 py-1 text-center text-sm">
-                    {draft.trim() ? <BlockMath math={draft} errorColor={MATH_ERROR_COLOR}/> : <span className="text-xs font-semibold text-slate-400">Pratinjau rumus tampil di sini.</span>}
+                <span className="block w-full overflow-x-auto rounded bg-card/70 px-2 py-1 text-center text-sm">
+                    {draft.trim() ? <BlockMath math={draft} errorColor={MATH_ERROR_COLOR}/> : <span className="text-xs font-semibold text-muted-foreground">Pratinjau rumus tampil di sini.</span>}
                 </span>
             ) : null}
         </span>
@@ -135,7 +135,7 @@ function MathInlineView({ node, updateAttributes, deleteNode, editor }: NodeView
         )
     }
     return (
-        <NodeViewWrapper as="span" className={cn('inline-block rounded px-0.5 align-middle', editable && 'cursor-pointer hover:bg-blue-50 hover:ring-2 hover:ring-blue-200')} title={editable ? 'Klik untuk mengubah rumus' : undefined} onClick={() => { if (editable) setEditing(true) }}>
+        <NodeViewWrapper as="span" className={cn('inline-block rounded px-0.5 align-middle', editable && 'cursor-pointer hover:bg-info-muted hover:ring-2 hover:ring-blue-200')} title={editable ? 'Klik untuk mengubah rumus' : undefined} onClick={() => { if (editable) setEditing(true) }}>
             <InlineMath math={latex} errorColor={MATH_ERROR_COLOR}/>
         </NodeViewWrapper>
     )
@@ -162,7 +162,7 @@ function MathBlockView({ node, updateAttributes, deleteNode, editor }: NodeViewP
         )
     }
     return (
-        <NodeViewWrapper as="div" className={cn('my-2 overflow-x-auto rounded', editable && 'cursor-pointer hover:bg-blue-50 hover:ring-2 hover:ring-blue-200')} title={editable ? 'Klik untuk mengubah rumus' : undefined} onClick={() => { if (editable) setEditing(true) }}>
+        <NodeViewWrapper as="div" className={cn('my-2 overflow-x-auto rounded', editable && 'cursor-pointer hover:bg-info-muted hover:ring-2 hover:ring-blue-200')} title={editable ? 'Klik untuk mengubah rumus' : undefined} onClick={() => { if (editable) setEditing(true) }}>
             <BlockMath math={latex} errorColor={MATH_ERROR_COLOR}/>
         </NodeViewWrapper>
     )
@@ -232,8 +232,8 @@ function ToolbarButton({ title, active = false, onClick, children }: {
             aria-label={title}
             onClick={onClick}
             className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-lg border text-slate-600 transition focus:outline-none focus:ring-4 focus:ring-blue-500/10',
-                active ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-transparent bg-white hover:border-slate-200 hover:bg-slate-100 hover:text-slate-900',
+                'flex h-8 w-8 items-center justify-center rounded-lg border text-muted-foreground transition focus:outline-none focus:ring-4 focus:ring-ring/10',
+                active ? 'border-info-border bg-info-muted text-info' : 'border-transparent bg-card hover:border-border hover:bg-muted hover:text-foreground',
             )}
         >
             {children}
@@ -318,7 +318,7 @@ export default function QuestionRichTextEditor({
         content: initialHtml,
         editorProps: {
             attributes: {
-                class: cn('px-3 py-2.5 text-sm font-medium leading-7 text-slate-900 outline-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:my-1 [&_img]:max-w-full', heightClass),
+                class: cn('px-3 py-2.5 text-sm font-medium leading-7 text-foreground outline-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:my-1 [&_img]:max-w-full', heightClass),
                 // Tanpa role eksplisit, Chromium mengekspos div contenteditable
                 // sebagai `generic` — pembaca layar dan locator role=textbox
                 // (dipakai spec review) tidak menemukannya sebagai field teks.
@@ -451,13 +451,13 @@ export default function QuestionRichTextEditor({
                     </button>
                 </div>
             ) : null}
-            {hint ? <span id={hintId} className="block text-xs font-medium leading-5 text-slate-500">{hint}</span> : null}
+            {hint ? <span id={hintId} className="block text-xs font-medium leading-5 text-muted-foreground">{hint}</span> : null}
             <div
-                className="overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10"
+                className="overflow-hidden rounded-lg border border-border bg-card focus-within:border-primary focus-within:ring-4 focus-within:ring-ring/10"
                 onPasteCapture={handlePasteCapture}
                 onDropCapture={handleDropCapture}
             >
-                <div className={cn('flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50/70', compact ? 'p-1.5' : 'p-2')}>
+                <div className={cn('flex flex-wrap items-center gap-1 border-b border-border bg-muted/70', compact ? 'p-1.5' : 'p-2')}>
                     {editor ? (
                         <>
                             <ToolbarButton title="Tebal" active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={15}/></ToolbarButton>
@@ -479,7 +479,7 @@ export default function QuestionRichTextEditor({
                             onClick={() => fileInputRef.current?.click()}
                             title={`Sisipkan gambar ke ${label.toLowerCase()}`}
                             aria-label={`Sisipkan gambar ke ${label.toLowerCase()}`}
-                            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:border-info-border hover:bg-info-muted hover:text-info focus:outline-none focus:ring-2 focus:ring-ring/20"
                         >
                             {uploading ? <Loader2 className="animate-spin" size={13}/> : <ImagePlus size={13}/>}
                         </button>
@@ -487,7 +487,7 @@ export default function QuestionRichTextEditor({
                 </div>
                 <EditorContent editor={editor}/>
             </div>
-            {message ? <span id={errorId} role="alert" className="block text-xs font-bold text-red-700">{message}</span> : null}
+            {message ? <span id={errorId} role="alert" className="block text-xs font-medium text-danger">{message}</span> : null}
             {!compact && placeholder && editor?.isEmpty ? <span className="sr-only">{placeholder}</span> : null}
             {hiddenInput ? <input type="hidden" name={name} value={html}/> : null}
         </div>

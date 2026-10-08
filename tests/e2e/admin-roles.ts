@@ -123,10 +123,15 @@ export async function cleanupRoleUser(supabaseUrl: string, userId: string) {
  */
 export async function loginAs(page: Page, user: Pick<ProvisionedUser, 'email' | 'password'>, landingPath: string) {
     await page.goto(`/login?returnTo=${encodeURIComponent(landingPath)}`)
+    // A rendered SSR form can precede hydration in dev. Confirm an interactive
+    // control responds before submitting credentials through the client handler.
+    await page.getByRole('button', { name: 'Tampilkan kata sandi', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Sembunyikan kata sandi', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: 'Sembunyikan kata sandi', exact: true }).click()
     await page.locator('input[type="email"]').fill(user.email)
     await page.locator('input[type="password"]').fill(user.password)
     await page.getByRole('button', { name: 'Masuk', exact: true }).click()
-    await page.waitForURL((url) => url.pathname === landingPath, { timeout: 60_000 })
+    await page.waitForURL((url) => url.pathname === landingPath, { timeout: 60_000, waitUntil: 'domcontentloaded' })
 }
 
 /**

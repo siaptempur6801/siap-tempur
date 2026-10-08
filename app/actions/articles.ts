@@ -1,5 +1,6 @@
 'use server'
 
+import { adminReturnUrl } from '@/lib/admin-return-url'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { ArticleFormSchema } from '@/lib/validations/admin'
@@ -98,7 +99,7 @@ export async function createArticle(_prevState: ArticleActionState, formData: Fo
 
     await logAuditEvent({ action: 'CREATE_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: data.id })
     revalidatePath(ARTICLE_ADMIN_PATH)
-    redirect(ARTICLE_ADMIN_PATH)
+    redirect(adminReturnUrl(formData.get('return_to'),ARTICLE_ADMIN_PATH))
 }
 
 export async function updateArticle(id: string, _prevState: ArticleActionState, formData: FormData): Promise<ArticleActionState> {
@@ -126,7 +127,7 @@ export async function updateArticle(id: string, _prevState: ArticleActionState, 
     await logAuditEvent({ action: 'UPDATE_ARTICLE', actor_id: actor.userId, target_type: 'article', target_id: id })
     revalidatePath(ARTICLE_ADMIN_PATH)
     revalidatePath(`/blog/${parsed.data.slug}`)
-    redirect(ARTICLE_ADMIN_PATH)
+    redirect(adminReturnUrl(formData.get('return_to'),ARTICLE_ADMIN_PATH))
 }
 
 export async function publishArticle(id: string): Promise<ArticleActionState> {

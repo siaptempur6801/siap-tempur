@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, Users, RefreshCw, ChevronUp, ChevronDown, Minus, Clock, Pause, Play, Plus } from 'lucide-react'
-import { getLiveLeaderboardAction, LiveLeaderboardEntry } from '@/app/actions/event-leaderboard'
-import Image from 'next/image'
-import { cn } from '@/lib/utils'
+import { getLiveLeaderboardAction,LiveLeaderboardEntry } from '@/app/actions/event-leaderboard'
 import { shouldRefreshEventLeaderboard } from '@/lib/event-leaderboard-refresh'
-import { buildPassingGradeLeaderboardSections, type PassingGradeMap } from '@/lib/leaderboard-passing-grade'
+import { buildPassingGradeLeaderboardSections,type PassingGradeMap } from '@/lib/leaderboard-passing-grade'
+import { cn } from '@/lib/utils'
+import { AnimatePresence,motion } from 'framer-motion'
+import { ChevronDown,ChevronUp,Clock,Minus,Pause,Play,Plus,RefreshCw,Trophy,Users } from 'lucide-react'
+import Image from 'next/image'
+import { useEffect,useMemo,useRef,useState } from 'react'
 
 const DEFAULT_AUTO_SCROLL_SPEED = 10
 const MIN_AUTO_SCROLL_SPEED = 5
@@ -175,10 +175,10 @@ export default function LiveLeaderboardClient({
         return (
             <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
                 <div className="flex flex-col items-center gap-4 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-300 st-shadow-sm">
+                    <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-300 st-">
                         <RefreshCw className="animate-spin text-slate-900" size={24} />
                     </div>
-                    <h2 className="font-display text-2xl font-black text-slate-950">Memuat leaderboard...</h2>
+                    <h2 className="font-display text-2xl font-semibold text-slate-950">Memuat leaderboard...</h2>
                 </div>
             </div>
         )
@@ -189,7 +189,7 @@ export default function LiveLeaderboardClient({
             <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
                 <div className="max-w-lg border-2 border-slate-900 bg-white p-6 text-center st-shadow-md">
                     <Trophy className="mx-auto mb-4 text-blue-600" size={36} />
-                    <h2 className="font-display text-2xl font-black sm:text-3xl">Leaderboard tidak tersedia</h2>
+                    <h2 className="font-display text-2xl font-semibold sm:text-3xl">Leaderboard tidak tersedia</h2>
                     <p className="mt-2 text-sm font-semibold text-slate-600">{errorMessage}</p>
                 </div>
             </div>
@@ -200,28 +200,28 @@ export default function LiveLeaderboardClient({
         <div data-experience-mode="event-leaderboard" data-program="cpns" className="st-product flex h-screen flex-col overflow-hidden bg-[#fbfaf7] font-body text-slate-950">
             <header className="relative z-10 flex flex-col gap-3 border-b-2 border-slate-900 bg-[#fbfaf7]/95 px-4 py-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
                 <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-slate-900 bg-yellow-300 st-shadow-sm">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-slate-900 bg-yellow-300 st-">
                         <Trophy className="text-slate-900" size={20} />
                     </div>
                     <div className="min-w-0">
                         <div className="flex min-w-0 items-baseline gap-2">
-                            <span className="hidden shrink-0 font-script text-lg font-black text-slate-950 sm:inline">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</span>
+                            <span className="hidden shrink-0 font-script text-lg font-semibold text-slate-950 sm:inline">Siap<span className="text-blue-600 underline decoration-wavy decoration-2 underline-offset-2">Tempur</span>.</span>
                             <span className="hidden text-slate-300 sm:inline">/</span>
-                            <h1 className="truncate font-display text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
+                            <h1 className="truncate font-display text-2xl font-semibold leading-tight text-slate-950 sm:text-3xl">
                             {isFinalLeaderboard ? 'Leaderboard Event' : 'Live Leaderboard'}
                             </h1>
                         </div>
                         <p className="mt-0.5 truncate text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500 sm:text-xs">{event?.title || 'Memuat event...'}</p>
                     </div>
                 </div>
-                
+
                 <div className="flex items-center">
-                    <div className="flex w-full items-center justify-between gap-3 border-2 border-slate-900 bg-white px-3 py-2 st-shadow-sm sm:w-auto">
+                    <div className="flex w-full items-center justify-between gap-3 border-2 border-slate-900 bg-white px-3 py-2 st- sm:w-auto">
                         <div className="flex items-center gap-1.5 text-slate-500">
                             <Clock size={14} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.1em]">Update</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.1em]">Update</span>
                         </div>
-                        <span className="font-mono text-sm font-black tabular-nums text-slate-900">
+                        <span className="font-mono text-sm font-semibold tabular-nums text-slate-900">
                             {lastUpdated.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta' })}
                         </span>
                     </div>
@@ -232,7 +232,7 @@ export default function LiveLeaderboardClient({
             <main ref={scrollContainerRef} className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 lg:p-7">
                 <div className="mx-auto max-w-6xl">
                     {/* Header Columns */}
-                    <div className="mb-2 hidden grid-cols-[72px_1fr_220px_120px_170px] items-center gap-4 px-4 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500 lg:grid">
+                    <div className="mb-2 hidden grid-cols-[72px_1fr_220px_120px_170px] items-center gap-4 px-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 lg:grid">
                         <div className="text-center">Rank</div>
                         <div>Peserta</div>
                         <div className="text-center">{isFinalLeaderboard ? 'Nilai Final' : 'Nilai Live'}</div>
@@ -245,14 +245,14 @@ export default function LiveLeaderboardClient({
                         {entries.length > 0 ? leaderboardSections.map((section) => (
                             <section key={section.key} className="flex flex-col gap-3">
                                 <div className={cn(
-                                    'flex flex-col gap-2 border-2 border-slate-900 px-4 py-3 st-shadow-sm sm:flex-row sm:items-center sm:justify-between',
+                                    'flex flex-col gap-2 border-2 border-slate-900 px-4 py-3 st- sm:flex-row sm:items-center sm:justify-between',
                                     section.key === 'passed' ? 'bg-emerald-100' : 'bg-yellow-100'
                                 )}>
                                     <div>
-                                        <h2 className="font-display text-xl font-black text-slate-950 sm:text-2xl">{section.title}</h2>
+                                        <h2 className="font-display text-xl font-semibold text-slate-950 sm:text-2xl">{section.title}</h2>
                                         <p className="mt-0.5 text-xs font-semibold text-slate-600">{section.description}</p>
                                     </div>
-                                    <div className="inline-flex w-fit items-center gap-1.5 border-2 border-slate-900 bg-white px-2.5 py-1.5 text-xs font-black text-slate-900 st-shadow-sm">
+                                    <div className="inline-flex w-fit items-center gap-1.5 border-2 border-slate-900 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 st-">
                                         <Users size={14} strokeWidth={3} />
                                         {section.entries.length} Peserta
                                     </div>
@@ -296,7 +296,7 @@ export default function LiveLeaderboardClient({
                                                 ? 'border-emerald-500 shadow-[3px_3px_0_0_#10b981]'
                                                 : isRankDown
                                                     ? 'border-red-500 shadow-[3px_3px_0_0_#ef4444]'
-                                                    : 'border-slate-900 st-shadow-sm hover:st-shadow-sm'
+                                                    : 'border-slate-900 st- hover:st-'
                                         )}
                                     >
                                         <AnimatePresence>
@@ -329,7 +329,7 @@ export default function LiveLeaderboardClient({
                                                     <motion.div
                                                         key={`badge-${entry.entry_id}-${entry.live_rank}`}
                                                         className={cn(
-                                                            'pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 border-2 border-slate-900 px-2 py-1 text-[10px] font-black uppercase tracking-wide st-shadow-sm sm:right-4 sm:top-4',
+                                                            'pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 border-2 border-slate-900 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide st- sm:right-4 sm:top-4',
                                                             isRankUp
                                                                 ? 'bg-green-400 text-gray-950'
                                                                 : 'bg-red-500 text-white'
@@ -349,7 +349,7 @@ export default function LiveLeaderboardClient({
                                         {/* Rank Column */}
                                         <div className="relative z-10 flex flex-col items-center justify-center gap-1 border-r-2 border-slate-200 pr-3 sm:pr-4">
                                             <div className={cn(
-                                                "flex h-9 w-9 items-center justify-center border-2 border-slate-900 text-sm font-black st-shadow-sm sm:h-10 sm:w-10 sm:text-base",
+                                                "flex h-9 w-9 items-center justify-center border-2 border-slate-900 text-sm font-semibold st- sm:h-10 sm:w-10 sm:text-base",
                                                 entry.live_rank === 1 ? 'bg-yellow-300 text-slate-900' :
                                                 entry.live_rank === 2 ? 'bg-slate-200 text-slate-900' :
                                                 entry.live_rank === 3 ? 'bg-orange-300 text-slate-900' :
@@ -357,44 +357,44 @@ export default function LiveLeaderboardClient({
                                             )}>
                                                 #{entry.live_rank}
                                             </div>
-                                            
+
                                             {/* Rank Movement Indicator */}
                                             <div className="mt-1 flex h-5 items-center justify-center">
                                                 {isRankUp && (
-                                                    <motion.div initial={{y:5, opacity:0}} animate={{y:0, opacity:1}} className="flex items-center text-xs font-black text-green-600">
+                                                    <motion.div initial={{y:5, opacity:0}} animate={{y:0, opacity:1}} className="flex items-center text-xs font-semibold text-green-600">
                                                         <ChevronUp size={16} strokeWidth={4} /> {rankDelta}
                                                     </motion.div>
                                                 )}
                                                 {isRankDown && (
-                                                    <motion.div initial={{y:-5, opacity:0}} animate={{y:0, opacity:1}} className="flex items-center text-xs font-black text-red-600">
+                                                    <motion.div initial={{y:-5, opacity:0}} animate={{y:0, opacity:1}} className="flex items-center text-xs font-semibold text-red-600">
                                                         <ChevronDown size={16} strokeWidth={4} /> {Math.abs(rankDelta)}
                                                     </motion.div>
                                                 )}
                                                 {isSameRank && (
-                                                    <span className="text-gray-400 font-black text-xs"><Minus size={16} strokeWidth={3} /></span>
+                                                    <span className="text-gray-400 font-semibold text-xs"><Minus size={16} strokeWidth={3} /></span>
                                                 )}
                                             </div>
                                         </div>
 
                                         {/* User Info Column */}
                                         <div className="relative z-10 flex min-w-0 items-center gap-3 sm:gap-4">
-                                            <div className="relative h-11 w-11 shrink-0 overflow-hidden border-2 border-slate-900 bg-slate-100 st-shadow-sm sm:h-12 sm:w-12">
+                                            <div className="relative h-11 w-11 shrink-0 overflow-hidden border-2 border-slate-900 bg-slate-100 st- sm:h-12 sm:w-12">
                                                 {entry.avatar_url ? (
-                                                    <Image 
-                                                        src={entry.avatar_url} 
-                                                        alt={entry.full_name} 
-                                                        fill 
+                                                    <Image
+                                                        src={entry.avatar_url}
+                                                        alt={entry.full_name}
+                                                        fill
                                                         sizes="(min-width: 640px) 56px, 48px"
                                                         className="object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="flex h-full w-full items-center justify-center text-base font-black uppercase text-slate-900">
+                                                    <div className="flex h-full w-full items-center justify-center text-base font-semibold uppercase text-slate-900">
                                                         {entry.full_name.substring(0, 2)}
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="flex min-w-0 flex-col">
-                                                <span className="truncate text-sm font-black text-slate-900 sm:text-lg lg:max-w-[500px] lg:text-xl">
+                                                <span className="truncate text-sm font-semibold text-slate-900 sm:text-lg lg:max-w-[500px] lg:text-xl">
                                                     {entry.full_name}
                                                 </span>
                                             </div>
@@ -409,7 +409,7 @@ export default function LiveLeaderboardClient({
                                             ].map((score) => (
                                                 <div
                                                     key={score.label}
-                                                    className={cn('min-w-0 border px-1.5 py-2 text-center font-black sm:px-2', score.className)}
+                                                    className={cn('min-w-0 border px-1.5 py-2 text-center font-semibold sm:px-2', score.className)}
                                                 >
                                                     <div className="text-[10px] uppercase tracking-widest">{score.label}</div>
                                                     <div className="font-mono text-lg leading-none sm:text-xl">{String(score.value).padStart(2, '0')}</div>
@@ -419,18 +419,18 @@ export default function LiveLeaderboardClient({
 
                                         {/* Score Column */}
                                         <div className="relative z-10 flex min-w-0 flex-col items-center justify-center border-t-2 border-slate-100 pt-3 lg:border-l-2 lg:border-t-0 lg:border-slate-200 lg:pl-4 lg:pt-0">
-                                            <span className="text-2xl font-black text-blue-600">{entry.total_score ?? 0}</span>
-                                            <span className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">Poin</span>
+                                            <span className="text-2xl font-semibold text-blue-600">{entry.total_score ?? 0}</span>
+                                            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400">Poin</span>
                                         </div>
 
                                         {/* Progress Column */}
                                         <div className="relative z-10 flex min-w-0 flex-col items-center justify-center gap-1.5 border-t-2 border-slate-100 pt-3 lg:border-l-2 lg:border-t-0 lg:border-slate-200 lg:pl-4 lg:pt-0">
                                             <div className="flex items-end gap-1 font-mono">
-                                                <span className="text-xl font-black text-slate-900 sm:text-2xl">{entry.progress_count}</span>
+                                                <span className="text-xl font-semibold text-slate-900 sm:text-2xl">{entry.progress_count}</span>
                                                 <span className="mb-0.5 text-xs font-bold text-slate-500">/{questionCount}</span>
                                             </div>
                                             <div className="h-3 w-full min-w-0 overflow-hidden border-2 border-slate-900 bg-slate-100">
-                                                <motion.div 
+                                                <motion.div
                                                     className="h-full border-r-2 border-slate-900 bg-blue-500"
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${Math.min((entry.progress_count / questionCount) * 100, 100)}%` }}
@@ -466,8 +466,8 @@ export default function LiveLeaderboardClient({
             </main>
 
             <div className="fixed bottom-3 right-3 z-30 flex w-44 flex-col gap-1.5 sm:bottom-4 sm:right-4">
-                <div className="overflow-hidden border-2 border-slate-900 bg-white st-shadow-sm">
-                    <div className="border-b-2 border-slate-900 bg-slate-50 px-2 py-0.5 text-center text-[9px] font-black uppercase tracking-[0.1em] text-slate-500">
+                <div className="overflow-hidden border-2 border-slate-900 bg-white st-">
+                    <div className="border-b-2 border-slate-900 bg-slate-50 px-2 py-0.5 text-center text-[9px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         Speed
                     </div>
                     <div className="grid grid-cols-[36px_1fr_36px]">
@@ -481,7 +481,7 @@ export default function LiveLeaderboardClient({
                         >
                             <Minus size={14} strokeWidth={4} />
                         </button>
-                        <div className="flex h-9 items-center justify-center bg-white px-1 text-center font-mono text-xs font-black text-slate-900">
+                        <div className="flex h-9 items-center justify-center bg-white px-1 text-center font-mono text-xs font-semibold text-slate-900">
                             {autoScrollSpeed}
                         </div>
                         <button
@@ -502,7 +502,7 @@ export default function LiveLeaderboardClient({
                     aria-pressed={isAutoScrollEnabled}
                     onClick={() => setIsAutoScrollEnabled((current) => !current)}
                     className={cn(
-                        'flex h-10 w-full items-center justify-center gap-1.5 border-2 border-slate-900 px-2 text-[10px] font-black uppercase tracking-wide st-shadow-sm transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none active:shadow-none',
+                        'flex h-10 w-full items-center justify-center gap-1.5 border-2 border-slate-900 px-2 text-[10px] font-semibold uppercase tracking-wide st- transition-all hover:translate-x-px hover:translate-y-px hover:shadow-none active:shadow-none',
                         isAutoScrollEnabled
                             ? 'bg-blue-500 text-white'
                             : 'bg-white text-slate-900'
@@ -512,7 +512,7 @@ export default function LiveLeaderboardClient({
                     {isAutoScrollEnabled ? 'Autoscroll ON' : 'Autoscroll OFF'}
                 </button>
             </div>
-            
+
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar {
                     width: 12px;

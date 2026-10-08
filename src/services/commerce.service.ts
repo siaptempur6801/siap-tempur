@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json } from '@/types/database.types'
+import { assessmentCatalogService } from '@/src/services/assessment-catalog.service'
 
 export type ProductOffer = {
     id: string
@@ -71,13 +72,19 @@ export class CommerceService {
 
         const { data: products, error: productError } = await admin
             .from('products')
-            .select('id, code, name, description, product_type, duration_days')
+            .select('id, code, name, description, product_type, duration_days, program_id, track_id')
             .eq('program_id', program.id)
             .eq('track_id', track.id)
             .in('status', ['active', 'ACTIVE'])
             .order('created_at', { ascending: true })
         if (productError) throw productError
         if (!products?.length) return []
+
+        if (programCode.trim().toUpperCase() === 'TKA') {
+            const assessments = await assessmentCatalogService.listDistributable()
+            if (!assessments.some((assessment) => assessment.domain === 'TKA'
+                && assessment.trackCode.toUpperCase() === trackCode.trim().toUpperCase())) return []
+        }
 
         const productIds = products.map((product) => stringValue(product.id)).filter(Boolean)
         const { data: prices, error: priceError } = await admin
@@ -135,16 +142,24 @@ export class CommerceService {
     }
 
     async getProductOfferByCode(productCode: string): Promise<ProductOffer | null> {
-        const admin = await createV2AdminClient()
+        const admin = await createAdminClient()
         const now = new Date().toISOString()
         const { data: product, error: productError } = await admin
             .from('products')
-            .select('id, code, name, description, product_type, duration_days')
+            .select('id, code, name, description, product_type, duration_days, program_id, track_id')
             .eq('code', productCode)
             .in('status', ['active', 'ACTIVE'])
             .maybeSingle()
         if (productError) throw productError
         if (!product) return null
+
+        const { data: program } = await admin.from('programs').select('code').eq('id', product.program_id).maybeSingle()
+        if (String(program?.code ?? '').toUpperCase() === 'TKA') {
+            const { data: track } = await admin.from('tracks').select('code').eq('id', product.track_id).maybeSingle()
+            const assessments = await assessmentCatalogService.listDistributable()
+            if (!assessments.some((assessment) => assessment.domain === 'TKA'
+                && assessment.trackCode.toUpperCase() === String(track?.code ?? '').toUpperCase())) return null
+        }
 
         const productId = stringValue(product.id)
         const { data: prices, error: priceError } = await admin

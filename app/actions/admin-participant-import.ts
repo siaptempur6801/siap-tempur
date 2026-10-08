@@ -145,7 +145,7 @@ async function runImport(form: FormData, mode: 'preview' | 'commit'): Promise<Im
             })
             // Satu peristiwa per impor, bukan satu per baris: mengimpor 2.000
             // peserta tidak boleh menghasilkan 2.000 baris audit yang menenggelamkan
-            // peristiwa lain di `/admin/audit`.
+            // peristiwa lain di `/admin/settings/audit`.
             await auditAdminAction({
                 actorId: authorization.userId,
                 action: 'IMPORT_PARTICIPANTS',

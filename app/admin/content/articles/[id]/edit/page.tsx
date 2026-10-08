@@ -1,9 +1,10 @@
-import { notFound, redirect } from 'next/navigation'
-import ArticleForm from '@/components/admin/ArticleForm'
 import { updateArticle } from '@/app/actions/articles'
+import ArticleForm from '@/components/admin/ArticleForm'
+import { adminReturnUrl } from '@/lib/admin-return-url'
 import { createClient } from '@/lib/utils/supabase/server'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
+import { notFound,redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,8 @@ type Article = {
     author_id: string | null
 }
 
-export default async function EditArticlePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditArticlePage({ params, searchParams }: { params: Promise<{ id: string }>;searchParams:Promise<{returnTo?:string}> }) {
+    const returnTo=adminReturnUrl((await searchParams).returnTo,'/admin/content/articles')
     const { id } = await params
     // Stack V2: permission dari AuthorizationService, bukan adapter peran lama.
     const authorization = await authorizationService.getCurrentAuthorization()
@@ -41,5 +43,5 @@ export default async function EditArticlePage({ params }: { params: Promise<{ id
     const canEdit = isAdmin || (row.author_id === authorization.userId && row.status !== 'published')
     if (!canEdit) redirect('/admin/content/articles')
 
-    return <ArticleForm title="Edit Artikel" action={updateArticle.bind(null, row.id)} defaultValues={row}/>
+    return <ArticleForm returnTo={returnTo} title="Edit Artikel" action={updateArticle.bind(null, row.id)} defaultValues={row}/>
 }

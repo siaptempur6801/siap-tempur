@@ -25,19 +25,35 @@ Masuk Admin
 Satu admin shell digunakan untuk seluruh program:
 
 ```text
-/admin
-├── Overview
-├── Content
-│   ├── Question Bank
-│   ├── Review Queue
-│   └── Articles
+Dashboard
+
+LEARNING
 ├── Assessment
-│   ├── Exams
-│   └── Events
-└── Commerce
-    ├── Products
-    └── Orders & Payments
+└── Content (collapsible)
+    ├── Question Bank
+    ├── Review
+    └── Articles
+
+OPERATIONS
+├── Event
+├── Instansi → Detail Instansi → Batch
+└── Monitoring → Monitoring / Reports
+
+BUSINESS
+├── Commerce (collapsible)
+│   ├── Products
+│   └── Orders → Order Detail → Payment information
+└── Users → Users / Roles & Permissions
+    └── User Detail → Entitlements
+
+SYSTEM
+└── Settings → General / Audit Log
 ```
+
+Global sidebar hanya berisi primary workspace. Batch, assignment, hasil, entitlement,
+payment detail, event session, report, dan audit detail diakses dari konteks induknya.
+Content dan Commerce tertutup secara default, lalu terbuka otomatis pada route anak.
+Route internal lama tetap boleh digunakan tanpa menjadi entry navigasi global.
 
 CPNS dan TKA **bukan admin yang berbeda**. Program dan track adalah context operasional.
 
@@ -55,49 +71,45 @@ CPNS dan TKA **bukan admin yang berbeda**. Program dan track adalah context oper
 - Navigation berbasis pekerjaan, bukan nama tabel database.
 - Menu harus permission-aware; jangan tampilkan aksi/menu yang user tidak dapat gunakan.
 - Desktop memakai sidebar yang dapat diciutkan.
-- Mobile memakai drawer + akses cepat yang tidak menutupi pekerjaan utama.
-- Route canonical harus berada di `/admin/*`; route legacy hanya compatibility layer.
+- Mobile memakai drawer dengan tombol menu di header; sidebar desktop tidak dirapatkan ke viewport mobile.
+- Route canonical berada di `/admin/*`: resource/view berada di path; query hanya untuk filter, pagination, domain, preselection dan return context.
+- List `/admin/assessments`, create `/admin/assessments/new`, detail `/admin/assessments/{id}`, tab `/admin/assessments/{id}/distribution`, edit `/admin/assessments/{id}/edit`.
+- Event menggunakan `/admin/events`; bukan child Assessment. Orders berada di `/admin/commerce/orders`.
+- Batch adalah child `/admin/organizations/{org}/batches/{batch}`; assignment monitoring berada di `/admin/organizations/{org}/batches/{batch}/assignments/{assignment}/monitoring`.
+- Reports `/admin/monitoring/reports`, Audit Log `/admin/settings/audit`, Roles `/admin/users/roles`, user access `/admin/users/{id}/entitlements`.
+- `lib/admin-routes.ts` adalah satu contract decode/normalisasi URL; `AdminLink` dan action return menggunakan contract yang sama. Path context mengalahkan query yang bertentangan.
+- Bookmark legacy mendapatkan temporary 307 dengan cookie sesi, CSRF dan CSP tetap terbawa. POST/server action tidak dialihkan sebelum mutation.
 - Tidak boleh ada dead-end navigation.
 
 ## 5. Page Hierarchy
 
-Setiap halaman operasional idealnya memiliki urutan:
+Semua halaman operasional memakai urutan:
 
-1. Page title + deskripsi singkat.
-2. Primary action tunggal yang jelas.
-3. Status/metric yang membantu mengambil keputusan bila relevan.
-4. Search/filter toolbar.
-5. Main work surface (table, queue, form, detail).
-6. Secondary/history information di bawah atau dalam expandable area.
+1. `AdminBreadcrumbs` menjaga parent/context.
+2. `AdminPageHeader`: judul, deskripsi singkat, satu primary action.
+3. Tabs atau summary yang relevan, tanpa menggantikan main work surface.
+4. `AdminTableToolbar`: search, status, satu filter utama, More Filters.
+5. `AdminDataTable`, workspace detail, atau form halaman.
+6. Riwayat/audit dalam secondary section atau expandable detail.
 
-Jangan membuat audit/history menguasai primary workflow.
+Workspace/table memakai seluruh lebar yang tersedia. Form memakai maksimum 960 px. Padding halaman 24–32 px di desktop dan 16 px di mobile; gap section 24 px, gap card 16 px. Hindari card bertingkat dan dekorasi marketing.
 
 ## 6. Tables & Queues
 
-Untuk list operasional:
+Seluruh tabel admin memakai `AdminDataTable` berbasis Shadcn Table, dengan head/row spacing yang sama, scroll horizontal dalam region yang bernama dan dapat difokuskan, serta loading/empty/error/pagination yang konsisten.
 
-- search yang mudah ditemukan;
-- filter yang konsisten;
-- status badge human-readable;
-- row dapat discan cepat;
-- primary row action jelas;
-- empty state menjelaskan kondisi;
-- responsive strategy eksplisit (scroll container atau card layout), bukan overflow halaman;
-- filter/context tidak hilang saat membuka detail lalu kembali.
+`AdminTableToolbar` memakai URL untuk search, filter, dan pagination. Detail link serta return URL mempertahankan state daftar. Review dibuka sebagai antrean; detail baru dimuat setelah `question` dipilih secara eksplisit.
 
-Bulk action ditambahkan hanya bila aman secara permission/workflow dan memang mengurangi pekerjaan berulang.
+Gunakan `AdminEmptyState` yang menjelaskan resource, alasan kosong, dan next action. `AdminErrorState` menyebut resource yang gagal serta menyediakan retry. `AdminLoading` memakai skeleton yang sama. Warna status selalu disertai label melalui `AdminStatusBadge`.
 
 ## 7. Forms
 
-- Jangan mengekspos format storage/internal sebagai primary input.
-- Jangan meminta admin menulis UUID jika entity dapat dipilih berdasarkan nama/kode.
-- Field teknis advanced harus dipisahkan dari input utama.
-- Label menggunakan bahasa operasional manusia.
-- Validation/error harus muncul dekat konteks masalah dan tetap divalidasi server-side.
-- Form panjang dipecah secara logis: Content, Classification, Explanation, Publishing/Workflow.
-- Primary save/submit action harus mudah ditemukan.
+`AdminFormSection` memberi legend, description, grid field, dan separator. `AdminField` menghubungkan label/control serta hint/error ARIA. `AdminFormActions` menempatkan Cancel dan Save dalam satu pola.
 
-Contoh: opsi soal **tidak** boleh meminta admin menulis format `A|content|score|...`; gunakan editor opsi terstruktur.
+Form panjang Assessment, Event, Question, Product, dan Article memakai halaman, maksimum 960 px. Modal dipakai untuk confirmation, quick create, dan small selection. Drawer dipakai untuk navigasi/filter/preview, bukan multi-step workflow.
+
+Field teknis advanced dipisahkan dari input utama. Entity dipilih lewat nama/kode; jangan meminta admin menulis UUID. Validasi permission, version/concurrency, readiness, waktu, dan scope tetap wajib di server. Answer key hanya boleh ditampilkan melalui kontrak permission existing.
+
 
 ## 8. Workflow & Status
 
@@ -156,22 +168,19 @@ Critical pages tidak boleh menghasilkan document-level horizontal overflow pada 
 - Jangan menambah dependency UI berat jika komponen lokal sudah cukup.
 - Preserve RBAC/server-action validation; UI permission bukan security boundary.
 
-## 13. Reviewer Workspace Gold Standard
+## 13. Canonical Admin Components
 
-Reviewer Workspace menjadi reference implementation untuk modul admin berikutnya:
+Shared components:
 
-- persistent Program/Track context;
-- operational metrics;
-- search/filter toolbar;
-- queue + selected detail;
-- human-readable status;
-- structured question option editor;
-- role-aware actions;
-- workflow feedback;
-- review/version/audit history dipisahkan dari primary content surface;
-- mobile/tablet responsive smoke.
+- `AdminPageHeader`, `AdminBreadcrumbs`, `AdminTabs`, `AdminWorkspaceTabs`.
+- `AdminDataTable`, `AdminTableToolbar`, `AdminSearchInput`, `AdminPagination`.
+- `AdminStatusBadge`, `AdminMetric`, `AdminReadinessChecklist`.
+- `AdminFormSection`, `AdminField`, `AdminFormActions`, `AdminSubmitButton`.
+- `AdminEmptyState`, `AdminErrorState`, `AdminLoading`, `AdminFeedbackBanner`.
+- `AdminConfirmDialog`, `ConfirmSubmit`, `useAdminConfirm`, `AdminModal` untuk small workflows.
 
-Modul Product, Exam, Event, Commerce dan modul baru harus bergerak ke pola yang sama saat disentuh, tanpa melakukan rewrite besar yang tidak diperlukan.
+Domain components tetap menangani assessment readiness/distribution, event lifecycle, instansi/batch/assignment, monitoring/report, product readiness, dan user access. Jangan menyatukan domain berbeda dalam satu mega workspace.
+
 
 ## 14. Permanent Definition of Done — Admin Feature
 

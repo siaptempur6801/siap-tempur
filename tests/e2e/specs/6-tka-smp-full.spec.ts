@@ -14,7 +14,7 @@ import {
     readOwnStoredTkaReadiness,
     readOwnTkaReadiness,
 } from '../tka-readiness.ci'
-import { confirmTkaSectionIfPresent } from '../pages/TkaExamActions'
+import { confirmTkaSectionIfPresent, dismissSessionReward } from '../pages/TkaExamActions'
 import { grantM4Pass } from '../tka.m4'
 
 function expectedWeakestNodeIds(projection: TkaLearningProjection) {
@@ -184,6 +184,7 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
 
     await expect(page.getByRole('heading', { name: 'Sesi selesai. Sekarang lihat apa yang perlu diperbaiki.', exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Tinjau jawaban satu per satu', exact: true })).toBeVisible()
+    await dismissSessionReward(page)
     await expect(page.getByText('Full Tryout · TKA/SMP')).toBeVisible()
     await expect(page.getByText(/2\/60/)).toBeVisible()
 

@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { useEffect,useId,useRef,type KeyboardEvent,type ReactNode } from 'react'
 
 /**
  * Kerangka dialog konfirmasi admin: overlay, `role="alertdialog"`, focus trap,
@@ -80,23 +80,23 @@ export default function AdminConfirmDialog({
                 role="alertdialog"
                 aria-modal="true"
                 aria-labelledby={titleId}
-                className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-lg"
+                className="w-full max-w-md rounded-lg border border-border bg-card shadow-lg"
                 onKeyDown={handleKeyDown}
             >
                 <div className="flex items-start gap-3 p-5">
-                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-700">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-danger-muted text-danger">
                         <AlertTriangle size={18}/>
                     </span>
                     <div className="min-w-0">
-                        <h2 id={titleId} className="text-base font-black text-slate-950">{title}</h2>
-                        <p className="mt-1.5 text-sm font-medium leading-6 text-slate-600">{message}</p>
+                        <h2 id={titleId} className="text-base font-semibold text-foreground">{title}</h2>
+                        <p className="mt-1.5 text-sm font-medium leading-6 text-muted-foreground">{message}</p>
                         {detail ? (
-                            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800">{detail}</p>
+                            <p className="mt-2 rounded-lg border border-warning-border bg-warning-muted px-3 py-2 text-xs font-medium text-warning">{detail}</p>
                         ) : null}
                     </div>
                 </div>
 
-                <div className="flex flex-wrap justify-end gap-2 border-t border-slate-200 p-4">{children}</div>
+                <div className="flex flex-wrap justify-end gap-2 border-t border-border p-4">{children}</div>
             </div>
         </div>
     )

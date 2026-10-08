@@ -1,4 +1,5 @@
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
+import { cache } from 'react'
 
 export type ProgramTrackContext = {
     programCode: string
@@ -38,43 +39,29 @@ function normalizeCode(value: string, label: string) {
     return normalized
 }
 
-export class CatalogContextService {
-    async resolve(context: ProgramTrackContext): Promise<ResolvedCatalogContext> {
+// Primitive keys deduplicate within one server render; no persistent/auth cache.
+const resolveCatalog = cache(async (programCode: string, trackCode: string): Promise<ResolvedCatalogContext> => {
         const admin = await createV2AdminClient()
-        const programCode = normalizeCode(context.programCode, 'PROGRAM_CODE')
-        const trackCode = normalizeCode(context.trackCode, 'TRACK_CODE')
 
-        const { data: program, error: programError } = await admin
-            .from('programs')
-            .select('id, code, name')
-            .eq('code', programCode)
-            .maybeSingle()
-        if (programError) throw programError
-        if (!program) throw new Error(`PROGRAM_NOT_FOUND:${programCode}`)
-
-        const { data: track, error: trackError } = await admin
-            .from('tracks')
-            .select('id, code, name')
-            .eq('program_id', program.id)
-            .eq('code', trackCode)
-            .maybeSingle()
-        if (trackError) throw trackError
-        if (!track) throw new Error(`TRACK_NOT_FOUND:${programCode}/${trackCode}`)
-
-        const [{ data: subjects, error: subjectError }, { data: examTypes, error: typeError }] = await Promise.all([
-            admin
-                .from('subjects')
-                .select('id, code, name, subject_type')
-                .eq('track_id', track.id)
-                .in('status', ['active', 'ACTIVE'])
-                .order('sort_order', { ascending: true }),
-            admin
-                .from('exam_types')
-                .select('id, code, name')
-                .order('code', { ascending: true }),
+        // Track embeds its program: one scoped request replaces program → track.
+        const [scope, types] = await Promise.all([
+            admin.from('tracks').select('id, code, name, programs!inner(id, code, name)').eq('programs.code',programCode).eq('code',trackCode).maybeSingle(),
+            admin.from('exam_types').select('id, code, name').order('code'),
         ])
+        if(scope.error)throw scope.error
+        if(types.error)throw types.error
+        const track=scope.data
+        if(!track) {
+            // Preserve specific errors for invalid context without burdening valid requests.
+            const {data:program,error}=await admin.from('programs').select('id').eq('code',programCode).maybeSingle()
+            if(error)throw error
+            if(!program)throw new Error(`PROGRAM_NOT_FOUND:${programCode}`)
+            throw new Error(`TRACK_NOT_FOUND:${programCode}/${trackCode}`)
+        }
+        const program=track.programs as unknown as {id:string;code:string;name:string}
+        const examTypes=types.data
+        const {data:subjects,error:subjectError}=await admin.from('subjects').select('id, code, name, subject_type').eq('track_id',track.id).in('status',['active','ACTIVE']).order('sort_order',{ascending:true})
         if (subjectError) throw subjectError
-        if (typeError) throw typeError
 
         return {
             programCode,
@@ -101,40 +88,13 @@ export class CatalogContextService {
                 name: String(row.name),
             })),
         }
+})
+
+export class CatalogContextService {
+    resolve(context: ProgramTrackContext): Promise<ResolvedCatalogContext> {
+        return resolveCatalog(normalizeCode(context.programCode, 'PROGRAM_CODE'), normalizeCode(context.trackCode, 'TRACK_CODE'))
     }
 
-    async listActiveContexts() {
-        const admin = await createV2AdminClient()
-        const { data: programs, error: programsError } = await admin
-            .from('programs')
-            .select('id, code, name, status')
-            .in('status', ['active', 'ACTIVE'])
-            .order('code', { ascending: true })
-        if (programsError) throw programsError
-
-        const programIds = (programs ?? []).map((row) => row.id)
-        if (!programIds.length) return []
-
-        const { data: tracks, error: tracksError } = await admin
-            .from('tracks')
-            .select('id, program_id, code, name, status')
-            .in('program_id', programIds)
-            .in('status', ['active', 'ACTIVE'])
-            .order('code', { ascending: true })
-        if (tracksError) throw tracksError
-
-        const programById = new Map((programs ?? []).map((row) => [String(row.id), row]))
-        return (tracks ?? []).map((track) => {
-            const program = programById.get(String(track.program_id))
-            if (!program) throw new Error(`PROGRAM_NOT_FOUND_FOR_TRACK:${String(track.id)}`)
-            return {
-                programCode: String(program.code),
-                programName: String(program.name),
-                trackCode: String(track.code),
-                trackName: String(track.name),
-            }
-        })
-    }
 }
 
 export const catalogContextService = new CatalogContextService()

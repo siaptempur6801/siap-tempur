@@ -25,7 +25,7 @@ describe('escapePostgrestValue', () => {
     })
 
     it('dipakai oleh kedua pencarian admin, bukan salinan lokal', () => {
-        for (const file of ['src/services/admin-v2.service.ts', 'src/services/content-review.service.ts']) {
+        for (const file of ['src/services/admin-workspace.service.ts', 'src/services/content-review.service.ts']) {
             const text = readFileSync(resolve(repoRoot, file), 'utf8')
             expect(text, `${file} harus memakai helper bersama`).toContain("from '@/lib/postgrest-filter'")
             expect(text).not.toMatch(/function escapePostgrestValue/)

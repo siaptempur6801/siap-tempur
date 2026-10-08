@@ -15,7 +15,7 @@ function source(relativePath: string) {
 
 const migration = source('supabase/migrations/20260922010000_review_assign_policy_v1.sql')
 const action = source('app/actions/content-review.ts')
-const page = source('app/admin/content/review/page.tsx')
+const page = source('components/admin/domain/content/ReviewWorkspace.tsx')
 const permissions = source('src/auth/permissions.ts')
 
 describe('kebijakan penugasan reviewer', () => {

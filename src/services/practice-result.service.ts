@@ -93,6 +93,7 @@ export type PracticeResultView = {
     startedAt: string | null
     submittedAt: string | null
     practiceKind: string | null
+    accessContext: string | null
     knowledgeNode: string | null
     programCode: string
     trackCode: string
@@ -314,6 +315,7 @@ export class PracticeResultService {
             startedAt: bundle.attempt.started_at,
             submittedAt: bundle.attempt.submitted_at,
             practiceKind: readString(metadata, 'practiceKind'),
+            accessContext: readString(metadata, 'accessContext'),
             knowledgeNode,
             programCode,
             trackCode,

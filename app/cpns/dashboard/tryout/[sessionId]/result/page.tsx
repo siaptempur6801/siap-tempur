@@ -18,7 +18,8 @@ function formatDuration(startedAt: string | null, submittedAt: string | null) {
     return `${minutes} menit ${rest} detik`
 }
 
-function resolveBackTarget(kind: string | null, from?: string) {
+function resolveBackTarget(kind: string | null, from?: string, accessContext?: string | null) {
+    if (accessContext === 'organization' || from === 'organization') return { href: '/cpns/dashboard/assignments', label: 'assignment' }
     if (from === 'riwayat') return { href: '/cpns/dashboard/riwayat', label: 'riwayat' }
     if (from === 'event' || kind === 'event') return { href: '/cpns/dashboard/event', label: 'event' }
     if (from === 'drilling-materi' || kind === 'drill') return { href: '/cpns/dashboard/drilling-materi', label: 'Latihan Fokus' }
@@ -51,7 +52,7 @@ export default async function PracticeResultPage({
         })
         : null
 
-    const back = resolveBackTarget(result.practiceKind, from)
+    const back = resolveBackTarget(result.practiceKind, from, result.accessContext)
     const answeredCount = result.answers.filter((answer) => Boolean(answer.option_id)).length
     const needsImprovement = result.passed === false
 

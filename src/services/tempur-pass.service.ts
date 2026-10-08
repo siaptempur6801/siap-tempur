@@ -43,25 +43,13 @@ function isUsableEntitlement(input: {
  */
 export async function getActivePassScopes(userId: string): Promise<PassScope[]> {
     const supabase = await createV2Client()
-    const { data: features, error: featureError } = await supabase
-        .from('features')
-        .select('id, code')
-        .in('code', Object.values(PASS_FEATURE_BY_SCOPE))
-    if (featureError) throw featureError
-
-    const scopeByFeatureId = new Map<string, PassScope>()
-    for (const feature of features ?? []) {
-        const code = String(feature.code)
-        const scope = PASS_SCOPES.find((candidate) => PASS_FEATURE_BY_SCOPE[candidate] === code)
-        if (scope) scopeByFeatureId.set(String(feature.id), scope)
-    }
-    if (scopeByFeatureId.size === 0) return []
-
+    // Same authenticated RLS and entitlement rules, one read instead of a
+    // feature-id lookup followed by a dependent entitlement request.
     const { data: entitlements, error: entitlementError } = await supabase
         .from('entitlements')
-        .select('feature_id, starts_at, expires_at, usage_limit, usage_count, status')
+        .select('starts_at, expires_at, usage_limit, usage_count, status, features!inner(code)')
         .eq('user_id', userId)
-        .in('feature_id', [...scopeByFeatureId.keys()])
+        .in('features.code', Object.values(PASS_FEATURE_BY_SCOPE))
         .in('status', ['active', 'ACTIVE'])
     if (entitlementError) throw entitlementError
 
@@ -73,7 +61,7 @@ export async function getActivePassScopes(userId: string): Promise<PassScope[]> 
             usageLimit: entitlement.usage_limit === null ? null : Number(entitlement.usage_limit),
             usageCount: Number(entitlement.usage_count ?? 0),
         })
-        const scope = scopeByFeatureId.get(String(entitlement.feature_id))
+        const scope = PASS_SCOPES.find(scope => PASS_FEATURE_BY_SCOPE[scope] === String(entitlement.features?.code))
         if (usable && scope) active.add(scope)
     }
 

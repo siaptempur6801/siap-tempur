@@ -177,7 +177,7 @@ export class PracticeOverviewService {
             const kind = practiceKind(attempt)
             const subjectCode = metadataString(attempt.metadata, 'subjectCode')
             const knowledgeNode = metadataString(attempt.metadata, 'knowledgeNode')
-            const event = attempt.examTypeCode === 'EVENT'
+            const event = attempt.examTypeCode === 'EVENT' || Boolean(metadataString(attempt.metadata, 'eventId'))
             const historyKind = event
                 ? 'event' as const
                 : kind === 'drill'

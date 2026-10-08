@@ -25,6 +25,7 @@ export default function TkaStartExamButton({
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const startLockRef = useRef(false)
     const hasActiveAttempt = Boolean(activeAttemptId)
+    const isDrill = examSlug.toLowerCase().includes('drill')
 
     const start = async () => {
         if ((!hasActiveAttempt && disabledReason) || !acquireSingleFlightLock(startLockRef)) return
@@ -47,9 +48,9 @@ export default function TkaStartExamButton({
                 trackProductEvent('px_exam_start', {
                     program: 'tka_smp',
                     surface: 'exam',
-                    mode: examSlug.includes('full') ? 'full_tryout' : 'mini_tryout',
+                    mode: isDrill ? 'latihan_fokus' : examSlug.includes('full') ? 'full_tryout' : 'mini_tryout',
                 })
-                toast.success(result.resumed ? 'Melanjutkan tryout tersimpan.' : 'Tryout TKA dimulai!')
+                toast.success(result.resumed ? `Melanjutkan ${isDrill ? 'drill' : 'tryout'} tersimpan.` : `${isDrill ? 'Drill' : 'Tryout TKA'} dimulai!`)
                 router.push(`/tka/${level.toLowerCase()}/tryout/${result.sessionId}`)
                 isNavigating = true
             }
@@ -66,8 +67,8 @@ export default function TkaStartExamButton({
     const label = loading
         ? 'Menyiapkan...'
         : hasActiveAttempt
-            ? 'Lanjutkan Tryout'
-            : disabledReason || 'Mulai Tryout'
+            ? isDrill ? 'Lanjutkan Drill' : 'Lanjutkan Tryout'
+            : disabledReason || (isDrill ? 'Mulai Drill' : 'Mulai Tryout')
 
     return (
         <div className="mt-5">
@@ -75,7 +76,7 @@ export default function TkaStartExamButton({
                 type="button"
                 onClick={() => void start()}
                 disabled={(!hasActiveAttempt && Boolean(disabledReason)) || loading}
-                title={hasActiveAttempt ? 'Lanjutkan tryout yang sedang berjalan' : disabledReason || 'Mulai tryout'}
+                title={hasActiveAttempt ? `Lanjutkan ${isDrill ? 'drill' : 'tryout'} yang sedang berjalan` : disabledReason || `Mulai ${isDrill ? 'drill' : 'tryout'}`}
                 aria-describedby={errorMessage ? `${examSlug}-start-error` : undefined}
                 className="st-focus inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-black leading-tight text-white shadow-none transition hover:bg-blue-700 shadow-none disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
             >

@@ -81,6 +81,7 @@ setup('provision disposable CPNS SKD staging user', async ({ page }) => {
 
   try {
     await page.goto('/login?returnTo=%2Fcpns%2Fdashboard')
+    await expect(page.locator('html')).toHaveAttribute('data-interaction-guard','ready')
     await page.locator('input[type="email"]').fill(email)
     await page.locator('input[type="password"]').fill(password)
     await page.getByRole('button', { name: 'Masuk', exact: true }).click()

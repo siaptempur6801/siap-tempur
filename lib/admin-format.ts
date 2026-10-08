@@ -94,18 +94,26 @@ export function adminStatusVariant(value: unknown): AdminStatusVariant {
         case 'published':
         case 'approved':
         case 'paid':
+        case 'ready':
         case 'live':
         case 'completed':
             return 'green'
+        case 'unavailable':
+            return 'yellow'
+        case 'blocked':
+        case 'blocked_asset':
+        case 'blocked_content':
+            return 'red'
         case 'draft':
+            return 'neutral'
         case 'submitted':
         case 'editorial_review':
         case 'pending':
-        case 'scheduled':
         case 'not_started':
             return 'yellow'
         case 'academic_review':
             return 'violet'
+        case 'scheduled':
         case 'technical_qa':
         case 'registered':
         case 'in_progress':
@@ -138,7 +146,13 @@ export function adminStatusLabel(value: unknown): string {
     const raw = String(value ?? '')
     const status = raw.toLowerCase()
     const labels: Record<string, string> = {
-        draft: 'Draf',
+        draft: 'Draft',
+        ready: 'Ready',
+        unavailable: 'Unavailable',
+        blocked: 'Blocked',
+        blocked_asset: 'Blocked Asset',
+        blocked_content: 'Blocked Content',
+        needs_review: 'Needs Review',
         submitted: 'Editorial Review',
         editorial_review: 'Editorial Review',
         academic_review: 'Academic Review',
@@ -147,14 +161,15 @@ export function adminStatusLabel(value: unknown): string {
         approved: 'Disetujui',
         published: 'Terbit',
         rejected: 'Ditolak',
-        active: 'Aktif',
+        active: 'Active',
         inactive: 'Nonaktif',
         suspended: 'Ditangguhkan',
         pending: 'Menunggu',
-        scheduled: 'Terjadwal',
-        live: 'Berlangsung',
-        closed: 'Selesai',
-        archived: 'Diarsipkan',
+        scheduled: 'Scheduled',
+        live: 'Active',
+        closed: 'Ended',
+    ended: 'Ended',
+        archived: 'Archived',
         cancelled: 'Dibatalkan',
         failed: 'Gagal',
         expired: 'Kedaluwarsa',
@@ -206,9 +221,9 @@ export function adminProductTypeLabel(value: unknown): string {
 
 /** Label tipe ujian untuk kartu dan form admin. */
 const EXAM_TYPE_LABELS: Record<string, string> = {
-    DRILL: 'Latihan materi',
+    DRILL: 'Drill',
     MINI_TRYOUT: 'Mini Tryout',
-    FULL_TRYOUT: 'Tryout lengkap',
+    FULL_TRYOUT: 'Tryout',
     EVENT: 'Ujian event',
 }
 
@@ -218,7 +233,7 @@ export function adminExamTypeLabel(value: unknown): string {
     return EXAM_TYPE_LABELS[raw] ?? raw.replace(/_/g, ' ').toLowerCase()
 }
 
-/** Label jenis entitas audit untuk `/admin/audit` (nilai filter tetap mentah). */
+/** Label jenis entitas audit untuk `/admin/settings/audit` (nilai filter tetap mentah). */
 const ENTITY_TYPE_LABELS: Record<string, string> = {
     question: 'Soal',
     content_review: 'Review konten',

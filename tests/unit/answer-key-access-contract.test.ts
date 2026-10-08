@@ -8,6 +8,9 @@ const read = (relativePath: string) => readFileSync(resolve(repoRoot, relativePa
 const fixDetailMigration = read(
     'supabase/migrations/20260916213000_fix_content_question_detail_answer_key_leak.sql',
 )
+const nullableGuardMigration = read(
+    'supabase/migrations/20261006135419_harden_nullable_content_question_access_guard.sql',
+)
 const revokeVersionsMigration = read(
     'supabase/migrations/20260916213100_revoke_authenticated_question_versions_select.sql',
 )
@@ -53,6 +56,7 @@ describe('answer key access contract (P0)', () => {
         expect(fix > vulnerable).toBe(true)
         expect(fixDetailMigration.length).toBeGreaterThan(0)
         expect(revokeVersionsMigration.length).toBeGreaterThan(0)
+        expect(nullableGuardMigration.length).toBeGreaterThan(0)
     })
 
     it('get_content_question_detail tidak lagi memakai status approved/published sebagai syarat akses', () => {
@@ -70,7 +74,7 @@ describe('answer key access contract (P0)', () => {
     })
 
     it('get_content_question_detail hanya mengizinkan permission workspace konten', () => {
-        const body = detailFunctionBody(fixDetailMigration)
+        const body = detailFunctionBody(nullableGuardMigration)
         for (const permission of [
             'admin.access',
             'question.manage',
@@ -84,6 +88,18 @@ describe('answer key access contract (P0)', () => {
         }
         expect(body).toContain('auth.uid()')
         expect(detailFunctionBody(bootstrapDetailFunctions)).toContain('content.read')
+    })
+
+    it('NULL author/reviewer tidak melewati guard untuk participant tanpa permission', () => {
+        const body = detailFunctionBody(nullableGuardMigration)
+        expect(body).toMatch(/coalesce\(v_allowed\s*,\s*false\)\s+is\s+not\s+true/i)
+        expect(body).not.toMatch(/if\s+not\s+v_allowed\s+then/i)
+    })
+
+    it('NULL author/reviewer tidak melewati guard ketika izin pengguna tidak ada', () => {
+        const body = detailFunctionBody(nullableGuardMigration)
+        expect(body).toMatch(/coalesce\(v_allowed\s*,\s*false\)\s+is\s+not\s+true/i)
+        expect(body).not.toMatch(/if\s+not\s+v_allowed\s+then/i)
     })
 
     it('migration korektif tetap SECURITY DEFINER dengan search_path kosong', () => {

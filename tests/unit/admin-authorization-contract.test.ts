@@ -61,7 +61,7 @@ describe('admin authorization contract', () => {
         // /admin/content/review adalah halaman hidup yang dulu tinggal di
         // app/cpns/admin/review dan diimpor sebagai modul. Ia harus bergantung
         // pada service Schema V2.
-        const source = readFileSync(join(repoRoot, 'app/admin/content/review/page.tsx'), 'utf8')
+        const source = readFileSync(join(repoRoot, 'components/admin/domain/content/ReviewWorkspace.tsx'), 'utf8')
         expect(source).toContain("from '@/src/services/content-review.service'")
         expect(source).toContain("from '@/app/actions/content-review'")
     })

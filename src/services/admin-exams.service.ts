@@ -1,16 +1,11 @@
 import { createAdminClient } from '@/lib/utils/supabase/server'
-import { chunkValues } from '@/lib/supabase-batch'
+import { adminOffset, parseAdminPage } from '@/lib/admin-pagination'
+import { escapePostgrestValue } from '@/lib/postgrest-filter'
 import {
   catalogContextService,
   CPNS_SKD_CONTEXT,
   type ProgramTrackContext,
 } from '@/src/services/catalog-context.service'
-
-type AdminExamQuestionRow = {
-  id: string
-  subject_id: string
-  version: number
-}
 
 export type AdminExamRow = {
   id: string
@@ -65,17 +60,26 @@ function contextOrDefault(context?: ProgramTrackContext) {
 }
 
 export class AdminExamsService {
-  async getWorkspace(context?: ProgramTrackContext) {
+  async getWorkspace(context?: ProgramTrackContext, filters?: { search?: string; type?: string; status?: string; page?: string; id?: string }) {
     const catalog = await catalogContextService.resolve(contextOrDefault(context))
     const admin = await createAdminClient()
 
-    const { data: examsData, error: examsError } = await admin
+    let query = admin
       .from('exams')
-      .select('id, exam_type_id, blueprint_id, title, slug, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, starts_at, ends_at, token_cost, updated_at')
+      .select('id, exam_type_id, blueprint_id, title, slug, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, starts_at, ends_at, token_cost, updated_at', { count: 'exact' })
       .eq('program_id', catalog.program.id)
       .eq('track_id', catalog.track.id)
       .order('updated_at', { ascending: false })
-      .limit(100)
+
+    if (filters?.id) query = query.eq('id', filters.id)
+    else {
+      if (filters?.search) query = query.ilike('title', `%${escapePostgrestValue(filters.search)}%`)
+      if (filters?.status) query = query.in('status', [filters.status.toLowerCase(), filters.status.toUpperCase()])
+      if (filters?.type) query = query.eq('exam_type_id', catalog.examTypes.find(row => row.code === filters.type)?.id ?? '00000000-0000-0000-0000-000000000000')
+    }
+    const page = parseAdminPage(filters?.page)
+    query = filters ? query.range(filters.id ? 0 : adminOffset(page), filters.id ? 0 : adminOffset(page) + 24) : query.limit(100)
+    const { data: examsData, error: examsError, count } = await query
     if (examsError) throw examsError
 
     const exams = (examsData ?? []) as AdminExamRow[]
@@ -116,90 +120,11 @@ export class AdminExamsService {
 
     const rawNodes = nodesResult.data ?? []
     const nodeIds = rawNodes.map((row) => String(row.id))
-    const nodeSubjectById = new Map(rawNodes.map((row) => [String(row.id), String(row.subject_id)]))
-    const poolCountByNode = new Map<string, Set<string>>()
-    for (const nodeId of nodeIds) poolCountByNode.set(nodeId, new Set())
-
-    if (nodeIds.length) {
-      // Daftar id di sini tumbuh mengikuti jumlah soal, sehingga filter `.in()`
-      // harus di-batch agar URL PostgREST tidak melewati batas header server.
-      const paths: Array<{ ancestor_id: string; descendant_id: string }> = []
-      for (const batch of chunkValues(nodeIds)) {
-        const { data, error } = await admin
-          .from('knowledge_node_paths')
-          .select('ancestor_id, descendant_id')
-          .in('ancestor_id', batch)
-        if (error) throw error
-        paths.push(...((data ?? []) as Array<{ ancestor_id: string; descendant_id: string }>))
-      }
-
-      const descendantIds = [...new Set(paths.map((row) => String(row.descendant_id)))]
-      if (descendantIds.length) {
-        const mappings: Array<{ question_id: string; knowledge_node_id: string }> = []
-        for (const batch of chunkValues(descendantIds)) {
-          const { data, error } = await admin
-            .from('question_knowledge_nodes')
-            .select('question_id, knowledge_node_id, relation_type')
-            .in('knowledge_node_id', batch)
-            .eq('relation_type', 'primary')
-          if (error) throw error
-          mappings.push(...((data ?? []) as Array<{ question_id: string; knowledge_node_id: string }>))
-        }
-
-        const questionIds = [...new Set(mappings.map((row) => String(row.question_id)))]
-        if (questionIds.length) {
-          const questions: AdminExamQuestionRow[] = []
-          for (const batch of chunkValues(questionIds)) {
-            const { data, error } = await admin
-              .from('questions')
-              .select('id, subject_id, version, status')
-              .eq('program_id', catalog.program.id)
-              .eq('track_id', catalog.track.id)
-              .in('id', batch)
-              .in('status', ['approved', 'published'])
-            if (error) throw error
-            questions.push(...((data ?? []) as AdminExamQuestionRow[]))
-          }
-
-          const versionsData: Array<{ question_id: string; version: number }> = []
-          for (const batch of chunkValues(questions.map((row) => String(row.id)))) {
-            const { data, error } = await admin
-              .from('question_versions')
-              .select('question_id, version')
-              .in('question_id', batch)
-            if (error) throw error
-            versionsData.push(...((data ?? []) as Array<{ question_id: string; version: number }>))
-          }
-
-          const frozen = new Set((versionsData ?? []).map((row) => `${String(row.question_id)}:${Number(row.version)}`))
-          const validQuestions = new Map(
-            questions
-              .filter((row) => frozen.has(`${String(row.id)}:${Number(row.version)}`))
-              .map((row) => [String(row.id), String(row.subject_id)])
-          )
-          const questionsByDescendant = new Map<string, Set<string>>()
-          for (const mapping of mappings) {
-            const questionId = String(mapping.question_id)
-            if (!validQuestions.has(questionId)) continue
-            const descendantId = String(mapping.knowledge_node_id)
-            const bucket = questionsByDescendant.get(descendantId) ?? new Set<string>()
-            bucket.add(questionId)
-            questionsByDescendant.set(descendantId, bucket)
-          }
-
-          for (const path of paths) {
-            const ancestorId = String(path.ancestor_id)
-            const descendantId = String(path.descendant_id)
-            const ancestorSubjectId = nodeSubjectById.get(ancestorId)
-            const bucket = poolCountByNode.get(ancestorId)
-            if (!bucket || !ancestorSubjectId) continue
-            for (const questionId of questionsByDescendant.get(descendantId) ?? []) {
-              if (validQuestions.get(questionId) === ancestorSubjectId) bucket.add(questionId)
-            }
-          }
-        }
-      }
-    }
+    const {data: counts, error: countError} = nodeIds.length
+      ? await admin.rpc('admin_drill_supply', {p_program_id: catalog.program.id, p_track_id: catalog.track.id, p_node_ids: nodeIds})
+      : {data: [], error: null}
+    if (countError) throw countError
+    const poolCountByNode = new Map<string, number>((counts || []).map((row: {node_id: string; available_count: number}) => [row.node_id, Number(row.available_count)]))
 
     const drillNodes: DrillKnowledgeNode[] = rawNodes.map((row) => ({
       id: String(row.id),
@@ -210,7 +135,7 @@ export class AdminExamsService {
       nodeType: String(row.node_type),
       depth: Number(row.depth ?? 0),
       sortOrder: Number(row.sort_order ?? 0),
-      availableQuestionCount: poolCountByNode.get(String(row.id))?.size ?? 0,
+      availableQuestionCount: poolCountByNode.get(String(row.id)) ?? 0,
     }))
 
     const drillRules: DrillBlueprintRule[] = (rulesResult.data ?? [])
@@ -224,6 +149,8 @@ export class AdminExamsService {
 
     return {
       catalog,
+      total: count ?? 0,
+      page,
       exams,
       examSections: (sectionsResult.data ?? []) as AdminExamSectionRow[],
       drillNodes,

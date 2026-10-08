@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Aksi massal Review Queue tidak boleh kembali ke N+1: satu RPC per soal membuat
+ * Aksi massal Review tidak boleh kembali ke N+1: satu RPC per soal membuat
  * batch 500 soal berarti 500 round-trip berurutan dari server action.
  *
  * Fungsi batch harus memanggil fungsi workflow yang sama (`submit_question_for_review`,
@@ -17,7 +17,7 @@ function source(relativePath: string) {
 const migration = source('supabase/migrations/20260921140000_review_batch_submit_publish_v1.sql')
 const action = source('app/actions/content-review-batch.ts')
 
-describe('aksi massal Review Queue', () => {
+describe('aksi massal Review', () => {
     it('RPC batch memanggil fungsi workflow yang sama dan membatasi ukuran', () => {
         expect(migration).toMatch(/perform app_private\.submit_question_for_review\(v_id\)/)
         expect(migration).toMatch(/perform app_private\.publish_question\(v_id\)/)

@@ -78,7 +78,14 @@ export default function UniversalPracticeSessionClient({
             const selected = singleAnswers[question.id]
             return selected ? [selected] : []
         }
-        return multiAnswers[question.id] ?? []
+        const selectedOptions = multiAnswers[question.id]
+        if (selectedOptions?.length) return selectedOptions
+
+        // The answer RPC stores a one-option selection in selected_option_id.
+        // Multi-response questions use attempt_answer_options only when multiple
+        // options are selected, so restore the one-option case from that column.
+        const singleOptionFallback = singleAnswers[question.id]
+        return singleOptionFallback ? [singleOptionFallback] : []
     }, [multiAnswers, singleAnswers])
 
     const answeredQuestionIds = useMemo(() => {

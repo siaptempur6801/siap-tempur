@@ -199,6 +199,7 @@ export class ExamAttemptService {
                     { attemptId: existing.id },
                 )
             }
+            await attemptRepository.waitForAttemptQuestions(existing.id)
             const resumeCoveredByPass = await this.isSessionCoveredByPass(input.userId, exam)
             await this.chargeAttempt(input.userId, existing.id, resumeCoveredByPass ? 0 : exam.tokenCost)
             return { attemptId: existing.id, resumed: true }
@@ -238,22 +239,33 @@ export class ExamAttemptService {
             throw new PracticeDomainError('EXAM_CONFIGURATION_ERROR', message)
         }
 
-        const attempt = await attemptRepository.createAttempt({
-            userId: input.userId,
-            examId: exam.id,
-            metadata,
-        })
-
-        let questionsAllocated = false
+        let attempt
         try {
-            await attemptRepository.addAttemptQuestions(attempt.id, questions)
-            questionsAllocated = true
+            attempt = await attemptRepository.createAttemptWithQuestions({
+                userId: input.userId,
+                examId: exam.id,
+                metadata,
+                questions,
+            })
+        } catch (error) {
+            // A partial unique index arbitrates simultaneous starts in the same
+            // Direct/Event context. Reuse only the Direct row won by this user.
+            if (!error || typeof error !== 'object' || !('code' in error) || error.code !== '23505') throw error
+            const raced = await attemptRepository.findActiveAttempt(input.userId, exam.id, {
+                schemaVersion: 2,
+                practiceKind: input.kind,
+                ...(input.subjectCode ? { subjectCode: input.subjectCode } : {}),
+                ...(input.knowledgeNodeName ? { knowledgeNode: input.knowledgeNodeName } : {}),
+            })
+            if (!raced) throw error
+            await attemptRepository.waitForAttemptQuestions(raced.id)
+            return { attemptId: raced.id, resumed: true }
+        }
+
+        try {
             await this.chargeAttempt(input.userId, attempt.id, access.coveredByPass ? 0 : exam.tokenCost)
         } catch (error) {
-            const confirmedNoCharge = !questionsAllocated || (
-                error instanceof PracticeDomainError && error.code === 'INSUFFICIENT_TOKEN_BALANCE'
-            )
-            if (confirmedNoCharge) {
+            if (error instanceof PracticeDomainError && error.code === 'INSUFFICIENT_TOKEN_BALANCE') {
                 await attemptRepository.deleteAttempt(attempt.id).catch(() => undefined)
             }
             throw error

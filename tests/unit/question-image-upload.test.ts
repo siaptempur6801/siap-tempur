@@ -36,7 +36,7 @@ describe('upload gambar soal', () => {
 
     it('form soal dan review memakai field dengan tombol sisipkan gambar', () => {
         expect(source('components/admin/QuestionBankForm.tsx')).toContain('QuestionRichTextEditor')
-        expect(source('app/admin/content/review/page.tsx')).toContain('QuestionRichTextEditor')
+        expect(source('components/admin/domain/content/ReviewWorkspace.tsx')).toContain('QuestionRichTextEditor')
     })
 
     it('editor opsi memakai tombol unggah gambar', () => {
@@ -51,7 +51,7 @@ describe('tahap B — toolbar rumus', () => {
     it('editor soal, editor opsi, dan form review memakai FormulaToolbar', () => {
         expect(source('components/admin/QuestionRichTextEditor.tsx')).toContain('FormulaToolbar')
         expect(source('components/admin/QuestionOptionsEditor.tsx')).toContain('QuestionRichTextEditor')
-        expect(source('app/admin/content/review/page.tsx')).toContain('QuestionRichTextEditor')
+        expect(source('components/admin/domain/content/ReviewWorkspace.tsx')).toContain('QuestionRichTextEditor')
     })
 
     it('snippet disisipkan sebagai node rumus di editor visual', () => {
@@ -115,7 +115,7 @@ describe('editor visual soal (WYSIWYG)', () => {
     })
 
     it('form Review memakai editor visual, bukan textarea', () => {
-        const page = source('app/admin/content/review/page.tsx')
+        const page = source('components/admin/domain/content/ReviewWorkspace.tsx')
         expect(page).toContain('QuestionRichTextEditor')
         expect(page).not.toContain('QuestionRichTextField')
     })

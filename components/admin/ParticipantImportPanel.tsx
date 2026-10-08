@@ -1,22 +1,25 @@
 'use client'
 
-import { useActionState, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { toCsvWithColumns, safeFileName } from '@/lib/csv'
-import { adminDangerButtonClass, adminPrimaryButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
+
+
 import {
-    IMPORT_STATUS_LABELS,
-    PARTICIPANT_IMPORT_COLUMNS,
-    PARTICIPANT_IMPORT_COLUMN_LABELS,
-    PARTICIPANT_IMPORT_SAMPLE,
-    type ImportPreview,
-} from '@/lib/participant-import'
-import {
-    commitParticipantsAction,
-    previewParticipantsAction,
-    type ImportActionResult,
+commitParticipantsAction,
+previewParticipantsAction,
+type ImportActionResult,
 } from '@/app/actions/admin-participant-import'
+import { adminDangerButtonClass,adminPrimaryButtonClass,adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { safeFileName,toCsvWithColumns } from '@/lib/csv'
+import {
+IMPORT_STATUS_LABELS,
+PARTICIPANT_IMPORT_COLUMNS,
+PARTICIPANT_IMPORT_COLUMN_LABELS,
+PARTICIPANT_IMPORT_SAMPLE,
+type ImportPreview,
+} from '@/lib/participant-import'
+import { cn } from '@/lib/utils'
+import { AlertTriangle,CheckCircle2,Download,FileSpreadsheet,Upload } from 'lucide-react'
+import { useActionState,useMemo,useRef,useState } from 'react'
 
 /**
  * Panel bulk import peserta (PRD §7.2.1).
@@ -34,15 +37,15 @@ import {
 const IDLE: ImportActionResult = { status: 'idle' }
 
 const STATUS_STYLE: Record<string, string> = {
-    ok: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-    duplicate: 'border-slate-200 bg-slate-50 text-slate-600',
-    error: 'border-red-200 bg-red-50 text-red-800',
+    ok: 'border-success-border bg-success-muted text-success',
+    duplicate: 'border-border bg-muted text-muted-foreground',
+    error: 'border-danger-border bg-danger-muted text-danger',
 }
 
 const STATUS_BADGE: Record<string, string> = {
-    ok: 'bg-emerald-100 text-emerald-800',
-    duplicate: 'bg-slate-200 text-slate-700',
-    error: 'bg-red-100 text-red-800',
+    ok: 'bg-success-muted text-success',
+    duplicate: 'bg-slate-200 text-foreground',
+    error: 'bg-danger-muted text-danger',
 }
 
 function download(fileName: string, content: string) {
@@ -98,13 +101,13 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
     }
 
     return (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="mt-4 rounded-lg border border-border bg-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-2 text-sm font-black text-slate-900">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                         <FileSpreadsheet size={16}/>Impor peserta dari CSV
                     </div>
-                    <p className="mt-0.5 text-xs font-medium leading-5 text-slate-500">
+                    <p className="mt-0.5 text-xs font-medium leading-5 text-muted-foreground">
                         Untuk instansi yang sudah punya daftar peserta final. Peserta yang sudah ada tidak akan digandakan.
                     </p>
                 </div>
@@ -121,16 +124,16 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
             </div>
 
             <details className="mt-3">
-                <summary className="cursor-pointer text-[11px] font-extrabold uppercase tracking-wide text-slate-500 hover:text-slate-600">Kolom yang dikenali</summary>
+                <summary className="cursor-pointer text-[11px] font-semibold uppercase tracking-wide text-muted-foreground hover:text-muted-foreground">Kolom yang dikenali</summary>
                 <dl className="mt-2 grid gap-1 sm:grid-cols-2">
                     {PARTICIPANT_IMPORT_COLUMNS.map((column) => (
                         <div key={column} className="flex gap-2 text-[11px] leading-5">
-                            <dt className="font-mono font-bold text-slate-600">{column}</dt>
-                            <dd className="font-medium text-slate-500">{PARTICIPANT_IMPORT_COLUMN_LABELS[column]}</dd>
+                            <dt className="font-mono font-bold text-muted-foreground">{column}</dt>
+                            <dd className="font-medium text-muted-foreground">{PARTICIPANT_IMPORT_COLUMN_LABELS[column]}</dd>
                         </div>
                     ))}
                 </dl>
-                <p className="mt-2 text-[11px] font-medium leading-5 text-slate-500">
+                <p className="mt-2 text-[11px] font-medium leading-5 text-muted-foreground">
                     Pemisah koma maupun titik koma dikenali, begitu juga berkas ekspor Excel dengan BOM.
                     Baris dengan kode/email/HP yang sama tidak akan digandakan.
                 </p>
@@ -170,16 +173,16 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
                     <button type="button" onClick={() => fileInput.current?.click()} className={adminSecondaryButtonClass}>
                         <Upload size={15}/>Pilih berkas CSV
                     </button>
-                    {fileName ? <span className="text-xs font-semibold text-slate-500">{fileName}</span> : null}
-                    {csv ? <span className="text-xs font-medium text-slate-500">{csv.split(/\r?\n/).filter((line) => line.trim()).length} baris terbaca</span> : null}
+                    {fileName ? <span className="text-xs font-semibold text-muted-foreground">{fileName}</span> : null}
+                    {csv ? <span className="text-xs font-medium text-muted-foreground">{csv.split(/\r?\n/).filter((line) => line.trim()).length} baris terbaca</span> : null}
                 </div>
 
                 <label className="block space-y-1.5">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">Atau tempel isi CSV</span>
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Atau tempel isi CSV</span>
                     <textarea
                         value={csv}
                         onChange={(event) => { setCsv(event.target.value); setFileName('') }}
-                        className="min-h-28 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-xs text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                        className="min-h-28 w-full resize-y rounded-lg border border-border bg-card px-3 py-2.5 font-mono text-xs text-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-ring/10"
                         placeholder={'participant_code,full_name,email,phone\n,Andi,andi@contoh.id,081234567890'}
                     />
                 </label>
@@ -196,21 +199,21 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
                     {commitPending ? 'Mengimpor…' : 'Impor sekarang'}
                 </button>
                 {hasBlockingErrors ? (
-                    <span className="text-xs font-semibold text-red-600">
+                    <span className="text-xs font-semibold text-danger">
                         Perbaiki {preview?.error} baris bermasalah dulu, atau unduh berkas kesalahan.
                     </span>
                 ) : null}
             </form>
 
             {state.status === 'error' ? (
-                <div role="status" className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-800">
+                <div role="status" className="mt-3 flex items-start gap-2 rounded-lg border border-danger-border bg-danger-muted px-3 py-2.5 text-sm font-medium text-danger">
                     <AlertTriangle className="mt-0.5 shrink-0" size={16}/>{state.message}
                 </div>
             ) : null}
 
             {preview ? (
                 <div className="mt-4 space-y-3">
-                    <div role="status" className={cn('flex items-start gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold', state.status === 'imported' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-blue-200 bg-blue-50 text-blue-800')}>
+                    <div role="status" className={cn('flex items-start gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium', state.status === 'imported' ? 'border-success-border bg-success-muted text-success' : 'border-info-border bg-info-muted text-info')}>
                         <CheckCircle2 className="mt-0.5 shrink-0" size={16}/>
                         <span>
                             {state.status === 'imported'
@@ -221,21 +224,21 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
 
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                         {[
-                            { label: 'Total baris', value: preview.total, tone: 'text-slate-900' },
-                            { label: state.status === 'imported' ? 'Diimpor' : 'Siap', value: state.status === 'imported' ? preview.imported : preview.ok, tone: 'text-emerald-700' },
-                            { label: 'Sudah ada', value: preview.duplicate, tone: 'text-slate-500' },
-                            { label: 'Perlu diperbaiki', value: preview.error, tone: preview.error > 0 ? 'text-red-600' : 'text-slate-400' },
+                            { label: 'Total baris', value: preview.total, tone: 'text-foreground' },
+                            { label: state.status === 'imported' ? 'Diimpor' : 'Siap', value: state.status === 'imported' ? preview.imported : preview.ok, tone: 'text-success' },
+                            { label: 'Sudah ada', value: preview.duplicate, tone: 'text-muted-foreground' },
+                            { label: 'Perlu diperbaiki', value: preview.error, tone: preview.error > 0 ? 'text-danger' : 'text-muted-foreground' },
                         ].map((metric) => (
-                            <div key={metric.label} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                                <div className="text-[11px] font-bold uppercase tracking-wide text-slate-500">{metric.label}</div>
-                                <div className={cn('mt-1 text-lg font-black', metric.tone)}>{metric.value}</div>
+                            <div key={metric.label} className="rounded-lg border border-border bg-muted p-3">
+                                <div className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">{metric.label}</div>
+                                <div className={cn('mt-1 text-lg font-semibold', metric.tone)}>{metric.value}</div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="max-h-80 overflow-auto rounded-xl border border-slate-200">
-                        <table className="w-full min-w-[720px] text-left text-sm">
-                            <thead className="sticky top-0 bg-slate-50 text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
+                    <div className="max-h-80 overflow-auto rounded-lg border border-border">
+                        <AdminDataTable className="w-full min-w-[720px] text-left text-sm">
+                            <thead className="sticky top-0 bg-muted text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                 <tr>
                                     <th className="px-3 py-2">Baris</th>
                                     <th className="px-3 py-2">Status</th>
@@ -245,12 +248,12 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
                                     <th className="px-3 py-2">Keterangan</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-border">
                                 {preview.rows.map((row) => (
                                     <tr key={`${row.line}-${row.participant_code}`} className={STATUS_STYLE[row.status]}>
-                                        <td className="px-3 py-2 font-mono text-xs font-bold">{row.line}</td>
+                                        <td className="px-3 py-2 font-mono text-xs font-medium">{row.line}</td>
                                         <td className="px-3 py-2">
-                                            <span className={cn('rounded-md px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide', STATUS_BADGE[row.status])}>
+                                            <span className={cn('rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide', STATUS_BADGE[row.status])}>
                                                 {IMPORT_STATUS_LABELS[row.status]}
                                             </span>
                                         </td>
@@ -263,7 +266,7 @@ export default function ParticipantImportPanel({ batchId, batchCode }: { batchId
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
+                        </AdminDataTable>
                     </div>
                 </div>
             ) : null}

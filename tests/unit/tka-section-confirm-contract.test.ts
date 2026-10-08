@@ -69,7 +69,7 @@ describe('kontrak konfirmasi sesi ujian TKA', () => {
     it.each(SECTION_COMPLETION_SPECS)('%s menyelesaikan konfirmasi lewat modal', (path) => {
         const code = stripComments(read(path))
         expect(code).not.toContain("page.once('dialog'")
-        expect(code).toContain("import { confirmTkaSectionIfPresent } from '../pages/TkaExamActions'")
+        expect(code).toMatch(/import \{[^}]*\bconfirmTkaSectionIfPresent\b[^}]*\} from '\.\.\/pages\/TkaExamActions'/)
         expect(code).toContain('await confirmTkaSectionIfPresent(page)')
     })
 })

@@ -1,21 +1,27 @@
 'use client'
+import dynamic from 'next/dynamic'
 
-import { useActionState, useRef, useState } from 'react'
-import { useFormStatus } from 'react-dom'
-import Link from 'next/link'
-import { Image as ImageIcon, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { createClient } from '@/lib/utils/supabase/client'
+import { AdminFormActions } from './forms/AdminFormActions'
+import { AdminFormSection } from './forms/AdminFormSection'
+import { AdminBreadcrumbs } from './navigation/AdminBreadcrumbs'
+
 import type { ArticleActionState } from '@/app/actions/articles'
-import ArticleRichTextEditor from './ArticleRichTextEditor'
 import {
-    AdminCard,
-    AdminPage,
-    AdminPageHeader,
-    adminInputClass,
-    adminPrimaryButtonClass,
-    adminSecondaryButtonClass,
+AdminPage,
+AdminPageHeader,
+adminInputClass,
+adminPrimaryButtonClass,
+adminSecondaryButtonClass
 } from '@/components/admin/AdminUi'
+import { createClient } from '@/lib/utils/supabase/client'
+import { Image as ImageIcon,Loader2 } from 'lucide-react'
+import Link from '@/components/admin/navigation/AdminLink'
+import { useActionState,useRef,useState } from 'react'
+import { useFormStatus } from 'react-dom'
+import { toast } from 'sonner'
+
+
+const ArticleRichTextEditor = dynamic(() => import('./ArticleRichTextEditor'), { loading: () => <div role="status" className="min-h-28 animate-pulse rounded-md bg-muted">Memuat editor…</div> })
 
 type ArticleFormValues = {
     title?: string | null
@@ -28,6 +34,7 @@ type ArticleFormValues = {
 
 interface ArticleFormProps {
     title: string
+    returnTo: string
     action: (prevState: ArticleActionState, formData: FormData) => Promise<ArticleActionState>
     defaultValues?: ArticleFormValues
 }
@@ -41,10 +48,10 @@ function SubmitButton() {
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
-    return <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{children}</span>
+    return <span className="text-xs font-medium text-muted-foreground">{children}</span>
 }
 
-export default function ArticleForm({ title, action, defaultValues }: ArticleFormProps) {
+export default function ArticleForm({ title, action, defaultValues, returnTo }: ArticleFormProps) {
     const [state, formAction] = useActionState(action, initialState)
     const [articleTitle, setArticleTitle] = useState(defaultValues?.title || '')
     const [slug, setSlug] = useState(defaultValues?.slug || '')
@@ -83,34 +90,36 @@ export default function ArticleForm({ title, action, defaultValues }: ArticleFor
     }
 
     return (
-        <AdminPage className="mx-auto max-w-5xl">
+        <AdminPage>
+            <AdminBreadcrumbs items={[{label:"Content"},{label:"Articles",href:returnTo},{label:title}]}/>
             <AdminPageHeader
                 title={title}
                 description="Tulis dan simpan sebagai draft terlebih dahulu. Status publikasi dikelola dari daftar Articles sesuai permission akun."
-                action={<Link href="/admin/content/articles" className={adminSecondaryButtonClass}>Kembali ke Articles</Link>}
+                action={<Link href={returnTo} className={adminSecondaryButtonClass}>Kembali ke Articles</Link>}
             />
 
-            <AdminCard className="p-5 sm:p-6 lg:p-7">
-                <form action={formAction} className="space-y-6">
-                    {state.message ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">{state.message}</div> : null}
+            <section>
+                <form data-admin-form action={formAction}>
+                    <input type="hidden" name="return_to" value={returnTo}/>
+                    {state.message ? <div role="alert" className="rounded-lg border border-danger-border bg-danger-muted px-4 py-3 text-sm font-medium text-danger">{state.message}</div> : null}
 
-                    <div className="grid gap-5 md:grid-cols-2">
+                    <AdminFormSection title="Informasi Artikel">
                         <label className="space-y-1.5"><FieldLabel>Judul</FieldLabel><input name="title" value={articleTitle} onChange={(event) => setArticleTitle(event.target.value)} required minLength={3} maxLength={160} className={adminInputClass}/></label>
-                        <label className="space-y-1.5"><FieldLabel>Slug</FieldLabel><input name="slug" value={slug} onChange={(event) => setSlug(event.target.value)} required minLength={3} maxLength={180} placeholder="contoh-artikel-cpns" className={adminInputClass}/><span className="block text-xs font-medium text-slate-500">URL publik: /blog/{slug || 'slug-artikel'}</span></label>
-                    </div>
+                        <label className="space-y-1.5"><FieldLabel>Slug</FieldLabel><input name="slug" value={slug} onChange={(event) => setSlug(event.target.value)} required minLength={3} maxLength={180} placeholder="contoh-artikel-cpns" className={adminInputClass}/><span className="block text-xs font-medium text-muted-foreground">URL publik: /blog/{slug || 'slug-artikel'}</span></label>
+                    </AdminFormSection>
 
-                    <div className="grid gap-5 md:grid-cols-2">
+                    <AdminFormSection title="Kategori & Media">
                         <label className="space-y-1.5"><FieldLabel>Kategori</FieldLabel><input name="category" value={category} onChange={(event) => setCategory(event.target.value)} maxLength={80} placeholder="Tips, Berita, Strategi SKD" className={adminInputClass}/></label>
-                        <label className="space-y-1.5"><FieldLabel>Cover image</FieldLabel><div className="flex flex-col gap-2 sm:flex-row"><button type="button" onClick={() => coverInputRef.current?.click()} disabled={isUploadingCover} className={adminSecondaryButtonClass}>{isUploadingCover ? <Loader2 size={16} className="animate-spin"/> : <ImageIcon size={16}/>}Upload</button><input name="cover_image_url" type="url" value={coverImageUrl} onChange={(event) => setCoverImageUrl(event.target.value)} placeholder="https://... atau klik Upload" className={adminInputClass}/></div><input type="file" ref={coverInputRef} onChange={handleCoverUpload} accept="image/jpeg, image/png, image/webp, image/gif" className="hidden"/><span className="block text-xs font-medium text-slate-500">JPG, PNG, WebP, atau GIF. Maksimal 2MB.</span></label>
-                    </div>
+                        <label className="space-y-1.5"><FieldLabel>Cover image</FieldLabel><div className="flex flex-col gap-2 sm:flex-row"><button type="button" onClick={() => coverInputRef.current?.click()} disabled={isUploadingCover} className={adminSecondaryButtonClass}>{isUploadingCover ? <Loader2 size={16} className="animate-spin"/> : <ImageIcon size={16}/>}Upload</button><input name="cover_image_url" type="url" value={coverImageUrl} onChange={(event) => setCoverImageUrl(event.target.value)} placeholder="https://... atau klik Upload" className={adminInputClass}/></div><input type="file" ref={coverInputRef} onChange={handleCoverUpload} accept="image/jpeg, image/png, image/webp, image/gif" className="hidden"/><span className="block text-xs font-medium text-muted-foreground">JPG, PNG, WebP, atau GIF. Maksimal 2MB.</span></label>
+                    </AdminFormSection>
 
-                    <label className="block space-y-1.5"><FieldLabel>Ringkasan</FieldLabel><textarea name="excerpt" value={excerpt} onChange={(event) => setExcerpt(event.target.value)} maxLength={320} rows={3} className={`${adminInputClass} resize-y`}/><span className="block text-right text-xs font-medium text-slate-500">{excerpt.length}/320</span></label>
+                    <label className="block space-y-1.5"><FieldLabel>Ringkasan</FieldLabel><textarea name="excerpt" value={excerpt} onChange={(event) => setExcerpt(event.target.value)} maxLength={320} rows={3} className={`${adminInputClass} resize-y`}/><span className="block text-right text-xs font-medium text-muted-foreground">{excerpt.length}/320</span></label>
 
                     <label className="block space-y-1.5"><FieldLabel>Konten artikel</FieldLabel><ArticleRichTextEditor content={content} onChange={setContent}/><input type="hidden" name="content" value={content}/></label>
 
-                    <div className="flex flex-col-reverse gap-2 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-end"><Link href="/admin/content/articles" className={adminSecondaryButtonClass}>Batal</Link><SubmitButton/></div>
+                    <AdminFormActions cancelHref={returnTo}><SubmitButton/></AdminFormActions>
                 </form>
-            </AdminCard>
+            </section>
         </AdminPage>
     )
 }

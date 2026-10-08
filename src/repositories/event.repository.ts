@@ -1,6 +1,7 @@
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import type { Json } from '@/types/database.types'
 import type { ResolvedExam } from '@/src/repositories/exam.repository'
+import { assessmentKindForExamType, assessmentIsReady } from '@/src/domain/assessment'
 
 export type CanonicalEventRow = {
     id: string
@@ -244,8 +245,19 @@ export class EventRepository {
     }
 
     async getUserEventAttempt(userId: string, eventId: string): Promise<CanonicalEventAttemptRow | null> {
-        const attempts = await this.listUserEventAttempts(userId, [eventId])
-        return attempts[0] ?? null
+        const admin = await createV2AdminClient()
+        const { data, error } = await admin
+            .from('exam_attempts')
+            .select('id, exam_id, status, started_at, submitted_at, duration_used_seconds, total_score, metadata')
+            .eq('user_id', userId)
+            .filter('source', 'eq', 'b2c')
+            .is('assignment_id', null)
+            .eq('metadata->>eventId', eventId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        if (error) throw error
+        return data as CanonicalEventAttemptRow | null
     }
 
     async listUserEventCertificates(userId: string, eventIds: string[]): Promise<CanonicalEventCertificateRow[]> {
@@ -260,7 +272,7 @@ export class EventRepository {
         return (data ?? []) as CanonicalEventCertificateRow[]
     }
 
-    async resolveSessionExam(session: CanonicalEventSessionRow): Promise<ResolvedExam | null> {
+    async resolveSessionExam(session: CanonicalEventSessionRow): Promise<(ResolvedExam & { programCode?: string; trackCode?: string }) | null> {
         const admin = await createV2AdminClient()
         const { data: examData, error: examError } = await admin
             .from('exams')
@@ -294,14 +306,25 @@ export class EventRepository {
             .eq('id', exam.exam_type_id)
             .maybeSingle()
         if (typeError) throw typeError
-        if (!typeData || String(typeData.code).toUpperCase() !== 'EVENT') return null
+        if (!typeData) return null
+        const typeCode = String(typeData.code).toUpperCase()
+        const legacyEventType = typeCode === 'EVENT'
+        if (!legacyEventType && !assessmentKindForExamType(typeCode)) return null
+        if (!legacyEventType && !assessmentIsReady(exam.status, await this.getExamQuestionCount(exam.id))) return null
+
+        const [{ data: program, error: programError }, { data: track, error: trackError }] = await Promise.all([
+            admin.from('programs').select('code').eq('id', exam.program_id).maybeSingle(),
+            admin.from('tracks').select('code').eq('id', exam.track_id).maybeSingle(),
+        ])
+        if (programError) throw programError
+        if (trackError) throw trackError
 
         return {
             id: exam.id,
             programId: exam.program_id,
             trackId: exam.track_id,
             examTypeId: exam.exam_type_id,
-            examTypeCode: 'EVENT',
+            examTypeCode: typeCode as ResolvedExam['examTypeCode'],
             title: exam.title,
             slug: exam.slug,
             durationSeconds: exam.duration_seconds,
@@ -314,6 +337,8 @@ export class EventRepository {
             endsAt: exam.ends_at,
             subjectId: null,
             subjectCode: null,
+            programCode: String(program?.code ?? ''),
+            trackCode: String(track?.code ?? ''),
         }
     }
 

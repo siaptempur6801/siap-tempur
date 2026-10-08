@@ -39,10 +39,11 @@ describe('chunkValues', () => {
 })
 
 describe('kontrak: filter .in() besar di admin-exams harus di-batch', () => {
-    it('memakai chunkValues untuk daftar soal', () => {
-        expect(adminExamsSource).toContain('chunkValues')
-        expect(adminExamsSource).toMatch(/for \(const batch of chunkValues\(questionIds\)\)/)
-        expect(adminExamsSource).toMatch(/chunkValues\(questions\.map\(\(row\) => String\(row\.id\)\)\)/)
+    it('uses database aggregation without transferring the question-id dataset', () => {
+        expect(adminExamsSource).toContain("admin.rpc('admin_drill_supply'")
+        expect(adminExamsSource).toContain('p_node_ids: nodeIds')
+        expect(adminExamsSource).not.toContain(".from('question_versions')")
+        expect(adminExamsSource).not.toContain(".from('question_knowledge_nodes')")
     })
 
     it('tidak lagi mengirim daftar soal tanpa batch ke PostgREST', () => {

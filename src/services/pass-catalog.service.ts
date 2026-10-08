@@ -1,5 +1,6 @@
 import type { createV2Client } from '@/lib/utils/supabase/server'
 import { PASS_FEATURE_BY_SCOPE, type PassScope } from '@/src/tka/pass-scope'
+import { assessmentCatalogService } from '@/src/services/assessment-catalog.service'
 
 /**
  * Katalog paket Tempur Pass per program (+ jenjang untuk TKA) dan pembacaan status pass.
@@ -55,6 +56,16 @@ export async function listActivePassPackages(
     { programCode, trackCode }: { programCode: string; trackCode?: string | null },
 ): Promise<PassPackage[]> {
     const now = new Date().toISOString()
+
+    if (programCode.trim().toUpperCase() === 'TKA' && trackCode?.trim().toUpperCase() === 'SMA') {
+        // SMA has no assessment content yet. Keep its public catalog closed using
+        // the privileged readiness check; established SD/SMP pass flows continue
+        // through their existing authenticated catalog path.
+        const availableAssessments = await assessmentCatalogService.listDistributable()
+        if (!availableAssessments.some((assessment) => (
+            assessment.domain === 'TKA' && assessment.trackCode.toUpperCase() === trackCode.trim().toUpperCase()
+        ))) return []
+    }
 
     const { data: program, error: programError } = await supabase
         .from('programs')

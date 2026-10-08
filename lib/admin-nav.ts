@@ -1,221 +1,48 @@
-/**
- * Model navigasi Admin Workspace.
- *
- * ## Kenapa modul terpisah
- *
- * Sebelumnya visibilitas menu ditentukan oleh SATU boolean di
- * `UnifiedAdminShell.tsx`:
- *
- *     const isFullAdmin = permissionSet.has('admin.access')
- *     if (item.adminOnly) return isFullAdmin
- *
- * Akibatnya setiap peran yang punya `admin.access` melihat SELURUH menu.
- * Di database, `FINANCE` dan `SUPPORT` memang punya `admin.access` — jadi
- * keduanya melihat Content, Assessment, dan Commerce lengkap, padahal keduanya
- * tidak punya satu pun permission di sana. Sebaliknya peran tanpa `admin.access`
- * (`CONTENT_EDITOR`, `CONTENT_REVIEWER`, `SCHOOL_ADMIN`) hanya kebagian menu
- * yang ditebak dari daftar permission content yang di-hardcode.
- *
- * `docs/ADMIN_UI_UX_STANDARD.md` §4 sudah menetapkan aturannya:
- * "Menu harus permission-aware; jangan tampilkan aksi/menu yang user tidak dapat
- * gunakan" dan "Tidak boleh ada dead-end navigation".
- *
- * Modul ini yang menegakkan keduanya, dan dipisah dari komponen supaya dapat
- * diuji tanpa React: `tests/unit/admin-nav.test.ts` mengunci perilaku tiap
- * peran yang benar-benar ada di database.
- *
- * ## Yang TIDAK ada di sini
- *
- * Ikon. Model ini sengaja bebas JSX supaya bisa diimpor unit test tanpa
- * merender React; `UnifiedAdminShell` memetakan `icon` (nama) ke komponen lucide.
- */
+import { adminHref, adminRouteState, adminRoutes } from './admin-routes'
+/** Primary admin workspaces. Detail resources are reached through their parent. */
 
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 
 export type AdminNavItem = {
     href: string
     label: string
-    mobileLabel?: string
-    /** Nama ikon lucide; dipetakan ke komponen di shell. */
     icon: string
-    /**
-     * Item tampil bila user punya SALAH SATU permission ini.
-     *
-     * Sengaja "salah satu", bukan "semua": satu halaman sering melayani beberapa
-     * pekerjaan (mis. Review Queue dipakai author maupun reviewer), dan halaman
-     * itu sendiri yang menyembunyikan aksi yang tidak diizinkan.
-     */
     requiresAny: PermissionCode[]
-    /** Datanya terikat program/track, jadi link harus membawa konteks. */
     contextual: boolean
+    children?: AdminNavItem[]
 }
 
-export type AdminNavGroup = {
-    label: string
-    items: AdminNavItem[]
-}
+export type AdminNavGroup = { label: string; items: AdminNavItem[] }
 
-/**
- * Pohon navigasi — mengikuti `docs/ADMIN_UI_UX_STANDARD.md` §2 (Information
- * Architecture). Urutan grup menentukan urutan di sidebar.
- *
- * Label item SENGAJA tidak diubah: E2E mengklik menu berdasarkan label
- * ("Question Bank", "Review Queue", "Exams", "Products"), jadi mengganti label
- * akan memutus test yang sudah ada sekaligus membingungkan pengguna lama.
- */
+const CONTENT_PERMISSIONS = [PERMISSIONS.CONTENT_READ, PERMISSIONS.CONTENT_CREATE, PERMISSIONS.CONTENT_UPDATE, PERMISSIONS.CONTENT_REVIEW, PERMISSIONS.CONTENT_PUBLISH]
+
 export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
-    {
-        label: 'Overview',
-        items: [
-            {
-                href: '/admin',
-                label: 'Dashboard',
-                icon: 'LayoutDashboard',
-                requiresAny: [PERMISSIONS.ADMIN_ACCESS],
-                contextual: true,
-            },
-        ],
-    },
-    {
-        label: 'Content',
-        items: [
-            {
-                href: '/admin/content/questions',
-                label: 'Question Bank',
-                icon: 'FileQuestion',
-                requiresAny: [PERMISSIONS.QUESTION_MANAGE],
-                contextual: true,
-            },
-            {
-                href: '/admin/content/review',
-                label: 'Review Queue',
-                mobileLabel: 'Review',
-                icon: 'ClipboardCheck',
-                requiresAny: [
-                    PERMISSIONS.CONTENT_READ,
-                    PERMISSIONS.CONTENT_CREATE,
-                    PERMISSIONS.CONTENT_UPDATE,
-                    PERMISSIONS.CONTENT_REVIEW,
-                    PERMISSIONS.CONTENT_PUBLISH,
-                ],
-                contextual: true,
-            },
-            {
-                href: '/admin/content/articles',
-                label: 'Articles',
-                icon: 'BookOpen',
-                requiresAny: [
-                    PERMISSIONS.CONTENT_READ,
-                    PERMISSIONS.CONTENT_CREATE,
-                    PERMISSIONS.CONTENT_UPDATE,
-                    PERMISSIONS.CONTENT_PUBLISH,
-                ],
-                // Artikel bersifat global: halamannya tidak membaca program/track
-                // sama sekali, jadi menempelkan konteks hanya akan menyesatkan.
-                contextual: false,
-            },
-        ],
-    },
-    {
-        label: 'Assessment',
-        items: [
-            {
-                href: '/admin/assessment/exams',
-                label: 'Exams',
-                icon: 'FileQuestion',
-                requiresAny: [PERMISSIONS.EXAM_MANAGE],
-                contextual: true,
-            },
-            {
-                href: '/admin/assessment/events',
-                label: 'Events',
-                icon: 'CalendarDays',
-                requiresAny: [PERMISSIONS.EVENT_MANAGE],
-                contextual: true,
-            },
-        ],
-    },
-    {
-        label: 'Commerce',
-        items: [
-            {
-                href: '/admin/commerce/products',
-                label: 'Products',
-                icon: 'Package',
-                requiresAny: [PERMISSIONS.PRODUCT_MANAGE],
-                contextual: true,
-            },
-            {
-                href: '/admin/commerce',
-                label: 'Orders & Payments',
-                mobileLabel: 'Commerce',
-                icon: 'CreditCard',
-                requiresAny: [PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE],
-                contextual: true,
-            },
-            {
-                href: '/admin/entitlements',
-                label: 'Entitlements',
-                mobileLabel: 'Token',
-                icon: 'Coins',
-                requiresAny: [PERMISSIONS.ENTITLEMENT_MANAGE],
-                contextual: false,
-            },
-        ],
-    },
-    {
-        label: 'Instansi',
-        items: [
-            {
-                href: '/admin/organizations',
-                label: 'Instansi & Batch',
-                mobileLabel: 'Instansi',
-                icon: 'Building2',
-                requiresAny: [PERMISSIONS.ORGANIZATION_MANAGE],
-                contextual: false,
-            },
-        ],
-    },
-    {
-        label: 'People',
-        items: [
-            {
-                href: '/admin/users',
-                label: 'Users & Roles',
-                mobileLabel: 'Users',
-                icon: 'Users',
-                requiresAny: [PERMISSIONS.USER_READ, PERMISSIONS.USER_MANAGE],
-                contextual: false,
-            },
-        ],
-    },
-    {
-        label: 'Insights',
-        items: [
-            {
-                href: '/admin/reports',
-                label: 'Reports',
-                icon: 'BarChart3',
-                requiresAny: [PERMISSIONS.REPORT_READ],
-                contextual: true,
-            },
-            {
-                href: '/admin/audit',
-                label: 'Audit Log',
-                mobileLabel: 'Audit',
-                icon: 'ScrollText',
-                requiresAny: [PERMISSIONS.AUDIT_READ],
-                contextual: false,
-            },
-            {
-                href: '/admin/settings',
-                label: 'Settings',
-                icon: 'Settings2',
-                requiresAny: [PERMISSIONS.SETTINGS_MANAGE],
-                contextual: false,
-            },
-        ],
-    },
+    { label: '', items: [
+        { href: '/admin', label: 'Dashboard', icon: 'LayoutDashboard', requiresAny: [PERMISSIONS.ADMIN_ACCESS], contextual: true },
+    ] },
+    { label: 'Learning', items: [
+        { href: adminRoutes.assessments, label: 'Assessment', icon: 'ClipboardCheck', requiresAny: [PERMISSIONS.EXAM_MANAGE], contextual: true },
+        { href: '/admin/content', label: 'Content', icon: 'BookOpen', requiresAny: [PERMISSIONS.QUESTION_MANAGE, ...CONTENT_PERMISSIONS], contextual: false, children: [
+            { href: '/admin/content/questions', label: 'Question Bank', icon: 'FileQuestion', requiresAny: [PERMISSIONS.QUESTION_MANAGE], contextual: true },
+            { href: '/admin/content/review', label: 'Review', icon: 'ClipboardCheck', requiresAny: CONTENT_PERMISSIONS, contextual: true },
+            { href: '/admin/content/articles', label: 'Articles', icon: 'BookOpen', requiresAny: [PERMISSIONS.CONTENT_READ, PERMISSIONS.CONTENT_CREATE, PERMISSIONS.CONTENT_UPDATE, PERMISSIONS.CONTENT_PUBLISH], contextual: false },
+        ] },
+    ] },
+    { label: 'Operations', items: [
+        { href: adminRoutes.events, label: 'Event', icon: 'CalendarDays', requiresAny: [PERMISSIONS.EVENT_MANAGE], contextual: true },
+        { href: adminRoutes.organizations, label: 'Instansi', icon: 'Building2', requiresAny: [PERMISSIONS.ORGANIZATION_MANAGE], contextual: false },
+        { href: '/admin/monitoring', label: 'Monitoring', icon: 'BarChart3', requiresAny: [PERMISSIONS.EVENT_MANAGE, PERMISSIONS.ORGANIZATION_MANAGE, PERMISSIONS.REPORT_READ], contextual: false },
+    ] },
+    { label: 'Business', items: [
+        { href: adminRoutes.orders, label: 'Commerce', icon: 'ShoppingBag', requiresAny: [PERMISSIONS.PRODUCT_MANAGE, PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE], contextual: false, children: [
+            { href: '/admin/commerce/products', label: 'Products', icon: 'Package', requiresAny: [PERMISSIONS.PRODUCT_MANAGE], contextual: true },
+            { href: adminRoutes.orders, label: 'Orders', icon: 'ShoppingBag', requiresAny: [PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE], contextual: false },
+        ] },
+        { href: '/admin/users', label: 'Users', icon: 'Users', requiresAny: [PERMISSIONS.USER_READ, PERMISSIONS.USER_MANAGE, PERMISSIONS.ENTITLEMENT_MANAGE], contextual: false },
+    ] },
+    { label: 'System', items: [
+        { href: '/admin/settings', label: 'Settings', icon: 'Settings2', requiresAny: [PERMISSIONS.SETTINGS_MANAGE, PERMISSIONS.AUDIT_READ], contextual: false },
+    ] },
 ]
 
 /**
@@ -228,7 +55,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
 const LANDING_CANDIDATES: Array<{ href: string; requiresAny: PermissionCode[] }> = [
     { href: '/admin', requiresAny: [PERMISSIONS.ADMIN_ACCESS] },
     { href: '/admin/content/questions', requiresAny: [PERMISSIONS.QUESTION_MANAGE] },
-    // Author dan reviewer berbagi satu workspace. Review Queue adalah satu-satunya
+    // Author dan reviewer berbagi satu workspace. Review adalah satu-satunya
     // tempat menulis soal bagi peran tanpa `question.manage`, jadi ia yang
     // didahulukan atas Articles.
     {
@@ -244,15 +71,15 @@ const LANDING_CANDIDATES: Array<{ href: string; requiresAny: PermissionCode[] }>
     // Instansi didahulukan atas Reports: `SCHOOL_ADMIN` memegang
     // organization.manage + report.read, dan pekerjaan utamanya adalah
     // mengelola instansi serta batch-nya, bukan membaca laporan.
-    { href: '/admin/organizations', requiresAny: [PERMISSIONS.ORGANIZATION_MANAGE] },
+    { href: adminRoutes.organizations, requiresAny: [PERMISSIONS.ORGANIZATION_MANAGE] },
     { href: '/admin/users', requiresAny: [PERMISSIONS.USER_MANAGE, PERMISSIONS.USER_READ] },
-    { href: '/admin/reports', requiresAny: [PERMISSIONS.REPORT_READ] },
-    { href: '/admin/audit', requiresAny: [PERMISSIONS.AUDIT_READ] },
-    { href: '/admin/commerce', requiresAny: [PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE] },
+    { href: '/admin/monitoring', requiresAny: [PERMISSIONS.REPORT_READ] },
+    { href: '/admin/settings', requiresAny: [PERMISSIONS.AUDIT_READ] },
+    { href: adminRoutes.orders, requiresAny: [PERMISSIONS.ORDER_READ, PERMISSIONS.PAYMENT_MANAGE] },
     { href: '/admin/commerce/products', requiresAny: [PERMISSIONS.PRODUCT_MANAGE] },
-    { href: '/admin/entitlements', requiresAny: [PERMISSIONS.ENTITLEMENT_MANAGE] },
-    { href: '/admin/assessment/exams', requiresAny: [PERMISSIONS.EXAM_MANAGE] },
-    { href: '/admin/assessment/events', requiresAny: [PERMISSIONS.EVENT_MANAGE] },
+    { href: '/admin/users', requiresAny: [PERMISSIONS.ENTITLEMENT_MANAGE] },
+    { href: adminRoutes.assessments, requiresAny: [PERMISSIONS.EXAM_MANAGE] },
+    { href: adminRoutes.events, requiresAny: [PERMISSIONS.EVENT_MANAGE] },
     { href: '/admin/settings', requiresAny: [PERMISSIONS.SETTINGS_MANAGE] },
 ]
 
@@ -264,7 +91,7 @@ export const ADMIN_SURFACE_PERMISSIONS: PermissionCode[] = [
 ]
 
 /** Semua link yang benar-benar ada di pohon navigasi. */
-export const ADMIN_NAV_HREFS = ADMIN_NAV_GROUPS.flatMap((group) => group.items).map((item) => item.href)
+export const ADMIN_NAV_HREFS = ADMIN_NAV_GROUPS.flatMap((group) => group.items).flatMap((item) => item.children ?? [item]).map((item) => item.href)
 
 function asPermissionSet(permissions: Iterable<string>) {
     return permissions instanceof Set ? permissions : new Set(permissions)
@@ -285,14 +112,17 @@ export function visibleAdminNavGroups(permissions: Iterable<string>): AdminNavGr
     return ADMIN_NAV_GROUPS
         .map((group) => ({
             label: group.label,
-            items: group.items.filter((item) => hasAny(permissionSet, item.requiresAny)),
+            items: group.items.filter((item) => hasAny(permissionSet, item.requiresAny)).map((item) => ({
+                ...item,
+                ...(item.children ? { children: item.children.filter((child) => hasAny(permissionSet, child.requiresAny)) } : {}),
+            })),
         }))
         .filter((group) => group.items.length > 0)
 }
 
 /** Semua href yang boleh dibuka pemegang `permissions`. */
 export function visibleAdminHrefs(permissions: Iterable<string>): string[] {
-    return visibleAdminNavGroups(permissions).flatMap((group) => group.items).map((item) => item.href)
+    return visibleAdminNavGroups(permissions).flatMap((group) => group.items).flatMap((item) => item.children ?? [item]).map((item) => item.href)
 }
 
 /**
@@ -390,10 +220,18 @@ export function tracksForProgram(program: string): string[] {
     return ADMIN_CONTEXTS.filter((context) => context.program === wanted).map((context) => context.track)
 }
 
+/** Whether a workspace page needs a visible Program/Track context selector. */
+export function adminPathUsesProgramContext(pathname: string): boolean {
+    const canonicalPath = adminHref(pathname).split('?')[0].replace(/\/$/, '') || '/'
+    if (canonicalPath === '/admin') return true
+    const workspace = adminRouteState(canonicalPath)?.workspace
+    return ['assessments', 'events', 'questions', 'review', 'products'].includes(workspace ?? '')
+}
+
 /**
  * Konteks yang dipakai sebuah path bila URL tidak menyebutkannya.
  *
- * Review Queue historisnya berjalan di konteks TKA/SMP (ia tumbuh dari modul TKA
+ * Review historisnya berjalan di konteks TKA/SMP (ia tumbuh dari modul TKA
  * lebih dulu), sedangkan modul lain default CPNS/SKD. Perbedaan ini
  * dipertahankan apa adanya supaya perilaku tidak berubah — tetapi kini
  * didefinisikan di SATU tempat, bukan disalin ke shell dan ke tiap halaman.
@@ -405,16 +243,48 @@ export function defaultContextForPath(pathname: string): AdminContext {
     return ADMIN_DEFAULT_CONTEXT
 }
 
+/** Route labels for the persistent context bar; never expose raw route IDs. */
+export function adminBreadcrumbs(pathname: string): Array<{ label: string; href?: string }> {
+    const routes: Array<{ prefix: string; crumbs: Array<{ label: string; href?: string }> }> = [
+        { prefix: '/admin/content/questions', crumbs: [{ label: 'Learning' }, { label: 'Content' }, { label: 'Question Bank' }] },
+        { prefix: '/admin/content/review', crumbs: [{ label: 'Learning' }, { label: 'Content' }, { label: 'Review' }] },
+        { prefix: '/admin/content/articles', crumbs: [{ label: 'Learning' }, { label: 'Content' }, { label: 'Articles' }] },
+        { prefix: '/admin/assessments', crumbs: [{ label: 'Learning' }, { label: 'Assessment' }] },
+        { prefix: '/admin/events', crumbs: [{ label: 'Operations' }, { label: 'Event' }] },
+        { prefix: '/admin/organizations', crumbs: [{ label: 'Operations' }, { label: 'Instansi' }] },
+        { prefix: '/admin/monitoring', crumbs: [{ label: 'Operations' }, { label: 'Monitoring' }] },
+        { prefix: '/admin/monitoring/results', crumbs: [{ label: 'Operations' }, { label: 'Monitoring', href: '/admin/monitoring' }, { label: 'Hasil' }] },
+        { prefix: '/admin/content/readiness', crumbs: [{ label: 'Learning' }, { label: 'Content Readiness' }] },
+        { prefix: '/admin/monitoring/reports', crumbs: [{ label: 'Operations' }, { label: 'Monitoring', href: '/admin/monitoring' }, { label: 'Reports' }] },
+        { prefix: '/admin/users', crumbs: [{ label: 'Business' }, { label: 'Users' }] },
+        { prefix: '/admin/commerce/products', crumbs: [{ label: 'Business' }, { label: 'Commerce' }, { label: 'Products' }] },
+        { prefix: '/admin/commerce/orders', crumbs: [{ label: 'Business' }, { label: 'Commerce' }, { label: 'Orders' }] },
+        { prefix: '/admin/users/access', crumbs: [{ label: 'Business' }, { label: 'Users', href: '/admin/users' }, { label: 'Entitlements' }] },
+        { prefix: '/admin/settings/audit', crumbs: [{ label: 'System' }, { label: 'Settings', href: '/admin/settings' }, { label: 'Audit Log' }] },
+        { prefix: '/admin/settings', crumbs: [{ label: 'System' }, { label: 'Settings' }] },
+    ]
+    const route = routes.sort((a,b) => b.prefix.length - a.prefix.length).find(({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+    return route?.crumbs ?? [{ label: 'Dashboard' }]
+}
+
 /**
  * Apakah `href` adalah halaman yang sedang dibuka.
  *
- * `/admin` dan `/admin/commerce` diperlakukan sebagai exact match supaya
+ * `/admin` dan `/admin/commerce/orders` diperlakukan sebagai exact match supaya
  * keduanya tidak ikut aktif pada anak-anaknya (`/admin/content/*`,
  * `/admin/commerce/products`).
  */
 export function adminNavIsActive(pathname: string, href: string): boolean {
-    if (href === '/admin' || href === '/admin/commerce') return pathname === href
+    if (href === '/admin') return pathname === href
+    if (href === '/admin/monitoring' && ['/admin/monitoring/reports', '/admin/monitoring/results'].some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) return true
+    if (href === '/admin/settings' && (pathname === '/admin/settings/audit' || pathname.startsWith('/admin/settings/audit/'))) return true
+    if (href === '/admin/users' && pathname === '/admin/users/access') return true
+    if (href === '/admin/commerce/orders') return pathname === href || pathname.startsWith('/admin/commerce/orders/')
     return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+export function adminWorkspaceIsActive(pathname: string, item: AdminNavItem): boolean {
+    return adminNavIsActive(pathname, item.href) || Boolean(item.children?.some((child) => adminNavIsActive(pathname, child.href)))
 }
 
 /** Link navigasi dengan konteks yang hanya ditambahkan pada modul contextual. */

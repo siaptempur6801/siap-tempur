@@ -38,7 +38,7 @@ export type LegacyAdminRedirect = {
 }
 
 /**
- * `AdminOperationsWorkspace` memakai `params.program || 'TKA'`, sedangkan peta
+ * Workspace domain memakai `params.program || 'TKA'`, sedangkan peta
  * redirect lama selalu menambahkan `program=CPNS&track=SKD`. Tanpa konteks ini,
  * pengguna yang membuka `/cpns/admin/event` mendarat di konteks TKA — berbeda
  * dari perilaku sebelumnya.
@@ -50,14 +50,14 @@ function withAdminContext(destination: string) {
 export const LEGACY_ADMIN_REDIRECTS: LegacyAdminRedirect[] = [
     { source: '/cpns/admin/review', destination: '/admin/content/review', permanent: false },
     { source: '/cpns/admin/articles', destination: '/admin/content/articles', permanent: false },
-    { source: '/cpns/admin/articles/create', destination: '/admin/content/articles/create', permanent: false },
+    { source: '/cpns/admin/articles/create', destination: '/admin/content/articles/new', permanent: false },
     { source: '/cpns/admin/articles/:id/edit', destination: '/admin/content/articles/:id/edit', permanent: false },
-    { source: '/cpns/admin/create', destination: withAdminContext('/admin/content/questions'), permanent: false },
-    { source: '/cpns/admin/edit/:id', destination: withAdminContext('/admin/content/questions'), permanent: false },
-    { source: '/cpns/admin/event', destination: withAdminContext('/admin/assessment/events'), permanent: false },
-    { source: '/cpns/admin/tryout-akbar', destination: withAdminContext('/admin/assessment/events'), permanent: false },
-    { source: '/cpns/admin/tryout-config', destination: withAdminContext('/admin/assessment/exams'), permanent: false },
-    { source: '/cpns/admin/keuangan', destination: withAdminContext('/admin/commerce'), permanent: false },
+    { source: '/cpns/admin/create', destination: withAdminContext('/admin/content/questions/new'), permanent: false },
+    { source: '/cpns/admin/edit/:id', destination: withAdminContext('/admin/content/questions/:id/edit'), permanent: false },
+    { source: '/cpns/admin/event', destination: withAdminContext('/admin/events'), permanent: false },
+    { source: '/cpns/admin/tryout-akbar', destination: withAdminContext('/admin/events'), permanent: false },
+    { source: '/cpns/admin/tryout-config', destination: withAdminContext('/admin/assessments'), permanent: false },
+    { source: '/cpns/admin/keuangan', destination: withAdminContext('/admin/commerce/orders'), permanent: false },
     { source: '/cpns/admin/voucher', destination: withAdminContext('/admin/commerce/products'), permanent: false },
     // `/cpns/admin/export` dulu satu-satunya rute legacy yang benar-benar dirender
     // (tidak ada di peta redirect proxy) lalu redirect sendiri.
@@ -70,10 +70,10 @@ export const LEGACY_ADMIN_REDIRECTS: LegacyAdminRedirect[] = [
  */
 export const LEGACY_ADMIN_TAB_ROUTES: Record<string, string> = {
     products: '/admin/commerce/products',
-    events: '/admin/assessment/events',
-    exams: '/admin/assessment/exams',
+    events: '/admin/events',
+    exams: '/admin/assessments',
     questions: '/admin/content/questions',
-    commerce: '/admin/commerce',
+    commerce: '/admin/commerce/orders',
     articles: '/admin/content/articles',
     review: '/admin/content/review',
 }

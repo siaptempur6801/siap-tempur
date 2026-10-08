@@ -9,11 +9,11 @@ import { auditEntityId, redactAuditPayload } from '@/lib/audit-log'
  * Sebelum S9, hanya `app/actions/articles.ts` (dan beberapa RPC alur review)
  * yang menulis `audit_logs`. Seluruh sisanya — termasuk penyesuaian dompet yang
  * bernilai uang, pemberian peran, penghapusan instansi, dan perubahan kunci
- * jawaban — tidak meninggalkan jejak apa pun, padahal `/admin/audit` sudah ada
+ * jawaban — tidak meninggalkan jejak apa pun, padahal `/admin/settings/audit` sudah ada
  * dan menjual dirinya sebagai jejak audit.
  *
  * Test ini mengunci dua hal: setiap modul aksi tulis memanggil helper audit, dan
- * nama aksinya mengikuti konvensi yang bisa difilter di `/admin/audit`.
+ * nama aksinya mengikuti konvensi yang bisa difilter di `/admin/settings/audit`.
  */
 
 const repoRoot = resolve(__dirname, '../..')
@@ -72,7 +72,7 @@ describe('jejak audit setiap aksi tulis admin', () => {
                 names.add(match[2])
             }
         }
-        // Angka di awal atau huruf kecil akan memecah filter facet di /admin/audit.
+        // Angka di awal atau huruf kecil akan memecah filter facet di /admin/settings/audit.
         const offenders = [...names].filter((name) => !/^[A-Z][A-Z_]*$/.test(name))
         expect(offenders).toEqual([])
         expect(names.size, 'harus ada cukup banyak aksi tercatat').toBeGreaterThanOrEqual(30)

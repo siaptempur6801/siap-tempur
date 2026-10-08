@@ -4,6 +4,8 @@ import { ADMIN_PAGE_SIZE, adminOffset, adminTotalPages } from '@/lib/admin-pagin
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
 export type ReviewWorkspaceFilters = {
+    ids?: string[]
+
     subject?: string | null
     status?: string | null
     stage?: string | null
@@ -232,46 +234,28 @@ export class ContentReviewService {
         }
     }
 
-    /**
-     * Ringkasan content untuk dashboard admin.
-     *
-     * KENAPA TERPISAH DARI `getWorkspaceData`
-     *   Dashboard hanya membutuhkan: context (program/track), beberapa angka
-     *   status, dan 6 baris teratas untuk "Review queue". Tetapi ia memanggil
-     *   `getWorkspaceData`, yang jauh lebih berat:
-     *
-     *     1. menarik 250 soal LENGKAP dengan `stem`;
-     *     2. menarik SELURUH `content_reviews` untuk 250 soal itu;
-     *     3. memanggil RPC `get_content_question_detail` untuk satu soal terpilih
-     *        — RPC itu mengembalikan opsi, pembahasan, stimulus, knowledge
-     *        mapping, versi, audit log, dan kandidat stimulus dalam satu payload.
-     *
-     *   Tidak satu pun dari (2) dan (3) dipakai dashboard. Lihat
-     *   `app/admin/AdminOverview.tsx`: ia hanya membaca `catalog`, `counts`,
-     *   `questions` (untuk hitungan tahap review + 6 baris queue), dan
-     *   `subjectById`.
-     */
-    async getReviewSummary(context: ProgramTrackContext) {
+    /** Exact aggregate under the authenticated caller's existing RLS. */
+    async getReviewCounts(context: ProgramTrackContext, resolvedCatalog?: Awaited<ReturnType<typeof resolveCatalog>>) {
+        const catalog = resolvedCatalog ?? await resolveCatalog(context)
         const client = await createClient()
-        const catalog = await resolveCatalog(context)
+        const {data,error} = await client.rpc('admin_question_status_counts',{p_program_id:catalog.program.id,p_track_id:catalog.track.id})
+        if(error)throw error
+        if(!data)throw new Error('Review counts unavailable')
+        return {counts:data as {total:number;draft:number;published:number;approved:number;revisionRequired:number;editorial:number;academic:number;technical:number;unassigned:number;assignedToMe:number}}
+    }
 
-        // Dashboard hanya butuh 6 baris antrean; angka per tahap dihitung exact
-        // oleh `countQuestionsByStatus`, bukan dari jendela seperti sebelumnya.
-        const { data, error } = await client
-            .from('questions')
-            .select('id, question_code, subject_id, status, version, stem')
-            .eq('program_id', catalog.program.id)
-            .eq('track_id', catalog.track.id)
-            .in('status', ACTIONABLE_STATUSES)
-            .order('updated_at', { ascending: false })
-            .limit(6)
-        if (error) throw error
-
-        const questions = (data ?? []) as Row[]
-        const subjectById = new Map(catalog.subjects.map((subject) => [String(subject.id), subject]))
-        const counts = await this.countQuestionsByStatus(catalog)
-
-        return { catalog, questions, subjectById, counts }
+    /** Separate panel read so a slow queue cannot block operational metrics. */
+    async getReviewQueue(context: ProgramTrackContext, resolvedCatalog?: Awaited<ReturnType<typeof resolveCatalog>>) {
+        const catalog = resolvedCatalog ?? await resolveCatalog(context)
+        const client=await createClient()
+        const {data,error}=await client.from('questions').select('id, question_code, subject_id, status, version, stem, subjects(id,code,name)')
+            .eq('program_id',catalog.program.id).eq('track_id',catalog.track.id).in('status',ACTIONABLE_STATUSES)
+            .order('updated_at',{ascending:false}).limit(6)
+        if(error)throw error
+        const questions=(data ?? []) as Row[]
+        const subjectById=new Map(catalog.subjects.map(subject=>[subject.id,subject]))
+        for(const question of questions){const subject=asRecord(question.subjects);if(subject?.id)subjectById.set(String(subject.id),{id:String(subject.id),code:String(subject.code),name:String(subject.name),subjectType:'mandatory'})}
+        return {questions,subjectById}
     }
 
     async getWorkspaceData(
@@ -308,6 +292,7 @@ export class ContentReviewService {
             let query = builder
                 .eq('program_id', catalog.program.id)
                 .eq('track_id', catalog.track.id)
+            if (filters.ids) query = query.in('id', filters.ids.length ? filters.ids : [NO_MATCH_ID])
             if (subjectId) query = query.eq('subject_id', subjectId)
             if (filters.status === 'all') {
                 // Semua status, termasuk terbit/arsip (pilihan eksplisit).
@@ -421,7 +406,6 @@ export class ContentReviewService {
 
         const selectedQuestion = offPageSelected
             ?? (selectedQuestionId ? questions.find((row) => sameId(row.id, selectedQuestionId)) ?? null : null)
-            ?? questions[0]
             ?? null
         const selectedId = selectedQuestion ? stringValue(selectedQuestion.id) : null
 

@@ -665,7 +665,13 @@ type EntitlementsTable = {
         created_at?: string
     }
     Update: Partial<EntitlementsTable['Insert']>
-    Relationships: []
+    Relationships: [{
+        foreignKeyName: 'fk_entitlements_feature_id_features'
+        columns: ['feature_id']
+        isOneToOne: false
+        referencedRelation: 'features'
+        referencedColumns: ['id']
+    }]
 }
 
 export type Database = {
@@ -767,6 +773,30 @@ export type Database = {
         }
         Views: { [_ in never]: never }
         Functions: {
+            admin_assessment_supply: {
+                Args: { p_exam_ids: string[] }
+                Returns: Array<{exam_id:string;bound_count:number;approved_bound_count:number;reviewed_bound_count:number;sections:Json}>
+            }
+            admin_drill_supply: {
+                Args: { p_program_id:string;p_track_id:string;p_node_ids:string[] }
+                Returns: Array<{node_id:string;available_count:number}>
+            }
+            admin_resource_counts: {
+                Args: {p_kind:string;p_ids:string[]}
+                Returns: Array<{resource_id:string;total:number}>
+            }
+            admin_question_status_counts: {
+                Args: {p_program_id:string;p_track_id:string}
+                Returns: Json
+            }
+            admin_monitoring_page: {
+                Args: {p_event_id?:string|null;p_organization_id?:string|null;p_batch_id?:string|null;p_assignment_id?:string|null;p_exam_id?:string|null;p_search?:string;p_status?:string;p_page?:number}
+                Returns: Json
+            }
+            admin_question_page: {
+                Args: {p_program_id:string;p_track_id:string;p_search?:string;p_status?:string;p_subject_id?:string|null;p_node_id?:string|null;p_review?:string;p_stage?:string;p_reviewer?:string;p_page?:number;p_id?:string|null}
+                Returns: Json
+            }
             get_question_bank_editor: {
                 Args: { p_program: string; p_track: string; p_id?: string | null }
                 Returns: Json

@@ -67,6 +67,7 @@ export async function startTryoutEvent(eventId: string) {
         return {
             success: true,
             sessionId: result.attemptId,
+            sessionPath: result.sessionPath,
             resumed: result.resumed,
             completed: result.completed,
         }

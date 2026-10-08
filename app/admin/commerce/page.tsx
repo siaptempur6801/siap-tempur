@@ -1,11 +1,8 @@
-import AdminOperationsWorkspace from '@/app/admin/AdminOperationsWorkspace'
+import { redirect } from 'next/navigation'
+import { adminHref } from '@/lib/admin-routes'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
-type SearchParams = { program?: string; track?: string; edit?: string; ok?: string; error?: string }
-
-export default async function CommerceRoute({ searchParams }: { searchParams: Promise<SearchParams> }) {
-    const params = await searchParams
-    return <AdminOperationsWorkspace mode="commerce" searchParams={Promise.resolve({ ...params, program: params.program || 'CPNS', track: params.track || 'SKD' })}/>
+export default async function LegacyPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams
+  const query = new URLSearchParams(Object.entries(params).flatMap(([key,value]) => value === undefined ? [] : (Array.isArray(value) ? value : [value]).map(v => [key,v])))
+  redirect(adminHref('/admin/commerce' + (query.size ? `?${query}` : '')))
 }

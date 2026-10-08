@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/utils/supabase/middleware'
 import { CSRF_COOKIE } from '@/lib/csrf'
 import { LEGACY_ADMIN_BASE_PATH, LEGACY_ADMIN_TAB_ROUTES } from '@/lib/admin-redirects'
+import { adminHref } from '@/lib/admin-routes'
 
 function isLoopbackHostname(hostname: string) {
     return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
@@ -82,7 +83,21 @@ export async function proxy(request: NextRequest) {
         path: '/',
     })
 
-    return legacyAdminTabRedirect(request, response) ?? response
+    const legacy = legacyAdminTabRedirect(request, response)
+    if (legacy) { legacy.headers.set('Content-Security-Policy', cspHeader); return legacy }
+    // Only normalize page reads. POST/server actions keep their mutation contract.
+    if (request.method === 'GET' && request.nextUrl.pathname.startsWith('/admin')) {
+        const current = `${request.nextUrl.pathname}${request.nextUrl.search}`
+        const canonical = adminHref(current)
+        if (canonical !== current) {
+            const target = new URL(canonical, request.url)
+            const redirected = NextResponse.redirect(target, 307)
+            response.cookies.getAll().forEach(cookie => redirected.cookies.set(cookie))
+            redirected.headers.set('Content-Security-Policy', cspHeader)
+            return redirected
+        }
+    }
+    return response
 }
 
 export const config = {

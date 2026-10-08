@@ -42,6 +42,7 @@ type UserEvent = {
     participant_id: string | null
     participant_status: string | null
     session_id: string | null
+    session_path: string
     event_session_status: string | null
     test_session_status: string | null
     question_count: number
@@ -789,7 +790,7 @@ export default function EventClient({ events }: EventClientProps) {
                 toast.info('Riwayat pengerjaan event ini tidak tersedia untuk akunmu.')
                 return
             }
-            router.push(`/cpns/dashboard/tryout/${event.session_id}/result?from=event`)
+            router.push(`${event.session_path}/${event.session_id}/result?from=event`)
             return
         }
         // Payment actions
@@ -872,7 +873,7 @@ export default function EventClient({ events }: EventClientProps) {
                 }
                 toast.success(result.message || 'Tryout Akbar dimulai')
                 if ('sessionId' in result && result.sessionId) {
-                    router.push(`/cpns/dashboard/tryout/${result.sessionId}`)
+                    router.push(`${result.sessionPath}/${result.sessionId}`)
                     isNavigating = true
                 } else {
                     router.refresh()

@@ -46,6 +46,8 @@ function routeExists(pathname: string): boolean {
     const target = pathname.split('?')[0].replace(/\/$/, '') || '/'
     return routePatterns.some((pattern) => {
         const patternParts = pattern.split('/')
+        const optionalCatchAll = patternParts.at(-1)?.startsWith('[[...')
+        if(optionalCatchAll) return target === patternParts.slice(0,-1).join('/') || target.startsWith(patternParts.slice(0,-1).join('/') + '/')
         const targetParts = target.split('/')
         if (patternParts.length !== targetParts.length) return false
         return patternParts.every((part, index) =>
@@ -93,9 +95,9 @@ describe('peta redirect admin legacy', () => {
     })
 
     it('konteks program/track dibawa pada tujuan yang membutuhkannya', () => {
-        // AdminOperationsWorkspace memakai `params.program || 'TKA'`. Tanpa konteks
+        // Workspace domain memakai `params.program || 'TKA'`. Tanpa konteks
         // eksplisit, pengguna yang membuka /cpns/admin/event mendarat di konteks TKA.
-        const needsContext = ['/admin/content/questions', '/admin/assessment/', '/admin/commerce']
+        const needsContext = ['/admin/content/questions', '/admin/assessment/', '/admin/commerce/orders']
         const withoutContext = LEGACY_ADMIN_REDIRECTS
             .filter((rule) => needsContext.some((prefix) => rule.destination.startsWith(prefix)))
             .filter((rule) => !rule.destination.includes('program=CPNS'))

@@ -37,10 +37,11 @@ export default defineConfig({
         /.*8-tka-smp-mini\.spec\.ts/,
         /.*9-tka-smp-monetization\.spec\.ts/,
         /.*13-tka-diagnostic\.spec\.ts/,
-        /.*10-admin-workspace-authenticated\.spec\.ts/,
+        /.*(?:10-admin-workspace-authenticated|27-admin-task-flows|28-admin-canonical-routes|29-admin-performance)\.spec\.ts/,
         /.*11-cpns-rc\.spec\.ts/,
         /.*7-content-review-workflow\.spec\.ts/,
         /.*17-authenticated-route-health\.spec\.ts/,
+        /.*(?:19-admin-role-navigation|20-instansi-join|21-instansi-exam|22-landing-authenticated|23-organization-participant-lifecycle|24-event-context-lifecycle|25-organization-dual-assignment-isolation|26-event-assessment-matrix)\.spec\.ts/,
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -117,7 +118,7 @@ export default defineConfig({
           },
           {
             name: 'chromium-admin-staging',
-            testMatch: /.*10-admin-workspace-authenticated\.spec\.ts/,
+            testMatch: /.*(?:10-admin-workspace-authenticated|27-admin-task-flows|28-admin-canonical-routes|29-admin-performance)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
               storageState: 'playwright/.auth/admin-user.json',

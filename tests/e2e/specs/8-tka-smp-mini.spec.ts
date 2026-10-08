@@ -6,7 +6,7 @@ import {
     type DisposableTkaSession,
 } from '../tka.ci'
 import { readOwnTkaReadiness } from '../tka-readiness.ci'
-import { confirmTkaSectionIfPresent } from '../pages/TkaExamActions'
+import { confirmTkaSectionIfPresent, dismissSessionReward } from '../pages/TkaExamActions'
 
 async function examCard(page: Page, title: string) {
     const card = page.locator('article').filter({
@@ -131,11 +131,61 @@ async function finishMini(page: Page, expectedSubject: string) {
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result(?:\?.*)?$/i, { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Sesi selesai. Sekarang lihat apa yang perlu diperbaiki.', exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Tinjau jawaban satu per satu', exact: true })).toBeVisible()
+    await dismissSessionReward(page)
     await expect(page.getByText('Mini Tryout · TKA/SMP')).toBeVisible()
     await expect(page.getByText(/1\/15/).first()).toBeVisible()
 }
 
 test.describe.serial('TKA SMP Mini Tryout core', () => {
+    test('Direct catalog Drill is discoverable, starts, autosaves, resumes, and completes', async ({ page }) => {
+        test.setTimeout(120_000)
+        const learner = await freshDisposableTkaSession(page)
+        await page.goto('/tka/smp/tryout')
+        const card = page.getByTestId('tka-catalog-drill').filter({ hasText: /Aljabar/i })
+        await expect(card).toBeVisible()
+        await expect(card.getByRole('heading')).toContainText(/Aljabar/i)
+        const twinPage = await page.context().newPage()
+        await twinPage.goto('/tka/smp/tryout')
+        const twinCard = twinPage.getByTestId('tka-catalog-drill').filter({ hasText: /Aljabar/i })
+        await expect(twinCard).toBeVisible()
+        await Promise.all([
+            card.getByRole('button', { name: 'Mulai Drill', exact: true }).click(),
+            twinCard.getByRole('button', { name: 'Mulai Drill', exact: true }).click(),
+        ])
+        await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
+        await twinPage.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
+        const attemptId = page.url().match(/\/tryout\/([0-9a-f-]+)$/i)?.[1]
+        expect(attemptId).toBeTruthy()
+        expect(twinPage.url().match(/\/tryout\/([0-9a-f-]+)$/i)?.[1]).toBe(attemptId)
+        await expect(page.getByText(/Soal 1 dari 10/)).toBeVisible()
+
+        const firstOption = page.locator('article').last().getByRole('button').first()
+        await firstOption.click()
+        await expect(page.getByText(/Terjawab total:/)).toContainText('1/10')
+
+        await page.reload()
+        await expect(page.getByText(/Soal 1 dari 10/)).toBeVisible()
+        await expect(page.locator('article').last().getByRole('button').first()).toHaveAttribute('data-selected', 'true')
+        await expect(page.getByText(/Terjawab total:/)).toContainText('1/10')
+
+        for (let index = 1; index < 10; index += 1) {
+            await page.getByRole('button', { name: 'Selanjutnya', exact: true }).click()
+        }
+        await expect(page.getByText(/Soal 10 dari 10/)).toBeVisible()
+        await twinPage.goto(`/tka/smp/tryout/${attemptId}`)
+        await twinPage.getByRole('button', { name: /^Buka soal 10/ }).click()
+        await expect(twinPage.getByText(/Soal 10 dari 10/)).toBeVisible()
+        await Promise.all([
+            page.getByRole('button', { name: 'Kirim tryout', exact: true }).click(),
+            twinPage.getByRole('button', { name: 'Kirim tryout', exact: true }).click(),
+        ])
+        await Promise.all([confirmTkaSectionIfPresent(page), confirmTkaSectionIfPresent(twinPage)])
+        await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result(?:\?.*)?$/i, { timeout: 30_000 })
+        await twinPage.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+\/result(?:\?.*)?$/i, { timeout: 30_000 })
+        await twinPage.close()
+        expect(learner.userId).toBeTruthy()
+    })
+
     test('SD & SMA aktif: pengunjung anonim diarahkan ke login dan tetap aman di mobile', async ({ browser }) => {
         // Kebijakan 2026-09-17: SD dan SMA bukan lagi "coming soon" — keduanya permukaan aplikasi
         // sehingga pengunjung anonim diarahkan ke login (sama seperti SMP).

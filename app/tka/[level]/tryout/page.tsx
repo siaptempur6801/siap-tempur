@@ -31,6 +31,7 @@ interface TryoutOption {
     disabledReason: string | null
     activeAttemptId: string | null
     full: boolean
+    drill: boolean
 }
 
 function minutes(seconds: unknown) {
@@ -115,13 +116,13 @@ export default async function TkaTryoutPage({
     if (typeError) throw typeError
 
     const examTypeById = new Map((examTypes ?? []).map((row) => [String(row.id), row]))
-    const tryoutExams = (exams ?? []).filter((exam) => {
+    const catalogExams = (exams ?? []).filter((exam) => {
         const typeCode = String(examTypeById.get(String(exam.exam_type_id))?.code ?? '').toUpperCase()
         const slug = String(exam.slug ?? '').toLowerCase()
-        return typeCode.includes('TRYOUT') || slug.includes('-mini-') || slug.endsWith('-full')
+        return typeCode.includes('TRYOUT') || (level === 'SMP' && typeCode.includes('DRILL')) || slug.includes('-mini-') || slug.endsWith('-full')
     })
-    const examIds = tryoutExams.map((exam) => String(exam.id))
-    const featureIds = Array.from(new Set(tryoutExams
+    const examIds = catalogExams.map((exam) => String(exam.id))
+    const featureIds = Array.from(new Set(catalogExams
         .map((exam) => exam.required_feature_id ? String(exam.required_feature_id) : '')
         .filter(Boolean)))
 
@@ -137,9 +138,10 @@ export default async function TkaTryoutPage({
         examIds.length > 0
             ? supabase
                 .from('exam_attempts')
-                .select('id, exam_id, attempt_number, status, started_at, submitted_at, percentage, updated_at')
+                .select('id, exam_id, attempt_number, status, started_at, submitted_at, percentage, updated_at, metadata')
                 .eq('user_id', user.id)
                 .in('exam_id', examIds)
+                .or('metadata->>accessContext.is.null,metadata->>accessContext.eq.direct')
                 .order('updated_at', { ascending: false })
             : Promise.resolve({ data: [], error: null }),
     ])
@@ -171,7 +173,7 @@ export default async function TkaTryoutPage({
         const examId = String(attempt.exam_id)
         if (!activeAttemptByExam.has(examId)) activeAttemptByExam.set(examId, String(attempt.id))
     }
-    const tryoutOptions: TryoutOption[] = tryoutExams.map((exam) => {
+    const catalogOptions: TryoutOption[] = catalogExams.map((exam) => {
         const type = examTypeById.get(String(exam.exam_type_id))
         const typeCode = String(type?.code ?? '').toUpperCase()
         const slug = String(exam.slug)
@@ -195,15 +197,16 @@ export default async function TkaTryoutPage({
                 : access === 'PREMIUM'
                     ? 'Premium - Tempur Pass'
                     : 'Gratis'
+        const drill = typeCode.includes('DRILL')
         const details = full
             ? ['60 soal - 30 + 30', '75 menit per bagian']
-            : ['15 soal - 1 mapel']
+            : drill ? ['Latihan materi terarah'] : ['15 soal - 1 mapel']
 
         return {
             id: String(exam.id),
             title: String(exam.title),
             slug,
-            typeLabel: String(type?.name || type?.code || (full ? 'Full Tryout' : 'Mini Tryout')),
+            typeLabel: String(type?.name || type?.code || (drill ? 'Drill' : full ? 'Full Tryout' : 'Mini Tryout')),
             duration: minutes(exam.duration_seconds),
             details,
             accessLabel,
@@ -215,8 +218,11 @@ export default async function TkaTryoutPage({
                     : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }) || accessReason,
             activeAttemptId: activeAttemptByExam.get(String(exam.id)) ?? null,
             full,
+            drill,
         }
     })
+    const tryoutOptions = catalogOptions.filter((exam) => !exam.drill)
+    const drillOptions = catalogOptions.filter((exam) => exam.drill)
     const fullTryouts = tryoutOptions.filter((exam) => exam.full)
     const featuredTryout = fullTryouts[0] ?? null
     const additionalFullTryouts = fullTryouts.slice(1)
@@ -454,6 +460,38 @@ export default async function TkaTryoutPage({
                                                 <BookOpenCheck size={20} />
                                             </div>
                                         </div>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {exam.duration && <MetaChip icon={<Clock3 size={13} />} text={`${exam.duration} menit`} />}
+                                            {exam.details.map((detail) => <MetaChip key={detail} text={detail} />)}
+                                            <MetaChip text={exam.accessLabel} tone={exam.accessTone} />
+                                        </div>
+                                    </div>
+                                    <div className="mt-6">
+                                        <TkaStartExamButton
+                                            level={level}
+                                            examSlug={exam.slug}
+                                            disabledReason={exam.disabledReason}
+                                            activeAttemptId={exam.activeAttemptId}
+                                        />
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {drillOptions.length > 0 && (
+                    <section className="space-y-4 pt-4" aria-labelledby="tka-drill-catalog-title">
+                        <div>
+                            <h3 id="tka-drill-catalog-title" className="text-lg font-bold text-slate-950">Drill TKA {level}</h3>
+                            <p className="mt-1 text-sm text-slate-600">Pilih latihan materi untuk mulai, menyimpan progres, dan melanjutkannya kapan saja.</p>
+                        </div>
+                        <div className="grid gap-5 md:grid-cols-2">
+                            {drillOptions.map((exam) => (
+                                <article key={exam.id} data-testid="tka-catalog-drill" data-exam-id={exam.id} className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md">
+                                    <div>
+                                        <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">{exam.typeLabel}</p>
+                                        <h4 className="mt-2 text-xl font-bold text-slate-950">{exam.title}</h4>
                                         <div className="mt-4 flex flex-wrap gap-2">
                                             {exam.duration && <MetaChip icon={<Clock3 size={13} />} text={`${exam.duration} menit`} />}
                                             {exam.details.map((detail) => <MetaChip key={detail} text={detail} />)}

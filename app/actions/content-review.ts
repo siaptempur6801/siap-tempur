@@ -1,5 +1,7 @@
 'use server'
 
+import {adminReturnUrl} from '@/lib/admin-return-url'
+
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
@@ -86,9 +88,16 @@ function workspaceUrl(context: ProgramTrackContext, questionId?: string | null, 
     return `/admin/content/review?${params.toString()}`
 }
 
-async function finish(context: ProgramTrackContext, questionId: string | null, ok: string, error?: unknown) {
+async function finish(context: ProgramTrackContext, questionId: string | null, ok: string, error?: unknown,form?:FormData) {
     revalidatePath('/admin/content/review')
-    redirect(workspaceUrl(context, questionId, error ? null : ok, error))
+    const target=new URL(workspaceUrl(context,questionId,error?null:ok,error),'http://admin.local')
+    const workspaceReturn=adminReturnUrl(form?.get('workspace_return_to'),'/admin/content/review')
+    const previous=new URL(workspaceReturn,'http://admin.local')
+    if(previous.pathname === '/admin/content/review')for(const key of ['q','status','subject','stage','reviewer','view','page']){const value=previous.searchParams.get(key);if(value)target.searchParams.set(key,value)}
+    if(!questionId && previous.searchParams.get('new')==='1')target.searchParams.set('new','1')
+    const returnContext=form?.get('return_context')
+    if(returnContext)target.searchParams.set('returnTo',adminReturnUrl(returnContext,'/admin/content/questions'))
+    redirect(`${target.pathname}${target.search}`)
 }
 
 export async function saveContentDraftAction(form: FormData) {
@@ -148,7 +157,7 @@ export async function saveContentDraftAction(form: FormData) {
     } catch (error) {
         failure = error
     }
-    await finish(context, savedId, 'Draft soal tersimpan.', failure)
+    await finish(context, savedId, 'Draft soal tersimpan.', failure,form)
 }
 
 export async function submitContentQuestionAction(form: FormData) {
@@ -164,7 +173,7 @@ export async function submitContentQuestionAction(form: FormData) {
     } catch (error) {
         failure = error
     }
-    await finish(context, questionId, 'Soal dikirim ke Editorial Review.', failure)
+    await finish(context, questionId, 'Soal dikirim ke Editorial Review.', failure,form)
 }
 
 export async function assignContentReviewerAction(form: FormData) {
@@ -192,7 +201,7 @@ export async function assignContentReviewerAction(form: FormData) {
     } catch (error) {
         failure = error
     }
-    await finish(context, questionId, 'Reviewer berhasil ditugaskan.', failure)
+    await finish(context, questionId, 'Reviewer berhasil ditugaskan.', failure,form)
 }
 
 export async function decideContentReviewAction(form: FormData) {
@@ -214,7 +223,7 @@ export async function decideContentReviewAction(form: FormData) {
     } catch (error) {
         failure = error
     }
-    await finish(context, questionId, 'Keputusan review tersimpan.', failure)
+    await finish(context, questionId, 'Keputusan review tersimpan.', failure,form)
 }
 
 export async function publishContentQuestionAction(form: FormData) {
@@ -230,5 +239,5 @@ export async function publishContentQuestionAction(form: FormData) {
     } catch (error) {
         failure = error
     }
-    await finish(context, questionId, 'Soal berhasil dipublish.', failure)
+    await finish(context, questionId, 'Soal berhasil dipublish.', failure,form)
 }

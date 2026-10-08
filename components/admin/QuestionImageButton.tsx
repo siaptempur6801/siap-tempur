@@ -1,13 +1,12 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import Image from 'next/image'
-import { ImagePlus, Loader2, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { QUESTION_IMAGE_ACCEPT } from '@/lib/question-media'
-import { uploadQuestionImage } from '@/lib/question-media-client'
 import { adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { QUESTION_IMAGE_ACCEPT } from '@/lib/question-media'
 import { cn } from '@/lib/utils'
+import { ImagePlus,Loader2,Trash2 } from 'lucide-react'
+import Image from 'next/image'
+import { useRef,useState } from 'react'
+import { toast } from 'sonner'
 
 /**
  * Tombol unggah gambar soal/opsi.
@@ -43,6 +42,7 @@ export default function QuestionImageButton({
     async function handleFile(file: File) {
         try {
             setUploading(true)
+            const { uploadQuestionImage } = await import('@/lib/question-media-client')
             onUploaded(await uploadQuestionImage(file))
             toast.success('Gambar diunggah.')
         } catch (error) {
@@ -73,7 +73,7 @@ export default function QuestionImageButton({
                 onClick={() => inputRef.current?.click()}
                 aria-label={ariaLabel}
                 className={compact
-                    ? 'inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-900/5 disabled:cursor-not-allowed disabled:opacity-40'
+                    ? 'inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground focus:outline-none focus:ring-4 focus:ring-slate-900/5 disabled:cursor-not-allowed disabled:opacity-40'
                     : adminSecondaryButtonClass}
             >
                 {uploading ? <Loader2 className="animate-spin" size={15}/> : <ImagePlus size={15}/>}
@@ -87,14 +87,14 @@ export default function QuestionImageButton({
                         width={36}
                         height={36}
                         unoptimized
-                        className={cn('rounded-lg border border-slate-200 object-cover', compact ? 'h-9 w-9' : 'h-10 w-10')}
+                        className={cn('rounded-lg border border-border object-cover', compact ? 'h-9 w-9' : 'h-10 w-10')}
                     />
                     {onClear ? (
                         <button
                             type="button"
                             onClick={onClear}
                             aria-label={`Hapus gambar: ${ariaLabel}`}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 text-red-500 transition hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-500/10"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-danger-border text-red-500 transition hover:bg-danger-muted focus:outline-none focus:ring-4 focus:ring-red-500/10"
                         >
                             <Trash2 size={14}/>
                         </button>

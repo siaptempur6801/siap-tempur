@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/utils/supabase/server'
+import { parseQuestionSnapshotOption, parseQuestionSnapshotStimulus } from '@/src/domain/question-snapshot'
 
 type RecordValue = Record<string, unknown>
 
@@ -63,32 +64,6 @@ function readNumber(record: RecordValue | null, key: string) {
     return null
 }
 
-function parseOption(value: unknown): TkaWrongQuestionOption | null {
-    const option = asRecord(value)
-    const id = readString(option, 'id')
-    const content = readString(option, 'content')
-    if (!id || content === null) return null
-    return {
-        id,
-        key: readString(option, 'option_key') ?? '',
-        content,
-        imageUrl: readString(option, 'image_url'),
-        responseGroup: readString(option, 'response_group'),
-        responseGroupOrder: readNumber(option, 'response_group_order'),
-    }
-}
-
-function parseStimulus(snapshot: RecordValue | null) {
-    const stimulus = asRecord(snapshot?.stimulus)
-    const content = readString(stimulus, 'content')
-    if (!stimulus || content === null) return null
-    return {
-        title: readString(stimulus, 'title'),
-        content,
-        imageUrl: readString(stimulus, 'image_url'),
-    }
-}
-
 function parseItem(row: RecordValue, subjectCodeById: Map<string, string>): TkaWrongQuestionItem | null {
     const snapshot = asRecord(row.question_snapshot)
     const question = asRecord(snapshot?.question)
@@ -109,9 +84,9 @@ function parseItem(row: RecordValue, subjectCodeById: Map<string, string>): TkaW
         stem,
         responseType: readString(question, 'question_type') ?? 'single_choice',
         cognitiveLevel: readString(question, 'cognitive_level'),
-        stimulus: parseStimulus(snapshot),
+        stimulus: parseQuestionSnapshotStimulus(snapshot),
         options: asArray(snapshot?.options).flatMap((value) => {
-            const parsed = parseOption(value)
+            const parsed = parseQuestionSnapshotOption(value)
             return parsed ? [parsed] : []
         }),
         failureCount: readNumber(row, 'failure_count') ?? 1,

@@ -1,11 +1,14 @@
 'use client'
+import dynamic from 'next/dynamic'
 
-import { useMemo, useState } from 'react'
-import { parseQuestionOptions } from '@/lib/question-options'
-import { Plus, Trash2 } from 'lucide-react'
-import { adminInputClass, adminLabelClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import { adminInputClass,adminLabelClass,adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 import QuestionImageButton from '@/components/admin/QuestionImageButton'
-import QuestionRichTextEditor from '@/components/admin/QuestionRichTextEditor'
+
+import { parseQuestionOptions } from '@/lib/question-options'
+import { Plus,Trash2 } from 'lucide-react'
+import { useMemo,useState } from 'react'
+
+const QuestionRichTextEditor = dynamic(() => import('@/components/admin/QuestionRichTextEditor'), { loading: () => <div role="status" className="min-h-28 animate-pulse rounded-md bg-muted">Memuat editor…</div> })
 
  type OptionRow = {
     /**
@@ -156,17 +159,17 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
     }
 
     return (
-        <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/60 p-4 lg:col-span-2">
-            <legend className="px-1 text-sm font-black text-slate-900">{label}</legend>
+        <fieldset className="space-y-3 rounded-lg border border-border bg-muted/60 p-4 lg:col-span-2">
+            <legend className="px-1 text-sm font-semibold text-foreground">{label}</legend>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <p className="mt-0.5 text-xs font-medium text-slate-500">Isi opsi dan tandai jawaban benar. Simbol, rumus, dan baris baru akan dipertahankan.</p>
+                    <p className="mt-0.5 text-xs font-medium text-muted-foreground">Isi opsi dan tandai jawaban benar. Simbol, rumus, dan baris baru akan dipertahankan.</p>
                 </div>
                 <button type="button" className={adminSecondaryButtonClass} onClick={addRow} disabled={rows.length >= 100}><Plus size={15}/>Tambah opsi</button>
             </div>
 
             {isCategory ? (
-                <p role="note" className="rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2 text-xs font-semibold leading-5 text-blue-900">
+                <p role="note" className="rounded-lg border border-info-border bg-info-muted/60 px-3 py-2 text-xs font-semibold leading-5 text-blue-900">
                     Tipe kategori: setiap opsi wajib punya <b>Response group</b>. Minimal dua kelompok; tiap kelompok minimal dua opsi
                     dan tepat satu jawaban benar.
                 </p>
@@ -176,7 +179,7 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
 
             <div className="space-y-3">
                 {rows.map((row, index) => (
-                    <div key={row.id} data-option-row={row.key} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <div key={row.id} data-option-row={row.key} className="rounded-lg border border-border bg-card p-3 ">
                         <div className="grid gap-3 md:grid-cols-[88px_minmax(0,1fr)_120px_110px_auto] md:items-end">
                             <label className="space-y-1">
                                 <span className={adminLabelClass}>Kode</span>
@@ -187,20 +190,20 @@ export default function QuestionOptionsEditor({ defaultValue, label = 'Pilihan j
                                 <span className={adminLabelClass}>Skor</span>
                                 <input className={adminInputClass} inputMode="decimal" value={row.score} onChange={(event) => update(index, { score: event.target.value })} aria-label={`Skor opsi ${row.key || index + 1}`} placeholder="Opsional" />
                             </label>
-                            <label className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700">
-                                <input type="checkbox" checked={row.isCorrect === true} onChange={(event) => update(index, { isCorrect: event.target.checked })} aria-label={`Jawaban benar ${row.key || index + 1}`} className="h-4 w-4 rounded border-slate-300 text-blue-600" />
+                            <label className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm font-medium text-foreground">
+                                <input type="checkbox" checked={row.isCorrect === true} onChange={(event) => update(index, { isCorrect: event.target.checked })} aria-label={`Jawaban benar ${row.key || index + 1}`} className="h-4 w-4 rounded border-border text-info" />
                                 Benar
                             </label>
-                            <div className="flex items-center gap-1.5"><QuestionImageButton compact ariaLabel={`Gambar opsi ${row.key || index + 1}`} value={row.imageUrl || null} onUploaded={(url) => update(index, { imageUrl: url })} onClear={() => update(index, { imageUrl: '' })} testId={`option-${row.key || index + 1}`}/><button type="button" onClick={() => removeRow(index)} disabled={rows.length <= 2} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-30" aria-label={`Hapus opsi ${row.key || index + 1}`}><Trash2 size={16}/></button></div>
+                            <div className="flex items-center gap-1.5"><QuestionImageButton compact ariaLabel={`Gambar opsi ${row.key || index + 1}`} value={row.imageUrl || null} onUploaded={(url) => update(index, { imageUrl: url })} onClear={() => update(index, { imageUrl: '' })} testId={`option-${row.key || index + 1}`}/><button type="button" onClick={() => removeRow(index)} disabled={rows.length <= 2} className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-danger-border text-red-500 transition hover:bg-danger-muted disabled:cursor-not-allowed disabled:opacity-30" aria-label={`Hapus opsi ${row.key || index + 1}`}><Trash2 size={16}/></button></div>
                         </div>
 
                         {isCategory ? (
-                            <div className="mt-3 border-t border-dashed border-slate-200 pt-3">
+                            <div className="mt-3 border-t border-dashed border-border pt-3">
                                 <OptionAdvancedFields row={row} index={index} update={update} requiredGroup/>
                             </div>
                         ) : (
-                            <details className="mt-3 border-t border-dashed border-slate-200 pt-3">
-                                <summary className="cursor-pointer text-xs font-bold text-slate-500">Pengaturan lanjutan: kategori, urutan, gambar</summary>
+                            <details className="mt-3 border-t border-dashed border-border pt-3">
+                                <summary className="cursor-pointer text-xs font-medium text-muted-foreground">Pengaturan lanjutan: kategori, urutan, gambar</summary>
                                 <div className="mt-3">
                                     <OptionAdvancedFields row={row} index={index} update={update} requiredGroup={false}/>
                                 </div>

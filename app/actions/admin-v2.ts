@@ -1,11 +1,17 @@
 'use server'
 
+import { createAdminClient } from '@/lib/utils/supabase/server'
+
+import { adminReturnUrl } from '@/lib/admin-return-url'
+import { assessmentCatalogService } from '@/src/services/assessment-catalog.service'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { validateCsrf } from '@/lib/csrf'
 import { PERMISSIONS, type PermissionCode } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
-import { adminV2Service } from '@/src/services/admin-v2.service'
+import { adminProductService } from '@/src/services/admin-product.service'
+import { adminEventManagementService } from '@/src/services/admin-event-management.service'
+import { adminExamManagementService } from '@/src/services/admin-exam-management.service'
 import { auditAdminAction } from '@/lib/audit-log'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
@@ -73,13 +79,13 @@ function errorMessage(error: unknown) {
         EVENT_REGISTRATION_TIME_INVALID: 'Rentang waktu registrasi event tidak valid.',
         EVENT_FLYER_URL_INVALID: 'URL foto event tidak valid. Upload ulang melalui form event.',
         EVENT_SESSION_TIME_INVALID: 'Waktu sesi tidak valid.',
+        EVENT_ASSESSMENT_NOT_READY: 'Pilih assessment aktif yang memiliki soal pada katalog CPNS/TKA.',
         EVENT_SESSION_CAPACITY_INVALID: 'Kapasitas sesi harus lebih dari 0.',
         EVENT_SESSION_NAME_REQUIRED: 'Nama sesi event wajib diisi.',
         EVENT_SESSION_MISMATCH: 'Sesi tidak berasal dari event yang dipilih.',
         EVENT_NOT_FOUND: 'Event tidak ditemukan.',
         EVENT_CATALOG_MISMATCH: 'Event tidak berada pada program/track yang sedang aktif.',
-        EVENT_EXAM_MISMATCH: 'Exam dan event harus berada pada program/track yang sama.',
-        EVENT_EXAM_TYPE_REQUIRED: 'Sesi Tryout Akbar hanya boleh memakai exam bertipe EVENT.',
+        EVENT_EXAM_MISMATCH: 'Assessment harus berasal dari domain dan level event yang sama.',
         EVENT_SESSION_OUTSIDE_EVENT: 'Waktu sesi harus berada di dalam rentang waktu event.',
         EVENT_PRODUCT_MISMATCH: 'Produk tiket tidak cocok dengan event yang dipilih.',
         EVENT_PRODUCT_ARCHIVED: 'Produk tiket sudah diarsipkan.',
@@ -145,9 +151,9 @@ type AdminAudit = {
  */
 const ADMIN_TAB_ROUTES = {
     products: '/admin/commerce/products',
-    commerce: '/admin/commerce',
-    events: '/admin/assessment/events',
-    exams: '/admin/assessment/exams',
+    commerce: '/admin/commerce/orders',
+    events: '/admin/events',
+    exams: '/admin/assessments',
     questions: '/admin/content/questions',
 } as const
 
@@ -182,8 +188,13 @@ function finish(
     context: ProgramTrackContext,
     error: unknown = null,
     editId?: string | null,
+    extraParams: Record<string, string | null | undefined> = {},
 ) {
-    const base = `${ADMIN_TAB_ROUTES[tab]}?${contextQuery(context)}`
+    const params = new URLSearchParams(contextQuery(context))
+    for (const [key, value] of Object.entries(extraParams)) {
+        if (value) params.set(key, value)
+    }
+    const base = `${ADMIN_TAB_ROUTES[tab]}?${params.toString()}`
     // Revalidasi rute kanonik, bukan path legacy yang hanya me-redirect.
     revalidatePath(ADMIN_TAB_ROUTES[tab])
     const edit = editId ? `&edit=${encodeURIComponent(editId)}` : ''
@@ -207,7 +218,7 @@ export async function saveProductAction(form: FormData) {
     try {
         const authorization = await actor(PERMISSIONS.PRODUCT_MANAGE)
         actorId = authorization.userId
-        savedId = await adminV2Service.saveProduct({
+        savedId = await adminProductService.saveProduct({
             id: requestedId,
             code: text(form, 'code'),
             name: text(form, 'name'),
@@ -235,6 +246,13 @@ export async function saveProductAction(form: FormData) {
             token_grant: nullableNumber(form, 'token_grant'),
         },
     }, failure)
+    if (text(form,'return_to')) {
+        revalidatePath('/admin/commerce/products')
+        const target = new URL(adminReturnUrl(form.get('return_to'),'/admin/commerce/products'),'http://admin.local')
+        if(failure && savedId) target.searchParams.set('edit',savedId)
+        target.searchParams.set(failure ? 'error' : 'ok',failure ? errorMessage(failure) : 'Produk tersimpan. Tinjau readiness dan availability sebelum aktivasi.')
+        redirect(`${target.pathname}${target.search}`)
+    }
     finish('products', 'Produk tersimpan.', context, failure, savedId)
 }
 
@@ -246,7 +264,7 @@ export async function archiveProductAction(form: FormData) {
     try {
         const authorization = await actor(PERMISSIONS.PRODUCT_MANAGE)
         actorId = authorization.userId
-        await adminV2Service.archiveProduct(productId)
+        await adminProductService.archiveProduct(productId)
     } catch (error) { failure = error }
     await auditAdminV2Action({
         actorId,
@@ -256,6 +274,12 @@ export async function archiveProductAction(form: FormData) {
         before: { status: 'active' },
         after: { status: 'archived' },
     }, failure)
+    if (text(form,'return_to')) {
+        revalidatePath('/admin/commerce/products')
+        const target = new URL(adminReturnUrl(form.get('return_to'),'/admin/commerce/products'),'http://admin.local')
+        target.searchParams.set(failure ? 'error' : 'ok',failure ? errorMessage(failure) : 'Produk diarsipkan.')
+        redirect(`${target.pathname}${target.search}`)
+    }
     finish('products', 'Produk diarsipkan.', context, failure)
 }
 
@@ -263,6 +287,7 @@ export async function saveEventAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
     const requestedId = nullableText(form, 'id')
+    const nextExamId = nullableText(form, 'next_exam_id')
     let savedId = requestedId
     let actorId = ''
     try {
@@ -271,7 +296,18 @@ export async function saveEventAction(form: FormData) {
         const startsAt = jakartaIso(form, 'starts_at')
         const endsAt = jakartaIso(form, 'ends_at')
         if (!startsAt || !endsAt) throw new Error('EVENT_FIELDS_REQUIRED')
-        savedId = await adminV2Service.saveEvent({
+        if (text(form, 'workflow') === '1' && !requestedId) {
+            if (!nextExamId || !await assessmentCatalogService.getById(nextExamId)) throw new Error('EVENT_ASSESSMENT_NOT_READY')
+            if (numberValue(form, 'capacity') < 1) throw new Error('EVENT_SESSION_CAPACITY_INVALID')
+        }
+        if (text(form,'workflow') === '1' && requestedId && ['live','scheduled'].includes(text(form,'status'))) {
+            const db=await createAdminClient()
+            const {data:sessions,error}=await db.from('event_sessions').select('exam_id').eq('event_id',requestedId).not('status','in','(archived,cancelled)')
+            if(error) throw error
+            const catalog=await assessmentCatalogService.listDistributable()
+            if(!sessions?.some(session=>catalog.some(exam=>exam.id===session.exam_id))) throw new Error('Konfigurasi sesi dengan assessment yang siap sebelum mengaktifkan Event.')
+        }
+        savedId = await adminEventManagementService.saveEvent({
             id: requestedId,
             code: text(form, 'code'),
             title: text(form, 'title'),
@@ -285,6 +321,9 @@ export async function saveEventAction(form: FormData) {
             status: text(form, 'status') || 'draft',
             context,
         })
+        if (text(form, 'workflow') === '1' && !requestedId && nextExamId && savedId) {
+            await adminEventManagementService.saveEventSession({ eventId: savedId, examId: nextExamId, name: text(form, 'title'), startsAt, endsAt, capacity: numberValue(form, 'capacity'), status: 'scheduled', context })
+        }
     } catch (error) { failure = error }
     await auditAdminV2Action({
         actorId,
@@ -294,7 +333,26 @@ export async function saveEventAction(form: FormData) {
         label: text(form, 'title') || text(form, 'code'),
         after: { code: text(form, 'code'), status: text(form, 'status') || 'draft' },
     }, failure)
-    finish('events', 'Event tersimpan.', context, failure, savedId)
+    if (text(form, 'workflow') === '1') {
+        revalidatePath('/admin/events')
+        const target = new URL(adminReturnUrl(form.get('return_to'), `/admin/events?${contextQuery(context)}`), 'http://admin.local')
+        if (savedId) { target.searchParams.set('program',context.programCode); target.searchParams.set('track',context.trackCode); target.pathname = '/admin/events'; target.searchParams.set('event', savedId); target.searchParams.set('tab', failure ? 'settings' : 'overview'); target.searchParams.delete('new'); target.searchParams.delete('edit') }
+        if (failure) target.searchParams.set('error', errorMessage(failure)); else target.searchParams.set('ok', 'Event tersimpan. Pantau peserta atau lengkapi pengaturan sesi.')
+        redirect(`${target.pathname}${target.search}`)
+    }
+    if (failure) {
+        finish('events', 'Event tersimpan.', context, failure, requestedId, {
+            new: requestedId ? null : '1',
+            exam: nextExamId,
+        })
+    }
+    if (nextExamId && savedId) {
+        finish('events', 'Event tersimpan.', context, null, null, {
+            session_event: savedId,
+            exam: nextExamId,
+        })
+    }
+    finish('events', 'Event tersimpan.', context, null, savedId)
 }
 
 export async function archiveEventAction(form: FormData) {
@@ -305,7 +363,7 @@ export async function archiveEventAction(form: FormData) {
     try {
         const authorization = await actor(PERMISSIONS.EVENT_MANAGE)
         actorId = authorization.userId
-        await adminV2Service.archiveEvent(eventId)
+        await adminEventManagementService.archiveEvent(eventId)
     } catch (error) { failure = error }
     await auditAdminV2Action({
         actorId,
@@ -314,6 +372,12 @@ export async function archiveEventAction(form: FormData) {
         entityId: eventId,
         after: { status: 'archived' },
     }, failure)
+    if (text(form,'return_to')) {
+        revalidatePath('/admin/events')
+        const target = new URL(adminReturnUrl(form.get('return_to'),'/admin/events'),'http://admin.local')
+        target.searchParams.set(failure ? 'error' : 'ok',failure ? errorMessage(failure) : 'Event diarsipkan.')
+        redirect(`${target.pathname}${target.search}`)
+    }
     finish('events', 'Event diarsipkan.', context, failure)
 }
 
@@ -321,6 +385,7 @@ export async function saveEventSessionAction(form: FormData) {
     let failure: unknown = null
     const context = catalogContext(form)
     const eventId = text(form, 'event_id')
+    const examId = text(form, 'exam_id')
     const sessionId = nullableText(form, 'id')
     let actorId = ''
     try {
@@ -329,10 +394,10 @@ export async function saveEventSessionAction(form: FormData) {
         const startsAt = jakartaIso(form, 'starts_at')
         const endsAt = jakartaIso(form, 'ends_at')
         if (!startsAt || !endsAt) throw new Error('EVENT_SESSION_TIME_INVALID')
-        await adminV2Service.saveEventSession({
+        await adminEventManagementService.saveEventSession({
             id: sessionId,
             eventId,
-            examId: text(form, 'exam_id'),
+            examId,
             name: text(form, 'name'),
             startsAt,
             endsAt,
@@ -349,7 +414,16 @@ export async function saveEventSessionAction(form: FormData) {
         label: text(form, 'name'),
         after: { event_id: eventId, status: text(form, 'status') || 'scheduled' },
     }, failure)
-    finish('events', 'Sesi event tersimpan.', context, failure, eventId || null)
+    if (text(form, 'return_to')) {
+        revalidatePath('/admin/events')
+        const target = new URL(adminReturnUrl(form.get('return_to'), '/admin/events'), 'http://admin.local')
+        target.searchParams.set(failure ? 'error' : 'ok', failure ? errorMessage(failure) : 'Sesi event tersimpan. Pantau peserta dari event ini.')
+        redirect(`${target.pathname}${target.search}`)
+    }
+    finish('events', 'Sesi event tersimpan.', context, failure, null, failure ? {
+        session_event: eventId,
+        exam: examId,
+    } : {})
 }
 
 export async function linkEventProductAction(form: FormData) {
@@ -360,7 +434,7 @@ export async function linkEventProductAction(form: FormData) {
     try {
         const authorization = await actor(PERMISSIONS.EVENT_MANAGE)
         actorId = authorization.userId
-        await adminV2Service.linkEventProduct({
+        await adminEventManagementService.linkEventProduct({
             eventId,
             sessionId: text(form, 'session_id'),
             productId: text(form, 'product_id'),
@@ -374,6 +448,12 @@ export async function linkEventProductAction(form: FormData) {
         entityId: eventId,
         after: { product_id: text(form, 'product_id'), session_id: text(form, 'session_id') },
     }, failure)
+    if (text(form,'return_to')) {
+        revalidatePath('/admin/events')
+        const target=new URL(adminReturnUrl(form.get('return_to'),'/admin/events'),'http://admin.local')
+        target.searchParams.set(failure?'error':'ok',failure?errorMessage(failure):'Tiket terhubung. Aktifkan produk setelah readiness terpenuhi.')
+        redirect(`${target.pathname}${target.search}`)
+    }
     finish('events', 'Tiket produk terhubung ke event.', context, failure, eventId || null)
 }
 
@@ -386,7 +466,7 @@ export async function saveExamAction(form: FormData) {
     try {
         const authorization = await actor(PERMISSIONS.EXAM_MANAGE)
         actorId = authorization.userId
-        savedId = await adminV2Service.saveExam({
+        savedId = await adminExamManagementService.saveExam({
             id: requestedId,
             examTypeCode: text(form, 'exam_type_code'),
             title: text(form, 'title'),
@@ -427,7 +507,7 @@ export async function archiveExamAction(form: FormData) {
     try {
         const authorization = await actor(PERMISSIONS.EXAM_MANAGE)
         actorId = authorization.userId
-        await adminV2Service.archiveExam(examId)
+        await adminExamManagementService.archiveExam(examId)
     } catch (error) { failure = error }
     await auditAdminV2Action({
         actorId,
@@ -448,7 +528,7 @@ export async function saveExamSectionAction(form: FormData) {
     try {
         const authorization = await actor(PERMISSIONS.EXAM_MANAGE)
         actorId = authorization.userId
-        await adminV2Service.saveExamSection({
+        await adminExamManagementService.saveExamSection({
             id: sectionId,
             examId,
             subjectCode: nullableText(form, 'subject_code'),

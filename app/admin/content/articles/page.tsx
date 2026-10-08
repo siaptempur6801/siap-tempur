@@ -1,23 +1,27 @@
-import Link from 'next/link'
-import { Eye, Plus } from 'lucide-react'
-import { createClient } from '@/lib/utils/supabase/server'
+import AdminPagination from '@/components/admin/AdminPagination'
+import AdminTableToolbar from '@/components/admin/AdminTableToolbar'
+import {
+AdminCard,
+AdminEmptyState,
+AdminPage,
+AdminPageHeader,
+AdminStatusBadge,AdminTh,
+adminPrimaryButtonClass,
+adminSecondaryButtonClass,
+adminTableHeadClass,
+} from '@/components/admin/AdminUi'
+import ArticleStatusActions from '@/components/admin/ArticleStatusActions'
+import { AdminDataTable } from '@/components/admin/data-display/AdminDataTable'
+import { AdminErrorState } from '@/components/admin/feedback/AdminErrorState'
+import { AdminBreadcrumbs } from '@/components/admin/navigation/AdminBreadcrumbs'
+import { adminStatusLabel } from '@/lib/admin-format'
+import { ADMIN_PAGE_SIZE,adminPageSummary,adminPageSummaryLabel,parseAdminPage } from '@/lib/admin-pagination'
 import { formatArticleDate } from '@/lib/articles'
+import { createClient } from '@/lib/utils/supabase/server'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import { authorizationService } from '@/src/services/authorization.service'
-import { ADMIN_PAGE_SIZE, adminPageSummary, adminPageSummaryLabel, parseAdminPage } from '@/lib/admin-pagination'
-import ArticleStatusActions from '@/components/admin/ArticleStatusActions'
-import AdminListToolbar from '@/components/admin/AdminListToolbar'
-import AdminPagination from '@/components/admin/AdminPagination'
-import {
-    AdminCard,
-    AdminEmptyState,
-    AdminPage,
-    AdminPageHeader,
-    AdminStatusBadge,
-    adminPrimaryButtonClass,
-    adminSecondaryButtonClass,
-} from '@/components/admin/AdminUi'
-import { adminStatusLabel } from '@/lib/admin-format'
+import { Eye,Plus } from 'lucide-react'
+import Link from '@/components/admin/navigation/AdminLink'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,6 +44,7 @@ type Article = {
     id: string
     title: string
     slug: string
+    category: string | null
     excerpt: string | null
     status: ArticleStatus
     author_id: string | null
@@ -76,7 +81,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
     const supabase = await createClient()
     let query = supabase
         .from('articles')
-        .select('id, title, slug, excerpt, status, author_id, published_at, updated_at', { count: 'exact' })
+        .select('id, title, slug, category, excerpt, status, author_id, published_at, updated_at', { count: 'exact' })
         .order('updated_at', { ascending: false })
 
     // Editor fokus pada artikelnya sendiri; reviewer melihat seluruh draft.
@@ -108,19 +113,16 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
 
     return (
         <AdminPage>
+            <AdminBreadcrumbs items={[{label:"Content"},{label:"Articles"}]}/>
             <AdminPageHeader
                 title="Articles"
-                description="Kelola draft, publikasi, dan arsip artikel sesuai permission konten. Editor fokus pada artikelnya sendiri; reviewer dapat membaca draft yang perlu dipublikasikan."
-                action={canCreate ? <Link href="/admin/content/articles/create" className={adminPrimaryButtonClass}><Plus size={16}/>Artikel baru</Link> : undefined}
+                description="Kelola artikel, publikasi, dan arsip konten."
+                action={canCreate ? <Link href={`/admin/content/articles/new?${new URLSearchParams({returnTo:`/admin/content/articles?${new URLSearchParams(filters)}`})}`} className={adminPrimaryButtonClass}><Plus size={16}/>Artikel baru</Link> : undefined}
             />
 
-            {error ? (
-                <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800">
-                    Gagal memuat artikel: {error.message}
-                </div>
-            ) : null}
+            {error ? <AdminErrorState noun="artikel" retryHref="/admin/content/articles"/> : null}
 
-            <AdminListToolbar
+            <AdminTableToolbar
                 pathname="/admin/content/articles"
                 search={search}
                 status={status}
@@ -131,41 +133,17 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
             />
 
             <AdminCard className="overflow-hidden">
-                <div className="border-b border-slate-200 p-5">
-                    <h2 className="text-base font-black text-slate-950">Daftar artikel</h2>
-                    <p className="mt-0.5 text-sm font-medium text-slate-500">{adminPageSummaryLabel(summary, 'artikel')}</p>
+                <div className="border-b border-border p-5">
+                    <h2 className="text-base font-semibold text-foreground">Daftar artikel</h2>
+                    <p className="mt-0.5 text-sm font-medium text-muted-foreground">{adminPageSummaryLabel(summary, 'artikel')}</p>
                 </div>
 
                 {rows.length ? (
-                    <div className="divide-y divide-slate-100">
-                        {rows.map((article) => {
-                            const ownsEditableDraft = article.author_id === authorization.userId && article.status !== 'published'
-                            const canEdit = canUpdate && (isAdmin || ownsEditableDraft)
-                            const canArchive = canUpdate && (isAdmin || ownsEditableDraft)
-                            return (
-                                <article key={article.id} className="p-5 transition hover:bg-slate-50/70 sm:p-6">
-                                    <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <AdminStatusBadge status={article.status}/>
-                                                <span className="text-xs font-semibold text-slate-500">{(article.author_id && authorById.get(article.author_id)) || 'Penulis'} · Diperbarui {formatArticleDate(article.updated_at)}</span>
-                                            </div>
-                                            <h3 className="mt-3 text-lg font-black text-slate-950 sm:text-xl">{article.title}</h3>
-                                            <p className="mt-1 text-xs font-bold text-blue-600">/blog/{article.slug}</p>
-                                            {article.excerpt ? <p className="mt-3 max-w-3xl text-sm font-medium leading-6 text-slate-600">{article.excerpt}</p> : null}
-                                            {article.published_at ? <p className="mt-2 text-xs font-medium text-slate-500">Terbit {formatArticleDate(article.published_at)}</p> : null}
-                                        </div>
-
-                                        <div className="flex shrink-0 flex-wrap gap-2 xl:max-w-sm xl:justify-end">
-                                            {article.status === 'published' ? <Link href={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer" className={adminSecondaryButtonClass}><Eye size={16}/>Lihat</Link> : null}
-                                            {canEdit ? <Link href={`/admin/content/articles/${article.id}/edit`} className={adminSecondaryButtonClass}>Ubah</Link> : null}
-                                            <ArticleStatusActions articleId={article.id} status={article.status} canPublish={canPublish} canArchive={canArchive} canDelete={isAdmin && article.status !== 'published'}/>
-                                        </div>
-                                    </div>
-                                </article>
-                            )
-                        })}
-                    </div>
+                    <AdminDataTable caption="Articles" className="min-w-[850px]"><thead className={adminTableHeadClass}><tr>{['Title','Category','Status','Author / Editor','Updated','Actions'].map(h=><AdminTh key={h}>{h}</AdminTh>)}</tr></thead><tbody>{rows.map(article=>{
+                        const ownsEditableDraft=article.author_id===authorization.userId&&article.status!=='published'
+                        const canEdit=canUpdate&&(isAdmin || ownsEditableDraft),canArchive=canEdit
+                        return <tr key={article.id}><td className="max-w-md"><p className="font-medium">{article.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">/blog/{article.slug}</p></td><td>{article.category || 'Tanpa kategori'}</td><td><AdminStatusBadge status={article.status}/></td><td>{(article.author_id&&authorById.get(article.author_id)) || 'Penulis'}</td><td className="whitespace-nowrap text-xs">{formatArticleDate(article.updated_at)}</td><td><div className="flex gap-2">{canEdit&&<Link href={`/admin/content/articles/${article.id}/edit?${new URLSearchParams({returnTo:`/admin/content/articles?${new URLSearchParams(filters)}`})}`} className={adminSecondaryButtonClass}>Ubah</Link>}<details><summary className={`${adminSecondaryButtonClass} cursor-pointer`}>Lainnya</summary><div className="mt-2 flex flex-col gap-2">{article.status==='published'&&<Link href={`/blog/${article.slug}`} target="_blank" rel="noopener noreferrer" className={adminSecondaryButtonClass}><Eye size={14}/>Preview</Link>}<ArticleStatusActions articleId={article.id} status={article.status} canPublish={canPublish} canArchive={canArchive} canDelete={isAdmin&&article.status!=='published'}/></div></details></div></td></tr>
+                    })}</tbody></AdminDataTable>
                 ) : error ? null : outOfRange ? (
                     <AdminEmptyState
                         title="Tidak ada artikel di halaman ini"
@@ -180,7 +158,7 @@ export default async function AdminArticlesPage({ searchParams }: { searchParams
                             : canCreate
                                 ? 'Buat draft pertama untuk mulai mengisi blog Siap Tempur.'
                                 : 'Belum ada artikel yang dapat diakses oleh akun ini.'}
-                        action={!hasFilter && canCreate ? <Link href="/admin/content/articles/create" className={adminPrimaryButtonClass}><Plus size={16}/>Buat artikel</Link> : undefined}
+                        action={!hasFilter && canCreate ? <Link href={`/admin/content/articles/new?${new URLSearchParams({returnTo:`/admin/content/articles?${new URLSearchParams(filters)}`})}`} className={adminPrimaryButtonClass}><Plus size={16}/>Buat artikel</Link> : undefined}
                     />
                 )}
 

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 /**
- * Kontrak service Review Queue:
- *   1. Hitungan status adalah AGREGAT SELURUH TABEL (`count: exact, head: true`),
- *      tidak pernah dibatasi `limit`.
+ * Kontrak service Review:
+ *   1. Hitungan status adalah satu RPC agregat dengan RLS dan konteks yang sama,
+ *      tidak pernah dibatasi `limit` atau mengambil seluruh baris soal.
  *   2. Filter stage/reviewer berjalan di DATABASE (bukan atas jendela), dan
  *      daftar antrean berhalaman 25 baris dengan `total` exact.
  *   3. Deep link `?question=` ke soal di luar halaman tetap memuat soal itu.
@@ -13,13 +13,13 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
  * stage/reviewer diterapkan di aplikasi sehingga soal ke-251 tidak terjangkau.
  */
 
-const fromMock = vi.fn()
+const {fromMock,rpcMock} = vi.hoisted(() => ({fromMock:vi.fn(),rpcMock:vi.fn()}))
 
 vi.mock('@/lib/utils/supabase/server', () => ({
-    createClient: async () => ({ from: fromMock, rpc: async () => ({ data: [], error: null }) }),
-    createV2Client: async () => ({ from: fromMock, rpc: async () => ({ data: [], error: null }) }),
-    createAdminClient: async () => ({ from: fromMock, rpc: async () => ({ data: [], error: null }) }),
-    createV2AdminClient: async () => ({ from: fromMock, rpc: async () => ({ data: [], error: null }) }),
+    createClient: async () => ({ from: fromMock, rpc: rpcMock }),
+    createV2Client: async () => ({ from: fromMock, rpc: rpcMock }),
+    createAdminClient: async () => ({ from: fromMock, rpc: rpcMock }),
+    createV2AdminClient: async () => ({ from: fromMock, rpc: rpcMock }),
 }))
 
 type Call = {
@@ -111,6 +111,7 @@ function makeBuilder(table: string) {
 }
 
 beforeEach(() => {
+    rpcMock.mockReset().mockResolvedValue({data:{total:60,draft:5,published:12,approved:7,revisionRequired:2,editorial:3,academic:4,technical:1,unassigned:2,assignedToMe:0},error:null})
     calls.length = 0
     state.questionCount = 60
     state.questionRows = [{ id: 'q-1', question_code: 'Q-1', subject_id: 's-1', status: 'draft', version: 1, stem: 'soal' }]
@@ -125,49 +126,28 @@ const CONTEXT = { programCode: 'CPNS', trackCode: 'SKD' }
 const questionCalls = () => calls.filter((c) => c.table === 'questions')
 const exactQuestionCounts = () => questionCalls().filter((c) => c.count === 'exact' && c.head)
 
-describe('getReviewSummary — hitungan agregat', () => {
-    it('memakai count exact head-only, bukan menarik baris', async () => {
-        await contentReviewService.getReviewSummary(CONTEXT)
-
-        expect(exactQuestionCounts().length).toBeGreaterThanOrEqual(4)
-        for (const call of exactQuestionCounts()) {
-            expect(call.head).toBe(true)
-        }
+describe('getReviewCounts — exact database aggregate under caller RLS', () => {
+    it('scopes one aggregate to program/track and returns every status count unchanged', async () => {
+        const result=await contentReviewService.getReviewCounts(CONTEXT)
+        expect(rpcMock).toHaveBeenCalledExactlyOnceWith('admin_question_status_counts',{p_program_id:'prog-1',p_track_id:'track-1'})
+        expect(result.counts).toEqual({total:60,draft:5,published:12,approved:7,revisionRequired:2,editorial:3,academic:4,technical:1,unassigned:2,assignedToMe:0})
+        expect(exactQuestionCounts()).toEqual([])
+        expect(questionCalls()).toHaveLength(0)
     })
-
-    it('TIDAK membatasi hitungan dengan limit — inti perbaikan', async () => {
-        await contentReviewService.getReviewSummary(CONTEXT)
-
-        const limitedCountCalls = exactQuestionCounts().filter((c) => c.limited)
-        expect(limitedCountCalls).toEqual([])
-
-        // Dashboard hanya menarik 6 baris antrean, bukan 250.
-        const rowsCall = questionCalls().find((c) => c.limited && !c.count)
-        expect(rowsCall?.limit).toBe(6)
-    })
-
-    it('memfilter setiap status dengan nilai yang benar', async () => {
-        await contentReviewService.getReviewSummary(CONTEXT)
-
-        const statuses = exactQuestionCounts().map((c) => c.status)
-        expect(statuses).toContain('published')
-        expect(statuses).toContain('approved')
-        expect(statuses).toContain('revision_required')
-        expect(statuses).toContain('academic_review')
-        expect(statuses).toContain('technical_qa')
-        // Satu hitungan total tanpa filter status.
-        expect(statuses).toContain(undefined)
-    })
-
-    it('menghitung tahap editorial dan unassigned di database', async () => {
-        await contentReviewService.getReviewSummary(CONTEXT)
-
-        expect(exactQuestionCounts().some((c) => c.inIds?.join(',') === 'submitted,editorial_review')).toBe(true)
-        expect(exactQuestionCounts().some((c) => c.isNull === 'reviewer_id')).toBe(true)
+    it('does not interpret aggregate failure as zero counts', async () => {
+        rpcMock.mockResolvedValue({data:null,error:new Error('RLS/query failure')})
+        await expect(contentReviewService.getReviewCounts(CONTEXT)).rejects.toThrow('RLS/query failure')
     })
 })
 
 describe('getWorkspaceData — paginasi & filter di database', () => {
+    it('shows the task queue until a question is explicitly selected', async () => {
+        const data = await contentReviewService.getWorkspaceData(CONTEXT)
+        expect(data.questions).toHaveLength(1)
+        expect(data.selectedQuestion).toBeNull()
+        expect(data.selectedId).toBeNull()
+        expect(data.options).toEqual([])
+    })
     it('meminta 25 baris dengan range dan count exact', async () => {
         await contentReviewService.getWorkspaceData(CONTEXT, { page: 2 })
 
@@ -258,9 +238,10 @@ describe('getWorkspaceData — antrean hanya berisi yang perlu tindakan', () => 
     })
 
     it('antrean dashboard juga mengecualikan status selesai', async () => {
-        await contentReviewService.getReviewSummary(CONTEXT)
+        await contentReviewService.getReviewQueue(CONTEXT)
 
         const rowsCall = questionCalls().find((c) => c.limited && !c.count)
+        expect(rowsCall?.limit).toBe(6)
         expect(rowsCall?.inIds).not.toContain('published')
         expect(rowsCall?.inIds).not.toContain('archived')
     })

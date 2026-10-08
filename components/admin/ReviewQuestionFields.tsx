@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
-import QuestionOptionsEditor from '@/components/admin/QuestionOptionsEditor'
-import { AdminField, adminInputClass } from '@/components/admin/AdminUi'
+import { AdminField,adminInputClass } from '@/components/admin/AdminUi';
+import QuestionOptionsEditor from '@/components/admin/QuestionOptionsEditor';
+import { useState,type ReactNode } from 'react';
 
 /**
  * Tipe soal + editor opsi yang berbagi satu state.

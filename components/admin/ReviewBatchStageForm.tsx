@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useTransition, type FormEvent } from 'react'
-import { CheckCircle2, Clock3, XCircle } from 'lucide-react'
-import { toast } from 'sonner'
-import { adminDangerButtonClass, adminInputClass, adminSuccessButtonClass, adminWarningButtonClass } from '@/components/admin/AdminUi'
+import { adminDangerButtonClass,adminInputClass,adminSuccessButtonClass,adminWarningButtonClass } from '@/components/admin/AdminUi'
 import { useAdminConfirm } from '@/components/admin/useAdminConfirm'
-import { STAGE_LABEL, type ReviewStage } from '@/lib/review-batch'
+import { STAGE_LABEL,type ReviewStage } from '@/lib/review-batch'
 import { cn } from '@/lib/utils'
+import { CheckCircle2,Clock3,XCircle } from 'lucide-react'
+import { useState,useTransition,type FormEvent } from 'react'
+import { toast } from 'sonner'
 
 /**
  * Langkah 2 panel review massal: putuskan SATU tahap untuk seluruh batch.
@@ -85,29 +85,29 @@ export default function ReviewBatchStageForm({
     return (
         <>
             {dialog}
-            <form action={action} onSubmit={handleSubmit} className={cn('rounded-xl border p-4', highlight ? 'border-blue-300 bg-blue-50/60' : 'border-blue-200 bg-blue-50/40')}>
+            <form action={action} onSubmit={handleSubmit} className={cn('rounded-lg border p-4', highlight ? 'border-info-border bg-info-muted/60' : 'border-info-border bg-info-muted/40')}>
                 <input type="hidden" name="batch" value={batch} />
                 <input type="hidden" name="program_code" value={program} />
                 <input type="hidden" name="track_code" value={track} />
                 <input type="hidden" name="stage" value={stage} />
-                <h3 className="text-sm font-black text-slate-900">
+                <h3 className="text-sm font-semibold text-foreground">
                     Langkah 2 · Tahap {stageNumber} dari 3{mixed
                         ? ` — aktif: ${activeStages.map((key) => STAGE_LABEL[key]).join(' + ')}`
                         : ` — ${STAGE_LABEL[stage]}`}
                 </h3>
-                <p className="mt-0.5 text-xs font-medium text-slate-500">
+                <p className="mt-0.5 text-xs font-medium text-muted-foreground">
                     Berlaku untuk {activeCount} soal pada tahap aktif. Setiap soal naik SATU tahap, lalu
                     klaim reviewer dikosongkan — panel ini mengklaim ulang otomatis, jadi satu klik per tahap.
                 </p>
                 {mixed ? (
-                    <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-5 text-amber-800">
+                    <p className="mt-2 rounded-lg border border-warning-border bg-warning-muted px-3 py-2 text-[11px] font-semibold leading-5 text-warning">
                         Batch tidak seragam: {activeStages.map((key) => STAGE_LABEL[key]).join(' dan ')} berjalan
                         bersamaan. Satu klik memajukan setiap soal satu tahap sesuai posisinya masing-masing — batch akan
                         menyeragamkan diri setelah beberapa klik.
                     </p>
                 ) : null}
-                <label htmlFor="review-batch-notes" className="mt-3 block text-[11px] font-extrabold uppercase tracking-wide text-slate-500">
-                    Catatan review <span className="normal-case text-slate-400">(wajib untuk Tolak / Minta revisi)</span>
+                <label htmlFor="review-batch-notes" className="mt-3 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Catatan review <span className="normal-case text-muted-foreground">(wajib untuk Tolak / Minta revisi)</span>
                 </label>
                 <textarea
                     id="review-batch-notes"

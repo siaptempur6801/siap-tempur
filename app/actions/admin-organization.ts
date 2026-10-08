@@ -132,7 +132,7 @@ function backTo(back: Back, ok?: string, error?: unknown): never {
 function orgBack(form: FormData): Back {
     const params: Record<string, string> = {}
     const q = text(form, 'q')
-    const status = text(form, 'status')
+    const status = form.has('filter_status') ? text(form, 'filter_status') : text(form, 'status')
     if (q) params.q = q
     if (status) params.status = status
     const org = text(form, 'organization_id') || text(form, 'org') || text(form, 'id')
@@ -142,6 +142,9 @@ function orgBack(form: FormData): Back {
     // panel peserta dan memaksa admin membukanya lagi.
     const batch = text(form, 'batch_id') || text(form, 'batch')
     if (batch) params.batch = batch
+    for (const key of ['page', 'tab', 'returnTo', 'participant_search', 'participant_page']) { const value = text(form, key); if (value) params[key] = value }
+    const exam = text(form, 'return_exam_id')
+    if (exam) params.exam = exam
     return { path: '/admin/organizations', params }
 }
 
@@ -229,7 +232,7 @@ export async function saveBatchAction(form: FormData) {
         if (!organizationId) throw new Error('Organization is required')
 
         const client = await createClient()
-        const { error } = await client.rpc('admin_upsert_batch', {
+        const { data, error } = await client.rpc('admin_upsert_batch', {
             p_id: id || null,
             p_organization_id: organizationId,
             p_code: text(form, 'code'),
@@ -240,6 +243,8 @@ export async function saveBatchAction(form: FormData) {
             p_notes: text(form, 'notes') || null,
         })
         if (error) throw new Error(error.message)
+        const savedBatch = data as { id?: string } | null
+        if (!batchId && savedBatch?.id) { back.params.batch = savedBatch.id; back.params.tab = 'assignments' }
     } catch (error) {
         failure = error
         logger.warn('[saveBatchAction] gagal', { error: error instanceof Error ? error.message : String(error) })

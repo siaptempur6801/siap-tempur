@@ -48,7 +48,7 @@ export type PracticeSessionView = {
     initialMarked: Record<string, boolean>
     endTime?: string
     isTryout: boolean
-    returnTo: 'tryout' | 'mini-tryout' | 'drilling-materi' | 'event'
+    returnTo: 'tryout' | 'mini-tryout' | 'drilling-materi' | 'event' | 'organization'
 }
 
 function asObject(value: Json | undefined): JsonObject | null {
@@ -107,7 +107,8 @@ function readResponseConfig(object: JsonObject | null): Json {
     return value ?? {}
 }
 
-function resolveReturnTo(kind: string | null): PracticeSessionView['returnTo'] {
+function resolveReturnTo(kind: string | null, accessContext: string | null): PracticeSessionView['returnTo'] {
+    if (accessContext === 'organization') return 'organization'
     if (kind === 'drill') return 'drilling-materi'
     if (kind === 'mini_tryout') return 'mini-tryout'
     if (kind === 'event') return 'event'
@@ -121,6 +122,7 @@ export class PracticeSessionService {
 
         const metadata = asObject(bundle.attempt.metadata)
         const practiceKind = readString(metadata, 'practiceKind')
+        const accessContext = readString(metadata, 'accessContext')
         const knowledgeNode = readString(metadata, 'knowledgeNode') ?? ''
         const metadataSubjectCode = readString(metadata, 'subjectCode')
         const durationSeconds = readNumber(metadata, 'durationSeconds')
@@ -214,7 +216,7 @@ export class PracticeSessionService {
             initialMarked,
             endTime,
             isTryout,
-            returnTo: resolveReturnTo(practiceKind),
+            returnTo: resolveReturnTo(practiceKind, accessContext),
         }
     }
 }

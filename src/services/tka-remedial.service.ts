@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/utils/supabase/server'
+import { parseQuestionSnapshotOption, parseQuestionSnapshotStimulus } from '@/src/domain/question-snapshot'
 
 type RecordValue = Record<string, unknown>
 
@@ -83,32 +84,6 @@ function readNumber(record: RecordValue | null, key: string) {
     return null
 }
 
-function parseOption(value: unknown): TkaRemedialOption | null {
-    const option = asRecord(value)
-    const id = readString(option, 'id')
-    const content = readString(option, 'content')
-    if (!id || content === null) return null
-    return {
-        id,
-        key: readString(option, 'option_key') ?? '',
-        content,
-        imageUrl: readString(option, 'image_url'),
-        responseGroup: readString(option, 'response_group'),
-        responseGroupOrder: readNumber(option, 'response_group_order'),
-    }
-}
-
-function parseStimulus(snapshot: RecordValue | null) {
-    const stimulus = asRecord(snapshot?.stimulus)
-    const content = readString(stimulus, 'content')
-    if (!stimulus || content === null) return null
-    return {
-        title: readString(stimulus, 'title'),
-        content,
-        imageUrl: readString(stimulus, 'image_url'),
-    }
-}
-
 function parseSession(value: unknown): TkaRemedialSession | null {
     const session = asRecord(value)
     const id = readString(session, 'id')
@@ -154,9 +129,9 @@ function parseItem(value: unknown, subjectCodeById: Map<string, string>): TkaRem
         stem,
         responseType: readString(question, 'question_type') ?? 'single_choice',
         cognitiveLevel: readString(question, 'cognitive_level'),
-        stimulus: parseStimulus(snapshot),
+        stimulus: parseQuestionSnapshotStimulus(snapshot),
         options: asArray(snapshot?.options).flatMap((option) => {
-            const parsed = parseOption(option)
+            const parsed = parseQuestionSnapshotOption(option)
             return parsed ? [parsed] : []
         }),
     }

@@ -1,3 +1,4 @@
+import { adminUrlState } from '../admin-workflow'
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
@@ -26,117 +27,88 @@ function uniqueCode(prefix: string) {
     return `${prefix}-${Date.now().toString(36).toUpperCase().slice(-6)}`
 }
 
-test.describe('Instansi — template ujian & assignment', () => {
-    test('buat template, bentuk exam 110 soal, lalu jadwalkan untuk batch', async ({ page }) => {
+function wibInput(minutesFromNow: number) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(Date.now() + minutesFromNow * 60_000))
+    const part = (type: string) => parts.find((item) => item.type === type)?.value ?? ''
+    return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`
+}
+
+test.describe('Instansi — distribusi assessment katalog', () => {
+    test('jadwalkan assessment katalog untuk batch dan bersihkan assignment', async ({ page }) => {
         const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
         const admin = await provisionRoleUser(supabaseUrl, 'ADMIN')
-        const orgCode = uniqueCode('E2E-UJIAN-ORG')
-        const batchCode = uniqueCode('E2E-UJIAN-BATCH')
+        const orgCode = uniqueCode('E2E-DIST-ORG')
+        const batchCode = uniqueCode('E2E-DIST-BATCH')
         let orgId = ''
+        let batchId = ''
 
         try {
             await loginAs(page, admin, '/admin')
-            await page.goto('/admin/organizations')
+            await page.goto('/admin/assessments?program=CPNS&track=SKD')
+            await page.locator('tr[data-assessment-id]').filter({hasText:'Siap'}).first().getByRole('link',{name:'Lihat',exact:true}).click()
+            await page.getByRole('link',{name:'Distribution',exact:true}).click()
+            const assignmentLink = page.getByRole('link', { name: 'Tugaskan ke Instansi', exact: true }).first()
+            await expect(assignmentLink).toBeVisible()
+            const assignmentHref = await assignmentLink.getAttribute('href')
+            expect(assignmentHref).not.toBeNull()
+            const assignmentUrl = new URL(assignmentHref!, 'http://localhost')
+            const assessmentId = assignmentUrl.searchParams.get('exam') ?? ''
+            expect(assessmentId).not.toBe('')
+            await assignmentLink.click()
+            await expect(page).toHaveURL(new RegExp(`/admin/organizations\\?.*exam=${assessmentId}`))
 
             // ------------------------------------------------- instansi & batch
             await page.getByRole('link', { name: 'Instansi baru', exact: true }).click()
             await page.getByPlaceholder('Dinas Pendidikan Kota Medan').fill(`Instansi Ujian ${orgCode}`)
             await page.getByPlaceholder('DINAS-MEDAN').fill(orgCode)
             await page.getByRole('button', { name: 'Buat instansi', exact: true }).click()
-            await expect(page.getByRole('heading', { name: `Ubah Instansi Ujian ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
-            orgId = new URL(page.url()).searchParams.get('org') ?? ''
+            await expect(page.getByRole('heading', { name: `Instansi Ujian ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
+            orgId = adminUrlState(page.url()).get('org') ?? ''
             expect(orgId).not.toBe('')
 
-            await page.getByRole('link', { name: 'Batch baru', exact: true }).click()
+            if (!await page.getByRole('link', { name: 'Batch baru', exact: true }).count()) await page.getByRole('link',{name:'Batch',exact:true}).click()
+            await page.getByRole('link', { name: 'Batch baru', exact: true }).first().click()
             await page.getByPlaceholder('CPNS 2026 Batch A').fill(`Batch Ujian ${batchCode}`)
             await page.getByPlaceholder('CPNS-2026-A').fill(batchCode)
             await page.getByLabel('Status batch').selectOption('active')
             await page.getByRole('button', { name: 'Buat batch', exact: true }).click()
             await expect(page.locator('input[aria-label^="Tautan undangan"]')).toBeVisible({ timeout: 30_000 })
+            await expect(page.getByText('Assessment untuk batch ini', { exact: true })).toBeVisible()
 
-            // -------------------------------------------------------- template
-            await page.getByRole('link', { name: 'Template baru', exact: true }).click()
-            await expect(page.getByRole('heading', { name: 'Template ujian', exact: true })).toBeVisible()
+            // Batch baru langsung dipilih setelah disimpan; ambil ID dari URL
+            // untuk membuktikan konteks yang dipakai dan membersihkan fixture.
+            batchId = adminUrlState(page.url()).get('batch') ?? ''
+            expect(batchId).not.toBe('')
+            await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toContainText(batchCode)
 
-            await page.getByPlaceholder('Full Tryout SKD Standar').fill(`Template E2E ${orgCode}`)
-            // Template diikat ke instansi ini, BUKAN ke "Semua instansi".
-            // Template global tidak ikut terhapus saat instansinya dihapus, sehingga
-            // setiap kali gate dijalankan akan tertinggal satu template sampah —
-            // dan memang itu yang terjadi: enam template menumpuk dari run yang gagal.
-            await page.getByLabel('Cakupan template').selectOption(orgId)
-            // Nilai bawaan form sudah 30/35/45; diperiksa supaya test gagal bila
-            // bawaannya berubah tanpa disengaja.
-            await expect(page.locator('input[name="twk_count"]')).toHaveValue('30')
-            await expect(page.locator('input[name="tiu_count"]')).toHaveValue('35')
-            await expect(page.locator('input[name="tkp_count"]')).toHaveValue('45')
+            const assessmentPicker = page.locator('input[name="exam_id"]')
+            await expect(assessmentPicker).toHaveValue(assessmentId)
+            const assessmentTitle = (await page.locator(`label:has(input[type="radio"][value="${assessmentId}"])`).innerText()).split('\n')[0].trim()
+            await page.getByLabel('Buka (WIB)').fill(wibInput(5))
+            await page.getByLabel('Tutup (WIB)').fill(wibInput(24 * 60))
+            await page.getByRole('button',{name:'Review Penugasan',exact:true}).click()
+            await page.getByRole('button', { name: 'Jadwalkan assessment', exact: true }).click()
 
-            // Kolom yang PRD §7.3 minta harus ada.
-            for (const label of ['Durasi (menit)', 'Batas attempt', 'Pembahasan', 'Visibilitas ranking']) {
-                await expect(page.getByText(label, { exact: true })).toBeVisible()
-            }
-            // Opsi yang belum diterapkan harus ditandai apa adanya.
-            await expect(page.getByText('Belum diterapkan', { exact: true })).toBeVisible()
-
-            await page.getByRole('button', { name: 'Buat template', exact: true }).click()
-            const templateCard = page.locator('div.rounded-xl', { hasText: `Template E2E ${orgCode}` }).last()
-            await expect(templateCard).toBeVisible({ timeout: 30_000 })
-            await expect(templateCard.getByText('30 TWK + 35 TIU + 45 TKP = 110 soal', { exact: true })).toBeVisible()
-            // Ketersediaan nyata dari database: staging punya cukup soal terbit.
-            await expect(templateCard.getByText('Soal cukup', { exact: true })).toBeVisible()
-            await expect(templateCard.getByText('Khusus instansi ini', { exact: true })).toBeVisible()
-
-            // ------------------------------------------------------ bentuk exam
-            await page.getByRole('link', { name: 'Lihat peserta', exact: true }).first().click()
-            await expect(page.getByText('Ujian batch ini', { exact: true })).toBeVisible()
-
-            await page.getByLabel('Template ujian').selectOption({ label: `Template E2E ${orgCode} — 30 TWK + 35 TIU + 45 TKP = 110 soal` })
-            // Jadwal diisi pada langkah yang sama: §7.4 menetapkan assignment adalah
-            // batch + template + jadwal, dan §10.1 langkah 4–5 menjalankannya berurutan.
-            await page.getByLabel('Buka (WIB)').fill('2026-10-01T08:00')
-            await page.getByLabel('Tutup (WIB)').fill('2026-10-01T12:00')
-            await page.getByRole('button', { name: 'Bentuk & jadwalkan', exact: true }).click()
-
-            await expect(page.getByText(/terbentuk dengan 110 soal dan sudah dijadwalkan/)).toBeVisible({ timeout: 60_000 })
-
-            // ---------------------------------------------------------- hasil
-            await expect(page.getByText(/Ujian terjadwal \(1\)/)).toBeVisible({ timeout: 30_000 })
-            // Tombol "Nonaktifkan" hanya muncul ketika assignment memang AKTIF —
-            // sinyal yang tidak ambigu. Memeriksa teks "Aktif" tidak bisa dipakai:
-            // ia juga cocok dengan <option>Aktif</option> di <select> yang tersembunyi.
+            await expect(page.getByRole('status').filter({ hasText: 'Penugasan disimpan.' })).toBeVisible({ timeout: 30_000 })
+            await expect(page.getByText('Penugasan (1)', { exact: true })).toBeVisible()
+            await expect(page.locator('[data-assignment-id]').getByRole('cell').filter({hasText:assessmentTitle})).toBeVisible()
+            await page.getByText('Pengaturan Penugasan',{exact:true}).click()
             await expect(page.getByRole('button', { name: 'Nonaktifkan', exact: true })).toBeVisible()
-            await expect(page.getByRole('button', { name: 'Hapus exam', exact: true })).toBeVisible()
         } finally {
-            // Bersihkan: assignment, exam, lalu instansi. Instansi yang masih punya
-            // peserta atau exam tidak boleh dihapus, jadi urutannya penting.
+            // Instansi uji tanpa peserta dapat dihapus. Batch dan assignment ikut
+            // cascade; assessment katalog bersama tidak disentuh.
             if (orgId) {
-                // TANPA penjaga `count()`: `locator.count()` tidak menunggu render,
-                // sehingga versi sebelumnya melewati seluruh pembersihan ketika
-                // halaman belum selesai dimuat — dan menyisakan satu instansi serta
-                // satu template setiap kali gate dijalankan, tanpa membuat test gagal.
-                // `orgId` hanya terisi setelah instansinya benar-benar dibuat, jadi
-                // kegagalan di sini memang harus berisik.
-                await page.goto(`/admin/organizations?org=${orgId}`)
-                await expect(page.getByRole('heading', { name: `Ubah Instansi Ujian ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
-
-                // Exam dihapus lebih dulu: ia TIDAK terikat instansi, jadi tidak ikut
-                // terhapus bersama instansinya.
-                await page.getByRole('link', { name: 'Lihat peserta', exact: true }).first().click()
-                await page.getByRole('button', { name: 'Hapus exam', exact: true }).click()
-                // Fase 2 memindahkan "Hapus exam" ke ConfirmSubmit: klik pertama membuka
-                // dialog, klik konfirmasi di dalamnya yang mengirim form.
-                const deleteExamDialog = page.getByRole('alertdialog')
-                await expect(deleteExamDialog).toBeVisible()
-                await deleteExamDialog.getByRole('button', { name: 'Hapus exam', exact: true }).click()
-                // Pola pesan sukses, BUKAN tebakan judul: exam mewarisi nama template
-                // ketika kolom judul dibiarkan kosong, dan menebak judul membuat test
-                // gagal justru setelah penghapusannya berhasil.
-                await expect(page.getByRole('status').filter({ hasText: 'dihapus' })).toHaveText(/^Exam .+ dihapus\.$/, { timeout: 30_000 })
-
+                const batchQuery = batchId ? `&batch=${batchId}` : ''
+                await page.goto(`/admin/organizations?org=${orgId}${batchQuery}&tab=settings`)
+                await expect(page.getByRole('heading', { name: `Instansi Ujian ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
+                await page.getByRole('link',{name:'Pengaturan',exact:true}).click()
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
-                // Dua hasil sah: terhapus, atau ditolak karena masih ada peserta
-                // yang sudah mengerjakan ujian (penjaga produk, bukan kegagalan).
+                await page.getByRole('alertdialog').getByRole('button',{name:'Hapus instansi',exact:true}).click()
                 await expect(page.getByRole('status').filter({ hasText: /dihapus|masih punya peserta/ })).toContainText(
-                    /dihapus\.|masih punya peserta/,
+                    new RegExp(`Instansi Ujian ${orgCode} dihapus\\.|masih punya peserta`),
                     { timeout: 30_000 },
                 )
             }
@@ -162,11 +134,12 @@ test.describe('Instansi — monitoring & export', () => {
             await page.getByPlaceholder('Dinas Pendidikan Kota Medan').fill(`Instansi Export ${orgCode}`)
             await page.getByPlaceholder('DINAS-MEDAN').fill(orgCode)
             await page.getByRole('button', { name: 'Buat instansi', exact: true }).click()
-            await expect(page.getByRole('heading', { name: `Ubah Instansi Export ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
-            orgId = new URL(page.url()).searchParams.get('org') ?? ''
+            await expect(page.getByRole('heading', { name: `Instansi Export ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
+            orgId = adminUrlState(page.url()).get('org') ?? ''
             expect(orgId).not.toBe('')
 
-            await page.getByRole('link', { name: 'Batch baru', exact: true }).click()
+            if (!await page.getByRole('link', { name: 'Batch baru', exact: true }).count()) await page.getByRole('link',{name:'Batch',exact:true}).click()
+            await page.getByRole('link', { name: 'Batch baru', exact: true }).first().click()
             await page.getByPlaceholder('CPNS 2026 Batch A').fill(`Batch Export ${batchCode}`)
             await page.getByPlaceholder('CPNS-2026-A').fill(batchCode)
             await page.getByLabel('Status batch').selectOption('active')
@@ -174,7 +147,7 @@ test.describe('Instansi — monitoring & export', () => {
             await expect(page.locator('input[aria-label^="Tautan undangan"]')).toBeVisible({ timeout: 30_000 })
 
             // ---------------------------------------------------------- peserta
-            await page.getByRole('link', { name: 'Lihat peserta', exact: true }).first().click()
+            await page.getByRole('link', { name: 'Peserta', exact: true }).click()
             await expect(page.getByText('Impor peserta dari CSV', { exact: true })).toBeVisible()
 
             await page.getByPlaceholder(/participant_code,full_name,email,phone/).fill([
@@ -189,12 +162,13 @@ test.describe('Instansi — monitoring & export', () => {
 
             // -------------------------------------------------------- monitoring
             await page.reload()
-            await expect(page.getByText('Monitoring peserta', { exact: true })).toBeVisible({ timeout: 30_000 })
+            await page.getByRole('navigation',{name:'Bagian workspace'}).getByRole('link',{name:'Monitoring',exact:true}).click()
+            await expect(page.locator('main h1')).toHaveText('Monitoring Peserta')
             // Tanpa exam, semua peserta berstatus "Belum mulai" — dan itulah yang
             // harus terlihat, bukan angka nol yang menyesatkan.
             // Dipersempit ke tabel MONITORING (dibedakan oleh header "Status ujian"):
             // nama peserta juga muncul di tabel peserta di atasnya.
-            const monitoringTable = page.locator('table', { hasText: 'Status ujian' }).first()
+            const monitoringTable = page.locator('table', { hasText: 'Progres' }).first()
             await expect(monitoringTable).toBeVisible({ timeout: 30_000 })
             await expect(monitoringTable.getByText('Belum mulai', { exact: true }).first()).toBeVisible()
             for (const name of ['Peserta Satu', 'Peserta Dua']) {
@@ -234,8 +208,8 @@ test.describe('Instansi — monitoring & export', () => {
             expect(detail).toContain('Peserta Satu')
         } finally {
             if (orgId) {
-                await page.goto(`/admin/organizations?org=${orgId}`)
-                await expect(page.getByRole('heading', { name: `Ubah Instansi Export ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
+                await page.goto(`/admin/organizations?org=${orgId}&tab=batches`)
+                await expect(page.getByRole('heading', { name: `Instansi Export ${orgCode}`, exact: true })).toBeVisible({ timeout: 30_000 })
 
                 // Peserta dikeluarkan dulu: instansi yang masih punya peserta tidak
                 // boleh dihapus, dan penjaga itu memang benar.
@@ -255,7 +229,9 @@ test.describe('Instansi — monitoring & export', () => {
                     await expect(remove).toHaveCount(before - 1, { timeout: 30_000 })
                 }
 
+                await page.getByRole('link',{name:'Pengaturan',exact:true}).click()
                 await page.getByRole('button', { name: 'Hapus instansi', exact: true }).click()
+                await page.getByRole('alertdialog').getByRole('button',{name:'Hapus instansi',exact:true}).click()
                 // Sama seperti spec join: penolakan "masih punya peserta" adalah
                 // penjaga produk yang sah, bukan kegagalan pembersihan.
                 await expect(page.getByRole('status').filter({ hasText: /dihapus|masih punya peserta/ })).toContainText(

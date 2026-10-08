@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { attemptRepository } from '@/src/repositories/attempt.repository'
 import { eventRepository, type CanonicalEventRow, type CanonicalEventSessionRow } from '@/src/repositories/event.repository'
 import { examRepository } from '@/src/repositories/exam.repository'
-import { walletService, WalletDomainError } from '@/src/services/wallet.service'
+import { tkaFullExamRpcService } from '@/src/services/tka-full-exam-rpc.service'
 import { logger } from '@/lib/logger'
 import type { Json } from '@/types/database.types'
 
@@ -15,9 +15,7 @@ export type EventDomainErrorCode =
     | 'EVENT_START_WINDOW_CLOSED'
     | 'EVENT_NOT_REGISTERED'
     | 'EVENT_EXAM_NOT_CONFIGURED'
-    | 'EVENT_ACCESS_PENDING'
     | 'QUESTION_BANK_INCOMPLETE'
-    | 'INSUFFICIENT_TOKEN_BALANCE'
 
 export class EventDomainError extends Error {
     constructor(public readonly code: EventDomainErrorCode, message: string) {
@@ -28,7 +26,7 @@ export class EventDomainError extends Error {
 
 function statusFor(event: CanonicalEventRow) {
     const now = Date.now()
-    if (String(event.status).toLowerCase() === 'closed' || now > Date.parse(event.ends_at)) return 'closed' as const
+    if (String(event.status).toLowerCase() === 'closed' || now >= Date.parse(event.ends_at)) return 'closed' as const
     if (now >= Date.parse(event.starts_at)) return 'live' as const
     return 'scheduled' as const
 }
@@ -52,6 +50,10 @@ function sessionLatestStart(session: CanonicalEventSessionRow, durationSeconds: 
 function remainingDurationSeconds(session: CanonicalEventSessionRow, configuredDuration: number | null) {
     const remaining = Math.max(1, Math.floor((Date.parse(session.ends_at) - Date.now()) / 1000))
     return Math.min(configuredDuration ?? remaining, remaining)
+}
+
+function isUniqueViolation(error: unknown): boolean {
+    return Boolean(error && typeof error === 'object' && 'code' in error && error.code === '23505')
 }
 
 export class EventService {
@@ -106,6 +108,7 @@ export class EventService {
 
         const questionCountByExam = new Map<string, number>()
         const durationByExam = new Map<string, number | null>()
+        const sessionPathByExam = new Map<string, string>()
         const representativeSessionByExam = new Map<string, CanonicalEventSessionRow>()
         for (const session of sessions) {
             if (!representativeSessionByExam.has(session.exam_id)) representativeSessionByExam.set(session.exam_id, session)
@@ -117,6 +120,7 @@ export class EventService {
             ])
             questionCountByExam.set(examId, questionCount)
             durationByExam.set(examId, exam?.durationSeconds ?? null)
+            if (exam) sessionPathByExam.set(examId, this.sessionPath(exam))
         }))
 
         const sessionRegistrationCounts = await eventRepository.countRegistrationsForSessions(sessions.map((row) => row.id))
@@ -168,6 +172,7 @@ export class EventService {
                 event_session_status: registration?.status ?? null,
                 test_session_status: attempt?.status ?? null,
                 question_count: selectedSession ? questionCountByExam.get(selectedSession.exam_id) ?? 0 : 0,
+                session_path: selectedSession ? sessionPathByExam.get(selectedSession.exam_id) ?? '/cpns/dashboard/tryout' : '/cpns/dashboard/tryout',
                 payment_status: null,
                 payment_order_id: null,
                 payment_snap_token: null,
@@ -196,13 +201,22 @@ export class EventService {
         const session = sessions.find((candidate) => candidate.capacity === null || (counts.get(candidate.id) ?? 0) < candidate.capacity)
         if (!session) throw new EventDomainError('EVENT_SESSION_FULL', 'Kuota sesi event sudah penuh')
 
-        const registration = await eventRepository.createRegistration({
-            eventId,
-            sessionId: session.id,
-            userId,
-            registrationNumber: `EVT-${event.code}-${randomUUID().slice(0, 8).toUpperCase()}`,
-        })
-        return { registration, alreadyRegistered: false }
+        try {
+            const registration = await eventRepository.createRegistration({
+                eventId,
+                sessionId: session.id,
+                userId,
+                registrationNumber: `EVT-${event.code}-${randomUUID().slice(0, 8).toUpperCase()}`,
+            })
+            return { registration, alreadyRegistered: false }
+        } catch (error) {
+            // The unique (event_id, user_id) constraint is the race arbiter.
+            // A simultaneous second registration returns that canonical row.
+            if (!isUniqueViolation(error)) throw error
+            const raced = await eventRepository.getRegistration(userId, eventId)
+            if (!raced) throw error
+            return { registration: raced, alreadyRegistered: true }
+        }
     }
 
     async start(userId: string, eventId: string) {
@@ -223,35 +237,50 @@ export class EventService {
         }
 
         const exam = await eventRepository.resolveSessionExam(session)
-        if (!exam) throw new EventDomainError('EVENT_EXAM_NOT_CONFIGURED', 'Exam EVENT belum dikonfigurasi')
-        if (exam.requiredFeatureId) {
-            throw new EventDomainError('EVENT_ACCESS_PENDING', 'Event dengan entitlement akan diaktifkan pada fase commerce')
-        }
+        if (!exam) throw new EventDomainError('EVENT_EXAM_NOT_CONFIGURED', 'Assessment katalog event belum tersedia atau belum siap')
 
         const existing = await eventRepository.getUserEventAttempt(userId, eventId)
         if (existing) {
+            if (['in_progress', 'created'].includes(String(existing.status).toLowerCase())) await attemptRepository.waitForAttemptQuestions(existing.id)
             return {
                 attemptId: existing.id,
                 resumed: ['in_progress', 'created'].includes(String(existing.status).toLowerCase()),
                 completed: String(existing.status).toLowerCase() === 'completed',
+                sessionPath: this.sessionPath(exam),
             }
         }
 
         const now = Date.now()
+        const eventStartsAt = Date.parse(event.starts_at)
+        if (Number.isFinite(eventStartsAt) && now < eventStartsAt) {
+            throw new EventDomainError('EVENT_NOT_STARTED', 'Event belum dimulai')
+        }
+        if (statusFor(event) === 'closed') {
+            throw new EventDomainError('EVENT_START_WINDOW_CLOSED', 'Waktu masuk event sudah ditutup')
+        }
         const startsAt = Date.parse(session.starts_at)
         if (now < startsAt) throw new EventDomainError('EVENT_NOT_STARTED', 'Sesi event belum dimulai')
         if (now > sessionLatestStart(session, exam.durationSeconds) || now >= Date.parse(session.ends_at)) {
             throw new EventDomainError('EVENT_START_WINDOW_CLOSED', 'Waktu masuk event sudah ditutup')
         }
 
-        if (exam.tokenCost > 0) {
-            try {
-                await walletService.assertCanAfford(userId, exam.tokenCost)
-            } catch (error) {
-                if (error instanceof WalletDomainError) {
-                    throw new EventDomainError('INSUFFICIENT_TOKEN_BALANCE', 'Token ujian tidak mencukupi')
-                }
-                throw error
+        // TKA SMP tryout modes use the existing section-aware RPC engine (the
+        // same engine used by direct access). Drill and CPNS keep their existing
+        // shared Schema V2 attempt flow.
+        if (exam.programCode?.toUpperCase() === 'TKA'
+            && exam.trackCode?.toUpperCase() === 'SMP'
+            && ['FULL_TRYOUT', 'MINI_TRYOUT'].includes(exam.examTypeCode)) {
+            const started = await tkaFullExamRpcService.startSmpExam({
+                userId,
+                examSlug: exam.slug,
+                context: { type: 'EVENT', eventId },
+            })
+            await eventRepository.updateRegistrationStatus(registration.id, 'started')
+            return {
+                attemptId: started.attemptId,
+                resumed: started.resumed,
+                completed: false,
+                sessionPath: this.sessionPath(exam),
             }
         }
 
@@ -270,24 +299,51 @@ export class EventService {
         const metadata: Record<string, Json> = {
             schemaVersion: 2,
             practiceKind: 'event',
-            examTypeCode: 'EVENT',
+            examTypeCode: exam.examTypeCode,
+            programCode: exam.programCode ?? 'CPNS',
+            trackCode: exam.trackCode ?? 'SKD',
             eventId,
             eventSessionId: session.id,
             eventRegistrationId: registration.id,
             durationSeconds,
         }
-        const attempt = await attemptRepository.createAttempt({ userId, examId: exam.id, metadata })
+        let attempt
+        try {
+            attempt = await attemptRepository.createAttemptWithQuestions({
+                userId,
+                examId: exam.id,
+                metadata,
+                questions,
+            })
+        } catch (error) {
+            // The database index guarantees one active attempt for this user,
+            // assessment, and event. Re-read the winner after a concurrent start.
+            if (!isUniqueViolation(error)) throw error
+            const raced = await eventRepository.getUserEventAttempt(userId, eventId)
+            if (!raced) throw error
+            if (['in_progress', 'created'].includes(String(raced.status).toLowerCase())) await attemptRepository.waitForAttemptQuestions(raced.id)
+            return {
+                attemptId: raced.id,
+                resumed: ['in_progress', 'created'].includes(String(raced.status).toLowerCase()),
+                completed: String(raced.status).toLowerCase() === 'completed',
+                sessionPath: this.sessionPath(exam),
+            }
+        }
 
         try {
-            await attemptRepository.addAttemptQuestions(attempt.id, questions)
-            if (exam.tokenCost > 0) await walletService.debitForAttempt(userId, attempt.id)
             await eventRepository.updateRegistrationStatus(registration.id, 'started')
         } catch (error) {
             await attemptRepository.deleteAttempt(attempt.id).catch(() => undefined)
             throw error
         }
 
-        return { attemptId: attempt.id, resumed: false, completed: false }
+        return { attemptId: attempt.id, resumed: false, completed: false, sessionPath: this.sessionPath(exam) }
+    }
+
+    private sessionPath(exam: { programCode?: string; trackCode?: string }) {
+        return exam.programCode?.toUpperCase() === 'TKA'
+            ? `/tka/${(exam.trackCode ?? 'SMP').toLowerCase()}/tryout`
+            : '/cpns/dashboard/tryout'
     }
 }
 

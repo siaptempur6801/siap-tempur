@@ -16,27 +16,30 @@ function source(relativePath: string) {
     return readFileSync(resolve(repoRoot, relativePath), 'utf8')
 }
 
-const service = source('src/services/admin-v2.service.ts')
-const page = source('app/admin/AdminOperationsWorkspace.tsx')
+const workspaceService = source('src/services/admin-workspace.service.ts')
+const productService = source('src/services/admin-product.service.ts')
+const sharedUi = source('components/admin/AdminResourceShared.tsx')
+const page = source('components/admin/ProductAvailabilityFields.tsx')
 
 describe('status produk huruf besar', () => {
     it('daftar domain menandai products sebagai uppercase dan filter menyesuaikan diri', () => {
-        expect(service).toMatch(/statusCase: 'upper'/)
-        expect(service).toMatch(/spec\.statusCase === 'upper' \? status\.toUpperCase\(\) : status/)
-        expect(service).toMatch(/spec\.statusCase === 'upper' \? options\.status\.toUpperCase\(\) : options\.status/)
+        expect(workspaceService).toMatch(/statusCase: 'upper'/)
+        expect(workspaceService).toMatch(/spec\.statusCase === 'upper' \? status\.toUpperCase\(\) : status/)
+        expect(workspaceService).not.toContain('countDomainRows')
     })
 
     it('penulisan produk menormalkan status; harga lama dinonaktifkan uppercase', () => {
-        expect(service).toMatch(/const status = input\.status\.trim\(\)\.toUpperCase\(\)/)
-        expect(service).toContain('PRODUCT_STATUS_INVALID')
-        expect(service).toContain("status: 'INACTIVE'")
+        expect(productService).toMatch(/const status = input\.status\.trim\(\)\.toUpperCase\(\)/)
+        expect(productService).toContain('PRODUCT_STATUS_INVALID')
+        expect(productService).toContain("status: 'INACTIVE'")
         // Payload produk tidak boleh lagi memakai status mentah dari form.
-        expect(service).not.toMatch(/duration_days: input\.durationDays \?\? null,\n\s+status: input\.status,/)
+        expect(productService).not.toMatch(/duration_days: input\.durationDays \?\? null,\n\s+status: input\.status,/)
     })
 
     it('UI mengirim nilai uppercase', () => {
-        expect(page).toContain("{ value: 'DRAFT', label: 'Draf' }")
-        expect(page).toContain("{ value: 'ARCHIVED', label: 'Diarsipkan' }")
-        expect(page).toMatch(/name="status" defaultValue=\{s\(editedProduct\?\.status\) \|\| 'DRAFT'\}/)
+        expect(sharedUi).toContain("{ value: 'DRAFT', label: 'Draft' }")
+        expect(sharedUi).toContain("{ value: 'ARCHIVED', label: 'Archived' }")
+        expect(page).toContain('name="status" value={state}')
+        expect(page).toContain('value="ACTIVE" disabled={!gate?.ready}')
     })
 })

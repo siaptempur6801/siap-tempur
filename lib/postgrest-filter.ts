@@ -6,7 +6,7 @@
  * bukan sekadar gagal. Karakter liarnya juga dibuang supaya `%` yang diketik
  * admin tidak berubah menjadi wildcard tak terbatas.
  *
- * Satu definisi untuk seluruh pencarian admin: sebelumnya `admin-v2.service`
+ * Satu definisi untuk seluruh pencarian admin: sebelumnya `admin-workspace.service`
  * punya salinannya sendiri sementara `content-review.service` hanya membuang
  * `%_`, sehingga `,` dan `()` dari kata kunci bisa merusak ekspresi filter.
  */

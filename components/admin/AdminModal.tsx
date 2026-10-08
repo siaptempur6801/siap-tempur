@@ -1,21 +1,19 @@
 'use client'
 
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
-import { Plus, X } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
+import { adminPrimaryButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
 import { useAdminConfirm } from '@/components/admin/useAdminConfirm'
+import { cn } from '@/lib/utils'
+import { Plus,X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useEffect,useId,useRef,useState,type ReactNode } from 'react'
 
-const triggerVariants = {
-    primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500/20',
-    secondary: 'border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 focus:ring-slate-900/5',
-} as const
+const triggerVariants = { primary: adminPrimaryButtonClass, secondary: adminSecondaryButtonClass } as const
 
 const sizes = {
     md: 'max-w-xl',
-    lg: 'max-w-3xl',
-    xl: 'max-w-5xl',
-    wide: 'max-w-6xl',
+    lg: 'max-w-xl',
+    xl: 'max-w-2xl',
+    wide: 'max-w-2xl',
 } as const
 
 type AdminModalProps = {
@@ -108,10 +106,7 @@ export default function AdminModal({
                         onOpen?.()
                         setOpen(true)
                     }}
-                    className={cn(
-                        'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-50',
-                        triggerVariants[triggerVariant],
-                    )}
+                    className={cn(triggerVariants[triggerVariant])}
                 >
                     {triggerIcon ?? <Plus size={16} aria-hidden="true"/>} {triggerLabel}
                 </button>
@@ -129,26 +124,26 @@ export default function AdminModal({
                     if (event.target === dialogRef.current) closeModal()
                 }}
                 className={cn(
-                    'm-auto w-[calc(100%-1.5rem)] max-h-[calc(100dvh-1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 text-slate-950 shadow-2xl backdrop:bg-slate-950/45 backdrop:backdrop-blur-[2px]',
+                    'm-auto w-[calc(100%-1.5rem)] max-h-[calc(100dvh-1.5rem)] overflow-hidden rounded-lg border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-slate-950/45 backdrop:backdrop-blur-[2px]',
                     sizes[size],
                 )}
             >
                 <div className="flex max-h-[calc(100dvh-1.5rem)] w-full flex-col">
-                    <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
+                    <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
                         <div className="min-w-0">
-                            <h2 id={titleId} className="text-lg font-black tracking-tight text-slate-950">{title}</h2>
-                            {description ? <p id={descriptionId} className="mt-1 text-sm font-medium leading-6 text-slate-500">{description}</p> : null}
+                            <h2 id={titleId} className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+                            {description ? <p id={descriptionId} className="mt-1 text-sm font-medium leading-6 text-muted-foreground">{description}</p> : null}
                         </div>
                         <button
                             type="button"
                             onClick={closeModal}
                             aria-label="Tutup modal"
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-900/5"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
-                            <X size={18}/>
+                            <X size={16}/>
                         </button>
                     </header>
-                    <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+                    <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
                         {children}
                     </div>
                 </div>
