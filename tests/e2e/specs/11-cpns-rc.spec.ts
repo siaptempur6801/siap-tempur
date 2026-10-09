@@ -67,6 +67,75 @@ test.describe('CPNS SKD release-candidate', () => {
     await expectDashboardTokenBalance(page, 3)
   })
 
+  test('token confirmation stays reachable on short mobile screens and cancels without charging', async ({ page }, testInfo) => {
+    await page.setViewportSize({ width: 390, height: 568 })
+    await page.goto('/cpns/dashboard/tryout', NAVIGATION_OPTIONS)
+    await page.evaluate(() => { document.body.style.overflow = 'clip' })
+    const start = page.getByRole('button', { name: 'Mulai Full Tryout', exact: true })
+    const dialog = await openTokenDialog(page, start)
+    await expect(dialog).toHaveAccessibleName('Konfirmasi Token')
+    await expect(dialog.getByRole('button', { name: 'Batal', exact: true })).toBeFocused()
+    const box = await dialog.boundingBox()
+    expect(box).not.toBeNull()
+    expect(box!.y).toBeGreaterThanOrEqual(16)
+    expect(box!.y + box!.height).toBeLessThanOrEqual(552)
+    await expect(dialog.getByRole('heading', { name: 'Konfirmasi Token', exact: true })).toBeInViewport()
+    const confirm = dialog.getByRole('button', { name: /Gunakan 1 Token/i })
+    await expect(confirm).toBeInViewport()
+    expect((await confirm.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    await page.keyboard.press('Shift+Tab')
+    await expect(dialog.getByRole('region', { name: 'Ringkasan sesi dan token', exact: true })).toBeFocused()
+    await page.keyboard.press('Shift+Tab')
+    await expect(dialog.getByRole('button', { name: 'Tutup dialog', exact: true })).toBeFocused()
+    await page.keyboard.press('Shift+Tab')
+    await expect(confirm).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(dialog.getByRole('button', { name: 'Tutup dialog', exact: true })).toBeFocused()
+    await page.screenshot({ path: testInfo.outputPath('token-confirmation-mobile.png') })
+    await page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+    await expect(start).toBeFocused()
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('clip')
+    await expectListingTokenBalance(page, 3)
+    await expect(start).not.toHaveAttribute('data-press-lock', 'true')
+    await openTokenDialog(page, start)
+    await page.mouse.click(2, 2)
+    await expect(dialog).not.toBeVisible()
+    await expect(start).toBeFocused()
+    await page.reload(NAVIGATION_OPTIONS)
+    await expectListingTokenBalance(page, 3)
+    // Hold a request in the browser, before it can reach the server or charge tokens.
+    let pendingRequest: import('@playwright/test').Route | undefined
+    await page.route('**/cpns/dashboard/tryout', async (route) => {
+      if (route.request().method() === 'POST' && route.request().headers()['next-action']) {
+        pendingRequest = route
+        return
+      }
+      await route.continue()
+    })
+    try {
+      await openTokenDialog(page, start)
+      await dialog.getByRole('button', { name: /Gunakan 1 Token/i }).click()
+      await expect(dialog.getByRole('button', { name: 'Memulai...', exact: true })).toBeDisabled()
+      await expect(dialog.getByRole('button', { name: 'Batal', exact: true })).toBeDisabled()
+      await page.keyboard.press('Escape')
+      await expect(dialog).toBeVisible()
+      await page.mouse.click(2, 2)
+      await expect(dialog).toBeVisible()
+      await expect.poll(() => Boolean(pendingRequest)).toBe(true)
+      await pendingRequest!.abort('failed')
+      pendingRequest = undefined
+      await expect(dialog.getByRole('button', { name: 'Batal', exact: true })).toBeEnabled()
+      await dialog.getByRole('button', { name: 'Batal', exact: true }).click()
+      await expect(dialog).not.toBeVisible()
+    } finally {
+      await pendingRequest?.abort('failed')
+      await page.unroute('**/cpns/dashboard/tryout')
+    }
+    await page.reload(NAVIGATION_OPTIONS)
+    await expectListingTokenBalance(page, 3)
+  })
+
   test('full lifecycle, mini tryout, and drill preserve state and charge exactly once', async ({ page }) => {
     test.setTimeout(180_000)
 
