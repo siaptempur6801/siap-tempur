@@ -108,8 +108,27 @@ test.describe('CPNS SKD release-candidate', () => {
     const persistedFirstOption = page.getByTestId('answer-option-0').first()
     await expect(persistedFirstOption).toHaveClass(/border-blue-600/)
 
-    // A failed latest edit must block manual completion and recover on reconnect.
+    // Real browser offline/online events, with multiple edits while disconnected.
+    // The acknowledged A remains on the server; reconnect must save only the
+    // latest pending selection before reload, without charging another token.
     const saveActionId = answerResponse.request().headers()['next-action']
+    await page.context().setOffline(true)
+    try {
+      await page.getByTestId('answer-option-2').first().click()
+      await expect(page.getByText('Gagal menyimpan jawaban', { exact: true }).first()).toBeVisible()
+      await page.getByTestId('answer-option-3').first().click()
+      await page.getByTestId('answer-option-2').first().click()
+      await expect(page.getByTestId('answer-option-2').first()).toHaveClass(/border-blue-600/)
+    } finally {
+      const onlineSave = page.waitForResponse(response =>
+        response.request().headers()['next-action'] === saveActionId, { timeout: 20_000 })
+      await page.context().setOffline(false)
+      expect((await onlineSave).ok()).toBeTruthy()
+    }
+    await page.reload(NAVIGATION_OPTIONS)
+    await expect(page.getByTestId('answer-option-2').first()).toHaveClass(/border-blue-600/)
+
+    // A failed latest edit must block manual completion and recover on reconnect.
     let blockedSaves = 0
     let completionActions = 0
     const failAnswerSave = async (route: import('@playwright/test').Route) => {

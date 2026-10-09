@@ -22,6 +22,26 @@ describe('answer save queue', () => {
         expect(queue.keys()).toEqual(['q']);await queue.sync('q',save)
         expect(save).toHaveBeenCalledTimes(2);expect(queue.keys()).toEqual([])
     })
+    it('keeps acknowledged answers clean when a later answer loses its response or the session expires', async () => {
+        const queue = new AnswerSaveQueue<string>()
+        const accepted = new Map<string, string>()
+        queue.set('q1', 'A')
+        await queue.sync('q1', async value => { accepted.set('q1', value) })
+        queue.set('q2', 'B')
+        await expect(queue.sync('q2', async value => {
+            accepted.set('q2', value)
+            throw Error('response lost')
+        })).rejects.toThrow('response lost')
+        expect(queue.keys()).toEqual(['q2'])
+        expect(accepted.get('q1')).toBe('A')
+        await expect(queue.sync('q2', async () => { throw Error('ATTEMPT_TIME_EXPIRED') })).rejects.toThrow('ATTEMPT_TIME_EXPIRED')
+        expect(queue.keys()).toEqual(['q2'])
+        // Retrying the same accepted selection is safe; acknowledgement clears
+        // only that question and never replays the earlier acknowledged answer.
+        await queue.sync('q2', async value => { accepted.set('q2', value) })
+        expect([...accepted.entries()]).toEqual([['q1', 'A'], ['q2', 'B']])
+        expect(queue.keys()).toEqual([])
+    })
     it('saves a new edit even if a superseded answer fails', async () => {
         const queue=new AnswerSaveQueue<string>(),gate=deferred()
         const save=vi.fn().mockImplementationOnce(async()=>{await gate.promise;throw Error('old failure')}).mockResolvedValue(undefined)

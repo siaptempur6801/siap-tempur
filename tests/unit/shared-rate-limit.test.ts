@@ -20,6 +20,24 @@ describe('shared rate limiter', () => {
         vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response(JSON.stringify({result:3}),{status:200})))
         await expect(checkRateLimit(crypto.randomUUID(),2,60000)).resolves.toBe(true)
     })
+    it('enforces one shared window for concurrent requests from independent instances behind the same NAT', async () => {
+        const counters = new Map<string, number>()
+        vi.stubGlobal('fetch', vi.fn().mockImplementation(async (_url, options) => {
+            const key = JSON.parse(options.body)[3] as string
+            const result = (counters.get(key) ?? 0) + 1
+            counters.set(key, result)
+            return new Response(JSON.stringify({ result }))
+        }))
+        vi.resetModules()
+        const instanceA = await import('@/lib/api-utils')
+        vi.resetModules()
+        const instanceB = await import('@/lib/api-utils')
+        const results = await Promise.all(Array.from({ length: 62 }, (_, i) =>
+            (i % 2 ? instanceA : instanceB).checkRateLimit('beacon_classroom-NAT', 60, 60000)))
+        expect(results.filter(limited => !limited)).toHaveLength(60)
+        expect(results.filter(Boolean)).toHaveLength(2)
+        await expect(instanceB.checkRateLimit('beacon_other-NAT', 60, 60000)).resolves.toBe(false)
+    })
     it.each([new Response('{}',{status:503}),new Response('{"result":0}'),new Response('{"result":"bad"}'),new Response('{"error":"denied"}'),new Response('not-json')])('fails closed in production for failed or malformed Redis responses',async response=>{
         vi.stubEnv('APP_ENV','production');vi.stubGlobal('fetch',vi.fn().mockResolvedValue(response))
         await expect(checkRateLimit(crypto.randomUUID(),2,60000)).resolves.toBe(true)
