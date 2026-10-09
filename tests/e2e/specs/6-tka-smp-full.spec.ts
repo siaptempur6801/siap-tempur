@@ -130,7 +130,7 @@ async function resolveSingleChoiceRemedialAtPosition(
     expect(resolved).toBe(true)
 }
 
-test('TKA SMP full tryout creates automatic remedial and closes the learning loop', async ({ page }) => {
+test('TKA SMP full tryout creates automatic remedial and closes the learning loop', async ({ page }, testInfo) => {
     test.setTimeout(240_000)
     const session = await freshDisposableTkaSession(page)
     // Full Tryout ber-`access_type = PREMIUM`, jadi wajib punya Tempur Pass aktif
@@ -172,6 +172,15 @@ test('TKA SMP full tryout creates automatic remedial and closes the learning loo
     const sectionDialog = page.getByRole('dialog', { name: 'Selesaikan bagian ini?', exact: true })
     await expect(sectionDialog).toBeVisible()
     await expect(page.getByTestId('tka-section-cancel')).toBeFocused()
+    const originalViewport = page.viewportSize()!
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.screenshot({ path: testInfo.outputPath('section-confirmation-desktop.png') })
+    await page.setViewportSize({ width: 390, height: 568 })
+    const dialogBounds = await sectionDialog.boundingBox()
+    expect(dialogBounds!.y).toBeGreaterThanOrEqual(16)
+    expect(dialogBounds!.y + dialogBounds!.height).toBeLessThanOrEqual(552)
+    await page.screenshot({ path: testInfo.outputPath('section-confirmation-mobile.png') })
+    await page.setViewportSize(originalViewport)
     await page.keyboard.press('Shift+Tab')
     await expect(sectionDialog.getByRole('button', { name: 'Tutup dialog', exact: true })).toBeFocused()
     await page.keyboard.press('Shift+Tab')
