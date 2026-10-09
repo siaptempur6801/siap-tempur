@@ -6,7 +6,7 @@ Implemented and committed safe improvements on `optimize/end-to-end-2026-10-09`,
 
 Runtime dependency audit is clean. The local CI gates pass, including public E2E with CI's placeholder service-role credential. CPNS, TKA, admin roles, payment script navigation, and database parity were exercised. Production database, secrets, deployments, and infrastructure were not modified. Two versioned migrations were applied **only to verified staging**, `lpgrivowdcepcxradavu`.
 
-This branch is ready for review and a controlled release. Hosted CI has not been rerun on these commits: the branch was not pushed, avoiding an automatic deployment. Production rollout and capacity certification remain separate, approval-gated operations.
+**Latest follow-up decision: ready for code review; NO-GO for production rollout until the concrete checklist below passes.** Hosted CI has not been rerun on these commits: the branch was not pushed, avoiding an automatic deployment. Production rollout and capacity certification remain separate, approval-gated operations.
 
 ## Measurement method
 
@@ -82,7 +82,7 @@ All four functions use `SECURITY INVOKER`, explicit empty search paths, and exis
 
 EXPLAIN ANALYZE staging observations: completed-total projection approximately **1.5 ms**; active-progress projection approximately **10.4 ms**, including the sample-user lookup. A question-count plan used existing bitmap indexes. These are individual small-fixture observations, not an equivalent before/after SQL latency benchmark. No speculative index was added.
 
-Read-only metadata comparison through Supabase MCP found exactly four new staging functions, the previously documented staging import table and its index, and migration-ledger differences. Existing function signatures/security configuration/ACL metadata, table columns, policies, indexes, and triggers otherwise match. Function bodies are not compared by this metadata check. The CLI parity runner was blocked by its token's project-status privileges; the connected MCP comparison succeeded. Ledger histories differ in both directions, so broad `supabase db push` must not be used as a release shortcut.
+Read-only metadata comparison through Supabase MCP found exactly four new staging functions, the previously documented staging import table and its index, and migration-ledger differences. Existing table columns, policies, indexes, triggers and function signatures/security settings otherwise match. This original comparison did not compare function bodies or column privileges; the follow-up below adds those checks and explains raw ACL/body differences. The CLI parity runner was blocked by its token's project-status privileges; the connected MCP comparison succeeded. Ledger histories differ in both directions, so broad `supabase db push` must not be used as a release shortcut.
 
 Remaining risk: production callers require the two reviewed migrations before deployment. Larger datasets need representative query plans and latency measurements. Ranking, streak rules, score computation, and atomic/idempotent exam and payment transactions retain their existing implementation.
 
@@ -200,13 +200,117 @@ Reviewable implementation commits:
 | `6e642e3` | Retained failed saves, dirty flushes, reconnect and E2E regression |
 | `b008f23` | Public article reads through anon RLS, preserving cache semantics |
 
+## Follow-up — TKA latency and production readiness
+
+Continued from clean commit `7604144` on the same optimization branch. Completed aggregate, payment, security-dependency, certificate and autosave implementations were retained. Evidence is in [follow-up metrics](optimization-followup-metrics.json), [function hashes](optimization-function-parity.json), [effective ACLs](optimization-release-acl.json), and [current migration ledger](optimization-migration-ledger.json). Private fixture cookies/recorded responses were kept outside git and removed after verification. No new migration was applied.
+
+### 1. TKA latency diagnosis and targeted fix
+
+**Root causes confirmed in code and waterfalls:** the pages awaited Auth before a request-scoped, RLS-protected catalog lookup; the overview separately awaited `user_tracks` before independent exams/types/question count. `app/tka/layout.tsx` now shares the existing request-scoped `getAuthUser()` with pages. `src/repositories/tka-catalog-read.repository.ts` starts identity and catalog together, preserves authenticated query errors, and immediately permits the login redirect if Auth fails even when catalog stalls. All three page files use it. Overview track status joins the existing parallel batch. No permissions, quotas, scores, entitlement evaluation, rows, or UI changed.
+
+The trace distinguishes **one proxy Auth round trip and the render Auth round trip** from later speculative prefetches. Next already coalesced equivalent render fetches; this change does not claim an additional HTTP-count reduction. The request counts remain 21 / 16 / 16 including the observation window. Authentication stays server-verified `getUser()`, with no persistent permission cache.
+
+Seven fresh contexts per route against staging, serially, reproduced substantial HTTP variability. The previous three-sample readiness regression did **not** reproduce as a stable signal. A bounded authenticated-role `EXPLAIN (ANALYZE, BUFFERS)` of the quota function, including its catalog selector and a zero-history subject, took **4.054 ms** (planning 4.334 ms). Individual HTTP calls in the trace reached hundreds of milliseconds; an after-run Auth call took 580 ms. This is evidence to investigate region/network/Auth variation, not an index justification. No index or SQL function was changed.
+
+| Route | Live readiness median before → after | Live document completion before → after | Fixed-delay replay document completion before → after |
+|---|---:|---:|---:|
+| `/tka/smp` | 805 → 724 ms | 604 → 530 ms | **626 → 421 ms** |
+| `/tka/smp/tryout` | 687 → 731 ms | 377 → 534 ms | **427 → 320 ms** |
+| `/tka/smp/mini-tryout` | 538 → 674 ms | 343 → 492 ms | **530 → 428 ms** |
+
+Replay uses recorded responses from our own disposable fixture, fixed **100 ms per Supabase response**, seven fresh contexts per route and speculative prefetch blocked in both versions. It compares detached baseline `7604144` with the targeted page/layout change, before font changes. It makes no staging calls during replay. Completion measures the streamed document/RSC response; it is **not** browser readiness or production latency. Replay readiness was 662 → 721, 721 → 689, and 728 → 729 ms respectively: hydration/load scheduling remains variable. The repeatable result is two removed network dependency stages on overview and one on each catalog page. A consistently faster user-ready TKA page is still unproven; larger, interleaved deployment measurements and field traces remain a gate for a latency/capacity claim.
+
+Reproduce live diagnostics with an owned staging fixture's private Playwright storage state, a local production build, and `scripts/perf/tka-readiness.mjs`. Set `PERF_BASE_URL`, `PERF_STORAGE_STATE_PATH`, `PERF_OUTPUT_PATH`, `PERF_SAMPLES=7`; the script restricts itself to loopback, serial 1–10 samples and the same three selectors. Optional `PERF_BLOCK_PREFETCH=1` isolates document work. For sanitized server timings, preload `scripts/perf/supabase-fetch-timing.mjs` using Node `--import` and set `FETCH_METRICS_FILE` in both processes. It records method/path/status/bytes/timing only. Use the same build mode, fixture, viewport and conditions on both revisions; do not overlap other suites. Fixed replay artifacts remain private under `/tmp/siap-tempur-followup-2026-10-09`, rather than publishing learner responses.
+
+Validation: eight focused catalog tests, lint/typecheck/build, final three-route diagnostic and the 17-test TKA suite with retries disabled. One new test specifically protects the immediate invalid-session redirect during catalog failure/stall. Commit: `b3f3eec`; reproducible diagnostics: `a926b0a`.
+
+### 2. Mobile critical rendering path
+
+The LCP element is the hero **H1 text**, not a hero image. Brand imagery is inline SVG, and no third-party payment script loads here. `app/layout.tsx` preloaded two secondary font families unused by the landing page in addition to Poppins and Patrick Hand. It also declared two icon links beside Next's automatic `app/favicon.ico` link. Lighthouse's icon collection downloaded the large nine-frame ICO three times.
+
+Implemented: `preload:false` for Geist/Geist Mono, while retaining their definitions and on-demand availability; Poppins weights, Patrick Hand, display swap, all typography/CSS and CSP stay intact. Next emits the one favicon link. Re-encoded the existing ICO frames losslessly, retaining every size and the small legacy DIB frame; decoded RGBA hashes match for each converted frame. The original 256-pixel PNG and 16-pixel DIB remain byte-identical. No visual asset was redesigned.
+
+The historical **6.62 s** simulated mobile LCP did not reproduce. Three fresh baseline Lighthouse 13.5 runs established 3,641 / 3,636 / 3,636 ms; three after runs gave 3,249 / 3,250 / 3,258 ms. Compare these controlled runs, not the historical outlier:
+
+| Metric | Baseline median → after median |
+|---|---:|
+| Simulated mobile LCP | **3,636 → 3,250 ms (-10.6%)** |
+| FCP | 1,206 → 1,206 ms |
+| Performance score | **90 → 93** |
+| CLS | **0 → 0** |
+| Font transfers | **8 / 110,663 B → 6 / 57,079 B** |
+| ICO file size | **177,694 → 32,632 B (-81.6%)** |
+| Lighthouse icon transfers | **3 / 534,960 B → 2 / 66,514 B** |
+
+The remaining second icon fetch is manifest/icon gathering, not a second metadata icon link. Simulated LCP and observed H1 paint differ; the old trace observed about 1.2 s, while new unthrottled traces paint much sooner. These are local laboratory values, not field Core Web Vitals. LCP remains above 2.5 s; blocking CSS and mobile network/CPU still need deployment/field evidence before further structural changes.
+
+Browser plugin not available; used existing Playwright/Chromium at `http://127.0.0.1:3100`, desktop 1440×900 and mobile 390×900. Flow: landing → desktop program link or mobile menu/program link → visible target content. Identity, meaningful hero, no framework overlay, no runtime/console errors, no horizontal overflow, computed Poppins typography, one icon link, six preloads, nonce-bearing scripts and interactions passed. Screenshots were captured before interaction and inspected outside git. Public E2E is recorded in the final validation table below. Commit: `341fdd9`.
+
+### 3. Exam resilience and NAT
+
+Extended the existing CPNS E2E without reducing assertions or increasing its timeout: acknowledge an answer and reload; set the browser truly offline; make three edits; bring it online; reload and verify the **latest** selected option; then exercise interrupted save, manual-submit blocking, explicit retry/reload and existing token/result/resume journeys. The first run used a nonexistent fifth option in this four-option fixture; that test defect left an active attempt and caused the later state-dependent event-start failure. Corrected the selector, cleaned up through the existing teardown, and reran the **entire nine-test suite with fresh fixtures and retries disabled: 9 passed**. No application regression was established from that failed run.
+
+Queue regression checks cover a lost response, a later expired-save rejection and a clean acknowledged answer, alongside existing coalescing, independent questions, latest-value recovery and automatic-expiry barriers. The final TKA E2E passes full/mini resume, section boundaries, quota/pass expiry, results, payment owner isolation and diagnostic/remedial behavior. No score/duration/order/token code changed.
+
+A shared mocked Redis counter across two newly imported application instances enforces 60 accepted / 2 rejected requests for 62 concurrent requests to one NAT key; a second NAT key remains independent. This proves the current policy's classroom collision, **not real provider behavior or capacity**. The 60/IP/min policy remains intact pending an approved security-policy decision. It applies to progress/flags beacons; answers save through server actions. No acknowledged-answer loss was observed. Unacknowledged in-memory edits cannot survive full offline reload, cross-device progress during beacon rejection remains unverified, and real Redis/network expiry/long-outage chaos still needs an approved environment. Commit: `abe3f4b`.
+
+### 4. Release-blocking database/provider risks
+
+Read-only inspections now include all existing function-definition hashes, effective critical function privileges and protected column grants. Six pre-existing body differences are formatting/optional aliases/equivalent constant assignments as described in the runbook; they were not overwritten. Learners have no direct write privileges on attempts/answers and no direct read privileges on question snapshots/options/versions/explanations. Privileged score/payment/ranking execution remains denied to anon/authenticated on both projects. New projections have the exact expected invoker/STABLE/empty-path/execute matrix. This supplements rather than replaces the earlier table/policy/index parity.
+
+The migration-ledger drift is **197 staging / 195 production**, twelve staging-only and ten production-only versions. Only the two reviewed optimization versions and four functions are missing from production. Broad push/repair is unsafe.
+
+[Exact production instructions and rollback strategy](OPTIMIZATION_RELEASE_RUNBOOK.md) use a local checksum-pinned SQL generator. It creates no connection, refuses altered migration content, existing output files/functions/versions, verifies deployed hashes/effective ACLs and records the exact two ledger entries atomically with DDL and schema notification. Its post-install verification block passed as read-only SQL on staging; the absence preflight passed read-only on production; both ledger INSERT statements passed EXPLAIN planning without execution. Original DDL/large parity fixtures remain staged and validated. A complete isolated rehearsal and explicit operator approval are still required before production execution. Keep the prior application artifact as the preferred rollback; unused read functions need not be removed. Any removal is a separately reviewed forward migration, RESTRICT only, preserving history.
+
+Prepared a ten-request, uniquely scoped Redis EVAL/TTL/repair checker with explicit staging origin and environment guards. Four mocked-transport tests pass, including production/origin rejection before requests. It does not auto-load Redis credentials. Official Upstash [EVAL](https://upstash.com/docs/redis/sdks/ts/commands/scripts/eval) / [REST ACL](https://upstash.com/docs/redis/features/restapi) support does not prove the deployed credential permits the commands. No approved staging Redis origin was supplied, and no provider Redis write was made. Production limiter failure remains fail-closed. Commit: `6a5464c`.
+
+### 5. CI and capacity verification
+
+Re-inspected latest main CI: `37839046620` is still the dependency-audit failure on `c9d80a7`; no branch push or workflow trigger occurred. The normalized lock stayed unchanged after fresh `npm ci`. Runtime audit remains zero; the full critical-threshold audit passes with **five visible high development-only braces-chain findings**. No security check was removed/suppressed. No controlled realistic load test was explicitly authorized, so no k6 run, resource/connection sampling under load or production percentile/capacity claim was added. The earlier smoke results remain historical smoke evidence only.
+
+| Follow-up check | Actual result |
+|---|---|
+| Fresh `npm ci` / production build | PASS; lock unchanged |
+| ESLint / TypeScript | PASS |
+| Unit tests | **856 passed, 117 files** |
+| Final TKA E2E | **17 passed**, retries disabled |
+| CPNS/organization/event E2E | **9 passed**, fresh retry-free rerun; initial 7 pass / 2 fail retained above |
+| Public/placeholder-credential E2E | **42 passed, 2 existing optional-credential skips**, retries disabled |
+| TKA/placeholder-credential E2E | **17 passed**, retries disabled |
+| Desktop/mobile rendered landing QA | PASS, interactions/CSP/no errors/overflow |
+| Mobile Lighthouse | 3 baseline + 3 after; 3.636 → 3.250 s median LCP |
+| SQL definition/ACL/absence assertions | PASS, read-only |
+| Ledger INSERT syntax/planning | PASS, EXPLAIN without execution |
+| Final learner parity / cleanup | **14 assertions passed**, original 42 attempts/3 tracks; owned fixtures and private files removed |
+| Real staging Redis / realistic capacity / full bundle rehearsal | NOT RUN; approval/designated environment pending |
+
+Admin parity/E2E and original >1,000-row SQL checks were not blindly repeated: no admin query/scoring/schema changes were introduced. Their historical results and retry flake remain above; hosted CI on the release candidate is still required. Learner parity passed after final teardown: 14 assertions, original 42 attempts/3 tracks; owned fixtures and private cookie/response files were removed. The pre-existing developer server was left running.
+
+### Concrete go/no-go release checklist
+
+**GO for code review. NO-GO for production rollout today.** Each missing evidence item is a stop condition for the associated release claim.
+
+- [x] Small independent code commits; existing business/security/UI semantics preserved.
+- [x] Reproducible install, lint/typecheck/unit/build/audits pass locally; development advisories visible.
+- [x] TKA waterfall improvement demonstrated separately from variable browser readiness.
+- [x] Mobile LCP improves in repeated laboratory runs; typography/CSP/visual identity verified.
+- [x] CPNS real offline/reconnect/reload and token tests pass without retries.
+- [x] Two migration definitions, effective privileges and production absence reviewed; exact apply/rollback procedure prepared.
+- [ ] Hosted CI on the reviewed branch, through a process that does not auto-deploy without approval.
+- [ ] Approved isolated rehearsal of the complete migration bundle; production migration approval; post-install PostgREST/owner/anon parity.
+- [ ] Explicitly designated staging Redis and real EVAL/TTL/token-ACL verification; confirm production credential/config through approved operations.
+- [ ] Classroom NAT policy decision and cross-device progress/flag verification at the supported classroom size.
+- [ ] Approved realistic staging concurrency/soak and resource measurements with defined SLOs, P50/P95/P99, errors and connection/function/bandwidth evidence.
+- [ ] Representative deployment/field TKA readiness and mobile LCP verification before latency/CWV certification.
+- [ ] Separate deployment approval, canary plan and rollback owner/artifact confirmed.
+
 ## Prioritized remaining technical debt
 
 1. **Release prerequisite:** review and explicitly approve applying only the two new migrations to production before deploying callers. Verify function ACLs, owner parity, and configured Redis EVAL permission. Do not deploy these callers to a database missing the projections, or use broad migration push against divergent ledgers. Obtain hosted CI on the reviewed branch through the controlled release process.
 2. **P1 security:** track the unpatched development-only braces advisory. Adopt a verified upstream patch when available; retain the audit checks.
-3. **P1 capacity:** approve representative staging concurrency/soak tests and collect DB connection usage, query plans, function duration/memory, bandwidth, error rates, and sufficiently sampled P50/P95/P99. Recheck TKA timing increases and shared per-IP beacon limits under classroom NAT traffic.
+3. **P1 capacity:** approve representative staging concurrency/soak tests and collect DB connection usage, query plans, function duration/memory, bandwidth, error rates, and sufficiently sampled P50/P95/P99. The follow-up removes confirmed TKA waterfall stages; representative user-ready latency still needs deployment evidence. Resolve the demonstrated shared-IP beacon collision under an approved NAT policy.
 4. **P1 resilience:** test server-side flag/progress resume across devices, prolonged outages, expiry during failed saves, and provider outages. Generic progress beacons still need a privileged server credential; do not mistake local resume state in placeholder-key CI for cross-device persistence. Establish an explicitly scoped recovery design before persisting any private answers.
-5. **P2 frontend:** investigate mobile Lighthouse LCP, excess font preload/favicon traffic, and field INP. Detailed React commit profiling on exam and admin screens remains useful at representative question complexity; the short browser trace is not a substitute.
+5. **P2 frontend:** collect deployment/field mobile LCP and INP. The follow-up fixes excess secondary font preload and duplicate/oversized favicon traffic; simulated LCP remains 3.25 s. Detailed React commit profiling on exam and admin screens remains useful at representative question complexity; the short browser trace is not a substitute.
 6. **P2 backend:** `PracticeOverviewRepository.listDrillingMaterials` still performs per-node reads/counts. Measure it before replacing hierarchy semantics with a batch projection. The TKA overview still uses a bounded recent-history list; separate old active attempts from recent results if evidence confirms they are hidden by that bound.
 7. **P2 maintainability:** reconcile pre-existing staging/production migration histories deliberately; avoid assuming ledger presence proves live schema parity. Keep sensitive projections request-scoped and extend permission/answer-key regression coverage as new read models are added.
 

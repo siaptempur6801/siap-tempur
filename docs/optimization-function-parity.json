@@ -1,0 +1,4181 @@
+{
+  "readOnly": true,
+  "checkedAt": "2026-10-09",
+  "staging": [
+    {
+      "schema": "app_private",
+      "proname": "activate_user_track_for_user",
+      "args": "p_user_id uuid, p_program_code text, p_track_code text, p_target_year integer, p_school_name text, p_school_grade text",
+      "definition_hash": "a92c693a6e28d01dc2156274b70fa104",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "assert_question_bank_permission",
+      "args": "p_permission text",
+      "definition_hash": "aa9be6874ad3da702059b16eb6facaf0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "assign_question_reviewer",
+      "args": "p_question_id uuid, p_reviewer_id uuid",
+      "definition_hash": "18aed721e9945665151f5311cb5b3abd",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "audit_content_review_change",
+      "args": "",
+      "definition_hash": "8fa0cb4750ee43cae00b16c8b5403b99",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": null,
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "audit_question_workflow_change",
+      "args": "",
+      "definition_hash": "4cccd2ec7547e58e56f2e2afd31e0514",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": null,
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "bulk_review_pilot_stage",
+      "args": "p_batch text, p_decision text, p_notes text",
+      "definition_hash": "f75542ba9c19bfaee24f00effbcb0320",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": null,
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "claim_pilot_review_stage",
+      "args": "p_batch text",
+      "definition_hash": "823cc7680747d8e6d8337c77fe47eef7",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": null,
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "complete_exam_section_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "7ef65e56d90a7275a58c9a1ca4f96efd",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "current_user_has_permission",
+      "args": "p_permission text",
+      "definition_hash": "bcbc9bf3381fd1bb24e557a38c6ed02e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "enforce_question_workflow_guard",
+      "args": "",
+      "definition_hash": "102683b69577249cc5f7d91cf1c41252",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": null,
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "ensure_question_snapshot",
+      "args": "p_question_id uuid, p_actor uuid, p_reason text",
+      "definition_hash": "74c225ef6caab971efdd9bf9bbd4f625",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "evaluate_wrong_question_selection",
+      "args": "p_snapshot jsonb, p_option_ids uuid[]",
+      "definition_hash": "5805a70af1cea021d01fca2097cdbedf",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "generate_tka_smp_exam",
+      "args": "p_exam_id uuid, p_seed text",
+      "definition_hash": "2c70897b137b2005747a6c15159e385c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_content_question_detail",
+      "args": "p_question_id uuid",
+      "definition_hash": "972b839c175839d1ea8fec50bfc84cb1",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_exam_attempt_result_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "5b974849b3cd0c5f6b4886b5eb8d333b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_exam_attempt_review_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "f8a284b499fa470424b1f02c5d3ba485",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_exam_attempt_state_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "ffa2a2f32965a38a0735aa9bc538bbbf",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_tka_smp_remedial_payload_for_user",
+      "args": "p_user_id uuid, p_session_id uuid",
+      "definition_hash": "25299c7a2609457bfdb6f356060577ac",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_user_authorization",
+      "args": "p_user_id uuid, p_scope_type text, p_scope_id uuid",
+      "definition_hash": "624f1a1a25479cabf826613b023f3e92",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "grant_content_reviewer",
+      "args": "p_user_id uuid",
+      "definition_hash": "1f8a70d6b560f9ce732720e462929c9b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": null,
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "guard_exam_question_item",
+      "args": "",
+      "definition_hash": "1099d6c9462216cf052209694db48815",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": null,
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "has_active_feature",
+      "args": "target_feature uuid",
+      "definition_hash": "a678b4acb9f2f65fe882a164937ab672",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "has_permission",
+      "args": "required_permission text",
+      "definition_hash": "78e4e7c9ea3ed1e90353a3b835723ff8",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "is_org_member",
+      "args": "org_id uuid",
+      "definition_hash": "12b1eb397b71b2aef95e3e3427e0e7b3",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "list_content_people",
+      "args": "",
+      "definition_hash": "646283d2f6002230dae019a7f33cb7e4",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "mutate_question_bank",
+      "args": "p_payload jsonb",
+      "definition_hash": "a343f00433f66226f173a511de3ab010",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "publish_question",
+      "args": "p_question_id uuid",
+      "definition_hash": "28a93630697f39829ecd7b2cca3f0f7a",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "publish_questions",
+      "args": "p_question_ids uuid[]",
+      "definition_hash": "488516cc2cda8c6235726e61721050b7",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "question_bank_editor",
+      "args": "p_program text, p_track text, p_id uuid",
+      "definition_hash": "8f7b3d491d738cca65e2fad9d645c6eb",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "question_snapshot_json",
+      "args": "p_question_id uuid",
+      "definition_hash": "c81a38a5cc75bc4b9fddb83f35e4b135",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_diagnostic_profile_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "ac758cfb84bd207604e8516cdedf88ba",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_diagnostic_recommendations_for_user",
+      "args": "p_user_id uuid, p_diagnostic_profile_id uuid",
+      "definition_hash": "ed2b130678d2715ca6e55246e8f752d0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_drill_projection_after_attempt",
+      "args": "",
+      "definition_hash": "62b275972969142464facbcbc099dde3",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_learning_projection_for_user",
+      "args": "p_user_id uuid, p_source_attempt_id uuid",
+      "definition_hash": "8779893e2b6e2d61028b6385354ce848",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_learning_recommendations_for_user",
+      "args": "p_user_id uuid",
+      "definition_hash": "ef39b5c180ce7e6fd6884a0c705c7722",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_readiness_for_user",
+      "args": "p_user_id uuid",
+      "definition_hash": "e6e25c35f7e7d93a910e609ccef711bc",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_readiness_from_new_progress",
+      "args": "",
+      "definition_hash": "6ef419e961f99fe0da352078598e564f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_readiness_from_old_progress",
+      "args": "",
+      "definition_hash": "781877b5e2dbe68c29e0e8f9e2c21c76",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_recommendations_from_new_progress",
+      "args": "",
+      "definition_hash": "3b9514a6e35096a6eb9f74dd8cda006e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_recommendations_from_old_progress",
+      "args": "",
+      "definition_hash": "c915cead3e2b645e6f9f84164b9aa285",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_remedial_session_for_attempt",
+      "args": "p_user_id uuid, p_source_attempt_id uuid, p_limit integer",
+      "definition_hash": "c95c81b5b1c1123ff365f97ab6f8ff58",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_wrong_question_state_for_user",
+      "args": "p_user_id uuid, p_source_attempt_id uuid",
+      "definition_hash": "68c842a3b44803a041d77c2338b07c4d",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "review_question_stage",
+      "args": "p_question_id uuid, p_decision text, p_notes text",
+      "definition_hash": "05df7e3b931db3e77d6458a5c0a18099",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "review_tka_smp_remedial_item_for_user",
+      "args": "p_user_id uuid, p_session_id uuid, p_item_id uuid, p_option_ids uuid[]",
+      "definition_hash": "199ff89e6268c7b4ba55cc96b7ba7ba2",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "review_wrong_question_for_user",
+      "args": "p_user_id uuid, p_wrong_question_id uuid, p_option_ids uuid[]",
+      "definition_hash": "68a3afbc8a72f4c44096fdfbdb502123",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "save_exam_answer_for_user",
+      "args": "p_user_id uuid, p_attempt_question_id uuid, p_option_ids uuid[], p_answer_value text, p_time_spent_seconds integer, p_is_flagged boolean",
+      "definition_hash": "525fb080ee6478bfd4c55911573e5962",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "save_question_draft",
+      "args": "p_question_id uuid, p_program_code text, p_track_code text, p_subject_code text, p_question_type text, p_stem text, p_difficulty text, p_cognitive_level text, p_estimated_seconds integer, p_source_reference text, p_stimulus_id uuid, p_explanation text, p_knowledge_node_id uuid, p_options jsonb, p_change_reason text, p_expected_version integer, p_expected_updated_at timestamp with time zone",
+      "definition_hash": "eaeb8760ea341cc829bfec99349c6d67",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "score_exam_attempt",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "aff0712706c5f2ffb262e6dc5b4af12c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "start_exam_attempt_for_context",
+      "args": "p_exam_id uuid, p_user_id uuid, p_context jsonb",
+      "definition_hash": "24c7d11f7aa9cbb6014dba22a424bf05",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "start_exam_attempt_for_user",
+      "args": "p_exam_id uuid, p_user_id uuid",
+      "definition_hash": "6ef43151d5fad5a6a5adf9b0a612e9bb",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "submit_exam_attempt_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "efab97a3fb87e8ae0fff46901a84c1e7",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "submit_question_for_review",
+      "args": "p_question_id uuid",
+      "definition_hash": "02b1908ad6077b595707a76935aff2a4",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "submit_questions_for_review",
+      "args": "p_question_ids uuid[]",
+      "definition_hash": "83e1f09f79dcc81610791e7ee79c73ce",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "sync_tka_smp_remedial_sessions_for_user",
+      "args": "p_user_id uuid",
+      "definition_hash": "8e7647dfd9b39b03190f91c4adbddaeb",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "validate_cpns_legacy_mapping_review",
+      "args": "",
+      "definition_hash": "bdc01de99f876de72b811e692ff896e7",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "validate_event_session_assessment",
+      "args": "",
+      "definition_hash": "0001e7051b528dd6dd2d1904079766f0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "activate_user_track",
+      "args": "p_program_code text, p_track_code text, p_target_year integer, p_school_name text, p_school_grade text",
+      "definition_hash": "d15e7c29136388a48e259b0813e42718",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_adjust_wallet",
+      "args": "p_user_id uuid, p_wallet_type text, p_amount integer, p_reason text",
+      "definition_hash": "d9289862a6dbb73dc3b4e1eb00830485",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_assessment_supply",
+      "args": "p_exam_ids uuid[]",
+      "definition_hash": "43234a128c206cf68589e0015984f0f1",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_assign_user_role",
+      "args": "p_user_id uuid, p_role_code text",
+      "definition_hash": "f8baede2b1035db4e0e1a61eda4508fd",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_audit_facets",
+      "args": "",
+      "definition_hash": "ffed28236a3798be2a1e69caed290e66",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_batch_monitoring",
+      "args": "p_batch_id uuid",
+      "definition_hash": "467bc93e8c91c2cf4699073f0d6a3cba",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_compose_exam_from_template",
+      "args": "p_template_id uuid, p_title text, p_status text",
+      "definition_hash": "1c1330795dcd782e374c496df657298b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_delete_composed_exam",
+      "args": "p_exam_id uuid",
+      "definition_hash": "a99d90822edb008ecbbc51c6b005ccd5",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_delete_organization",
+      "args": "p_id uuid",
+      "definition_hash": "27a1537f9745c70f0b5be3a1d392fa0e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_delete_system_setting",
+      "args": "p_key text",
+      "definition_hash": "fae331fe9af28ebadf74863cac8738b0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_drill_supply",
+      "args": "p_program_id uuid, p_track_id uuid, p_node_ids uuid[]",
+      "definition_hash": "246f342bc402d45bf47ffb66ac1279ca",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_entitlement_overview",
+      "args": "",
+      "definition_hash": "085c41f7db6bdbc3af69c9cd4e981049",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_export_organization",
+      "args": "p_organization_id uuid, p_batch_id uuid",
+      "definition_hash": "d1913b0c16bf7001c39860b2e2843b42",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_get_organization",
+      "args": "p_id uuid",
+      "definition_hash": "561592150ce70b811b41ec3ab8906180",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_import_participants",
+      "args": "p_batch_id uuid, p_rows jsonb, p_dry_run boolean",
+      "definition_hash": "23b6d95103b343484b630d4c1847109f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_assignments",
+      "args": "p_batch_id uuid",
+      "definition_hash": "04e00090f584b57e74e9384362e10393",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_audit_logs",
+      "args": "p_action text, p_entity_type text, p_actor_id uuid, p_limit integer, p_offset integer",
+      "definition_hash": "cd3dc5a043f70d1fd401fa88566bffdf",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_entitlements",
+      "args": "p_search text, p_status text, p_limit integer, p_offset integer",
+      "definition_hash": "ab3a0b27b75eeefaeeb74e1697bd2b9c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_org_templates",
+      "args": "p_organization_id uuid",
+      "definition_hash": "87e52e7059bfea9edd2069db6473b41a",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_organizations",
+      "args": "p_search text, p_status text, p_limit integer, p_offset integer",
+      "definition_hash": "39841bf7cdffdc109fcf5a881d711ba2",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_participants",
+      "args": "p_organization_id uuid, p_batch_id uuid, p_search text, p_status text, p_limit integer, p_offset integer",
+      "definition_hash": "915ed1e63829ca543aabc2a1317e83ff",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_roles",
+      "args": "",
+      "definition_hash": "f194b084b0ea0dcd728eefd0a9d56f96",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_settings",
+      "args": "",
+      "definition_hash": "a914ec1e792fd2cd870d1ac257e6b33f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_users",
+      "args": "p_search text, p_role text, p_status text, p_limit integer, p_offset integer",
+      "definition_hash": "cf51db12eb8d850d95751f615ab41f8b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_vouchers",
+      "args": "",
+      "definition_hash": "a9e715524436021e95416618ca673a77",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_wallet_transactions",
+      "args": "p_user_id uuid, p_wallet_type text, p_limit integer, p_offset integer",
+      "definition_hash": "a52f7dac7dd0e28d1fb2e9a035ac443e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_wallets",
+      "args": "p_search text, p_wallet_type text, p_limit integer, p_offset integer",
+      "definition_hash": "d11b4af8da06c7a4a85f7970ae7a65f9",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_monitoring_page",
+      "args": "p_event_id uuid, p_organization_id uuid, p_batch_id uuid, p_assignment_id uuid, p_exam_id uuid, p_search text, p_status text, p_page integer",
+      "definition_hash": "8a3554f779d810cf24ddfb8fd14fc717",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_monitoring_summary",
+      "args": "p_event_id uuid, p_organization_id uuid, p_batch_id uuid, p_assignment_id uuid, p_exam_id uuid, p_include_report boolean",
+      "definition_hash": "e14e0799cbf9db9a0076781ba1d1c4f6",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_question_page",
+      "args": "p_program_id uuid, p_track_id uuid, p_search text, p_status text, p_subject_id uuid, p_node_id uuid, p_review text, p_stage text, p_reviewer text, p_page integer, p_id uuid",
+      "definition_hash": "9f66079f74eff6af05ae0a1433b88808",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_question_status_counts",
+      "args": "p_program_id uuid, p_track_id uuid",
+      "definition_hash": "94a5554f19121204ae2397d6622ccc2d",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_remove_participant",
+      "args": "p_participant_id uuid",
+      "definition_hash": "db2e9f00f1fb3bc9b25f1c2291f4d23c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_report_overview",
+      "args": "p_program_code text, p_track_code text",
+      "definition_hash": "06fbb6a7aa82bbe9f54876a5e5d67e22",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_resource_counts",
+      "args": "p_kind text, p_ids uuid[]",
+      "definition_hash": "c4ade48d394360acfa163df9e5890392",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_revoke_user_role",
+      "args": "p_user_id uuid, p_role_code text",
+      "definition_hash": "af52a35ae7c05bd48961641fc9ec4963",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_rotate_batch_invite",
+      "args": "p_batch_id uuid",
+      "definition_hash": "62c9ce883797d21ba34bbc39f1bba22b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_set_participant_status",
+      "args": "p_participant_id uuid, p_status text",
+      "definition_hash": "486f963046b4e907897b1cc6a40773e5",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_set_track_period_active",
+      "args": "p_track_period_id uuid, p_is_active boolean",
+      "definition_hash": "73f0c724aee69484f8fdefac74c1609e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_set_user_status",
+      "args": "p_user_id uuid, p_status text",
+      "definition_hash": "e6fdc9f5698781421eb4a9471dce1534",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_template_shortages",
+      "args": "p_template_id uuid",
+      "definition_hash": "4c60fca127ad181b77dd411776c201ad",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_assignment",
+      "args": "p_id uuid, p_batch_id uuid, p_exam_id uuid, p_template_id uuid, p_starts_at timestamp with time zone, p_due_at timestamp with time zone, p_is_active boolean, p_notes text",
+      "definition_hash": "349889871fb3d9744e1f4491debef62f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_batch",
+      "args": "p_id uuid, p_organization_id uuid, p_code text, p_name text, p_starts_at timestamp with time zone, p_ends_at timestamp with time zone, p_status text, p_notes text",
+      "definition_hash": "ad9048f478a67890aa92cc9161fa9932",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_certificate_template",
+      "args": "p_id uuid, p_name text, p_template_url text, p_config jsonb",
+      "definition_hash": "ef5033ac13d179785043ce7086e9d1b9",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_drill_exam_v1",
+      "args": "p_exam_id uuid, p_program_code text, p_track_code text, p_subject_code text, p_knowledge_node_id uuid, p_title text, p_slug text, p_duration_seconds integer, p_attempt_limit integer, p_question_count integer, p_question_order text, p_result_visibility text, p_access_type text, p_status text, p_token_cost integer, p_actor_id uuid",
+      "definition_hash": "b20f44c7816c0643cdeb5e71532740fa",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_feature_flag",
+      "args": "p_id uuid, p_key text, p_name text, p_enabled boolean, p_rollout_percentage integer",
+      "definition_hash": "76e1e3b352562804a0d6c6f64bf633e6",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_org_template",
+      "args": "p_id uuid, p_organization_id uuid, p_name text, p_twk_count integer, p_tiu_count integer, p_tkp_count integer, p_duration_seconds integer, p_max_attempts integer, p_randomize_questions boolean, p_randomize_options boolean, p_show_explanation text, p_ranking_visibility text, p_status text",
+      "definition_hash": "a772bc09af90370aca57e3937bcbd1e6",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_organization",
+      "args": "p_id uuid, p_name text, p_code text, p_type text, p_city text, p_province text, p_address text, p_contact_name text, p_contact_email text, p_contact_phone text, p_status text, p_notes text",
+      "definition_hash": "2cbc8d7ea7f5b124bee210f995751b27",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_system_setting",
+      "args": "p_key text, p_value jsonb",
+      "definition_hash": "aa8f707d507abd74af95018748f9423b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_voucher",
+      "args": "p_id uuid, p_code text, p_quota_amount integer, p_max_uses integer, p_expires_at timestamp with time zone, p_is_active boolean, p_wallet_type text",
+      "definition_hash": "832daed976d9738726eaff3b5c7adc22",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "assign_question_reviewer",
+      "args": "p_question_id uuid, p_reviewer_id uuid",
+      "definition_hash": "3c0b6dff0a37d48b6439fcced9b0ada1",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "bulk_review_pilot_stage",
+      "args": "p_batch text, p_decision text, p_notes text",
+      "definition_hash": "767f881c281a403164ba9a077e682440",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "claim_pilot_review_stage",
+      "args": "p_batch text",
+      "definition_hash": "33f6381c9ffce7ca6fbc65164685571a",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "claim_voucher",
+      "args": "p_user_id uuid, p_voucher_code text, p_wallet_type text",
+      "definition_hash": "74e65dddb8c9b170851fb02a35342aff",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "complete_exam_section",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "2c1d0495e180d9b49502ce03b317e301",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "debit_exam_token_once",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "fa14fc4cb0719dde5d976c112755da84",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=public"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "fulfill_paid_order",
+      "args": "p_order_id uuid, p_provider text, p_status text, p_provider_transaction_id text, p_payment_method text, p_amount numeric, p_raw_response jsonb",
+      "definition_hash": "8c35af5c262bfa45524e8427f586068c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "generate_tka_smp_exam",
+      "args": "p_exam_id uuid, p_seed text",
+      "definition_hash": "ff520e7760545e762a112db0314bed18",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_batch_invite",
+      "args": "p_token text",
+      "definition_hash": "4bcb00c8f874d955a678b3968ef8e954",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_content_question_detail",
+      "args": "p_question_id uuid",
+      "definition_hash": "a7f897e411fb43595ea71ae95ea7b518",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_cpns_legacy_import_summary",
+      "args": "",
+      "definition_hash": "4ee3f75e394c489909cc2db820cdd12f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_exam_attempt_result",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "67ddc9227e07b19658668e55efcd8566",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_exam_attempt_review",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "4f9d29518ac815148e414be79439abbb",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_exam_attempt_state",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "7b7731b03876eae008263bb0f09cf1a8",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_my_organization_memberships",
+      "args": "",
+      "definition_hash": "4341757fb9bd4b3eeff251599d8f21bc",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_question_bank_editor",
+      "args": "p_program text, p_track text, p_id uuid",
+      "definition_hash": "4e4a470d2edbfb05c5c34637d2c83847",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_learning_focus",
+      "args": "",
+      "definition_hash": "0c0568df7ffe6de99fd91fed618e3d68",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_learning_hierarchy",
+      "args": "",
+      "definition_hash": "0afc01d1bd8baaf842204433d80daa30",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_readiness",
+      "args": "",
+      "definition_hash": "193a61d91f83773d54fa19b948b70f87",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_remedial_for_attempt",
+      "args": "p_source_attempt_id uuid",
+      "definition_hash": "8d165a3c331b6d291b45c4cba30fe579",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_remedial_session",
+      "args": "p_session_id uuid",
+      "definition_hash": "d10ac857c6c39e8c0e0d4b30b7140d8e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_wrong_questions",
+      "args": "p_limit integer",
+      "definition_hash": "956f8adbe7e24a86b0288dca59ad3621",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_user_authorization",
+      "args": "p_user_id uuid, p_scope_type text, p_scope_id uuid",
+      "definition_hash": "7a1296af721b5adc1026f209d62d0f44",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_user_subject_progress",
+      "args": "p_user_id uuid",
+      "definition_hash": "c614138da39cfc0cf21c7f09c7bb41fc",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "grant_content_reviewer",
+      "args": "p_user_id uuid",
+      "definition_hash": "3eca46e8af6eab5e33853410a6c8a65e",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "handle_new_user",
+      "args": "",
+      "definition_hash": "dbae3074708706cbe687389241c39a16",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "import_reviewed_cpns_legacy_batch",
+      "args": "p_publish boolean, p_limit integer",
+      "definition_hash": "ce873284d6da8b7dc75abe883582b3a3",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "import_reviewed_cpns_legacy_question",
+      "args": "p_source_question_id uuid, p_publish boolean",
+      "definition_hash": "5d1a0812670d2c2da215eb018d11607f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "is_tka_smp_monetization_enforced",
+      "args": "",
+      "definition_hash": "c458403505f6cd732bcf7dfa00fdda10",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "join_batch_with_invite",
+      "args": "p_token text, p_full_name text, p_phone text, p_unit text, p_jabatan text",
+      "definition_hash": "9e58ac24704c38db1534727fcf622b93",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "learner_completed_attempt_totals",
+      "args": "",
+      "definition_hash": "3d5da3dba496ba280505d3949415d477",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "learner_exam_attempt_summaries",
+      "args": "p_exam_ids uuid[], p_direct_only boolean",
+      "definition_hash": "47c04e9329e2e0cc312a9a3d49e31ecd",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "list_content_people",
+      "args": "",
+      "definition_hash": "904d5f85d1d0a8955801a74c7960be7d",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "mutate_question_bank",
+      "args": "p_payload jsonb",
+      "definition_hash": "7bf30996393310859a15a6bb445c2054",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "practice_active_attempt_overviews",
+      "args": "p_user_id uuid",
+      "definition_hash": "5257741ba2c8ca2a0372bdcb47d72bc4",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "practice_completed_attempt_totals",
+      "args": "p_user_id uuid",
+      "definition_hash": "b543c95faa2cb4801ad1d86deed0189c",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "publish_question",
+      "args": "p_question_id uuid",
+      "definition_hash": "17430c997935bfce58ae476fd7d8ae07",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "publish_questions",
+      "args": "p_question_ids uuid[]",
+      "definition_hash": "d635de74b26d939248b40ece2c18e823",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "rebuild_leaderboard",
+      "args": "p_leaderboard_id uuid",
+      "definition_hash": "cbec8a38e1d6e57510f2722f54750de3",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "recalculate_event_rankings",
+      "args": "p_event_id uuid",
+      "definition_hash": "52911cf1498cf79c073a0fcdf8f6d7e1",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=public"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "recalculate_leaderboard",
+      "args": "p_leaderboard_id uuid, p_user_id uuid",
+      "definition_hash": "990b48c235f19baa2b5eef9e6634aefd",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "review_question_stage",
+      "args": "p_question_id uuid, p_decision text, p_notes text",
+      "definition_hash": "8c210f3611204ca4201be4f39fb91511",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "review_tka_smp_remedial_item",
+      "args": "p_session_id uuid, p_item_id uuid, p_option_ids uuid[]",
+      "definition_hash": "7bdd18adf688fd2b95c9dc4eb61414f4",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "review_wrong_question",
+      "args": "p_wrong_question_id uuid, p_option_ids uuid[]",
+      "definition_hash": "a9643c77a739a04dbc1a8a2c464a2881",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "save_attempt_answer_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid, p_question_id uuid, p_option_ids uuid[]",
+      "definition_hash": "1bf447ff84538ed76911ddf1f7187170",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "save_exam_answer",
+      "args": "p_attempt_question_id uuid, p_option_ids uuid[], p_answer_value text, p_time_spent_seconds integer, p_is_flagged boolean",
+      "definition_hash": "e3f19ee36e70b82304ca767285d368e0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "save_question_draft",
+      "args": "p_question_id uuid, p_program_code text, p_track_code text, p_subject_code text, p_question_type text, p_stem text, p_difficulty text, p_cognitive_level text, p_estimated_seconds integer, p_source_reference text, p_stimulus_id uuid, p_explanation text, p_knowledge_node_id uuid, p_options jsonb, p_change_reason text, p_expected_version integer, p_expected_updated_at timestamp with time zone",
+      "definition_hash": "9c6fbf00c86d12d4b42e3a17927b4b1c",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "set_articles_updated_at",
+      "args": "",
+      "definition_hash": "314581a6df7c2417af237deab297a711",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "stage_cpns_legacy_question",
+      "args": "p_source_question_id uuid, p_source_question_code text, p_payload jsonb",
+      "definition_hash": "29353fc2d6bcd89ba254c550a6a9ef06",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "start_exam_attempt",
+      "args": "p_exam_id uuid",
+      "definition_hash": "462cd73bf9c54f0bcf6277951ac08c52",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "start_exam_attempt_in_context",
+      "args": "p_exam_id uuid, p_context jsonb",
+      "definition_hash": "b8b8f92ed5317914e2cff4f3146e696e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "start_tka_smp_drill",
+      "args": "p_subject_code text, p_knowledge_node_name text",
+      "definition_hash": "ca70c884d1858804ccdd26b195ce404c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "submit_exam_attempt",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "1f6335dacbdde9a4a746098eb92c8c6a",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "submit_question_for_review",
+      "args": "p_question_id uuid",
+      "definition_hash": "7bfde62a2eb7981dd5675d4b99659e7b",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "submit_questions_for_review",
+      "args": "p_question_ids uuid[]",
+      "definition_hash": "73f7cf8a4d4b86dd456eaf37c0f0798f",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "update_attempt_answer_scores",
+      "args": "p_scores jsonb",
+      "definition_hash": "129d1fd3f1b35f324f84d299b8153c30",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "upsert_cpns_legacy_mapping_review",
+      "args": "p_source_question_id uuid, p_source_question_code text, p_subject_code text, p_legacy_category text, p_legacy_sub_category text, p_primary_node_code text, p_secondary_node_code text, p_review_status text, p_review_method text, p_review_notes text, p_reviewed_by uuid",
+      "definition_hash": "106a7c6799502a931d9506f5b81e1683",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    }
+  ],
+  "production": [
+    {
+      "schema": "app_private",
+      "proname": "activate_user_track_for_user",
+      "args": "p_user_id uuid, p_program_code text, p_track_code text, p_target_year integer, p_school_name text, p_school_grade text",
+      "definition_hash": "a92c693a6e28d01dc2156274b70fa104",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "assert_question_bank_permission",
+      "args": "p_permission text",
+      "definition_hash": "aa9be6874ad3da702059b16eb6facaf0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "assign_question_reviewer",
+      "args": "p_question_id uuid, p_reviewer_id uuid",
+      "definition_hash": "18aed721e9945665151f5311cb5b3abd",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "audit_content_review_change",
+      "args": "",
+      "definition_hash": "8fa0cb4750ee43cae00b16c8b5403b99",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "audit_question_workflow_change",
+      "args": "",
+      "definition_hash": "4cccd2ec7547e58e56f2e2afd31e0514",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "bulk_review_pilot_stage",
+      "args": "p_batch text, p_decision text, p_notes text",
+      "definition_hash": "f75542ba9c19bfaee24f00effbcb0320",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "claim_pilot_review_stage",
+      "args": "p_batch text",
+      "definition_hash": "823cc7680747d8e6d8337c77fe47eef7",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "complete_exam_section_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "7ef65e56d90a7275a58c9a1ca4f96efd",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "current_user_has_permission",
+      "args": "p_permission text",
+      "definition_hash": "bcbc9bf3381fd1bb24e557a38c6ed02e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "enforce_question_workflow_guard",
+      "args": "",
+      "definition_hash": "102683b69577249cc5f7d91cf1c41252",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "ensure_question_snapshot",
+      "args": "p_question_id uuid, p_actor uuid, p_reason text",
+      "definition_hash": "74c225ef6caab971efdd9bf9bbd4f625",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "evaluate_wrong_question_selection",
+      "args": "p_snapshot jsonb, p_option_ids uuid[]",
+      "definition_hash": "5805a70af1cea021d01fca2097cdbedf",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "generate_tka_smp_exam",
+      "args": "p_exam_id uuid, p_seed text",
+      "definition_hash": "2c70897b137b2005747a6c15159e385c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_content_question_detail",
+      "args": "p_question_id uuid",
+      "definition_hash": "972b839c175839d1ea8fec50bfc84cb1",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_exam_attempt_result_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "5b974849b3cd0c5f6b4886b5eb8d333b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_exam_attempt_review_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "f8a284b499fa470424b1f02c5d3ba485",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_exam_attempt_state_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "ffa2a2f32965a38a0735aa9bc538bbbf",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_tka_smp_remedial_payload_for_user",
+      "args": "p_user_id uuid, p_session_id uuid",
+      "definition_hash": "25299c7a2609457bfdb6f356060577ac",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "get_user_authorization",
+      "args": "p_user_id uuid, p_scope_type text, p_scope_id uuid",
+      "definition_hash": "624f1a1a25479cabf826613b023f3e92",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "grant_content_reviewer",
+      "args": "p_user_id uuid",
+      "definition_hash": "1f8a70d6b560f9ce732720e462929c9b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "guard_exam_question_item",
+      "args": "",
+      "definition_hash": "1099d6c9462216cf052209694db48815",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "has_active_feature",
+      "args": "target_feature uuid",
+      "definition_hash": "a678b4acb9f2f65fe882a164937ab672",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "has_permission",
+      "args": "required_permission text",
+      "definition_hash": "78e4e7c9ea3ed1e90353a3b835723ff8",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "is_org_member",
+      "args": "org_id uuid",
+      "definition_hash": "12b1eb397b71b2aef95e3e3427e0e7b3",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "list_content_people",
+      "args": "",
+      "definition_hash": "646283d2f6002230dae019a7f33cb7e4",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "mutate_question_bank",
+      "args": "p_payload jsonb",
+      "definition_hash": "a343f00433f66226f173a511de3ab010",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "publish_question",
+      "args": "p_question_id uuid",
+      "definition_hash": "28a93630697f39829ecd7b2cca3f0f7a",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "publish_questions",
+      "args": "p_question_ids uuid[]",
+      "definition_hash": "488516cc2cda8c6235726e61721050b7",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "question_bank_editor",
+      "args": "p_program text, p_track text, p_id uuid",
+      "definition_hash": "8f7b3d491d738cca65e2fad9d645c6eb",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "question_snapshot_json",
+      "args": "p_question_id uuid",
+      "definition_hash": "c81a38a5cc75bc4b9fddb83f35e4b135",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_diagnostic_profile_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "b1d8bb2f6409f95a0dad291a5b844b08",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_diagnostic_recommendations_for_user",
+      "args": "p_user_id uuid, p_diagnostic_profile_id uuid",
+      "definition_hash": "08ff15986b0a2c22b476673a35973f50",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_drill_projection_after_attempt",
+      "args": "",
+      "definition_hash": "b3f227f203b4e37bc73e82bbac243d81",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_learning_projection_for_user",
+      "args": "p_user_id uuid, p_source_attempt_id uuid",
+      "definition_hash": "bce30b564fc0b59c2825e32bfa9fc41c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_learning_recommendations_for_user",
+      "args": "p_user_id uuid",
+      "definition_hash": "3474c20ad40ac06ac4d2801182404c43",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_readiness_for_user",
+      "args": "p_user_id uuid",
+      "definition_hash": "e6e25c35f7e7d93a910e609ccef711bc",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_readiness_from_new_progress",
+      "args": "",
+      "definition_hash": "6ef419e961f99fe0da352078598e564f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_readiness_from_old_progress",
+      "args": "",
+      "definition_hash": "781877b5e2dbe68c29e0e8f9e2c21c76",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_recommendations_from_new_progress",
+      "args": "",
+      "definition_hash": "3b9514a6e35096a6eb9f74dd8cda006e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_recommendations_from_old_progress",
+      "args": "",
+      "definition_hash": "c915cead3e2b645e6f9f84164b9aa285",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_remedial_session_for_attempt",
+      "args": "p_user_id uuid, p_source_attempt_id uuid, p_limit integer",
+      "definition_hash": "c95c81b5b1c1123ff365f97ab6f8ff58",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "refresh_tka_smp_wrong_question_state_for_user",
+      "args": "p_user_id uuid, p_source_attempt_id uuid",
+      "definition_hash": "68c842a3b44803a041d77c2338b07c4d",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "review_question_stage",
+      "args": "p_question_id uuid, p_decision text, p_notes text",
+      "definition_hash": "05df7e3b931db3e77d6458a5c0a18099",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "review_tka_smp_remedial_item_for_user",
+      "args": "p_user_id uuid, p_session_id uuid, p_item_id uuid, p_option_ids uuid[]",
+      "definition_hash": "199ff89e6268c7b4ba55cc96b7ba7ba2",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "review_wrong_question_for_user",
+      "args": "p_user_id uuid, p_wrong_question_id uuid, p_option_ids uuid[]",
+      "definition_hash": "68a3afbc8a72f4c44096fdfbdb502123",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "save_exam_answer_for_user",
+      "args": "p_user_id uuid, p_attempt_question_id uuid, p_option_ids uuid[], p_answer_value text, p_time_spent_seconds integer, p_is_flagged boolean",
+      "definition_hash": "525fb080ee6478bfd4c55911573e5962",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "save_question_draft",
+      "args": "p_question_id uuid, p_program_code text, p_track_code text, p_subject_code text, p_question_type text, p_stem text, p_difficulty text, p_cognitive_level text, p_estimated_seconds integer, p_source_reference text, p_stimulus_id uuid, p_explanation text, p_knowledge_node_id uuid, p_options jsonb, p_change_reason text, p_expected_version integer, p_expected_updated_at timestamp with time zone",
+      "definition_hash": "eaeb8760ea341cc829bfec99349c6d67",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "score_exam_attempt",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "aff0712706c5f2ffb262e6dc5b4af12c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "start_exam_attempt_for_context",
+      "args": "p_exam_id uuid, p_user_id uuid, p_context jsonb",
+      "definition_hash": "24c7d11f7aa9cbb6014dba22a424bf05",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "start_exam_attempt_for_user",
+      "args": "p_exam_id uuid, p_user_id uuid",
+      "definition_hash": "6ef43151d5fad5a6a5adf9b0a612e9bb",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "submit_exam_attempt_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "554b4e65ce99f23d2363a8babb53e3d0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "submit_question_for_review",
+      "args": "p_question_id uuid",
+      "definition_hash": "02b1908ad6077b595707a76935aff2a4",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "submit_questions_for_review",
+      "args": "p_question_ids uuid[]",
+      "definition_hash": "83e1f09f79dcc81610791e7ee79c73ce",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{=X/postgres,postgres=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "sync_tka_smp_remedial_sessions_for_user",
+      "args": "p_user_id uuid",
+      "definition_hash": "8e7647dfd9b39b03190f91c4adbddaeb",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "validate_cpns_legacy_mapping_review",
+      "args": "",
+      "definition_hash": "bdc01de99f876de72b811e692ff896e7",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "app_private",
+      "proname": "validate_event_session_assessment",
+      "args": "",
+      "definition_hash": "0001e7051b528dd6dd2d1904079766f0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "activate_user_track",
+      "args": "p_program_code text, p_track_code text, p_target_year integer, p_school_name text, p_school_grade text",
+      "definition_hash": "d15e7c29136388a48e259b0813e42718",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_adjust_wallet",
+      "args": "p_user_id uuid, p_wallet_type text, p_amount integer, p_reason text",
+      "definition_hash": "d9289862a6dbb73dc3b4e1eb00830485",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_assessment_supply",
+      "args": "p_exam_ids uuid[]",
+      "definition_hash": "43234a128c206cf68589e0015984f0f1",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_assign_user_role",
+      "args": "p_user_id uuid, p_role_code text",
+      "definition_hash": "f8baede2b1035db4e0e1a61eda4508fd",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_audit_facets",
+      "args": "",
+      "definition_hash": "ffed28236a3798be2a1e69caed290e66",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_batch_monitoring",
+      "args": "p_batch_id uuid",
+      "definition_hash": "467bc93e8c91c2cf4699073f0d6a3cba",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_compose_exam_from_template",
+      "args": "p_template_id uuid, p_title text, p_status text",
+      "definition_hash": "1c1330795dcd782e374c496df657298b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_delete_composed_exam",
+      "args": "p_exam_id uuid",
+      "definition_hash": "a99d90822edb008ecbbc51c6b005ccd5",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_delete_organization",
+      "args": "p_id uuid",
+      "definition_hash": "27a1537f9745c70f0b5be3a1d392fa0e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_delete_system_setting",
+      "args": "p_key text",
+      "definition_hash": "fae331fe9af28ebadf74863cac8738b0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_drill_supply",
+      "args": "p_program_id uuid, p_track_id uuid, p_node_ids uuid[]",
+      "definition_hash": "246f342bc402d45bf47ffb66ac1279ca",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_entitlement_overview",
+      "args": "",
+      "definition_hash": "085c41f7db6bdbc3af69c9cd4e981049",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_export_organization",
+      "args": "p_organization_id uuid, p_batch_id uuid",
+      "definition_hash": "d1913b0c16bf7001c39860b2e2843b42",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_get_organization",
+      "args": "p_id uuid",
+      "definition_hash": "561592150ce70b811b41ec3ab8906180",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_import_participants",
+      "args": "p_batch_id uuid, p_rows jsonb, p_dry_run boolean",
+      "definition_hash": "23b6d95103b343484b630d4c1847109f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_assignments",
+      "args": "p_batch_id uuid",
+      "definition_hash": "04e00090f584b57e74e9384362e10393",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_audit_logs",
+      "args": "p_action text, p_entity_type text, p_actor_id uuid, p_limit integer, p_offset integer",
+      "definition_hash": "cd3dc5a043f70d1fd401fa88566bffdf",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_entitlements",
+      "args": "p_search text, p_status text, p_limit integer, p_offset integer",
+      "definition_hash": "ab3a0b27b75eeefaeeb74e1697bd2b9c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_org_templates",
+      "args": "p_organization_id uuid",
+      "definition_hash": "87e52e7059bfea9edd2069db6473b41a",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_organizations",
+      "args": "p_search text, p_status text, p_limit integer, p_offset integer",
+      "definition_hash": "39841bf7cdffdc109fcf5a881d711ba2",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_participants",
+      "args": "p_organization_id uuid, p_batch_id uuid, p_search text, p_status text, p_limit integer, p_offset integer",
+      "definition_hash": "915ed1e63829ca543aabc2a1317e83ff",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_roles",
+      "args": "",
+      "definition_hash": "f194b084b0ea0dcd728eefd0a9d56f96",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_settings",
+      "args": "",
+      "definition_hash": "a914ec1e792fd2cd870d1ac257e6b33f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_users",
+      "args": "p_search text, p_role text, p_status text, p_limit integer, p_offset integer",
+      "definition_hash": "cf51db12eb8d850d95751f615ab41f8b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_vouchers",
+      "args": "",
+      "definition_hash": "a9e715524436021e95416618ca673a77",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_wallet_transactions",
+      "args": "p_user_id uuid, p_wallet_type text, p_limit integer, p_offset integer",
+      "definition_hash": "a52f7dac7dd0e28d1fb2e9a035ac443e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_list_wallets",
+      "args": "p_search text, p_wallet_type text, p_limit integer, p_offset integer",
+      "definition_hash": "d11b4af8da06c7a4a85f7970ae7a65f9",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_monitoring_page",
+      "args": "p_event_id uuid, p_organization_id uuid, p_batch_id uuid, p_assignment_id uuid, p_exam_id uuid, p_search text, p_status text, p_page integer",
+      "definition_hash": "8a3554f779d810cf24ddfb8fd14fc717",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_monitoring_summary",
+      "args": "p_event_id uuid, p_organization_id uuid, p_batch_id uuid, p_assignment_id uuid, p_exam_id uuid, p_include_report boolean",
+      "definition_hash": "e14e0799cbf9db9a0076781ba1d1c4f6",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_question_page",
+      "args": "p_program_id uuid, p_track_id uuid, p_search text, p_status text, p_subject_id uuid, p_node_id uuid, p_review text, p_stage text, p_reviewer text, p_page integer, p_id uuid",
+      "definition_hash": "9f66079f74eff6af05ae0a1433b88808",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_question_status_counts",
+      "args": "p_program_id uuid, p_track_id uuid",
+      "definition_hash": "94a5554f19121204ae2397d6622ccc2d",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_remove_participant",
+      "args": "p_participant_id uuid",
+      "definition_hash": "db2e9f00f1fb3bc9b25f1c2291f4d23c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_report_overview",
+      "args": "p_program_code text, p_track_code text",
+      "definition_hash": "06fbb6a7aa82bbe9f54876a5e5d67e22",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_resource_counts",
+      "args": "p_kind text, p_ids uuid[]",
+      "definition_hash": "c4ade48d394360acfa163df9e5890392",
+      "prosecdef": false,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_revoke_user_role",
+      "args": "p_user_id uuid, p_role_code text",
+      "definition_hash": "af52a35ae7c05bd48961641fc9ec4963",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_rotate_batch_invite",
+      "args": "p_batch_id uuid",
+      "definition_hash": "62c9ce883797d21ba34bbc39f1bba22b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_set_participant_status",
+      "args": "p_participant_id uuid, p_status text",
+      "definition_hash": "486f963046b4e907897b1cc6a40773e5",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_set_track_period_active",
+      "args": "p_track_period_id uuid, p_is_active boolean",
+      "definition_hash": "73f0c724aee69484f8fdefac74c1609e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_set_user_status",
+      "args": "p_user_id uuid, p_status text",
+      "definition_hash": "e6fdc9f5698781421eb4a9471dce1534",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_template_shortages",
+      "args": "p_template_id uuid",
+      "definition_hash": "4c60fca127ad181b77dd411776c201ad",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_assignment",
+      "args": "p_id uuid, p_batch_id uuid, p_exam_id uuid, p_template_id uuid, p_starts_at timestamp with time zone, p_due_at timestamp with time zone, p_is_active boolean, p_notes text",
+      "definition_hash": "349889871fb3d9744e1f4491debef62f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_batch",
+      "args": "p_id uuid, p_organization_id uuid, p_code text, p_name text, p_starts_at timestamp with time zone, p_ends_at timestamp with time zone, p_status text, p_notes text",
+      "definition_hash": "ad9048f478a67890aa92cc9161fa9932",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_certificate_template",
+      "args": "p_id uuid, p_name text, p_template_url text, p_config jsonb",
+      "definition_hash": "ef5033ac13d179785043ce7086e9d1b9",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_drill_exam_v1",
+      "args": "p_exam_id uuid, p_program_code text, p_track_code text, p_subject_code text, p_knowledge_node_id uuid, p_title text, p_slug text, p_duration_seconds integer, p_attempt_limit integer, p_question_count integer, p_question_order text, p_result_visibility text, p_access_type text, p_status text, p_token_cost integer, p_actor_id uuid",
+      "definition_hash": "b20f44c7816c0643cdeb5e71532740fa",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_feature_flag",
+      "args": "p_id uuid, p_key text, p_name text, p_enabled boolean, p_rollout_percentage integer",
+      "definition_hash": "76e1e3b352562804a0d6c6f64bf633e6",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_org_template",
+      "args": "p_id uuid, p_organization_id uuid, p_name text, p_twk_count integer, p_tiu_count integer, p_tkp_count integer, p_duration_seconds integer, p_max_attempts integer, p_randomize_questions boolean, p_randomize_options boolean, p_show_explanation text, p_ranking_visibility text, p_status text",
+      "definition_hash": "a772bc09af90370aca57e3937bcbd1e6",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_organization",
+      "args": "p_id uuid, p_name text, p_code text, p_type text, p_city text, p_province text, p_address text, p_contact_name text, p_contact_email text, p_contact_phone text, p_status text, p_notes text",
+      "definition_hash": "2cbc8d7ea7f5b124bee210f995751b27",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_system_setting",
+      "args": "p_key text, p_value jsonb",
+      "definition_hash": "aa8f707d507abd74af95018748f9423b",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "admin_upsert_voucher",
+      "args": "p_id uuid, p_code text, p_quota_amount integer, p_max_uses integer, p_expires_at timestamp with time zone, p_is_active boolean, p_wallet_type text",
+      "definition_hash": "832daed976d9738726eaff3b5c7adc22",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "assign_question_reviewer",
+      "args": "p_question_id uuid, p_reviewer_id uuid",
+      "definition_hash": "3c0b6dff0a37d48b6439fcced9b0ada1",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "bulk_review_pilot_stage",
+      "args": "p_batch text, p_decision text, p_notes text",
+      "definition_hash": "767f881c281a403164ba9a077e682440",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "claim_pilot_review_stage",
+      "args": "p_batch text",
+      "definition_hash": "33f6381c9ffce7ca6fbc65164685571a",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "claim_voucher",
+      "args": "p_user_id uuid, p_voucher_code text, p_wallet_type text",
+      "definition_hash": "74e65dddb8c9b170851fb02a35342aff",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "complete_exam_section",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "2c1d0495e180d9b49502ce03b317e301",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "debit_exam_token_once",
+      "args": "p_user_id uuid, p_attempt_id uuid",
+      "definition_hash": "fa14fc4cb0719dde5d976c112755da84",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=public"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "fulfill_paid_order",
+      "args": "p_order_id uuid, p_provider text, p_status text, p_provider_transaction_id text, p_payment_method text, p_amount numeric, p_raw_response jsonb",
+      "definition_hash": "8c35af5c262bfa45524e8427f586068c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "generate_tka_smp_exam",
+      "args": "p_exam_id uuid, p_seed text",
+      "definition_hash": "ff520e7760545e762a112db0314bed18",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_batch_invite",
+      "args": "p_token text",
+      "definition_hash": "4bcb00c8f874d955a678b3968ef8e954",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_content_question_detail",
+      "args": "p_question_id uuid",
+      "definition_hash": "a7f897e411fb43595ea71ae95ea7b518",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_cpns_legacy_import_summary",
+      "args": "",
+      "definition_hash": "4ee3f75e394c489909cc2db820cdd12f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_exam_attempt_result",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "67ddc9227e07b19658668e55efcd8566",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_exam_attempt_review",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "4f9d29518ac815148e414be79439abbb",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_exam_attempt_state",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "7b7731b03876eae008263bb0f09cf1a8",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_my_organization_memberships",
+      "args": "",
+      "definition_hash": "4341757fb9bd4b3eeff251599d8f21bc",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_question_bank_editor",
+      "args": "p_program text, p_track text, p_id uuid",
+      "definition_hash": "4e4a470d2edbfb05c5c34637d2c83847",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_learning_focus",
+      "args": "",
+      "definition_hash": "0c0568df7ffe6de99fd91fed618e3d68",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_learning_hierarchy",
+      "args": "",
+      "definition_hash": "0afc01d1bd8baaf842204433d80daa30",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_readiness",
+      "args": "",
+      "definition_hash": "193a61d91f83773d54fa19b948b70f87",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_remedial_for_attempt",
+      "args": "p_source_attempt_id uuid",
+      "definition_hash": "8d165a3c331b6d291b45c4cba30fe579",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_remedial_session",
+      "args": "p_session_id uuid",
+      "definition_hash": "d10ac857c6c39e8c0e0d4b30b7140d8e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_tka_smp_wrong_questions",
+      "args": "p_limit integer",
+      "definition_hash": "956f8adbe7e24a86b0288dca59ad3621",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_user_authorization",
+      "args": "p_user_id uuid, p_scope_type text, p_scope_id uuid",
+      "definition_hash": "7a1296af721b5adc1026f209d62d0f44",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "get_user_subject_progress",
+      "args": "p_user_id uuid",
+      "definition_hash": "c614138da39cfc0cf21c7f09c7bb41fc",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "grant_content_reviewer",
+      "args": "p_user_id uuid",
+      "definition_hash": "3eca46e8af6eab5e33853410a6c8a65e",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "handle_new_user",
+      "args": "",
+      "definition_hash": "dbae3074708706cbe687389241c39a16",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "import_reviewed_cpns_legacy_batch",
+      "args": "p_publish boolean, p_limit integer",
+      "definition_hash": "ce873284d6da8b7dc75abe883582b3a3",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "import_reviewed_cpns_legacy_question",
+      "args": "p_source_question_id uuid, p_publish boolean",
+      "definition_hash": "5d1a0812670d2c2da215eb018d11607f",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "is_tka_smp_monetization_enforced",
+      "args": "",
+      "definition_hash": "c458403505f6cd732bcf7dfa00fdda10",
+      "prosecdef": true,
+      "provolatile": "s",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "join_batch_with_invite",
+      "args": "p_token text, p_full_name text, p_phone text, p_unit text, p_jabatan text",
+      "definition_hash": "9e58ac24704c38db1534727fcf622b93",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "list_content_people",
+      "args": "",
+      "definition_hash": "904d5f85d1d0a8955801a74c7960be7d",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "mutate_question_bank",
+      "args": "p_payload jsonb",
+      "definition_hash": "7bf30996393310859a15a6bb445c2054",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "publish_question",
+      "args": "p_question_id uuid",
+      "definition_hash": "17430c997935bfce58ae476fd7d8ae07",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "publish_questions",
+      "args": "p_question_ids uuid[]",
+      "definition_hash": "d635de74b26d939248b40ece2c18e823",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "rebuild_leaderboard",
+      "args": "p_leaderboard_id uuid",
+      "definition_hash": "cbec8a38e1d6e57510f2722f54750de3",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "recalculate_event_rankings",
+      "args": "p_event_id uuid",
+      "definition_hash": "52911cf1498cf79c073a0fcdf8f6d7e1",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=public"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "recalculate_leaderboard",
+      "args": "p_leaderboard_id uuid, p_user_id uuid",
+      "definition_hash": "990b48c235f19baa2b5eef9e6634aefd",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "review_question_stage",
+      "args": "p_question_id uuid, p_decision text, p_notes text",
+      "definition_hash": "8c210f3611204ca4201be4f39fb91511",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "review_tka_smp_remedial_item",
+      "args": "p_session_id uuid, p_item_id uuid, p_option_ids uuid[]",
+      "definition_hash": "7bdd18adf688fd2b95c9dc4eb61414f4",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "review_wrong_question",
+      "args": "p_wrong_question_id uuid, p_option_ids uuid[]",
+      "definition_hash": "a9643c77a739a04dbc1a8a2c464a2881",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "save_attempt_answer_for_user",
+      "args": "p_user_id uuid, p_attempt_id uuid, p_question_id uuid, p_option_ids uuid[]",
+      "definition_hash": "1bf447ff84538ed76911ddf1f7187170",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "save_exam_answer",
+      "args": "p_attempt_question_id uuid, p_option_ids uuid[], p_answer_value text, p_time_spent_seconds integer, p_is_flagged boolean",
+      "definition_hash": "e3f19ee36e70b82304ca767285d368e0",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "save_question_draft",
+      "args": "p_question_id uuid, p_program_code text, p_track_code text, p_subject_code text, p_question_type text, p_stem text, p_difficulty text, p_cognitive_level text, p_estimated_seconds integer, p_source_reference text, p_stimulus_id uuid, p_explanation text, p_knowledge_node_id uuid, p_options jsonb, p_change_reason text, p_expected_version integer, p_expected_updated_at timestamp with time zone",
+      "definition_hash": "9c6fbf00c86d12d4b42e3a17927b4b1c",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "set_articles_updated_at",
+      "args": "",
+      "definition_hash": "314581a6df7c2417af237deab297a711",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "stage_cpns_legacy_question",
+      "args": "p_source_question_id uuid, p_source_question_code text, p_payload jsonb",
+      "definition_hash": "29353fc2d6bcd89ba254c550a6a9ef06",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "start_exam_attempt",
+      "args": "p_exam_id uuid",
+      "definition_hash": "462cd73bf9c54f0bcf6277951ac08c52",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "start_exam_attempt_in_context",
+      "args": "p_exam_id uuid, p_context jsonb",
+      "definition_hash": "b8b8f92ed5317914e2cff4f3146e696e",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "start_tka_smp_drill",
+      "args": "p_subject_code text, p_knowledge_node_name text",
+      "definition_hash": "ca70c884d1858804ccdd26b195ce404c",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "submit_exam_attempt",
+      "args": "p_attempt_id uuid",
+      "definition_hash": "1f6335dacbdde9a4a746098eb92c8c6a",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "submit_question_for_review",
+      "args": "p_question_id uuid",
+      "definition_hash": "7bfde62a2eb7981dd5675d4b99659e7b",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "submit_questions_for_review",
+      "args": "p_question_ids uuid[]",
+      "definition_hash": "73f7cf8a4d4b86dd456eaf37c0f0798f",
+      "prosecdef": false,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "update_attempt_answer_scores",
+      "args": "p_scores jsonb",
+      "definition_hash": "129d1fd3f1b35f324f84d299b8153c30",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=\"\""
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "schema": "public",
+      "proname": "upsert_cpns_legacy_mapping_review",
+      "args": "p_source_question_id uuid, p_source_question_code text, p_subject_code text, p_legacy_category text, p_legacy_sub_category text, p_primary_node_code text, p_secondary_node_code text, p_review_status text, p_review_method text, p_review_notes text, p_reviewed_by uuid",
+      "definition_hash": "106a7c6799502a931d9506f5b81e1683",
+      "prosecdef": true,
+      "provolatile": "v",
+      "proconfig": [
+        "search_path=pg_catalog, public, app_private"
+      ],
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    }
+  ],
+  "review": {
+    "tokenIdentical": [
+      "refresh_tka_smp_drill_projection_after_attempt",
+      "refresh_tka_smp_learning_projection_for_user"
+    ],
+    "optionalAliasAsOnly": [
+      "refresh_tka_smp_diagnostic_profile_for_user",
+      "refresh_tka_smp_diagnostic_recommendations_for_user",
+      "refresh_tka_smp_learning_recommendations_for_user"
+    ],
+    "equivalentConstantAssignment": "submit_exam_attempt_for_user: staging assigns v_projection to v_wrong_state/v_remedial; production repeats the same immutable jsonb_build_object constant. No logic/scoring change identified. Raw hash differences remain recorded.",
+    "acl": "Raw ACL ordering and NULL/default owner+PUBLIC grants differ; these are not evidence of different effective permissions. New-function effective privileges checked separately."
+  }
+}
