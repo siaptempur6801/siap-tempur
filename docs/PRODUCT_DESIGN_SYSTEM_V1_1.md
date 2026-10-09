@@ -1,5 +1,7 @@
 # SiapTempur Product Design System V1.1
 
+> Current component and interaction contracts: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) and [UI_INTERACTION_STANDARDS.md](UI_INTERACTION_STANDARDS.md). See their authority section for precedence; this document retains its domain and historical context.
+
 Status: **DRAFT — active foundation for Product Experience V1.1**  
 Parent: GitHub Issue #21  
 Audit: GitHub Issue #22  
