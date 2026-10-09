@@ -43,83 +43,66 @@ export function errorResponse(code: string, message: string, status = 400, detai
     return NextResponse.json(payload, { status });
 }
 
-// Simple in-memory rate limiter using Map.
-// Key: IP or User ID, Value: { count: number, resetAt: number }
-//
-// ⚠️ SERVERLESS WARNING:
-// In-memory rate limiter resets on cold starts and does NOT share state across
-// instances. For production multi-instance deployments, configure Upstash Redis
-// via UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN env vars to enable
-// shared rate limiting. Without Redis, each function instance has its own
-// independent counter — acceptable for single-instance deployments but
-// insufficient for horizontal scaling.
+// Local/staging fallback only. Production needs a shared counter across instances.
 const rateLimitCache = new Map<string, { count: number; resetAt: number }>();
+let nextRateLimitCleanup = 0;
 
-/**
- * Basic memory-based rate limiting.
- * Returns true if allowed, false if limit exceeded.
- */
+/** Returns true when the limit is exceeded. */
 export function isRateLimited(identifier: string, limit: number, windowMs: number): boolean {
     const now = Date.now();
+    if (now >= nextRateLimitCleanup) {
+        for (const [key, record] of rateLimitCache) if (now >= record.resetAt) rateLimitCache.delete(key);
+        nextRateLimitCleanup = now + 60_000;
+    }
     const record = rateLimitCache.get(identifier);
-
-    if (!record) {
+    if (!record || now >= record.resetAt) {
         rateLimitCache.set(identifier, { count: 1, resetAt: now + windowMs });
         return false;
     }
-
-    if (now > record.resetAt) {
-        // Window expired, reset
-        rateLimitCache.set(identifier, { count: 1, resetAt: now + windowMs });
-        return false;
-    }
-
-    if (record.count >= limit) {
-        return true;
-    }
-
+    if (record.count >= limit) return true;
     record.count += 1;
     return false;
 }
 
+// INCR and expiry must be atomic: a function crash between two HTTP calls used
+// to leave a permanent counter. PTTL also repairs counters left by that version.
+const RATE_LIMIT_SCRIPT = `local count = redis.call('INCR', KEYS[1])
+if count == 1 or redis.call('PTTL', KEYS[1]) < 0 then
+    redis.call('PEXPIRE', KEYS[1], ARGV[1])
+end
+return count`;
+
+function rateLimitFallback(identifier: string, limit: number, windowMs: number) {
+    // Never silently turn a shared security boundary into per-instance counters.
+    if (env.appEnvironment() === 'production') return true;
+    return isRateLimited(identifier, limit, windowMs);
+}
+
 export async function checkRateLimit(identifier: string, limit: number, windowMs: number): Promise<boolean> {
-    const redisUrl = env.upstashRedisRestUrl()
-    const redisToken = env.upstashRedisRestToken()
-
+    const redisUrl = env.upstashRedisRestUrl();
+    const redisToken = env.upstashRedisRestToken();
     if (!redisUrl || !redisToken) {
-        return isRateLimited(identifier, limit, windowMs)
+        if (env.appEnvironment() === 'production') logger.warn('Shared production rate limiter is not configured');
+        return rateLimitFallback(identifier, limit, windowMs);
     }
-
-    const key = `rate-limit:${identifier}`
-    const ttlSeconds = Math.max(1, Math.ceil(windowMs / 1000))
-
     try {
-        const incrementResponse = await fetch(`${redisUrl}/incr/${encodeURIComponent(key)}`, {
-            headers: { Authorization: `Bearer ${redisToken}` },
+        const response = await fetch(redisUrl, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(['EVAL', RATE_LIMIT_SCRIPT, '1', `rate-limit:${identifier}`, String(Math.max(1, Math.ceil(windowMs)))]),
             cache: 'no-store',
-        })
-
-        if (!incrementResponse.ok) {
-            logger.warn('External rate limit increment failed; using memory fallback', {
-                status: incrementResponse.status,
-            })
-            return isRateLimited(identifier, limit, windowMs)
+            signal: AbortSignal.timeout(2000),
+        });
+        if (!response.ok) throw new Error(`Rate limit store returned ${response.status}`);
+        const payload = await response.json() as { result?: unknown; error?: unknown };
+        if (payload.error || typeof payload.result !== 'number' || !Number.isSafeInteger(payload.result) || payload.result < 1) {
+            throw new Error('Invalid rate limit counter');
         }
-
-        const incrementPayload = await incrementResponse.json() as { result?: number }
-        const count = Number(incrementPayload.result || 0)
-
-        if (count === 1) {
-            await fetch(`${redisUrl}/expire/${encodeURIComponent(key)}/${ttlSeconds}`, {
-                headers: { Authorization: `Bearer ${redisToken}` },
-                cache: 'no-store',
-            })
-        }
-
-        return count > limit
-    } catch (error) {
-        logger.warn('External rate limit unavailable; using memory fallback', { error })
-        return isRateLimited(identifier, limit, windowMs)
+        return payload.result > limit;
+    } catch {
+        // Avoid logging response bodies, credentials, URLs, or user identifiers.
+        logger.warn('Shared rate limit unavailable', { failClosed: env.appEnvironment() === 'production' });
+        return rateLimitFallback(identifier, limit, windowMs);
     }
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createV2Client, createV2AdminClient } from '@/lib/utils/supabase/server'
-import { errorResponse, successResponse, isRateLimited, getIp } from '@/lib/api-utils'
+import { errorResponse, successResponse, checkRateLimit, getIp } from '@/lib/api-utils'
 import { beaconPayloadSchema } from '@/lib/validations/api'
 import { logger } from '@/lib/logger'
 
@@ -16,7 +16,7 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const ip = getIp(request)
-    if (isRateLimited(`beacon_${ip}`, 60, 60000)) {
+    if (await checkRateLimit(`beacon_${ip}`, 60, 60000)) {
         return errorResponse('rate_limit_exceeded', 'Rate limit exceeded', 429)
     }
 

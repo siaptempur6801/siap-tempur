@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { headers } from 'next/headers'
 import { checkRateLimit } from '@/lib/api-utils'
 import { getClientIp } from '@/lib/request-ip'
+import { env } from '@/lib/env'
 
 /**
  * Helper for applying rate limiting inside Next.js Server Actions.
@@ -77,7 +78,7 @@ export async function getRequestIp(): Promise<string> {
  * produksi, dan default tanpa env tetap memakai limit ketat di atas.
  */
 export function isAuthRateLimitBypassed() {
-    return process.env.E2E_DISABLE_AUTH_RATE_LIMIT === '1'
+    return env.appEnvironment() !== 'production' && process.env.E2E_DISABLE_AUTH_RATE_LIMIT === '1'
 }
 
 /**

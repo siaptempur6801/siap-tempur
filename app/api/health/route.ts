@@ -19,8 +19,8 @@ function healthResponse(statusCode: number, checks: HealthChecks, clientIpSource
     const deploymentCommitSha = process.env.VERCEL_GIT_COMMIT_SHA ?? null
     const deploymentEnvironment = process.env.VERCEL_ENV ?? null
 
-    // Informatif (tidak memengaruhi status): tanpa Upstash, rate limiter jatuh ke
-    // penyimpanan in-memory yang per-instance sehingga mudah ditembus di serverless.
+    // Configuration indicator only: production now rejects rate-limited actions
+    // when the shared store is missing; local/staging can use memory fallback.
     const rateLimitStore = env.upstashRedisRestUrl() && env.upstashRedisRestToken() ? 'redis' : 'memory'
 
     return NextResponse.json(
