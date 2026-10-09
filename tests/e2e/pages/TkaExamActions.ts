@@ -12,10 +12,12 @@ export async function confirmTkaSectionIfPresent(page: Page, timeoutMs = 4000) {
     const confirm = page.getByTestId('tka-section-confirm')
     try {
         await confirm.waitFor({ state: 'visible', timeout: timeoutMs })
-        await confirm.click()
     } catch {
         // Modal tidak muncul — tidak ada yang perlu dikonfirmasi di sini.
+        return
     }
+    // A visible confirmation must be clickable; never swallow an interaction failure.
+    await confirm.click()
 }
 
 

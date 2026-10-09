@@ -30,14 +30,17 @@ export default function TkaSectionConfirmModal({
             onClose={onCancel}
             title={title}
             className="max-w-md"
+            dismissible={!processing}
         >
             <p className="text-sm font-medium leading-relaxed text-slate-700">{message}</p>
             <div className="mt-6 grid grid-cols-2 gap-3">
                 <button
                     type="button"
                     data-testid="tka-section-cancel"
+                    data-autofocus
+                    disabled={processing}
                     onClick={onCancel}
-                    className="min-h-11 rounded-xl border-2 border-slate-900 bg-white px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-50 active:scale-[0.98]"
+                    className="min-h-11 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-50"
                 >
                     Batal
                 </button>
@@ -46,7 +49,7 @@ export default function TkaSectionConfirmModal({
                     data-testid="tka-section-confirm"
                     disabled={processing}
                     onClick={onConfirm}
-                    className="min-h-11 rounded-xl border-2 border-indigo-800 bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50"
+                    className="min-h-11 rounded-xl border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-50"
                 >
                     {processing ? 'Memproses...' : confirmLabel}
                 </button>

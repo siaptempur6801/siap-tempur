@@ -1,82 +1,34 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useId } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import DialogSurface from './DialogSurface'
 
 interface ModalProps {
     isOpen: boolean
     onClose: () => void
-    title?: string
+    title: string
     children: React.ReactNode
     className?: string
+    dismissible?: boolean
 }
 
-export default function Modal({ isOpen, onClose, title, children, className = '' }: ModalProps) {
-    const modalRef = useRef<HTMLDivElement>(null)
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose()
-        }
-        
-        if (isOpen) {
-            document.body.style.overflow = 'hidden'
-            window.addEventListener('keydown', handleKeyDown)
-        }
-        
-        return () => {
-            document.body.style.overflow = 'unset'
-            window.removeEventListener('keydown', handleKeyDown)
-        }
-    }, [isOpen, onClose])
+export default function Modal({ isOpen, onClose, title, children, className, dismissible = true }: ModalProps) {
+    const titleId = useId()
 
     return (
-        <AnimatePresence>
-            {isOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Backdrop */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={onClose}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-                    />
-
-                    {/* Modal Content */}
-                    <motion.div
-                        ref={modalRef}
-                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                        className={cn(
-                            "relative w-full bg-white rounded-xl st-shadow-lg border-2 border-gray-900 overflow-hidden flex flex-col max-h-[90vh]",
-                            className
-                        )}
-                    >
-                        {/* Header */}
-                        {title && (
-                            <div className="px-6 py-4 border-b-2 border-gray-100 flex items-center justify-between bg-gray-50 shrink-0">
-                                <h3 className="font-display text-2xl font-bold text-gray-900">{title}</h3>
-                                <button
-                                    onClick={onClose}
-                                    className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
-                                    aria-label="Close"
-                                >
-                                    <X size={24} />
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Body */}
-                        <div className="p-6 overflow-y-auto">
-                            {children}
-                        </div>
-                    </motion.div>
-                </div>
-            )}
-        </AnimatePresence>
+        <DialogSurface isOpen={isOpen} onClose={onClose} labelledBy={titleId} dismissible={dismissible}
+            className={cn('border border-slate-200', className)}>
+            <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 sm:px-6">
+                <h2 id={titleId} className="text-lg font-bold text-slate-900">{title}</h2>
+                <button type="button" onClick={onClose} disabled={!dismissible}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-50"
+                    aria-label="Tutup dialog">
+                    <X size={20} aria-hidden="true" />
+                </button>
+            </header>
+            <div className="p-4 sm:p-6">{children}</div>
+        </DialogSurface>
     )
 }
