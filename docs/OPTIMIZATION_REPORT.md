@@ -252,7 +252,9 @@ Extended the existing CPNS E2E without reducing assertions or increasing its tim
 
 Queue regression checks cover a lost response, a later expired-save rejection and a clean acknowledged answer, alongside existing coalescing, independent questions, latest-value recovery and automatic-expiry barriers. The final TKA E2E passes full/mini resume, section boundaries, quota/pass expiry, results, payment owner isolation and diagnostic/remedial behavior. No score/duration/order/token code changed.
 
-A shared mocked Redis counter across two newly imported application instances enforces 60 accepted / 2 rejected requests for 62 concurrent requests to one NAT key; a second NAT key remains independent. This proves the current policy's classroom collision, **not real provider behavior or capacity**. The 60/IP/min policy remains intact pending an approved security-policy decision. It applies to progress/flags beacons; answers save through server actions. No acknowledged-answer loss was observed. Unacknowledged in-memory edits cannot survive full offline reload, cross-device progress during beacon rejection remains unverified, and real Redis/network expiry/long-outage chaos still needs an approved environment. Commit: `abe3f4b`.
+A real staging database test, [answer-expiry-fixture.sql](../scripts/db-verify/answer-expiry-fixture.sql), then ran the existing save RPC **as service_role** against one synthetic question/attempt belonging to a fresh owned CI user. Initial acknowledgement and duplicate retry succeeded with one answer row; after expiring only that transaction's synthetic attempt, a different edit raised `ATTEMPT_TIME_EXPIRED`; after marking it completed, edits raised `EXAM_CONFIGURATION_ERROR`. The acknowledged answer's entire row (including scoring columns) and wallet balance remained unchanged. All synthetic rows rolled back, the disposable user was removed, and final parity returned to 42 attempts. No scoring/submission routine or production mutation ran. Commit: `f9a9bad`.
+
+A shared mocked Redis counter across two newly imported application instances enforces 60 accepted / 2 rejected requests for 62 concurrent requests to one NAT key; a second NAT key remains independent. This proves the current policy's classroom collision, **not real provider behavior or capacity**. The 60/IP/min policy remains intact pending an approved security-policy decision. It applies to progress/flags beacons; answers save through server actions. No acknowledged-answer loss was observed. Unacknowledged in-memory edits cannot survive full offline reload, cross-device progress during beacon rejection remains unverified, and provider failure, re-authentication, cross-device concurrency and browser automatic expiry through a long outage still need an approved environment. Commit: `abe3f4b`.
 
 ### 4. Release-blocking database/provider risks
 
@@ -280,6 +282,7 @@ Re-inspected latest main CI: `37839046620` is still the dependency-audit failure
 | Desktop/mobile rendered landing QA | PASS, interactions/CSP/no errors/overflow |
 | Mobile Lighthouse | 3 baseline + 3 after; 3.636 → 3.250 s median LCP |
 | SQL definition/ACL/absence assertions | PASS, read-only |
+| Real database expired/completed answer rejection | PASS as service_role; acknowledged row/wallet preserved; fixture transaction rolled back |
 | Ledger INSERT syntax/planning | PASS, EXPLAIN without execution |
 | Final learner parity / cleanup | **14 assertions passed**, original 42 attempts/3 tracks; owned fixtures and private files removed |
 | Real staging Redis / realistic capacity / full bundle rehearsal | NOT RUN; approval/designated environment pending |

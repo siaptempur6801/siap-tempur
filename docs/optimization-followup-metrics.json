@@ -13062,6 +13062,23 @@
       "ownedFixturesRemoved": true,
       "privateFilesRemoved": true,
       "preexistingDeveloperServerUntouched": true
+    },
+    "databaseAnswerExpiry": {
+      "project": "staging",
+      "role": "service_role",
+      "initialAcknowledgement": "PASS",
+      "duplicateRetrySingleRow": "PASS",
+      "expiredEditRejected": "ATTEMPT_TIME_EXPIRED",
+      "completedEditRejected": "EXAM_CONFIGURATION_ERROR",
+      "acknowledgedAnswerAndScoringColumnsPreserved": true,
+      "walletPreserved": true,
+      "syntheticRowsRolledBack": true,
+      "ownedUserRemoved": true,
+      "postCleanupParity": {
+        "assertions": 14,
+        "attempts": 42,
+        "tracks": 3
+      }
     }
   },
   "landingQA": [
@@ -13139,6 +13156,7 @@
     "landing": "341fdd9",
     "resilience": "abe3f4b",
     "releasePreparation": "6a5464c",
-    "diagnostics": "a926b0a"
+    "diagnostics": "a926b0a",
+    "databaseExpiry": "f9a9bad"
   }
 }
