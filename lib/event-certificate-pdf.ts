@@ -43,9 +43,9 @@ const PDF_HEIGHT = 595
  */
 const CERTIFICATE_FONT_FAMILY = 'Poppins'
 const CERTIFICATE_FONT_FILES = [
-    'public/fonts/Poppins-Regular.ttf',
-    'public/fonts/Poppins-Bold.ttf',
-    'public/fonts/Poppins-Black.ttf',
+    path.join(process.cwd(), 'public', 'fonts', 'Poppins-Regular.ttf'),
+    path.join(process.cwd(), 'public', 'fonts', 'Poppins-Bold.ttf'),
+    path.join(process.cwd(), 'public', 'fonts', 'Poppins-Black.ttf'),
 ]
 
 /**
@@ -57,11 +57,8 @@ const CERTIFICATE_FONT_FILES = [
  * bukan diam-diam.
  */
 async function loadCertificateFontFiles(): Promise<string[]> {
-    const resolved = CERTIFICATE_FONT_FILES.map((relativePath) =>
-        path.join(process.cwd(), relativePath))
-
     const available: string[] = []
-    for (const [index, file] of resolved.entries()) {
+    for (const [index, file] of CERTIFICATE_FONT_FILES.entries()) {
         try {
             await readFile(file)
             available.push(file)
@@ -131,8 +128,7 @@ function achievementBadgeFontSize(label: string) {
     return 25
 }
 
-async function fileDataUri(relativePath: string, mimeType: string) {
-    const file = await readFile(path.join(process.cwd(), 'public', relativePath))
+function fileDataUri(file: Buffer, mimeType: string) {
     return `data:${mimeType};base64,${file.toString('base64')}`
 }
 
@@ -234,12 +230,12 @@ function createPdfFromJpeg(jpeg: Buffer) {
 }
 
 export async function createEventCertificateImage(input: CertificateRenderInput) {
-    const [logoUri, signatureUri] = await Promise.all([
-        fileDataUri('logos/siap-tempur-logo-transparent.png', 'image/png'),
-        fileDataUri('signatures/dirga-halim-susilo-transparent.png', 'image/png'),
+    const [logo, signature, fontFiles] = await Promise.all([
+        readFile(path.join(process.cwd(), 'public', 'logos', 'siap-tempur-logo-transparent.png')),
+        readFile(path.join(process.cwd(), 'public', 'signatures', 'dirga-halim-susilo-transparent.png')),
+        loadCertificateFontFiles(),
     ])
-    const svg = buildCertificateSvg(input, logoUri, signatureUri)
-    const fontFiles = await loadCertificateFontFiles()
+    const svg = buildCertificateSvg(input, fileDataUri(logo, 'image/png'), fileDataUri(signature, 'image/png'))
 
     return Buffer.from(new Resvg(svg, {
         fitTo: {
