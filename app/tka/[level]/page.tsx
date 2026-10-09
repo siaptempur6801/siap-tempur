@@ -21,6 +21,7 @@ import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
 import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
+import { getTkaCatalogContext } from '@/src/repositories/tka-catalog-read.repository'
 import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath, type TkaLevel } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
@@ -85,22 +86,10 @@ export default async function TkaLevelPage({
     const stagingEnvironment = env.appEnvironment() !== 'production'
     const stagingPilot = stagingEnvironment
 
-    const { data: program, error: programError } = await supabase
-        .from('programs')
-        .select('id')
-        .eq('code', context.programCode)
-        .maybeSingle()
-    if (programError) throw programError
-    if (!program) notFound()
-
-    const { data: track, error: trackError } = await supabase
-        .from('tracks')
-        .select('id')
-        .eq('program_id', program.id)
-        .eq('code', context.trackCode)
-        .maybeSingle()
-    if (trackError) throw trackError
-    if (!track) notFound()
+    const catalogContext = await getTkaCatalogContext(context.programCode, context.trackCode)
+    if (!catalogContext) notFound()
+    const program = { id: catalogContext.programId }
+    const track = { id: catalogContext.trackId }
 
     const { data: userTrack, error: userTrackError } = await supabase
         .from('user_tracks')
@@ -111,7 +100,7 @@ export default async function TkaLevelPage({
     if (userTrackError) throw userTrackError
 
     const questionStatuses = stagingPilot ? ['approved', 'published'] : ['published']
-    const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { data: questionRows, error: questionError }] = await Promise.all([
+    const [{ data: exams, error: examError }, { data: examTypes, error: typeError }, { count: questionCount, error: questionError }] = await Promise.all([
         supabase
             .from('exams')
             .select('id, exam_type_id, title, slug, required_feature_id')
@@ -122,11 +111,10 @@ export default async function TkaLevelPage({
         supabase.from('exam_types').select('id, code, name'),
         supabase
             .from('questions')
-            .select('subject_id')
+            .select('id', { count: 'exact', head: true })
             .eq('program_id', program.id)
             .eq('track_id', track.id)
-            .in('status', questionStatuses)
-            .limit(5000),
+            .in('status', questionStatuses),
     ])
     if (examError) throw examError
     if (typeError) throw typeError
@@ -178,7 +166,7 @@ export default async function TkaLevelPage({
     const examTypeById = new Map((examTypes ?? []).map((row) => [String(row.id), row]))
     const examById = new Map((exams ?? []).map((exam) => [String(exam.id), exam]))
 
-    const totalQuestions = (questionRows ?? []).length
+    const totalQuestions = questionCount ?? 0
     const studentName = user.user_metadata?.full_name ||
         user.user_metadata?.name ||
         (user.email ? user.email.split('@')[0] : null) ||

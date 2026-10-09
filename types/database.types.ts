@@ -773,6 +773,22 @@ export type Database = {
         }
         Views: { [_ in never]: never }
         Functions: {
+      practice_completed_attempt_totals: {
+        Args: { p_user_id: string }
+        Returns: { total_sessions: number; total_xp: number }[]
+      }
+      practice_active_attempt_overviews: {
+        Args: { p_user_id: string }
+        Returns: {
+          id: string; exam_id: string; started_at: string | null; last_saved_at: string | null
+          last_question_position: number | null; metadata: Json; question_count: number; answered_questions: number
+        }[]
+      }
+      learner_exam_attempt_summaries: {
+        Args: { p_exam_ids: string[]; p_direct_only?: boolean }
+        Returns: { exam_id: string; attempt_count: number; active_attempt_id: string | null }[]
+      }
+
             admin_assessment_supply: {
                 Args: { p_exam_ids: string[] }
                 Returns: Array<{exam_id:string;bound_count:number;approved_bound_count:number;reviewed_bound_count:number;sections:Json}>

@@ -1,5 +1,4 @@
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
-import { getAttemptXp } from '@/lib/gamification'
 import { chunkValues } from '@/lib/supabase-batch'
 import type { Json } from '@/types/database.types'
 import { DEFAULT_TOKEN_WALLET_TYPE } from '@/src/repositories/wallet.repository'
@@ -49,35 +48,9 @@ function numberOrZero(value: unknown) {
 export class PracticeOverviewRepository {
     async getCompletedAttemptTotals(userId: string) {
         const admin = await createV2AdminClient()
-        const pageSize = 1000
-        let from = 0
-        let totalSessions = 0
-        let totalXp = 0
-
-        while (true) {
-            const { data, error } = await admin
-                .from('exam_attempts')
-                .select('total_score, metadata')
-                .eq('user_id', userId)
-                .in('status', ['completed', 'COMPLETED'])
-                .order('id', { ascending: true })
-                .range(from, from + pageSize - 1)
-            if (error) throw error
-
-            const rows = (data ?? []) as Array<{ total_score: number | null; metadata: Json }>
-            for (const row of rows) {
-                const metadata = row.metadata && !Array.isArray(row.metadata) && typeof row.metadata === 'object'
-                    ? row.metadata
-                    : null
-                const practiceKind = typeof metadata?.practiceKind === 'string' ? metadata.practiceKind : null
-                totalXp += getAttemptXp(numberOrZero(row.total_score), practiceKind)
-            }
-            totalSessions += rows.length
-            if (rows.length < pageSize) break
-            from += pageSize
-        }
-
-        return { totalSessions, totalXp }
+        const { data, error } = await admin.rpc('practice_completed_attempt_totals', { p_user_id: userId }).single()
+        if (error) throw error
+        return { totalSessions: numberOrZero(data.total_sessions), totalXp: numberOrZero(data.total_xp) }
     }
 
     async getWalletBalance(userId: string) {
@@ -143,73 +116,17 @@ export class PracticeOverviewRepository {
 
     async listActiveAttempts(userId: string): Promise<ActiveAttemptOverview[]> {
         const admin = await createV2AdminClient()
-        const { data: attempts, error: attemptError } = await admin
-            .from('exam_attempts')
-            .select('id, exam_id, started_at, last_saved_at, last_question_position, metadata')
-            .eq('user_id', userId)
-            .in('status', ['in_progress', 'IN_PROGRESS', 'created', 'CREATED'])
-            .order('last_saved_at', { ascending: false, nullsFirst: false })
-            .limit(30)
-        if (attemptError) throw attemptError
-
-        const attemptRows = (attempts ?? []) as Array<{
-            id: string
-            exam_id: string
-            started_at: string | null
-            last_saved_at: string | null
-            last_question_position: number | null
-            metadata: Json
-        }>
-        if (attemptRows.length === 0) return []
-
-        const attemptIds = attemptRows.map((row) => row.id)
-        const { data: questionRows, error: questionError } = await admin
-            .from('attempt_questions')
-            .select('id, attempt_id')
-            .in('attempt_id', attemptIds)
-            .limit(5000)
-        if (questionError) throw questionError
-
-        const questions = (questionRows ?? []) as Array<{ id: string; attempt_id: string }>
-        const questionIds = questions.map((row) => row.id)
-        let answers: Array<{ attempt_question_id: string; selected_option_id: string | null }> = []
-        if (questionIds.length > 0) {
-            const answerRows: Array<{ attempt_question_id: string; selected_option_id: string | null }> = []
-            for (const batch of chunkValues(questionIds)) {
-                const { data, error } = await admin
-                    .from('attempt_answers')
-                    .select('attempt_question_id, selected_option_id')
-                    .in('attempt_question_id', batch)
-                    .limit(5000)
-                if (error) throw error
-                answerRows.push(...((data ?? []) as Array<{ attempt_question_id: string; selected_option_id: string | null }>))
-            }
-            answers = answerRows
-        }
-
-        const attemptIdByQuestionId = new Map(questions.map((row) => [row.id, row.attempt_id]))
-        const questionCountByAttempt = new Map<string, number>()
-        for (const row of questions) {
-            questionCountByAttempt.set(row.attempt_id, (questionCountByAttempt.get(row.attempt_id) ?? 0) + 1)
-        }
-
-        const answeredByAttempt = new Map<string, number>()
-        for (const answer of answers) {
-            if (!answer.selected_option_id) continue
-            const attemptId = attemptIdByQuestionId.get(answer.attempt_question_id)
-            if (!attemptId) continue
-            answeredByAttempt.set(attemptId, (answeredByAttempt.get(attemptId) ?? 0) + 1)
-        }
-
-        return attemptRows.map((attempt) => ({
+        const { data, error } = await admin.rpc('practice_active_attempt_overviews', { p_user_id: userId })
+        if (error) throw error
+        return (data ?? []).map((attempt) => ({
             id: attempt.id,
             examId: attempt.exam_id,
             startedAt: attempt.started_at,
             lastSavedAt: attempt.last_saved_at,
             lastQuestionPosition: attempt.last_question_position,
             metadata: attempt.metadata,
-            questionCount: questionCountByAttempt.get(attempt.id) ?? 0,
-            answeredQuestions: answeredByAttempt.get(attempt.id) ?? 0,
+            questionCount: numberOrZero(attempt.question_count),
+            answeredQuestions: numberOrZero(attempt.answered_questions),
         }))
     }
 

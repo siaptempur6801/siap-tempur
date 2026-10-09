@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { createV2Client } from '@/lib/utils/supabase/server'
+import { getTkaCatalogContext, getTkaAttemptSummaries } from '@/src/repositories/tka-catalog-read.repository'
 import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
@@ -118,22 +119,10 @@ export default async function TkaMiniTryoutPage({
     if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(pagePath)}`)
 
     const context = tkaContext(level)
-    const { data: program, error: programError } = await supabase
-        .from('programs')
-        .select('id')
-        .eq('code', context.programCode)
-        .maybeSingle()
-    if (programError) throw programError
-    if (!program) notFound()
-
-    const { data: track, error: trackError } = await supabase
-        .from('tracks')
-        .select('id')
-        .eq('program_id', program.id)
-        .eq('code', context.trackCode)
-        .maybeSingle()
-    if (trackError) throw trackError
-    if (!track) notFound()
+    const catalogContext = await getTkaCatalogContext(context.programCode, context.trackCode)
+    if (!catalogContext) notFound()
+    const program = { id: catalogContext.programId }
+    const track = { id: catalogContext.trackId }
 
     const [{ data: userTrack, error: userTrackError }, { data: exams, error: examError }, { data: examTypes, error: typeError }] = await Promise.all([
         supabase
@@ -168,7 +157,7 @@ export default async function TkaMiniTryoutPage({
         .map((exam) => exam.required_feature_id ? String(exam.required_feature_id) : '')
         .filter(Boolean)))
 
-    const [{ data: entitlementRows, error: entitlementError }, { data: attemptRows, error: attemptError }] = await Promise.all([
+    const [{ data: entitlementRows, error: entitlementError }, attemptSummaries] = await Promise.all([
         featureIds.length > 0
             ? supabase
                 .from('entitlements')
@@ -177,17 +166,9 @@ export default async function TkaMiniTryoutPage({
                 .in('feature_id', featureIds)
                 .in('status', ['active', 'ACTIVE'])
             : Promise.resolve({ data: [], error: null }),
-        examIds.length > 0
-            ? supabase
-                .from('exam_attempts')
-                .select('id, exam_id, attempt_number, status, started_at, submitted_at, percentage, updated_at')
-                .eq('user_id', user.id)
-                .in('exam_id', examIds)
-                .order('updated_at', { ascending: false })
-            : Promise.resolve({ data: [], error: null }),
+        getTkaAttemptSummaries(supabase, examIds, false),
     ])
     if (entitlementError) throw entitlementError
-    if (attemptError) throw attemptError
 
     const entitledFeatures = new Set<string>()
     for (const row of entitlementRows ?? []) {
@@ -201,16 +182,9 @@ export default async function TkaMiniTryoutPage({
         }
     }
 
-    const attemptCountByExam = new Map<string, number>()
-    const activeAttemptByExam = new Map<string, string>()
-    for (const row of attemptRows ?? []) {
-        const examId = String(row.exam_id)
-        attemptCountByExam.set(examId, (attemptCountByExam.get(examId) ?? 0) + 1)
-        if (String(row.status ?? '').toLowerCase() === 'in_progress' && !activeAttemptByExam.has(examId)) {
-            activeAttemptByExam.set(examId, String(row.id))
-        }
-    }
-
+    const attemptCountByExam = new Map(attemptSummaries.map((row) => [row.exam_id, row.attempt_count]))
+    const activeAttemptByExam = new Map(attemptSummaries.flatMap((row) =>
+        row.active_attempt_id ? [[row.exam_id, row.active_attempt_id] as const] : []))
     const activeTrack = userTrack?.status.toLowerCase() === 'active'
     const miniTryouts: TryoutOption[] = miniTryoutExams.map((exam) => {
         const type = examTypeById.get(String(exam.exam_type_id))
