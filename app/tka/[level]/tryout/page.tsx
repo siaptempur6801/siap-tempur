@@ -12,7 +12,7 @@ import {
 } from 'lucide-react'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { createV2Client } from '@/lib/utils/supabase/server'
-import { getTkaCatalogContext, getTkaAttemptSummaries } from '@/src/repositories/tka-catalog-read.repository'
+import { getAuthenticatedTkaCatalogContext, getTkaAttemptSummaries } from '@/src/repositories/tka-catalog-read.repository'
 import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
@@ -75,11 +75,10 @@ export default async function TkaTryoutPage({
     const base = tkaLevelPath(level)
     const pagePath = `${base}/tryout`
     const supabase = await createV2Client()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) redirect(`/login?returnTo=${encodeURIComponent(pagePath)}`)
 
     const context = tkaContext(level)
-    const catalogContext = await getTkaCatalogContext(context.programCode, context.trackCode)
+    const { user, catalogContext } = await getAuthenticatedTkaCatalogContext(context.programCode, context.trackCode)
+    if (!user) redirect(`/login?returnTo=${encodeURIComponent(pagePath)}`)
     if (!catalogContext) notFound()
     const program = { id: catalogContext.programId }
     const track = { id: catalogContext.trackId }

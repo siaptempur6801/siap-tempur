@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import TkaDashboardShell from '@/components/tka/TkaDashboardShell'
-import { createClient } from '@/lib/utils/supabase/server'
+import { createClient, getAuthUser } from '@/lib/utils/supabase/server'
 import { isTkaLevelAvailable, parseTkaLevel, type TkaLevel } from '@/src/tka/context'
 import { getActivePassScopes } from '@/src/services/tempur-pass.service'
 
@@ -20,7 +20,7 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
         createClient(),
         headers(),
     ])
-    const { data: { user } } = await supabase.auth.getUser()
+    const { user } = await getAuthUser()
 
     const pathname = requestHeaders.get('x-pathname')
 
