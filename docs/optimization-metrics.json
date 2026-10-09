@@ -1,0 +1,618 @@
+{
+  "date": "2026-10-09",
+  "baselineCommit": "c9d80a7aaace704ec67f1e3276ad86264a808b76",
+  "method": "Local production build, Chromium 1440x1000, three fresh contexts per route, staging fixtures. Supabase HTTP fetch counts include proxy/auth/prefetch. No production capacity claims.",
+  "browser": {
+    "before": [
+      {
+        "route": "/cpns/dashboard",
+        "sample": 1,
+        "readyMs": 1343,
+        "vitals": {
+          "lcp": 1276,
+          "cls": 0.0020183333333333334
+        },
+        "js": 212010,
+        "midtrans": 1,
+        "requests": 33,
+        "payload": 25550,
+        "errors": []
+      },
+      {
+        "route": "/cpns/dashboard",
+        "sample": 2,
+        "readyMs": 3743,
+        "vitals": {
+          "lcp": 3732,
+          "cls": 0.0020183333333333334
+        },
+        "js": 212010,
+        "midtrans": 1,
+        "requests": 38,
+        "payload": 31240,
+        "errors": []
+      },
+      {
+        "route": "/cpns/dashboard",
+        "sample": 3,
+        "readyMs": 1072,
+        "vitals": {
+          "lcp": 1044,
+          "cls": 0.0020183333333333334
+        },
+        "js": 212010,
+        "midtrans": 1,
+        "requests": 37,
+        "payload": 30102,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp",
+        "sample": 1,
+        "readyMs": 1045,
+        "vitals": {
+          "lcp": 1048,
+          "cls": 0.03331138888888889
+        },
+        "js": 193183,
+        "midtrans": 0,
+        "requests": 33,
+        "payload": 51143,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp",
+        "sample": 2,
+        "readyMs": 818,
+        "vitals": {
+          "lcp": 792,
+          "cls": 0.03331138888888889
+        },
+        "js": 193183,
+        "midtrans": 0,
+        "requests": 33,
+        "payload": 51143,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp",
+        "sample": 3,
+        "readyMs": 1151,
+        "vitals": {
+          "lcp": 1080,
+          "cls": 0.03331138888888889
+        },
+        "js": 193183,
+        "midtrans": 0,
+        "requests": 33,
+        "payload": 51143,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/tryout",
+        "sample": 1,
+        "readyMs": 1717,
+        "vitals": {
+          "lcp": 1708,
+          "cls": 0
+        },
+        "js": 206339,
+        "midtrans": 0,
+        "requests": 31,
+        "payload": 35524,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/tryout",
+        "sample": 2,
+        "readyMs": 829,
+        "vitals": {
+          "lcp": 832,
+          "cls": 0
+        },
+        "js": 206339,
+        "midtrans": 0,
+        "requests": 32,
+        "payload": 36658,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/tryout",
+        "sample": 3,
+        "readyMs": 551,
+        "vitals": {
+          "lcp": 508,
+          "cls": 0
+        },
+        "js": 206339,
+        "midtrans": 0,
+        "requests": 31,
+        "payload": 35524,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/mini-tryout",
+        "sample": 1,
+        "readyMs": 857,
+        "vitals": {
+          "lcp": 824,
+          "cls": 0
+        },
+        "js": 206339,
+        "midtrans": 0,
+        "requests": 32,
+        "payload": 36658,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/mini-tryout",
+        "sample": 2,
+        "readyMs": 898,
+        "vitals": {
+          "lcp": 892,
+          "cls": 0
+        },
+        "js": 206339,
+        "midtrans": 0,
+        "requests": 32,
+        "payload": 36658,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/mini-tryout",
+        "sample": 3,
+        "readyMs": 546,
+        "vitals": {
+          "lcp": 492,
+          "cls": 0
+        },
+        "js": 206339,
+        "midtrans": 0,
+        "requests": 32,
+        "payload": 36658,
+        "errors": []
+      },
+      {
+        "route": "/",
+        "sample": 1,
+        "readyMs": 116,
+        "vitals": {
+          "lcp": 68,
+          "cls": 0
+        },
+        "js": 196606,
+        "midtrans": 0,
+        "requests": 0,
+        "payload": 0,
+        "errors": []
+      },
+      {
+        "route": "/",
+        "sample": 2,
+        "readyMs": 104,
+        "vitals": {
+          "lcp": 64,
+          "cls": 0
+        },
+        "js": 196606,
+        "midtrans": 0,
+        "requests": 0,
+        "payload": 0,
+        "errors": []
+      },
+      {
+        "route": "/",
+        "sample": 3,
+        "readyMs": 102,
+        "vitals": {
+          "lcp": 64,
+          "cls": 0
+        },
+        "js": 196606,
+        "midtrans": 0,
+        "requests": 0,
+        "payload": 0,
+        "errors": []
+      }
+    ],
+    "after": [
+      {
+        "route": "/cpns/dashboard",
+        "sample": 1,
+        "readyMs": 2335,
+        "vitals": {
+          "lcp": 2320,
+          "cls": 0.0020183333333333334
+        },
+        "js": 210241,
+        "midtrans": 0,
+        "requests": 21,
+        "payload": 11925,
+        "errors": []
+      },
+      {
+        "route": "/cpns/dashboard",
+        "sample": 2,
+        "readyMs": 716,
+        "vitals": {
+          "lcp": 696,
+          "cls": 0.0020183333333333334
+        },
+        "js": 210241,
+        "midtrans": 0,
+        "requests": 21,
+        "payload": 11925,
+        "errors": []
+      },
+      {
+        "route": "/cpns/dashboard",
+        "sample": 3,
+        "readyMs": 646,
+        "vitals": {
+          "lcp": 596,
+          "cls": 0.0020183333333333334
+        },
+        "js": 210241,
+        "midtrans": 0,
+        "requests": 21,
+        "payload": 11925,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp",
+        "sample": 1,
+        "readyMs": 1167,
+        "vitals": {
+          "lcp": 1120,
+          "cls": 0.03331138888888889
+        },
+        "js": 193348,
+        "midtrans": 0,
+        "requests": 21,
+        "payload": 21603,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp",
+        "sample": 2,
+        "readyMs": 1229,
+        "vitals": {
+          "lcp": 1156,
+          "cls": 0.03331138888888889
+        },
+        "js": 193348,
+        "midtrans": 0,
+        "requests": 21,
+        "payload": 21603,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp",
+        "sample": 3,
+        "readyMs": 542,
+        "vitals": {
+          "lcp": 544,
+          "cls": 0.03331138888888889
+        },
+        "js": 193348,
+        "midtrans": 0,
+        "requests": 21,
+        "payload": 21603,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/tryout",
+        "sample": 1,
+        "readyMs": 853,
+        "vitals": {
+          "lcp": 840,
+          "cls": 0
+        },
+        "js": 206504,
+        "midtrans": 0,
+        "requests": 16,
+        "payload": 19680,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/tryout",
+        "sample": 2,
+        "readyMs": 1137,
+        "vitals": {
+          "lcp": 1076,
+          "cls": 0
+        },
+        "js": 206504,
+        "midtrans": 0,
+        "requests": 16,
+        "payload": 19680,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/tryout",
+        "sample": 3,
+        "readyMs": 1188,
+        "vitals": {
+          "lcp": 1192,
+          "cls": 0
+        },
+        "js": 206504,
+        "midtrans": 0,
+        "requests": 16,
+        "payload": 19680,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/mini-tryout",
+        "sample": 1,
+        "readyMs": 1095,
+        "vitals": {
+          "lcp": 1096,
+          "cls": 0
+        },
+        "js": 206504,
+        "midtrans": 0,
+        "requests": 16,
+        "payload": 19680,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/mini-tryout",
+        "sample": 2,
+        "readyMs": 853,
+        "vitals": {
+          "lcp": 856,
+          "cls": 0
+        },
+        "js": 206504,
+        "midtrans": 0,
+        "requests": 16,
+        "payload": 19680,
+        "errors": []
+      },
+      {
+        "route": "/tka/smp/mini-tryout",
+        "sample": 3,
+        "readyMs": 1426,
+        "vitals": {
+          "lcp": 1432,
+          "cls": 0
+        },
+        "js": 206504,
+        "midtrans": 0,
+        "requests": 15,
+        "payload": 18546,
+        "errors": []
+      },
+      {
+        "route": "/",
+        "sample": 1,
+        "readyMs": 117,
+        "vitals": {
+          "lcp": 76,
+          "cls": 0
+        },
+        "js": 196761,
+        "midtrans": 0,
+        "requests": 0,
+        "payload": 0,
+        "errors": []
+      },
+      {
+        "route": "/",
+        "sample": 2,
+        "readyMs": 110,
+        "vitals": {
+          "lcp": 60,
+          "cls": 0
+        },
+        "js": 196761,
+        "midtrans": 0,
+        "requests": 0,
+        "payload": 0,
+        "errors": []
+      },
+      {
+        "route": "/",
+        "sample": 3,
+        "readyMs": 112,
+        "vitals": {
+          "lcp": 64,
+          "cls": 0
+        },
+        "js": 196761,
+        "midtrans": 0,
+        "requests": 0,
+        "payload": 0,
+        "errors": []
+      }
+    ]
+  },
+  "certificateTracing": {
+    "before": [
+      {
+        "path": ".next/server/app/api/certificates/[certificateNumber]/download/route.js.nft.json",
+        "files": 1261,
+        "bytes": 39667147
+      },
+      {
+        "path": ".next/server/app/api/certificates/[certificateNumber]/preview/route.js.nft.json",
+        "files": 1261,
+        "bytes": 39666720
+      },
+      {
+        "path": ".next/server/app/cpns/dashboard/certificates/[certificateNumber]/page.js.nft.json",
+        "files": 134,
+        "bytes": 2746895
+      },
+      {
+        "path": ".next/server/app/verify-certificate/[certificateNumber]/page.js.nft.json",
+        "files": 125,
+        "bytes": 2399161
+      }
+    ],
+    "after": [
+      {
+        "path": ".next/server/app/api/certificates/[certificateNumber]/download/route.js.nft.json",
+        "files": 228,
+        "bytes": 25737977,
+        "fonts": [
+          "../../../../../../../public/fonts/Poppins-Black.ttf",
+          "../../../../../../../public/fonts/Poppins-Bold.ttf",
+          "../../../../../../../public/fonts/Poppins-Regular.ttf"
+        ],
+        "assets": [
+          "../../../../../../../public/logos/siap-tempur-logo-transparent.png",
+          "../../../../../../../public/signatures/dirga-halim-susilo-transparent.png"
+        ],
+        "envFiles": []
+      },
+      {
+        "path": ".next/server/app/api/certificates/[certificateNumber]/preview/route.js.nft.json",
+        "files": 228,
+        "bytes": 25737550,
+        "fonts": [
+          "../../../../../../../public/fonts/Poppins-Black.ttf",
+          "../../../../../../../public/fonts/Poppins-Bold.ttf",
+          "../../../../../../../public/fonts/Poppins-Regular.ttf"
+        ],
+        "assets": [
+          "../../../../../../../public/logos/siap-tempur-logo-transparent.png",
+          "../../../../../../../public/signatures/dirga-halim-susilo-transparent.png"
+        ],
+        "envFiles": []
+      },
+      {
+        "path": ".next/server/app/cpns/dashboard/certificates/[certificateNumber]/page.js.nft.json",
+        "files": 152,
+        "bytes": 2799847,
+        "fonts": [],
+        "assets": [],
+        "envFiles": []
+      },
+      {
+        "path": ".next/server/app/verify-certificate/[certificateNumber]/page.js.nft.json",
+        "files": 143,
+        "bytes": 2458250,
+        "fonts": [],
+        "assets": [],
+        "envFiles": []
+      }
+    ]
+  },
+  "paymentQA": [
+    {
+      "width": 1440,
+      "initialDashboardSnapRequests": 0,
+      "paymentLoadsSnap": true,
+      "nonce": true,
+      "sandbox": true,
+      "horizontalOverflow": false,
+      "pageErrors": [],
+      "paidTransactions": 0
+    },
+    {
+      "width": 390,
+      "initialDashboardSnapRequests": 0,
+      "paymentLoadsSnap": true,
+      "nonce": true,
+      "sandbox": true,
+      "horizontalOverflow": false,
+      "pageErrors": [],
+      "paidTransactions": 0
+    }
+  ],
+  "autosaveQA": {
+    "failedSelectionRequests": 2,
+    "completionActionsWhileUnsaved": 0,
+    "manualFinishBlocked": true,
+    "onlineRetrySavedLatest": true,
+    "reloadRestoredLatest": true,
+    "attemptRemainedActive": true
+  },
+  "lighthouseAfter": {
+    "version": "13.5.0",
+    "performanceScore": 0.77,
+    "first-contentful-paint": 1213.3241,
+    "largest-contentful-paint": 6619.986149999999,
+    "total-blocking-time": 40,
+    "cumulative-layout-shift": 0,
+    "speed-index": 2167.4198400010014
+  },
+  "k6Smoke": {
+    "schemaV2": {
+      "vus": 1,
+      "iterations": 3,
+      "requests": 9,
+      "checksPassed": 18,
+      "errorRate": 0,
+      "p50ms": 62.79,
+      "p95ms": 274.46,
+      "p99ms": 350.16
+    },
+    "catalog": {
+      "vus": 1,
+      "iterations": 3,
+      "requests": 3,
+      "checksPassed": 9,
+      "errorRate": 0,
+      "p50ms": 122.02,
+      "p95ms": 381.65,
+      "p99ms": 404.73
+    },
+    "publicLocal": {
+      "vus": 1,
+      "iterations": 3,
+      "requests": 9,
+      "checksPassed": 21,
+      "errorRate": 0,
+      "p50ms": 7.55,
+      "p95ms": 14.62,
+      "p99ms": 14.69
+    }
+  },
+  "examBrowserProfile": {
+    "timerElapsedSeconds": 5,
+    "wallSeconds": 5.261,
+    "navigationMs": [
+      34,
+      61,
+      48,
+      89
+    ],
+    "longTasksAbove50ms": 0,
+    "longTaskDurationsMs": [],
+    "answersWritten": 0
+  },
+  "validation": {
+    "unitTests": 844,
+    "unitFiles": 115,
+    "publicE2E": {
+      "passed": 42,
+      "existingOptionalSkips": 2
+    },
+    "tkaE2E": {
+      "passed": 17,
+      "serviceRoleCredential": "placeholder"
+    },
+    "cpnsE2E": {
+      "passed": 9,
+      "autosaveFaultRegression": true
+    },
+    "adminE2E": {
+      "firstAttemptPasses": 76,
+      "retryDependentPasses": 1,
+      "isolatedRerunPassed": 3,
+      "isolatedRetries": 0
+    },
+    "adminParityAssertions": 1634,
+    "learnerParityAssertionsWithFixture": 20,
+    "learnerParityAssertionsAfterCleanup": 14,
+    "productionRuntimeAuditFindings": 0,
+    "developmentAuditHighFindings": 5,
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "fixtureCleanup": "owned fixtures removed; staging restored to 42 attempts"
+  }
+}

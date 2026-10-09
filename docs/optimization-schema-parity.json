@@ -1,0 +1,164 @@
+{
+  "readOnly": true,
+  "checkedAt": "2026-10-09",
+  "differences": [
+    {
+      "kind": "functions",
+      "key": "public.learner_completed_attempt_totals",
+      "side": "staging"
+    },
+    {
+      "kind": "functions",
+      "key": "public.learner_exam_attempt_summaries.p_exam_ids uuid[], p_direct_only boolean",
+      "side": "staging"
+    },
+    {
+      "kind": "functions",
+      "key": "public.practice_active_attempt_overviews.p_user_id uuid",
+      "side": "staging"
+    },
+    {
+      "kind": "functions",
+      "key": "public.practice_completed_attempt_totals.p_user_id uuid",
+      "side": "staging"
+    },
+    {
+      "kind": "tables",
+      "key": "app_private.cpns_skd_p1_import_stage",
+      "side": "staging"
+    },
+    {
+      "kind": "indexes",
+      "key": "app_private.cpns_skd_p1_import_stage.cpns_skd_p1_import_stage_pkey",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006073456",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006104154",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006104613",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006135534",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006135853",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006153254",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006153852",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006172558",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261008044605",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261008150758",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261009060323",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261009063825",
+      "side": "staging"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006165617",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006173714",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006173747",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006173825",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006173852",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006173913",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006173941",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261006174008",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261008150815",
+      "side": "production"
+    },
+    {
+      "kind": "migration",
+      "key": "20261008150816",
+      "side": "production"
+    }
+  ],
+  "counts": {
+    "staging": {
+      "functions": 162,
+      "tables": 111,
+      "policies": 100,
+      "indexes": 419,
+      "triggers": 18,
+      "ledger": 197
+    },
+    "production": {
+      "functions": 158,
+      "tables": 110,
+      "policies": 100,
+      "indexes": 418,
+      "triggers": 18,
+      "ledger": 195
+    }
+  }
+}
