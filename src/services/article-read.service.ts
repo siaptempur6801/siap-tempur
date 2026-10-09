@@ -1,5 +1,6 @@
 import { unstable_cache } from 'next/cache'
-import { createAdminClient } from '@/lib/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
+import { env } from '@/lib/env'
 
 /**
  * Pembacaan artikel publik yang di-cache.
@@ -23,16 +24,17 @@ import { createAdminClient } from '@/lib/utils/supabase/server'
  *     `status = 'published'`, jadi tidak ada konten draft yang ikut ter-cache.
  *
  * KEAMANAN
- *   Memakai klien service role karena pembacaan ini tidak bergantung pada
- *   cookie — justru itu tujuannya. Isi yang diambil tetap dibatasi oleh filter
- *   `status = 'published'` yang eksplisit, sama seperti sebelumnya saat query
- *   dijalankan dengan klien anon + RLS.
- *
- * CATATAN PENTING
- *   Klien yang bergantung cookie (`createClient`/`createV2Client`) TIDAK boleh
- *   dipakai di dalam `unstable_cache`: di luar konteks permintaan pembacaan
- *   cookie akan gagal. Karena itu modul ini memakai klien service role.
+ *   Klien anon stateless tidak membaca cookie dan tidak memakai service role.
+ *   RLS membatasi baris ke artikel published; filter eksplisit tetap dipertahankan.
+ *   Klien berbasis cookie tidak boleh dipakai di dalam unstable_cache karena cache
+ *   ini hanya untuk konten publik yang identik bagi semua pengunjung.
  */
+
+function createPublicArticleClient() {
+    return createClient(env.supabaseUrl(), env.supabasePublishableKey(), {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    })
+}
 
 const REVALIDATE_SECONDS = 300
 const ARTICLE_TAG = 'articles'
@@ -51,7 +53,7 @@ const PREVIEW_COLUMNS = 'title, slug, excerpt, content, category, cover_image_ur
 
 export const listPublishedArticles = unstable_cache(
     async (): Promise<ArticlePreview[]> => {
-        const supabase = await createAdminClient()
+        const supabase = createPublicArticleClient()
         const { data, error } = await supabase
             .from('articles')
             .select(PREVIEW_COLUMNS)
@@ -66,7 +68,7 @@ export const listPublishedArticles = unstable_cache(
 
 export const listLatestPublishedArticles = unstable_cache(
     async (limit: number): Promise<ArticlePreview[]> => {
-        const supabase = await createAdminClient()
+        const supabase = createPublicArticleClient()
         const { data, error } = await supabase
             .from('articles')
             .select(PREVIEW_COLUMNS)
@@ -89,7 +91,7 @@ export const listLatestPublishedArticles = unstable_cache(
  */
 export const listLatestPublishedArticleCards = unstable_cache(
     async (limit: number) => {
-        const supabase = await createAdminClient()
+        const supabase = createPublicArticleClient()
         const { data, error } = await supabase
             .from('articles')
             .select('id, title, slug, cover_image_url, published_at, excerpt, content, category')
@@ -105,7 +107,7 @@ export const listLatestPublishedArticleCards = unstable_cache(
 
 export const getPublishedArticleBySlug = unstable_cache(
     async (slug: string): Promise<ArticlePreview | null> => {
-        const supabase = await createAdminClient()
+        const supabase = createPublicArticleClient()
         const { data, error } = await supabase
             .from('articles')
             .select(PREVIEW_COLUMNS)
