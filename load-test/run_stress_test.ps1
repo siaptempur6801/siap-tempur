@@ -19,32 +19,29 @@ Get-Content $envFile | Where-Object { $_ -match '^\s*[^#]' -and $_ -match '=' } 
 }
 
 $url = $envVars['NEXT_PUBLIC_SUPABASE_URL']
-$anon = $envVars['NEXT_PUBLIC_SUPABASE_ANON_KEY']
+$anon = $envVars['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']
+if (-not $anon) { $anon = $envVars['NEXT_PUBLIC_SUPABASE_ANON_KEY'] }
 
 if (-not $url -or -not $anon) {
     Write-Error "NEXT_PUBLIC_SUPABASE_URL atau NEXT_PUBLIC_SUPABASE_ANON_KEY tidak ditemukan di .env.local"
     exit 1
 }
 
-Write-Host "=== SUPABASE FREE TIER STRESS TEST ===" -ForegroundColor Cyan
-Write-Host "URL  : $($url.Substring(0, [Math]::Min(40, $url.Length)))..." -ForegroundColor Gray
-Write-Host "Anon : $($anon.Substring(0, 20))..." -ForegroundColor Gray
-Write-Host ""
-Write-Host "Ramp-up plan:" -ForegroundColor Yellow
-Write-Host "  20s →  50 VUs (warm-up)"
-Write-Host "  30s → 100 VUs (lewati 60 direct conn)"
-Write-Host "  30s → 150 VUs"
-Write-Host "  30s → 200 VUs (TEP batas pooler)"
-Write-Host "  30s → 250 VUs (LEWAT batas pooler)"
-Write-Host "  30s → 300 VUs (stress)"
-Write-Host "  20s →   0 VUs (cool-down)"
-Write-Host ""
+if ($url.TrimEnd('/') -ne 'https://lpgrivowdcepcxradavu.supabase.co') {
+    Write-Error "Load tests are staging-only"
+    exit 1
+}
+if (-not $env:LOAD_TEST_LEARNER_JWT -or -not $env:LOAD_TEST_EXAM_IDS) {
+    Write-Error "Set a disposable staging learner JWT and exam IDs before running Schema V2 reads."
+    exit 1
+}
+Write-Host "Schema V2 staging smoke: 1 VU, 3 iterations. Stress requires explicit opt-in."
 
 $scriptPath = Join-Path $PSScriptRoot "03_supabase_stress.js"
 $outputPath = Join-Path $PSScriptRoot "results_stress.json"
 
+$env:NEXT_PUBLIC_SUPABASE_URL = $url
+$env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = $anon
 k6 run `
-    -e "NEXT_PUBLIC_SUPABASE_URL=$url" `
-    -e "NEXT_PUBLIC_SUPABASE_ANON_KEY=$anon" `
     --out "json=$outputPath" `
     $scriptPath

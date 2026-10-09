@@ -2,13 +2,8 @@
  * Load Test 01 - Public Pages (Next.js)
  * Menguji kapasitas halaman publik: landing page, login, register
  *
- * Skenario:
- *   0  → 50  VU  dalam 30 detik  (warm-up)
- *   50 → 200 VU  dalam 1 menit   (ramp-up sedang)
- *   200→ 500 VU  selama 1 menit  (peak load)
- *   500→ 0   VU  dalam 30 detik  (cool-down)
- *
- * Jalankan: k6 run 01_public_pages.js
+ * Default: one VU, three iterations. Stress requires explicit staging opt-in.
+ * Jalankan: k6 run load-test/01_public_pages.js
  * Untuk ganti URL: k6 run -e BASE_URL=https://your-domain.com 01_public_pages.js
  */
 
@@ -16,27 +11,26 @@ import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+import { safeOptions, stagingAppUrl } from './staging-config.js';
+const BASE_URL = stagingAppUrl(__ENV);
 
 // Custom metrics
 const errorRate = new Rate('error_rate');
 const landingDuration = new Trend('landing_page_duration', true);
 const loginPageDuration = new Trend('login_page_duration', true);
 
-export const options = {
-    stages: [
-        { duration: '30s', target: 50 },   // Warm-up: naik ke 50 user
-        { duration: '1m', target: 200 },  // Ramp-up: naik ke 200 user
-        { duration: '1m', target: 500 },  // Peak: tahan di 500 user
-        { duration: '30s', target: 0 },    // Cool-down
-    ],
-    thresholds: {
-        // 95% request harus selesai < 2 detik
-        http_req_duration: ['p(95)<2000'],
-        // Error rate tidak boleh melebihi 5%
-        error_rate: ['rate<0.05'],
-    },
-};
+export const options = safeOptions(__ENV,{http_req_duration:['p(95)<2000'],error_rate:['rate<0.05']});
+
+// A staging label in an env var cannot override a deployment identifying itself
+// as production. One read-only preflight runs before any remote app load.
+export function setup() {
+    if (BASE_URL.startsWith('https://')) {
+        const health = http.get(`${BASE_URL}/api/health`);
+        if (health.status !== 200 || !['preview','staging'].includes(health.json('deploymentEnvironment'))) {
+            throw new Error('Remote application did not identify itself as staging/preview');
+        }
+    }
+}
 
 export default function publicPagesScenario() {
     const headers = { 'Accept': 'text/html' };

@@ -3,21 +3,21 @@
  * Jalankan: k6 run load-test/debug_metrics.js
  */
 import http from 'k6/http';
+import encoding from 'k6/encoding';
 import { sleep } from 'k6';
+import { stagingSupabaseUrl, stagingLearnerHeaders } from './staging-config.js';
 
 export const options = {
-    duration: '10s',
-    vus: 5,
+    iterations: 1,
+    vus: 1,
 };
 
-const SUPABASE_URL = __ENV.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON = __ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_URL = stagingSupabaseUrl(__ENV);
+const HEADERS = stagingLearnerHeaders(__ENV, (value) => encoding.b64decode(value, 'std', 's'));
 
 export default function debugMetricsScenario() {
-    http.get(`${SUPABASE_URL}/rest/v1/tryouts?select=id&limit=1`, {
-        headers: {
-            'apikey': SUPABASE_ANON,
-        }
+    http.get(`${SUPABASE_URL}/rest/v1/exams?select=id&limit=1`, {
+        headers: HEADERS
     });
     sleep(0.5);
 }
