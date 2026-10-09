@@ -773,6 +773,10 @@ export type Database = {
         }
         Views: { [_ in never]: never }
         Functions: {
+      learner_completed_attempt_totals: {
+        Args: Record<PropertyKey, never>
+        Returns: { total_sessions: number; total_xp: number }[]
+      }
       practice_completed_attempt_totals: {
         Args: { p_user_id: string }
         Returns: { total_sessions: number; total_xp: number }[]

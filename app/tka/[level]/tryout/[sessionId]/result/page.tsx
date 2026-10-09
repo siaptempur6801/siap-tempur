@@ -105,16 +105,15 @@ export default async function TkaResultPage({
     if (!['completed', 'COMPLETED', 'submitted', 'SUBMITTED'].includes(result.status)) {
         redirect(`${base}/tryout/${sessionId}`)
     }
-    // XP/reward bersifat pelengkap. Lookup-nya memakai klien privileged (mis. di CI staging
-    // service role sengaja tidak tersedia), jadi kegagalannya tidak boleh membatalkan render
-    // halaman hasil — dulu error di sini memutus stream sehingga panel fokus belajar hilang.
+    // Learner rewards use the authenticated client and owner-only aggregate.
+    // Keep the result available during a transient reward lookup failure.
     let xpInfo: Awaited<ReturnType<typeof gamificationService.getAttemptReward>> | null = null
     if (completed === '1') {
         try {
             xpInfo = await gamificationService.getAttemptReward(user.id, {
                 score: result.totalScore,
                 practiceKind: result.practiceKind,
-            })
+            }, supabase)
         } catch (error) {
             logger.warn('[tka-result] reward lookup failed', {
                 error: error instanceof Error ? error.message : String(error),

@@ -9,6 +9,7 @@ begin
     if u is null or exists(select 1 from public.exam_attempts where user_id=u) then
         raise exception 'Requires fresh disposable optimization TKA user';
     end if;
+    perform set_config('optimization.fixture_user',u::text,true);
     select id into e from public.exams order by id limit 1;
     -- > PostgREST's default 1000-row cap; fractional/negative scores, every XP
     -- minimum, invalid metadata type, and both case variants of completion.
@@ -25,6 +26,7 @@ begin
             case metadata->>'practiceKind' when 'mini_tryout' then 20 when 'full_tryout' then 30 when 'event' then 30 else 10 end))
         from public.exam_attempts where user_id=u
     ) then raise exception 'XP/count parity failed'; end if;
+    perform set_config('optimization.fixture_xp',totals.total_xp::text,true);
     insert into public.exam_attempts(exam_id,user_id,attempt_number,status,metadata,updated_at)
         values(e,u,1006,'in_progress',jsonb_build_object('accessContext','event','eventId',gen_random_uuid()),now()),
               (e,u,1007,'in_progress','{"accessContext":"direct"}',now()+interval '1 second'),
@@ -52,6 +54,17 @@ begin
         raise exception 'Cross-user leak'; end if;
 end $$;
 -- The same call under the actual learner role enforces both RLS and auth.uid().
+select set_config('request.jwt.claim.sub',current_setting('optimization.fixture_user'),true);
 set local role authenticated;
+do $$
+declare totals record;
+begin
+    select * into totals from public.learner_completed_attempt_totals();
+    if totals.total_sessions<>1005 or totals.total_xp<>current_setting('optimization.fixture_xp')::bigint then
+        raise exception 'Authenticated reward XP/count parity failed'; end if;
+    perform set_config('request.jwt.claim.sub',gen_random_uuid()::text,true);
+    select * into totals from public.learner_completed_attempt_totals();
+    if totals.total_sessions<>0 or totals.total_xp<>0 then raise exception 'Cross-user reward leak'; end if;
+end $$;
 select * from public.learner_exam_attempt_summaries('{}'::uuid[],false);
 rollback;

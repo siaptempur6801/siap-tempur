@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 const { rpc, single } = vi.hoisted(() => ({ rpc: vi.fn(), single: vi.fn() }))
 vi.mock('@/lib/utils/supabase/server', () => ({ createV2AdminClient: async () => ({ rpc }) }))
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database.types'
 import { PracticeOverviewRepository } from '@/src/repositories/practice-overview.repository'
 const repository = new PracticeOverviewRepository()
 beforeEach(() => { vi.resetAllMocks() })
@@ -23,4 +25,12 @@ describe('CPNS read models', () => {
         rpc.mockResolvedValue({data:null,error})
         await expect(repository.listActiveAttempts('owner')).rejects.toEqual(error)
     })
+})
+
+it('uses the learner client with a parameterless owner-only reward aggregate', async () => {
+    const learnerRpc = vi.fn().mockReturnValue({single:vi.fn().mockResolvedValue({data:{total_sessions:1005,total_xp:20100},error:null})})
+    const db = {rpc:learnerRpc} as unknown as SupabaseClient<Database>
+    await expect(repository.getCompletedAttemptTotals('ignored-owner', db)).resolves.toEqual({totalSessions:1005,totalXp:20100})
+    expect(learnerRpc).toHaveBeenCalledExactlyOnceWith('learner_completed_attempt_totals')
+    expect(rpc).not.toHaveBeenCalled()
 })

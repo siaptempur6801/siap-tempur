@@ -41,7 +41,7 @@ for (const track of tracks) for (const statuses of [['published'],['approved','p
     if (error) throw error
     same(count,rows.length)
 }
-for (const [name,args] of [['practice_completed_attempt_totals',{p_user_id:attempts[0].user_id}],['practice_active_attempt_overviews',{p_user_id:attempts[0].user_id}],['learner_exam_attempt_summaries',{p_exam_ids:[]}]]) {
+for (const [name,args] of [['practice_completed_attempt_totals',{p_user_id:attempts[0].user_id}],['practice_active_attempt_overviews',{p_user_id:attempts[0].user_id}],['learner_exam_attempt_summaries',{p_exam_ids:[]}],['learner_completed_attempt_totals',{}]]) {
     const { error } = await anon.rpc(name,args)
     same(error?.code,'42501')
 }

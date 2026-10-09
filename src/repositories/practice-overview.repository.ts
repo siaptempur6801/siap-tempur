@@ -1,6 +1,7 @@
 import { createV2AdminClient } from '@/lib/utils/supabase/server'
 import { chunkValues } from '@/lib/supabase-batch'
-import type { Json } from '@/types/database.types'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database, Json } from '@/types/database.types'
 import { DEFAULT_TOKEN_WALLET_TYPE } from '@/src/repositories/wallet.repository'
 
 export type ActiveAttemptOverview = {
@@ -46,9 +47,11 @@ function numberOrZero(value: unknown) {
 }
 
 export class PracticeOverviewRepository {
-    async getCompletedAttemptTotals(userId: string) {
-        const admin = await createV2AdminClient()
-        const { data, error } = await admin.rpc('practice_completed_attempt_totals', { p_user_id: userId }).single()
+    async getCompletedAttemptTotals(userId: string, learnerClient?: SupabaseClient<Database>) {
+        const db = learnerClient ?? await createV2AdminClient()
+        const { data, error } = await (learnerClient
+            ? db.rpc('learner_completed_attempt_totals')
+            : db.rpc('practice_completed_attempt_totals', { p_user_id: userId })).single()
         if (error) throw error
         return { totalSessions: numberOrZero(data.total_sessions), totalXp: numberOrZero(data.total_xp) }
     }
@@ -76,8 +79,8 @@ export class PracticeOverviewRepository {
         return data as { id: string; full_name: string } | null
     }
 
-    async getStreak(userId: string) {
-        const admin = await createV2AdminClient()
+    async getStreak(userId: string, learnerClient?: SupabaseClient<Database>) {
+        const admin = learnerClient ?? await createV2AdminClient()
         const { data, error } = await admin
             .from('user_streaks')
             .select('current_streak')
