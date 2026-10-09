@@ -12,6 +12,7 @@ import PaperBackground from '@/components/PaperBackground'
 import MathRenderer from '@/components/MathRenderer'
 import { getPracticeSessionStorageKey } from '@/lib/practice-progress'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
+import { AnswerSaveQueue, flushAnswerSaves } from '@/lib/answer-save-queue'
 import { trackProductEvent } from '@/lib/product-analytics'
 
 
@@ -46,11 +47,6 @@ type SessionProgressSnapshot = {
     markedQuestions: Record<string, boolean>
 }
 
-type AnswerSyncState = {
-    inFlight: boolean
-    latestOptionId: string | null
-    inflightPromise: Promise<void> | null
-}
 
 function getSessionStorageKey(sessionId: string) {
     return getPracticeSessionStorageKey(sessionId)
@@ -440,7 +436,7 @@ export default function PracticeSessionClient({
     const [hasHydratedResumeState, setHasHydratedResumeState] = useState(false)
     const lastSavedSnapshotRef = useRef('')
     const latestSnapshotRef = useRef<SessionProgressSnapshot | null>(null)
-    const answerSyncStateRef = useRef<Record<string, AnswerSyncState>>({})
+    const answerSyncStateRef = useRef(new AnswerSaveQueue<string>())
     const finishLockRef = useRef(false)
     const exitLockRef = useRef(false)
     const sessionKindLabel = isTryout ? 'Tryout' : returnTo === 'drilling-materi' ? 'Latihan Fokus' : 'Mini Tryout'
@@ -648,54 +644,33 @@ export default function PracticeSessionClient({
         })
     }
 
-    const syncAnswerForQuestion = useCallback(async (questionId: string): Promise<void> => {
-        const state = answerSyncStateRef.current[questionId]
-        if (!state?.latestOptionId) return
-        if (state.inFlight) {
-            return state.inflightPromise ?? Promise.resolve()
+    const syncAnswerForQuestion = useCallback((questionId: string) =>
+        answerSyncStateRef.current.sync(questionId, async (optionId) => {
+            const result = await submitAnswer(sessionId, questionId, optionId)
+            if (result?.error) throw new Error(result.error)
+        }), [sessionId])
+
+    const retryPendingAnswers = useCallback(() => {
+        for (const questionId of answerSyncStateRef.current.keys()) {
+            void syncAnswerForQuestion(questionId).catch(() => toast.error('Gagal menyimpan jawaban'))
         }
-
-        const optionId = state.latestOptionId
-        state.inFlight = true
-
-        const request = submitAnswer(sessionId, questionId, optionId)
-            .then((result) => {
-                if (result?.error && state.latestOptionId === optionId) {
-                    toast.error('Gagal menyimpan jawaban')
-                }
-            })
-            .catch(() => {
-                if (state.latestOptionId === optionId) {
-                    toast.error('Gagal menyimpan jawaban')
-                }
-            })
-            .then(async () => {
-                state.inFlight = false
-
-                if (state.latestOptionId !== optionId) {
-                    await syncAnswerForQuestion(questionId)
-                }
-            })
-
-        state.inflightPromise = request
-        return request
-    }, [sessionId])
-
-    const flushPendingAnswers = useCallback(async () => {
-        const pendingQuestionIds = Object.keys(answerSyncStateRef.current)
-        if (pendingQuestionIds.length === 0) return
-
-        await Promise.all(pendingQuestionIds.map((questionId) => syncAnswerForQuestion(questionId)))
     }, [syncAnswerForQuestion])
 
-    const startFinishFlow = useCallback(async () => {
-        if (!acquireSingleFlightLock(finishLockRef)) return false
+    useEffect(() => {
+        window.addEventListener('online', retryPendingAnswers)
+        return () => window.removeEventListener('online', retryPendingAnswers)
+    }, [retryPendingAnswers])
 
+    const flushPendingAnswers = useCallback((automatic = false) =>
+        flushAnswerSaves(answerSyncStateRef.current.keys().map(syncAnswerForQuestion), automatic),
+    [syncAnswerForQuestion])
+
+    const startFinishFlow = useCallback(async (automatic = false) => {
+        if (!acquireSingleFlightLock(finishLockRef)) return false
         setFinishing(true)
         setShowConfirmModal(false)
-
         try {
-            await flushPendingAnswers()
+            await flushPendingAnswers(automatic)
             await finishSessionAfterLockAcquired()
         } catch (error) {
             console.error('Error preparing finish practice:', error)
@@ -703,35 +678,21 @@ export default function PracticeSessionClient({
             setFinishing(false)
             releaseSingleFlightLock(finishLockRef)
         }
-
         return true
     }, [finishSessionAfterLockAcquired, flushPendingAnswers])
 
     const handleAutoFinish = useCallback(async () => {
         if (finishLockRef.current || hasFinished) return
-
         toast.info('Waktu selesai. Jawaban akan dikumpulkan otomatis.')
-        await startFinishFlow()
+        await startFinishFlow(true)
     }, [hasFinished, startFinishFlow])
 
     const handleSelectOption = useCallback((optionId: string) => {
         const questionId = currentQuestionId
-        if (!questionId) return
-
-        if (answers[questionId] === optionId) return
-
+        if (!questionId || answers[questionId] === optionId) return
         setAnswers(prev => ({ ...prev, [questionId]: optionId }))
-
-        const currentState = answerSyncStateRef.current[questionId] ?? {
-            inFlight: false,
-            latestOptionId: null,
-            inflightPromise: null
-        }
-
-        currentState.latestOptionId = optionId
-        answerSyncStateRef.current[questionId] = currentState
-
-        void syncAnswerForQuestion(questionId)
+        answerSyncStateRef.current.set(questionId, optionId)
+        void syncAnswerForQuestion(questionId).catch(() => toast.error('Gagal menyimpan jawaban'))
     }, [answers, currentQuestionId, syncAnswerForQuestion])
 
     const handleShowWarning5Min = useCallback(() => {

@@ -108,6 +108,43 @@ test.describe('CPNS SKD release-candidate', () => {
     const persistedFirstOption = page.getByTestId('answer-option-0').first()
     await expect(persistedFirstOption).toHaveClass(/border-blue-600/)
 
+    // A failed latest edit must block manual completion and recover on reconnect.
+    const saveActionId = answerResponse.request().headers()['next-action']
+    let blockedSaves = 0
+    let completionActions = 0
+    const failAnswerSave = async (route: import('@playwright/test').Route) => {
+      const actionId = route.request().headers()['next-action']
+      if (actionId === saveActionId) {
+        blockedSaves += 1
+        await route.abort('failed')
+      } else {
+        if (actionId) completionActions += 1
+        await route.continue()
+      }
+    }
+    await page.route('**/cpns/dashboard/tryout/**', failAnswerSave)
+    try {
+      await page.getByTestId('answer-option-1').first().click()
+      await expect(page.getByText('Gagal menyimpan jawaban', { exact: true }).first()).toBeVisible()
+      await page.getByRole('button', { name: 'Buka soal 110', exact: true }).click()
+      await page.getByRole('button', { name: 'Kumpulkan jawaban', exact: true }).click()
+      await page.getByRole('heading', { name: 'Kumpulkan jawaban?', exact: true })
+        .locator('..').getByRole('button', { name: 'Kumpulkan jawaban', exact: true }).click()
+      await expect(page.getByText('Jawaban belum berhasil disimpan. Coba lagi sebelum menyelesaikan sesi.', { exact: true })).toBeVisible()
+      await expect(page).toHaveURL(fullSessionUrl)
+      expect(blockedSaves).toBe(2)
+      expect(completionActions).toBe(0)
+    } finally {
+      await page.unroute('**/cpns/dashboard/tryout/**', failAnswerSave)
+    }
+    const recoveredSave = page.waitForResponse(response =>
+      response.request().headers()['next-action'] === saveActionId, { timeout: 20_000 })
+    await page.evaluate(() => window.dispatchEvent(new Event('online')))
+    expect((await recoveredSave).ok()).toBeTruthy()
+    await page.reload(NAVIGATION_OPTIONS)
+    await page.getByRole('button', { name: /^Buka soal 1(?:,|$)/ }).click()
+    await expect(page.getByTestId('answer-option-1').first()).toHaveClass(/border-blue-600/)
+
     // Returning to listing shows the one-token debit and active resume state.
     await page.goto('/cpns/dashboard/tryout', NAVIGATION_OPTIONS)
     await expectListingTokenBalance(page, 2)

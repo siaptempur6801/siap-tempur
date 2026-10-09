@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Flag, LogOut, Map as MapIcon } from 'lucide-react'
+import { AnswerSaveQueue, flushAnswerSaves } from '@/lib/answer-save-queue'
 import MathRenderer from '@/components/MathRenderer'
 import TkaSectionConfirmModal from '@/components/tka/TkaSectionConfirmModal'
 import { cn } from '@/lib/utils'
@@ -21,18 +22,6 @@ type Props = {
     endTime?: string
     returnPath: string
     resultPath: (sessionId: string) => string
-}
-
-type SyncState = {
-    latestIds: string[]
-    inflightPromise: Promise<void> | null
-}
-
-function sameSelection(left: string[], right: string[]) {
-    if (left.length !== right.length) return false
-    const a = [...left].sort()
-    const b = [...right].sort()
-    return a.every((value, index) => value === b[index])
 }
 
 function responseInstruction(type: string) {
@@ -68,7 +57,7 @@ export default function UniversalPracticeSessionClient({
     const [finishing, setFinishing] = useState(false)
     const [finishConfirmMessage, setFinishConfirmMessage] = useState<string | null>(null)
     const [remainingMs, setRemainingMs] = useState<number | null>(null)
-    const syncStateRef = useRef<Record<string, SyncState>>({})
+    const syncStateRef = useRef(new AnswerSaveQueue<string[]>())
     const finishedRef = useRef(false)
 
     const currentQuestion = questions[currentIndex] ?? null
@@ -79,7 +68,7 @@ export default function UniversalPracticeSessionClient({
             return selected ? [selected] : []
         }
         const selectedOptions = multiAnswers[question.id]
-        if (selectedOptions?.length) return selectedOptions
+        if (selectedOptions) return selectedOptions
 
         // The answer RPC stores a one-option selection in selected_option_id.
         // Multi-response questions use attempt_answer_options only when multiple
@@ -96,55 +85,31 @@ export default function UniversalPracticeSessionClient({
         return answered
     }, [questions, selectedIdsFor])
 
-    const syncSelection = useCallback((question: PracticeQuestionView): Promise<void> => {
-        const questionId = question.id
-        const existing = syncStateRef.current[questionId]
-        if (!existing) return Promise.resolve()
-        if (existing.inflightPromise) return existing.inflightPromise
-
-        const worker = (async () => {
-            while (true) {
-                const current = syncStateRef.current[questionId]
-                if (!current) return
-                const selection = [...current.latestIds]
-
-                try {
-                    const result = question.response_type === 'single_choice'
-                        ? selection[0]
-                            ? await submitAnswer(sessionId, questionId, selection[0])
-                            : { error: 'Jawaban kosong.' }
-                        : await submitAnswerOptions(sessionId, questionId, selection)
-                    const latest = syncStateRef.current[questionId]?.latestIds ?? selection
-                    if (result?.error && sameSelection(latest, selection)) toast.error(result.error)
-                } catch {
-                    const latest = syncStateRef.current[questionId]?.latestIds ?? selection
-                    if (sameSelection(latest, selection)) toast.error('Gagal menyimpan jawaban.')
-                }
-
-                const latest = syncStateRef.current[questionId]?.latestIds ?? selection
-                if (sameSelection(latest, selection)) {
-                    syncStateRef.current[questionId] = { latestIds: latest, inflightPromise: null }
-                    return
-                }
-            }
-        })()
-
-        syncStateRef.current[questionId] = {
-            latestIds: [...existing.latestIds],
-            inflightPromise: worker,
-        }
-        return worker
-    }, [sessionId])
+    const syncSelection = useCallback((question: PracticeQuestionView) =>
+        syncStateRef.current.sync(question.id, async (selection) => {
+            const result = question.response_type === 'single_choice'
+                ? selection[0]
+                    ? await submitAnswer(sessionId, question.id, selection[0])
+                    : { error: 'Jawaban kosong.' }
+                : await submitAnswerOptions(sessionId, question.id, selection)
+            if (result?.error) throw new Error(result.error)
+        }), [sessionId])
 
     const queueSelection = useCallback((question: PracticeQuestionView, nextIds: string[]) => {
-        const existing = syncStateRef.current[question.id]
-        const inflightPromise = existing?.inflightPromise ?? null
-        syncStateRef.current[question.id] = {
-            latestIds: [...nextIds],
-            inflightPromise,
-        }
-        if (!inflightPromise) void syncSelection(question)
+        syncStateRef.current.set(question.id, [...nextIds])
+        void syncSelection(question).catch(() => toast.error('Gagal menyimpan jawaban.'))
     }, [syncSelection])
+
+    useEffect(() => {
+        const retry = () => {
+            const pending = new Set(syncStateRef.current.keys())
+            for (const question of questions) if (pending.has(question.id)) {
+                void syncSelection(question).catch(() => toast.error('Gagal menyimpan jawaban.'))
+            }
+        }
+        window.addEventListener('online', retry)
+        return () => window.removeEventListener('online', retry)
+    }, [questions, syncSelection])
 
     const handleSelect = useCallback((question: PracticeQuestionView, optionId: string) => {
         if (question.response_type === 'single_choice') {
@@ -153,30 +118,22 @@ export default function UniversalPracticeSessionClient({
             return
         }
 
-        setMultiAnswers((previous) => {
-            const current = previous[question.id] ?? []
-            let next: string[]
-
-            if (question.response_type === 'category') {
-                const selectedOption = question.options.find((option) => option.id === optionId)
-                const selectedGroup = selectedOption?.response_group ?? null
-                const optionIdsInGroup = new Set(
-                    question.options
-                        .filter((option) => (option.response_group ?? null) === selectedGroup)
-                        .map((option) => option.id),
-                )
-                const withoutGroup = current.filter((id) => !optionIdsInGroup.has(id))
-                next = current.includes(optionId) ? withoutGroup : [...withoutGroup, optionId]
-            } else {
-                next = current.includes(optionId)
-                    ? current.filter((id) => id !== optionId)
-                    : [...current, optionId]
-            }
-
-            queueSelection(question, next)
-            return { ...previous, [question.id]: next }
-        })
-    }, [queueSelection])
+        const current = selectedIdsFor(question)
+        let next: string[]
+        if (question.response_type === 'category') {
+            const selectedOption = question.options.find((option) => option.id === optionId)
+            const selectedGroup = selectedOption?.response_group ?? null
+            const optionIdsInGroup = new Set(question.options
+                .filter((option) => (option.response_group ?? null) === selectedGroup)
+                .map((option) => option.id))
+            const withoutGroup = current.filter((id) => !optionIdsInGroup.has(id))
+            next = current.includes(optionId) ? withoutGroup : [...withoutGroup, optionId]
+        } else {
+            next = current.includes(optionId) ? current.filter((id) => id !== optionId) : [...current, optionId]
+        }
+        setMultiAnswers((previous) => ({ ...previous, [question.id]: next }))
+        queueSelection(question, next)
+    }, [queueSelection, selectedIdsFor])
 
     const persistProgress = useCallback((index: number, nextMarked: Record<string, boolean>) => {
         void fetch(`/api/practice-sessions/${sessionId}/beacon`, {
@@ -201,9 +158,9 @@ export default function UniversalPracticeSessionClient({
         })
     }, [currentIndex, currentQuestion, persistProgress])
 
-    const flushAnswers = useCallback(async () => {
-        const pending = questions.filter((question) => syncStateRef.current[question.id])
-        await Promise.all(pending.map((question) => syncSelection(question)))
+    const flushAnswers = useCallback((automatic = false) => {
+        const pending = new Set(syncStateRef.current.keys())
+        return flushAnswerSaves(questions.filter((q) => pending.has(q.id)).map(syncSelection), automatic)
     }, [questions, syncSelection])
 
     const finish = useCallback(async (automatic = false) => {
@@ -211,7 +168,7 @@ export default function UniversalPracticeSessionClient({
         finishedRef.current = true
         setFinishing(true)
         try {
-            await flushAnswers()
+            await flushAnswers(automatic)
             const result = await finishPractice(sessionId)
             if (result?.error) {
                 finishedRef.current = false

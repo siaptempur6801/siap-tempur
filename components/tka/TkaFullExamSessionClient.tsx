@@ -14,6 +14,7 @@ import {
     LogOut,
     Map as MapIcon,
 } from 'lucide-react'
+import { AnswerSaveQueue, flushAnswerSaves } from '@/lib/answer-save-queue'
 import MathRenderer from '@/components/MathRenderer'
 import TkaSectionConfirmModal from '@/components/tka/TkaSectionConfirmModal'
 import { progressStorageKey } from '@/lib/session-progress'
@@ -28,19 +29,6 @@ import type {
     TkaFullExamState,
 } from '@/src/services/tka-full-exam-rpc.service'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
-
-type SyncState = {
-    latestIds: string[]
-    latestFlag: boolean
-    inflightPromise: Promise<void> | null
-}
-
-function sameSelection(left: string[], right: string[]) {
-    if (left.length !== right.length) return false
-    const a = [...left].sort()
-    const b = [...right].sort()
-    return a.every((value, index) => value === b[index])
-}
 
 function formatRemaining(milliseconds: number) {
     const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
@@ -89,7 +77,7 @@ export default function TkaFullExamSessionClient({
         setSectionConfirmMessage(null)
     }, [activeSection?.sectionId])
     const finishLockRef = useRef(false)
-    const syncStateRef = useRef<Record<string, SyncState>>({})
+    const syncStateRef = useRef(new AnswerSaveQueue<{ ids: string[]; flag: boolean }>())
     const questionEnteredAtRef = useRef<number | null>(null)
     const expiredHandledRef = useRef(false)
 
@@ -117,7 +105,7 @@ export default function TkaFullExamSessionClient({
             ...storedFlags,
         })
         setCurrentIndex(Math.max(0, Math.min(storedIndex, Math.max(state.questions.length - 1, 0))))
-        syncStateRef.current = {}
+        syncStateRef.current = new AnswerSaveQueue()
         questionEnteredAtRef.current = Date.now()
         expiredHandledRef.current = false
     }, [state.activeSectionId, state.attemptId, state.questions])
@@ -151,73 +139,32 @@ export default function TkaFullExamSessionClient({
         return Math.max(0, question.timeSpentSeconds + extra)
     }, [currentQuestion?.attemptQuestionId])
 
-    const syncSelection = useCallback((question: TkaFullExamQuestionView): Promise<void> => {
-        const questionId = question.attemptQuestionId
-        const existing = syncStateRef.current[questionId]
-        if (!existing) return Promise.resolve()
-        if (existing.inflightPromise) return existing.inflightPromise
-
-        const worker = (async () => {
-            while (true) {
-                const current = syncStateRef.current[questionId]
-                if (!current) return
-                const selection = [...current.latestIds]
-                const flagValue = current.latestFlag
-
-                try {
-                    const result = await saveTkaFullExamAnswer({
-                        attemptQuestionId: questionId,
-                        optionIds: selection,
-                        timeSpentSeconds: currentTimeSpent(question),
-                        isFlagged: flagValue,
-                    })
-                    const latest = syncStateRef.current[questionId]
-                    if (
-                        result?.error
-                        && latest
-                        && sameSelection(latest.latestIds, selection)
-                        && latest.latestFlag === flagValue
-                    ) {
-                        toast.error(result.error)
-                    }
-                } catch {
-                    const latest = syncStateRef.current[questionId]
-                    if (latest && sameSelection(latest.latestIds, selection) && latest.latestFlag === flagValue) {
-                        toast.error('Gagal menyimpan jawaban.')
-                    }
-                }
-
-                const latest = syncStateRef.current[questionId]
-                if (!latest) return
-                if (sameSelection(latest.latestIds, selection) && latest.latestFlag === flagValue) {
-                    syncStateRef.current[questionId] = {
-                        latestIds: [...latest.latestIds],
-                        latestFlag: latest.latestFlag,
-                        inflightPromise: null,
-                    }
-                    return
-                }
-            }
-        })()
-
-        syncStateRef.current[questionId] = {
-            latestIds: [...existing.latestIds],
-            latestFlag: existing.latestFlag,
-            inflightPromise: worker,
-        }
-        return worker
-    }, [currentTimeSpent])
+    const syncSelection = useCallback((question: TkaFullExamQuestionView) =>
+        syncStateRef.current.sync(question.attemptQuestionId, async (selection) => {
+            const result = await saveTkaFullExamAnswer({
+                attemptQuestionId: question.attemptQuestionId,
+                optionIds: selection.ids,
+                timeSpentSeconds: currentTimeSpent(question),
+                isFlagged: selection.flag,
+            })
+            if (result?.error) throw new Error(result.error)
+        }), [currentTimeSpent])
 
     const queueSelection = useCallback((question: TkaFullExamQuestionView, nextIds: string[], flagValue: boolean) => {
-        const existing = syncStateRef.current[question.attemptQuestionId]
-        const inflightPromise = existing?.inflightPromise ?? null
-        syncStateRef.current[question.attemptQuestionId] = {
-            latestIds: [...nextIds],
-            latestFlag: flagValue,
-            inflightPromise,
-        }
-        if (!inflightPromise) void syncSelection(question)
+        syncStateRef.current.set(question.attemptQuestionId, { ids: [...nextIds], flag: flagValue })
+        void syncSelection(question).catch(() => toast.error('Gagal menyimpan jawaban.'))
     }, [syncSelection])
+
+    useEffect(() => {
+        const retry = () => {
+            const pending = new Set(syncStateRef.current.keys())
+            for (const question of questions) if (pending.has(question.attemptQuestionId)) {
+                void syncSelection(question).catch(() => toast.error('Gagal menyimpan jawaban.'))
+            }
+        }
+        window.addEventListener('online', retry)
+        return () => window.removeEventListener('online', retry)
+    }, [questions, syncSelection])
 
     const handleSelect = useCallback((question: TkaFullExamQuestionView, optionId: string) => {
         const current = selections[question.attemptQuestionId] ?? []
@@ -257,9 +204,9 @@ export default function TkaFullExamSessionClient({
         questionEnteredAtRef.current = Date.now()
     }, [questions.length])
 
-    const flushSelections = useCallback(async () => {
-        const pending = questions.filter((question) => syncStateRef.current[question.attemptQuestionId])
-        await Promise.all(pending.map((question) => syncSelection(question)))
+    const flushSelections = useCallback((automatic = false) => {
+        const pending = new Set(syncStateRef.current.keys())
+        return flushAnswerSaves(questions.filter((q) => pending.has(q.attemptQuestionId)).map(syncSelection), automatic)
     }, [questions, syncSelection])
 
     const sectionAdvanceMessage = useCallback(() => {
@@ -281,7 +228,7 @@ export default function TkaFullExamSessionClient({
         let isNavigating = false
         setProcessing(true)
         try {
-            await flushSelections()
+            await flushSelections(automatic)
             const transition = await completeTkaFullExamSection(state.attemptId)
             if (transition?.error) {
                 toast.error(transition.error)
