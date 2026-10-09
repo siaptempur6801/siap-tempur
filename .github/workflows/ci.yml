@@ -43,9 +43,7 @@ jobs:
           node-version: 24
 
       - name: Install dependencies
-        # package-lock normalization is tracked separately; current repository
-        # installs successfully with npm install and CI must not rewrite the lockfile.
-        run: npm install
+        run: npm ci
 
       - name: Lint
         run: npm run lint
