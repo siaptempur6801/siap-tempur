@@ -12,12 +12,14 @@ const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 // Poppins = tipografi brand (brand sheet: Poppins Bold/Regular) untuk display + body.
@@ -71,8 +73,8 @@ export const metadata: Metadata = {
     ],
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
+    // app/favicon.ico already emits the icon link. Duplicate metadata links
+    // cause repeated icon downloads during browser/Lighthouse discovery.
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.webmanifest",
