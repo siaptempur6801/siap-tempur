@@ -318,3 +318,100 @@ Admin parity/E2E and original >1,000-row SQL checks were not blindly repeated: n
 7. **P2 maintainability:** reconcile pre-existing staging/production migration histories deliberately; avoid assuming ledger presence proves live schema parity. Keep sensitive projections request-scoped and extend permission/answer-key regression coverage as new read models are added.
 
 All automatic work remained within local code and the verified staging environment, apart from read-only production health and catalog-metadata inspection. Only owned disposable fixtures were used and cleaned up; the pre-existing developer server was left running. Restart that server normally to load the patched framework version.
+
+## UI/UX continuation — 9 October 2026
+
+### Baseline and scope
+
+UI work starts at the clean, verified local optimization commit **`705375b`**, on the new branch **`uiux/shared-foundations-2026-10-09`**. It does not restart from `origin/main`. The optimization commits, pending migrations, autosave queues, CPNS/TKA queries, authentication/actions, CSP, scoped payment scripts, rate limits, font preloads and favicon improvements remain intact. This continuation changes shared dialog presentation/interaction and profile validation feedback; it does not change database or exam contracts. No push, migration, deployment, production writes or load test occurred.
+
+### Repository-wide inventory and design-reference precedence
+
+Static inventory at the baseline covered **86 page modules and 156 TSX components**, including shared primitives and their callers. Rendered verification samples representative surfaces; this is not a claim that every route/state has been visually remediated.
+
+| Area | Current foundations / representative files | Inventory decision |
+|---|---|---|
+| Marketing | `app/page.tsx`, `components/home/*`, `components/brand/*`, `components/ui/Button.tsx`, `Card.tsx`, `Section.tsx` | Preserve expressive identity, wordmark, Poppins, mascots and existing primary CTAs. Shared Button already supplies 44 px targets and focus rings. No global size/theme rewrite. |
+| Authentication | `components/auth/LoginForm.tsx`, `RegisterForm.tsx`, `ForgotPasswordForm.tsx`, `ResetPasswordForm.tsx` | Login/register already have linked errors and labelled visibility controls. ResetPasswordForm still has legacy copy, decoration and hidden labels; audit this specific flow before changing its recovery/auth contract. |
+| Learning navigation/layout | `components/dashboard/*`, `app/tka/[level]/layout.tsx`, `components/profile/TkaProfile.module.css` | Keep separate CPNS/TKA visual modes and existing shells, active state and optimized navigation requests. Profile's local TKA styles intentionally soften borders/shadows. |
+| Catalog / start decisions | CPNS `PracticeClient.tsx`, `MiniTryoutClient.tsx`, `DrillingMateriClient.tsx`; TKA catalog pages | Preserve all query/entitlement/quota logic. Confirmed token-dialog focus and short-viewport defects remediated through one shared component for all three CPNS callers. |
+| Exam sessions | `PracticeSessionClient.tsx`, `UniversalPracticeSessionClient.tsx`, `TkaFullExamSessionClient.tsx`, `TkaSectionConfirmModal.tsx` | Preserve queue/timer/scoring/order/submission code. Fix only the shared TKA section confirmation. Other custom exit/submission/navigation overlays remain candidates for focused keyboard audits. |
+| Profile / media | `SettingsTab.tsx`, `ProfileTab.tsx`, `ImageCropper.tsx` | Remediate shared password/deletion dialogs, input spacing and linked validation. Image preview/cropper remain separate, with media/processing-specific dismissal contracts to verify before consolidation. |
+| Results / review | `components/practice/review/*`, `TkaInteractiveReviewClient.tsx`, `XPRewardPopup.tsx` | Preserve result semantics and reward completion flow. Review drawers/reward overlay remain separate; do not assume every overlay can be replaced by the confirmation foundation. |
+| Payments / events | `components/payments/*`, `components/pass/*`, `components/dashboard/EventClient.tsx` | Preserve scoped Midtrans loading, pending/error states and payment security. Event/payment overlay consolidation requires dedicated pending-state tests. |
+| Admin operations | `UnifiedAdminShell.tsx`, `AdminUi.tsx`, `AdminModal.tsx`, `AdminConfirmDialog.tsx`, `AdminDataTable.tsx`, `components/admin/forms/*` | Preserve the completed workspace/table/navigation/form and query improvements. Existing native modal/drawer behavior is not reimplemented. Verify representative responsiveness and keyboard flows. |
+
+Reference conflicts were resolved by scope and current implementation/release evidence:
+
+- Product identity and experience modes follow [Product Design System V1.1](PRODUCT_DESIGN_SYSTEM_V1_1.md) and [Product Language Guide](PRODUCT_LANGUAGE_GUIDE_V1_1.md). The specific learning scale in §2.6 takes precedence over the older generic app-heading scale. Brand/category tokens in §6.0/6.2 take precedence over the older cyan accent paragraph. Exam mode remains quiet and without decorative motion.
+- Admin uses the newer [Admin UI/UX Standard](ADMIN_UI_UX_STANDARD.md), [P1 redesign/report](ADMIN_UI_UX_REDESIGN.md) and [8 October release evidence](releases/admin-workspace-2026-10-08.md). The older [Admin Workspace UI System](ADMIN_WORKSPACE_UI_SYSTEM.md) describes historical routes/modal CRUD defaults; it does not override current canonical routes or page-based long forms. The admin table's explicit 28 px desktop / 36 px mobile density is preserved as a scoped exception to the product's practical 44 px target guidance, not applied to learner dialogs.
+- [Product audit](PRODUCT_EXPERIENCE_V1_1_AUDIT.md) and [implementation backlog](PRODUCT_EXPERIENCE_V1_1_IMPLEMENTATION_BACKLOG.md) provide context, but unchecked historical items do not prove an optimization/design feature is missing. Current code and verified release reports prevent repeating completed work.
+
+### Confirmed defects and implemented changes
+
+| Finding / root cause | Before | Implemented result |
+|---|---|---|
+| `components/ui/Modal.tsx`: custom animated div has no dialog semantics, initial focus or focus containment; cleanup writes `overflow: unset` | TKA section confirmation allows keyboard focus to leave the decision and cannot correctly preserve an existing scroll style | New `DialogSurface.tsx` uses native modal/background inertness, explicit Tab wrapping that excludes hidden/disabled controls, labelled dialog, Escape/backdrop handling and exact, counted scroll-lock restoration. `Modal.tsx` adopts it with a 44 px close control and quieter exam styling. |
+| `TokenUsageConfirmModal.tsx`: centered, unconstrained overlay, no keyboard lifecycle; high visual emphasis on ordinary remaining balance | Heading and primary action clipped on a short mobile viewport; focus remains behind overlay | Named, scrollable summary with fixed title/actions, safe initial Cancel focus, shared Button sizes/focus rings, calmer amber/neutral hierarchy and disabled dismissal while loading. All quantities, token text/calculations and callbacks retained. |
+| `SettingsTab.tsx`: independent overlays without modal focus lifecycle or short-height constraint | CPNS password/deletion panels exceed a 568 px viewport; Escape fails; background remains keyboard-accessible | Shared native surface with viewport scrolling, exact focus restoration even when React unmounts a conditional dialog, and 44 px TKA close control. CPNS/TKA styling remains scoped. |
+| `SettingsTab.tsx`: password errors are toast-only; field labels do not establish consistent block spacing | Users must infer which input needs correction; Enter does not use a form submit | Existing empty/mismatch/server validation now also has visible, linked field/form errors; labels stay separate from error text so accessible names remain stable. Native form submission supports Enter using the same update action and validation rules. Mobile TKA password text is 16 px. |
+| `SettingsTab.tsx`: deletion backdrop close does not clear `deleteConfirmText` | Reopening can retain the previously typed `HAPUS` confirmation | Every allowed cancellation clears the confirmation. Pending deletion remains non-dismissible; deletion action/authorization unchanged. |
+| `tests/e2e/pages/TkaExamActions.ts`: catch also absorbs a failed click on an already visible confirmation | A broken interaction can be mistaken for an absent optional modal | Only the visibility wait is optional. Clicking a visible confirmation must succeed. |
+
+No new dependency, caching, memoization or speculative backend optimization was introduced. Modal/token opening no longer depends on decorative Framer Motion transitions. No bundle-size or latency gain is claimed without measurement.
+
+### Before/after UI measurements
+
+Same owned staging fixtures, local production build at `http://127.0.0.1:3100`, Chromium, and **1440×900 / 390×844 / 390×568**. Geometry is sampled after the dialog appears; the old animated token geometry varies slightly while entering. Browser plugin was unavailable; existing Playwright was used.
+
+| Reproducible check | Before | After |
+|---|---:|---:|
+| CPNS token/password/delete: initial focus inside (nine viewport/flow cases) | 0/9 | 9/9 |
+| Same cases: focus inside after 12 Tab presses | 0/9 | 9/9 |
+| Same cases: Escape closes / focus returns to trigger | 0/9 / 0/9 | 9/9 / 9/9 |
+| Token, 390×568: top / bottom | −38.57 / 610.92 px | 16 / 552 px |
+| Password, 390×568: top / bottom | −3.72 / 571.72 px | 16 / 552 px |
+| Delete, 390×568: top / bottom | −37.14 / 605.14 px | 16 / 552 px |
+| TKA password: Tab containment / Escape across the three viewports | 0/3 / 0/3 | 3/3 / 3/3 |
+| TKA password close-control height | 32 px (source class) | 44 px (browser assertion) |
+| Current dialog samples: page exceptions / console errors | No page exceptions in baseline samples | 0 / 0 across nine CPNS samples; TKA keyboard flow also passes |
+
+Token title and primary action are both in the viewport on the short screen. Profile forms can scroll as their validation content grows. [Before token](/tmp/siap-tempur-uiux-2026-10-09/before-token-390x568.png) and [after token](/tmp/siap-tempur-uiux-2026-10-09/after-token-390x568.png) illustrate the short-screen fix. Before/after JSON and screenshots live outside the repository under `/tmp/siap-tempur-uiux-2026-10-09/`: `before-dialog-qa.json`, `after-dialog-qa.json`, `before-tka-dialog-qa.json`, `after-tka-dialog-qa.json`, and corresponding viewport screenshots. Private fixture cookies were removed after exact owned-fixture cleanup. All test-suite users were cleaned through their existing teardown; the two additional screenshot-fixture users were deleted by their recorded IDs. Test servers/helper were stopped; the existing user server on port 3000 was retained.
+
+### Verification and commits
+
+- `d8bc2fb`: shared foundation and TKA cancellation/focus regression. Foundation lint, typecheck, build and 856 unit tests passed; focused TKA end-to-end flow passed (three checks including setup/cleanup).
+- `c5266fc`: scrollable CPNS token confirmation with visible mobile actions; committed regression covers keyboard scroll region, Tab/Shift+Tab, backdrop/Escape cancellation, exact prior scroll style, 44 px action, unchanged wallet after reload, held/aborted start request and blocked pending dismissal.
+- `a8c8ff8`: CPNS/TKA profile surface, stable field labels/linked errors, Enter validation, fresh destructive confirmation, and conditional-unmount focus restoration. Shared profile E2E helper asserts that its empty/mismatch/cancel flows send **zero mutation Server Action requests**.
+- `150af3d`: desktop/short-mobile TKA confirmation screenshots and viewport-bound assertions. The full learning-loop selection reran successfully (**3 passed, retries 0**, including setup/cleanup); screenshots were visually inspected.
+- Final code: **lint, typecheck, production build and 856 unit tests / 117 files passed**.
+- Final CPNS UI/engine selection: **6 passed, retries 0** (setup/cleanup included). Full/Mini/Drill lifecycle, exact token charging, acknowledged answer reload, offline queued edits/reconnect and failed-save submission block remain intact. Five additional unchanged Event/Instansi isolation/matrix cases passed during the token iteration; the first new keyboard test then failed because the scrollable summary was an implicit Tab stop. It was made an explicit named region and corrected assertions now pass. The final selection does not claim a rerun of all distribution cases.
+- Final TKA staging suite: **18 passed, retries 0** (setup/cleanup included): diagnostic, full sections/result/remedial, Mini/Drill, mobile/tablet resume, quotas, pass denial/expiry/access, plus the new profile regression.
+- Final public suite: **42 passed, 2 pre-existing optional credential skips, retries 0**. No assertions/security checks were disabled or timeouts increased.
+- Final admin representative checks: **35 passed, retries 0** (setup/cleanup included): desktop core modules, 390 px mobile / 1024 px tablet overflow checks, archive confirmation, mobile drawer focus/return, and desktop/mobile signout confirmation.
+- Landing browser checks at 1440/390 px: meaningful page/title, Poppins identity, menu interaction, no overflow or console/page errors; nonce-bearing scripts, six font preloads and one favicon link remain intact.
+- `git diff --check` passed. Diff review confirms no changes to package/lockfile, migrations, repositories, exam engine clients, answer queue, authentication actions, rate-limit implementation, font/CSP setup or payment scripts.
+
+Initial new keyboard tests exposed native focus wrapping toward browser chrome, implicit scroll-region traversal, and conditional-unmount focus restoration; fixes were verified with the assertions retained. The rapid reopen test waits for the existing repeat-click guard's visible lock state to clear, rather than changing that guard or adding arbitrary sleeps.
+
+### Remaining UI debt and rollout checklist
+
+Priority order for further UI work:
+
+1. **P1:** Browser-audit the remaining CPNS exam exit/submit/mobile-navigation overlays, reward popup, learner signout and EventClient dialogs. Verify pending dismissal, autosave/acknowledgement and timer transitions before adopting shared behavior. Do not mechanically replace every overlay.
+2. **P1:** Verify native-dialog/focus behavior with supported Safari/Firefox, screen readers and real mobile software keyboards. Current automation proves Chromium desktop/mobile/tablet behavior; it does not simulate all assistive technology or device keyboards. Nested shared-surface scroll locking is implemented defensively but no new nested consumer is introduced or certified by this batch.
+3. **P2:** Audit reset-password field labels, visibility-control targets and legacy language against the current product references, with a disposable recovery-link flow; retain existing password and session security.
+4. **P2:** Review image preview/cropper dialogs and review drawers with their own processing/resizing/navigation tests.
+5. **P2:** Consolidate legacy Card/Section literal colors and local overrides only after rendered evidence confirms a mismatch. Preserve intentional marketing/learning/admin density differences. Reconcile historical backlog completion marks with code/release evidence separately.
+
+Review/controlled-rollout checklist:
+
+- [x] Dedicated UI branch starts at the latest verified optimization baseline; earlier work preserved.
+- [x] Design-reference conflicts resolved by scope/version before applying shared changes.
+- [x] Shared foundation verified in a real TKA session before learner-surface expansion.
+- [x] Representative screenshot, keyboard, short-mobile, functional exam and form-error checks pass.
+- [x] Token, scoring, autosave acknowledgement, quota and authentication contracts preserved.
+- [ ] Hosted CI for the exact candidate after an approved push (not triggered locally).
+- [ ] Complete the **existing** production release gates above: reviewed/rehearsed migration bundle and ledger handling, real Redis verification/NAT policy, explicitly authorized capacity testing, deployment/field checks and deployment approval.
+
+**Production remains NO-GO under the existing optimization release gates.** This UI batch is ready for review, not deployment authorization. UI rollback is code-only: revert `150af3d`, `a8c8ff8`, `c5266fc`, then `d8bc2fb`; this returns to the verified optimization baseline without undoing its SQL/queue/query/security work. No database rollback is introduced by these UI commits.
