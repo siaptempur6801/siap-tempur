@@ -3,9 +3,7 @@ import { redirect } from 'next/navigation'
 import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
-import Script from 'next/script'
 import { logger } from '@/lib/logger'
-import { env } from '@/lib/env'
 import { hasActivePass } from '@/src/services/tempur-pass.service'
 import { walletService } from '@/src/services/wallet.service'
 
@@ -25,7 +23,6 @@ export default async function DashboardLayout({
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const requestHeaders = await headers()
-    const nonce = requestHeaders.get('x-nonce') || undefined
     const pathname = requestHeaders.get('x-pathname') ?? ''
 
     if (!user) {
@@ -72,13 +69,6 @@ export default async function DashboardLayout({
 
     return (
         <>
-            <Script
-                id="midtrans-snap-script"
-                src={env.midtransSnapScriptUrl()}
-                data-client-key={env.midtransClientKey()}
-                strategy="afterInteractive"
-                nonce={nonce}
-            />
             <DashboardShell
                 user={user}
                 profile={profile}

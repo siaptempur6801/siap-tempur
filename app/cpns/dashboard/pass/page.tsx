@@ -1,5 +1,5 @@
+import MidtransSnapScript from '@/components/payments/MidtransSnapScript'
 import Link from 'next/link'
-import Script from 'next/script'
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { CalendarDays, CheckCircle2, ShieldCheck, Sparkles } from 'lucide-react'
@@ -7,7 +7,6 @@ import PassPackagesClient from '@/components/pass/PassPackagesClient'
 import PaperBackground from '@/components/PaperBackground'
 import { PageAnimateContainer, PageAnimateItem } from '@/components/ui/PageAnimate'
 import { Button } from '@/components/ui/Button'
-import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { getPassAccess, listActivePassPackages } from '@/src/services/pass-catalog.service'
 
@@ -46,11 +45,10 @@ export default async function CpnsPassPage() {
         listActivePassPackages(supabase, { programCode: 'CPNS' }),
         getPassAccess(supabase, user.id, 'cpns'),
     ])
-    const snapClientKey = env.midtransClientKey()
 
     return (
         <div className="relative min-h-screen w-full">
-            <Script id="midtrans-snap" src={env.midtransSnapScriptUrl()} data-client-key={snapClientKey} strategy="afterInteractive" />
+            <MidtransSnapScript />
             <PaperBackground />
             <PageAnimateContainer className="relative z-10 mx-auto max-w-6xl space-y-7 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:py-9">
                 <PageAnimateItem>

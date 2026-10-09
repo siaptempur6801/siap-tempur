@@ -28,6 +28,7 @@ export function NavItem({ href, icon, label, badge, exact = false, variant = 'br
     return (
         <Link
             href={href}
+            prefetch={false}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
                 'group flex min-h-10 items-center justify-between px-3 py-2 text-[13px] font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2',
@@ -87,6 +88,7 @@ export function MobileNavItem({ href, icon, label, exact = false, variant = 'bra
     return (
         <Link
             href={href}
+            prefetch={false}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
                 'flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1 text-[10px] font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-inset',

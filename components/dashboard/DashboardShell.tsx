@@ -116,7 +116,7 @@ export default function DashboardShell({
                 <div className="shrink-0 border-t-2 border-slate-900 p-3">
                     <div className="flex items-center gap-2.5 border-2 border-slate-900 bg-white p-2.5 st-shadow-sm">
                         <Link
-                            href="/cpns/dashboard/profile"
+                            href="/cpns/dashboard/profile" prefetch={false}
                             aria-label="Buka profil"
                             className="st-focus relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden border-2 border-slate-900 bg-yellow-100 text-sm font-black text-slate-900"
                         >
@@ -129,7 +129,7 @@ export default function DashboardShell({
                         <div className="min-w-0 flex-1">
                             <p className="truncate text-[13px] font-black text-slate-900">{displayName}</p>
                             <Link
-                                href="/cpns/dashboard/beli-paket"
+                                href="/cpns/dashboard/beli-paket" prefetch={false}
                                 className="st-focus mt-0.5 inline-flex min-h-6 items-center gap-1.5 text-[11px] font-black text-blue-700 hover:underline"
                             >
                                 <Ticket size={12} /> {tokenBalance} token tersisa
@@ -153,7 +153,7 @@ export default function DashboardShell({
                     </Link>
                     <div className="flex items-center gap-2">
                         <Link
-                            href="/cpns/dashboard/beli-paket"
+                            href="/cpns/dashboard/beli-paket" prefetch={false}
                             aria-label={`${tokenBalance} token tersisa`}
                             className="st-focus inline-flex min-h-9 shrink-0 items-center gap-1.5 border-2 border-slate-900 bg-yellow-100 px-2.5 text-xs font-black text-slate-900 st-shadow-sm"
                         >
