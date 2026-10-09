@@ -54,10 +54,10 @@ export function useAdminConfirm() {
             detail={pending.detail}
             onCancel={() => finish(pending, false)}
         >
-            <button type="button" onClick={() => finish(pending, false)} className={adminSecondaryButtonClass}>
+            <button type="button" data-autofocus onClick={() => finish(pending, false)} className={adminSecondaryButtonClass}>
                 {pending.cancelLabel ?? 'Batal'}
             </button>
-            <button type="button" data-autofocus onClick={() => finish(pending, true)} className={pending.danger ? adminDangerButtonClass : adminPrimaryButtonClass}>
+            <button type="button" onClick={() => finish(pending, true)} className={pending.danger ? adminDangerButtonClass : adminPrimaryButtonClass}>
                 {pending.confirmLabel ?? 'Ya, lanjutkan'}
             </button>
         </AdminConfirmDialog>

@@ -1,6 +1,7 @@
 'use client'
 
 import { adminPrimaryButtonClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import DialogSurface from '@/components/ui/DialogSurface'
 import { useAdminConfirm } from '@/components/admin/useAdminConfirm'
 import { cn } from '@/lib/utils'
 import { Plus,X } from 'lucide-react'
@@ -61,14 +62,6 @@ export default function AdminModal({
         setOpen(defaultOpen)
     }, [defaultOpen])
 
-    useEffect(() => {
-        const dialog = dialogRef.current
-        if (!dialog) return
-
-        if (open && !dialog.open) dialog.showModal()
-        if (!open && dialog.open) dialog.close()
-    }, [open])
-
     /**
      * `onOpen` juga dipanggil untuk modal yang terbuka sejak render pertama
      * (`defaultOpen`) — mis. tautan `?edit=` yang membuka form langsung. Sekali
@@ -112,23 +105,19 @@ export default function AdminModal({
                 </button>
             ) : null}
 
-            <dialog
-                ref={dialogRef}
-                aria-labelledby={titleId}
-                aria-describedby={description ? descriptionId : undefined}
-                onCancel={(event) => {
-                    event.preventDefault()
-                    closeModal()
-                }}
-                onClick={(event) => {
-                    if (event.target === dialogRef.current) closeModal()
-                }}
+            <DialogSurface
+                dialogRef={dialogRef}
+                keepMounted
+                isOpen={open}
+                onClose={closeModal}
+                labelledBy={titleId}
+                describedBy={description ? descriptionId : undefined}
                 className={cn(
-                    'm-auto w-[calc(100%-1.5rem)] max-h-[calc(100dvh-1.5rem)] overflow-hidden rounded-lg border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-slate-950/45 backdrop:backdrop-blur-[2px]',
+                    'max-h-[calc(100dvh-2rem)] overflow-hidden rounded-lg border border-border bg-card p-0 text-foreground shadow-lg backdrop:bg-slate-950/45 backdrop:backdrop-blur-[2px]',
                     sizes[size],
                 )}
             >
-                <div className="flex max-h-[calc(100dvh-1.5rem)] w-full flex-col">
+                <div className="flex max-h-[calc(100dvh-2rem)] w-full flex-col">
                     <header className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
                         <div className="min-w-0">
                             <h2 id={titleId} className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
@@ -138,9 +127,9 @@ export default function AdminModal({
                             type="button"
                             onClick={closeModal}
                             aria-label="Tutup modal"
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         >
-                            <X size={16}/>
+                            <X size={16} aria-hidden="true"/>
                         </button>
                     </header>
                     <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
@@ -148,7 +137,7 @@ export default function AdminModal({
                     </div>
                 </div>
                 {dialog}
-            </dialog>
+            </DialogSurface>
         </>
     )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 import { cn } from '@/lib/utils'
 
 // Nested dialogs share the scroll lock, and restore the caller's exact style.
@@ -28,7 +28,7 @@ function lockScroll(doc: Document) {
 /** Native modal focus containment, background inertness and trigger restoration. */
 export default function DialogSurface({
     isOpen, onClose, labelledBy, describedBy, dismissible = true,
-    role = 'dialog', className, children,
+    role = 'dialog', className, children, dialogRef, keepMounted = false, returnFocusRef,
 }: {
     isOpen: boolean
     onClose: () => void
@@ -38,14 +38,21 @@ export default function DialogSurface({
     role?: 'dialog' | 'alertdialog'
     className?: string
     children: ReactNode
+    /** Domain adapters may inspect dirty/pending form markers. */
+    dialogRef?: RefObject<HTMLDialogElement | null>
+    /** Preserve adapters whose children initialize before the modal opens. */
+    keepMounted?: boolean
+    /** Surviving trigger when an opening disclosure removes the clicked item. */
+    returnFocusRef?: RefObject<HTMLElement | null>
 }) {
-    const ref = useRef<HTMLDialogElement>(null)
+    const internalRef = useRef<HTMLDialogElement>(null)
+    const ref = dialogRef ?? internalRef
 
     useEffect(() => {
         const dialog = ref.current
         if (!isOpen || !dialog) return
         const doc = dialog.ownerDocument
-        const trigger = doc.activeElement instanceof HTMLElement ? doc.activeElement : null
+        const trigger = returnFocusRef?.current ?? (doc.activeElement instanceof HTMLElement ? doc.activeElement : null)
         dialog.showModal()
         const unlock = lockScroll(doc)
         dialog.querySelector<HTMLElement>('[data-autofocus]:not(:disabled)')?.focus()
@@ -55,7 +62,7 @@ export default function DialogSurface({
             // React may remove a conditional dialog before native close restores focus.
             if (trigger?.isConnected) trigger.focus({ preventScroll: true })
         }
-    }, [isOpen])
+    }, [isOpen, ref, returnFocusRef])
 
     return (
         <dialog
@@ -71,7 +78,7 @@ export default function DialogSurface({
                 if (event.target instanceof Element && event.target.closest('dialog') !== dialog) return
                 const controls = Array.from(dialog.querySelectorAll<HTMLElement>(
                     'button, [href], input, select, textarea, [tabindex]',
-                )).filter((element) => element.tabIndex >= 0 && !element.matches(':disabled') && !element.closest('[inert]') &&
+                )).filter((element) => element.closest('dialog') === dialog && element.tabIndex >= 0 && !element.matches(':disabled') && !element.closest('[inert]') &&
                     element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
                 const first = controls[0]
                 const last = controls.at(-1)
@@ -89,6 +96,7 @@ export default function DialogSurface({
             }}
             onCancel={(event) => {
                 event.preventDefault()
+                event.stopPropagation()
                 if (dismissible) onClose()
             }}
             onClick={(event) => {
@@ -102,7 +110,7 @@ export default function DialogSurface({
                 className,
             )}
         >
-            {isOpen ? children : null}
+            {isOpen || keepMounted ? children : null}
         </dialog>
     )
 }

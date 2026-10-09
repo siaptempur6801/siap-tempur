@@ -479,3 +479,39 @@ test.describe('Admin content modules after legacy tree removal', () => {
     }
   })
 })
+
+test('admin confirmation uses safe focus, inert background and bounded mobile layout', async ({ page }, testInfo) => {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 568 }]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/admin/commerce/products?program=CPNS&track=SKD')
+    await expect(page.locator('html')).toHaveAttribute('data-interaction-guard', 'ready')
+    await page.locator('summary').filter({ hasText: 'Lainnya' }).first().click()
+    const trigger = page.getByRole('button', { name: 'Arsipkan', exact: true }).first()
+    await trigger.click()
+    const dialog = page.getByRole('alertdialog')
+    await expect(dialog).toBeVisible()
+    await expect(dialog.getByRole('button', { name: 'Batal', exact: true })).toBeFocused()
+    expect(await dialog.evaluate(el => el.tagName)).toBe('DIALOG')
+    const description = await dialog.getAttribute('aria-describedby')
+    expect(description).toBeTruthy()
+    expect(await page.locator(`[id="${description}"]`).textContent()).toContain('arsip')
+    await page.getByRole('banner').locator('select').first().evaluate(el => (el as HTMLSelectElement).focus())
+    await expect(dialog.getByRole('button', { name: 'Batal', exact: true })).toBeFocused()
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('hidden')
+    for (let i = 0; i < 8; i += 1) {
+      await page.keyboard.press(i % 2 ? 'Shift+Tab' : 'Tab')
+      expect(await dialog.evaluate(el => el.contains(document.activeElement))).toBe(true)
+    }
+    const bounds = await dialog.boundingBox()
+    expect(bounds!.y).toBeGreaterThanOrEqual(16)
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height - 16)
+    // Panel padding is not a backdrop click.
+    await page.mouse.click(bounds!.x + 2, bounds!.y + 2)
+    await expect(dialog).toBeVisible()
+    await page.screenshot({ path: testInfo.outputPath(`admin-confirm-${viewport.width}.png`) })
+    await page.keyboard.press('Escape')
+    await expect(dialog).not.toBeVisible()
+    await expect(trigger).toBeFocused()
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe('')
+  }
+})

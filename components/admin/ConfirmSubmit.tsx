@@ -93,11 +93,10 @@ export default function ConfirmSubmit({
             {triggerNode}
 
             <AdminConfirmDialog open={open} title={title} message={message} detail={detail} onCancel={() => setOpen(false)}>
-                <button type="button" onClick={() => setOpen(false)} className={adminSecondaryButtonClass}>
+                <button type="button" data-autofocus onClick={() => setOpen(false)} className={adminSecondaryButtonClass}>
                     Batal
                 </button>
                 <button
-                    data-autofocus
                     // Tipe `submit` DIPERLUKAN, dan `requestSubmit()` dipanggil TANPA
                     // argumen. Dua kegagalan nyata yang membentuk baris ini:
                     //
@@ -117,6 +116,7 @@ export default function ConfirmSubmit({
                     formNoValidate
                     className={adminDangerButtonClass}
                     onClick={(event) => {
+                        event.preventDefault()
                         setOpen(false)
                         event.currentTarget.form?.requestSubmit()
                     }}
