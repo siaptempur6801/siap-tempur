@@ -16,6 +16,11 @@ import {
 } from '../tka-readiness.ci'
 import { confirmTkaSectionIfPresent, dismissSessionReward } from '../pages/TkaExamActions'
 import { grantM4Pass } from '../tka.m4'
+import { verifyProfileSettingsDialogs } from '../pages/ProfileSettings'
+
+test('TKA profile dialogs remain usable on short mobile screens', async ({ page }, testInfo) => {
+    await verifyProfileSettingsDialogs(page, '/tka/smp/profile?tab=settings', testInfo)
+})
 
 function expectedWeakestNodeIds(projection: TkaLearningProjection) {
     return [...projection.knowledge]

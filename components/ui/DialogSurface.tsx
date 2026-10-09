@@ -44,12 +44,16 @@ export default function DialogSurface({
     useEffect(() => {
         const dialog = ref.current
         if (!isOpen || !dialog) return
+        const doc = dialog.ownerDocument
+        const trigger = doc.activeElement instanceof HTMLElement ? doc.activeElement : null
         dialog.showModal()
-        const unlock = lockScroll(dialog.ownerDocument)
+        const unlock = lockScroll(doc)
         dialog.querySelector<HTMLElement>('[data-autofocus]:not(:disabled)')?.focus()
         return () => {
             dialog.close()
             unlock()
+            // React may remove a conditional dialog before native close restores focus.
+            if (trigger?.isConnected) trigger.focus({ preventScroll: true })
         }
     }, [isOpen])
 
@@ -62,11 +66,12 @@ export default function DialogSurface({
             aria-describedby={describedBy}
             tabIndex={-1}
             onKeyDown={(event) => {
-                if (event.key !== 'Tab') return
+                if (event.key !== 'Tab' || event.defaultPrevented) return
                 const dialog = event.currentTarget
+                if (event.target instanceof Element && event.target.closest('dialog') !== dialog) return
                 const controls = Array.from(dialog.querySelectorAll<HTMLElement>(
                     'button, [href], input, select, textarea, [tabindex]',
-                )).filter((element) => element.tabIndex >= 0 && !element.matches(':disabled') &&
+                )).filter((element) => element.tabIndex >= 0 && !element.matches(':disabled') && !element.closest('[inert]') &&
                     element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden')
                 const first = controls[0]
                 const last = controls.at(-1)

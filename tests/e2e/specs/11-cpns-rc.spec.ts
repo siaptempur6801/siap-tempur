@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { verifyProfileSettingsDialogs } from '../pages/ProfileSettings'
 
 const SESSION_URL = /\/cpns\/dashboard\/tryout\/[0-9a-f-]{36}(?:\?.*)?$/i
 const RESULT_URL = /\/cpns\/dashboard\/tryout\/[0-9a-f-]{36}\/result(?:\?.*)?$/i
@@ -134,6 +135,10 @@ test.describe('CPNS SKD release-candidate', () => {
     }
     await page.reload(NAVIGATION_OPTIONS)
     await expectListingTokenBalance(page, 3)
+  })
+
+  test('profile dialogs explain validation and clear cancelled destructive confirmation', async ({ page }, testInfo) => {
+    await verifyProfileSettingsDialogs(page, '/cpns/dashboard/profile?tab=settings', testInfo)
   })
 
   test('full lifecycle, mini tryout, and drill preserve state and charge exactly once', async ({ page }) => {
