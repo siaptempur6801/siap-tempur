@@ -31,55 +31,55 @@ import { env } from '@/lib/env'
  */
 
 function createPublicArticleClient() {
-    return createClient(env.supabaseUrl(), env.supabasePublishableKey(), {
-        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    })
+  return createClient(env.supabaseUrl(), env.supabasePublishableKey(), {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
 }
 
 const REVALIDATE_SECONDS = 300
 const ARTICLE_TAG = 'articles'
 
 export type ArticlePreview = {
-    title: string
-    slug: string
-    excerpt: string | null
-    content: string | null
-    category: string | null
-    cover_image_url: string | null
-    published_at: string | null
+  title: string
+  slug: string
+  excerpt: string | null
+  content: string | null
+  category: string | null
+  cover_image_url: string | null
+  published_at: string | null
 }
 
 const PREVIEW_COLUMNS = 'title, slug, excerpt, content, category, cover_image_url, published_at'
 
 export const listPublishedArticles = unstable_cache(
-    async (): Promise<ArticlePreview[]> => {
-        const supabase = createPublicArticleClient()
-        const { data, error } = await supabase
-            .from('articles')
-            .select(PREVIEW_COLUMNS)
-            .eq('status', 'published')
-            .order('published_at', { ascending: false })
-        if (error) throw error
-        return (data ?? []) as ArticlePreview[]
-    },
-    ['articles:published:all'],
-    { revalidate: REVALIDATE_SECONDS, tags: [ARTICLE_TAG] },
+  async (): Promise<ArticlePreview[]> => {
+    const supabase = createPublicArticleClient()
+    const { data, error } = await supabase
+      .from('articles')
+      .select(PREVIEW_COLUMNS)
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []) as ArticlePreview[]
+  },
+  ['articles:published:all'],
+  { revalidate: REVALIDATE_SECONDS, tags: [ARTICLE_TAG] },
 )
 
 export const listLatestPublishedArticles = unstable_cache(
-    async (limit: number): Promise<ArticlePreview[]> => {
-        const supabase = createPublicArticleClient()
-        const { data, error } = await supabase
-            .from('articles')
-            .select(PREVIEW_COLUMNS)
-            .eq('status', 'published')
-            .order('published_at', { ascending: false })
-            .limit(limit)
-        if (error) throw error
-        return (data ?? []) as ArticlePreview[]
-    },
-    ['articles:published:latest'],
-    { revalidate: REVALIDATE_SECONDS, tags: [ARTICLE_TAG] },
+  async (limit: number): Promise<ArticlePreview[]> => {
+    const supabase = createPublicArticleClient()
+    const { data, error } = await supabase
+      .from('articles')
+      .select(PREVIEW_COLUMNS)
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return (data ?? []) as ArticlePreview[]
+  },
+  ['articles:published:latest'],
+  { revalidate: REVALIDATE_SECONDS, tags: [ARTICLE_TAG] },
 )
 
 /**
@@ -90,33 +90,33 @@ export const listLatestPublishedArticles = unstable_cache(
  * dibutuhkannya (atau kehilangan kolom yang dibutuhkannya).
  */
 export const listLatestPublishedArticleCards = unstable_cache(
-    async (limit: number) => {
-        const supabase = createPublicArticleClient()
-        const { data, error } = await supabase
-            .from('articles')
-            .select('id, title, slug, cover_image_url, published_at, excerpt, content, category')
-            .eq('status', 'published')
-            .order('published_at', { ascending: false })
-            .limit(limit)
-        if (error) throw error
-        return data ?? []
-    },
-    ['articles:published:cards'],
-    { revalidate: REVALIDATE_SECONDS, tags: [ARTICLE_TAG] },
+  async (limit: number) => {
+    const supabase = createPublicArticleClient()
+    const { data, error } = await supabase
+      .from('articles')
+      .select('id, title, slug, cover_image_url, published_at, excerpt, content, category')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(limit)
+    if (error) throw error
+    return data ?? []
+  },
+  ['articles:published:cards'],
+  { revalidate: REVALIDATE_SECONDS, tags: [ARTICLE_TAG] },
 )
 
 export const getPublishedArticleBySlug = unstable_cache(
-    async (slug: string): Promise<ArticlePreview | null> => {
-        const supabase = createPublicArticleClient()
-        const { data, error } = await supabase
-            .from('articles')
-            .select(PREVIEW_COLUMNS)
-            .eq('slug', slug)
-            .eq('status', 'published')
-            .maybeSingle()
-        if (error) throw error
-        return (data as ArticlePreview | null) ?? null
-    },
-    ['articles:published:slug'],
-    { revalidate: REVALIDATE_SECONDS, tags: [ARTICLE_TAG] },
+  async (slug: string): Promise<ArticlePreview | null> => {
+    const supabase = createPublicArticleClient()
+    const { data, error } = await supabase
+      .from('articles')
+      .select(PREVIEW_COLUMNS)
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .maybeSingle()
+    if (error) throw error
+    return (data as ArticlePreview | null) ?? null
+  },
+  ['articles:published:slug'],
+  { revalidate: REVALIDATE_SECONDS, tags: [ARTICLE_TAG] },
 )

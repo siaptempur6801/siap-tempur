@@ -55,18 +55,75 @@ export type DrillBlueprintRule = {
   questionCount: number
 }
 
+/** Resolve a drill rule from the assessment's own section before falling back to its blueprint. */
+export function drillRuleForExam(
+  exam: Pick<AdminExamRow, 'blueprint_id'>,
+  sections: AdminExamSectionRow[],
+  rules: DrillBlueprintRule[],
+  nodes: DrillKnowledgeNode[] = [],
+) {
+  const drillSection =
+    sections.find((section) => section.config?.mode === 'drill') ??
+    sections.find((section) => typeof section.config?.knowledge_node_id === 'string') ??
+    (sections.length === 1 ? sections[0] : undefined)
+  const candidates = exam.blueprint_id
+    ? rules.filter((rule) => rule.blueprintId === exam.blueprint_id)
+    : []
+  const configuredNodeId = drillSection?.config?.knowledge_node_id
+  const sectionNode =
+    nodes.find(
+      (node) => node.subjectId === drillSection?.subject_id && node.id === configuredNodeId,
+    ) ??
+    nodes.find(
+      (node) => node.subjectId === drillSection?.subject_id && node.name === drillSection?.title,
+    )
+
+  // Drill's generated section is scoped to one exam, so it is the safest source
+  // when a legacy or imported blueprint points at another drill's rule.
+  if (drillSection?.subject_id && sectionNode) {
+    return {
+      blueprintId: exam.blueprint_id ?? '',
+      subjectId: drillSection.subject_id,
+      knowledgeNodeId: sectionNode.id,
+      questionCount: Number(drillSection.question_count ?? 0),
+    }
+  }
+
+  if (typeof configuredNodeId === 'string') {
+    return candidates.find(
+      (rule) =>
+        rule.knowledgeNodeId === configuredNodeId &&
+        (!drillSection?.subject_id || rule.subjectId === drillSection.subject_id),
+    )
+  }
+
+  const sectionSubjectId = drillSection?.subject_id
+  const subjectCandidates = sectionSubjectId
+    ? candidates.filter((rule) => rule.subjectId === sectionSubjectId)
+    : []
+  if (subjectCandidates.length === 1) return subjectCandidates[0]
+  if (!drillSection && candidates.length === 1) return candidates[0]
+  return undefined
+}
+
 function contextOrDefault(context?: ProgramTrackContext) {
   return context ?? CPNS_SKD_CONTEXT
 }
 
-export class AdminExamsService {
-  async getWorkspace(context?: ProgramTrackContext, filters?: { search?: string; type?: string; status?: string; page?: string; id?: string }) {
+class AdminExamsService {
+  async getWorkspace(
+    context?: ProgramTrackContext,
+    filters?: { search?: string; type?: string; status?: string; page?: string; id?: string },
+  ) {
     const catalog = await catalogContextService.resolve(contextOrDefault(context))
     const admin = await createAdminClient()
 
     let query = admin
       .from('exams')
-      .select('id, exam_type_id, blueprint_id, title, slug, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, starts_at, ends_at, token_cost, updated_at', { count: 'exact' })
+      .select(
+        'id, exam_type_id, blueprint_id, title, slug, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, starts_at, ends_at, token_cost, updated_at',
+        { count: 'exact' },
+      )
       .eq('program_id', catalog.program.id)
       .eq('track_id', catalog.track.id)
       .order('updated_at', { ascending: false })
@@ -74,24 +131,34 @@ export class AdminExamsService {
     if (filters?.id) query = query.eq('id', filters.id)
     else {
       if (filters?.search) query = query.ilike('title', `%${escapePostgrestValue(filters.search)}%`)
-      if (filters?.status) query = query.in('status', [filters.status.toLowerCase(), filters.status.toUpperCase()])
-      if (filters?.type) query = query.eq('exam_type_id', catalog.examTypes.find(row => row.code === filters.type)?.id ?? '00000000-0000-0000-0000-000000000000')
+      if (filters?.status)
+        query = query.in('status', [filters.status.toLowerCase(), filters.status.toUpperCase()])
+      if (filters?.type)
+        query = query.eq(
+          'exam_type_id',
+          catalog.examTypes.find((row) => row.code === filters.type)?.id ??
+            '00000000-0000-0000-0000-000000000000',
+        )
     }
     const page = parseAdminPage(filters?.page)
-    query = filters ? query.range(filters.id ? 0 : adminOffset(page), filters.id ? 0 : adminOffset(page) + 24) : query.limit(100)
+    query = filters
+      ? query.range(filters.id ? 0 : adminOffset(page), filters.id ? 0 : adminOffset(page) + 24)
+      : query.limit(100)
     const { data: examsData, error: examsError, count } = await query
     if (examsError) throw examsError
 
     const exams = (examsData ?? []) as AdminExamRow[]
     const examIds = exams.map((row) => row.id)
-    const blueprintIds = exams.flatMap((row) => row.blueprint_id ? [row.blueprint_id] : [])
+    const blueprintIds = exams.flatMap((row) => (row.blueprint_id ? [row.blueprint_id] : []))
     const subjectIds = catalog.subjects.map((row) => row.id)
 
     const [sectionsResult, rulesResult, nodesResult] = await Promise.all([
       examIds.length
         ? admin
             .from('exam_sections')
-            .select('id, exam_id, subject_id, title, sort_order, question_count, duration_seconds, config')
+            .select(
+              'id, exam_id, subject_id, title, sort_order, question_count, duration_seconds, config',
+            )
             .in('exam_id', examIds)
             .order('sort_order', { ascending: true })
         : Promise.resolve({ data: [], error: null }),
@@ -120,11 +187,20 @@ export class AdminExamsService {
 
     const rawNodes = nodesResult.data ?? []
     const nodeIds = rawNodes.map((row) => String(row.id))
-    const {data: counts, error: countError} = nodeIds.length
-      ? await admin.rpc('admin_drill_supply', {p_program_id: catalog.program.id, p_track_id: catalog.track.id, p_node_ids: nodeIds})
-      : {data: [], error: null}
+    const { data: counts, error: countError } = nodeIds.length
+      ? await admin.rpc('admin_drill_supply', {
+          p_program_id: catalog.program.id,
+          p_track_id: catalog.track.id,
+          p_node_ids: nodeIds,
+        })
+      : { data: [], error: null }
     if (countError) throw countError
-    const poolCountByNode = new Map<string, number>((counts || []).map((row: {node_id: string; available_count: number}) => [row.node_id, Number(row.available_count)]))
+    const poolCountByNode = new Map<string, number>(
+      (counts || []).map((row: { node_id: string; available_count: number }) => [
+        row.node_id,
+        Number(row.available_count),
+      ]),
+    )
 
     const drillNodes: DrillKnowledgeNode[] = rawNodes.map((row) => ({
       id: String(row.id),

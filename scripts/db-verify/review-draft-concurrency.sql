@@ -9,9 +9,13 @@
 -- Membuktikan: simpan kedua dengan token benar menaikkan versi TANPA mengubah ID
 -- opsi; simpan dengan token basi ditolak QUESTION_VERSION_CONFLICT; token yang
 -- dikirim untuk soal baru ditolak QUESTION_VERSION_INVALID.
-create or replace function public.__test_review_draft_concurrency() returns jsonb
-language plpgsql security definer set search_path to '' as $$
-declare
+CREATE OR REPLACE FUNCTION public.__test_review_draft_concurrency ()
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $$
+DECLARE
   v_out jsonb := '{}'::jsonb;
   v_subject text;
   v_options jsonb;
@@ -23,72 +27,119 @@ declare
   v_first_ids uuid[];
   v_second_ids uuid[];
   v_msg text;
-begin
-  select s.code into v_subject from public.subjects s
-    join public.tracks t on t.id=s.track_id
-    join public.programs p on p.id=t.program_id
-   where p.code='CPNS' and t.code='SKD' and upper(s.status)='ACTIVE'
-   order by s.sort_order limit 1;
-  if v_subject is null then raise exception 'Tidak ada subject CPNS/SKD aktif'; end if;
+BEGIN
+  SELECT
+    s.code
+  INTO
+    v_subject
+  FROM
+    public.subjects s
+    JOIN public.tracks t ON t.id = s.track_id
+    JOIN public.programs p ON p.id = t.program_id
+  WHERE
+    p.code = 'CPNS'
+    AND t.code = 'SKD'
+    AND upper(s.status) = 'ACTIVE'
+  ORDER BY
+    s.sort_order
+  LIMIT 1;
+  IF v_subject IS NULL THEN
+    RAISE EXCEPTION 'Tidak ada subject CPNS/SKD aktif';
+  END IF;
 
-  v_options := jsonb_build_array(
-    jsonb_build_object('key','A','content','Opsi A','is_correct',true,'score',1),
-    jsonb_build_object('key','B','content','Opsi B','is_correct',false,'score',0)
-  );
+  v_options := jsonb_build_array(jsonb_build_object('key', 'A', 'content', 'Opsi A', 'is_correct', TRUE, 'score', 1), jsonb_build_object('key', 'B', 'content', 'Opsi B', 'is_correct', FALSE, 'score', 0));
 
-  v_new := public.save_question_draft(null,'CPNS','SKD',v_subject,'single_choice','Stem uji concurrency','medium',
-    null,null,null,null,null,null,v_options,'verifikasi concurrency',null,null);
-  v_question_id := (v_new->>'question_id')::uuid;
-  v_out := v_out || jsonb_build_object('1_dibuat', (v_new->>'status') || ' v' || (v_new->>'version'));
+  v_new := public.save_question_draft (NULL, 'CPNS', 'SKD', v_subject, 'single_choice', 'Stem uji concurrency', 'medium', NULL, NULL, NULL, NULL, NULL, NULL, v_options, 'verifikasi concurrency', NULL, NULL);
+  v_question_id := (v_new ->> 'question_id')::uuid;
+  v_out := v_out || jsonb_build_object('1_dibuat', (v_new ->> 'status') || ' v' || (v_new ->> 'version'));
 
-  select version, updated_at into v_version, v_updated_at from public.questions where id=v_question_id;
-  select array_agg(id order by option_key) into v_first_ids from public.question_options where question_id=v_question_id;
+  SELECT
+    version,
+    updated_at
+  INTO
+    v_version,
+    v_updated_at
+  FROM
+    public.questions
+  WHERE
+    id = v_question_id;
+  SELECT
+    array_agg(id ORDER BY option_key)
+  INTO
+    v_first_ids
+  FROM
+    public.question_options
+  WHERE
+    question_id = v_question_id;
 
-  v_second := public.save_question_draft(v_question_id,'CPNS','SKD',v_subject,'single_choice','Stem uji concurrency v2','medium',
-    null,null,null,null,null,null,
-    jsonb_build_array(
-      jsonb_build_object('key','A','content','Opsi A diperbarui','is_correct',true,'score',2),
-      jsonb_build_object('key','B','content','Opsi B','is_correct',false,'score',0)
-    ),'verifikasi concurrency 2',v_version,v_updated_at);
-  v_out := v_out || jsonb_build_object('2_simpan_kedua', 'v' || (v_second->>'version'));
+  v_second := public.save_question_draft (v_question_id, 'CPNS', 'SKD', v_subject, 'single_choice', 'Stem uji concurrency v2', 'medium', NULL, NULL, NULL, NULL, NULL, NULL, jsonb_build_array(jsonb_build_object('key', 'A', 'content', 'Opsi A diperbarui', 'is_correct', TRUE, 'score', 2), jsonb_build_object('key', 'B', 'content', 'Opsi B', 'is_correct', FALSE, 'score', 0)), 'verifikasi concurrency 2', v_version, v_updated_at);
+  v_out := v_out || jsonb_build_object('2_simpan_kedua', 'v' || (v_second ->> 'version'));
 
-  select array_agg(id order by option_key) into v_second_ids from public.question_options where question_id=v_question_id;
+  SELECT
+    array_agg(id ORDER BY option_key)
+  INTO
+    v_second_ids
+  FROM
+    public.question_options
+  WHERE
+    question_id = v_question_id;
   v_out := v_out || jsonb_build_object('3_id_opsi_dipertahankan', v_first_ids = v_second_ids);
 
-  begin
-    perform public.save_question_draft(v_question_id,'CPNS','SKD',v_subject,'single_choice','Stem basi','medium',
-      null,null,null,null,null,null,v_options,'token basi',v_version,v_updated_at);
+  BEGIN
+    PERFORM
+      public.save_question_draft (v_question_id, 'CPNS', 'SKD', v_subject, 'single_choice', 'Stem basi', 'medium', NULL, NULL, NULL, NULL, NULL, NULL, v_options, 'token basi', v_version, v_updated_at);
     v_msg := 'TIDAK DITOLAK';
-  exception when others then v_msg := sqlerrm; end;
+  EXCEPTION
+    WHEN OTHERS THEN
+      v_msg := sqlerrm;
+  END;
   v_out := v_out || jsonb_build_object('4_token_basi', v_msg);
 
-  begin
-    perform public.save_question_draft(null,'CPNS','SKD',v_subject,'single_choice','Stem baru','medium',
-      null,null,null,null,null,null,v_options,'token untuk soal baru',1,now());
-    v_msg := 'TIDAK DITOLAK';
-  exception when others then v_msg := sqlerrm; end;
+  BEGIN
+    PERFORM
+      public.save_question_draft (NULL, 'CPNS', 'SKD', v_subject, 'single_choice', 'Stem baru', 'medium', NULL, NULL, NULL, NULL, NULL, NULL, v_options, 'token untuk soal baru', 1, now());
+      v_msg := 'TIDAK DITOLAK';
+  EXCEPTION
+    WHEN OTHERS THEN
+      v_msg := sqlerrm;
+  END;
   v_out := v_out || jsonb_build_object('5_token_untuk_soal_baru', v_msg);
 
-  return v_out;
-end $$;
+  RETURN v_out;
+END
+$$;
 
-begin;
-
+BEGIN;
 -- Aktor dicari dari DATABASE, bukan di-hardcode (lihat `_bootstrap.sql`).
-do $$
-declare v_admin uuid;
-begin
-  select ur.user_id into v_admin
-    from public.user_roles ur join public.roles r on r.id = ur.role_id
-   where r.code in ('SUPER_ADMIN','ADMIN')
-   order by case when r.code='SUPER_ADMIN' then 0 else 1 end
-   limit 1;
-  if v_admin is null then raise exception 'Tidak ada pengguna berperan SUPER_ADMIN atau ADMIN'; end if;
-  perform set_config('request.jwt.claims', json_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
-end $$;
-set local role authenticated;
-
-select jsonb_pretty(public.__test_review_draft_concurrency());
-rollback;
-
-drop function if exists public.__test_review_draft_concurrency();
+DO $$
+DECLARE
+  v_admin uuid;
+BEGIN
+  SELECT
+    ur.user_id
+  INTO
+    v_admin
+  FROM
+    public.user_roles ur
+    JOIN public.roles r ON r.id = ur.role_id
+  WHERE
+    r.code IN ('SUPER_ADMIN', 'ADMIN')
+  ORDER BY
+    CASE WHEN r.code = 'SUPER_ADMIN' THEN
+      0
+    ELSE
+      1
+    END
+  LIMIT 1;
+  IF v_admin IS NULL THEN
+    RAISE EXCEPTION 'Tidak ada pengguna berperan SUPER_ADMIN atau ADMIN';
+  END IF;
+  PERFORM
+    set_config('request.jwt.claims', json_build_object('sub', v_admin::text, 'role', 'authenticated')::text, TRUE);
+END
+$$;
+SET local ROLE authenticated;
+SELECT
+  jsonb_pretty(public.__test_review_draft_concurrency ());
+ROLLBACK;
+DROP FUNCTION IF EXISTS public.__test_review_draft_concurrency ();

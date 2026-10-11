@@ -1,56 +1,19 @@
-'use client'
-
-import React from 'react'
-import { motion, Variants } from 'framer-motion'
+import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface PageAnimateProps {
-    children: React.ReactNode
-    className?: string
+  children: ReactNode
+  className?: string
 }
 
-const containerVariants: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.15,
-            delayChildren: 0.1
-        }
-    }
-}
-
-const itemVariants: Variants = {
-    hidden: { opacity: 0, y: 15, rotate: -0.5 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        rotate: 0,
-        transition: {
-            type: 'spring',
-            stiffness: 100,
-            damping: 15
-        }
-    }
-}
-
+/**
+ * Stable learner work surfaces: SSR content remains visible before hydration and
+ * under reduced motion. Keep these wrapper contracts for existing consumers.
+ */
 export function PageAnimateContainer({ children, className }: PageAnimateProps) {
-    return (
-        <motion.div
-            className={cn("w-full", className)}
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-        >
-            {children}
-        </motion.div>
-    )
+  return <div className={cn('w-full', className)}>{children}</div>
 }
 
 export function PageAnimateItem({ children, className }: PageAnimateProps) {
-    return (
-        <motion.div variants={itemVariants} className={className}>
-            {children}
-        </motion.div>
-    )
+  return <div className={className}>{children}</div>
 }

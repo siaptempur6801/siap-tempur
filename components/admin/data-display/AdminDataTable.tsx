@@ -1,7 +1,7 @@
 import { Skeleton } from '@/components/ui/LoadingState'
 import { Table } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import type { ComponentProps,ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { AdminEmptyState } from '../AdminUi'
 import { AdminErrorState } from '../feedback/AdminErrorState'
 

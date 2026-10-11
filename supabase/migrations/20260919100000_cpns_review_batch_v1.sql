@@ -45,7 +45,6 @@
 --   Seleksi memakai syarat yang stabil, penandaan memakai `||` (merge), dan
 --   submit/assign dilewati bila soal sudah berada di status review.
 -- =============================================================================
-
 -- -----------------------------------------------------------------------------
 -- 1. Pilih soal untuk batch ini.
 --
@@ -58,94 +57,148 @@
 --    Dipilih berdasarkan `question_code` agar hasilnya DETERMINISTIK: menjalankan
 --    ulang migrasi ini tidak akan menukar set soalnya.
 -- -----------------------------------------------------------------------------
-create table if not exists public.review_batches (
-    batch_code  text primary key,
-    description text not null,
-    created_at  timestamptz not null default now()
+CREATE TABLE IF NOT EXISTS public.review_batches (
+  batch_code text PRIMARY KEY,
+  description text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
 );
 
-comment on table public.review_batches is
-    'Penanda batch review konten. Dipakai bersama response_config.pilotBatch '
-    'agar bulk_review_pilot_stage dapat menyaring satu batch sekaligus.';
+COMMENT ON TABLE public.review_batches IS TEXTVALUE0E; REVOKE ALL ON public.review_batches FROM anon, authenticated;
 
-revoke all on public.review_batches from anon, authenticated;
+INSERT INTO public.review_batches (batch_code, description)
+  VALUES ('cpns-full-tryout-1', 'Soal CPNS untuk membentuk satu set Full Tryout SKD: TIU 35 + TKP 45. '
+      'TWK sudah terbit 30. Menunggu review manusia sebelum diterbitkan.')
+ON CONFLICT (batch_code)
+  DO NOTHING;
+DO $$
+DECLARE
+  v_batch constant text := 'cpns-full-tryout-1';
+  v_tiu uuid;
+  v_tkp uuid;
+  v_before integer;
+  v_after integer;
+BEGIN
+  SELECT
+    s.id
+  INTO
+    v_tiu
+  FROM
+    public.subjects s
+    JOIN public.tracks t ON t.id = s.track_id
+    JOIN public.programs p ON p.id = t.program_id
+  WHERE
+    p.code = 'CPNS'
+    AND t.code = 'SKD'
+    AND s.code = 'TIU';
 
-insert into public.review_batches (batch_code, description)
-values (
-    'cpns-full-tryout-1',
-    'Soal CPNS untuk membentuk satu set Full Tryout SKD: TIU 35 + TKP 45. '
-    'TWK sudah terbit 30. Menunggu review manusia sebelum diterbitkan.'
-)
-on conflict (batch_code) do nothing;
+  SELECT
+    s.id
+  INTO
+    v_tkp
+  FROM
+    public.subjects s
+    JOIN public.tracks t ON t.id = s.track_id
+    JOIN public.programs p ON p.id = t.program_id
+  WHERE
+    p.code = 'CPNS'
+    AND t.code = 'SKD'
+    AND s.code = 'TKP';
 
-do $$
-declare
-    v_batch  constant text := 'cpns-full-tryout-1';
-    v_tiu    uuid;
-    v_tkp    uuid;
-    v_before integer;
-    v_after  integer;
-begin
-    select s.id into v_tiu from public.subjects s
-      join public.tracks t on t.id = s.track_id
-      join public.programs p on p.id = t.program_id
-     where p.code = 'CPNS' and t.code = 'SKD' and s.code = 'TIU';
+  IF v_tiu IS NULL OR v_tkp IS NULL THEN
+    RAISE NOTICE 'Subjek TIU/TKP CPNS tidak ditemukan — batch dilewati';
+    RETURN;
+  END IF;
 
-    select s.id into v_tkp from public.subjects s
-      join public.tracks t on t.id = s.track_id
-      join public.programs p on p.id = t.program_id
-     where p.code = 'CPNS' and t.code = 'SKD' and s.code = 'TKP';
+  SELECT
+    count(*)
+  INTO
+    v_before
+  FROM
+    public.questions q
+  WHERE
+    q.response_config ->> 'pilotBatch' = v_batch;
+  -- TIU 35 — syarat section Full Tryout.
+  WITH kandidat AS (
+    SELECT
+      q.id
+    FROM
+      public.questions q
+    WHERE
+      q.subject_id = v_tiu
+      AND q.status = 'draft'
+      AND q.source_type = 'legacy_migration'
+      AND (
+        SELECT
+          count(*)
+        FROM
+          public.question_options o
+        WHERE
+          o.question_id = q.id) >= 4
+        AND EXISTS (
+          SELECT
+            1
+          FROM
+            public.question_explanations x
+          WHERE
+            x.question_id = q.id)
+        ORDER BY
+          q.question_code
+        LIMIT 35)
+  UPDATE
+    public.questions q
+  SET
+    response_config = coalesce(q.response_config, '{}'::jsonb) || jsonb_build_object('pilotBatch', v_batch),
+  updated_at = now()
+FROM
+  kandidat k
+WHERE
+  q.id = k.id;
+  -- TKP 45
+  WITH kandidat AS (
+    SELECT
+      q.id
+    FROM
+      public.questions q
+    WHERE
+      q.subject_id = v_tkp
+      AND q.status = 'draft'
+      AND q.source_type = 'legacy_migration'
+      AND (
+        SELECT
+          count(*)
+        FROM
+          public.question_options o
+        WHERE
+          o.question_id = q.id) >= 4
+        AND EXISTS (
+          SELECT
+            1
+          FROM
+            public.question_explanations x
+          WHERE
+            x.question_id = q.id)
+        ORDER BY
+          q.question_code
+        LIMIT 45)
+  UPDATE
+    public.questions q
+  SET
+    response_config = coalesce(q.response_config, '{}'::jsonb) || jsonb_build_object('pilotBatch', v_batch),
+  updated_at = now()
+FROM
+  kandidat k
+WHERE
+  q.id = k.id;
 
-    if v_tiu is null or v_tkp is null then
-        raise notice 'Subjek TIU/TKP CPNS tidak ditemukan — batch dilewati';
-        return;
-    end if;
+  SELECT
+    count(*)
+  INTO
+    v_after
+  FROM
+    public.questions q
+  WHERE
+    q.response_config ->> 'pilotBatch' = v_batch;
 
-    select count(*) into v_before
-      from public.questions q
-     where q.response_config ->> 'pilotBatch' = v_batch;
-
-    -- TIU 35 — syarat section Full Tryout.
-    with kandidat as (
-        select q.id
-        from public.questions q
-        where q.subject_id = v_tiu
-          and q.status = 'draft'
-          and q.source_type = 'legacy_migration'
-          and (select count(*) from public.question_options o where o.question_id = q.id) >= 4
-          and exists (select 1 from public.question_explanations x where x.question_id = q.id)
-        order by q.question_code
-        limit 35
-    )
-    update public.questions q
-       set response_config = coalesce(q.response_config, '{}'::jsonb)
-                             || jsonb_build_object('pilotBatch', v_batch),
-           updated_at = now()
-      from kandidat k
-     where q.id = k.id;
-
-    -- TKP 45
-    with kandidat as (
-        select q.id
-        from public.questions q
-        where q.subject_id = v_tkp
-          and q.status = 'draft'
-          and q.source_type = 'legacy_migration'
-          and (select count(*) from public.question_options o where o.question_id = q.id) >= 4
-          and exists (select 1 from public.question_explanations x where x.question_id = q.id)
-        order by q.question_code
-        limit 45
-    )
-    update public.questions q
-       set response_config = coalesce(q.response_config, '{}'::jsonb)
-                             || jsonb_build_object('pilotBatch', v_batch),
-           updated_at = now()
-      from kandidat k
-     where q.id = k.id;
-
-    select count(*) into v_after
-      from public.questions q
-     where q.response_config ->> 'pilotBatch' = v_batch;
-
-    raise notice 'Batch % : % soal ditandai (sebelumnya %)', v_batch, v_after, v_before;
-end $$;
+  RAISE NOTICE 'Batch % : % soal ditandai (sebelumnya %)', v_batch, v_after, v_before;
+END
+$$;

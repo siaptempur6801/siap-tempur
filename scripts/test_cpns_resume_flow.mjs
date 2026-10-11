@@ -101,15 +101,21 @@ async function main() {
     }
 
     console.log('3. Memulai sesi tryout...')
-    const { data: sessionStartData, error: startError } = await supabase.rpc('start_tryout_session', {
-      p_user_id: testUserId,
-    })
+    const { data: sessionStartData, error: startError } = await supabase.rpc(
+      'start_tryout_session',
+      {
+        p_user_id: testUserId,
+      },
+    )
 
     if (startError) {
       throw startError
     }
 
-    assert(Array.isArray(sessionStartData) && sessionStartData.length > 0, 'RPC start_tryout_session tidak mengembalikan sesi.')
+    assert(
+      Array.isArray(sessionStartData) && sessionStartData.length > 0,
+      'RPC start_tryout_session tidak mengembalikan sesi.',
+    )
     sessionId = sessionStartData[0].session_id
     assert(sessionId, 'session_id tidak ditemukan dari RPC.')
     console.log(`   Session ID: ${sessionId}`)
@@ -129,7 +135,8 @@ async function main() {
     console.log('5. Mengisi beberapa jawaban lalu menyimpan progress terakhir di soal nomor 5...')
     const { data: firstQuestions, error: questionsError } = await supabase
       .from('test_answers')
-      .select(`
+      .select(
+        `
         question_id,
         questions!inner(
           id,
@@ -137,7 +144,8 @@ async function main() {
             id
           )
         )
-      `)
+      `,
+      )
       .eq('session_id', sessionId)
       .limit(5)
 
@@ -197,11 +205,20 @@ async function main() {
 
     assert(activeSession, 'Sesi aktif tidak ditemukan saat resume.')
     assert(activeSession.id === sessionId, 'Resume tidak mengarah ke sesi yang sama.')
-    assert(activeSession.current_question_index === currentQuestionIndex, `Nomor soal terakhir tidak tersimpan. Expected 4, got ${activeSession.current_question_index}`)
-    assert(activeSession.marked_questions?.[currentQuestionId] === true, 'Marked question tidak ikut tersimpan.')
+    assert(
+      activeSession.current_question_index === currentQuestionIndex,
+      `Nomor soal terakhir tidak tersimpan. Expected 4, got ${activeSession.current_question_index}`,
+    )
+    assert(
+      activeSession.marked_questions?.[currentQuestionId] === true,
+      'Marked question tidak ikut tersimpan.',
+    )
 
     const resumedQuestionNumber = activeSession.current_question_index + 1
-    assert(resumedQuestionNumber === 5, `User tidak resume di soal 5. Dapat: ${resumedQuestionNumber}`)
+    assert(
+      resumedQuestionNumber === 5,
+      `User tidak resume di soal 5. Dapat: ${resumedQuestionNumber}`,
+    )
     console.log(`   Resume kembali ke soal nomor ${resumedQuestionNumber}`)
 
     console.log('7. Memastikan progress ringkas sesuai dashboard...')
@@ -236,7 +253,10 @@ async function main() {
       throw finishedSessionError
     }
 
-    assert(finishedSession?.status === 'completed', `Sesi tidak berubah ke completed. Status: ${finishedSession?.status}`)
+    assert(
+      finishedSession?.status === 'completed',
+      `Sesi tidak berubah ke completed. Status: ${finishedSession?.status}`,
+    )
     assert(Boolean(finishedSession?.end_time), 'end_time tidak terisi setelah finish.')
 
     console.log('9. Memastikan sesi aktif sudah hilang setelah selesai...')

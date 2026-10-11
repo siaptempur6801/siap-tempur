@@ -56,19 +56,28 @@
 --   Tidak ada perubahan RLS, policy, atau ACL fungsi. Migration ini hanya
 --   menyisipkan data konfigurasi dan menjadwalkan cron.
 -- =============================================================================
-
 -- -----------------------------------------------------------------------------
 -- 1. Buang cron Schema V1 yang sudah mati
 -- -----------------------------------------------------------------------------
-do $$
-begin
-    if exists (select 1 from pg_extension where extname = 'pg_cron') then
-        perform cron.unschedule(jobid)
-        from cron.job
-        where jobname = 'refresh_leaderboard'
-          and command ilike '%leaderboard_snapshot%';
-    end if;
-end $$;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      pg_extension
+    WHERE
+      extname = 'pg_cron') THEN
+  PERFORM
+    cron.unschedule (jobid)
+  FROM
+    cron.job
+  WHERE
+    jobname = 'refresh_leaderboard'
+    AND command ILIKE '%leaderboard_snapshot%';
+END IF;
+END
+$$;
 
 -- -----------------------------------------------------------------------------
 -- 2. Papan peringkat nasional CPNS/SKD untuk musim 2026
@@ -77,23 +86,24 @@ end $$;
 --    memakai `.gte('ends_at', now())`, jadi papan dengan ends_at lampau akan
 --    diam-diam tidak pernah tampil.
 -- -----------------------------------------------------------------------------
-insert into public.leaderboards (
-    code, name, leaderboard_type, program_id, track_id, starts_at, ends_at, status
-)
-select
-    'CPNS_NATIONAL_2026',
-    'Peringkat Nasional SKD CPNS 2026',
-    'national',
-    p.id,
-    t.id,
-    timestamptz '2026-01-01 00:00:00+07',
-    timestamptz '2026-12-31 23:59:59+07',
-    'active'
-from public.programs p
-join public.tracks t on t.program_id = p.id
-where p.code = 'CPNS'
-  and t.code = 'SKD'
-on conflict (code) do nothing;
+INSERT INTO public.leaderboards (code, name, leaderboard_type, program_id, track_id, starts_at, ends_at, status)
+SELECT
+  'CPNS_NATIONAL_2026',
+  'Peringkat Nasional SKD CPNS 2026',
+  'national',
+  p.id,
+  t.id,
+  timestamptz '2026-01-01 00:00:00+07',
+  timestamptz '2026-12-31 23:59:59+07',
+  'active'
+FROM
+  public.programs p
+  JOIN public.tracks t ON t.program_id = p.id
+WHERE
+  p.code = 'CPNS'
+  AND t.code = 'SKD'
+ON CONFLICT (code)
+  DO NOTHING;
 
 -- -----------------------------------------------------------------------------
 -- 3. Isi papan dari attempt historis
@@ -105,88 +115,100 @@ on conflict (code) do nothing;
 --    Karena seluruh baris historis diberi `durationSeconds` yang sama, pemecah
 --    serinya otomatis jatuh ke `submittedAt` — sesuai maksud di atas.
 -- -----------------------------------------------------------------------------
-do $$
-declare
-    v_board_id uuid;
-    v_attempt  record;
-begin
-    select id into v_board_id from public.leaderboards where code = 'CPNS_NATIONAL_2026';
-    if v_board_id is null then
-        return;
-    end if;
+DO $$
+DECLARE
+  v_board_id uuid;
+  v_attempt record;
+BEGIN
+  SELECT
+    id
+  INTO
+    v_board_id
+  FROM
+    public.leaderboards
+  WHERE
+    code = 'CPNS_NATIONAL_2026';
+  IF v_board_id IS NULL THEN
+    RETURN;
+  END IF;
+  -- Mulai dari keadaan bersih supaya migration ini idempoten.
+  DELETE FROM public.leaderboard_entries
+  WHERE leaderboard_id = v_board_id;
 
-    -- Mulai dari keadaan bersih supaya migration ini idempoten.
-    delete from public.leaderboard_entries where leaderboard_id = v_board_id;
+  FOR v_attempt IN
+  SELECT
+    ea.user_id,
+    ea.id AS attempt_id,
+    coalesce(ea.total_score, 0)::numeric AS total_score,
+    ea.submitted_at,
+    coalesce((
+      SELECT
+        max(ats.raw_score)
+      FROM public.attempt_scores ats
+      JOIN public.subjects s ON s.id = ats.subject_id
+      WHERE
+        ats.attempt_id = ea.id
+        AND s.code = 'TWK'), 0)::numeric AS score_twk,
+    coalesce((
+      SELECT
+        max(ats.raw_score)
+      FROM public.attempt_scores ats
+      JOIN public.subjects s ON s.id = ats.subject_id
+      WHERE
+        ats.attempt_id = ea.id
+        AND s.code = 'TIU'), 0)::numeric AS score_tiu,
+    coalesce((
+      SELECT
+        max(ats.raw_score)
+      FROM public.attempt_scores ats
+      JOIN public.subjects s ON s.id = ats.subject_id
+    WHERE
+      ats.attempt_id = ea.id
+      AND s.code = 'TKP'), 0)::numeric AS score_tkp,
+    row_number() OVER (PARTITION BY ea.user_id ORDER BY coalesce(ea.total_score, 0) DESC,
+      ea.submitted_at ASC nulls LAST,
+      ea.id ASC) AS user_best_rank
+  FROM
+    public.exam_attempts ea
+    JOIN public.exams e ON e.id = ea.exam_id
+    JOIN public.exam_types et ON et.id = e.exam_type_id
+  WHERE
+    lower(ea.status) = 'completed'
+    AND et.code = 'FULL_TRYOUT'
+    AND e.program_id = (
+      SELECT
+        id
+      FROM
+        public.programs
+      WHERE
+        code = 'CPNS')
+    AND e.track_id = (
+      SELECT
+        t.id
+      FROM
+        public.tracks t
+        JOIN public.programs p ON p.id = t.program_id
+      WHERE
+        p.code = 'CPNS'
+        AND t.code = 'SKD')
+    AND ea.submitted_at IS NOT NULL LOOP
+      -- Hanya attempt terbaik per user yang masuk papan.
+      IF v_attempt.user_best_rank = 1 THEN
+        INSERT INTO public.leaderboard_entries (leaderboard_id, user_id, score, rank, metadata, updated_at)
+          VALUES (v_board_id, v_attempt.user_id, v_attempt.total_score, 0, -- peringkat sementara; dirapikan oleh rebuild di bawah
+            jsonb_build_object('attemptId', v_attempt.attempt_id,
+              -- Durasi legacy tidak dipercaya: diset sama agar pemecah seri
+              -- jatuh ke submittedAt, bukan ke angka sampah.
+              'durationSeconds', 2147483647, 'submittedAt', v_attempt.submitted_at, 'scoreTWK', v_attempt.score_twk, 'scoreTIU', v_attempt.score_tiu, 'scoreTKP', v_attempt.score_tkp, 'legacyBackfill', TRUE), now())
+        ON CONFLICT (leaderboard_id, user_id)
+          DO NOTHING;
+      END IF;
+    END LOOP;
 
-    for v_attempt in
-        select
-            ea.user_id,
-            ea.id                                            as attempt_id,
-            coalesce(ea.total_score, 0)::numeric             as total_score,
-            ea.submitted_at,
-            coalesce((
-                select max(ats.raw_score) from public.attempt_scores ats
-                join public.subjects s on s.id = ats.subject_id
-                where ats.attempt_id = ea.id and s.code = 'TWK'
-            ), 0)::numeric as score_twk,
-            coalesce((
-                select max(ats.raw_score) from public.attempt_scores ats
-                join public.subjects s on s.id = ats.subject_id
-                where ats.attempt_id = ea.id and s.code = 'TIU'
-            ), 0)::numeric as score_tiu,
-            coalesce((
-                select max(ats.raw_score) from public.attempt_scores ats
-                join public.subjects s on s.id = ats.subject_id
-                where ats.attempt_id = ea.id and s.code = 'TKP'
-            ), 0)::numeric as score_tkp,
-            row_number() over (
-                partition by ea.user_id
-                order by coalesce(ea.total_score, 0) desc,
-                         ea.submitted_at asc nulls last,
-                         ea.id asc
-            ) as user_best_rank
-        from public.exam_attempts ea
-        join public.exams e on e.id = ea.exam_id
-        join public.exam_types et on et.id = e.exam_type_id
-        where lower(ea.status) = 'completed'
-          and et.code = 'FULL_TRYOUT'
-          and e.program_id = (select id from public.programs where code = 'CPNS')
-          and e.track_id = (
-              select t.id from public.tracks t
-              join public.programs p on p.id = t.program_id
-              where p.code = 'CPNS' and t.code = 'SKD'
-          )
-          and ea.submitted_at is not null
-    loop
-        -- Hanya attempt terbaik per user yang masuk papan.
-        if v_attempt.user_best_rank = 1 then
-            insert into public.leaderboard_entries (
-                leaderboard_id, user_id, score, rank, metadata, updated_at
-            )
-            values (
-                v_board_id,
-                v_attempt.user_id,
-                v_attempt.total_score,
-                0,  -- peringkat sementara; dirapikan oleh rebuild di bawah
-                jsonb_build_object(
-                    'attemptId', v_attempt.attempt_id,
-                    -- Durasi legacy tidak dipercaya: diset sama agar pemecah seri
-                    -- jatuh ke submittedAt, bukan ke angka sampah.
-                    'durationSeconds', 2147483647,
-                    'submittedAt', v_attempt.submitted_at,
-                    'scoreTWK', v_attempt.score_twk,
-                    'scoreTIU', v_attempt.score_tiu,
-                    'scoreTKP', v_attempt.score_tkp,
-                    'legacyBackfill', true
-                ),
-                now()
-            )
-            on conflict (leaderboard_id, user_id) do nothing;
-        end if;
-    end loop;
-
-    perform public.rebuild_leaderboard(v_board_id);
-end $$;
+  PERFORM
+    public.rebuild_leaderboard (v_board_id);
+END
+$$;
 
 -- -----------------------------------------------------------------------------
 -- 4. Pemeliharaan papan terjadwal
@@ -199,34 +221,45 @@ end $$;
 --    ulang seluruh papan, jadi menjalankannya sering berarti membuang manfaat
 --    optimasi inkremental.
 -- -----------------------------------------------------------------------------
-do $$
-begin
-    if not exists (select 1 from pg_extension where extname = 'pg_cron') then
-        return;
-    end if;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_extension
+    WHERE
+      extname = 'pg_cron') THEN
+  RETURN;
+END IF;
+  -- Idempoten: buang dulu bila job dengan nama ini sudah ada.
+  PERFORM
+    cron.unschedule (jobid)
+  FROM
+    cron.job
+  WHERE
+    jobname = 'maintain_leaderboards';
 
-    -- Idempoten: buang dulu bila job dengan nama ini sudah ada.
-    perform cron.unschedule(jobid)
-    from cron.job
-    where jobname = 'maintain_leaderboards';
-
-    perform cron.schedule(
-        'maintain_leaderboards',
-        '17 19 * * *',  -- 02:17 WIB setiap hari
-        $cron$
-        do $body$
-        declare
-            v_board uuid;
-        begin
-            for v_board in
-                select id from public.leaderboards
-                where status in ('active', 'ACTIVE')
-                  and starts_at <= now()
-                  and ends_at >= now()
-            loop
-                perform public.rebuild_leaderboard(v_board);
-            end loop;
-        end $body$;
-        $cron$
-    );
-end $$;
+  PERFORM
+    cron.schedule ('maintain_leaderboards', '17 19 * * *', -- 02:17 WIB setiap hari
+      $cron$ DO $body$
+DECLARE
+  v_board uuid;
+BEGIN
+  FOR v_board IN
+  SELECT
+    id
+  FROM
+    public.leaderboards
+  WHERE
+    status IN ('active', 'ACTIVE')
+    AND starts_at <= now()
+    AND ends_at >= now()
+    LOOP
+      PERFORM
+        public.rebuild_leaderboard (v_board);
+    END LOOP;
+END $body$;
+  $cron$);
+END
+$$;

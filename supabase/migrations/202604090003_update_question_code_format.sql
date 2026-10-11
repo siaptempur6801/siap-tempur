@@ -1,85 +1,102 @@
-create sequence if not exists questions_twk_code_seq start 1;
-create sequence if not exists questions_tiu_code_seq start 1;
-create sequence if not exists questions_tkp_code_seq start 1;
+CREATE SEQUENCE IF NOT EXISTS questions_twk_code_seq START 1;
 
-create or replace function next_question_code_by_type(question_type_input question_type)
-returns text
-language plpgsql
-as $$
-declare
+CREATE SEQUENCE IF NOT EXISTS questions_tiu_code_seq START 1;
+
+CREATE SEQUENCE IF NOT EXISTS questions_tkp_code_seq START 1;
+
+CREATE OR REPLACE FUNCTION next_question_code_by_type (question_type_input question_type)
+  RETURNS text
+  LANGUAGE plpgsql
+  AS $$
+DECLARE
   code_prefix text;
   next_number bigint;
-begin
-  case question_type_input
-    when 'TWK' then
-      code_prefix := 'TWK';
-      next_number := nextval('questions_twk_code_seq');
-    when 'TIU' then
-      code_prefix := 'TIU';
-      next_number := nextval('questions_tiu_code_seq');
-    when 'TKP' then
-      code_prefix := 'TKP';
-      next_number := nextval('questions_tkp_code_seq');
-    else
-      raise exception 'Unsupported question type: %', question_type_input;
-  end case;
+BEGIN
+  CASE question_type_input
+  WHEN 'TWK' THEN
+    code_prefix := 'TWK';
+    next_number := nextval('questions_twk_code_seq');
+  WHEN 'TIU' THEN
+    code_prefix := 'TIU';
+    next_number := nextval('questions_tiu_code_seq');
+  WHEN 'TKP' THEN
+    code_prefix := 'TKP';
+    next_number := nextval('questions_tkp_code_seq');
+  ELSE
+    RAISE EXCEPTION 'Unsupported question type: %', question_type_input;
+  END CASE;
 
-  return code_prefix || '-' || lpad(next_number::text, 6, '0');
-end;
+  RETURN code_prefix || '-' || lpad(next_number::text, 6, '0');
+END;
 $$;
 
-create or replace function assign_question_code_by_type()
-returns trigger
-language plpgsql
-as $$
-begin
-  if new.question_code is null or btrim(new.question_code) = '' then
-    new.question_code := next_question_code_by_type(new.type);
-  end if;
+CREATE OR REPLACE FUNCTION assign_question_code_by_type ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  AS $$
+BEGIN
+  IF NEW.question_code IS NULL OR btrim(NEW.question_code) = '' THEN
+    NEW.question_code := next_question_code_by_type (NEW.type);
+  END IF;
 
-  return new;
-end;
+  RETURN new;
+END;
 $$;
 
-alter table questions alter column question_code drop default;
+ALTER TABLE questions
+  ALTER COLUMN question_code DROP DEFAULT;
 
-drop trigger if exists questions_assign_question_code on questions;
+DROP TRIGGER IF EXISTS questions_assign_question_code ON questions;
 
-create trigger questions_assign_question_code
-before insert on questions
-for each row
-execute function assign_question_code_by_type();
+CREATE TRIGGER questions_assign_question_code
+  BEFORE INSERT ON questions
+  FOR EACH ROW
+  EXECUTE FUNCTION assign_question_code_by_type ();
 
-with ranked_questions as (
-  select
+WITH ranked_questions AS (
+  SELECT
     id,
     type,
-    row_number() over (partition by type order by created_at, id) as sequence_number
-  from questions
-)
-update questions as q
-set question_code = case ranked_questions.type
-  when 'TWK' then 'TWK-' || lpad(ranked_questions.sequence_number::text, 6, '0')
-  when 'TIU' then 'TIU-' || lpad(ranked_questions.sequence_number::text, 6, '0')
-  when 'TKP' then 'TKP-' || lpad(ranked_questions.sequence_number::text, 6, '0')
-end
-from ranked_questions
-where q.id = ranked_questions.id;
+    row_number() OVER (PARTITION BY type ORDER BY created_at,
+      id) AS sequence_number
+  FROM
+    questions)
+UPDATE
+  questions AS q
+SET
+  question_code = CASE ranked_questions.type
+  WHEN 'TWK' THEN
+    'TWK-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+  WHEN 'TIU' THEN
+    'TIU-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+  WHEN 'TKP' THEN
+    'TKP-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+  END
+FROM
+  ranked_questions
+WHERE
+  q.id = ranked_questions.id;
 
-select setval(
-  'questions_twk_code_seq',
-  greatest((select count(*) from questions where type = 'TWK') + 1, 1),
-  false
-);
+SELECT
+  setval('questions_twk_code_seq', greatest ((
+      SELECT
+        count(*)
+      FROM questions
+      WHERE
+        type = 'TWK') + 1, 1), FALSE);
 
-select setval(
-  'questions_tiu_code_seq',
-  greatest((select count(*) from questions where type = 'TIU') + 1, 1),
-  false
-);
+SELECT
+  setval('questions_tiu_code_seq', greatest ((
+      SELECT
+        count(*)
+      FROM questions
+      WHERE
+        type = 'TIU') + 1, 1), FALSE);
 
-select setval(
-  'questions_tkp_code_seq',
-  greatest((select count(*) from questions where type = 'TKP') + 1, 1),
-  false
-);
+SELECT
+  setval('questions_tkp_code_seq', greatest ((
+      SELECT
+        count(*)
+      FROM questions
+      WHERE
+        type = 'TKP') + 1, 1), FALSE);

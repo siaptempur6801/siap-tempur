@@ -4,45 +4,44 @@ import { env } from '@/lib/env'
 import { resolvePostLoginRedirect } from '@/lib/auth-redirect'
 
 function sanitizeNext(rawNext: string | null) {
-    return resolvePostLoginRedirect(rawNext)
+  return resolvePostLoginRedirect(rawNext)
 }
 
 function toErrorRedirect(origin: string, message: string) {
-    return NextResponse.redirect(`${origin}/auth/auth-code-error?message=${encodeURIComponent(message)}`)
+  return NextResponse.redirect(
+    `${origin}/auth/auth-code-error?message=${encodeURIComponent(message)}`,
+  )
 }
 
 function createRouteClient(request: NextRequest) {
-    const cookiesToApply: Array<{ name: string; value: string; options?: Record<string, unknown> }> = []
+  const cookiesToApply: Array<{ name: string; value: string; options?: Record<string, unknown> }> =
+    []
 
-    const supabase = createServerClient(
-        env.supabaseUrl(),
-        env.supabaseAnonKey(),
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll()
-                },
-                setAll(nextCookies) {
-                    cookiesToApply.splice(0, cookiesToApply.length, ...nextCookies)
-                    nextCookies.forEach(({ name, value }) => request.cookies.set(name, value))
-                },
-            },
-        }
-    )
+  const supabase = createServerClient(env.supabaseUrl(), env.supabaseAnonKey(), {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll()
+      },
+      setAll(nextCookies) {
+        cookiesToApply.splice(0, cookiesToApply.length, ...nextCookies)
+        nextCookies.forEach(({ name, value }) => request.cookies.set(name, value))
+      },
+    },
+  })
 
-    function applyCookies(response: NextResponse) {
-        cookiesToApply.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
-        return response
-    }
+  function applyCookies(response: NextResponse) {
+    cookiesToApply.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+    return response
+  }
 
-    return { supabase, applyCookies }
+  return { supabase, applyCookies }
 }
 
 function renderCallbackShell(request: NextRequest) {
-    const next = sanitizeNext(request.nextUrl.searchParams.get('next'))
-    const origin = request.nextUrl.origin
-    const nonce = request.headers.get('x-nonce') ?? undefined
-    const html = `<!doctype html>
+  const next = sanitizeNext(request.nextUrl.searchParams.get('next'))
+  const origin = request.nextUrl.origin
+  const nonce = request.headers.get('x-nonce') ?? undefined
+  const html = `<!doctype html>
 <html lang="id">
   <head>
     <meta charset="utf-8" />
@@ -142,73 +141,73 @@ function renderCallbackShell(request: NextRequest) {
   </body>
 </html>`
 
-    return new NextResponse(html, {
-        status: 200,
-        headers: {
-            'content-type': 'text/html; charset=utf-8',
-            'cache-control': 'no-store',
-        },
-    })
+  return new NextResponse(html, {
+    status: 200,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+    },
+  })
 }
 
 export async function GET(request: NextRequest) {
-    const { searchParams, origin } = request.nextUrl
-    const code = searchParams.get('code')
-    const next = sanitizeNext(searchParams.get('next'))
+  const { searchParams, origin } = request.nextUrl
+  const code = searchParams.get('code')
+  const next = sanitizeNext(searchParams.get('next'))
 
-    if (!code) {
-        return renderCallbackShell(request)
-    }
+  if (!code) {
+    return renderCallbackShell(request)
+  }
 
-    const { supabase, applyCookies } = createRouteClient(request)
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+  const { supabase, applyCookies } = createRouteClient(request)
+  const { error } = await supabase.auth.exchangeCodeForSession(code)
 
-    if (error) {
-        return applyCookies(toErrorRedirect(origin, error.message))
-    }
+  if (error) {
+    return applyCookies(toErrorRedirect(origin, error.message))
+  }
 
-    return applyCookies(NextResponse.redirect(new URL(next, origin)))
+  return applyCookies(NextResponse.redirect(new URL(next, origin)))
 }
 
 export async function POST(request: NextRequest) {
-    const { origin } = request.nextUrl
-    let body: unknown
+  const { origin } = request.nextUrl
+  let body: unknown
 
-    try {
-        body = await request.json()
-    } catch {
-        return NextResponse.json({ message: 'invalid_json' }, { status: 400 })
-    }
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ message: 'invalid_json' }, { status: 400 })
+  }
 
-    const payload = body && typeof body === 'object' ? body as Record<string, unknown> : {}
-    const accessToken = typeof payload.access_token === 'string' ? payload.access_token : ''
-    const refreshToken = typeof payload.refresh_token === 'string' ? payload.refresh_token : ''
-    const next = typeof payload.next === 'string' ? payload.next : null
+  const payload = body && typeof body === 'object' ? (body as Record<string, unknown>) : {}
+  const accessToken = typeof payload.access_token === 'string' ? payload.access_token : ''
+  const refreshToken = typeof payload.refresh_token === 'string' ? payload.refresh_token : ''
+  const next = typeof payload.next === 'string' ? payload.next : null
 
-    if (!accessToken || !refreshToken) {
-        return NextResponse.json({ message: 'missing_auth_data' }, { status: 400 })
-    }
+  if (!accessToken || !refreshToken) {
+    return NextResponse.json({ message: 'missing_auth_data' }, { status: 400 })
+  }
 
-    const { supabase, applyCookies } = createRouteClient(request)
-    const redirectTo = sanitizeNext(next)
-    const { error } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-    })
+  const { supabase, applyCookies } = createRouteClient(request)
+  const redirectTo = sanitizeNext(next)
+  const { error } = await supabase.auth.setSession({
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  })
 
-    if (error) {
-        return applyCookies(NextResponse.json({ message: error.message }, { status: 400 }))
-    }
+  if (error) {
+    return applyCookies(NextResponse.json({ message: error.message }, { status: 400 }))
+  }
 
-    return applyCookies(
-        NextResponse.json(
-            { redirectTo: new URL(redirectTo, origin).toString() },
-            {
-                status: 200,
-                headers: {
-                    'cache-control': 'no-store',
-                },
-            }
-        )
-    )
+  return applyCookies(
+    NextResponse.json(
+      { redirectTo: new URL(redirectTo, origin).toString() },
+      {
+        status: 200,
+        headers: {
+          'cache-control': 'no-store',
+        },
+      },
+    ),
+  )
 }

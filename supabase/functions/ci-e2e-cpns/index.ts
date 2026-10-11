@@ -50,11 +50,12 @@ async function verifyGithubOidc(token: string): Promise<Claims> {
   if (parts.length !== 3) throw new Error('OIDC_FORMAT_INVALID')
 
   const header = decodeJson<Record<string, unknown>>(parts[0])
-  if (header.alg !== 'RS256' || typeof header.kid !== 'string') throw new Error('OIDC_HEADER_INVALID')
+  if (header.alg !== 'RS256' || typeof header.kid !== 'string')
+    throw new Error('OIDC_HEADER_INVALID')
 
   const jwksResponse = await fetch(GITHUB_JWKS_URL, { cache: 'no-store' })
   if (!jwksResponse.ok) throw new Error('OIDC_JWKS_UNAVAILABLE')
-  const jwks = await jwksResponse.json() as { keys?: Array<JsonWebKey & { kid?: string }> }
+  const jwks = (await jwksResponse.json()) as { keys?: Array<JsonWebKey & { kid?: string }> }
   const jwk = jwks.keys?.find((candidate) => candidate.kid === header.kid)
   if (!jwk) throw new Error('OIDC_SIGNING_KEY_NOT_FOUND')
 
@@ -81,9 +82,12 @@ async function verifyGithubOidc(token: string): Promise<Claims> {
   if (typeof claims.exp !== 'number' || claims.exp < now - 30) throw new Error('OIDC_EXPIRED')
   if (typeof claims.nbf === 'number' && claims.nbf > now + 30) throw new Error('OIDC_NOT_YET_VALID')
   if (claims.repository !== EXPECTED_REPOSITORY) throw new Error('OIDC_REPOSITORY_INVALID')
-  if (!claims.sub?.startsWith(`repo:${EXPECTED_REPOSITORY}:`)) throw new Error('OIDC_SUBJECT_INVALID')
-  if (!['pull_request', 'workflow_dispatch'].includes(String(claims.event_name ?? ''))) throw new Error('OIDC_EVENT_INVALID')
-  if (!claims.workflow_ref?.startsWith(EXPECTED_WORKFLOW_PREFIX)) throw new Error('OIDC_WORKFLOW_INVALID')
+  if (!claims.sub?.startsWith(`repo:${EXPECTED_REPOSITORY}:`))
+    throw new Error('OIDC_SUBJECT_INVALID')
+  if (!['pull_request', 'workflow_dispatch'].includes(String(claims.event_name ?? '')))
+    throw new Error('OIDC_EVENT_INVALID')
+  if (!claims.workflow_ref?.startsWith(EXPECTED_WORKFLOW_PREFIX))
+    throw new Error('OIDC_WORKFLOW_INVALID')
   return claims
 }
 
@@ -115,7 +119,8 @@ async function provision(body: Body) {
   const password = body.password ?? ''
   const runId = body.runId?.trim() ?? ''
   if (!CI_EMAIL.test(email)) return json({ error: 'CI_EMAIL_INVALID' }, 400)
-  if (password.length < 20 || password.length > 160) return json({ error: 'CI_PASSWORD_INVALID' }, 400)
+  if (password.length < 20 || password.length > 160)
+    return json({ error: 'CI_PASSWORD_INVALID' }, 400)
   if (!/^[a-zA-Z0-9._-]{1,128}$/.test(runId)) return json({ error: 'CI_RUN_ID_INVALID' }, 400)
 
   const admin = adminClient()
@@ -150,26 +155,28 @@ async function provision(body: Body) {
     if (trackError || !track) throw trackError ?? new Error('CPNS_SKD_TRACK_NOT_FOUND')
 
     const now = new Date().toISOString()
-    const { error: userTrackError } = await admin
-      .from('user_tracks')
-      .upsert({
+    const { error: userTrackError } = await admin.from('user_tracks').upsert(
+      {
         user_id: userId,
         track_id: track.id,
         status: 'active',
         target_year: 2026,
         started_at: now,
         updated_at: now,
-      }, { onConflict: 'user_id,track_id' })
+      },
+      { onConflict: 'user_id,track_id' },
+    )
     if (userTrackError) throw userTrackError
 
-    const { error: walletError } = await admin
-      .from('wallets')
-      .upsert({
+    const { error: walletError } = await admin.from('wallets').upsert(
+      {
         user_id: userId,
         wallet_type: 'exam_token',
         balance: 3,
         updated_at: now,
-      }, { onConflict: 'user_id,wallet_type' })
+      },
+      { onConflict: 'user_id,wallet_type' },
+    )
     if (walletError) throw walletError
 
     return json({ userId, walletBalance: 3 })
@@ -186,12 +193,17 @@ async function cleanup(body: Body) {
   const admin = adminClient()
   const { data, error: getError } = await admin.auth.admin.getUserById(userId)
   if (getError) {
-    if (String(getError.message).toLowerCase().includes('not found')) return json({ ok: true, alreadyDeleted: true })
+    if (String(getError.message).toLowerCase().includes('not found'))
+      return json({ ok: true, alreadyDeleted: true })
     throw getError
   }
 
   const user = data.user
-  if (user?.user_metadata?.ci_e2e !== true || user?.user_metadata?.ci_kind !== 'cpns' || !CI_EMAIL.test(user.email ?? '')) {
+  if (
+    user?.user_metadata?.ci_e2e !== true ||
+    user?.user_metadata?.ci_kind !== 'cpns' ||
+    !CI_EMAIL.test(user.email ?? '')
+  ) {
     return json({ error: 'CI_USER_DELETE_FORBIDDEN' }, 403)
   }
 
@@ -211,7 +223,7 @@ Deno.serve(async (req) => {
     if (!authHeader.startsWith('Bearer ')) return json({ error: 'OIDC_REQUIRED' }, 401)
     await verifyGithubOidc(authHeader.slice('Bearer '.length).trim())
 
-    const body = await req.json() as Body
+    const body = (await req.json()) as Body
     if (body.action === 'provision') return await provision(body)
     if (body.action === 'cleanup') return await cleanup(body)
     return json({ error: 'ACTION_INVALID' }, 400)
@@ -219,6 +231,9 @@ Deno.serve(async (req) => {
     const message = error instanceof Error ? error.message : String(error)
     const unauthorized = message.startsWith('OIDC_')
     console.error('[ci-e2e-cpns]', message)
-    return json({ error: unauthorized ? 'OIDC_INVALID' : 'CI_E2E_CPNS_FAILED' }, unauthorized ? 401 : 500)
+    return json(
+      { error: unauthorized ? 'OIDC_INVALID' : 'CI_E2E_CPNS_FAILED' },
+      unauthorized ? 401 : 500,
+    )
   }
 })

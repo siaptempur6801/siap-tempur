@@ -134,7 +134,10 @@ def verify_runtime_schema_local(db_url: str, path: Path) -> None:
             )
         count, sem_hash = semantic_function_gate(db_url)
         local_version = mod.query(db_url, "show server_version;")
-        if count != EXPECTED_LOCAL_FUNCTION_SEMANTIC_COUNT or sem_hash != EXPECTED_LOCAL_FUNCTION_SEMANTIC_HASH:
+        if (
+            count != EXPECTED_LOCAL_FUNCTION_SEMANTIC_COUNT
+            or sem_hash != EXPECTED_LOCAL_FUNCTION_SEMANTIC_HASH
+        ):
             mod.die(
                 "runtime function exact hash differs AND semantic function fingerprint differs: "
                 f"server={local_version} count={count} hash={sem_hash}"
@@ -191,7 +194,9 @@ def configure_function_artifact_from_args() -> None:
         mod.die(f"missing runtime function gate file: {gate_file}")
     gate_text = gate_file.read_text(encoding="utf-8")
     if "80|e147d38d3801ac4c02ad41e21c02fe2a" not in gate_text:
-        mod.die("canonical runtime function gate file does not contain the frozen strict fingerprint")
+        mod.die(
+            "canonical runtime function gate file does not contain the frozen strict fingerprint"
+        )
     os.environ[ordered.RUNTIME_FUNCTION_OVERRIDE_ENV] = str(runtime_functions)
 
 

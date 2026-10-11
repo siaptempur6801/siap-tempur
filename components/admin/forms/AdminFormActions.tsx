@@ -4,7 +4,7 @@ import { adminSecondaryButtonClass } from '../AdminUi'
 
 export function AdminFormActions({
   cancelHref,
-  children
+  children,
 }: {
   cancelHref: string
   children: ReactNode

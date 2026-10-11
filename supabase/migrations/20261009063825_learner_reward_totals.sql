@@ -1,23 +1,46 @@
 -- Read projections only. Apply and verify on staging before deploying callers.
 -- Privileged CPNS projections retain server-side authorization at their callers;
 -- TKA quota summaries always use auth.uid() and the caller's existing RLS.
-create or replace function public.learner_completed_attempt_totals()
-returns table(total_sessions bigint, total_xp bigint)
-language sql stable security invoker set search_path = '' as $$
-    select count(*), coalesce(sum(greatest(
-        case when ea.total_score is null or ea.total_score::text in ('NaN', 'Infinity', '-Infinity') then 0
-             else greatest(0, floor(ea.total_score)) end,
-        case when jsonb_typeof(ea.metadata -> 'practiceKind') = 'string' then
-            case ea.metadata ->> 'practiceKind'
-                when 'mini_tryout' then 20
-                when 'full_tryout' then 30
-                when 'event' then 30
-                else 10 end
-            else 10 end
-    )), 0)::bigint
-    from public.exam_attempts ea
-    where ea.user_id = (select auth.uid()) and ea.status in ('completed', 'COMPLETED');
+CREATE OR REPLACE FUNCTION public.learner_completed_attempt_totals ()
+  RETURNS TABLE (
+    total_sessions bigint,
+    total_xp bigint)
+  LANGUAGE sql
+  STABLE
+  SECURITY INVOKER
+  SET search_path = ''
+  AS $$
+  SELECT
+    count(*),
+    coalesce(sum(greatest (
+          CASE WHEN ea.total_score IS NULL
+            OR ea.total_score::text IN ('NaN', 'Infinity', '-Infinity') THEN
+            0
+          ELSE
+            greatest (0, floor(ea.total_score))
+          END, CASE WHEN jsonb_typeof(ea.metadata -> 'practiceKind') = 'string' THEN
+            CASE ea.metadata ->> 'practiceKind'
+            WHEN 'mini_tryout' THEN
+              20
+            WHEN 'full_tryout' THEN
+              30
+            WHEN 'event' THEN
+              30
+            ELSE
+              10
+          END
+          ELSE
+            10
+          END)), 0)::bigint
+  FROM
+    public.exam_attempts ea
+  WHERE
+    ea.user_id = (
+      SELECT
+        auth.uid ())
+    AND ea.status IN ('completed', 'COMPLETED');
 $$;
 
-revoke all on function public.learner_completed_attempt_totals() from public, anon;
-grant execute on function public.learner_completed_attempt_totals() to authenticated, service_role;
+REVOKE ALL ON FUNCTION public.learner_completed_attempt_totals () FROM public, anon;
+
+GRANT EXECUTE ON FUNCTION public.learner_completed_attempt_totals () TO authenticated, service_role;

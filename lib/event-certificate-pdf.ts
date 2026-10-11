@@ -2,19 +2,23 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { Resvg } from '@resvg/resvg-js'
 import sharp from 'sharp'
-import { getCertificateAchievementLabel, getCertificateTitle, type EventCertificateKind } from '@/lib/event-certificates'
+import {
+  getCertificateAchievementLabel,
+  getCertificateTitle,
+  type EventCertificateKind,
+} from '@/lib/event-certificates'
 import { logger } from '@/lib/logger'
 
 export type CertificateRenderInput = {
-    certificateNumber: string
-    certificateName: string
-    eventTitle: string
-    certificateKind: EventCertificateKind
-    rank: number | null
-    score: number | null
-    isPassed?: boolean | null
-    issuedAt: string
-    verifyUrl: string
+  certificateNumber: string
+  certificateName: string
+  eventTitle: string
+  certificateKind: EventCertificateKind
+  rank: number | null
+  score: number | null
+  isPassed?: boolean | null
+  issuedAt: string
+  verifyUrl: string
 }
 
 const PAGE_WIDTH = 1684
@@ -43,9 +47,9 @@ const PDF_HEIGHT = 595
  */
 const CERTIFICATE_FONT_FAMILY = 'Poppins'
 const CERTIFICATE_FONT_FILES = [
-    path.join(process.cwd(), 'public', 'fonts', 'Poppins-Regular.ttf'),
-    path.join(process.cwd(), 'public', 'fonts', 'Poppins-Bold.ttf'),
-    path.join(process.cwd(), 'public', 'fonts', 'Poppins-Black.ttf'),
+  path.join(process.cwd(), 'public', 'fonts', 'Poppins-Regular.ttf'),
+  path.join(process.cwd(), 'public', 'fonts', 'Poppins-Bold.ttf'),
+  path.join(process.cwd(), 'public', 'fonts', 'Poppins-Black.ttf'),
 ]
 
 /**
@@ -57,97 +61,97 @@ const CERTIFICATE_FONT_FILES = [
  * bukan diam-diam.
  */
 async function loadCertificateFontFiles(): Promise<string[]> {
-    const available: string[] = []
-    for (const [index, file] of CERTIFICATE_FONT_FILES.entries()) {
-        try {
-            await readFile(file)
-            available.push(file)
-        } catch {
-            logger.warn('[certificate-pdf] Font sertifikat tidak ditemukan', {
-                font: CERTIFICATE_FONT_FILES[index],
-                resolvedPath: file,
-            })
-        }
+  const available: string[] = []
+  for (const [index, file] of CERTIFICATE_FONT_FILES.entries()) {
+    try {
+      await readFile(file)
+      available.push(file)
+    } catch {
+      logger.warn('[certificate-pdf] Font sertifikat tidak ditemukan', {
+        font: CERTIFICATE_FONT_FILES[index],
+        resolvedPath: file,
+      })
     }
+  }
 
-    return available
+  return available
 }
 
 function escapeXml(value: string) {
-    return value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;')
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
 }
 
 function formatIssuedDate(value: string) {
-    return new Intl.DateTimeFormat('id-ID', {
-        weekday: 'long',
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'Asia/Jakarta',
-    }).format(new Date(value))
+  return new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Jakarta',
+  }).format(new Date(value))
 }
 
 function nameFontSize(name: string) {
-    if (name.length > 42) return 58
-    if (name.length > 32) return 68
-    return 78
+  if (name.length > 42) return 58
+  if (name.length > 32) return 68
+  return 78
 }
 
 function wrapText(value: string, maxChars: number) {
-    const words = value.trim().split(/\s+/)
-    const lines: string[] = []
-    let current = ''
+  const words = value.trim().split(/\s+/)
+  const lines: string[] = []
+  let current = ''
 
-    for (const word of words) {
-        const next = current ? `${current} ${word}` : word
-        if (next.length > maxChars && current) {
-            lines.push(current)
-            current = word
-        } else {
-            current = next
-        }
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word
+    if (next.length > maxChars && current) {
+      lines.push(current)
+      current = word
+    } else {
+      current = next
     }
+  }
 
-    if (current) lines.push(current)
-    return lines.slice(0, 2)
+  if (current) lines.push(current)
+  return lines.slice(0, 2)
 }
 
 function achievementBadgeWidth(label: string) {
-    if (label.includes('Skor:')) return 430
-    if (label.length > 14) return 280
-    return 148
+  if (label.includes('Skor:')) return 430
+  if (label.length > 14) return 280
+  return 148
 }
 
 function achievementBadgeFontSize(label: string) {
-    if (label.includes('Skor:')) return 23
-    return 25
+  if (label.includes('Skor:')) return 23
+  return 25
 }
 
 function fileDataUri(file: Buffer, mimeType: string) {
-    return `data:${mimeType};base64,${file.toString('base64')}`
+  return `data:${mimeType};base64,${file.toString('base64')}`
 }
 
 function buildCertificateSvg(input: CertificateRenderInput, logoUri: string, signatureUri: string) {
-    const title = getCertificateTitle(input.certificateKind)
-    const achievementLabel = getCertificateAchievementLabel({
-        kind: input.certificateKind,
-        rank: input.rank,
-        score: input.score,
-        isPassed: input.isPassed,
-    })
-    const eventLines = wrapText(input.eventTitle, 62)
-    const issuedDate = formatIssuedDate(input.issuedAt)
-    const certName = escapeXml(input.certificateName)
-    const achievementWidth = achievementBadgeWidth(achievementLabel)
-    const achievementX = 842 - achievementWidth / 2
-    const achievementFontSize = achievementBadgeFontSize(achievementLabel)
+  const title = getCertificateTitle(input.certificateKind)
+  const achievementLabel = getCertificateAchievementLabel({
+    kind: input.certificateKind,
+    rank: input.rank,
+    score: input.score,
+    isPassed: input.isPassed,
+  })
+  const eventLines = wrapText(input.eventTitle, 62)
+  const issuedDate = formatIssuedDate(input.issuedAt)
+  const certName = escapeXml(input.certificateName)
+  const achievementWidth = achievementBadgeWidth(achievementLabel)
+  const achievementX = 842 - achievementWidth / 2
+  const achievementFontSize = achievementBadgeFontSize(achievementLabel)
 
-    return `<?xml version="1.0" encoding="UTF-8"?>
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${PAGE_WIDTH}" height="${PAGE_HEIGHT}" viewBox="0 0 ${PAGE_WIDTH} ${PAGE_HEIGHT}">
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -194,70 +198,88 @@ function buildCertificateSvg(input: CertificateRenderInput, logoUri: string, sig
 }
 
 function createPdfFromJpeg(jpeg: Buffer) {
-    const content = Buffer.from(`q\n${PDF_WIDTH} 0 0 ${PDF_HEIGHT} 0 0 cm\n/Im1 Do\nQ\n`, 'utf8')
-    const objects = [
-        Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'utf8'),
-        Buffer.from('<< /Type /Pages /Kids [3 0 R] /Count 1 >>', 'utf8'),
-        Buffer.from(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDF_WIDTH} ${PDF_HEIGHT}] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>`, 'utf8'),
-        Buffer.concat([
-            Buffer.from(`<< /Type /XObject /Subtype /Image /Width ${PAGE_WIDTH} /Height ${PAGE_HEIGHT} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`, 'utf8'),
-            jpeg,
-            Buffer.from('\nendstream', 'utf8'),
-        ]),
-        Buffer.concat([
-            Buffer.from(`<< /Length ${content.length} >>\nstream\n`, 'utf8'),
-            content,
-            Buffer.from('endstream', 'utf8'),
-        ]),
-    ]
+  const content = Buffer.from(`q\n${PDF_WIDTH} 0 0 ${PDF_HEIGHT} 0 0 cm\n/Im1 Do\nQ\n`, 'utf8')
+  const objects = [
+    Buffer.from('<< /Type /Catalog /Pages 2 0 R >>', 'utf8'),
+    Buffer.from('<< /Type /Pages /Kids [3 0 R] /Count 1 >>', 'utf8'),
+    Buffer.from(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDF_WIDTH} ${PDF_HEIGHT}] /Resources << /XObject << /Im1 4 0 R >> >> /Contents 5 0 R >>`,
+      'utf8',
+    ),
+    Buffer.concat([
+      Buffer.from(
+        `<< /Type /XObject /Subtype /Image /Width ${PAGE_WIDTH} /Height ${PAGE_HEIGHT} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`,
+        'utf8',
+      ),
+      jpeg,
+      Buffer.from('\nendstream', 'utf8'),
+    ]),
+    Buffer.concat([
+      Buffer.from(`<< /Length ${content.length} >>\nstream\n`, 'utf8'),
+      content,
+      Buffer.from('endstream', 'utf8'),
+    ]),
+  ]
 
-    const chunks: Buffer[] = [Buffer.from('%PDF-1.4\n', 'utf8')]
-    const offsets = [0]
+  const chunks: Buffer[] = [Buffer.from('%PDF-1.4\n', 'utf8')]
+  const offsets = [0]
 
-    objects.forEach((object, index) => {
-        offsets.push(Buffer.concat(chunks).length)
-        chunks.push(Buffer.from(`${index + 1} 0 obj\n`, 'utf8'), object, Buffer.from('\nendobj\n', 'utf8'))
-    })
+  objects.forEach((object, index) => {
+    offsets.push(Buffer.concat(chunks).length)
+    chunks.push(
+      Buffer.from(`${index + 1} 0 obj\n`, 'utf8'),
+      object,
+      Buffer.from('\nendobj\n', 'utf8'),
+    )
+  })
 
-    const body = Buffer.concat(chunks)
-    let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
-    for (let index = 1; index < offsets.length; index += 1) {
-        xref += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`
-    }
-    xref += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${body.length}\n%%EOF`
+  const body = Buffer.concat(chunks)
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
+  for (let index = 1; index < offsets.length; index += 1) {
+    xref += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`
+  }
+  xref += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${body.length}\n%%EOF`
 
-    return new Uint8Array(Buffer.concat([body, Buffer.from(xref, 'utf8')]))
+  return new Uint8Array(Buffer.concat([body, Buffer.from(xref, 'utf8')]))
 }
 
 export async function createEventCertificateImage(input: CertificateRenderInput) {
-    const [logo, signature, fontFiles] = await Promise.all([
-        readFile(path.join(process.cwd(), 'public', 'logos', 'siap-tempur-logo-transparent.png')),
-        readFile(path.join(process.cwd(), 'public', 'signatures', 'dirga-halim-susilo-transparent.png')),
-        loadCertificateFontFiles(),
-    ])
-    const svg = buildCertificateSvg(input, fileDataUri(logo, 'image/png'), fileDataUri(signature, 'image/png'))
+  const [logo, signature, fontFiles] = await Promise.all([
+    readFile(path.join(process.cwd(), 'public', 'logos', 'siap-tempur-logo-transparent.png')),
+    readFile(
+      path.join(process.cwd(), 'public', 'signatures', 'dirga-halim-susilo-transparent.png'),
+    ),
+    loadCertificateFontFiles(),
+  ])
+  const svg = buildCertificateSvg(
+    input,
+    fileDataUri(logo, 'image/png'),
+    fileDataUri(signature, 'image/png'),
+  )
 
-    return Buffer.from(new Resvg(svg, {
-        fitTo: {
-            mode: 'width',
-            value: PAGE_WIDTH,
-        },
-        font: {
-            // Font di-bundle; font sistem tidak diandalkan karena berbeda antar
-            // environment (Arial ada di macOS, tidak ada di Vercel Linux).
-            loadSystemFonts: false,
-            fontFiles,
-            defaultFontFamily: CERTIFICATE_FONT_FAMILY,
-            sansSerifFamily: CERTIFICATE_FONT_FAMILY,
-        },
-    }).render().asPng())
+  return Buffer.from(
+    new Resvg(svg, {
+      fitTo: {
+        mode: 'width',
+        value: PAGE_WIDTH,
+      },
+      font: {
+        // Font di-bundle; font sistem tidak diandalkan karena berbeda antar
+        // environment (Arial ada di macOS, tidak ada di Vercel Linux).
+        loadSystemFonts: false,
+        fontFiles,
+        defaultFontFamily: CERTIFICATE_FONT_FAMILY,
+        sansSerifFamily: CERTIFICATE_FONT_FAMILY,
+      },
+    })
+      .render()
+      .asPng(),
+  )
 }
 
 export async function createEventCertificatePdf(input: CertificateRenderInput) {
-    const png = await createEventCertificateImage(input)
-    const jpeg = await sharp(png)
-        .jpeg({ quality: 94, mozjpeg: true })
-        .toBuffer()
+  const png = await createEventCertificateImage(input)
+  const jpeg = await sharp(png).jpeg({ quality: 94, mozjpeg: true }).toBuffer()
 
-    return createPdfFromJpeg(jpeg)
+  return createPdfFromJpeg(jpeg)
 }

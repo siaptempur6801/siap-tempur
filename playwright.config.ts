@@ -1,14 +1,14 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test'
 
 // Final RC retrigger after repairing Vercel ↔ GitHub author authentication.
 const hasParticipantCredentials = Boolean(
   process.env.E2E_PARTICIPANT_EMAIL && process.env.E2E_PARTICIPANT_PASSWORD,
-);
-const tkaStagingE2EEnabled = process.env.E2E_TKA_STAGING === '1';
-const contentReviewStagingE2EEnabled = process.env.E2E_CONTENT_REVIEW_STAGING === '1';
-const adminStagingE2EEnabled = process.env.E2E_ADMIN_STAGING === '1';
-const remoteE2EEnabled = process.env.E2E_REMOTE_BASE_URL === '1';
-const vercelAutomationBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+)
+const tkaStagingE2EEnabled = process.env.E2E_TKA_STAGING === '1'
+const contentReviewStagingE2EEnabled = process.env.E2E_CONTENT_REVIEW_STAGING === '1'
+const adminStagingE2EEnabled = process.env.E2E_ADMIN_STAGING === '1'
+const remoteE2EEnabled = process.env.E2E_REMOTE_BASE_URL === '1'
+const vercelAutomationBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -16,9 +16,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
-  ],
+  reporter: [['html', { outputFolder: 'playwright-report' }]],
   use: {
     baseURL: process.env.BASE_URL || 'http://127.0.0.1:3000',
     trace: 'on-first-retry',
@@ -74,7 +72,8 @@ export default defineConfig({
           },
           {
             name: 'chromium-tka-staging',
-            testMatch: /.*(?:6-tka-smp-full|8-tka-smp-mini|9-tka-smp-monetization|13-tka-diagnostic)\.spec\.ts/,
+            testMatch:
+              /.*(?:6-tka-smp-full|8-tka-smp-mini|9-tka-smp-monetization|13-tka-diagnostic)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
               storageState: 'playwright/.auth/tka-user.json',
@@ -118,7 +117,8 @@ export default defineConfig({
           },
           {
             name: 'chromium-admin-staging',
-            testMatch: /.*(?:10-admin-workspace-authenticated|27-admin-task-flows|28-admin-canonical-routes|29-admin-performance)\.spec\.ts/,
+            testMatch:
+              /.*(?:10-admin-workspace-authenticated|27-admin-task-flows|28-admin-canonical-routes|29-admin-performance)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
               storageState: 'playwright/.auth/admin-user.json',
@@ -145,7 +145,8 @@ export default defineConfig({
              * lalu membersihkannya di `finally`.
              */
             name: 'chromium-admin-roles',
-            testMatch: /.*(?:19-admin-role-navigation|20-instansi-join|21-instansi-exam|22-landing-authenticated)\.spec\.ts/,
+            testMatch:
+              /.*(?:19-admin-role-navigation|20-instansi-join|21-instansi-exam|22-landing-authenticated)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
               storageState: { cookies: [], origins: [] },
@@ -176,4 +177,4 @@ export default defineConfig({
           timeout: 120000,
         },
       }),
-});
+})

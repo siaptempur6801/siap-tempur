@@ -1,5 +1,5 @@
-.profile.profile,
-.profile.profile :global(.st-product) {
+.profile,
+.profile :global(.st-product) {
   --st-paper: #f6f7fb;
   --st-paper-strong: #eef1f7;
   --st-yellow: #e0e7ff;
@@ -14,72 +14,78 @@
   font-family: var(--font-body), sans-serif;
 }
 
-.profile.profile {
+.profile {
   background: transparent;
 }
 
-.profile.profile > header {
+.profile > header {
   max-width: none;
   border-bottom: 1px solid #e2e8f0;
   border-radius: 0;
   padding-bottom: 20px;
 }
 
-.profile.profile > header p {
+.profile > header p {
   margin-top: 8px;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.6;
 }
 
-.profile.profile :is(h2, h3, button, label, input, textarea, select) {
+.profile :is(h2, h3, button, label, input, textarea, select) {
   letter-spacing: 0;
 }
 
-.profile.profile :is(h2, h3),
-.profile.profile :global(.font-display) {
+.profile :is(h2, h3),
+.profile :global(.font-display) {
   font-family: var(--font-body), sans-serif;
 }
 
-.profile.profile :is(h2, h3) {
+.profile :is(h2, h3) {
   font-weight: 700;
 }
 
-.profile.profile :is([class~='border-2'], [class~='border-4']) {
+.profile :is([class~='border-2'], [class~='border-4']) {
   border-width: 1px;
   border-radius: 8px;
   box-shadow: none;
 }
 
-.profile.profile :is([class~='border-gray-900'], [class~='border-[var(--st-ink)]']) {
+.profile :is([class~='border-gray-900'], [class~='border-[var(--st-ink)]']) {
   border-color: #e2e8f0;
 }
 
-.profile.profile :is([class~='border-b-4'], [class~='border-t-4']) {
+.profile :is([class~='border-b-4'], [class~='border-t-4']) {
   border-width: 1px;
   border-color: #e2e8f0;
 }
 
-.profile.profile :is([class~='bg-yellow-300'], [class~='bg-[#fdfbf7]']) {
+.profile :is([class~='bg-yellow-300'], [class~='bg-[#fdfbf7]']) {
   background-color: #eef2ff;
 }
 
-.profile.profile :global(.st-button) {
+.profile :global(.st-button) {
+  border: 1px solid #e2e8f0 !important;
   border-radius: 8px !important;
   box-shadow: none !important;
+  font-weight: 600;
 }
 
-.profile.profile :is(button, a):is(:hover, :active) {
+.profile :global([class~='font-black']) {
+  font-weight: 600;
+}
+
+.profile :is(button, a):is(:hover, :active) {
   transform: none;
 }
 
-.profile.profile :is(input, select, textarea) {
+.profile :is(input, select, textarea) {
   min-width: 0;
   font-family: var(--font-body), sans-serif;
   font-weight: 500;
 }
 
-.profile.profile :is([role='dialog'], [role='alertdialog']) {
+.profile :is([role='dialog'], [role='alertdialog']) {
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   border: 1px solid #e2e8f0;

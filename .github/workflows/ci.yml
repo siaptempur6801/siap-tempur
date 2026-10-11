@@ -42,8 +42,36 @@ jobs:
         with:
           node-version: 24
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install source formatters
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --requirement requirements-dev.txt
+
+          shfmt_version="$(node -p "require('./format-tool-versions.json').shfmt")"
+          curl -fsSL "https://github.com/mvdan/sh/releases/download/v${shfmt_version}/shfmt_v${shfmt_version}_linux_amd64" -o "$RUNNER_TEMP/shfmt"
+          sudo install "$RUNNER_TEMP/shfmt" /usr/local/bin/shfmt
+
+          pgformatter_version="$(node -p "require('./format-tool-versions.json').pgFormatter")"
+          mkdir -p "$RUNNER_TEMP/pgformatter"
+          curl -fsSL "https://github.com/darold/pgFormatter/archive/refs/tags/v${pgformatter_version}.tar.gz" | tar -xz -C "$RUNNER_TEMP/pgformatter"
+          cd "$RUNNER_TEMP/pgformatter/pgFormatter-${pgformatter_version}"
+          perl Makefile.PL
+          make
+          sudo make install
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Source formatting
+        run: npm run format:check
+
+      - name: Dead-code analysis
+        run: npm run analyze:unused
 
       - name: Lint
         run: npm run lint

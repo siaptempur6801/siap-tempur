@@ -1,113 +1,132 @@
 -- Milestone 2: remove learner track activation dependency on a service-role client.
 -- The public wrapper is authenticated-only and always derives the user from auth.uid().
-
-create or replace function app_private.activate_user_track_for_user(
-  p_user_id uuid,
-  p_program_code text,
-  p_track_code text,
-  p_target_year integer default null,
-  p_school_name text default null,
-  p_school_grade text default null
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
+CREATE OR REPLACE FUNCTION app_private.activate_user_track_for_user (p_user_id uuid, p_program_code text, p_track_code text, p_target_year integer DEFAULT NULL, p_school_name text DEFAULT NULL, p_school_grade text DEFAULT NULL)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
   v_program_id uuid;
   v_program_code text;
   v_track_id uuid;
   v_track_code text;
   v_user_track_id uuid;
-  v_school_name text := nullif(btrim(coalesce(p_school_name,'')),'');
-  v_school_grade text := nullif(btrim(coalesce(p_school_grade,'')),'');
-begin
-  if p_user_id is null then raise exception 'Authentication required'; end if;
-  if not exists(select 1 from public.profiles where id=p_user_id and status='active') then
-    raise exception 'Active user profile not found';
-  end if;
+  v_school_name text := nullif (btrim(coalesce(p_school_name, '')),'');
+  v_school_grade text := nullif (btrim(coalesce(p_school_grade, '')),'');
+BEGIN
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.profiles
+    WHERE
+      id = p_user_id
+      AND status = 'active') THEN
+  RAISE EXCEPTION 'Active user profile not found';
+END IF;
 
-  v_program_code := upper(btrim(coalesce(p_program_code,'')));
-  v_track_code := upper(btrim(coalesce(p_track_code,'')));
-  if v_program_code = '' or length(v_program_code) > 32 then raise exception 'Invalid program code'; end if;
-  if v_track_code = '' or length(v_track_code) > 32 then raise exception 'Invalid track code'; end if;
-  if p_target_year is not null and (p_target_year < 2025 or p_target_year > 2100) then
-    raise exception 'Invalid target year';
-  end if;
-  if v_school_name is not null and length(v_school_name) > 160 then raise exception 'School name too long'; end if;
-  if v_school_grade is not null and length(v_school_grade) > 32 then raise exception 'School grade too long'; end if;
+  v_program_code := upper(btrim(coalesce(p_program_code, '')));
+  v_track_code := upper(btrim(coalesce(p_track_code, '')));
+  IF v_program_code = '' OR length(v_program_code) > 32 THEN
+    RAISE EXCEPTION 'Invalid program code';
+  END IF;
+  IF v_track_code = '' OR length(v_track_code) > 32 THEN
+    RAISE EXCEPTION 'Invalid track code';
+  END IF;
+  IF p_target_year IS NOT NULL AND (p_target_year < 2025 OR p_target_year > 2100) THEN
+    RAISE EXCEPTION 'Invalid target year';
+  END IF;
+  IF v_school_name IS NOT NULL AND length(v_school_name) > 160 THEN
+    RAISE EXCEPTION 'School name too long';
+  END IF;
+  IF v_school_grade IS NOT NULL AND length(v_school_grade) > 32 THEN
+    RAISE EXCEPTION 'School grade too long';
+  END IF;
 
-  select p.id,p.code into v_program_id,v_program_code
-  from public.programs p
-  where upper(p.code)=v_program_code and lower(p.status)='active'
-  limit 1;
-  if v_program_id is null then raise exception 'Active program not found'; end if;
+  SELECT
+    p.id,
+    p.code
+  INTO
+    v_program_id,
+    v_program_code
+  FROM
+    public.programs p
+  WHERE
+    upper(p.code) = v_program_code
+    AND lower(p.status) = 'active'
+  LIMIT 1;
+  IF v_program_id IS NULL THEN
+    RAISE EXCEPTION 'Active program not found';
+  END IF;
 
-  select t.id,t.code into v_track_id,v_track_code
-  from public.tracks t
-  where t.program_id=v_program_id and upper(t.code)=v_track_code and lower(t.status)='active'
-  limit 1;
-  if v_track_id is null then raise exception 'Active track not found'; end if;
+  SELECT
+    t.id,
+    t.code
+  INTO
+    v_track_id,
+    v_track_code
+  FROM
+    public.tracks t
+  WHERE
+    t.program_id = v_program_id
+    AND upper(t.code) = v_track_code
+    AND lower(t.status) = 'active'
+  LIMIT 1;
+  IF v_track_id IS NULL THEN
+    RAISE EXCEPTION 'Active track not found';
+  END IF;
 
-  perform pg_advisory_xact_lock(hashtextextended(p_user_id::text || ':' || v_track_id::text,0));
+  PERFORM
+    pg_advisory_xact_lock(hashtextextended(p_user_id::text || ':' || v_track_id::text, 0));
 
-  insert into public.user_tracks(
-    user_id,track_id,status,target_year,started_at,completed_at,created_at,updated_at
-  ) values (
-    p_user_id,v_track_id,'active',p_target_year,now(),null,now(),now()
-  )
-  on conflict(user_id,track_id) do update set
-    status='active',
-    target_year=excluded.target_year,
-    completed_at=null,
-    updated_at=now()
-  returning id into v_user_track_id;
+INSERT INTO public.user_tracks (user_id, track_id, status, target_year, started_at, completed_at, created_at, updated_at)
+  VALUES (p_user_id, v_track_id, 'active', p_target_year, now(), NULL, now(), now())
+ON CONFLICT (user_id, track_id)
+  DO UPDATE SET
+    status = 'active',
+    target_year = excluded.target_year,
+    completed_at = NULL,
+    updated_at = now()
+  RETURNING
+    id
+  INTO
+    v_user_track_id;
 
-  if v_school_name is not null or v_school_grade is not null then
-    insert into public.user_track_preferences(
-      user_track_id,school_name,school_grade,preferences,created_at,updated_at
-    ) values (
-      v_user_track_id,v_school_name,v_school_grade,jsonb_build_object('source','tka_entry'),now(),now()
-    )
-    on conflict(user_track_id) do update set
-      school_name=excluded.school_name,
-      school_grade=excluded.school_grade,
-      preferences=coalesce(public.user_track_preferences.preferences,'{}'::jsonb) || jsonb_build_object('source','tka_entry'),
-      updated_at=now();
-  end if;
+  IF v_school_name IS NOT NULL OR v_school_grade IS NOT NULL THEN
+    INSERT INTO public.user_track_preferences (user_track_id, school_name, school_grade, preferences, created_at, updated_at)
+      VALUES (v_user_track_id, v_school_name, v_school_grade, jsonb_build_object('source', 'tka_entry'), now(), now())
+    ON CONFLICT (user_track_id)
+      DO UPDATE SET
+        school_name = excluded.school_name,
+        school_grade = excluded.school_grade,
+        preferences = coalesce(public.user_track_preferences.preferences, '{}'::jsonb) || jsonb_build_object('source', 'tka_entry'),
+        updated_at = now();
+  END IF;
 
-  return jsonb_build_object(
-    'userTrackId',v_user_track_id,
-    'programCode',v_program_code,
-    'trackCode',v_track_code,
-    'status','active',
-    'targetYear',p_target_year
-  );
-end;
+  RETURN jsonb_build_object('userTrackId', v_user_track_id, 'programCode', v_program_code, 'trackCode', v_track_code, 'status', 'active', 'targetYear', p_target_year);
+END;
 $$;
 
-create or replace function public.activate_user_track(
-  p_program_code text,
-  p_track_code text,
-  p_target_year integer default null,
-  p_school_name text default null,
-  p_school_grade text default null
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_user uuid := auth.uid();
-begin
-  if v_user is null then raise exception 'Authentication required'; end if;
-  return app_private.activate_user_track_for_user(
-    v_user,p_program_code,p_track_code,p_target_year,p_school_name,p_school_grade
-  );
-end;
+CREATE OR REPLACE FUNCTION public.activate_user_track (p_program_code text, p_track_code text, p_target_year integer DEFAULT NULL, p_school_name text DEFAULT NULL, p_school_grade text DEFAULT NULL)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
+  v_user uuid := auth.uid ();
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+  RETURN app_private.activate_user_track_for_user (v_user, p_program_code, p_track_code, p_target_year, p_school_name, p_school_grade);
+END;
 $$;
 
-revoke all on function public.activate_user_track(text,text,integer,text,text) from public;
-grant execute on function public.activate_user_track(text,text,integer,text,text) to authenticated;
+REVOKE ALL ON FUNCTION public.activate_user_track (text, text, integer, text, text) FROM public;
+
+GRANT EXECUTE ON FUNCTION public.activate_user_track (text, text, integer, text, text) TO authenticated;

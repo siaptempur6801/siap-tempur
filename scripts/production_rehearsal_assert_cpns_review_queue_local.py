@@ -47,10 +47,14 @@ def query(db_url: str, sql: str) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Assert CPNS reviewed/withheld migration invariants in Supabase Local.")
+    parser = argparse.ArgumentParser(
+        description="Assert CPNS reviewed/withheld migration invariants in Supabase Local."
+    )
     parser.add_argument(
         "--db-url",
-        default=os.environ.get("LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"),
+        default=os.environ.get(
+            "LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+        ),
     )
     args = parser.parse_args()
     if not shutil.which("psql"):
@@ -80,7 +84,9 @@ def main() -> None:
     if summary != "433|6":
         die(f"review queue mismatch; expected reviewed|needs_revision = 433|6, got {summary}")
     if bank != "433|0|0":
-        die(f"canonical CPNS bank mismatch; expected drafts|versions|withheld_in_bank = 433|0|0, got {bank}")
+        die(
+            f"canonical CPNS bank mismatch; expected drafts|versions|withheld_in_bank = 433|0|0, got {bank}"
+        )
     if subject_split != "TIU:3,TWK:3":
         die(f"withheld subject split mismatch; expected TIU:3,TWK:3, got {subject_split}")
 

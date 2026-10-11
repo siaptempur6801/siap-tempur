@@ -5,7 +5,7 @@ import { LEGACY_ADMIN_BASE_PATH, LEGACY_ADMIN_TAB_ROUTES } from '@/lib/admin-red
 import { adminHref } from '@/lib/admin-routes'
 
 function isLoopbackHostname(hostname: string) {
-    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
 }
 
 /**
@@ -21,38 +21,39 @@ function isLoopbackHostname(hostname: string) {
  * refresh sesi dan tidak pernah menerima header keamanan.
  */
 function legacyAdminTabRedirect(request: NextRequest, response: NextResponse) {
-    const pathname = request.nextUrl.pathname
-    if (pathname !== LEGACY_ADMIN_BASE_PATH) return null
+  const pathname = request.nextUrl.pathname
+  if (pathname !== LEGACY_ADMIN_BASE_PATH) return null
 
-    const tab = request.nextUrl.searchParams.get('tab')
-    // Tanpa tab, `/cpns/admin` diarahkan ke root workspace admin.
-    const destination = tab ? LEGACY_ADMIN_TAB_ROUTES[tab.toLowerCase()] : '/admin'
-    if (!destination) return null
+  const tab = request.nextUrl.searchParams.get('tab')
+  // Tanpa tab, `/cpns/admin` diarahkan ke root workspace admin.
+  const destination = tab ? LEGACY_ADMIN_TAB_ROUTES[tab.toLowerCase()] : '/admin'
+  if (!destination) return null
 
-    const target = request.nextUrl.clone()
-    target.pathname = destination
-    target.searchParams.delete('tab')
-    if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
-    if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
+  const target = request.nextUrl.clone()
+  target.pathname = destination
+  target.searchParams.delete('tab')
+  if (!target.searchParams.has('program')) target.searchParams.set('program', 'CPNS')
+  if (!target.searchParams.has('track')) target.searchParams.set('track', 'SKD')
 
-    const redirect = NextResponse.redirect(target)
-    // Bawa cookie sesi yang baru di-refresh agar tidak hilang saat redirect.
-    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie))
-    return redirect
+  const redirect = NextResponse.redirect(target)
+  // Bawa cookie sesi yang baru di-refresh agar tidak hilang saat redirect.
+  response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie))
+  return redirect
 }
 
 export async function proxy(request: NextRequest) {
-    const nonce = crypto.randomUUID().replace(/-/g, '')
-    const csrfToken = crypto.randomUUID()
+  const nonce = crypto.randomUUID().replace(/-/g, '')
+  const csrfToken = crypto.randomUUID()
 
-    // `upgrade-insecure-requests` hanya untuk host non-loopback: pada `next start` lokal
-    // (NODE_ENV=production) flag ini membuat browser meng-upgrade request http ke https
-    // sehingga memunculkan ERR_SSL_PROTOCOL_ERROR di dev/E2E.
-    const upgradeInsecureRequests = process.env.NODE_ENV === 'production' && !isLoopbackHostname(request.nextUrl.hostname)
-        ? 'upgrade-insecure-requests;'
-        : ''
+  // `upgrade-insecure-requests` hanya untuk host non-loopback: pada `next start` lokal
+  // (NODE_ENV=production) flag ini membuat browser meng-upgrade request http ke https
+  // sehingga memunculkan ERR_SSL_PROTOCOL_ERROR di dev/E2E.
+  const upgradeInsecureRequests =
+    process.env.NODE_ENV === 'production' && !isLoopbackHostname(request.nextUrl.hostname)
+      ? 'upgrade-insecure-requests;'
+      : ''
 
-    const cspHeader = `
+  const cspHeader = `
         default-src 'self';
         script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"} https://app.midtrans.com https://app.sandbox.midtrans.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
@@ -66,42 +67,47 @@ export async function proxy(request: NextRequest) {
         frame-ancestors 'none';
         ${upgradeInsecureRequests}
         ${process.env.CSP_REPORT_URI ? `report-uri ${process.env.CSP_REPORT_URI};` : ''}
-    `.replace(/\s{2,}/g, ' ').trim()
+    `
+    .replace(/\s{2,}/g, ' ')
+    .trim()
 
-    const requestHeaders = new Headers(request.headers)
-    requestHeaders.set('x-nonce', nonce)
-    requestHeaders.set('x-pathname', request.nextUrl.pathname)
-    requestHeaders.set('Content-Security-Policy', cspHeader)
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-nonce', nonce)
+  requestHeaders.set('x-pathname', request.nextUrl.pathname)
+  requestHeaders.set('Content-Security-Policy', cspHeader)
 
-    const response = await updateSession(request, requestHeaders)
-    response.headers.set('Content-Security-Policy', cspHeader)
+  const response = await updateSession(request, requestHeaders)
+  response.headers.set('Content-Security-Policy', cspHeader)
 
-    response.cookies.set(CSRF_COOKIE, csrfToken, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production' && !isLoopbackHostname(request.nextUrl.hostname),
-        sameSite: 'strict',
-        path: '/',
-    })
+  response.cookies.set(CSRF_COOKIE, csrfToken, {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production' && !isLoopbackHostname(request.nextUrl.hostname),
+    sameSite: 'strict',
+    path: '/',
+  })
 
-    const legacy = legacyAdminTabRedirect(request, response)
-    if (legacy) { legacy.headers.set('Content-Security-Policy', cspHeader); return legacy }
-    // Only normalize page reads. POST/server actions keep their mutation contract.
-    if (request.method === 'GET' && request.nextUrl.pathname.startsWith('/admin')) {
-        const current = `${request.nextUrl.pathname}${request.nextUrl.search}`
-        const canonical = adminHref(current)
-        if (canonical !== current) {
-            const target = new URL(canonical, request.url)
-            const redirected = NextResponse.redirect(target, 307)
-            response.cookies.getAll().forEach(cookie => redirected.cookies.set(cookie))
-            redirected.headers.set('Content-Security-Policy', cspHeader)
-            return redirected
-        }
+  const legacy = legacyAdminTabRedirect(request, response)
+  if (legacy) {
+    legacy.headers.set('Content-Security-Policy', cspHeader)
+    return legacy
+  }
+  // Only normalize page reads. POST/server actions keep their mutation contract.
+  if (request.method === 'GET' && request.nextUrl.pathname.startsWith('/admin')) {
+    const current = `${request.nextUrl.pathname}${request.nextUrl.search}`
+    const canonical = adminHref(current)
+    if (canonical !== current) {
+      const target = new URL(canonical, request.url)
+      const redirected = NextResponse.redirect(target, 307)
+      response.cookies.getAll().forEach((cookie) => redirected.cookies.set(cookie))
+      redirected.headers.set('Content-Security-Policy', cspHeader)
+      return redirected
     }
-    return response
+  }
+  return response
 }
 
 export const config = {
-    matcher: [
-        '/((?!_next/static|_next/image|_next/hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    ],
+  matcher: [
+    '/((?!_next/static|_next/image|_next/hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 }

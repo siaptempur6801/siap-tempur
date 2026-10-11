@@ -41,172 +41,202 @@
 --     5. setiap penyesuaian menulis baris `wallet_transactions` sehingga
 --        riwayatnya tidak bisa hilang.
 -- =============================================================================
-
 -- -----------------------------------------------------------------------------
 -- 1. Ringkasan entitlements. Permission: entitlement.manage.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_entitlement_overview()
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor uuid := auth.uid();
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_entitlement_overview ()
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('entitlement.manage') then
-        raise exception 'Entitlement manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('entitlement.manage') THEN
+    RAISE EXCEPTION 'Entitlement manage permission required';
+  END IF;
 
-    return jsonb_build_object(
-        'wallets', coalesce((
-            select jsonb_agg(jsonb_build_object(
-                'wallet_type', w.wallet_type,
-                'wallets', w.wallets,
-                'balance', w.balance
-            ) order by w.wallet_type)
-              from (
-                select wallet_type, count(*) as wallets, coalesce(sum(balance), 0) as balance
-                  from public.wallets group by wallet_type
-              ) w
-        ), '[]'::jsonb),
-        'transactions_total', (select count(*) from public.wallet_transactions),
-        'transactions_30d', (select count(*) from public.wallet_transactions where created_at > now() - interval '30 days'),
-        'vouchers_total', (select count(*) from public.vouchers),
-        'vouchers_active', (select count(*) from public.vouchers where is_active),
-        'voucher_claims', (select count(*) from public.voucher_claims),
-        'entitlements_total', (select count(*) from public.entitlements),
-        'entitlements_active', (select count(*) from public.entitlements where status = 'active')
-    );
-end;
+  RETURN jsonb_build_object('wallets', coalesce((
+      SELECT
+        jsonb_agg(jsonb_build_object('wallet_type', w.wallet_type, 'wallets', w.wallets, 'balance', w.balance)
+      ORDER BY w.wallet_type)
+      FROM (
+        SELECT
+          wallet_type, count(*) AS wallets, coalesce(sum(balance), 0) AS balance
+        FROM public.wallets GROUP BY wallet_type) w), '[]'::jsonb), 'transactions_total', (
+  SELECT
+    count(*)
+  FROM public.wallet_transactions), 'transactions_30d', (
+  SELECT
+    count(*)
+  FROM public.wallet_transactions
+  WHERE
+    created_at > now() - interval '30 days'), 'vouchers_total', (
+  SELECT
+    count(*)
+  FROM public.vouchers), 'vouchers_active', (
+  SELECT
+    count(*)
+  FROM public.vouchers
+WHERE
+  is_active), 'voucher_claims', (
+  SELECT
+    count(*)
+  FROM public.voucher_claims), 'entitlements_total', (
+  SELECT
+    count(*)
+  FROM public.entitlements), 'entitlements_active', (
+  SELECT
+    count(*)
+  FROM public.entitlements
+WHERE
+  status = 'active'));
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
 -- 2. Daftar dompet per pengguna. Permission: entitlement.manage.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_list_wallets(
-    p_search      text default null,
-    p_wallet_type text default null,
-    p_limit       integer default 50,
-    p_offset      integer default 0
+CREATE OR REPLACE FUNCTION public.admin_list_wallets (p_search text DEFAULT NULL, p_wallet_type text DEFAULT NULL, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_limit integer := least (greatest (coalesce(p_limit, 50), 1), 200);
+  v_offset integer := greatest (coalesce(p_offset, 0), 0);
+  v_rows jsonb;
+  v_total integer := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT app_private.current_user_has_permission ('entitlement.manage') THEN
+    RAISE EXCEPTION 'Entitlement manage permission required';
+  END IF;
+
+  WITH filtered AS (
+    SELECT
+      w.id,
+      w.user_id,
+      w.wallet_type,
+      w.balance,
+      w.updated_at,
+      pr.full_name,
+      pr.display_name,
+      au.email::text AS email
+    FROM
+      public.wallets w
+    LEFT JOIN public.profiles pr ON pr.id = w.user_id
+    LEFT JOIN auth.users au ON au.id = w.user_id
+  WHERE (p_wallet_type IS NULL
+    OR p_wallet_type = ''
+    OR w.wallet_type = p_wallet_type)
+    AND (p_search IS NULL
+      OR p_search = ''
+      OR pr.full_name ILIKE '%' || p_search || '%'
+      OR pr.display_name ILIKE '%' || p_search || '%'
+      OR au.email ILIKE '%' || p_search || '%')
+),
+paged AS (
+  SELECT
+    f.*,
+    count(*) OVER () AS total_count
+  FROM
+    filtered f
+  ORDER BY
+    f.balance DESC,
+    f.updated_at DESC
+  LIMIT v_limit OFFSET v_offset
 )
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor uuid := auth.uid();
-    v_limit integer := least(greatest(coalesce(p_limit, 50), 1), 200);
-    v_offset integer := greatest(coalesce(p_offset, 0), 0);
-    v_rows jsonb;
-    v_total integer := 0;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+SELECT
+  coalesce(jsonb_agg(to_jsonb (paged) - 'total_count'), '[]'::jsonb),
+  coalesce(max(paged.total_count), 0)
+INTO
+  v_rows,
+  v_total
+FROM
+  paged;
 
-    if not app_private.current_user_has_permission('entitlement.manage') then
-        raise exception 'Entitlement manage permission required';
-    end if;
-
-    with filtered as (
-        select
-            w.id,
-            w.user_id,
-            w.wallet_type,
-            w.balance,
-            w.updated_at,
-            pr.full_name,
-            pr.display_name,
-            au.email::text as email
-          from public.wallets w
-          left join public.profiles pr on pr.id = w.user_id
-          left join auth.users au on au.id = w.user_id
-         where (p_wallet_type is null or p_wallet_type = '' or w.wallet_type = p_wallet_type)
-           and (p_search is null or p_search = ''
-                or pr.full_name ilike '%' || p_search || '%'
-                or pr.display_name ilike '%' || p_search || '%'
-                or au.email ilike '%' || p_search || '%')
-    ), paged as (
-        select f.*, count(*) over () as total_count
-          from filtered f
-         order by f.balance desc, f.updated_at desc
-         limit v_limit offset v_offset
-    )
-    select
-        coalesce(jsonb_agg(to_jsonb(paged) - 'total_count'), '[]'::jsonb),
-        coalesce(max(paged.total_count), 0)
-      into v_rows, v_total
-      from paged;
-
-    return jsonb_build_object('wallets', v_rows, 'total', v_total);
-end;
+  RETURN jsonb_build_object('wallets', v_rows, 'total', v_total);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
 -- 3. Riwayat transaksi dompet. Permission: entitlement.manage.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_list_wallet_transactions(
-    p_user_id     uuid default null,
-    p_wallet_type text default null,
-    p_limit       integer default 50,
-    p_offset      integer default 0
+CREATE OR REPLACE FUNCTION public.admin_list_wallet_transactions (p_user_id uuid DEFAULT NULL, p_wallet_type text DEFAULT NULL, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_limit integer := least (greatest (coalesce(p_limit, 50), 1), 200);
+  v_offset integer := greatest (coalesce(p_offset, 0), 0);
+  v_rows jsonb;
+  v_total integer := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT app_private.current_user_has_permission ('entitlement.manage') THEN
+    RAISE EXCEPTION 'Entitlement manage permission required';
+  END IF;
+
+  WITH filtered AS (
+    SELECT
+      t.id,
+      t.wallet_id,
+      t.type,
+      t.amount,
+      t.source_type,
+      t.source_id,
+      t.balance_after,
+      t.created_at,
+      w.user_id,
+      w.wallet_type
+    FROM
+      public.wallet_transactions t
+      JOIN public.wallets w ON w.id = t.wallet_id
+    WHERE (p_user_id IS NULL
+      OR w.user_id = p_user_id)
+    AND (p_wallet_type IS NULL
+      OR p_wallet_type = ''
+      OR w.wallet_type = p_wallet_type)
+),
+paged AS (
+  SELECT
+    f.*,
+    count(*) OVER () AS total_count
+  FROM
+    filtered f
+  ORDER BY
+    f.created_at DESC,
+    f.id DESC
+  LIMIT v_limit OFFSET v_offset
 )
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor uuid := auth.uid();
-    v_limit integer := least(greatest(coalesce(p_limit, 50), 1), 200);
-    v_offset integer := greatest(coalesce(p_offset, 0), 0);
-    v_rows jsonb;
-    v_total integer := 0;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+SELECT
+  coalesce(jsonb_agg(to_jsonb (paged) - 'total_count'), '[]'::jsonb),
+  coalesce(max(paged.total_count), 0)
+INTO
+  v_rows,
+  v_total
+FROM
+  paged;
 
-    if not app_private.current_user_has_permission('entitlement.manage') then
-        raise exception 'Entitlement manage permission required';
-    end if;
-
-    with filtered as (
-        select
-            t.id,
-            t.wallet_id,
-            t.type,
-            t.amount,
-            t.source_type,
-            t.source_id,
-            t.balance_after,
-            t.created_at,
-            w.user_id,
-            w.wallet_type
-          from public.wallet_transactions t
-          join public.wallets w on w.id = t.wallet_id
-         where (p_user_id is null or w.user_id = p_user_id)
-           and (p_wallet_type is null or p_wallet_type = '' or w.wallet_type = p_wallet_type)
-    ), paged as (
-        select f.*, count(*) over () as total_count
-          from filtered f
-         order by f.created_at desc, f.id desc
-         limit v_limit offset v_offset
-    )
-    select
-        coalesce(jsonb_agg(to_jsonb(paged) - 'total_count'), '[]'::jsonb),
-        coalesce(max(paged.total_count), 0)
-      into v_rows, v_total
-      from paged;
-
-    return jsonb_build_object('transactions', v_rows, 'total', v_total);
-end;
+  RETURN jsonb_build_object('transactions', v_rows, 'total', v_total);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
@@ -214,185 +244,198 @@ $function$;
 --    PENJAGA: lihat catatan di kepala file. Setiap penyesuaian WAJIB beralasan
 --    dan meninggalkan baris wallet_transactions.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_adjust_wallet(
-    p_user_id     uuid,
-    p_wallet_type text,
-    p_amount      integer,
-    p_reason      text
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor        uuid := auth.uid();
-    v_wallet_type  text := btrim(coalesce(p_wallet_type, ''));
-    v_reason       text := btrim(coalesce(p_reason, ''));
-    v_amount       integer := coalesce(p_amount, 0);
-    v_wallet_id    uuid;
-    v_balance      integer;
-    v_new_balance  integer;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_adjust_wallet (p_user_id uuid, p_wallet_type text, p_amount integer, p_reason text)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_wallet_type text := btrim(coalesce(p_wallet_type, ''));
+  v_reason text := btrim(coalesce(p_reason, ''));
+  v_amount integer := coalesce(p_amount, 0);
+  v_wallet_id uuid;
+  v_balance integer;
+  v_new_balance integer;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('entitlement.manage') then
-        raise exception 'Entitlement manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('entitlement.manage') THEN
+    RAISE EXCEPTION 'Entitlement manage permission required';
+  END IF;
 
-    if p_user_id is null then
-        raise exception 'User is required';
-    end if;
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'User is required';
+  END IF;
+  -- Penjaga 1: tidak boleh menyesuaikan dompet sendiri. Token bernilai uang,
+  -- jadi mem bolehkan ini sama dengan memberi akses cetak uang.
+  IF p_user_id = v_actor THEN
+    RAISE EXCEPTION 'Cannot adjust your own wallet';
+  END IF;
 
-    -- Penjaga 1: tidak boleh menyesuaikan dompet sendiri. Token bernilai uang,
-    -- jadi mem bolehkan ini sama dengan memberi akses cetak uang.
-    if p_user_id = v_actor then
-        raise exception 'Cannot adjust your own wallet';
-    end if;
+  IF v_wallet_type NOT IN ('exam_token_cpns', 'exam_token_tka', 'exam_token') THEN
+    RAISE EXCEPTION 'Unknown wallet type';
+  END IF;
+  -- Penjaga 2: jumlah harus masuk akal.
+  IF v_amount = 0 THEN
+    RAISE EXCEPTION 'Amount must not be zero';
+  END IF;
+  IF abs(v_amount) > 1000000 THEN
+    RAISE EXCEPTION 'Amount exceeds the per-adjustment limit';
+  END IF;
+  -- Penjaga 4: alasan wajib.
+  IF length(v_reason) < 3 THEN
+    RAISE EXCEPTION 'A reason of at least 3 characters is required';
+  END IF;
 
-    if v_wallet_type not in ('exam_token_cpns', 'exam_token_tka', 'exam_token') then
-        raise exception 'Unknown wallet type';
-    end if;
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.profiles
+    WHERE
+      id = p_user_id) THEN
+  RAISE EXCEPTION 'User profile not found';
+END IF;
+  -- Kunci dompet supaya dua penyesuaian bersamaan tidak saling menimpa.
+  SELECT
+    id,
+    balance
+  INTO
+    v_wallet_id,
+    v_balance
+  FROM
+    public.wallets
+  WHERE
+    user_id = p_user_id
+    AND wallet_type = v_wallet_type
+  FOR UPDATE;
 
-    -- Penjaga 2: jumlah harus masuk akal.
-    if v_amount = 0 then
-        raise exception 'Amount must not be zero';
-    end if;
-    if abs(v_amount) > 1000000 then
-        raise exception 'Amount exceeds the per-adjustment limit';
-    end if;
+  IF v_wallet_id IS NULL THEN
+    INSERT INTO public.wallets (user_id, wallet_type, balance)
+      VALUES (p_user_id, v_wallet_type, 0)
+    RETURNING
+      id, balance
+    INTO
+      v_wallet_id, v_balance;
+  END IF;
 
-    -- Penjaga 4: alasan wajib.
-    if length(v_reason) < 3 then
-        raise exception 'A reason of at least 3 characters is required';
-    end if;
+  v_new_balance := v_balance + v_amount;
+  -- Penjaga 3: saldo tidak boleh negatif.
+  IF v_new_balance < 0 THEN
+    RAISE EXCEPTION 'Adjustment would make the balance negative';
+  END IF;
 
-    if not exists (select 1 from public.profiles where id = p_user_id) then
-        raise exception 'User profile not found';
-    end if;
+  UPDATE
+    public.wallets
+  SET
+    balance = v_new_balance,
+    updated_at = now()
+  WHERE
+    id = v_wallet_id;
 
-    -- Kunci dompet supaya dua penyesuaian bersamaan tidak saling menimpa.
-    select id, balance into v_wallet_id, v_balance
-      from public.wallets
-     where user_id = p_user_id and wallet_type = v_wallet_type
-     for update;
+INSERT INTO public.wallet_transactions (wallet_id, type, amount, source_type, source_id, balance_after)
+  VALUES (v_wallet_id, CASE WHEN v_amount > 0 THEN
+      'credit'
+    ELSE
+      'debit'
+    END, v_amount, 'admin_adjustment', NULL, v_new_balance);
 
-    if v_wallet_id is null then
-        insert into public.wallets (user_id, wallet_type, balance)
-        values (p_user_id, v_wallet_type, 0)
-        returning id, balance into v_wallet_id, v_balance;
-    end if;
-
-    v_new_balance := v_balance + v_amount;
-
-    -- Penjaga 3: saldo tidak boleh negatif.
-    if v_new_balance < 0 then
-        raise exception 'Adjustment would make the balance negative';
-    end if;
-
-    update public.wallets
-       set balance = v_new_balance,
-           updated_at = now()
-     where id = v_wallet_id;
-
-    insert into public.wallet_transactions (wallet_id, type, amount, source_type, source_id, balance_after)
-    values (
-        v_wallet_id,
-        case when v_amount > 0 then 'credit' else 'debit' end,
-        v_amount,
-        'admin_adjustment',
-        null,
-        v_new_balance
-    );
-
-    return jsonb_build_object(
-        'user_id', p_user_id,
-        'wallet_type', v_wallet_type,
-        'amount', v_amount,
-        'previous_balance', v_balance,
-        'balance', v_new_balance,
-        'reason', v_reason
-    );
-end;
+  RETURN jsonb_build_object('user_id', p_user_id, 'wallet_type', v_wallet_type, 'amount', v_amount, 'previous_balance', v_balance, 'balance', v_new_balance, 'reason', v_reason);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
 -- 5. Daftar voucher + jumlah klaimnya. Permission: entitlement.manage.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_list_vouchers()
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor uuid := auth.uid();
-    v_rows jsonb;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_list_vouchers ()
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_rows jsonb;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('entitlement.manage') then
-        raise exception 'Entitlement manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('entitlement.manage') THEN
+    RAISE EXCEPTION 'Entitlement manage permission required';
+  END IF;
 
-    select coalesce(jsonb_agg(voucher_row order by voucher_row->>'code'), '[]'::jsonb) into v_rows
-      from (
-        select jsonb_build_object(
-            'id', v.id,
-            'code', v.code,
-            'quota_amount', v.quota_amount,
-            'max_uses', v.max_uses,
-            'used_count', v.used_count,
-            'expires_at', v.expires_at,
-            'is_active', v.is_active,
-            'wallet_type', v.wallet_type,
-            'created_at', v.created_at,
-            'claims', (select count(*) from public.voucher_claims c where c.voucher_id = v.id),
-            -- `voucher_claims` TIDAK menyimpan berapa token yang diberikan
-            -- (kolomnya hanya id, voucher_id, user_id, user_email, claimed_at).
-            --
-            -- Angka otoritatifnya ada di buku besar dompet: transaksi dengan
-            -- source_type 'voucher' dan source_id = voucher ini. TETAPI klaim
-            -- yang diwarisi dari migrasi legacy TIDAK punya baris buku besar —
-            -- di produksi ada 307 klaim voucher sementara transaksi bersumber
-            -- 'voucher' nol. Menampilkan 0 di sebelah "37 klaim" menyesatkan.
-            --
-            -- Jadi: pakai buku besar bila ada, dan bila belum ada, PERKIRAKAN
-            -- dari klaim x kuota sambil menandainya sebagai perkiraan supaya
-            -- angka itu tidak disalahartikan sebagai catatan resmi.
-            'tokens_ledger_rows', (
-                select count(*) from public.wallet_transactions t
-                 where t.source_type = 'voucher' and t.source_id = v.id
-            ),
-            'tokens_granted', case
-                when exists (
-                    select 1 from public.wallet_transactions t
-                     where t.source_type = 'voucher' and t.source_id = v.id
-                ) then coalesce((
-                    select sum(t.amount) from public.wallet_transactions t
-                     where t.source_type = 'voucher' and t.source_id = v.id
-                ), 0)
-                else (
-                    select count(*) from public.voucher_claims c where c.voucher_id = v.id
-                ) * v.quota_amount
-            end,
-            'tokens_source', case
-                when exists (
-                    select 1 from public.wallet_transactions t
-                     where t.source_type = 'voucher' and t.source_id = v.id
-                ) then 'ledger'
-                else 'estimated'
-            end
-        ) as voucher_row
-          from public.vouchers v
-      ) x;
+  SELECT
+    coalesce(jsonb_agg(voucher_row ORDER BY voucher_row ->> 'code'), '[]'::jsonb)
+  INTO
+    v_rows
+  FROM (
+    SELECT
+      jsonb_build_object('id', v.id, 'code', v.code, 'quota_amount', v.quota_amount, 'max_uses', v.max_uses, 'used_count', v.used_count, 'expires_at', v.expires_at, 'is_active', v.is_active, 'wallet_type', v.wallet_type, 'created_at', v.created_at, 'claims', (
+          SELECT
+            count(*)
+          FROM public.voucher_claims c
+          WHERE
+            c.voucher_id = v.id),
+          -- `voucher_claims` TIDAK menyimpan berapa token yang diberikan
+          -- (kolomnya hanya id, voucher_id, user_id, user_email, claimed_at).
+          --
+          -- Angka otoritatifnya ada di buku besar dompet: transaksi dengan
+          -- source_type 'voucher' dan source_id = voucher ini. TETAPI klaim
+          -- yang diwarisi dari migrasi legacy TIDAK punya baris buku besar —
+          -- di produksi ada 307 klaim voucher sementara transaksi bersumber
+          -- 'voucher' nol. Menampilkan 0 di sebelah "37 klaim" menyesatkan.
+          --
+          -- Jadi: pakai buku besar bila ada, dan bila belum ada, PERKIRAKAN
+          -- dari klaim x kuota sambil menandainya sebagai perkiraan supaya
+          -- angka itu tidak disalahartikan sebagai catatan resmi.
+          'tokens_ledger_rows', (
+            SELECT
+              count(*)
+            FROM public.wallet_transactions t
+          WHERE
+            t.source_type = 'voucher'
+            AND t.source_id = v.id), 'tokens_granted', CASE WHEN EXISTS (
+            SELECT
+              1
+            FROM public.wallet_transactions t
+          WHERE
+            t.source_type = 'voucher'
+            AND t.source_id = v.id) THEN
+            coalesce((
+              SELECT
+                sum(t.amount)
+              FROM public.wallet_transactions t
+            WHERE
+              t.source_type = 'voucher'
+              AND t.source_id = v.id), 0)
+          ELSE
+            (
+              SELECT
+                count(*)
+              FROM public.voucher_claims c
+            WHERE
+              c.voucher_id = v.id) * v.quota_amount
+          END, 'tokens_source', CASE WHEN EXISTS (
+            SELECT
+              1
+            FROM public.wallet_transactions t
+          WHERE
+            t.source_type = 'voucher'
+            AND t.source_id = v.id) THEN
+            'ledger'
+          ELSE
+            'estimated'
+          END) AS voucher_row
+    FROM
+      public.vouchers v) x;
 
-    return jsonb_build_object('vouchers', v_rows);
-end;
+  RETURN jsonb_build_object('vouchers', v_rows);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
@@ -401,168 +444,189 @@ $function$;
 --    `max_uses` tidak boleh lebih kecil dari `used_count`. Tanpa itu, mengubah
 --    voucher bisa membuat data klaim yang sudah ada menjadi tidak konsisten.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_upsert_voucher(
-    p_id           uuid,
-    p_code         text,
-    p_quota_amount integer,
-    p_max_uses     integer,
-    p_expires_at   timestamptz,
-    p_is_active    boolean,
-    p_wallet_type  text
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor        uuid := auth.uid();
-    v_code         text := upper(btrim(coalesce(p_code, '')));
-    v_wallet_type  text := nullif(btrim(coalesce(p_wallet_type, '')), '');
-    v_id           uuid := p_id;
-    v_used         integer := 0;
-    v_claim_count  integer := 0;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_upsert_voucher (p_id uuid, p_code text, p_quota_amount integer, p_max_uses integer, p_expires_at timestamptz, p_is_active boolean, p_wallet_type text)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_code text := upper(btrim(coalesce(p_code, '')));
+  v_wallet_type text := nullif (btrim(coalesce(p_wallet_type, '')), '');
+  v_id uuid := p_id;
+  v_used integer := 0;
+  v_claim_count integer := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('entitlement.manage') then
-        raise exception 'Entitlement manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('entitlement.manage') THEN
+    RAISE EXCEPTION 'Entitlement manage permission required';
+  END IF;
 
-    if v_code !~ '^[A-Z0-9][A-Z0-9_-]{2,31}$' then
-        raise exception 'Voucher code must be 3-32 characters of A-Z, 0-9, _ or -';
-    end if;
+  IF v_code !~ '^[A-Z0-9][A-Z0-9_-]{2,31}$' THEN
+    RAISE EXCEPTION 'Voucher code must be 3-32 characters of A-Z, 0-9, _ or -';
+  END IF;
 
-    if coalesce(p_quota_amount, 0) <= 0 then
-        raise exception 'Quota must be greater than zero';
-    end if;
+  IF coalesce(p_quota_amount, 0) <= 0 THEN
+    RAISE EXCEPTION 'Quota must be greater than zero';
+  END IF;
 
-    if coalesce(p_max_uses, 0) <= 0 then
-        raise exception 'Max uses must be greater than zero';
-    end if;
+  IF coalesce(p_max_uses, 0) <= 0 THEN
+    RAISE EXCEPTION 'Max uses must be greater than zero';
+  END IF;
 
-    if v_wallet_type is not null and v_wallet_type not in ('exam_token_cpns', 'exam_token_tka') then
-        raise exception 'Unknown wallet type';
-    end if;
+  IF v_wallet_type IS NOT NULL AND v_wallet_type NOT IN ('exam_token_cpns', 'exam_token_tka') THEN
+    RAISE EXCEPTION 'Unknown wallet type';
+  END IF;
 
-    if v_id is null then
-        insert into public.vouchers (code, quota_amount, max_uses, expires_at, is_active, wallet_type)
-        values (v_code, p_quota_amount, p_max_uses, p_expires_at, coalesce(p_is_active, true), v_wallet_type)
-        returning id into v_id;
-    else
-        select used_count into v_used from public.vouchers where id = v_id for update;
-        if v_used is null then
-            raise exception 'Voucher not found';
-        end if;
+  IF v_id IS NULL THEN
+    INSERT INTO public.vouchers (code, quota_amount, max_uses, expires_at, is_active, wallet_type)
+      VALUES (v_code, p_quota_amount, p_max_uses, p_expires_at, coalesce(p_is_active, TRUE), v_wallet_type)
+    RETURNING
+      id
+    INTO
+      v_id;
+  ELSE
+    SELECT
+      used_count
+    INTO
+      v_used
+    FROM
+      public.vouchers
+    WHERE
+      id = v_id
+    FOR UPDATE;
+    IF v_used IS NULL THEN
+      RAISE EXCEPTION 'Voucher not found';
+    END IF;
 
-        select count(*) into v_claim_count from public.voucher_claims where voucher_id = v_id;
+    SELECT
+      count(*)
+    INTO
+      v_claim_count
+    FROM
+      public.voucher_claims
+    WHERE
+      voucher_id = v_id;
 
-        if p_max_uses < v_used then
-            raise exception 'Max uses cannot be lower than the % times already used', v_used;
-        end if;
-        if p_quota_amount < 0 then
-            raise exception 'Quota must not be negative';
-        end if;
+    IF p_max_uses < v_used THEN
+      RAISE EXCEPTION 'Max uses cannot be lower than the % times already used', v_used;
+    END IF;
+    IF p_quota_amount < 0 THEN
+      RAISE EXCEPTION 'Quota must not be negative';
+    END IF;
+    -- Voucher yang sudah diklaim tidak boleh diubah kodenya: pengguna
+    -- memegang kode itu, dan mengubahnya membuat klaim lama menunjuk kode
+    -- yang tidak pernah mereka pakai.
+    IF v_claim_count > 0 AND v_code <> (
+      SELECT
+        code
+      FROM
+        public.vouchers
+      WHERE
+        id = v_id) THEN
+      RAISE EXCEPTION 'Cannot change the code of a voucher that already has claims';
+    END IF;
 
-        -- Voucher yang sudah diklaim tidak boleh diubah kodenya: pengguna
-        -- memegang kode itu, dan mengubahnya membuat klaim lama menunjuk kode
-        -- yang tidak pernah mereka pakai.
-        if v_claim_count > 0 and v_code <> (select code from public.vouchers where id = v_id) then
-            raise exception 'Cannot change the code of a voucher that already has claims';
-        end if;
+    UPDATE
+      public.vouchers
+    SET
+      code = v_code,
+      quota_amount = p_quota_amount,
+      max_uses = p_max_uses,
+      expires_at = p_expires_at,
+      is_active = coalesce(p_is_active, is_active),
+      wallet_type = v_wallet_type,
+      updated_at = now()
+    WHERE
+      id = v_id;
+  END IF;
 
-        update public.vouchers
-           set code = v_code,
-               quota_amount = p_quota_amount,
-               max_uses = p_max_uses,
-               expires_at = p_expires_at,
-               is_active = coalesce(p_is_active, is_active),
-               wallet_type = v_wallet_type,
-               updated_at = now()
-         where id = v_id;
-    end if;
-
-    return jsonb_build_object(
-        'id', v_id,
-        'code', v_code,
-        'claims', v_claim_count,
-        'used_count', v_used
-    );
-end;
+  RETURN jsonb_build_object('id', v_id, 'code', v_code, 'claims', v_claim_count, 'used_count', v_used);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
 -- 7. Daftar entitlement (pass) per pengguna. Permission: entitlement.manage.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_list_entitlements(
-    p_search text default null,
-    p_status text default null,
-    p_limit  integer default 50,
-    p_offset integer default 0
+CREATE OR REPLACE FUNCTION public.admin_list_entitlements (p_search text DEFAULT NULL, p_status text DEFAULT NULL, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_limit integer := least (greatest (coalesce(p_limit, 50), 1), 200);
+  v_offset integer := greatest (coalesce(p_offset, 0), 0);
+  v_rows jsonb;
+  v_total integer := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  IF NOT app_private.current_user_has_permission ('entitlement.manage') THEN
+    RAISE EXCEPTION 'Entitlement manage permission required';
+  END IF;
+
+  WITH filtered AS (
+    SELECT
+      e.id,
+      e.user_id,
+      e.source_type,
+      e.source_id,
+      e.starts_at,
+      e.expires_at,
+      e.usage_limit,
+      e.usage_count,
+      e.status,
+      e.created_at,
+      f.code AS feature_code,
+      f.name AS feature_name,
+      pr.full_name,
+      pr.display_name,
+      au.email::text AS email
+    FROM
+      public.entitlements e
+    LEFT JOIN public.features f ON f.id = e.feature_id
+    LEFT JOIN public.profiles pr ON pr.id = e.user_id
+    LEFT JOIN auth.users au ON au.id = e.user_id
+  WHERE (p_status IS NULL
+    OR p_status = ''
+    OR e.status = p_status)
+    AND (p_search IS NULL
+      OR p_search = ''
+      OR pr.full_name ILIKE '%' || p_search || '%'
+      OR pr.display_name ILIKE '%' || p_search || '%'
+      OR au.email ILIKE '%' || p_search || '%'
+      OR f.code ILIKE '%' || p_search || '%')
+),
+paged AS (
+  SELECT
+    f.*,
+    count(*) OVER () AS total_count
+  FROM
+    filtered f
+  ORDER BY
+    f.created_at DESC,
+    f.id
+  LIMIT v_limit OFFSET v_offset
 )
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor uuid := auth.uid();
-    v_limit integer := least(greatest(coalesce(p_limit, 50), 1), 200);
-    v_offset integer := greatest(coalesce(p_offset, 0), 0);
-    v_rows jsonb;
-    v_total integer := 0;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+SELECT
+  coalesce(jsonb_agg(to_jsonb (paged) - 'total_count'), '[]'::jsonb),
+  coalesce(max(paged.total_count), 0)
+INTO
+  v_rows,
+  v_total
+FROM
+  paged;
 
-    if not app_private.current_user_has_permission('entitlement.manage') then
-        raise exception 'Entitlement manage permission required';
-    end if;
-
-    with filtered as (
-        select
-            e.id,
-            e.user_id,
-            e.source_type,
-            e.source_id,
-            e.starts_at,
-            e.expires_at,
-            e.usage_limit,
-            e.usage_count,
-            e.status,
-            e.created_at,
-            f.code as feature_code,
-            f.name as feature_name,
-            pr.full_name,
-            pr.display_name,
-            au.email::text as email
-          from public.entitlements e
-          left join public.features f on f.id = e.feature_id
-          left join public.profiles pr on pr.id = e.user_id
-          left join auth.users au on au.id = e.user_id
-         where (p_status is null or p_status = '' or e.status = p_status)
-           and (p_search is null or p_search = ''
-                or pr.full_name ilike '%' || p_search || '%'
-                or pr.display_name ilike '%' || p_search || '%'
-                or au.email ilike '%' || p_search || '%'
-                or f.code ilike '%' || p_search || '%')
-    ), paged as (
-        select f.*, count(*) over () as total_count
-          from filtered f
-         order by f.created_at desc, f.id
-         limit v_limit offset v_offset
-    )
-    select
-        coalesce(jsonb_agg(to_jsonb(paged) - 'total_count'), '[]'::jsonb),
-        coalesce(max(paged.total_count), 0)
-      into v_rows, v_total
-      from paged;
-
-    return jsonb_build_object('entitlements', v_rows, 'total', v_total);
-end;
+  RETURN jsonb_build_object('entitlements', v_rows, 'total', v_total);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
@@ -573,138 +637,132 @@ $function$;
 --    perjalanan bolak-balik ke database untuk satu halaman hanya menambah
 --    waktu muat tanpa manfaat.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_list_settings()
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor uuid := auth.uid();
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_list_settings ()
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('settings.manage') then
-        raise exception 'Settings manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('settings.manage') THEN
+    RAISE EXCEPTION 'Settings manage permission required';
+  END IF;
 
-    return jsonb_build_object(
-        'feature_flags', coalesce((
-            select jsonb_agg(jsonb_build_object(
-                'id', ff.id, 'key', ff.key, 'name', ff.name, 'enabled', ff.enabled,
-                'rollout_percentage', ff.rollout_percentage, 'config', ff.config
-            ) order by ff.key)
-              from public.feature_flags ff
-        ), '[]'::jsonb),
-        'features', coalesce((
-            select jsonb_agg(jsonb_build_object(
-                'id', f.id, 'code', f.code, 'name', f.name, 'description', f.description,
-                'entitlements', (select count(*) from public.entitlements e where e.feature_id = f.id)
-            ) order by f.code)
-              from public.features f
-        ), '[]'::jsonb),
-        'certificate_templates', coalesce((
-            select jsonb_agg(jsonb_build_object(
-                'id', ct.id, 'name', ct.name, 'template_url', ct.template_url,
-                'config', ct.config, 'created_at', ct.created_at,
-                'certificates', (select count(*) from public.certificates c where c.template_id = ct.id)
-            ) order by ct.name)
-              from public.certificate_templates ct
-        ), '[]'::jsonb),
-        'periods', coalesce((
-            select jsonb_agg(jsonb_build_object(
-                'id', p.id, 'code', p.code, 'name', p.name,
-                'start_date', p.start_date, 'end_date', p.end_date, 'status', p.status
-            ) order by p.start_date desc)
-              from public.periods p
-        ), '[]'::jsonb),
-        'track_periods', coalesce((
-            select jsonb_agg(jsonb_build_object(
-                'id', tp.id, 'is_active', tp.is_active,
-                'track_code', t.code, 'program_code', pr.code,
-                'period_code', p.code, 'period_name', p.name,
-                'start_date', p.start_date, 'end_date', p.end_date
-            ) order by pr.code, t.code)
-              from public.track_periods tp
-              join public.tracks t on t.id = tp.track_id
-              join public.programs pr on pr.id = t.program_id
-              left join public.periods p on p.id = tp.period_id
-        ), '[]'::jsonb),
-        'system_settings', coalesce((
-            select jsonb_agg(jsonb_build_object(
-                'key', s.key, 'value', s.value, 'updated_at', s.updated_at,
-                'updated_by_name', pr.full_name
-            ) order by s.key)
-              from public.system_settings s
-              left join public.profiles pr on pr.id = s.updated_by
-        ), '[]'::jsonb)
-    );
-end;
+  RETURN jsonb_build_object('feature_flags', coalesce((
+      SELECT
+        jsonb_agg(jsonb_build_object('id', ff.id, 'key', ff.key, 'name', ff.name, 'enabled', ff.enabled, 'rollout_percentage', ff.rollout_percentage, 'config', ff.config)
+      ORDER BY ff.key)
+      FROM public.feature_flags ff), '[]'::jsonb), 'features', coalesce((
+    SELECT
+      jsonb_agg(jsonb_build_object('id', f.id, 'code', f.code, 'name', f.name, 'description', f.description, 'entitlements', (
+            SELECT
+              count(*)
+          FROM public.entitlements e
+        WHERE
+          e.feature_id = f.id))
+    ORDER BY f.code)
+  FROM public.features f), '[]'::jsonb), 'certificate_templates', coalesce((
+  SELECT
+    jsonb_agg(jsonb_build_object('id', ct.id, 'name', ct.name, 'template_url', ct.template_url, 'config', ct.config, 'created_at', ct.created_at, 'certificates', (
+          SELECT
+            count(*)
+        FROM public.certificates c
+      WHERE
+        c.template_id = ct.id))
+  ORDER BY ct.name)
+FROM public.certificate_templates ct), '[]'::jsonb), 'periods', coalesce((
+  SELECT
+    jsonb_agg(jsonb_build_object('id', p.id, 'code', p.code, 'name', p.name, 'start_date', p.start_date, 'end_date', p.end_date, 'status', p.status)
+    ORDER BY p.start_date DESC)
+  FROM public.periods p), '[]'::jsonb), 'track_periods', coalesce((
+  SELECT
+    jsonb_agg(jsonb_build_object('id', tp.id, 'is_active', tp.is_active, 'track_code', t.code, 'program_code', pr.code, 'period_code', p.code, 'period_name', p.name, 'start_date', p.start_date, 'end_date', p.end_date)
+    ORDER BY pr.code, t.code)
+  FROM public.track_periods tp
+  JOIN public.tracks t ON t.id = tp.track_id
+  JOIN public.programs pr ON pr.id = t.program_id
+  LEFT JOIN public.periods p ON p.id = tp.period_id), '[]'::jsonb), 'system_settings', coalesce((
+  SELECT
+    jsonb_agg(jsonb_build_object('key', s.key, 'value', s.value, 'updated_at', s.updated_at, 'updated_by_name', pr.full_name)
+    ORDER BY s.key)
+  FROM public.system_settings s
+  LEFT JOIN public.profiles pr ON pr.id = s.updated_by), '[]'::jsonb));
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
 -- 9. Buat / ubah feature flag. Permission: settings.manage.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_upsert_feature_flag(
-    p_id                 uuid,
-    p_key                text,
-    p_name               text,
-    p_enabled            boolean,
-    p_rollout_percentage integer
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor   uuid := auth.uid();
-    v_key     text := btrim(coalesce(p_key, ''));
-    v_name    text := btrim(coalesce(p_name, ''));
-    v_rollout integer := coalesce(p_rollout_percentage, 0);
-    v_id      uuid := p_id;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_upsert_feature_flag (p_id uuid, p_key text, p_name text, p_enabled boolean, p_rollout_percentage integer)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_key text := btrim(coalesce(p_key, ''));
+  v_name text := btrim(coalesce(p_name, ''));
+  v_rollout integer := coalesce(p_rollout_percentage, 0);
+  v_id uuid := p_id;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('settings.manage') then
-        raise exception 'Settings manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('settings.manage') THEN
+    RAISE EXCEPTION 'Settings manage permission required';
+  END IF;
 
-    if v_key !~ '^[a-z0-9][a-z0-9_.-]{1,63}$' then
-        raise exception 'Flag key must be 2-64 characters of a-z, 0-9, _ . or -';
-    end if;
+  IF v_key !~ '^[a-z0-9][a-z0-9_.-]{1,63}$' THEN
+    RAISE EXCEPTION 'Flag key must be 2-64 characters of a-z, 0-9, _ . or -';
+  END IF;
 
-    if length(v_name) < 2 then
-        raise exception 'Flag name is required';
-    end if;
+  IF length(v_name) < 2 THEN
+    RAISE EXCEPTION 'Flag name is required';
+  END IF;
 
-    if v_rollout < 0 or v_rollout > 100 then
-        raise exception 'Rollout percentage must be between 0 and 100';
-    end if;
+  IF v_rollout < 0 OR v_rollout > 100 THEN
+    RAISE EXCEPTION 'Rollout percentage must be between 0 and 100';
+  END IF;
 
-    if v_id is null then
-        insert into public.feature_flags (key, name, enabled, rollout_percentage)
-        values (v_key, v_name, coalesce(p_enabled, false), v_rollout)
-        returning id into v_id;
-    else
-        if not exists (select 1 from public.feature_flags where id = v_id) then
-            raise exception 'Feature flag not found';
-        end if;
+  IF v_id IS NULL THEN
+    INSERT INTO public.feature_flags (key, name, enabled, rollout_percentage)
+      VALUES (v_key, v_name, coalesce(p_enabled, FALSE), v_rollout)
+    RETURNING
+      id
+    INTO
+      v_id;
+  ELSE
+    IF NOT EXISTS (
+      SELECT
+        1
+      FROM
+        public.feature_flags
+      WHERE
+        id = v_id) THEN
+    RAISE EXCEPTION 'Feature flag not found';
+  END IF;
 
-        update public.feature_flags
-           set key = v_key,
-               name = v_name,
-               enabled = coalesce(p_enabled, enabled),
-               rollout_percentage = v_rollout
-         where id = v_id;
-    end if;
+  UPDATE
+    public.feature_flags
+  SET
+    key = v_key,
+    name = v_name,
+    enabled = coalesce(p_enabled, enabled),
+    rollout_percentage = v_rollout
+  WHERE
+    id = v_id;
+END IF;
 
-    return jsonb_build_object('id', v_id, 'key', v_key, 'enabled', coalesce(p_enabled, false), 'rollout_percentage', v_rollout);
-end;
+  RETURN jsonb_build_object('id', v_id, 'key', v_key, 'enabled', coalesce(p_enabled, FALSE), 'rollout_percentage', v_rollout);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
@@ -712,190 +770,227 @@ $function$;
 --     PENJAGA: template yang sudah dipakai sertifikat terbit tidak boleh
 --     kehilangan `template_url`-nya — sertifikat lama akan gagal dirender ulang.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_upsert_certificate_template(
-    p_id           uuid,
-    p_name         text,
-    p_template_url text,
-    p_config       jsonb
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor    uuid := auth.uid();
-    v_name     text := btrim(coalesce(p_name, ''));
-    v_url      text := nullif(btrim(coalesce(p_template_url, '')), '');
-    v_in_use   integer := 0;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_upsert_certificate_template (p_id uuid, p_name text, p_template_url text, p_config jsonb)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_name text := btrim(coalesce(p_name, ''));
+  v_url text := nullif (btrim(coalesce(p_template_url, '')), '');
+  v_in_use integer := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('settings.manage') then
-        raise exception 'Settings manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('settings.manage') THEN
+    RAISE EXCEPTION 'Settings manage permission required';
+  END IF;
 
-    if p_id is null then
-        raise exception 'Certificate template id is required';
-    end if;
+  IF p_id IS NULL THEN
+    RAISE EXCEPTION 'Certificate template id is required';
+  END IF;
 
-    if length(v_name) < 2 then
-        raise exception 'Template name is required';
-    end if;
+  IF length(v_name) < 2 THEN
+    RAISE EXCEPTION 'Template name is required';
+  END IF;
 
-    if not exists (select 1 from public.certificate_templates where id = p_id) then
-        raise exception 'Certificate template not found';
-    end if;
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.certificate_templates
+    WHERE
+      id = p_id) THEN
+  RAISE EXCEPTION 'Certificate template not found';
+END IF;
 
-    select count(*) into v_in_use from public.certificates where template_id = p_id;
+  SELECT
+    count(*)
+  INTO
+    v_in_use
+  FROM
+    public.certificates
+  WHERE
+    template_id = p_id;
 
-    if v_url is null and v_in_use > 0 then
-        raise exception 'Cannot clear the template URL: % certificates already use this template', v_in_use;
-    end if;
+  IF v_url IS NULL AND v_in_use > 0 THEN
+    RAISE EXCEPTION 'Cannot clear the template URL: % certificates already use this template', v_in_use;
+  END IF;
 
-    update public.certificate_templates
-       set name = v_name,
-           template_url = coalesce(v_url, template_url),
-           config = coalesce(p_config, config)
-     where id = p_id;
+  UPDATE
+    public.certificate_templates
+  SET
+    name = v_name,
+    template_url = coalesce(v_url, template_url),
+    config = coalesce(p_config, config)
+  WHERE
+    id = p_id;
 
-    return jsonb_build_object('id', p_id, 'name', v_name, 'certificates_in_use', v_in_use);
-end;
+  RETURN jsonb_build_object('id', p_id, 'name', v_name, 'certificates_in_use', v_in_use);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
 -- 11. Aktifkan / nonaktifkan track period. Permission: settings.manage.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_set_track_period_active(
-    p_track_period_id uuid,
-    p_is_active       boolean
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor   uuid := auth.uid();
-    v_updated integer := 0;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_set_track_period_active (p_track_period_id uuid, p_is_active boolean)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_updated integer := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('settings.manage') then
-        raise exception 'Settings manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('settings.manage') THEN
+    RAISE EXCEPTION 'Settings manage permission required';
+  END IF;
 
-    update public.track_periods
-       set is_active = coalesce(p_is_active, false),
-           updated_at = now()
-     where id = p_track_period_id;
-    get diagnostics v_updated = row_count;
+  UPDATE
+    public.track_periods
+  SET
+    is_active = coalesce(p_is_active, FALSE),
+    updated_at = now()
+  WHERE
+    id = p_track_period_id;
+  get diagnostics v_updated = row_count;
 
-    if v_updated = 0 then
-        raise exception 'Track period not found';
-    end if;
+  IF v_updated = 0 THEN
+    RAISE EXCEPTION 'Track period not found';
+  END IF;
 
-    return jsonb_build_object('id', p_track_period_id, 'is_active', coalesce(p_is_active, false));
-end;
+  RETURN jsonb_build_object('id', p_track_period_id, 'is_active', coalesce(p_is_active, FALSE));
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
 -- 12. Tulis / hapus system setting (key-value). Permission: settings.manage.
 --     Nilai disimpan sebagai jsonb, jadi angka, boolean, dan objek sama-sama sah.
 -- -----------------------------------------------------------------------------
-create or replace function public.admin_upsert_system_setting(p_key text, p_value jsonb)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor uuid := auth.uid();
-    v_key   text := btrim(coalesce(p_key, ''));
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_upsert_system_setting (p_key text, p_value jsonb)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_key text := btrim(coalesce(p_key, ''));
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('settings.manage') then
-        raise exception 'Settings manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('settings.manage') THEN
+    RAISE EXCEPTION 'Settings manage permission required';
+  END IF;
 
-    if v_key !~ '^[a-z0-9][a-z0-9_.-]{1,63}$' then
-        raise exception 'Setting key must be 2-64 characters of a-z, 0-9, _ . or -';
-    end if;
+  IF v_key !~ '^[a-z0-9][a-z0-9_.-]{1,63}$' THEN
+    RAISE EXCEPTION 'Setting key must be 2-64 characters of a-z, 0-9, _ . or -';
+  END IF;
 
-    if p_value is null then
-        raise exception 'Setting value is required';
-    end if;
+  IF p_value IS NULL THEN
+    RAISE EXCEPTION 'Setting value is required';
+  END IF;
 
-    insert into public.system_settings (key, value, updated_by, updated_at)
-    values (v_key, p_value, v_actor, now())
-    on conflict (key) do update
-       set value = excluded.value,
-           updated_by = excluded.updated_by,
-           updated_at = now();
+  INSERT INTO public.system_settings (key, value, updated_by, updated_at)
+    VALUES (v_key, p_value, v_actor, now())
+  ON CONFLICT (key)
+    DO UPDATE SET
+      value = excluded.value,
+      updated_by = excluded.updated_by,
+      updated_at = now();
 
-    return jsonb_build_object('key', v_key, 'value', p_value);
-end;
+  RETURN jsonb_build_object('key', v_key, 'value', p_value);
+END;
 $function$;
 
-create or replace function public.admin_delete_system_setting(p_key text)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor   uuid := auth.uid();
-    v_deleted integer := 0;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+CREATE OR REPLACE FUNCTION public.admin_delete_system_setting (p_key text)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_deleted integer := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-    if not app_private.current_user_has_permission('settings.manage') then
-        raise exception 'Settings manage permission required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('settings.manage') THEN
+    RAISE EXCEPTION 'Settings manage permission required';
+  END IF;
 
-    delete from public.system_settings where key = btrim(coalesce(p_key, ''));
-    get diagnostics v_deleted = row_count;
+  DELETE FROM public.system_settings
+  WHERE key = btrim(coalesce(p_key, ''));
+  get diagnostics v_deleted = row_count;
 
-    return jsonb_build_object('key', p_key, 'deleted', v_deleted > 0);
-end;
+  RETURN jsonb_build_object('key', p_key, 'deleted', v_deleted > 0);
+END;
 $function$;
 
 -- -----------------------------------------------------------------------------
 -- ACL: `anon` tidak diberi akses; setiap fungsi memeriksa permission sendiri.
 -- -----------------------------------------------------------------------------
-revoke all on function public.admin_entitlement_overview() from public, anon;
-revoke all on function public.admin_list_wallets(text, text, integer, integer) from public, anon;
-revoke all on function public.admin_list_wallet_transactions(uuid, text, integer, integer) from public, anon;
-revoke all on function public.admin_adjust_wallet(uuid, text, integer, text) from public, anon;
-revoke all on function public.admin_list_vouchers() from public, anon;
-revoke all on function public.admin_upsert_voucher(uuid, text, integer, integer, timestamptz, boolean, text) from public, anon;
-revoke all on function public.admin_list_entitlements(text, text, integer, integer) from public, anon;
-revoke all on function public.admin_list_settings() from public, anon;
-revoke all on function public.admin_upsert_feature_flag(uuid, text, text, boolean, integer) from public, anon;
-revoke all on function public.admin_upsert_certificate_template(uuid, text, text, jsonb) from public, anon;
-revoke all on function public.admin_set_track_period_active(uuid, boolean) from public, anon;
-revoke all on function public.admin_upsert_system_setting(text, jsonb) from public, anon;
-revoke all on function public.admin_delete_system_setting(text) from public, anon;
+REVOKE ALL ON FUNCTION public.admin_entitlement_overview () FROM public, anon;
 
-grant execute on function public.admin_entitlement_overview() to authenticated;
-grant execute on function public.admin_list_wallets(text, text, integer, integer) to authenticated;
-grant execute on function public.admin_list_wallet_transactions(uuid, text, integer, integer) to authenticated;
-grant execute on function public.admin_adjust_wallet(uuid, text, integer, text) to authenticated;
-grant execute on function public.admin_list_vouchers() to authenticated;
-grant execute on function public.admin_upsert_voucher(uuid, text, integer, integer, timestamptz, boolean, text) to authenticated;
-grant execute on function public.admin_list_entitlements(text, text, integer, integer) to authenticated;
-grant execute on function public.admin_list_settings() to authenticated;
-grant execute on function public.admin_upsert_feature_flag(uuid, text, text, boolean, integer) to authenticated;
-grant execute on function public.admin_upsert_certificate_template(uuid, text, text, jsonb) to authenticated;
-grant execute on function public.admin_set_track_period_active(uuid, boolean) to authenticated;
-grant execute on function public.admin_upsert_system_setting(text, jsonb) to authenticated;
-grant execute on function public.admin_delete_system_setting(text) to authenticated;
+REVOKE ALL ON FUNCTION public.admin_list_wallets (text, text, integer, integer) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_list_wallet_transactions (uuid, text, integer, integer) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_adjust_wallet (uuid, text, integer, text) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_list_vouchers () FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_upsert_voucher (uuid, text, integer, integer, timestamptz, boolean, text) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_list_entitlements (text, text, integer, integer) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_list_settings () FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_upsert_feature_flag (uuid, text, text, boolean, integer) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_upsert_certificate_template (uuid, text, text, jsonb) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_set_track_period_active (uuid, boolean) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_upsert_system_setting (text, jsonb) FROM public, anon;
+
+REVOKE ALL ON FUNCTION public.admin_delete_system_setting (text) FROM public, anon;
+
+GRANT EXECUTE ON FUNCTION public.admin_entitlement_overview () TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_list_wallets (text, text, integer, integer) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_list_wallet_transactions (uuid, text, integer, integer) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_adjust_wallet (uuid, text, integer, text) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_list_vouchers () TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_upsert_voucher (uuid, text, integer, integer, timestamptz, boolean, text) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_list_entitlements (text, text, integer, integer) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_list_settings () TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_upsert_feature_flag (uuid, text, text, boolean, integer) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_upsert_certificate_template (uuid, text, text, jsonb) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_set_track_period_active (uuid, boolean) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_upsert_system_setting (text, jsonb) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.admin_delete_system_setting (text) TO authenticated;

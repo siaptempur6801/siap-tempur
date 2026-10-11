@@ -12,7 +12,7 @@ fi
 # Require an actual PostgreSQL URI. A bare project ref/database name would make psql
 # silently fall back to a local Unix socket, which is unsafe/confusing for rehearsal.
 case "$PROD_DB_URL" in
-  postgresql://*|postgres://*) ;;
+  postgresql://* | postgres://*) ;;
   *)
     echo "ERROR: PROD_DB_URL is not a PostgreSQL connection URI."
     echo "Expected it to begin with postgresql:// or postgres://."
@@ -30,7 +30,7 @@ fi
 
 # Explicitly refuse localhost targets for the production exporter.
 case "$PROD_DB_URL" in
-  *"127.0.0.1"*|*"localhost"*)
+  *"127.0.0.1"* | *"localhost"*)
     echo "ERROR: PROD_DB_URL points to localhost. Refusing production export."
     exit 1
     ;;
@@ -103,21 +103,21 @@ ro_copy_query \
   "select table_schema, table_name, ordinal_position, column_name, data_type, udt_schema, udt_name, is_nullable from information_schema.columns where table_schema='public' order by table_name, ordinal_position" \
   "${OUT_DIR}/public_columns.csv"
 
-printf 'table_name,row_count\n' > "${OUT_DIR}/public_row_counts.csv"
+printf 'table_name,row_count\n' >"${OUT_DIR}/public_row_counts.csv"
 
 # Export every production public BASE TABLE. This intentionally favors completeness over a hand-maintained table allowlist.
-ro_scalar "select tablename from pg_catalog.pg_tables where schemaname='public' order by tablename" |
-while IFS= read -r table; do
-  if [[ ! "$table" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-    echo "ERROR: unexpected table name: $table"
-    exit 1
-  fi
+ro_scalar "select tablename from pg_catalog.pg_tables where schemaname='public' order by tablename" \
+  | while IFS= read -r table; do
+    if [[ ! "$table" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+      echo "ERROR: unexpected table name: $table"
+      exit 1
+    fi
 
-  echo "Exporting public.${table} ..."
-  ro_copy_table "$table" "${PUBLIC_DIR}/${table}.csv"
-  count="$(ro_scalar "select count(*) from public.\"${table}\"")"
-  printf '%s,%s\n' "$table" "$count" >> "${OUT_DIR}/public_row_counts.csv"
-done
+    echo "Exporting public.${table} ..."
+    ro_copy_table "$table" "${PUBLIC_DIR}/${table}.csv"
+    count="$(ro_scalar "select count(*) from public.\"${table}\"")"
+    printf '%s,%s\n' "$table" "$count" >>"${OUT_DIR}/public_row_counts.csv"
+  done
 
 # Count exported tables from the manifest (header excluded), compatible with macOS Bash 3.x.
 TABLE_COUNT="$(tail -n +2 "${OUT_DIR}/public_row_counts.csv" | wc -l | tr -d ' ')"
@@ -132,10 +132,10 @@ if [[ -f "$BASELINE_SQL" ]]; then
     -c "SET LOCAL statement_timeout = '120s';" \
     -f "$BASELINE_SQL" \
     -c 'ROLLBACK;' \
-    > "${OUT_DIR}/source_baseline.txt"
+    >"${OUT_DIR}/source_baseline.txt"
 fi
 
-cat > "${OUT_DIR}/README.txt" <<EOF
+cat >"${OUT_DIR}/README.txt" <<EOF
 Siap Tempur production rehearsal raw snapshot
 Created: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 Expected source project: ${EXPECTED_PROJECT_REF}

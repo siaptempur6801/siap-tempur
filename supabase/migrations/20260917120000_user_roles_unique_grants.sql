@@ -6,13 +6,12 @@
 --
 -- Karena `scope_type`/`scope_id` bisa NULL (peran tanpa cakupan), keunikan dipisah menjadi dua
 -- indeks parsial: satu untuk peran tanpa cakupan, satu untuk peran dengan cakupan.
-
 -- Peran tanpa cakupan (mis. ADMIN global): satu baris per (user, role).
-create unique index if not exists user_roles_unique_unscoped_idx
-    on public.user_roles (user_id, role_id)
- where scope_type is null and scope_id is null;
+CREATE UNIQUE INDEX IF NOT EXISTS user_roles_unique_unscoped_idx ON public.user_roles (user_id, role_id)
+WHERE
+  scope_type IS NULL AND scope_id IS NULL;
 
 -- Peran dengan cakupan (mis. peran pada track tertentu): satu baris per (user, role, scope).
-create unique index if not exists user_roles_unique_scoped_idx
-    on public.user_roles (user_id, role_id, scope_type, scope_id)
- where scope_type is not null and scope_id is not null;
+CREATE UNIQUE INDEX IF NOT EXISTS user_roles_unique_scoped_idx ON public.user_roles (user_id, role_id, scope_type, scope_id)
+WHERE
+  scope_type IS NOT NULL AND scope_id IS NOT NULL;

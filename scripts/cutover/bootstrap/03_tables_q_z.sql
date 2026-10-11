@@ -1,9 +1,8 @@
 -- Generated from canonical staging lpgrivowdcepcxradavu.
 -- Runtime public tables Q-Z only. Constraints/indexes/RLS/functions/grants are separate fragments.
 -- DO NOT apply to production before explicit final GO.
-
 CREATE TABLE public.question_assets (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   question_id uuid NOT NULL,
   asset_type text NOT NULL,
   storage_path text NOT NULL,
@@ -13,7 +12,7 @@ CREATE TABLE public.question_assets (
 );
 
 CREATE TABLE public.question_explanations (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   question_id uuid NOT NULL,
   content text NOT NULL,
   format text DEFAULT 'markdown'::text NOT NULL,
@@ -30,12 +29,12 @@ CREATE TABLE public.question_knowledge_nodes (
 );
 
 CREATE TABLE public.question_options (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   question_id uuid NOT NULL,
   option_key text NOT NULL,
   content text NOT NULL,
   is_correct boolean,
-  score numeric(10,2),
+  score numeric(10, 2),
   sort_order integer DEFAULT 0 NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   image_url text,
@@ -45,7 +44,7 @@ CREATE TABLE public.question_options (
 );
 
 CREATE TABLE public.question_reports (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   question_id uuid NOT NULL,
   user_id uuid NOT NULL,
   attempt_id uuid,
@@ -62,15 +61,15 @@ CREATE TABLE public.question_statistics (
   attempt_count bigint DEFAULT 0 NOT NULL,
   correct_count bigint DEFAULT 0 NOT NULL,
   wrong_count bigint DEFAULT 0 NOT NULL,
-  accuracy numeric(7,4) DEFAULT 0 NOT NULL,
-  average_time numeric(10,2) DEFAULT 0 NOT NULL,
+  accuracy numeric(7, 4) DEFAULT 0 NOT NULL,
+  average_time numeric(10, 2) DEFAULT 0 NOT NULL,
   report_count integer DEFAULT 0 NOT NULL,
-  difficulty_index numeric(7,4),
+  difficulty_index numeric(7, 4),
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE public.question_stimuli (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   stimulus_code text NOT NULL,
   program_id uuid NOT NULL,
   track_id uuid NOT NULL,
@@ -92,7 +91,7 @@ CREATE TABLE public.question_tags (
 );
 
 CREATE TABLE public.question_versions (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   question_id uuid NOT NULL,
   version integer NOT NULL,
   snapshot jsonb NOT NULL,
@@ -102,7 +101,7 @@ CREATE TABLE public.question_versions (
 );
 
 CREATE TABLE public.questions (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   question_code text NOT NULL,
   program_id uuid NOT NULL,
   track_id uuid NOT NULL,
@@ -127,9 +126,9 @@ CREATE TABLE public.questions (
 );
 
 CREATE TABLE public.refunds (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   payment_id uuid NOT NULL,
-  amount numeric(14,2) NOT NULL,
+  amount numeric(14, 2) NOT NULL,
   reason text NOT NULL,
   status text DEFAULT 'pending'::text NOT NULL,
   requested_by uuid NOT NULL,
@@ -140,7 +139,7 @@ CREATE TABLE public.refunds (
 );
 
 CREATE TABLE public.remedial_session_items (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   session_id uuid NOT NULL,
   question_id uuid NOT NULL,
   knowledge_node_id uuid,
@@ -155,7 +154,7 @@ CREATE TABLE public.remedial_session_items (
 );
 
 CREATE TABLE public.remedial_sessions (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   track_id uuid NOT NULL,
   source_attempt_id uuid,
@@ -171,14 +170,14 @@ CREATE TABLE public.role_permissions (
 );
 
 CREATE TABLE public.roles (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   code text NOT NULL,
   name text NOT NULL,
   description text
 );
 
 CREATE TABLE public.session_activity (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   device_id uuid,
   session_id_hash text NOT NULL,
@@ -190,7 +189,7 @@ CREATE TABLE public.session_activity (
 );
 
 CREATE TABLE public.subjects (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   track_id uuid NOT NULL,
   code text NOT NULL,
   name text NOT NULL,
@@ -210,23 +209,23 @@ CREATE TABLE public.system_settings (
 );
 
 CREATE TABLE public.tags (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   name text NOT NULL,
   slug text NOT NULL
 );
 
 CREATE TABLE public.track_periods (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   track_id uuid NOT NULL,
   period_id uuid NOT NULL,
-  is_active boolean DEFAULT true NOT NULL,
+  is_active boolean DEFAULT TRUE NOT NULL,
   config jsonb DEFAULT '{}'::jsonb NOT NULL,
   created_at timestamp with time zone DEFAULT now() NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE public.tracks (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   program_id uuid NOT NULL,
   code text NOT NULL,
   name text NOT NULL,
@@ -249,28 +248,28 @@ CREATE TABLE public.user_activity_daily (
 );
 
 CREATE TABLE public.user_devices (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   device_fingerprint text NOT NULL,
   device_name text,
   last_ip inet,
   first_seen_at timestamp with time zone DEFAULT now() NOT NULL,
   last_seen_at timestamp with time zone DEFAULT now() NOT NULL,
-  trusted boolean DEFAULT false NOT NULL,
+  trusted boolean DEFAULT FALSE NOT NULL,
   revoked_at timestamp with time zone
 );
 
 CREATE TABLE public.user_knowledge_progress (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   user_track_id uuid NOT NULL,
   knowledge_node_id uuid NOT NULL,
   attempted_questions integer DEFAULT 0 NOT NULL,
   correct_questions integer DEFAULT 0 NOT NULL,
-  accuracy numeric(7,4) DEFAULT 0 NOT NULL,
-  average_score numeric(10,4) DEFAULT 0 NOT NULL,
-  average_time_seconds numeric(10,2) DEFAULT 0 NOT NULL,
-  mastery_score numeric(7,4) DEFAULT 0 NOT NULL,
+  accuracy numeric(7, 4) DEFAULT 0 NOT NULL,
+  average_score numeric(10, 4) DEFAULT 0 NOT NULL,
+  average_time_seconds numeric(10, 2) DEFAULT 0 NOT NULL,
+  mastery_score numeric(7, 4) DEFAULT 0 NOT NULL,
   mastery_level text DEFAULT 'unknown'::text NOT NULL,
   last_practiced_at timestamp with time zone,
   updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -283,7 +282,7 @@ CREATE TABLE public.user_question_bookmarks (
 );
 
 CREATE TABLE public.user_question_notes (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   question_id uuid NOT NULL,
   content text NOT NULL,
@@ -298,23 +297,23 @@ CREATE TABLE public.user_question_state (
   times_correct integer DEFAULT 0 NOT NULL,
   times_wrong integer DEFAULT 0 NOT NULL,
   last_result text,
-  needs_review boolean DEFAULT false NOT NULL,
+  needs_review boolean DEFAULT FALSE NOT NULL,
   next_review_at timestamp with time zone,
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE public.user_readiness (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   track_id uuid NOT NULL,
-  readiness_score numeric(7,4) NOT NULL,
-  confidence_score numeric(7,4),
+  readiness_score numeric(7, 4) NOT NULL,
+  confidence_score numeric(7, 4),
   calculation_version text NOT NULL,
   calculated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE public.user_roles (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   role_id uuid NOT NULL,
   scope_type text,
@@ -331,18 +330,18 @@ CREATE TABLE public.user_streaks (
 );
 
 CREATE TABLE public.user_subject_progress (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   subject_id uuid NOT NULL,
   attempts integer DEFAULT 0 NOT NULL,
   questions_answered integer DEFAULT 0 NOT NULL,
-  accuracy numeric(7,4) DEFAULT 0 NOT NULL,
-  mastery_score numeric(7,4) DEFAULT 0 NOT NULL,
+  accuracy numeric(7, 4) DEFAULT 0 NOT NULL,
+  mastery_score numeric(7, 4) DEFAULT 0 NOT NULL,
   updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 CREATE TABLE public.user_track_preferences (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_track_id uuid NOT NULL,
   target_institution text,
   target_position text,
@@ -356,7 +355,7 @@ CREATE TABLE public.user_track_preferences (
 );
 
 CREATE TABLE public.user_tracks (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   track_id uuid NOT NULL,
   status text DEFAULT 'active'::text NOT NULL,
@@ -368,7 +367,7 @@ CREATE TABLE public.user_tracks (
 );
 
 CREATE TABLE public.user_wrong_questions (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   user_track_id uuid NOT NULL,
   track_id uuid NOT NULL,
@@ -392,7 +391,7 @@ CREATE TABLE public.user_wrong_questions (
 );
 
 CREATE TABLE public.wallet_transactions (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   wallet_id uuid NOT NULL,
   type text NOT NULL,
   amount integer NOT NULL,
@@ -403,7 +402,7 @@ CREATE TABLE public.wallet_transactions (
 );
 
 CREATE TABLE public.wallets (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   wallet_type text DEFAULT 'exam_token'::text NOT NULL,
   balance integer DEFAULT 0 NOT NULL,
@@ -411,7 +410,7 @@ CREATE TABLE public.wallets (
 );
 
 CREATE TABLE public.wrong_question_reviews (
-  id uuid DEFAULT gen_random_uuid() NOT NULL,
+  id uuid DEFAULT gen_random_uuid () NOT NULL,
   user_id uuid NOT NULL,
   user_wrong_question_id uuid NOT NULL,
   question_id uuid NOT NULL,

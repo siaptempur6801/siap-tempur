@@ -8,7 +8,7 @@ import { PERMISSIONS } from '@/src/auth/permissions'
 import { auditAdminAction } from '@/lib/audit-log'
 import { authorizationService } from '@/src/services/authorization.service'
 import { adminExamManagementService } from '@/src/services/admin-exam-management.service'
-import { adminExamsService } from '@/src/services/admin-exams.service'
+import { adminExamsService, drillRuleForExam } from '@/src/services/admin-exams.service'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
 
 function text(form: FormData, key: string) {
@@ -69,10 +69,14 @@ function friendlyError(error: unknown) {
     DRILL_KNOWLEDGE_NODE_INVALID: 'Submateri Drill tidak cocok dengan subtes yang dipilih.',
     DRILL_KNOWLEDGE_NODE_INACTIVE: 'Submateri Drill sedang tidak aktif.',
     DRILL_QUESTION_COUNT_INVALID: 'Jumlah soal Drill harus lebih dari 0.',
-    DRILL_ACTIVE_ATTEMPT_LOCKED: 'Drill tidak dapat diubah saat masih ada attempt yang sedang berjalan.',
-    DRILL_SECTION_CONFLICT: 'Drill ini memiliki lebih dari satu section. Rapikan struktur exam sebelum mengubah fokus Drill.',
-    DRILL_TYPE_IMMUTABLE: 'Exam yang sudah dibuat tidak dapat diubah menjadi/keluar dari tipe Drill melalui editor ini.',
+    DRILL_ACTIVE_ATTEMPT_LOCKED:
+      'Drill tidak dapat diubah saat masih ada attempt yang sedang berjalan.',
+    DRILL_SECTION_CONFLICT:
+      'Drill ini memiliki lebih dari satu section. Rapikan struktur exam sebelum mengubah fokus Drill.',
+    DRILL_TYPE_IMMUTABLE:
+      'Exam yang sudah dibuat tidak dapat diubah menjadi/keluar dari tipe Drill melalui editor ini.',
     EXAM_NOT_FOUND: 'Exam tidak ditemukan pada context aktif.',
+    SECTION_NOT_FOUND: 'Bagian assessment tidak ditemukan pada assessment ini.',
     SECTION_TITLE_REQUIRED: 'Judul section wajib diisi.',
     SECTION_SORT_ORDER_INVALID: 'Urutan section tidak valid.',
     SECTION_QUESTION_COUNT_INVALID: 'Jumlah soal section harus lebih dari 0.',
@@ -118,17 +122,32 @@ async function auditExamAction(audit: ExamAudit, error?: unknown) {
   await auditAdminAction(audit)
 }
 
-function finish(context: ProgramTrackContext, success: string, error?: unknown, form?: FormData, savedId?: string) {
+function finish(
+  context: ProgramTrackContext,
+  success: string,
+  error?: unknown,
+  form?: FormData,
+  savedId?: string,
+) {
   revalidatePath('/admin/assessments')
   const query = new URLSearchParams({
     program: context.programCode,
     track: context.trackCode,
     ...(error ? { error: friendlyError(error) } : { ok: success }),
   })
-  const target = new URL(adminReturnUrl(form?.get('return_to'), `/admin/assessments?${query}`), 'http://admin.local')
-  target.searchParams.delete('ok'); target.searchParams.delete('error')
+  const target = new URL(
+    adminReturnUrl(form?.get('return_to'), `/admin/assessments?${query}`),
+    'http://admin.local',
+  )
+  target.searchParams.delete('ok')
+  target.searchParams.delete('error')
   target.searchParams.set(error ? 'error' : 'ok', error ? friendlyError(error) : success)
-  if (savedId && !error) { target.searchParams.set('assessment', savedId); target.searchParams.set('tab', target.searchParams.get('tab') || 'overview'); target.searchParams.delete('new'); target.searchParams.delete('edit') }
+  if (savedId && !error) {
+    target.searchParams.set('assessment', savedId)
+    target.searchParams.set('tab', target.searchParams.get('tab') || 'overview')
+    target.searchParams.delete('new')
+    target.searchParams.delete('edit')
+  }
   redirect(`${target.pathname}${target.search}`)
 }
 
@@ -146,14 +165,19 @@ export async function saveAdminExamAction(form: FormData) {
     const requestedSlug = text(form, 'slug')
     const slug = slugify(requestedSlug || title)
     const examId = nullableText(form, 'id')
-    if (examTypeCode !== 'DRILL' && ['active','scheduled','ready','published'].includes(text(form,'status').toLowerCase())) {
-      if(!examId) throw new Error('Buat assessment sebagai Draft, lalu lengkapi soal sebelum aktivasi.')
-      const data=await adminExamsService.getWorkspace(context,{id:examId})
-      const current=data.exams[0]
-      if(!current) throw new Error('EXAM_NOT_FOUND')
-      if(!['active','scheduled','ready','published'].includes(current.status.toLowerCase())) {
-        const {assessmentReadiness}=await import('@/src/services/admin-assessment-ux.service')
-        if(!(await assessmentReadiness(current,data.examSections)).configurationReady) throw new Error('Lengkapi soal dan konfigurasi sebelum aktivasi Assessment.')
+    if (
+      examTypeCode !== 'DRILL' &&
+      ['active', 'scheduled', 'ready', 'published'].includes(text(form, 'status').toLowerCase())
+    ) {
+      if (!examId)
+        throw new Error('Buat assessment sebagai Draft, lalu lengkapi soal sebelum aktivasi.')
+      const data = await adminExamsService.getWorkspace(context, { id: examId })
+      const current = data.exams[0]
+      if (!current) throw new Error('EXAM_NOT_FOUND')
+      if (!['active', 'scheduled', 'ready', 'published'].includes(current.status.toLowerCase())) {
+        const { assessmentReadiness } = await import('@/src/services/admin-assessment-ux.service')
+        if (!(await assessmentReadiness(current, data.examSections)).configurationReady)
+          throw new Error('Lengkapi soal dan konfigurasi sebelum aktivasi Assessment.')
       }
     }
 
@@ -202,19 +226,28 @@ export async function saveAdminExamAction(form: FormData) {
   } catch (error) {
     failure = error
   }
-  await auditExamAction({
-    actorId,
-    action: existingId ? 'UPDATE_EXAM' : 'CREATE_EXAM',
-    entityType: 'exam',
-    entityId: existingId,
-    label: text(form, 'title'),
-    after: {
-      exam_type_code: text(form, 'exam_type_code').toUpperCase(),
-      status: text(form, 'status') || 'draft',
-      token_cost: numberValue(form, 'token_cost', 0),
+  await auditExamAction(
+    {
+      actorId,
+      action: existingId ? 'UPDATE_EXAM' : 'CREATE_EXAM',
+      entityType: 'exam',
+      entityId: existingId,
+      label: text(form, 'title'),
+      after: {
+        exam_type_code: text(form, 'exam_type_code').toUpperCase(),
+        status: text(form, 'status') || 'draft',
+        token_cost: numberValue(form, 'token_cost', 0),
+      },
     },
-  }, failure)
-  finish(context, 'Assessment tersimpan. Lengkapi soal, lalu distribusikan.', failure, form, savedId || undefined)
+    failure,
+  )
+  finish(
+    context,
+    'Assessment tersimpan. Lengkapi soal, lalu distribusikan.',
+    failure,
+    form,
+    savedId || undefined,
+  )
 }
 
 export async function archiveAdminExamAction(form: FormData) {
@@ -229,13 +262,16 @@ export async function archiveAdminExamAction(form: FormData) {
   } catch (error) {
     failure = error
   }
-  await auditExamAction({
-    actorId,
-    action: 'ARCHIVE_EXAM',
-    entityType: 'exam',
-    entityId: examId,
-    after: { status: 'archived' },
-  }, failure)
+  await auditExamAction(
+    {
+      actorId,
+      action: 'ARCHIVE_EXAM',
+      entityType: 'exam',
+      entityId: examId,
+      after: { status: 'archived' },
+    },
+    failure,
+  )
   finish(context, 'Assessment diarsipkan.', failure, form)
 }
 
@@ -262,41 +298,98 @@ export async function saveAdminExamSectionAction(form: FormData) {
   } catch (error) {
     failure = error
   }
-  await auditExamAction({
-    actorId,
-    action: sectionId ? 'UPDATE_EXAM_SECTION' : 'CREATE_EXAM_SECTION',
-    entityType: 'exam',
-    entityId: examId,
-    label: text(form, 'title'),
-    after: {
-      question_count: nullableNumber(form, 'question_count'),
-      passing_score: nullableNumber(form, 'passing_score'),
+  await auditExamAction(
+    {
+      actorId,
+      action: sectionId ? 'UPDATE_EXAM_SECTION' : 'CREATE_EXAM_SECTION',
+      entityType: 'exam',
+      entityId: examId,
+      label: text(form, 'title'),
+      after: {
+        subject_code: nullableText(form, 'subject_code'),
+        title: text(form, 'title'),
+        sort_order: numberValue(form, 'sort_order', 0),
+        question_count: nullableNumber(form, 'question_count'),
+        duration_seconds: nullableNumber(form, 'duration_seconds'),
+        passing_score: nullableNumber(form, 'passing_score'),
+      },
     },
-  }, failure)
+    failure,
+  )
   finish(context, 'Bagian assessment tersimpan.', failure, form)
 }
 
 export async function publishAdminExamAction(form: FormData) {
   const context = contextFrom(form)
-  const id = text(form,'id')
+  const id = text(form, 'id')
   let failure: unknown = null
   let actorId = ''
+
   try {
-    const actor = await requireExamManager(); actorId = actor.userId
-    const data = await adminExamsService.getWorkspace(context,{id})
+    const actor = await requireExamManager()
+    actorId = actor.userId
+
+    const data = await adminExamsService.getWorkspace(context, { id })
     const exam = data.exams[0]
-    if(!exam) throw new Error('Assessment tidak ditemukan.')
-    if(!['draft','ready'].includes(exam.status.toLowerCase())) throw new Error('Assessment tidak dalam status yang dapat dipublish.')
-    const {assessmentReadiness} = await import('@/src/services/admin-assessment-ux.service')
-    const rule=data.drillRules.find(r=>r.blueprintId===exam.blueprint_id)
-    const node=rule && data.drillNodes.find(n=>n.id===rule.knowledgeNodeId)
-    const readiness=await assessmentReadiness(exam,data.examSections,rule?{available:node?.availableQuestionCount || 0,required:rule.questionCount}:undefined)
-    if(!readiness.ready) throw new Error('Assessment belum siap. Lengkapi soal, review, dan konfigurasi sebelum publish.')
-    const {createAdminClient}=await import('@/lib/utils/supabase/server')
-    const db=await createAdminClient()
-    const {error}=await db.from('exams').update({status:'active',updated_at:new Date().toISOString()}).eq('id',id).eq('program_id',data.catalog.program.id).eq('track_id',data.catalog.track.id).in('status',['draft','DRAFT','ready','READY'])
-    if(error) throw error
-  } catch(error) {failure=error}
-  await auditExamAction({actorId, action: 'PUBLISH_EXAM',entityType:'exam',entityId:id,after:{status:'active'}},failure)
-  finish(context,'Assessment aktif. Pilih Event atau Instansi untuk distribusi.',failure,form,id)
+    if (!exam) throw new Error('Assessment tidak ditemukan.')
+    if (!['draft', 'ready'].includes(exam.status.toLowerCase())) {
+      throw new Error('Assessment tidak dalam status yang dapat dipublish.')
+    }
+
+    const { assessmentReadiness } = await import('@/src/services/admin-assessment-ux.service')
+    const isDrill =
+      data.catalog.examTypes.find((type) => type.id === exam.exam_type_id)?.code === 'DRILL'
+    const sections = data.examSections.filter((section) => section.exam_id === exam.id)
+    const rule = isDrill
+      ? drillRuleForExam(exam, sections, data.drillRules, data.drillNodes)
+      : undefined
+    const node = rule && data.drillNodes.find((candidate) => candidate.id === rule.knowledgeNodeId)
+    const drillSection =
+      sections.find((section) => section.config?.mode === 'drill') ??
+      sections.find((section) => typeof section.config?.knowledge_node_id === 'string') ??
+      sections[0]
+    const drillSupply = isDrill
+      ? {
+          available: node?.availableQuestionCount ?? 0,
+          required: rule?.questionCount ?? Number(drillSection?.question_count ?? 0),
+        }
+      : undefined
+    const readiness = await assessmentReadiness(exam, sections, drillSupply)
+    if (!readiness.ready) {
+      throw new Error(
+        'Assessment belum siap. Lengkapi soal, review, dan konfigurasi sebelum publish.',
+      )
+    }
+
+    const { createAdminClient } = await import('@/lib/utils/supabase/server')
+    const db = await createAdminClient()
+    const { error } = await db
+      .from('exams')
+      .update({ status: 'active', updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('program_id', data.catalog.program.id)
+      .eq('track_id', data.catalog.track.id)
+      .in('status', ['draft', 'DRAFT', 'ready', 'READY'])
+    if (error) throw error
+  } catch (error) {
+    failure = error
+  }
+
+  await auditExamAction(
+    {
+      actorId,
+      action: 'PUBLISH_EXAM',
+      entityType: 'exam',
+      entityId: id,
+      after: { status: 'active' },
+    },
+    failure,
+  )
+  finish(
+    context,
+    'Assessment aktif. Pilih Event atau Instansi untuk distribusi.',
+    failure,
+    form,
+    id,
+  )
 }

@@ -2,10 +2,8 @@
 -- LOCAL ONLY. Run only against 127.0.0.1:54322.
 -- Purpose: remove staging runtime/QA residue after restoring canonical staging data,
 -- while preserving canonical master/content data required for production rehearsal.
-
-begin;
-
-truncate table
+BEGIN;
+TRUNCATE TABLE
   public.attempt_answer_options,
   public.attempt_answers,
   public.attempt_events,
@@ -56,20 +54,64 @@ truncate table
   public.notification_deliveries,
   public.audit_logs,
   public.user_roles
-restart identity cascade;
-
-commit;
+RESTART IDENTITY
+CASCADE;
+COMMIT;
 
 -- Verification: runtime tables must be empty while canonical content remains.
-select
-  (select count(*) from public.profiles) as technical_profiles,
-  (select count(*) from public.questions) as questions,
-  (select count(*) from public.question_versions) as question_versions,
-  (select count(*) from public.exams) as exams,
-  (select count(*) from public.content_reviews) as content_reviews,
-  (select count(*) from public.exam_attempts) as exam_attempts,
-  (select count(*) from public.orders) as orders,
-  (select count(*) from public.wallets) as wallets,
-  (select count(*) from public.user_tracks) as user_tracks,
-  (select count(*) from public.events) as events,
-  (select count(*) from public.audit_logs) as audit_logs;
+SELECT
+  (
+    SELECT
+      count(*)
+    FROM
+      public.profiles) AS technical_profiles,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.questions) AS questions,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.question_versions) AS question_versions,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.exams) AS exams,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.content_reviews) AS content_reviews,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.exam_attempts) AS exam_attempts,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.orders) AS orders,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.wallets) AS wallets,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.user_tracks) AS user_tracks,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.events) AS events,
+  (
+    SELECT
+      count(*)
+    FROM
+      public.audit_logs) AS audit_logs;

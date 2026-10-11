@@ -1,7 +1,7 @@
-import { MetadataRoute } from 'next';
+import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://siaptempur.id';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://siaptempur.id'
 
   // Core routes
   const routes = [
@@ -20,13 +20,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/cpns/tiu',
     '/cpns/tkp',
     '/blog',
-    '/faq'
+    '/faq',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
-    changeFrequency: route === '/cpns' ? 'daily' as const : 'weekly' as const,
+    changeFrequency: route === '/cpns' ? ('daily' as const) : ('weekly' as const),
     priority: route === '/cpns' ? 1 : 0.8,
-  }));
+  }))
 
-  return routes;
+  return routes
 }

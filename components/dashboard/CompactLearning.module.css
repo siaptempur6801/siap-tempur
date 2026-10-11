@@ -27,59 +27,59 @@
 }
 
 .compact :global(h1.st-heading-display) {
-  font-size: clamp(2rem, 3vw, 2.75rem) !important;
+  font-size: clamp(1.25rem, 2vw, 1.5rem) !important;
 }
 
 .compact :global(h2.st-heading-display) {
-  font-size: clamp(1.5rem, 2.1vw, 2rem) !important;
+  font-size: clamp(1.125rem, 1.7vw, 1.25rem) !important;
 }
 
 .compact :global(h2.st-heading) {
-  font-size: clamp(1.25rem, 1.8vw, 1.6rem) !important;
+  font-size: clamp(1.125rem, 1.7vw, 1.25rem) !important;
 }
 
-.compact :global([data-experience-mode="learning"] h1:not(.st-heading-display)) {
-  font-size: clamp(1.75rem, 2.6vw, 2.25rem) !important;
+.compact :global([data-experience-mode='learning'] h1:not(.st-heading-display)) {
+  font-size: clamp(1.25rem, 2vw, 1.5rem) !important;
 }
 
-.compact :global([data-experience-mode="learning"] h2:not(.st-heading-display):not(.st-heading)) {
-  font-size: clamp(1.125rem, 1.7vw, 1.5rem) !important;
+.compact :global([data-experience-mode='learning'] h2:not(.st-heading-display):not(.st-heading)) {
+  font-size: clamp(1.125rem, 1.7vw, 1.25rem) !important;
 }
 
-.compact :global(.st-card[class~="p-8"]),
-.compact :global(.st-card-md[class~="p-8"]),
-.compact :global(.st-card-lg[class~="p-8"]),
-.compact :global(article[class~="p-8"]) {
+.compact :global(.st-card[class~='p-8']),
+.compact :global(.st-card-md[class~='p-8']),
+.compact :global(.st-card-lg[class~='p-8']),
+.compact :global(article[class~='p-8']) {
   padding: 1.25rem !important;
 }
 
-.compact :global(.st-card[class~="p-6"]),
-.compact :global(.st-card-md[class~="p-6"]),
-.compact :global(.st-card-lg[class~="p-6"]),
-.compact :global(article[class~="p-6"]) {
+.compact :global(.st-card[class~='p-6']),
+.compact :global(.st-card-md[class~='p-6']),
+.compact :global(.st-card-lg[class~='p-6']),
+.compact :global(article[class~='p-6']) {
   padding: 1.125rem !important;
 }
 
-.compact :global(.st-card[class~="p-5"]),
-.compact :global(.st-card-md[class~="p-5"]),
-.compact :global(.st-card-lg[class~="p-5"]),
-.compact :global(article[class~="p-5"]) {
+.compact :global(.st-card[class~='p-5']),
+.compact :global(.st-card-md[class~='p-5']),
+.compact :global(.st-card-lg[class~='p-5']),
+.compact :global(article[class~='p-5']) {
   padding: 1rem !important;
 }
 
-.compact :global([class~="gap-5"]) {
+.compact :global([class~='gap-5']) {
   gap: 1rem !important;
 }
 
-.compact :global([class~="gap-4"]) {
+.compact :global([class~='gap-4']) {
   gap: 0.875rem !important;
 }
 
-.compact :global([class~="mt-6"]) {
+.compact :global([class~='mt-6']) {
   margin-top: 1.25rem !important;
 }
 
-.compact :global([class~="mt-5"]) {
+.compact :global([class~='mt-5']) {
   margin-top: 1rem !important;
 }
 
@@ -98,6 +98,6 @@
 
 @media (min-width: 768px) {
   .compact :global(.st-button) {
-    min-height: 2.5rem !important;
+    min-height: 2.75rem !important;
   }
 }

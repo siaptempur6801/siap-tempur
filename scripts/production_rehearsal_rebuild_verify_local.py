@@ -20,8 +20,16 @@ from pathlib import Path
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost"}
 TECH_ACTORS = (
-    ("4cf7114c-7613-4676-9aa9-64793f855f04", "staging-actor-1@local.invalid", "Staging Content Actor 1"),
-    ("93b4d35b-a1fb-4a16-9304-fef1116002cf", "staging-actor-2@local.invalid", "Staging Content Actor 2"),
+    (
+        "4cf7114c-7613-4676-9aa9-64793f855f04",
+        "staging-actor-1@local.invalid",
+        "Staging Content Actor 1",
+    ),
+    (
+        "93b4d35b-a1fb-4a16-9304-fef1116002cf",
+        "staging-actor-2@local.invalid",
+        "Staging Content Actor 2",
+    ),
 )
 
 
@@ -112,34 +120,116 @@ def stable_hash(db_url: str, row_sql: str) -> str:
 
 def final_gates(db_url: str) -> dict:
     return {
-        "production_auth_uuid_match": scalar_int(db_url, "select count(*) from legacy_prod.auth_users_identity a join auth.users u on u.id=a.id::uuid"),
-        "production_profile_match": scalar_int(db_url, "select count(*) from legacy_prod.profiles l join public.profiles p on p.id=l.id::uuid"),
-        "user_tracks": scalar_int(db_url, "select count(*) from public.user_tracks ut join legacy_prod.auth_users_identity a on a.id::uuid=ut.user_id"),
-        "wallets": scalar_int(db_url, "select count(*) from public.wallets w join legacy_prod.auth_users_identity a on a.id::uuid=w.user_id where w.wallet_type='exam_token'"),
-        "wallet_balance_sum": scalar_int(db_url, "select coalesce(sum(w.balance),0)::bigint from public.wallets w join legacy_prod.auth_users_identity a on a.id::uuid=w.user_id where w.wallet_type='exam_token'"),
-        "attempts": scalar_int(db_url, "select count(*) from public.exam_attempts where metadata->>'migration_source'='production_legacy_rehearsal'"),
-        "completed_attempts": scalar_int(db_url, "select count(*) from public.exam_attempts where metadata->>'migration_source'='production_legacy_rehearsal' and status='completed'"),
-        "attempt_questions": scalar_int(db_url, "select count(*) from public.attempt_questions aq join public.exam_attempts ea on ea.id=aq.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'"),
-        "attempt_answers": scalar_int(db_url, "select count(*) from public.attempt_answers aa join public.attempt_questions aq on aq.id=aa.attempt_question_id join public.exam_attempts ea on ea.id=aq.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'"),
-        "attempt_scores": scalar_int(db_url, "select count(*) from public.attempt_scores s join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'"),
-        "completed_total_score": scalar_int(db_url, "select coalesce(sum(total_score),0)::bigint from public.exam_attempts where metadata->>'migration_source'='production_legacy_rehearsal' and status='completed'"),
-        "twk_score_sum": scalar_int(db_url, "select coalesce(sum(s.raw_score),0)::bigint from public.attempt_scores s join public.subjects sub on sub.id=s.subject_id join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal' and sub.code='TWK'"),
-        "tiu_score_sum": scalar_int(db_url, "select coalesce(sum(s.raw_score),0)::bigint from public.attempt_scores s join public.subjects sub on sub.id=s.subject_id join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal' and sub.code='TIU'"),
-        "tkp_score_sum": scalar_int(db_url, "select coalesce(sum(s.raw_score),0)::bigint from public.attempt_scores s join public.subjects sub on sub.id=s.subject_id join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal' and sub.code='TKP'"),
-        "historical_orders": scalar_int(db_url, "select count(*) from public.orders o where o.order_number in (select order_id from legacy_prod.transactions union all select order_id from legacy_prod.event_payments)"),
-        "historical_order_items": scalar_int(db_url, "select count(*) from public.order_items oi join public.orders o on o.id=oi.order_id where o.order_number in (select order_id from legacy_prod.transactions union all select order_id from legacy_prod.event_payments)"),
-        "historical_payments": scalar_int(db_url, "select count(*) from public.payments where raw_response->>'migration_source'='production_legacy_rehearsal' and raw_response->>'phase'='3'"),
-        "settlement_payments": scalar_int(db_url, "select count(*) from public.payments where raw_response->>'migration_source'='production_legacy_rehearsal' and raw_response->>'phase'='3' and status='settlement'"),
-        "expired_payments": scalar_int(db_url, "select count(*) from public.payments where raw_response->>'migration_source'='production_legacy_rehearsal' and raw_response->>'phase'='3' and status='expire'"),
-        "historical_events": scalar_int(db_url, "select count(*) from public.events where code like 'LEGACY-EVENT-%'"),
-        "historical_registrations": scalar_int(db_url, "select count(*) from public.event_registrations where registration_number like 'LEGACY-%'"),
-        "paid_registration_links": scalar_int(db_url, "select count(*) from public.event_registrations er join public.orders o on o.id=er.order_id where er.registration_number like 'LEGACY-%' and o.status='paid'"),
-        "expired_registration_links": scalar_int(db_url, "select count(*) from public.event_registrations er join public.orders o on o.id=er.order_id where er.registration_number like 'LEGACY-%' and o.status<>'paid'"),
-        "cpns_reviewed_drafts": scalar_int(db_url, "select count(*) from public.questions where source_type='legacy_migration' and status='draft'"),
-        "cpns_reviewed_draft_versions": scalar_int(db_url, "select count(*) from public.question_versions qv join public.questions q on q.id=qv.question_id where q.source_type='legacy_migration' and q.status='draft'"),
-        "withheld_questions_in_bank": scalar_int(db_url, "select count(*) from public.questions where question_code in ('TIU-000033','TIU-000064','TIU-000065','TWK-000385','TWK-000448','TWK-000461')"),
-        "history_placeholders": scalar_int(db_url, "select count(*) from public.questions where source_type='legacy_history_placeholder'"),
-        "raw_public_tables": scalar_int(db_url, "select count(*) from legacy_prod.snapshot_expected_counts"),
+        "production_auth_uuid_match": scalar_int(
+            db_url,
+            "select count(*) from legacy_prod.auth_users_identity a join auth.users u on u.id=a.id::uuid",
+        ),
+        "production_profile_match": scalar_int(
+            db_url,
+            "select count(*) from legacy_prod.profiles l join public.profiles p on p.id=l.id::uuid",
+        ),
+        "user_tracks": scalar_int(
+            db_url,
+            "select count(*) from public.user_tracks ut join legacy_prod.auth_users_identity a on a.id::uuid=ut.user_id",
+        ),
+        "wallets": scalar_int(
+            db_url,
+            "select count(*) from public.wallets w join legacy_prod.auth_users_identity a on a.id::uuid=w.user_id where w.wallet_type='exam_token'",
+        ),
+        "wallet_balance_sum": scalar_int(
+            db_url,
+            "select coalesce(sum(w.balance),0)::bigint from public.wallets w join legacy_prod.auth_users_identity a on a.id::uuid=w.user_id where w.wallet_type='exam_token'",
+        ),
+        "attempts": scalar_int(
+            db_url,
+            "select count(*) from public.exam_attempts where metadata->>'migration_source'='production_legacy_rehearsal'",
+        ),
+        "completed_attempts": scalar_int(
+            db_url,
+            "select count(*) from public.exam_attempts where metadata->>'migration_source'='production_legacy_rehearsal' and status='completed'",
+        ),
+        "attempt_questions": scalar_int(
+            db_url,
+            "select count(*) from public.attempt_questions aq join public.exam_attempts ea on ea.id=aq.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'",
+        ),
+        "attempt_answers": scalar_int(
+            db_url,
+            "select count(*) from public.attempt_answers aa join public.attempt_questions aq on aq.id=aa.attempt_question_id join public.exam_attempts ea on ea.id=aq.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'",
+        ),
+        "attempt_scores": scalar_int(
+            db_url,
+            "select count(*) from public.attempt_scores s join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'",
+        ),
+        "completed_total_score": scalar_int(
+            db_url,
+            "select coalesce(sum(total_score),0)::bigint from public.exam_attempts where metadata->>'migration_source'='production_legacy_rehearsal' and status='completed'",
+        ),
+        "twk_score_sum": scalar_int(
+            db_url,
+            "select coalesce(sum(s.raw_score),0)::bigint from public.attempt_scores s join public.subjects sub on sub.id=s.subject_id join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal' and sub.code='TWK'",
+        ),
+        "tiu_score_sum": scalar_int(
+            db_url,
+            "select coalesce(sum(s.raw_score),0)::bigint from public.attempt_scores s join public.subjects sub on sub.id=s.subject_id join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal' and sub.code='TIU'",
+        ),
+        "tkp_score_sum": scalar_int(
+            db_url,
+            "select coalesce(sum(s.raw_score),0)::bigint from public.attempt_scores s join public.subjects sub on sub.id=s.subject_id join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal' and sub.code='TKP'",
+        ),
+        "historical_orders": scalar_int(
+            db_url,
+            "select count(*) from public.orders o where o.order_number in (select order_id from legacy_prod.transactions union all select order_id from legacy_prod.event_payments)",
+        ),
+        "historical_order_items": scalar_int(
+            db_url,
+            "select count(*) from public.order_items oi join public.orders o on o.id=oi.order_id where o.order_number in (select order_id from legacy_prod.transactions union all select order_id from legacy_prod.event_payments)",
+        ),
+        "historical_payments": scalar_int(
+            db_url,
+            "select count(*) from public.payments where raw_response->>'migration_source'='production_legacy_rehearsal' and raw_response->>'phase'='3'",
+        ),
+        "settlement_payments": scalar_int(
+            db_url,
+            "select count(*) from public.payments where raw_response->>'migration_source'='production_legacy_rehearsal' and raw_response->>'phase'='3' and status='settlement'",
+        ),
+        "expired_payments": scalar_int(
+            db_url,
+            "select count(*) from public.payments where raw_response->>'migration_source'='production_legacy_rehearsal' and raw_response->>'phase'='3' and status='expire'",
+        ),
+        "historical_events": scalar_int(
+            db_url, "select count(*) from public.events where code like 'LEGACY-EVENT-%'"
+        ),
+        "historical_registrations": scalar_int(
+            db_url,
+            "select count(*) from public.event_registrations where registration_number like 'LEGACY-%'",
+        ),
+        "paid_registration_links": scalar_int(
+            db_url,
+            "select count(*) from public.event_registrations er join public.orders o on o.id=er.order_id where er.registration_number like 'LEGACY-%' and o.status='paid'",
+        ),
+        "expired_registration_links": scalar_int(
+            db_url,
+            "select count(*) from public.event_registrations er join public.orders o on o.id=er.order_id where er.registration_number like 'LEGACY-%' and o.status<>'paid'",
+        ),
+        "cpns_reviewed_drafts": scalar_int(
+            db_url,
+            "select count(*) from public.questions where source_type='legacy_migration' and status='draft'",
+        ),
+        "cpns_reviewed_draft_versions": scalar_int(
+            db_url,
+            "select count(*) from public.question_versions qv join public.questions q on q.id=qv.question_id where q.source_type='legacy_migration' and q.status='draft'",
+        ),
+        "withheld_questions_in_bank": scalar_int(
+            db_url,
+            "select count(*) from public.questions where question_code in ('TIU-000033','TIU-000064','TIU-000065','TWK-000385','TWK-000448','TWK-000461')",
+        ),
+        "history_placeholders": scalar_int(
+            db_url,
+            "select count(*) from public.questions where source_type='legacy_history_placeholder'",
+        ),
+        "raw_public_tables": scalar_int(
+            db_url, "select count(*) from legacy_prod.snapshot_expected_counts"
+        ),
     }
 
 
@@ -182,20 +272,62 @@ def fingerprint(db_url: str) -> dict:
     gates = final_gates(db_url)
     assert_final_gates(gates)
     hashes = {
-        "auth_uuid_set": stable_hash(db_url, "select a.id as v from legacy_prod.auth_users_identity a join auth.users u on u.id=a.id::uuid"),
-        "profiles": stable_hash(db_url, "select concat_ws('|',p.id::text,coalesce(p.full_name,''),coalesce(p.display_name,''),coalesce(p.phone,''),coalesce(p.status,''),coalesce(p.birth_date::text,''),coalesce(p.gender,''),coalesce(p.bio,''),coalesce(p.education_level,''),coalesce(p.target_instance,'')) as v from public.profiles p join legacy_prod.auth_users_identity a on a.id::uuid=p.id"),
-        "user_tracks": stable_hash(db_url, "select concat_ws('|',ut.user_id::text,ut.track_id::text,ut.status,coalesce(ut.started_at::text,''),coalesce(ut.completed_at::text,'')) as v from public.user_tracks ut join legacy_prod.auth_users_identity a on a.id::uuid=ut.user_id"),
-        "wallets": stable_hash(db_url, "select concat_ws('|',w.user_id::text,w.wallet_type,w.balance::text) as v from public.wallets w join legacy_prod.auth_users_identity a on a.id::uuid=w.user_id"),
-        "attempts": stable_hash(db_url, "select concat_ws('|',id::text,exam_id::text,user_id::text,attempt_number::text,status,coalesce(started_at::text,''),coalesce(submitted_at::text,''),coalesce(total_score::text,''),coalesce(passed::text,''),metadata::text) as v from public.exam_attempts where metadata->>'migration_source'='production_legacy_rehearsal'"),
-        "attempt_questions": stable_hash(db_url, "select concat_ws('|',aq.id::text,aq.attempt_id::text,aq.question_id::text,aq.question_version::text,aq.position::text,aq.question_snapshot::text,aq.max_score::text) as v from public.attempt_questions aq join public.exam_attempts ea on ea.id=aq.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'"),
-        "attempt_answers": stable_hash(db_url, "select concat_ws('|',aa.id::text,aa.attempt_question_id::text,coalesce(aa.selected_option_id::text,''),coalesce(aa.answer_value,''),coalesce(aa.is_correct::text,''),aa.score_awarded::text) as v from public.attempt_answers aa join public.attempt_questions aq on aq.id=aa.attempt_question_id join public.exam_attempts ea on ea.id=aq.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'"),
-        "attempt_scores": stable_hash(db_url, "select concat_ws('|',s.id::text,s.attempt_id::text,s.subject_id::text,s.raw_score::text,coalesce(s.passing_score::text,''),coalesce(s.passed::text,'')) as v from public.attempt_scores s join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'"),
-        "orders": stable_hash(db_url, "select concat_ws('|',o.id::text,o.order_number,o.user_id::text,o.status,o.subtotal::text,o.discount_amount::text,o.total_amount::text,o.currency,coalesce(o.paid_at::text,'')) as v from public.orders o where o.order_number in (select order_id from legacy_prod.transactions union all select order_id from legacy_prod.event_payments)"),
-        "payments": stable_hash(db_url, "select concat_ws('|',p.id::text,p.order_id::text,p.provider,coalesce(p.provider_transaction_id,''),p.amount::text,p.status,coalesce(p.paid_at::text,''),p.raw_response::text) as v from public.payments p where p.raw_response->>'migration_source'='production_legacy_rehearsal' and p.raw_response->>'phase'='3'"),
-        "events": stable_hash(db_url, "select concat_ws('|',e.id::text,e.code,e.title,e.slug,e.event_type,e.program_id::text,e.track_id::text,e.starts_at::text,e.ends_at::text,e.status) as v from public.events e where e.code like 'LEGACY-EVENT-%'"),
-        "event_registrations": stable_hash(db_url, "select concat_ws('|',er.id::text,er.event_id::text,coalesce(er.session_id::text,''),er.user_id::text,coalesce(er.order_id::text,''),er.registration_number,er.status,er.created_at::text) as v from public.event_registrations er where er.registration_number like 'LEGACY-%'"),
-        "history_products": stable_hash(db_url, "select concat_ws('|',p.id::text,p.code,p.name,p.product_type,p.program_id::text,coalesce(p.track_id::text,''),p.status) as v from public.products p where p.code like 'LEGACY_PKG_%' or p.code like 'LEGACY_EVENT_TICKET_%'"),
-        "question_map": stable_hash(db_url, "select concat_ws('|',legacy_question_id::text,legacy_question_code,canonical_question_id::text,mapping_type) as v from legacy_prod.question_map"),
+        "auth_uuid_set": stable_hash(
+            db_url,
+            "select a.id as v from legacy_prod.auth_users_identity a join auth.users u on u.id=a.id::uuid",
+        ),
+        "profiles": stable_hash(
+            db_url,
+            "select concat_ws('|',p.id::text,coalesce(p.full_name,''),coalesce(p.display_name,''),coalesce(p.phone,''),coalesce(p.status,''),coalesce(p.birth_date::text,''),coalesce(p.gender,''),coalesce(p.bio,''),coalesce(p.education_level,''),coalesce(p.target_instance,'')) as v from public.profiles p join legacy_prod.auth_users_identity a on a.id::uuid=p.id",
+        ),
+        "user_tracks": stable_hash(
+            db_url,
+            "select concat_ws('|',ut.user_id::text,ut.track_id::text,ut.status,coalesce(ut.started_at::text,''),coalesce(ut.completed_at::text,'')) as v from public.user_tracks ut join legacy_prod.auth_users_identity a on a.id::uuid=ut.user_id",
+        ),
+        "wallets": stable_hash(
+            db_url,
+            "select concat_ws('|',w.user_id::text,w.wallet_type,w.balance::text) as v from public.wallets w join legacy_prod.auth_users_identity a on a.id::uuid=w.user_id",
+        ),
+        "attempts": stable_hash(
+            db_url,
+            "select concat_ws('|',id::text,exam_id::text,user_id::text,attempt_number::text,status,coalesce(started_at::text,''),coalesce(submitted_at::text,''),coalesce(total_score::text,''),coalesce(passed::text,''),metadata::text) as v from public.exam_attempts where metadata->>'migration_source'='production_legacy_rehearsal'",
+        ),
+        "attempt_questions": stable_hash(
+            db_url,
+            "select concat_ws('|',aq.id::text,aq.attempt_id::text,aq.question_id::text,aq.question_version::text,aq.position::text,aq.question_snapshot::text,aq.max_score::text) as v from public.attempt_questions aq join public.exam_attempts ea on ea.id=aq.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'",
+        ),
+        "attempt_answers": stable_hash(
+            db_url,
+            "select concat_ws('|',aa.id::text,aa.attempt_question_id::text,coalesce(aa.selected_option_id::text,''),coalesce(aa.answer_value,''),coalesce(aa.is_correct::text,''),aa.score_awarded::text) as v from public.attempt_answers aa join public.attempt_questions aq on aq.id=aa.attempt_question_id join public.exam_attempts ea on ea.id=aq.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'",
+        ),
+        "attempt_scores": stable_hash(
+            db_url,
+            "select concat_ws('|',s.id::text,s.attempt_id::text,s.subject_id::text,s.raw_score::text,coalesce(s.passing_score::text,''),coalesce(s.passed::text,'')) as v from public.attempt_scores s join public.exam_attempts ea on ea.id=s.attempt_id where ea.metadata->>'migration_source'='production_legacy_rehearsal'",
+        ),
+        "orders": stable_hash(
+            db_url,
+            "select concat_ws('|',o.id::text,o.order_number,o.user_id::text,o.status,o.subtotal::text,o.discount_amount::text,o.total_amount::text,o.currency,coalesce(o.paid_at::text,'')) as v from public.orders o where o.order_number in (select order_id from legacy_prod.transactions union all select order_id from legacy_prod.event_payments)",
+        ),
+        "payments": stable_hash(
+            db_url,
+            "select concat_ws('|',p.id::text,p.order_id::text,p.provider,coalesce(p.provider_transaction_id,''),p.amount::text,p.status,coalesce(p.paid_at::text,''),p.raw_response::text) as v from public.payments p where p.raw_response->>'migration_source'='production_legacy_rehearsal' and p.raw_response->>'phase'='3'",
+        ),
+        "events": stable_hash(
+            db_url,
+            "select concat_ws('|',e.id::text,e.code,e.title,e.slug,e.event_type,e.program_id::text,e.track_id::text,e.starts_at::text,e.ends_at::text,e.status) as v from public.events e where e.code like 'LEGACY-EVENT-%'",
+        ),
+        "event_registrations": stable_hash(
+            db_url,
+            "select concat_ws('|',er.id::text,er.event_id::text,coalesce(er.session_id::text,''),er.user_id::text,coalesce(er.order_id::text,''),er.registration_number,er.status,er.created_at::text) as v from public.event_registrations er where er.registration_number like 'LEGACY-%'",
+        ),
+        "history_products": stable_hash(
+            db_url,
+            "select concat_ws('|',p.id::text,p.code,p.name,p.product_type,p.program_id::text,coalesce(p.track_id::text,''),p.status) as v from public.products p where p.code like 'LEGACY_PKG_%' or p.code like 'LEGACY_EVENT_TICKET_%'",
+        ),
+        "question_map": stable_hash(
+            db_url,
+            "select concat_ws('|',legacy_question_id::text,legacy_question_code,canonical_question_id::text,mapping_type) as v from legacy_prod.question_map",
+        ),
     }
     return {"gates": gates, "hashes": hashes}
 
@@ -203,13 +335,11 @@ def fingerprint(db_url: str) -> dict:
 def restore_technical_auth(db_url: str) -> None:
     values = []
     for user_id, email, full_name in TECH_ACTORS:
-        values.append(
-            "('" + user_id + "'::uuid,'" + email + "','" + full_name + "')"
-        )
+        values.append("('" + user_id + "'::uuid,'" + email + "','" + full_name + "')")
     sql = f"""
 insert into auth.users (id,email,raw_user_meta_data)
 select id,email,jsonb_build_object('full_name',full_name)
-from (values {','.join(values)}) as x(id,email,full_name)
+from (values {",".join(values)}) as x(id,email,full_name)
 on conflict (id) do nothing;
 
 delete from public.profiles
@@ -226,14 +356,26 @@ def main() -> None:
     )
     parser.add_argument(
         "--db-url",
-        default=os.environ.get("LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"),
+        default=os.environ.get(
+            "LOCAL_DB_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+        ),
         help="Supabase Local PostgreSQL URI. Remote hosts are refused.",
     )
     parser.add_argument("--workspace", type=Path, default=default_workspace)
-    parser.add_argument("--schema-dump", type=Path, default=default_workspace / "snapshots" / "staging_schema_v2.sql")
-    parser.add_argument("--data-dump", type=Path, default=default_workspace / "snapshots" / "staging_data_v2.sql")
+    parser.add_argument(
+        "--schema-dump",
+        type=Path,
+        default=default_workspace / "snapshots" / "staging_schema_v2.sql",
+    )
+    parser.add_argument(
+        "--data-dump", type=Path, default=default_workspace / "snapshots" / "staging_data_v2.sql"
+    )
     parser.add_argument("--production-snapshot", type=Path, default=None)
-    parser.add_argument("--yes-rebuild-local", action="store_true", help="Required destructive LOCAL-only confirmation.")
+    parser.add_argument(
+        "--yes-rebuild-local",
+        action="store_true",
+        help="Required destructive LOCAL-only confirmation.",
+    )
     args = parser.parse_args()
 
     if not args.yes_rebuild_local:
@@ -254,7 +396,9 @@ def main() -> None:
     if args.production_snapshot is None:
         candidates = sorted((repo_root / "snapshots").glob("production-raw-*"), reverse=True)
         if not candidates:
-            die("no production raw snapshot found under repo snapshots/; pass --production-snapshot")
+            die(
+                "no production raw snapshot found under repo snapshots/; pass --production-snapshot"
+            )
         prod_snapshot = candidates[0].resolve()
     else:
         prod_snapshot = args.production_snapshot.expanduser().resolve()
@@ -272,7 +416,10 @@ def main() -> None:
         if not p.is_file():
             die(f"required rehearsal script missing: {p}")
 
-    identity = query(args.db_url, "select current_database() || '|' || current_user || '|' || coalesce(inet_server_addr()::text,'local')")
+    identity = query(
+        args.db_url,
+        "select current_database() || '|' || current_user || '|' || coalesce(inet_server_addr()::text,'local')",
+    )
     print(f"Local rehearsal target: {identity}")
     print("Safety gate: ALL WRITES LOCAL ONLY at 127.0.0.1:54322")
     print("Remote database URLs are not accepted by this script.")
@@ -333,7 +480,9 @@ COMMIT;
         die(f"runtime cleanup gate failed; expected 0|0|0|0|0, got {clean}")
 
     print("[6/9] Load production raw snapshot into legacy_prod ...")
-    run([sys.executable, required_scripts[1], prod_snapshot, "--db-url", args.db_url], cwd=repo_root)
+    run(
+        [sys.executable, required_scripts[1], prod_snapshot, "--db-url", args.db_url], cwd=repo_root
+    )
 
     print("[7/9] Rerun Phase 1 -> Phase 2 -> Phase 3 ...")
     for script in required_scripts[2:]:
@@ -342,8 +491,14 @@ COMMIT;
     print("[8/9] Capture rebuilt fingerprint and compare ...")
     after = fingerprint(args.db_url)
     if before != after:
-        before_flat = {**{f"gate:{k}": v for k, v in before["gates"].items()}, **{f"hash:{k}": v for k, v in before["hashes"].items()}}
-        after_flat = {**{f"gate:{k}": v for k, v in after["gates"].items()}, **{f"hash:{k}": v for k, v in after["hashes"].items()}}
+        before_flat = {
+            **{f"gate:{k}": v for k, v in before["gates"].items()},
+            **{f"hash:{k}": v for k, v in before["hashes"].items()},
+        }
+        after_flat = {
+            **{f"gate:{k}": v for k, v in after["gates"].items()},
+            **{f"hash:{k}": v for k, v in after["hashes"].items()},
+        }
         diff = {
             k: {"before": before_flat.get(k), "after": after_flat.get(k)}
             for k in sorted(set(before_flat) | set(after_flat))
@@ -365,7 +520,9 @@ COMMIT;
         "fingerprint_before": before,
         "fingerprint_after": after,
     }
-    evidence_path.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    evidence_path.write_text(
+        json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     os.chmod(evidence_path, 0o600)
 
     print()

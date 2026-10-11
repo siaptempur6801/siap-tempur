@@ -21,44 +21,44 @@ import { NextResponse } from 'next/server'
  * menolak lebih awal berarti tidak ada data yang sempat dibaca.
  */
 export async function GET(request: Request) {
-    const authorization = await authorizationService.getCurrentAuthorization()
-    if (!authorization || !authorization.permissions.includes(PERMISSIONS.ORGANIZATION_MANAGE)) {
-        return NextResponse.json({ error: 'Akses tidak tersedia.' }, { status: 403 })
-    }
+  const authorization = await authorizationService.getCurrentAuthorization()
+  if (!authorization || !authorization.permissions.includes(PERMISSIONS.ORGANIZATION_MANAGE)) {
+    return NextResponse.json({ error: 'Akses tidak tersedia.' }, { status: 403 })
+  }
 
-    const url = new URL(request.url)
-    const organizationId = url.searchParams.get('org') ?? ''
-    const batchId = url.searchParams.get('batch')
+  const url = new URL(request.url)
+  const organizationId = url.searchParams.get('org') ?? ''
+  const batchId = url.searchParams.get('batch')
 
-    if (!organizationId) {
-        return NextResponse.json({ error: 'Instansi wajib dipilih.' }, { status: 400 })
-    }
+  if (!organizationId) {
+    return NextResponse.json({ error: 'Instansi wajib dipilih.' }, { status: 400 })
+  }
 
-    try {
-        const data = await organizationExportService.getExport(organizationId, batchId)
-        const workbook = organizationExportService.buildWorkbook(data)
-        const fileName = organizationExportService.fileName(data)
+  try {
+    const data = await organizationExportService.getExport(organizationId, batchId)
+    const workbook = organizationExportService.buildWorkbook(data)
+    const fileName = organizationExportService.fileName(data)
 
-        logger.info('[export-organization] XLSX dibuat', {
-            organizationId,
-            batchId: batchId ?? null,
-            detailRows: data.detail.rows.length,
-        })
+    logger.info('[export-organization] XLSX dibuat', {
+      organizationId,
+      batchId: batchId ?? null,
+      detailRows: data.detail.rows.length,
+    })
 
-        return new NextResponse(workbook as unknown as BodyInit, {
-            status: 200,
-            headers: {
-                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'Content-Disposition': `attachment; filename="${fileName}"`,
-                'Content-Length': String(workbook.byteLength),
-                'Cache-Control': 'no-store',
-            },
-        })
-    } catch (error) {
-        logger.warn('[export-organization] gagal', {
-            error: error instanceof Error ? error.message : String(error),
-            organizationId,
-        })
-        return NextResponse.json({ error: 'Export gagal dibuat.' }, { status: 400 })
-    }
+    return new NextResponse(workbook as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': String(workbook.byteLength),
+        'Cache-Control': 'no-store',
+      },
+    })
+  } catch (error) {
+    logger.warn('[export-organization] gagal', {
+      error: error instanceof Error ? error.message : String(error),
+      organizationId,
+    })
+    return NextResponse.json({ error: 'Export gagal dibuat.' }, { status: 400 })
+  }
 }

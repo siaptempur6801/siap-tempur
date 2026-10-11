@@ -11,5 +11,5 @@
  * `%_`, sehingga `,` dan `()` dari kata kunci bisa merusak ekspresi filter.
  */
 export function escapePostgrestValue(value: string) {
-    return value.replace(/[,()*%\\]/g, ' ').trim()
+  return value.replace(/[,()*%\\]/g, ' ').trim()
 }

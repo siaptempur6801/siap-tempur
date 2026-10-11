@@ -1,76 +1,83 @@
 -- Add per-section live score breakdown for admin event leaderboard.
 -- This keeps scoring server-side and avoids exposing answer keys to clients.
+DROP FUNCTION IF EXISTS public.get_live_event_leaderboard (uuid);
 
-drop function if exists public.get_live_event_leaderboard(uuid);
+CREATE FUNCTION public.get_live_event_leaderboard (p_event_id uuid)
+  RETURNS TABLE (
+    user_id uuid,
+    full_name text,
+    avatar_url text,
+    progress_count bigint,
+    score_twk bigint,
+    score_tiu bigint,
+    score_tkp bigint,
+    total_score bigint,
+    live_rank bigint)
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = public
+  AS $$
+BEGIN
+  IF NOT public.is_admin () THEN
+    RAISE EXCEPTION 'Access denied. Only admins can view the live leaderboard.';
+  END IF;
 
-create function public.get_live_event_leaderboard(p_event_id uuid)
-returns table (
-  user_id uuid,
-  full_name text,
-  avatar_url text,
-  progress_count bigint,
-  score_twk bigint,
-  score_tiu bigint,
-  score_tkp bigint,
-  total_score bigint,
-  live_rank bigint
-)
-language plpgsql
-security definer
-set search_path = public
-as $$
-begin
-  if not public.is_admin() then
-    raise exception 'Access denied. Only admins can view the live leaderboard.';
-  end if;
-
-  return query
-  with session_scores as (
-    select
+  RETURN QUERY WITH session_scores AS (
+    SELECT
       tes.user_id,
       tes.started_at,
-      count(a.option_id) as answered_count,
+      count(a.option_id) AS answered_count,
       coalesce(sum(
-        case
-          when q.type = 'TWK' and o.is_correct then 5
-          else 0
-        end
-      ), 0) as score_twk,
+          CASE WHEN q.type = 'TWK'
+            AND o.is_correct THEN
+            5
+          ELSE
+            0
+          END), 0) AS score_twk,
       coalesce(sum(
-        case
-          when q.type = 'TIU' and o.is_correct then 5
-          else 0
-        end
-      ), 0) as score_tiu,
+          CASE WHEN q.type = 'TIU'
+            AND o.is_correct THEN
+            5
+          ELSE
+            0
+          END), 0) AS score_tiu,
       coalesce(sum(
-        case
-          when q.type = 'TKP' then coalesce(o.score_value, 0)
-          else 0
-        end
-      ), 0) as score_tkp
-    from public.tryout_event_sessions tes
-    left join public.test_answers a on a.session_id = tes.session_id
-    left join public.questions q on q.id = a.question_id
-    left join public.options o on o.id = a.option_id
-    where tes.event_id = p_event_id
-    group by tes.user_id, tes.started_at
-  )
-  select
-    ss.user_id,
-    p.full_name,
-    p.avatar_url,
-    ss.answered_count,
-    ss.score_twk,
-    ss.score_tiu,
-    ss.score_tkp,
-    ss.score_twk + ss.score_tiu + ss.score_tkp as total_score,
-    rank() over (order by (ss.score_twk + ss.score_tiu + ss.score_tkp) desc, ss.started_at asc) as live_rank
-  from session_scores ss
-  join public.profiles p on p.id = ss.user_id
-  order by live_rank asc
-  limit 50;
-end;
+          CASE WHEN q.type = 'TKP' THEN
+            coalesce(o.score_value, 0)
+          ELSE
+            0
+          END), 0) AS score_tkp
+    FROM
+      public.tryout_event_sessions tes
+    LEFT JOIN public.test_answers a ON a.session_id = tes.session_id
+    LEFT JOIN public.questions q ON q.id = a.question_id
+    LEFT JOIN public.options o ON o.id = a.option_id
+  WHERE
+    tes.event_id = p_event_id
+  GROUP BY
+    tes.user_id,
+    tes.started_at
+)
+SELECT
+  ss.user_id,
+  p.full_name,
+  p.avatar_url,
+  ss.answered_count,
+  ss.score_twk,
+  ss.score_tiu,
+  ss.score_tkp,
+  ss.score_twk + ss.score_tiu + ss.score_tkp AS total_score,
+  rank() OVER (ORDER BY (ss.score_twk + ss.score_tiu + ss.score_tkp) DESC,
+  ss.started_at ASC) AS live_rank
+FROM
+  session_scores ss
+  JOIN public.profiles p ON p.id = ss.user_id
+ORDER BY
+  live_rank ASC
+LIMIT 50;
+END;
 $$;
 
-revoke execute on function public.get_live_event_leaderboard(uuid) from public, anon;
-grant execute on function public.get_live_event_leaderboard(uuid) to authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.get_live_event_leaderboard (uuid) FROM public, anon;
+
+GRANT EXECUTE ON FUNCTION public.get_live_event_leaderboard (uuid) TO authenticated, service_role;

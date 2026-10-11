@@ -25,7 +25,7 @@ const supabase = createClient(
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
+  },
 )
 
 const { data, error } = await supabase
@@ -50,7 +50,7 @@ console.log(`TWK ditemukan: ${questions.length}`)
 console.log(`Narasi soal perlu dirapikan: ${affectedQuestions.length}`)
 if (affectedQuestions.length > 0) {
   console.log(
-    `Target: ${affectedQuestions.map((question) => question.question_code || question.id).join(', ')}`
+    `Target: ${affectedQuestions.map((question) => question.question_code || question.id).join(', ')}`,
   )
 }
 
@@ -70,7 +70,7 @@ if (!shouldApply) {
 
       if (updateError || updatedRows?.length !== 1) {
         throw new Error(
-          `Gagal memperbarui ${question.question_code || question.id}: ${updateError?.message || 'baris tidak ditemukan'}`
+          `Gagal memperbarui ${question.question_code || question.id}: ${updateError?.message || 'baris tidak ditemukan'}`,
         )
       }
 
@@ -87,7 +87,9 @@ if (!shouldApply) {
         .eq('type', 'TWK')
 
       if (rollbackError) {
-        console.error(`Rollback gagal untuk ${question.question_code || question.id}: ${rollbackError.message}`)
+        console.error(
+          `Rollback gagal untuk ${question.question_code || question.id}: ${rollbackError.message}`,
+        )
       }
     }
 
@@ -103,9 +105,9 @@ if (!shouldApply) {
     throw new Error(`Gagal memverifikasi hasil: ${verificationError.message}`)
   }
 
-  const remainingCount = (verificationRows || []).filter((question) => (
-    normalizeQuestionContentSpacing(question.content || '') !== question.content
-  )).length
+  const remainingCount = (verificationRows || []).filter(
+    (question) => normalizeQuestionContentSpacing(question.content || '') !== question.content,
+  ).length
 
   if (remainingCount > 0) {
     throw new Error(`Verifikasi gagal: masih ada ${remainingCount} narasi yang belum rapi.`)

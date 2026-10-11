@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { resolvePostLoginRedirect, resolvePostLogoutRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
+import {
+  resolvePostLoginRedirect,
+  resolvePostLogoutRedirect,
+  sanitizeAuthReturnTo,
+} from '@/lib/auth-redirect'
 
 describe('auth redirect helpers', () => {
   it('uses program onboarding after login from the generic entry', () => {
@@ -32,7 +36,9 @@ describe('auth redirect helpers', () => {
 
   it('adds a one-time success marker to safe logout targets', () => {
     expect(resolvePostLogoutRedirect('/cpns')).toBe('/cpns?logout=success')
-    expect(resolvePostLogoutRedirect('/tka?level=smp#mulai')).toBe('/tka?level=smp&logout=success#mulai')
+    expect(resolvePostLogoutRedirect('/tka?level=smp#mulai')).toBe(
+      '/tka?level=smp&logout=success#mulai',
+    )
     expect(resolvePostLogoutRedirect('https://example.com/phish')).toBe('/?logout=success')
   })
 })

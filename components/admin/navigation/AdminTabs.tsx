@@ -1,10 +1,10 @@
-import Link from '@/components/admin/navigation/AdminLink';
+import Link from '@/components/admin/navigation/AdminLink'
 
 /** Navigation links deliberately keep URL state and native browser history. */
 export function AdminTabs({
   tabs,
   active,
-  label = 'Bagian workspace'
+  label = 'Bagian workspace',
 }: {
   tabs: { id: string; label: string; href: string }[]
   active: string

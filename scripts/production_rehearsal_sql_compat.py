@@ -47,9 +47,7 @@ _SIMPLE_NULLIF_EMPTY = re.compile(
 _AUTH_IDENTITY_ALIAS = re.compile(
     r"(?i)\blegacy_prod\.auth_users_identity\s+(?:AS\s+)?([A-Za-z_][A-Za-z0-9_]*)\b"
 )
-_STALE_OPTION_UUID_TEXT_JOIN = re.compile(
-    r"(?i)\blo\.id\s*=\s*sel\.legacy_option_id\s*::\s*text\b"
-)
+_STALE_OPTION_UUID_TEXT_JOIN = re.compile(r"(?i)\blo\.id\s*=\s*sel\.legacy_option_id\s*::\s*text\b")
 _REPLACE_SIMPLE_ID = re.compile(
     r"(?i)\breplace\(\s*([A-Za-z_][A-Za-z0-9_]*\.id)\s*,\s*'-'\s*,\s*''\s*\)"
 )
@@ -63,9 +61,7 @@ def _normalize_auth_identity_uuid_equalities(text: str) -> tuple[str, int]:
         a = re.escape(alias)
 
         # uuid_column = auth_identity_alias.id
-        right = re.compile(
-            rf"(?i)(\b[A-Za-z_][A-Za-z0-9_]*\.id\s*=\s*)({a}\.id)(?!\s*::\s*uuid\b)"
-        )
+        right = re.compile(rf"(?i)(\b[A-Za-z_][A-Za-z0-9_]*\.id\s*=\s*)({a}\.id)(?!\s*::\s*uuid\b)")
         text, n = right.subn(lambda m: f"{m.group(1)}{m.group(2)}::uuid", text)
         replacements += n
 

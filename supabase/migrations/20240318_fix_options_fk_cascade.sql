@@ -5,7 +5,6 @@
 --          `test_answers.option_id` FK changed to ON DELETE SET NULL so that
 --          deleting options doesn't break historical answer records.
 -- =============================================
-
 -- Drop existing FK constraint
 ALTER TABLE public.test_answers
   DROP CONSTRAINT IF EXISTS test_answers_option_id_fkey;
@@ -17,7 +16,4 @@ ALTER TABLE public.test_answers
 -- Re-add FK with ON DELETE SET NULL
 -- Historical answers are preserved; option_id becomes NULL when the option is removed.
 ALTER TABLE public.test_answers
-  ADD CONSTRAINT test_answers_option_id_fkey
-  FOREIGN KEY (option_id)
-  REFERENCES public.options(id)
-  ON DELETE SET NULL;
+  ADD CONSTRAINT test_answers_option_id_fkey FOREIGN KEY (option_id) REFERENCES public.options (id) ON DELETE SET NULL;

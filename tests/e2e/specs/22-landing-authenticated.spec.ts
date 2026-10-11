@@ -25,66 +25,74 @@ test.describe.configure({ mode: 'serial' })
 test.setTimeout(180_000)
 
 test.describe('Landing utama untuk pengguna yang sudah login', () => {
-    test('tanpa tombol Dashboard, dan Pilih program menuju onboarding', async ({ page }) => {
-        const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
-        const user = await provisionRoleUser(supabaseUrl, 'ADMIN')
-        try {
-            // Login tanpa returnTo: mendarat di halaman default, lalu buka landing
-            // secara eksplisit supaya test tidak bergantung pada tujuan pasca-login.
-            await loginAs(page, user, '/admin')
-            await page.goto('/')
-            await expect(page.getByRole('heading', { name: /Jangan cuma tahu skormu/i })).toBeVisible()
+  test('tanpa tombol Dashboard, dan Pilih program menuju onboarding', async ({ page }) => {
+    const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+    const user = await provisionRoleUser(supabaseUrl, 'ADMIN')
+    try {
+      // Login tanpa returnTo: mendarat di halaman default, lalu buka landing
+      // secara eksplisit supaya test tidak bergantung pada tujuan pasca-login.
+      await loginAs(page, user, '/admin')
+      await page.goto('/')
+      await expect(page.getByRole('heading', { name: /Jangan cuma tahu skormu/i })).toBeVisible()
 
-            // Dipersempit ke elemen <header>: kata "Dashboard" muncul di bagian lain
-            // halaman (mis. pada tangkapan layar contoh produk), jadi locator tanpa
-            // scope akan menyesatkan.
-            //
-            // Memakai `page.locator('header')`, BUKAN `getByRole('banner')`:
-            // `LandingHeader` dirender di dalam `<main>`, dan landmark `banner` hanya
-            // diberikan pada <header> yang TIDAK bersarang di dalam main/section/
-            // article. Header sengaja tetap di dalam `<main class="st-product">`
-            // karena `.st-button` di-scope ke `.st-product` — memindahkannya akan
-            // menghilangkan gaya tombolnya. (Landmark yang hilang itu sendiri layak
-            // diperbaiki terpisah, dengan memindahkan `.st-product` ke pembungkus.)
-            const header = page.locator('header')
-            await expect(header.getByRole('link', { name: 'Dashboard', exact: true })).toHaveCount(0)
+      // Dipersempit ke elemen <header>: kata "Dashboard" muncul di bagian lain
+      // halaman (mis. pada tangkapan layar contoh produk), jadi locator tanpa
+      // scope akan menyesatkan.
+      //
+      // Memakai `page.locator('header')`, BUKAN `getByRole('banner')`:
+      // `LandingHeader` dirender di dalam `<main>`, dan landmark `banner` hanya
+      // diberikan pada <header> yang TIDAK bersarang di dalam main/section/
+      // article. Header sengaja tetap di dalam `<main class="st-product">`
+      // karena `.st-button` di-scope ke `.st-product` — memindahkannya akan
+      // menghilangkan gaya tombolnya. (Landmark yang hilang itu sendiri layak
+      // diperbaiki terpisah, dengan memindahkan `.st-product` ke pembungkus.)
+      const header = page.locator('header')
+      await expect(header.getByRole('link', { name: 'Dashboard', exact: true })).toHaveCount(0)
 
-            const primaryCta = header.getByRole('link', { name: 'Pilih program', exact: true })
-            await expect(primaryCta).toHaveAttribute('href', '/onboarding')
+      const primaryCta = header.getByRole('link', { name: 'Pilih program', exact: true })
+      await expect(primaryCta).toHaveAttribute('href', '/onboarding')
 
-            await primaryCta.click()
-            await expect(page).toHaveURL(/\/onboarding$/)
-            // Judul halaman onboarding, dan DUA pilihan program yang menjadi inti
-            // halaman itu. "Pilih ruang belajar" sengaja tidak dipakai: teks itu ada
-            // di <div class="st-kicker">, bukan heading.
-            await expect(page.getByRole('heading', { name: /Mau belajar di program yang mana/i })).toBeVisible()
-            await expect(page.getByTestId('program-choice-cpns')).toBeVisible()
-            await expect(page.getByTestId('program-choice-tka')).toBeVisible()
-        } finally {
-            await cleanupRoleUser(supabaseUrl, user.userId)
-        }
-    })
+      await primaryCta.click()
+      await expect(page).toHaveURL(/\/onboarding$/)
+      // Judul halaman onboarding, dan DUA pilihan program yang menjadi inti
+      // halaman itu. "Pilih ruang belajar" sengaja tidak dipakai: teks itu ada
+      // di <div class="st-kicker">, bukan heading.
+      await expect(
+        page.getByRole('heading', { name: /Mau belajar di program yang mana/i }),
+      ).toBeVisible()
+      await expect(page.getByTestId('program-choice-cpns')).toBeVisible()
+      await expect(page.getByTestId('program-choice-tka')).toBeVisible()
+    } finally {
+      await cleanupRoleUser(supabaseUrl, user.userId)
+    }
+  })
 
-    test('?landing=1 tetap menampilkan halaman pengenalan TKA walau sudah login', async ({ page }) => {
-        const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
-        const user = await provisionRoleUser(supabaseUrl, 'ADMIN')
-        try {
-            await loginAs(page, user, '/admin')
+  test('?landing=1 tetap menampilkan halaman pengenalan TKA walau sudah login', async ({
+    page,
+  }) => {
+    const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+    const user = await provisionRoleUser(supabaseUrl, 'ADMIN')
+    try {
+      await loginAs(page, user, '/admin')
 
-            // Tanpa penanda ini, `/tka` mengalihkan ke jenjang aktif — perilaku yang
-            // memang disengaja dan diuji terpisah di spec 17 (INTENTIONAL_REDIRECTS).
-            await page.goto('/tka?landing=1')
-            await expect(page).toHaveURL(/\/tka\?landing=1$/)
-            await expect(page.getByRole('heading', { name: /Persiapan TKA untuk setiap jenjang belajar/i })).toBeVisible()
+      // Tanpa penanda ini, `/tka` mengalihkan ke jenjang aktif — perilaku yang
+      // memang disengaja dan diuji terpisah di spec 17 (INTENTIONAL_REDIRECTS).
+      await page.goto('/tka?landing=1')
+      await expect(page).toHaveURL(/\/tka\?landing=1$/)
+      await expect(
+        page.getByRole('heading', { name: /Persiapan TKA untuk setiap jenjang belajar/i }),
+      ).toBeVisible()
 
-            // Dan memilih TKA dari landing utama mendarat di halaman pengenalan itu,
-            // bukan langsung ke jenjang.
-            await page.goto('/')
-            await page.getByTestId('program-card-tka').first().click()
-            await expect(page).toHaveURL(/\/tka\?landing=1$/)
-            await expect(page.getByRole('heading', { name: /Persiapan TKA untuk setiap jenjang belajar/i })).toBeVisible()
-        } finally {
-            await cleanupRoleUser(supabaseUrl, user.userId)
-        }
-    })
+      // Dan memilih TKA dari landing utama mendarat di halaman pengenalan itu,
+      // bukan langsung ke jenjang.
+      await page.goto('/')
+      await page.getByTestId('program-card-tka').first().click()
+      await expect(page).toHaveURL(/\/tka\?landing=1$/)
+      await expect(
+        page.getByRole('heading', { name: /Persiapan TKA untuk setiap jenjang belajar/i }),
+      ).toBeVisible()
+    } finally {
+      await cleanupRoleUser(supabaseUrl, user.userId)
+    }
+  })
 })

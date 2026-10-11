@@ -5,36 +5,36 @@ import type { PracticeQuestionView } from '@/src/services/practice-session.servi
 import type { TkaLevel } from '@/src/tka/context'
 
 export default function TkaPracticeSessionClient({
-    level,
-    sessionId,
-    questions,
-    initialAnswers,
-    initialAnswerOptions,
-    initialCurrentIndex,
-    initialMarked,
-    endTime,
+  level,
+  sessionId,
+  questions,
+  initialAnswers,
+  initialAnswerOptions,
+  initialCurrentIndex,
+  initialMarked,
+  endTime,
 }: {
-    level: TkaLevel
-    sessionId: string
-    questions: PracticeQuestionView[]
-    initialAnswers: Record<string, string>
-    initialAnswerOptions: Record<string, string[]>
-    initialCurrentIndex: number
-    initialMarked: Record<string, boolean>
-    endTime?: string
+  level: TkaLevel
+  sessionId: string
+  questions: PracticeQuestionView[]
+  initialAnswers: Record<string, string>
+  initialAnswerOptions: Record<string, string[]>
+  initialCurrentIndex: number
+  initialMarked: Record<string, boolean>
+  endTime?: string
 }) {
-    const base = `/tka/${level.toLowerCase()}`
-    return (
-        <UniversalPracticeSessionClient
-            sessionId={sessionId}
-            questions={questions}
-            initialAnswers={initialAnswers}
-            initialAnswerOptions={initialAnswerOptions}
-            initialCurrentIndex={initialCurrentIndex}
-            initialMarked={initialMarked}
-            endTime={endTime}
-            returnPath={base}
-            resultPath={(attemptId) => `${base}/tryout/${attemptId}/result?completed=1`}
-        />
-    )
+  const base = `/tka/${level.toLowerCase()}`
+  return (
+    <UniversalPracticeSessionClient
+      sessionId={sessionId}
+      questions={questions}
+      initialAnswers={initialAnswers}
+      initialAnswerOptions={initialAnswerOptions}
+      initialCurrentIndex={initialCurrentIndex}
+      initialMarked={initialMarked}
+      endTime={endTime}
+      returnPath={base}
+      resultPath={(attemptId) => `${base}/tryout/${attemptId}/result?completed=1`}
+    />
+  )
 }

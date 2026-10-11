@@ -1,292 +1,414 @@
 -- Bootstrap schema for a fresh database.
 -- For an existing database, apply files in supabase/migrations instead of rerunning this file end-to-end.
-
 -- Enable necessary extensions
-create extension if not exists "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 1. Enums
-do $$
-begin
-  if not exists (select 1 from pg_type where typname = 'question_type') then
-    create type question_type as enum ('TWK', 'TIU', 'TKP');
-  end if;
-end
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      typname = 'question_type') THEN
+  CREATE TYPE question_type AS enum (
+    'TWK',
+    'TIU',
+    'TKP'
+);
+END IF;
+END
 $$;
 
-do $$
-begin
-  if not exists (select 1 from pg_type where typname = 'session_mode') then
-    create type session_mode as enum ('practice', 'tryout');
-  end if;
-end
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      typname = 'session_mode') THEN
+  CREATE TYPE session_mode AS enum (
+    'practice',
+    'tryout'
+);
+END IF;
+END
 $$;
 
-do $$
-begin
-  if not exists (select 1 from pg_type where typname = 'session_status') then
-    create type session_status as enum ('in_progress', 'completed');
-  end if;
-end
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      typname = 'session_status') THEN
+  CREATE TYPE session_status AS enum (
+    'in_progress',
+    'completed'
+);
+END IF;
+END
 $$;
 
-do $$
-begin
-  if not exists (select 1 from pg_type where typname = 'transaction_status') then
-    create type transaction_status as enum ('pending', 'capture', 'settlement', 'expire', 'cancel', 'deny');
-  end if;
-end
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_type
+    WHERE
+      typname = 'transaction_status') THEN
+  CREATE TYPE transaction_status AS enum (
+    'pending',
+    'capture',
+    'settlement',
+    'expire',
+    'cancel',
+    'deny'
+);
+END IF;
+END
 $$;
 
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_type t
-    join pg_enum e on e.enumtypid = t.oid
-    where t.typname = 'transaction_status'
-      and e.enumlabel = 'capture'
-  ) then
-    alter type transaction_status add value 'capture';
-  end if;
-end
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_type t
+      JOIN pg_enum e ON e.enumtypid = t.oid
+    WHERE
+      t.typname = 'transaction_status'
+      AND e.enumlabel = 'capture') THEN
+  ALTER TYPE transaction_status
+    ADD value 'capture';
+END IF;
+END
 $$;
 
 -- 2. Profiles Table
-create table if not exists profiles (
-  id uuid references auth.users(id) on delete cascade not null primary key,
+CREATE TABLE IF NOT EXISTS profiles (
+  id uuid REFERENCES auth.users (id) ON DELETE CASCADE NOT NULL PRIMARY KEY,
   full_name text,
   avatar_url text,
   bio text,
-  role text not null default 'user',
-  tryout_quota int not null default 0,
-  streak_count int not null default 0,
+  role text NOT NULL DEFAULT 'user',
+  tryout_quota int NOT NULL DEFAULT 0,
+  streak_count int NOT NULL DEFAULT 0,
   last_activity_date date,
-  
-  updated_at timestamp with time zone default timezone('utc'::text, now()),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()),
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-alter table profiles add column if not exists avatar_url text;
-alter table profiles add column if not exists bio text;
-alter table profiles add column if not exists role text not null default 'user';
-alter table profiles add column if not exists tryout_quota int not null default 0;
-alter table profiles add column if not exists streak_count int not null default 0;
-alter table profiles add column if not exists last_activity_date date;
-alter table profiles add column if not exists updated_at timestamp with time zone default timezone('utc'::text, now());
-alter table profiles add column if not exists created_at timestamp with time zone default timezone('utc'::text, now()) not null;
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS avatar_url text;
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS bio text;
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS ROLE text NOT NULL DEFAULT 'user';
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS tryout_quota int NOT NULL DEFAULT 0;
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS streak_count int NOT NULL DEFAULT 0;
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS last_activity_date date;
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS updated_at timestamp with time zone DEFAULT timezone('utc'::text, now());
+
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL;
 
 -- 3. Questions & Options
-create sequence if not exists question_code_seq start 1;
-create sequence if not exists questions_twk_code_seq start 1;
-create sequence if not exists questions_tiu_code_seq start 1;
-create sequence if not exists questions_tkp_code_seq start 1;
+CREATE SEQUENCE IF NOT EXISTS question_code_seq START 1;
 
-create or replace function generate_question_code()
-  returns text
-  language plpgsql
-  set search_path = public
-  as $$
-  begin
-    return 'Q-' || lpad(nextval('question_code_seq')::text, 6, '0');
-  end;
-  $$;
+CREATE SEQUENCE IF NOT EXISTS questions_twk_code_seq START 1;
 
-create or replace function next_question_code_by_type(question_type_input question_type)
-  returns text
-  language plpgsql
-  set search_path = public
-  as $$
-  declare
-    code_prefix text;
-    next_number bigint;
-begin
-  case question_type_input
-    when 'TWK' then
-      code_prefix := 'TWK';
-      next_number := nextval('questions_twk_code_seq');
-    when 'TIU' then
-      code_prefix := 'TIU';
-      next_number := nextval('questions_tiu_code_seq');
-    when 'TKP' then
-      code_prefix := 'TKP';
-      next_number := nextval('questions_tkp_code_seq');
-    else
-      raise exception 'Unsupported question type: %', question_type_input;
-  end case;
+CREATE SEQUENCE IF NOT EXISTS questions_tiu_code_seq START 1;
 
-  return code_prefix || '-' || lpad(next_number::text, 6, '0');
-end;
+CREATE SEQUENCE IF NOT EXISTS questions_tkp_code_seq START 1;
+
+CREATE OR REPLACE FUNCTION generate_question_code ()
+  RETURNS text
+  LANGUAGE plpgsql
+  SET search_path = public
+  AS $$
+BEGIN
+  RETURN 'Q-' || lpad(nextval('question_code_seq')::text, 6, '0');
+END;
 $$;
 
-create or replace function assign_question_code_by_type()
-  returns trigger
-  language plpgsql
-  set search_path = public
-  as $$
-  begin
-    if new.question_code is null or btrim(new.question_code) = '' then
-      new.question_code := next_question_code_by_type(new.type);
-  end if;
+CREATE OR REPLACE FUNCTION next_question_code_by_type (question_type_input question_type)
+  RETURNS text
+  LANGUAGE plpgsql
+  SET search_path = public
+  AS $$
+DECLARE
+  code_prefix text;
+  next_number bigint;
+BEGIN
+  CASE question_type_input
+  WHEN 'TWK' THEN
+    code_prefix := 'TWK';
+    next_number := nextval('questions_twk_code_seq');
+  WHEN 'TIU' THEN
+    code_prefix := 'TIU';
+    next_number := nextval('questions_tiu_code_seq');
+  WHEN 'TKP' THEN
+    code_prefix := 'TKP';
+    next_number := nextval('questions_tkp_code_seq');
+  ELSE
+    RAISE EXCEPTION 'Unsupported question type: %', question_type_input;
+  END CASE;
 
-  return new;
-end;
+  RETURN code_prefix || '-' || lpad(next_number::text, 6, '0');
+END;
 $$;
 
-create table if not exists questions (
-  id uuid default uuid_generate_v4() primary key,
-  question_code text not null,
-  content text not null,
-  type question_type not null,
+CREATE OR REPLACE FUNCTION assign_question_code_by_type ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SET search_path = public
+  AS $$
+BEGIN
+  IF NEW.question_code IS NULL OR btrim(NEW.question_code) = '' THEN
+    NEW.question_code := next_question_code_by_type (NEW.type);
+  END IF;
+
+  RETURN new;
+END;
+$$;
+
+CREATE TABLE IF NOT EXISTS questions (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  question_code text NOT NULL,
+  content text NOT NULL,
+  type question_type NOT NULL,
   category text,
   sub_category text,
   explanation text,
   image_url text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-alter table questions add column if not exists question_code text;
-alter table questions alter column question_code drop default;
-alter table questions add column if not exists category text;
-alter table questions add column if not exists sub_category text;
-alter table questions add column if not exists explanation text;
-alter table questions add column if not exists image_url text;
-alter table questions add column if not exists created_at timestamp with time zone default timezone('utc'::text, now()) not null;
-drop trigger if exists questions_assign_question_code on questions;
-create trigger questions_assign_question_code
-before insert on questions
-for each row
-execute function assign_question_code_by_type();
-with ranked_questions as (
-  select
+ALTER TABLE questions
+  ADD COLUMN IF NOT EXISTS question_code text;
+
+ALTER TABLE questions
+  ALTER COLUMN question_code DROP DEFAULT;
+
+ALTER TABLE questions
+  ADD COLUMN IF NOT EXISTS category text;
+
+ALTER TABLE questions
+  ADD COLUMN IF NOT EXISTS sub_category text;
+
+ALTER TABLE questions
+  ADD COLUMN IF NOT EXISTS explanation text;
+
+ALTER TABLE questions
+  ADD COLUMN IF NOT EXISTS image_url text;
+
+ALTER TABLE questions
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL;
+
+DROP TRIGGER IF EXISTS questions_assign_question_code ON questions;
+
+CREATE TRIGGER questions_assign_question_code
+  BEFORE INSERT ON questions
+  FOR EACH ROW
+  EXECUTE FUNCTION assign_question_code_by_type ();
+
+WITH ranked_questions AS (
+  SELECT
     id,
     type,
-    row_number() over (partition by type order by created_at, id) as sequence_number
-  from questions
-)
-update questions
-set question_code = case ranked_questions.type
-  when 'TWK' then 'TWK-' || lpad(ranked_questions.sequence_number::text, 6, '0')
-  when 'TIU' then 'TIU-' || lpad(ranked_questions.sequence_number::text, 6, '0')
-  when 'TKP' then 'TKP-' || lpad(ranked_questions.sequence_number::text, 6, '0')
-end
-from ranked_questions
-where questions.id = ranked_questions.id
-  and (questions.question_code is null or questions.question_code !~ '^(TWK|TIU|TKP)-[0-9]{6}$');
-select setval('questions_twk_code_seq', greatest((select count(*) from questions where type = 'TWK') + 1, 1), false);
-select setval('questions_tiu_code_seq', greatest((select count(*) from questions where type = 'TIU') + 1, 1), false);
-select setval('questions_tkp_code_seq', greatest((select count(*) from questions where type = 'TKP') + 1, 1), false);
-alter table questions alter column question_code set not null;
-create unique index if not exists questions_question_code_key on questions(question_code);
+    row_number() OVER (PARTITION BY type ORDER BY created_at,
+      id) AS sequence_number
+  FROM
+    questions)
+UPDATE
+  questions
+SET
+  question_code = CASE ranked_questions.type
+  WHEN 'TWK' THEN
+    'TWK-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+  WHEN 'TIU' THEN
+    'TIU-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+  WHEN 'TKP' THEN
+    'TKP-' || lpad(ranked_questions.sequence_number::text, 6, '0')
+  END
+FROM
+  ranked_questions
+WHERE
+  questions.id = ranked_questions.id
+  AND (questions.question_code IS NULL
+    OR questions.question_code !~ '^(TWK|TIU|TKP)-[0-9]{6}$');
 
-create table if not exists options (
-  id uuid default uuid_generate_v4() primary key,
-  question_id uuid references questions(id) on delete cascade not null,
-  content text not null,
+SELECT
+  setval('questions_twk_code_seq', greatest ((
+      SELECT
+        count(*)
+      FROM questions
+      WHERE
+        type = 'TWK') + 1, 1), FALSE);
+
+SELECT
+  setval('questions_tiu_code_seq', greatest ((
+      SELECT
+        count(*)
+      FROM questions
+      WHERE
+        type = 'TIU') + 1, 1), FALSE);
+
+SELECT
+  setval('questions_tkp_code_seq', greatest ((
+      SELECT
+        count(*)
+      FROM questions
+      WHERE
+        type = 'TKP') + 1, 1), FALSE);
+
+ALTER TABLE questions
+  ALTER COLUMN question_code SET NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS questions_question_code_key ON questions (question_code);
+
+CREATE TABLE IF NOT EXISTS options (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  question_id uuid REFERENCES questions (id) ON DELETE CASCADE NOT NULL,
+  content text NOT NULL,
   image_url text,
-  is_correct boolean not null default false,
-  score_value int not null default 0,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  is_correct boolean NOT NULL DEFAULT FALSE,
+  score_value int NOT NULL DEFAULT 0,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-alter table options add column if not exists image_url text;
-alter table options add column if not exists is_correct boolean not null default false;
-alter table options add column if not exists score_value int not null default 0;
-alter table options add column if not exists created_at timestamp with time zone default timezone('utc'::text, now()) not null;
+ALTER TABLE options
+  ADD COLUMN IF NOT EXISTS image_url text;
+
+ALTER TABLE options
+  ADD COLUMN IF NOT EXISTS is_correct boolean NOT NULL DEFAULT FALSE;
+
+ALTER TABLE options
+  ADD COLUMN IF NOT EXISTS score_value int NOT NULL DEFAULT 0;
+
+ALTER TABLE options
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL;
 
 -- 5. Test Sessions & Answers
-create table if not exists test_sessions (
-  id uuid default uuid_generate_v4() primary key,
-  user_id uuid references profiles(id) on delete cascade not null,
-  mode session_mode not null default 'practice',
-  status session_status not null default 'in_progress',
-  start_time timestamp with time zone default timezone('utc'::text, now()) not null,
+CREATE TABLE IF NOT EXISTS test_sessions (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  user_id uuid REFERENCES profiles (id) ON DELETE CASCADE NOT NULL,
+  mode session_mode NOT NULL DEFAULT 'practice',
+  status session_status NOT NULL DEFAULT 'in_progress',
+  start_time timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
   end_time timestamp with time zone,
-  
   -- Scores
-  score_twk int not null default 0,
-  score_tiu int not null default 0,
-  score_tkp int not null default 0,
-  total_score int not null default 0,
-  is_passed boolean not null default false,
-  current_question_index integer not null default 0,
-  marked_questions jsonb not null default '{}'::jsonb,
-  last_activity_at timestamp with time zone not null default timezone('utc'::text, now()),
-  
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  score_twk int NOT NULL DEFAULT 0,
+  score_tiu int NOT NULL DEFAULT 0,
+  score_tkp int NOT NULL DEFAULT 0,
+  total_score int NOT NULL DEFAULT 0,
+  is_passed boolean NOT NULL DEFAULT FALSE,
+  current_question_index integer NOT NULL DEFAULT 0,
+  marked_questions jsonb NOT NULL DEFAULT '{}'::jsonb,
+  last_activity_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-alter table test_sessions add column if not exists current_question_index integer not null default 0;
-alter table test_sessions add column if not exists marked_questions jsonb not null default '{}'::jsonb;
-alter table test_sessions add column if not exists last_activity_at timestamp with time zone not null default timezone('utc'::text, now());
-alter table test_sessions add column if not exists created_at timestamp with time zone default timezone('utc'::text, now()) not null;
+ALTER TABLE test_sessions
+  ADD COLUMN IF NOT EXISTS current_question_index integer NOT NULL DEFAULT 0;
 
-create table if not exists test_answers (
-  id uuid default uuid_generate_v4() primary key,
-  session_id uuid references test_sessions(id) on delete cascade not null,
-  question_id uuid references questions(id) not null,
-  option_id uuid references options(id),
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  
-  unique(session_id, question_id)
+ALTER TABLE test_sessions
+  ADD COLUMN IF NOT EXISTS marked_questions jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE test_sessions
+  ADD COLUMN IF NOT EXISTS last_activity_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now());
+
+ALTER TABLE test_sessions
+  ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL;
+
+CREATE TABLE IF NOT EXISTS test_answers (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  session_id uuid REFERENCES test_sessions (id) ON DELETE CASCADE NOT NULL,
+  question_id uuid REFERENCES questions (id) NOT NULL,
+  option_id uuid REFERENCES options (id),
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE (session_id, question_id)
 );
 
 -- 7. Transactions (Midtrans)
-create table if not exists transactions (
-  id uuid default uuid_generate_v4() primary key,
-  user_id uuid references profiles(id) on delete cascade not null,
-  order_id text unique not null,
-  amount int not null,
-  status transaction_status default 'pending',
-  package_name text not null,
+CREATE TABLE IF NOT EXISTS transactions (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  user_id uuid REFERENCES profiles (id) ON DELETE CASCADE NOT NULL,
+  order_id text UNIQUE NOT NULL,
+  amount int NOT NULL,
+  status transaction_status DEFAULT 'pending',
+  package_name text NOT NULL,
   snap_token text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now())
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
 
-create table if not exists tryout_configurations (
-  id uuid default uuid_generate_v4() primary key,
-  type varchar not null,
-  sub_category varchar not null,
-  question_count int not null default 0,
-  sort_order int not null default 0,
-  is_active boolean not null default true,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+CREATE TABLE IF NOT EXISTS tryout_configurations (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  type varchar NOT NULL,
+  sub_category varchar NOT NULL,
+  question_count int NOT NULL DEFAULT 0,
+  sort_order int NOT NULL DEFAULT 0,
+  is_active boolean NOT NULL DEFAULT TRUE,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'tryout_configurations_type_sub_category_key'
-  ) then
-    alter table tryout_configurations
-      add constraint tryout_configurations_type_sub_category_key unique (type, sub_category);
-  end if;
-end
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT
+      1
+    FROM
+      pg_constraint
+    WHERE
+      conname = 'tryout_configurations_type_sub_category_key') THEN
+  ALTER TABLE tryout_configurations
+    ADD CONSTRAINT tryout_configurations_type_sub_category_key UNIQUE (type, sub_category);
+END IF;
+END
 $$;
 
-do $$
-begin
-  if to_regclass('public.leaderboard_snapshot') is null then
-    create table leaderboard_snapshot (
+DO $$
+BEGIN
+  IF to_regclass('public.leaderboard_snapshot') IS NULL THEN
+    CREATE TABLE leaderboard_snapshot (
       rank_pos int,
-      user_id uuid primary key references profiles(id) on delete cascade,
+      user_id uuid PRIMARY KEY REFERENCES profiles (id ) ON DELETE CASCADE,
       full_name text,
       avatar_url text,
       top_score int,
       score_twk int,
       score_tiu int,
       score_tkp int,
-      updated_at timestamp with time zone default now()
+      updated_at timestamp with time zone DEFAULT now( )
     );
-  end if;
-end
+END IF;
+END
 $$;
 
-insert into tryout_configurations (type, sub_category, question_count, sort_order)
-values
+INSERT INTO tryout_configurations (type, sub_category, question_count, sort_order)
+VALUES
   ('TWK', 'Nasionalisme', 6, 1),
   ('TWK', 'Integritas', 6, 2),
   ('TWK', 'Bela Negara', 6, 3),
@@ -308,198 +430,337 @@ values
   ('TKP', 'Teknologi Informasi dan Komunikasi', 7, 19),
   ('TKP', 'Profesionalisme', 7, 20),
   ('TKP', 'Anti-Radikalisme', 8, 21)
-on conflict (type, sub_category) do update
-set
-  question_count = excluded.question_count,
-  sort_order = excluded.sort_order;
+ON CONFLICT (type, sub_category)
+  DO UPDATE SET
+    question_count = excluded.question_count,
+    sort_order = excluded.sort_order;
 
-create index if not exists idx_questions_type_subcategory on questions(type, sub_category);
-create index if not exists test_sessions_active_lookup_idx on test_sessions(user_id, mode, status, last_activity_at desc);
-do $$
-begin
-  if exists (
-    select 1
-    from pg_class
-    where oid = to_regclass('public.leaderboard_snapshot')
-      and relkind in ('r', 'm')
-  ) then
-    create index if not exists idx_leaderboard_score on leaderboard_snapshot(top_score desc);
-  end if;
-end
+CREATE INDEX IF NOT EXISTS idx_questions_type_subcategory ON questions (type, sub_category);
+
+CREATE INDEX IF NOT EXISTS test_sessions_active_lookup_idx ON test_sessions (user_id, mode, status, last_activity_at DESC);
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      pg_class
+    WHERE
+      oid = to_regclass('public.leaderboard_snapshot')
+      AND relkind IN ('r', 'm')) THEN
+  CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard_snapshot (top_score DESC);
+END IF;
+END
 $$;
 
 -- 8. Policies (RLS)
-alter table if exists profiles enable row level security;
-alter table if exists questions enable row level security;
-alter table if exists options enable row level security;
-alter table if exists test_sessions enable row level security;
-alter table if exists test_answers enable row level security;
-alter table if exists transactions enable row level security;
-alter table if exists tryout_configurations enable row level security;
-do $$
-begin
-  if exists (
-    select 1
-    from pg_class
-    where oid = to_regclass('public.leaderboard_snapshot')
-      and relkind = 'r'
-  ) then
-    alter table leaderboard_snapshot enable row level security;
-  end if;
-end
+ALTER TABLE IF EXISTS profiles ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE IF EXISTS questions ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE IF EXISTS options ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE IF EXISTS test_sessions ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE IF EXISTS test_answers ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE IF EXISTS transactions ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE IF EXISTS tryout_configurations ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      pg_class
+    WHERE
+      oid = to_regclass('public.leaderboard_snapshot')
+      AND relkind = 'r') THEN
+  ALTER TABLE leaderboard_snapshot ENABLE ROW LEVEL SECURITY;
+END IF;
+END
 $$;
 
 -- (Basic Policies - Extend as needed)
-drop policy if exists "Users can view own profile" on profiles;
-create policy "Users can view own profile" on profiles for select using ((select auth.uid()) = id);
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 
-drop policy if exists "Users can update own profile" on profiles;
-create policy "Users can update own profile" on profiles for update using ((select auth.uid()) = id);
+CREATE POLICY "Users can view own profile" ON profiles
+  FOR SELECT
+  USING ((
+    SELECT
+      auth.uid ()) = id);
 
-drop policy if exists "Public read questions" on questions;
-create policy "Public read questions" on questions for select using (true);
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 
-drop policy if exists "Public read options" on options;
-create policy "Public read options" on options for select using (true);
+CREATE POLICY "Users can update own profile" ON profiles
+  FOR UPDATE
+  USING ((
+    SELECT
+      auth.uid ()) = id);
 
-drop policy if exists "Users can view own sessions" on test_sessions;
-create policy "Users can view own sessions" on test_sessions for select using ((select auth.uid()) = user_id);
+DROP POLICY IF EXISTS "Public read questions" ON questions;
 
-drop policy if exists "Users can create own sessions" on test_sessions;
-drop policy if exists "Users can insert own sessions" on test_sessions;
-create policy "Users can create own sessions" on test_sessions for insert with check ((select auth.uid()) = user_id);
+CREATE POLICY "Public read questions" ON questions
+  FOR SELECT
+  USING (TRUE);
 
-drop policy if exists "Users can update own sessions" on test_sessions;
-create policy "Users can update own sessions" on test_sessions for update using ((select auth.uid()) = user_id);
+DROP POLICY IF EXISTS "Public read options" ON options;
 
-drop policy if exists "Users can view own answers" on test_answers;
-create policy "Users can view own answers" on test_answers for select using (
-  exists (
-    select 1
-    from test_sessions ts
-    where ts.id = test_answers.session_id
-      and ts.user_id = (select auth.uid())
-  )
-);
+CREATE POLICY "Public read options" ON options
+  FOR SELECT
+  USING (TRUE);
 
-drop policy if exists "Users can update own answers" on test_answers;
-create policy "Users can update own answers" on test_answers for update using (
-  exists (
-    select 1
-    from test_sessions ts
-    where ts.id = test_answers.session_id
-      and ts.user_id = (select auth.uid())
-  )
-) with check (
-  exists (
-    select 1
-    from test_sessions ts
-    where ts.id = test_answers.session_id
-      and ts.user_id = (select auth.uid())
-  )
-);
+DROP POLICY IF EXISTS "Users can view own sessions" ON test_sessions;
 
-drop policy if exists "Users can view own transactions" on transactions;
-create policy "Users can view own transactions" on transactions for select using ((select auth.uid()) = user_id);
+CREATE POLICY "Users can view own sessions" ON test_sessions
+  FOR SELECT
+  USING ((
+    SELECT
+      auth.uid ()) = user_id);
 
-drop policy if exists "Users can insert own transactions" on transactions;
-create policy "Users can insert own transactions" on transactions for insert with check ((select auth.uid()) = user_id);
+DROP POLICY IF EXISTS "Users can create own sessions" ON test_sessions;
 
-drop policy if exists "Anyone can read tryout configurations" on tryout_configurations;
-create policy "Anyone can read tryout configurations" on tryout_configurations for select using (true);
+DROP POLICY IF EXISTS "Users can insert own sessions" ON test_sessions;
 
-drop policy if exists "Admins can insert tryout configurations" on tryout_configurations;
-create policy "Admins can insert tryout configurations" on tryout_configurations for insert with check (
-  (select role from profiles where id = (select auth.uid())) = 'admin'
-);
+CREATE POLICY "Users can create own sessions" ON test_sessions
+  FOR INSERT
+  WITH CHECK ((
+    SELECT
+      auth.uid ()) = user_id);
 
-drop policy if exists "Admins can update tryout configurations" on tryout_configurations;
-create policy "Admins can update tryout configurations" on tryout_configurations for update using (
-  (select role from profiles where id = (select auth.uid())) = 'admin'
-);
+DROP POLICY IF EXISTS "Users can update own sessions" ON test_sessions;
 
-drop policy if exists "Admins can delete tryout configurations" on tryout_configurations;
-create policy "Admins can delete tryout configurations" on tryout_configurations for delete using (
-  (select role from profiles where id = (select auth.uid())) = 'admin'
-);
+CREATE POLICY "Users can update own sessions" ON test_sessions
+  FOR UPDATE
+  USING ((
+    SELECT
+      auth.uid ()) = user_id);
 
-do $$
-begin
-  if exists (
-    select 1
-    from pg_class
-    where oid = to_regclass('public.leaderboard_snapshot')
-      and relkind = 'r'
-  ) then
-    drop policy if exists "Anyone can view leaderboard" on leaderboard_snapshot;
-    create policy "Anyone can view leaderboard" on leaderboard_snapshot for select to authenticated using (true);
-  end if;
-end
+DROP POLICY IF EXISTS "Users can view own answers" ON test_answers;
+
+CREATE POLICY "Users can view own answers" ON test_answers
+  FOR SELECT
+  USING (EXISTS (
+    SELECT
+      1
+    FROM
+      test_sessions ts
+    WHERE
+      ts.id = test_answers.session_id
+      AND ts.user_id = (
+        SELECT
+          auth.uid ())));
+
+DROP POLICY IF EXISTS "Users can update own answers" ON test_answers;
+
+CREATE POLICY "Users can update own answers" ON test_answers
+  FOR UPDATE
+  USING (EXISTS (
+    SELECT
+      1
+    FROM
+      test_sessions ts
+    WHERE
+      ts.id = test_answers.session_id
+      AND ts.user_id = (
+        SELECT
+          auth.uid ())))
+  WITH CHECK (EXISTS (
+    SELECT
+      1
+    FROM
+      test_sessions ts
+    WHERE
+      ts.id = test_answers.session_id
+      AND ts.user_id = (
+        SELECT
+          auth.uid ())));
+
+DROP POLICY IF EXISTS "Users can view own transactions" ON transactions;
+
+CREATE POLICY "Users can view own transactions" ON transactions
+  FOR SELECT
+  USING ((
+    SELECT
+      auth.uid ()) = user_id);
+
+DROP POLICY IF EXISTS "Users can insert own transactions" ON transactions;
+
+CREATE POLICY "Users can insert own transactions" ON transactions
+  FOR INSERT
+  WITH CHECK ((
+    SELECT
+      auth.uid ()) = user_id);
+
+DROP POLICY IF EXISTS "Anyone can read tryout configurations" ON tryout_configurations;
+
+CREATE POLICY "Anyone can read tryout configurations" ON tryout_configurations
+  FOR SELECT
+  USING (TRUE);
+
+DROP POLICY IF EXISTS "Admins can insert tryout configurations" ON tryout_configurations;
+
+CREATE POLICY "Admins can insert tryout configurations" ON tryout_configurations
+  FOR INSERT
+  WITH CHECK ((
+    SELECT
+      ROLE
+    FROM
+      profiles
+    WHERE
+      id = (
+        SELECT
+          auth.uid ())) = 'admin');
+
+DROP POLICY IF EXISTS "Admins can update tryout configurations" ON tryout_configurations;
+
+CREATE POLICY "Admins can update tryout configurations" ON tryout_configurations
+  FOR UPDATE
+  USING ((
+    SELECT
+      ROLE
+    FROM
+      profiles
+    WHERE
+      id = (
+        SELECT
+          auth.uid ())) = 'admin');
+
+DROP POLICY IF EXISTS "Admins can delete tryout configurations" ON tryout_configurations;
+
+CREATE POLICY "Admins can delete tryout configurations" ON tryout_configurations
+  FOR DELETE
+  USING ((
+    SELECT
+      ROLE
+    FROM
+      profiles
+    WHERE
+      id = (
+        SELECT
+          auth.uid ())) = 'admin');
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      pg_class
+    WHERE
+      oid = to_regclass('public.leaderboard_snapshot')
+      AND relkind = 'r') THEN
+  DROP POLICY IF EXISTS "Anyone can view leaderboard" ON leaderboard_snapshot;
+  CREATE POLICY "Anyone can view leaderboard" ON leaderboard_snapshot
+    FOR SELECT TO authenticated
+    USING (TRUE );
+END IF;
+END
 $$;
 
 -- 9. Functions
-create or replace function handle_new_user()
-returns trigger as $$
-begin
-  insert into profiles (id, full_name, streak_count)
-  values (
-    new.id,
-    new.raw_user_meta_data->>'full_name',
-    0
-  )
-  on conflict (id) do update
-  set full_name = coalesce(excluded.full_name, profiles.full_name);
+CREATE OR REPLACE FUNCTION handle_new_user ()
+  RETURNS TRIGGER
+  AS $$
+BEGIN
+  INSERT INTO profiles (id, full_name, streak_count)
+    VALUES (NEW.id, NEW.raw_user_meta_data ->> 'full_name', 0)
+  ON CONFLICT (id)
+    DO UPDATE SET
+      full_name = coalesce(excluded.full_name, profiles.full_name);
 
-  return new;
-end;
-$$ language plpgsql security definer set search_path = public;
+  RETURN new;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public;
 
-create or replace function update_user_streak()
-returns trigger as $$
-declare
+CREATE OR REPLACE FUNCTION update_user_streak ()
+  RETURNS TRIGGER
+  AS $$
+DECLARE
   current_streak int;
   last_date date;
-  today date := current_date;
-begin
-  if new.status = 'completed' and old.status != 'completed' then
-    select streak_count, last_activity_date
-    into current_streak, last_date
-    from profiles
-    where id = new.user_id;
+  today date := CURRENT_DATE;
+BEGIN
+  IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
+    SELECT
+      streak_count,
+      last_activity_date
+    INTO
+      current_streak,
+      last_date
+    FROM
+      profiles
+    WHERE
+      id = NEW.user_id;
 
-    if last_date is null then
-      update profiles set streak_count = 1, last_activity_date = today where id = new.user_id;
-    elsif last_date = today - 1 then
-      update profiles set streak_count = current_streak + 1, last_activity_date = today where id = new.user_id;
-    elsif last_date < today - 1 then
-      update profiles set streak_count = 1, last_activity_date = today where id = new.user_id;
-    end if;
-  end if;
+    IF last_date IS NULL THEN
+      UPDATE
+        profiles
+      SET
+        streak_count = 1,
+        last_activity_date = today
+      WHERE
+        id = NEW.user_id;
+    ELSIF last_date = today - 1 THEN
+      UPDATE
+        profiles
+      SET
+        streak_count = current_streak + 1,
+        last_activity_date = today
+      WHERE
+        id = NEW.user_id;
+    ELSIF last_date < today - 1 THEN
+      UPDATE
+        profiles
+      SET
+        streak_count = 1,
+        last_activity_date = today
+      WHERE
+        id = NEW.user_id;
+    END IF;
+  END IF;
 
-  return new;
-end;
-$$ language plpgsql security definer set search_path = public;
+  RETURN new;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public;
 
-create or replace function update_tryout_configurations_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = timezone('utc'::text, now());
-  return new;
-end;
-$$ language plpgsql set search_path = public;
+CREATE OR REPLACE FUNCTION update_tryout_configurations_updated_at ()
+  RETURNS TRIGGER
+  AS $$
+BEGIN
+  NEW.updated_at = timezone('utc'::text, now());
+  RETURN new;
+END;
+$$
+LANGUAGE plpgsql
+SET search_path = public;
 
-create or replace function increment_tryout_quota(user_id_param uuid, increment_by int)
-returns void as $$
-begin
-  update profiles
-  set tryout_quota = coalesce(tryout_quota, 0) + increment_by
-  where id = user_id_param;
-end;
-$$ language plpgsql security definer set search_path = public;
+CREATE OR REPLACE FUNCTION increment_tryout_quota (user_id_param uuid, increment_by int)
+  RETURNS void
+  AS $$
+BEGIN
+  UPDATE
+    profiles
+  SET
+    tryout_quota = coalesce(tryout_quota, 0) + increment_by
+  WHERE
+    id = user_id_param;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public;
 
-create or replace function calculate_session_score(session_uuid uuid)
-returns void as $$
-declare
+CREATE OR REPLACE FUNCTION calculate_session_score (session_uuid uuid)
+  RETURNS void
+  AS $$
+DECLARE
   v_twk int;
   v_tiu int;
   v_tkp int;
@@ -508,33 +769,65 @@ declare
   pass_twk int := 65;
   pass_tiu int := 80;
   pass_tkp int := 166;
-begin
-  select coalesce(sum(case when q.type = 'TWK' and o.is_correct then 5 else 0 end), 0)
-  into v_twk
-  from test_answers a
-  join questions q on a.question_id = q.id
-  left join options o on a.option_id = o.id
-  where a.session_id = session_uuid;
+BEGIN
+  SELECT
+    coalesce(sum(
+        CASE WHEN q.type = 'TWK'
+          AND o.is_correct THEN
+          5
+        ELSE
+          0
+        END), 0)
+  INTO
+    v_twk
+  FROM
+    test_answers a
+    JOIN questions q ON a.question_id = q.id
+    LEFT JOIN options o ON a.option_id = o.id
+  WHERE
+    a.session_id = session_uuid;
 
-  select coalesce(sum(case when q.type = 'TIU' and o.is_correct then 5 else 0 end), 0)
-  into v_tiu
-  from test_answers a
-  join questions q on a.question_id = q.id
-  left join options o on a.option_id = o.id
-  where a.session_id = session_uuid;
+  SELECT
+    coalesce(sum(
+        CASE WHEN q.type = 'TIU'
+          AND o.is_correct THEN
+          5
+        ELSE
+          0
+        END), 0)
+  INTO
+    v_tiu
+  FROM
+    test_answers a
+    JOIN questions q ON a.question_id = q.id
+    LEFT JOIN options o ON a.option_id = o.id
+  WHERE
+    a.session_id = session_uuid;
 
-  select coalesce(sum(case when q.type = 'TKP' then coalesce(o.score_value, 0) else 0 end), 0)
-  into v_tkp
-  from test_answers a
-  join questions q on a.question_id = q.id
-  left join options o on a.option_id = o.id
-  where a.session_id = session_uuid;
+  SELECT
+    coalesce(sum(
+        CASE WHEN q.type = 'TKP' THEN
+          coalesce(o.score_value, 0)
+        ELSE
+          0
+        END), 0)
+  INTO
+    v_tkp
+  FROM
+    test_answers a
+    JOIN questions q ON a.question_id = q.id
+    LEFT JOIN options o ON a.option_id = o.id
+  WHERE
+    a.session_id = session_uuid;
 
   v_total := v_twk + v_tiu + v_tkp;
-  v_passed := (v_twk >= pass_twk and v_tiu >= pass_tiu and v_tkp >= pass_tkp);
+  v_passed := (v_twk >= pass_twk
+    AND v_tiu >= pass_tiu
+    AND v_tkp >= pass_tkp);
 
-  update test_sessions
-  set
+  UPDATE
+    test_sessions
+  SET
     score_twk = v_twk,
     score_tiu = v_tiu,
     score_tkp = v_tkp,
@@ -543,193 +836,221 @@ begin
     status = 'completed',
     end_time = now(),
     last_activity_at = now()
-  where id = session_uuid;
-end;
-$$ language plpgsql security definer set search_path = public;
+  WHERE
+    id = session_uuid;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public;
 
-create or replace function start_practice_session(
-  p_user_id uuid,
-  p_type question_type,
-  p_limit int default 10
-)
-returns table (
-  session_id uuid,
-  questions json
-) as $$
-declare
+CREATE OR REPLACE FUNCTION start_practice_session (p_user_id uuid, p_type question_type, p_limit int DEFAULT 10)
+  RETURNS TABLE (
+    session_id uuid,
+    questions json
+  )
+  AS $$
+DECLARE
   v_session_id uuid;
   v_questions json;
-begin
-  insert into test_sessions (user_id, mode, status, start_time, last_activity_at)
-  values (p_user_id, 'practice', 'in_progress', now(), now())
-  returning id into v_session_id;
+BEGIN
+  INSERT INTO test_sessions (user_id, mode, status, start_time, last_activity_at)
+    VALUES (p_user_id, 'practice', 'in_progress', now(), now())
+  RETURNING
+    id
+  INTO
+    v_session_id;
 
-  with selected_questions as (
-    select id, content, type, category, sub_category, image_url
-    from questions
-    where type = p_type
-    order by random()
-    limit p_limit
-  ),
-  inserted_answers as (
-    insert into test_answers (session_id, question_id)
-    select v_session_id, id from selected_questions
-    returning question_id
+  WITH selected_questions AS (
+    SELECT
+      id,
+      content,
+      type,
+      category,
+      sub_category,
+      image_url
+    FROM
+      questions
+    WHERE
+      type = p_type
+    ORDER BY
+      random()
+    LIMIT p_limit
+),
+inserted_answers AS (
+INSERT INTO test_answers (session_id, question_id)
+  SELECT
+    v_session_id,
+    id
+  FROM
+    selected_questions
+  RETURNING
+    question_id
+)
+SELECT
+  json_agg(json_build_object('id', q.id, 'content', q.content, 'type', q.type, 'category', q.category, 'sub_category', q.sub_category, 'image_url', q.image_url, 'options', (
+        SELECT
+          json_agg(json_build_object('id', o.id, 'content', o.content, 'image_url', o.image_url)
+        ORDER BY random())
+      FROM options o
+      WHERE
+        o.question_id = q.id)))
+INTO
+  v_questions
+FROM
+  selected_questions q
+  JOIN inserted_answers ia ON ia.question_id = q.id;
+
+    RETURN QUERY
+    SELECT
+      v_session_id,
+      v_questions;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public;
+
+CREATE OR REPLACE FUNCTION start_tryout_session (p_user_id uuid)
+  RETURNS TABLE (
+    session_id uuid,
+    questions json
   )
-  select json_agg(
-    json_build_object(
-      'id', q.id,
-      'content', q.content,
-      'type', q.type,
-      'category', q.category,
-      'sub_category', q.sub_category,
-      'image_url', q.image_url,
-      'options', (
-        select json_agg(
-          json_build_object(
-            'id', o.id,
-            'content', o.content,
-            'image_url', o.image_url
-          ) order by random()
-        )
-        from options o
-        where o.question_id = q.id
-      )
-    )
-  )
-  into v_questions
-  from selected_questions q
-  join inserted_answers ia on ia.question_id = q.id;
-
-  return query select v_session_id, v_questions;
-end;
-$$ language plpgsql security definer set search_path = public;
-
-create or replace function start_tryout_session(p_user_id uuid)
-returns table (
-  session_id uuid,
-  questions json
-) as $$
-declare
+  AS $$
+DECLARE
   v_session_id uuid;
   v_questions json;
   v_quota int;
-begin
-  select tryout_quota into v_quota
-  from profiles
-  where id = p_user_id;
+BEGIN
+  SELECT
+    tryout_quota
+  INTO
+    v_quota
+  FROM
+    profiles
+  WHERE
+    id = p_user_id;
 
-  if v_quota is null or v_quota < 1 then
-    raise exception 'Not enough SKD tickets';
-  end if;
+  IF v_quota IS NULL OR v_quota < 1 THEN
+    RAISE EXCEPTION 'Not enough SKD tickets';
+  END IF;
 
-  update profiles
-  set tryout_quota = tryout_quota - 1
-  where id = p_user_id;
+  UPDATE
+    profiles
+  SET
+    tryout_quota = tryout_quota - 1
+  WHERE
+    id = p_user_id;
 
-  insert into test_sessions (user_id, mode, status, start_time, last_activity_at)
-  values (p_user_id, 'tryout', 'in_progress', now(), now())
-  returning id into v_session_id;
+  INSERT INTO test_sessions (user_id, mode, status, start_time, last_activity_at)
+    VALUES (p_user_id, 'tryout', 'in_progress', now(), now())
+  RETURNING
+    id
+  INTO
+    v_session_id;
 
-  create temp table if not exists temp_selected_questions (
+  CREATE temp TABLE IF NOT EXISTS temp_selected_questions (
     question_id uuid,
     sort_order int
-  ) on commit drop;
+  ) ON COMMIT DROP;
 
-  truncate temp_selected_questions;
+  TRUNCATE temp_selected_questions;
 
-  insert into temp_selected_questions (question_id, sort_order)
-  select q.id, tc.sort_order
-  from tryout_configurations tc
-  cross join lateral (
-    select id
-    from questions q_inner
-    where q_inner.type = tc.type::question_type
-      and q_inner.sub_category = tc.sub_category
-    order by random()
-    limit tc.question_count
-  ) q
-  where tc.is_active = true;
+  INSERT INTO temp_selected_questions (question_id, sort_order)
+  SELECT
+    q.id,
+    tc.sort_order
+  FROM
+    tryout_configurations tc
+  CROSS JOIN LATERAL (
+    SELECT
+      id
+    FROM
+      questions q_inner
+    WHERE
+      q_inner.type = tc.type::question_type
+      AND q_inner.sub_category = tc.sub_category
+    ORDER BY
+      random()
+    LIMIT tc.question_count) q
+WHERE
+  tc.is_active = TRUE;
 
-  insert into test_answers (session_id, question_id)
-  select v_session_id, question_id
-  from temp_selected_questions;
+  INSERT INTO test_answers (session_id, question_id)
+  SELECT
+    v_session_id,
+    question_id
+  FROM
+    temp_selected_questions;
 
-  select json_agg(
-    json_build_object(
-      'id', q.id,
-      'content', q.content,
-      'type', q.type,
-      'category', q.category,
-      'sub_category', q.sub_category,
-      'image_url', q.image_url,
-      'options', (
-        select json_agg(
-          json_build_object(
-            'id', o.id,
-            'content', o.content,
-            'image_url', o.image_url
-          ) order by random()
-        )
-        from options o
-        where o.question_id = q.id
-      )
-    ) order by tsq.sort_order, random()
-  )
-  into v_questions
-  from temp_selected_questions tsq
-  join questions q on q.id = tsq.question_id;
+  SELECT
+    json_agg(json_build_object('id', q.id, 'content', q.content, 'type', q.type, 'category', q.category, 'sub_category', q.sub_category, 'image_url', q.image_url, 'options', (
+          SELECT
+            json_agg(json_build_object('id', o.id, 'content', o.content, 'image_url', o.image_url)
+          ORDER BY random())
+        FROM options o
+        WHERE
+          o.question_id = q.id))
+    ORDER BY tsq.sort_order, random())
+  INTO
+    v_questions
+  FROM
+    temp_selected_questions tsq
+    JOIN questions q ON q.id = tsq.question_id;
 
-  return query select v_session_id, v_questions;
-end;
-$$ language plpgsql security definer set search_path = public;
+  RETURN QUERY
+  SELECT
+    v_session_id,
+    v_questions;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public;
 
-create or replace function refresh_leaderboard_snapshot()
-returns void as $$
-begin
-  if exists (
-    select 1
-    from pg_class
-    where oid = to_regclass('public.leaderboard_snapshot')
-      and relkind = 'm'
-  ) then
-    refresh materialized view leaderboard_snapshot;
-    return;
-  end if;
+CREATE OR REPLACE FUNCTION refresh_leaderboard_snapshot ()
+  RETURNS void
+  AS $$
+BEGIN
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      pg_class
+    WHERE
+      oid = to_regclass('public.leaderboard_snapshot')
+      AND relkind = 'm') THEN
+  REFRESH MATERIALIZED VIEW leaderboard_snapshot;
+  RETURN;
+END IF;
 
-  if exists (
-    select 1
-    from pg_class
-    where oid = to_regclass('public.leaderboard_snapshot')
-      and relkind = 'r'
-  ) then
-    truncate leaderboard_snapshot;
+      IF EXISTS (
+        SELECT
+          1
+        FROM
+          pg_class
+        WHERE
+          oid = to_regclass('public.leaderboard_snapshot')
+          AND relkind = 'r') THEN
+      TRUNCATE leaderboard_snapshot;
 
-    insert into leaderboard_snapshot (
-      rank_pos,
-      user_id,
-      full_name,
-      avatar_url,
-      top_score,
-      score_twk,
-      score_tiu,
-      score_tkp,
-      updated_at
-    )
-    with user_best_scores as (
-      select distinct on (user_id)
+    INSERT INTO leaderboard_snapshot (rank_pos, user_id, full_name, avatar_url, top_score, score_twk, score_tiu, score_tkp, updated_at)
+    WITH user_best_scores AS (
+      SELECT DISTINCT ON (user_id)
         user_id,
         total_score,
         score_twk,
         score_tiu,
         score_tkp,
         end_time
-      from test_sessions
-      where status = 'completed'
-      order by user_id, total_score desc, end_time asc nulls last
-    )
-    select
-      row_number() over (order by total_score desc, end_time asc nulls last) as rank_pos,
+      FROM
+        test_sessions
+      WHERE
+        status = 'completed'
+      ORDER BY
+        user_id,
+        total_score DESC,
+        end_time ASC nulls LAST
+)
+    SELECT
+      row_number() OVER (ORDER BY total_score DESC, end_time ASC nulls LAST) AS rank_pos,
       ubs.user_id,
       coalesce(p.full_name, 'Pejuang SKD'),
       p.avatar_url,
@@ -738,34 +1059,42 @@ begin
       ubs.score_tiu,
       ubs.score_tkp,
       now()
-    from user_best_scores ubs
-    left join profiles p on p.id = ubs.user_id
-    order by ubs.total_score desc, ubs.end_time asc nulls last;
-  end if;
-end;
-$$ language plpgsql security definer set search_path = public;
+    FROM
+      user_best_scores ubs
+    LEFT JOIN profiles p ON p.id = ubs.user_id
+  ORDER BY
+    ubs.total_score DESC,
+    ubs.end_time ASC nulls LAST;
+END IF;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public;
 
-create or replace function get_leaderboard_snapshot()
-returns table (
-  rank_pos int,
-  user_id uuid,
-  full_name text,
-  avatar_url text,
-  top_score int,
-  score_twk int,
-  score_tiu int,
-  score_tkp int,
-  updated_at timestamp with time zone
-) as $$
-begin
-  if exists (
-    select 1
-    from information_schema.columns
-    where table_schema = 'public'
-      and table_name = 'leaderboard_snapshot'
-      and column_name = 'updated_at'
-  ) then
-    return query execute '
+CREATE OR REPLACE FUNCTION get_leaderboard_snapshot ()
+  RETURNS TABLE (
+    rank_pos int,
+    user_id uuid,
+    full_name text,
+    avatar_url text,
+    top_score int,
+    score_twk int,
+    score_tiu int,
+    score_tkp int,
+    updated_at timestamp with time zone
+  )
+  AS $$
+BEGIN
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      information_schema.columns
+    WHERE
+      table_schema = 'public'
+      AND table_name = 'leaderboard_snapshot'
+      AND column_name = 'updated_at') THEN
+  RETURN QUERY EXECUTE '
       select
         ls.rank_pos::int,
         ls.user_id,
@@ -780,10 +1109,10 @@ begin
       order by ls.rank_pos asc
       limit 100
     ';
-    return;
-  end if;
+  RETURN;
+END IF;
 
-  return query execute '
+      RETURN QUERY EXECUTE '
     select
       ls.rank_pos::int,
       ls.user_id,
@@ -798,79 +1127,105 @@ begin
     order by ls.rank_pos asc
     limit 100
   ';
-end;
-$$ language plpgsql security definer set search_path = public;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-  after insert on auth.users
-  for each row
-  execute function handle_new_user();
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
-drop trigger if exists on_session_complete on test_sessions;
-create trigger on_session_complete
-  after update on test_sessions
-  for each row
-  execute function update_user_streak();
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION handle_new_user ();
 
-drop trigger if exists trg_update_tryout_configurations on tryout_configurations;
-create trigger trg_update_tryout_configurations
-  before update on tryout_configurations
-  for each row
-  execute function update_tryout_configurations_updated_at();
+DROP TRIGGER IF EXISTS on_session_complete ON test_sessions;
 
-insert into storage.buckets (id, name, public)
-values
-  ('avatars', 'avatars', true),
-  ('question-images', 'question-images', true)
-on conflict (id) do update
-set public = excluded.public;
+CREATE TRIGGER on_session_complete
+  AFTER UPDATE ON test_sessions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_user_streak ();
 
-drop policy if exists "Avatar images are publicly accessible" on storage.objects;
-create policy "Avatar images are publicly accessible"
-  on storage.objects for select
-  using (bucket_id = 'avatars');
+DROP TRIGGER IF EXISTS trg_update_tryout_configurations ON tryout_configurations;
 
-drop policy if exists "Anyone can upload an avatar" on storage.objects;
-create policy "Anyone can upload an avatar"
-  on storage.objects for insert
-  with check (bucket_id = 'avatars');
+CREATE TRIGGER trg_update_tryout_configurations
+  BEFORE UPDATE ON tryout_configurations
+  FOR EACH ROW
+  EXECUTE FUNCTION update_tryout_configurations_updated_at ();
 
-drop policy if exists "Anyone can update their own avatar" on storage.objects;
-create policy "Anyone can update their own avatar"
-  on storage.objects for update
-  using (auth.uid() = owner)
-  with check (bucket_id = 'avatars');
+INSERT INTO storage.buckets (id, name, public)
+VALUES
+  ('avatars', 'avatars', TRUE),
+  ('question-images', 'question-images', TRUE)
+ON CONFLICT (id)
+  DO UPDATE SET
+    public = excluded.public;
 
-drop policy if exists "Public read open to all" on storage.objects;
-create policy "Public read open to all"
-  on storage.objects for select
-  using (bucket_id = 'question-images');
+DROP POLICY IF EXISTS "Avatar images are publicly accessible" ON storage.objects;
 
-drop policy if exists "Admin upload access" on storage.objects;
-create policy "Admin upload access"
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id = 'question-images'
-    and (select role from profiles where id = auth.uid()) = 'admin'
-  );
+CREATE POLICY "Avatar images are publicly accessible" ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'avatars');
 
-drop policy if exists "Admin update access" on storage.objects;
-create policy "Admin update access"
-  on storage.objects for update to authenticated
-  using (
-    bucket_id = 'question-images'
-    and (select role from profiles where id = auth.uid()) = 'admin'
-  );
+DROP POLICY IF EXISTS "Anyone can upload an avatar" ON storage.objects;
 
-drop policy if exists "Admin delete access" on storage.objects;
-create policy "Admin delete access"
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id = 'question-images'
-    and (select role from profiles where id = auth.uid()) = 'admin'
-  );
+CREATE POLICY "Anyone can upload an avatar" ON storage.objects
+  FOR INSERT
+  WITH CHECK (bucket_id = 'avatars');
 
-grant execute on function get_leaderboard_snapshot() to anon, authenticated;
+DROP POLICY IF EXISTS "Anyone can update their own avatar" ON storage.objects;
 
-select refresh_leaderboard_snapshot();
+CREATE POLICY "Anyone can update their own avatar" ON storage.objects
+  FOR UPDATE
+  USING (auth.uid () = OWNER)
+  WITH CHECK (bucket_id = 'avatars');
+
+DROP POLICY IF EXISTS "Public read open to all" ON storage.objects;
+
+CREATE POLICY "Public read open to all" ON storage.objects
+  FOR SELECT
+  USING (bucket_id = 'question-images');
+
+DROP POLICY IF EXISTS "Admin upload access" ON storage.objects;
+
+CREATE POLICY "Admin upload access" ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'question-images'
+  AND (
+    SELECT
+      ROLE
+    FROM
+      profiles
+    WHERE
+      id = auth.uid ()) = 'admin');
+
+DROP POLICY IF EXISTS "Admin update access" ON storage.objects;
+
+CREATE POLICY "Admin update access" ON storage.objects
+  FOR UPDATE TO authenticated
+  USING (bucket_id = 'question-images'
+    AND (
+      SELECT
+        ROLE
+      FROM
+        profiles
+      WHERE
+        id = auth.uid ()) = 'admin');
+
+DROP POLICY IF EXISTS "Admin delete access" ON storage.objects;
+
+CREATE POLICY "Admin delete access" ON storage.objects
+  FOR DELETE TO authenticated
+  USING (bucket_id = 'question-images'
+    AND (
+      SELECT
+        ROLE
+      FROM
+        profiles
+      WHERE
+        id = auth.uid ()) = 'admin');
+
+GRANT EXECUTE ON FUNCTION get_leaderboard_snapshot () TO anon, authenticated;
+
+SELECT
+  refresh_leaderboard_snapshot ();

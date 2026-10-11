@@ -49,14 +49,7 @@ describe('CPNS legacy mapping review artifact', () => {
         .filter((row) => row.status === 'needs_revision')
         .map((row) => row.questionCode)
         .sort(),
-    ).toEqual([
-      'TIU-000033',
-      'TIU-000064',
-      'TIU-000065',
-      'TWK-000385',
-      'TWK-000448',
-      'TWK-000461',
-    ])
+    ).toEqual(['TIU-000033', 'TIU-000064', 'TIU-000065', 'TWK-000385', 'TWK-000448', 'TWK-000461'])
   })
 
   it('never stores a guessed node on an unresolved question', () => {

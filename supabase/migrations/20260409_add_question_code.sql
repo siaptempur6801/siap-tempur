@@ -1,21 +1,28 @@
-create sequence if not exists question_code_seq start 1;
+CREATE SEQUENCE IF NOT EXISTS question_code_seq START 1;
 
-create or replace function generate_question_code()
-returns text
-language plpgsql
-as $$
-begin
-  return 'Q-' || lpad(nextval('question_code_seq')::text, 6, '0');
-end;
+CREATE OR REPLACE FUNCTION generate_question_code ()
+  RETURNS text
+  LANGUAGE plpgsql
+  AS $$
+BEGIN
+  RETURN 'Q-' || lpad(nextval('question_code_seq')::text, 6, '0');
+END;
 $$;
 
-alter table questions add column if not exists question_code text;
-alter table questions alter column question_code set default generate_question_code();
+ALTER TABLE questions
+  ADD COLUMN IF NOT EXISTS question_code text;
 
-update questions
-set question_code = generate_question_code()
-where question_code is null;
+ALTER TABLE questions
+  ALTER COLUMN question_code SET DEFAULT generate_question_code ();
 
-alter table questions alter column question_code set not null;
+UPDATE
+  questions
+SET
+  question_code = generate_question_code ()
+WHERE
+  question_code IS NULL;
 
-create unique index if not exists questions_question_code_key on questions(question_code);
+ALTER TABLE questions
+  ALTER COLUMN question_code SET NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS questions_question_code_key ON questions (question_code);

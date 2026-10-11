@@ -11,57 +11,45 @@ import type { Database } from '@/types/database.types'
  * lib/env.ts on Preview deployments.
  */
 export async function createClient() {
-    const cookieStore = await cookies()
+  const cookieStore = await cookies()
 
-    return createServerClient(
-        env.supabaseUrl(),
-        env.supabaseAnonKey(),
-        {
-            cookies: {
-                getAll() {
-                    return cookieStore.getAll()
-                },
-                setAll(cookiesToSet) {
-                    try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
-                        )
-                    } catch {
-                        // Server Components cannot always mutate cookies. The
-                        // middleware refresh path remains responsible for that.
-                    }
-                },
-            },
+  return createServerClient(env.supabaseUrl(), env.supabaseAnonKey(), {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+        } catch {
+          // Server Components cannot always mutate cookies. The
+          // middleware refresh path remains responsible for that.
         }
-    )
+      },
+    },
+  })
 }
 
 /**
  * Typed Schema V2 client. New repositories/services must prefer this client.
  */
 export async function createV2Client() {
-    const cookieStore = await cookies()
+  const cookieStore = await cookies()
 
-    return createServerClient<Database>(
-        env.supabaseUrl(),
-        env.supabaseAnonKey(),
-        {
-            cookies: {
-                getAll() {
-                    return cookieStore.getAll()
-                },
-                setAll(cookiesToSet) {
-                    try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
-                        )
-                    } catch {
-                        // See createClient() note above.
-                    }
-                },
-            },
+  return createServerClient<Database>(env.supabaseUrl(), env.supabaseAnonKey(), {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+        } catch {
+          // See createClient() note above.
         }
-    )
+      },
+    },
+  })
 }
 
 /**
@@ -79,12 +67,12 @@ export async function createV2Client() {
  * proses — dan tidak ada data yang tersimpan lintas request.
  */
 export const getAuthUser = cache(async () => {
-    const supabase = await createClient()
-    const { data, error } = await supabase.auth.getUser()
-    // `error` sengaja tidak dilempar: pemanggil lama memperlakukannya sebagai
-    // "belum login" (mis. `if (error || !user) return null`). Menjaga bentuk
-    // hasil yang sama membuat perubahan ini murni soal jumlah round trip.
-    return { user: error ? null : data.user }
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.getUser()
+  // `error` sengaja tidak dilempar: pemanggil lama memperlakukannya sebagai
+  // "belum login" (mis. `if (error || !user) return null`). Menjaga bentuk
+  // hasil yang sama membuat perubahan ini murni soal jumlah round trip.
+  return { user: error ? null : data.user }
 })
 
 /**
@@ -114,33 +102,27 @@ export const getAuthUser = cache(async () => {
  *   klaim tidak memuatnya, dan profil tetap harus dibaca dari database.
  */
 export const getAuthUserIdVerified = cache(async (): Promise<string | null> => {
-    const cookieStore = await cookies()
-    const supabase = createServerClient<Database>(
-        env.supabaseUrl(),
-        env.supabaseAnonKey(),
-        {
-            cookies: {
-                getAll() {
-                    return cookieStore.getAll()
-                },
-                setAll(cookiesToSet) {
-                    // Tidak ada yang perlu ditulis: verifikasi klaim tidak
-                    // menyegarkan sesi. Penyegaran tetap tugas middleware.
-                    try {
-                        cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
-                        )
-                    } catch {
-                        // Server Components cannot always mutate cookies.
-                    }
-                },
-            },
-        },
-    )
-    const { data, error } = await supabase.auth.getClaims()
-    if (error || !data) return null
-    const sub = data.claims.sub
-    return typeof sub === 'string' && sub.length > 0 ? sub : null
+  const cookieStore = await cookies()
+  const supabase = createServerClient<Database>(env.supabaseUrl(), env.supabaseAnonKey(), {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet) {
+        // Tidak ada yang perlu ditulis: verifikasi klaim tidak
+        // menyegarkan sesi. Penyegaran tetap tugas middleware.
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+        } catch {
+          // Server Components cannot always mutate cookies.
+        }
+      },
+    },
+  })
+  const { data, error } = await supabase.auth.getClaims()
+  if (error || !data) return null
+  const sub = data.claims.sub
+  return typeof sub === 'string' && sub.length > 0 ? sub : null
 })
 
 /**
@@ -148,11 +130,9 @@ export const getAuthUserIdVerified = cache(async (): Promise<string | null> => {
  * USE ONLY on the server after explicit authorization checks.
  */
 export async function createAdminClient() {
-    return createSupabaseClient(
-        env.supabaseUrl(),
-        env.supabaseServiceRoleKey(),
-        { auth: { persistSession: false, autoRefreshToken: false } }
-    )
+  return createSupabaseClient(env.supabaseUrl(), env.supabaseServiceRoleKey(), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
 }
 
 /**
@@ -160,9 +140,7 @@ export async function createAdminClient() {
  * Never import this function from client components.
  */
 export async function createV2AdminClient() {
-    return createSupabaseClient<Database>(
-        env.supabaseUrl(),
-        env.supabaseServiceRoleKey(),
-        { auth: { persistSession: false, autoRefreshToken: false } }
-    )
+  return createSupabaseClient<Database>(env.supabaseUrl(), env.supabaseServiceRoleKey(), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
 }

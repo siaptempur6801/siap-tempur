@@ -1,11 +1,9 @@
 {
-    "regions": [
-        "sin1"
-    ],
-    "crons": [
-        {
-            "path": "/api/cron/reconcile-payments",
-            "schedule": "0 0 * * *"
-        }
-    ]
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/reconcile-payments",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

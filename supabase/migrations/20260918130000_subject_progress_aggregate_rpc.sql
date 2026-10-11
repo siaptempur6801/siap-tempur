@@ -54,63 +54,62 @@
 --   satu `p_user_id`, tetapi dijaga agar kesalahan pemanggilan tidak diam-diam
 --   menghasilkan angka yang salah).
 -- =============================================================================
-
-create or replace function public.get_user_subject_progress(p_user_id uuid)
-returns table (
-    subject_id          uuid,
-    attempts            integer,
-    questions_answered  integer,
-    correct_answers     integer,
-    total_questions     integer,
-    weighted_percentage numeric
+CREATE OR REPLACE FUNCTION public.get_user_subject_progress (p_user_id uuid)
+  RETURNS TABLE (
+    subject_id uuid,
+    attempts integer,
+    questions_answered integer,
+    correct_answers integer,
+    total_questions integer,
+    weighted_percentage numeric)
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+  WITH completed AS (
+    SELECT DISTINCT
+      ea.id AS attempt_id
+    FROM
+      public.exam_attempts ea
+    WHERE
+      ea.user_id = p_user_id
+      AND lower(ea.status) = 'completed'
+),
+per_attempt AS (
+  SELECT
+    ats.subject_id,
+    ats.attempt_id,
+    ats.correct_count,
+    ats.wrong_count,
+    ats.unanswered_count,
+    ats.percentage
+  FROM
+    public.attempt_scores ats
+    JOIN completed c ON c.attempt_id = ats.attempt_id
+  WHERE
+    ats.subject_id IS NOT NULL
 )
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-    with completed as (
-        select distinct ea.id as attempt_id
-        from public.exam_attempts ea
-        where ea.user_id = p_user_id
-          and lower(ea.status) = 'completed'
-    ),
-    per_attempt as (
-        select
-            ats.subject_id,
-            ats.attempt_id,
-            ats.correct_count,
-            ats.wrong_count,
-            ats.unanswered_count,
-            ats.percentage
-        from public.attempt_scores ats
-        join completed c on c.attempt_id = ats.attempt_id
-        where ats.subject_id is not null
-    )
-    select
-        pa.subject_id,
-        count(distinct pa.attempt_id)::integer                                  as attempts,
-        coalesce(sum(pa.correct_count + pa.wrong_count), 0)::integer             as questions_answered,
-        coalesce(sum(pa.correct_count), 0)::integer                             as correct_answers,
-        coalesce(sum(pa.correct_count + pa.wrong_count + pa.unanswered_count), 0)::integer
-                                                                                as total_questions,
-        coalesce(
-            sum(
-                pa.percentage
-                * (pa.correct_count + pa.wrong_count + pa.unanswered_count)
-            ) filter (where pa.percentage is not null),
-            0
-        )::numeric                                                              as weighted_percentage
-    from per_attempt pa
-    group by pa.subject_id
-    order by pa.subject_id;
+SELECT
+  pa.subject_id,
+  count(DISTINCT pa.attempt_id)::integer AS attempts,
+  coalesce(sum(pa.correct_count + pa.wrong_count), 0)::integer AS questions_answered,
+  coalesce(sum(pa.correct_count), 0)::integer AS correct_answers,
+  coalesce(sum(pa.correct_count + pa.wrong_count + pa.unanswered_count), 0)::integer AS total_questions,
+  coalesce(sum(pa.percentage * (pa.correct_count + pa.wrong_count + pa.unanswered_count)) FILTER (WHERE pa.percentage IS NOT NULL), 0)::numeric AS weighted_percentage
+FROM
+  per_attempt pa
+GROUP BY
+  pa.subject_id
+ORDER BY
+  pa.subject_id;
 $$;
 
-comment on function public.get_user_subject_progress(uuid) is
-    'Agregat progres per subjek untuk satu user (menggantikan agregasi di Node). '
-    'Hanya membaca; EXECUTE terbatas untuk service_role.';
+COMMENT ON FUNCTION public.get_user_subject_progress (uuid) IS 'Agregat progres per subjek untuk satu user (menggantikan agregasi di Node). '
+      'Hanya membaca; EXECUTE terbatas untuk service_role.'; REVOKE ALL ON FUNCTION public.get_user_subject_progress (uuid) FROM public;
 
-revoke all on function public.get_user_subject_progress(uuid) from public;
-revoke all on function public.get_user_subject_progress(uuid) from anon;
-revoke all on function public.get_user_subject_progress(uuid) from authenticated;
-grant execute on function public.get_user_subject_progress(uuid) to service_role;
+REVOKE ALL ON FUNCTION public.get_user_subject_progress (uuid) FROM anon;
+
+REVOKE ALL ON FUNCTION public.get_user_subject_progress (uuid) FROM authenticated;
+
+GRANT EXECUTE ON FUNCTION public.get_user_subject_progress (uuid) TO service_role;

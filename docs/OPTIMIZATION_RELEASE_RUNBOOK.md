@@ -8,8 +8,8 @@ Only these additive, read-only projections belong to this release:
 
 | Version / file | SHA-256 |
 |---|---|
-| `20261009060323_learner_overview_read_models.sql` | `2313557892334a6f198cce945cde6dde907aa536a4dae609bd5eb2c92e5ee13e` |
-| `20261009063825_learner_reward_totals.sql` | `df52d3839c3b0aef143bf6432d51f38d9efb763217f2375fe626b144f87a0884` |
+| `20261009060323_learner_overview_read_models.sql` | `d8f874b9d56ea59c830f4313d7ba302cf5d09ea2f16d11332de6ab754e571869` |
+| `20261009063825_learner_reward_totals.sql` | `13b5821fb94c0a4c7f3a345feb60c02992b907bc1422877d4d767d02fd08e174` |
 
 Staging project: `lpgrivowdcepcxradavu`. Production project: `llnttutwhtvxtdktiizo`. Inspect the selected project and connection in the provider console; `current_database() = postgres` does **not** identify a Supabase project. Use an approved private connection/service configuration, never credentials in a command or report.
 

@@ -49,172 +49,148 @@
 -- ACL mengikuti konvensi repo: `authenticated` hanya SELECT (disaring RLS),
 -- seluruh penulisan lewat RPC SECURITY DEFINER.
 -- =============================================================================
-
 -- -----------------------------------------------------------------------------
 -- 1. Instansi: lengkapi kontak PIC.
 --    PRD §6.1 meminta "nama instansi, kode instansi, kontak PIC, dan status
 --    aktif" — kolom kontak sama sekali belum ada.
 -- -----------------------------------------------------------------------------
-alter table public.organizations
-    add column if not exists contact_name  text,
-    add column if not exists contact_email text,
-    add column if not exists contact_phone text,
-    add column if not exists notes         text,
-    add column if not exists created_by    uuid,
-    add column if not exists updated_at    timestamptz not null default now();
+ALTER TABLE public.organizations
+  ADD COLUMN IF NOT EXISTS contact_name text,
+  ADD COLUMN IF NOT EXISTS contact_email text,
+  ADD COLUMN IF NOT EXISTS contact_phone text,
+  ADD COLUMN IF NOT EXISTS notes text,
+  ADD COLUMN IF NOT EXISTS created_by uuid,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 
-create unique index if not exists organizations_code_key
-    on public.organizations (upper(code));
+CREATE UNIQUE INDEX IF NOT EXISTS organizations_code_key ON public.organizations (upper(code));
 
-comment on column public.organizations.contact_name is
-    'Nama PIC instansi (PRD §6.1). Bukan akun pengguna — PIC tidak menjadi admin sistem pada MVP (§15).';
-
+COMMENT ON COLUMN public.organizations.contact_name IS TEXTVALUE0E;
 -- -----------------------------------------------------------------------------
 -- 2. Batch (PRD §6.2).
 --    `invite_token` adalah kode yang dibagikan instansi untuk self-onboarding
 --    (§6.3, §10.3). Dibuat terpisah dari `code` supaya kode batch yang mudah
 --    dibaca manusia tidak sekaligus menjadi rahasia yang bisa ditebak.
 -- -----------------------------------------------------------------------------
-create table if not exists public.organization_batches (
-    id            uuid primary key default gen_random_uuid(),
-    organization_id uuid not null references public.organizations (id) on delete cascade,
-    code          text not null,
-    name          text not null,
-    invite_token  text not null default encode(extensions.gen_random_bytes(16), 'hex'),
-    starts_at     timestamptz,
-    ends_at       timestamptz,
-    status        text not null default 'draft',
-    notes         text,
-    created_by    uuid references public.profiles (id) on delete set null,
-    created_at    timestamptz not null default now(),
-    updated_at    timestamptz not null default now(),
-    constraint organization_batches_status_check
-        check (status in ('draft', 'active', 'closed', 'archived')),
-    constraint organization_batches_window_check
-        check (ends_at is null or starts_at is null or ends_at >= starts_at)
+CREATE TABLE IF NOT EXISTS public.organization_batches (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  organization_id uuid NOT NULL REFERENCES public.organizations (id) ON DELETE CASCADE,
+  code text NOT NULL,
+  name text NOT NULL,
+  invite_token text NOT NULL DEFAULT encode(extensions.gen_random_bytes(16), 'hex'),
+  starts_at timestamptz,
+  ends_at timestamptz,
+  status text NOT NULL DEFAULT 'draft',
+  notes text,
+  created_by uuid REFERENCES public.profiles (id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT organization_batches_status_check CHECK (status IN ('draft', 'active', 'closed', 'archived')),
+  CONSTRAINT organization_batches_window_check CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at >= starts_at)
 );
 
-create unique index if not exists organization_batches_org_code_key
-    on public.organization_batches (organization_id, upper(code));
-create unique index if not exists organization_batches_invite_token_key
-    on public.organization_batches (invite_token);
-create index if not exists organization_batches_org_status_idx
-    on public.organization_batches (organization_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS organization_batches_org_code_key ON public.organization_batches (organization_id, upper(code));
 
-comment on column public.organization_batches.invite_token is
-    'Token self-onboarding peserta (PRD §10.3). Terpisah dari `code` supaya kode batch yang mudah dibaca tidak sekaligus menjadi rahasia yang bisa ditebak.';
+CREATE UNIQUE INDEX IF NOT EXISTS organization_batches_invite_token_key ON public.organization_batches (invite_token);
 
+CREATE INDEX IF NOT EXISTS organization_batches_org_status_idx ON public.organization_batches (organization_id, status);
+
+COMMENT ON COLUMN public.organization_batches.invite_token IS TEXTVALUE1E;
 -- -----------------------------------------------------------------------------
 -- 3. Peserta instansi (PRD §7.2).
 --    Snapshot nama/email/telepon disimpan agar export tetap konsisten walau
 --    profil pengguna berubah setelah ujian (§12).
 -- -----------------------------------------------------------------------------
-create table if not exists public.organization_participants (
-    id                 uuid primary key default gen_random_uuid(),
-    organization_id    uuid not null references public.organizations (id) on delete cascade,
-    batch_id           uuid not null references public.organization_batches (id) on delete cascade,
-    user_id            uuid references public.profiles (id) on delete set null,
-    participant_code   text not null,
-    full_name_snapshot text not null,
-    email_snapshot     text,
-    phone_snapshot     text,
-    nik                text,
-    unit               text,
-    jabatan            text,
-    custom_metadata    jsonb,
-    status             text not null default 'registered',
-    registered_at      timestamptz not null default now(),
-    notes              text,
-    created_at         timestamptz not null default now(),
-    updated_at         timestamptz not null default now(),
-    constraint organization_participants_status_check
-        check (status in ('registered', 'active', 'completed', 'withdrawn'))
+CREATE TABLE IF NOT EXISTS public.organization_participants (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  organization_id uuid NOT NULL REFERENCES public.organizations (id) ON DELETE CASCADE,
+  batch_id uuid NOT NULL REFERENCES public.organization_batches (id) ON DELETE CASCADE,
+  user_id uuid REFERENCES public.profiles (id) ON DELETE SET NULL,
+  participant_code text NOT NULL,
+  full_name_snapshot text NOT NULL,
+  email_snapshot text,
+  phone_snapshot text,
+  nik text,
+  unit text,
+  jabatan text,
+  custom_metadata jsonb,
+  status text NOT NULL DEFAULT 'registered',
+  registered_at timestamptz NOT NULL DEFAULT now(),
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT organization_participants_status_check CHECK (status IN ('registered', 'active', 'completed', 'withdrawn'))
 );
 
 -- Kode peserta unik DI DALAM satu batch, bukan lintas instansi: dua instansi
 -- berbeda boleh sama-sama memakai kode "001".
-create unique index if not exists organization_participants_batch_code_key
-    on public.organization_participants (batch_id, upper(participant_code));
+CREATE UNIQUE INDEX IF NOT EXISTS organization_participants_batch_code_key ON public.organization_participants (batch_id, upper(participant_code));
 
 -- Dedupe yang disarankan PRD §7.2.1: email, telepon, atau kode peserta.
 -- Seorang peserta hanya boleh muncul sekali dalam satu batch.
-create unique index if not exists organization_participants_batch_email_key
-    on public.organization_participants (batch_id, lower(email_snapshot))
-    where email_snapshot is not null;
-create unique index if not exists organization_participants_batch_user_key
-    on public.organization_participants (batch_id, user_id)
-    where user_id is not null;
+CREATE UNIQUE INDEX IF NOT EXISTS organization_participants_batch_email_key ON public.organization_participants (batch_id, lower(email_snapshot))
+WHERE
+  email_snapshot IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS organization_participants_batch_user_key ON public.organization_participants (batch_id, user_id)
+WHERE
+  user_id IS NOT NULL;
 
 -- PRD §8: export harus dapat difilter cepat berdasarkan organization_id dan
 -- batch_id.
-create index if not exists organization_participants_org_batch_idx
-    on public.organization_participants (organization_id, batch_id);
-create index if not exists organization_participants_user_idx
-    on public.organization_participants (user_id);
+CREATE INDEX IF NOT EXISTS organization_participants_org_batch_idx ON public.organization_participants (organization_id, batch_id);
 
-comment on table public.organization_participants is
-    'Satu baris = satu partisipasi peserta pada SATU batch (PRD §7.2). Peserta yang mengikuti dua batch memperoleh dua baris.';
+CREATE INDEX IF NOT EXISTS organization_participants_user_idx ON public.organization_participants (user_id);
 
+COMMENT ON TABLE public.organization_participants IS TEXTVALUE2E;
 -- -----------------------------------------------------------------------------
 -- 4. Template ujian (PRD §7.3).
 --    `organization_id` boleh NULL: NULL berarti template bersama yang dipakai
 --    semua instansi, yang berguna karena komposisi SKD memang standar nasional
 --    (30 TWK + 35 TIU + 45 TKP).
 -- -----------------------------------------------------------------------------
-create table if not exists public.organization_exam_templates (
-    id                  uuid primary key default gen_random_uuid(),
-    organization_id     uuid references public.organizations (id) on delete cascade,
-    name                text not null,
-    twk_count           integer not null default 30,
-    tiu_count           integer not null default 35,
-    tkp_count           integer not null default 45,
-    duration_seconds    integer not null default 6000,
-    max_attempts        integer not null default 1,
-    randomize_questions boolean not null default true,
-    randomize_options   boolean not null default false,
-    show_explanation    text not null default 'after_exam',
-    ranking_visibility  text not null default 'internal',
-    ruleset             jsonb,
-    status              text not null default 'draft',
-    created_by          uuid references public.profiles (id) on delete set null,
-    created_at          timestamptz not null default now(),
-    updated_at          timestamptz not null default now(),
-    constraint organization_exam_templates_status_check
-        check (status in ('draft', 'active', 'archived')),
-    constraint organization_exam_templates_counts_check
-        check (twk_count >= 0 and tiu_count >= 0 and tkp_count >= 0
-               and (twk_count + tiu_count + tkp_count) > 0),
-    constraint organization_exam_templates_duration_check
-        check (duration_seconds > 0),
-    constraint organization_exam_templates_attempts_check
-        check (max_attempts >= 1),
-    constraint organization_exam_templates_explanation_check
-        check (show_explanation in ('never', 'after_exam', 'after_close')),
-    constraint organization_exam_templates_ranking_check
-        check (ranking_visibility in ('hidden', 'internal', 'public'))
+CREATE TABLE IF NOT EXISTS public.organization_exam_templates (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
+  organization_id uuid REFERENCES public.organizations (id) ON DELETE CASCADE,
+  name text NOT NULL,
+  twk_count integer NOT NULL DEFAULT 30,
+  tiu_count integer NOT NULL DEFAULT 35,
+  tkp_count integer NOT NULL DEFAULT 45,
+  duration_seconds integer NOT NULL DEFAULT 6000,
+  max_attempts integer NOT NULL DEFAULT 1,
+  randomize_questions boolean NOT NULL DEFAULT TRUE,
+  randomize_options boolean NOT NULL DEFAULT FALSE,
+  show_explanation text NOT NULL DEFAULT 'after_exam',
+  ranking_visibility text NOT NULL DEFAULT 'internal',
+  ruleset jsonb,
+  status text NOT NULL DEFAULT 'draft',
+  created_by uuid REFERENCES public.profiles (id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT organization_exam_templates_status_check CHECK (status IN ('draft', 'active', 'archived')),
+  CONSTRAINT organization_exam_templates_counts_check CHECK (twk_count >= 0 AND tiu_count >= 0 AND tkp_count >= 0 AND (twk_count + tiu_count + tkp_count) > 0),
+  CONSTRAINT organization_exam_templates_duration_check CHECK (duration_seconds > 0),
+  CONSTRAINT organization_exam_templates_attempts_check CHECK (max_attempts >= 1),
+  CONSTRAINT organization_exam_templates_explanation_check CHECK (show_explanation IN ('never', 'after_exam', 'after_close')),
+  CONSTRAINT organization_exam_templates_ranking_check CHECK (ranking_visibility IN ('hidden', 'internal', 'public'))
 );
 
-create index if not exists organization_exam_templates_org_idx
-    on public.organization_exam_templates (organization_id, status);
+CREATE INDEX IF NOT EXISTS organization_exam_templates_org_idx ON public.organization_exam_templates (organization_id, status);
 
 -- -----------------------------------------------------------------------------
 -- 5. Assignment ujian (PRD §7.4).
 --    `exam_id` tetap NOT NULL — lihat "Keputusan desain" butir 1.
 -- -----------------------------------------------------------------------------
-alter table public.organization_exam_assignments
-    add column if not exists batch_id    uuid references public.organization_batches (id) on delete cascade,
-    add column if not exists template_id uuid references public.organization_exam_templates (id) on delete set null,
-    add column if not exists is_active   boolean not null default true,
-    add column if not exists notes       text;
+ALTER TABLE public.organization_exam_assignments
+  ADD COLUMN IF NOT EXISTS batch_id uuid REFERENCES public.organization_batches (id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS template_id uuid REFERENCES public.organization_exam_templates (id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT TRUE,
+  ADD COLUMN IF NOT EXISTS notes text;
 
-create index if not exists organization_exam_assignments_batch_idx
-    on public.organization_exam_assignments (batch_id, is_active);
-create index if not exists organization_exam_assignments_org_idx
-    on public.organization_exam_assignments (organization_id);
+CREATE INDEX IF NOT EXISTS organization_exam_assignments_batch_idx ON public.organization_exam_assignments (batch_id, is_active);
 
-comment on column public.organization_exam_assignments.batch_id is
-    'Batch yang mengerjakan assignment ini (PRD §7.4). NULL berarti assignment tingkat instansi.';
+CREATE INDEX IF NOT EXISTS organization_exam_assignments_org_idx ON public.organization_exam_assignments (organization_id);
 
+COMMENT ON COLUMN public.organization_exam_assignments.batch_id IS TEXTVALUE3E;
 -- -----------------------------------------------------------------------------
 -- 6. Metadata instansi pada attempt (PRD §7.5).
 --
@@ -224,30 +200,30 @@ comment on column public.organization_exam_assignments.batch_id is
 --    "data B2C dan instansi bercampur" dicegah di tingkat skema, bukan di
 --    tingkat query.
 -- -----------------------------------------------------------------------------
-alter table public.exam_attempts
-    add column if not exists source         text not null default 'b2c',
-    add column if not exists organization_id uuid references public.organizations (id) on delete set null,
-    add column if not exists batch_id       uuid references public.organization_batches (id) on delete set null,
-    add column if not exists assignment_id  uuid references public.organization_exam_assignments (id) on delete set null,
-    add column if not exists participant_id uuid references public.organization_participants (id) on delete set null;
+ALTER TABLE public.exam_attempts
+  ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'b2c',
+  ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES public.organizations (id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS batch_id uuid REFERENCES public.organization_batches (id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS assignment_id uuid REFERENCES public.organization_exam_assignments (id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS participant_id uuid REFERENCES public.organization_participants (id) ON DELETE SET NULL;
 
-alter table public.exam_attempts
-    drop constraint if exists exam_attempts_source_check;
-alter table public.exam_attempts
-    add constraint exam_attempts_source_check check (source in ('b2c', 'organization'));
+ALTER TABLE public.exam_attempts
+  DROP CONSTRAINT IF EXISTS exam_attempts_source_check;
+
+ALTER TABLE public.exam_attempts
+  ADD CONSTRAINT exam_attempts_source_check CHECK (source IN ('b2c', 'organization'));
 
 -- Partial index: attempt B2C adalah mayoritas dan tidak pernah difilter dengan
 -- kolom ini, jadi tidak perlu masuk index.
-create index if not exists exam_attempts_org_batch_idx
-    on public.exam_attempts (organization_id, batch_id)
-    where source = 'organization';
-create index if not exists exam_attempts_participant_idx
-    on public.exam_attempts (participant_id)
-    where participant_id is not null;
+CREATE INDEX IF NOT EXISTS exam_attempts_org_batch_idx ON public.exam_attempts (organization_id, batch_id)
+WHERE
+  source = 'organization';
 
-comment on column public.exam_attempts.source is
-    'Pemisah data B2C vs instansi (PRD §7.5, Risiko §12). Export instansi WAJIB memfilter source = ''organization''.';
+CREATE INDEX IF NOT EXISTS exam_attempts_participant_idx ON public.exam_attempts (participant_id)
+WHERE
+  participant_id IS NOT NULL;
 
+COMMENT ON COLUMN public.exam_attempts.source IS TEXTVALUE4E;
 -- -----------------------------------------------------------------------------
 -- 7. RLS.
 --    Pola repo: `authenticated` hanya SELECT dan disaring RLS; seluruh
@@ -255,68 +231,94 @@ comment on column public.exam_attempts.source is
 --    Tidak ada policy tulis sama sekali — jadi walaupun GRANT bocor, tulis
 --    langsung tetap ditolak.
 -- -----------------------------------------------------------------------------
-alter table public.organization_batches           enable row level security;
-alter table public.organization_participants      enable row level security;
-alter table public.organization_exam_templates    enable row level security;
+ALTER TABLE public.organization_batches ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.organization_participants ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.organization_exam_templates ENABLE ROW LEVEL SECURITY;
 
 -- Anggota instansi boleh membaca batch instansinya sendiri.
-drop policy if exists organization_batches_member_read on public.organization_batches;
-create policy organization_batches_member_read on public.organization_batches
-    for select to authenticated
-    using (exists (
-        select 1 from public.organization_members m
-         where m.organization_id = organization_batches.organization_id
-           and m.user_id = (select auth.uid())
-           and m.status = 'active'
-    ));
+DROP POLICY IF EXISTS organization_batches_member_read ON public.organization_batches;
+
+CREATE POLICY organization_batches_member_read ON public.organization_batches
+  FOR SELECT TO authenticated
+  USING (EXISTS (
+    SELECT
+      1
+    FROM
+      public.organization_members m
+    WHERE
+      m.organization_id = organization_batches.organization_id
+      AND m.user_id = (
+        SELECT
+          auth.uid ())
+          AND m.status = 'active'));
 
 -- Peserta boleh membaca baris partisipasinya SENDIRI; anggota instansi boleh
 -- membaca seluruh peserta instansinya.
-drop policy if exists organization_participants_member_read on public.organization_participants;
-create policy organization_participants_member_read on public.organization_participants
-    for select to authenticated
-    using (
-        user_id = (select auth.uid())
-        or exists (
-            select 1 from public.organization_members m
-             where m.organization_id = organization_participants.organization_id
-               and m.user_id = (select auth.uid())
-               and m.status = 'active'
-        )
-    );
+DROP POLICY IF EXISTS organization_participants_member_read ON public.organization_participants;
 
-drop policy if exists organization_exam_templates_member_read on public.organization_exam_templates;
-create policy organization_exam_templates_member_read on public.organization_exam_templates
-    for select to authenticated
-    using (
-        organization_id is null
-        or exists (
-            select 1 from public.organization_members m
-             where m.organization_id = organization_exam_templates.organization_id
-               and m.user_id = (select auth.uid())
-               and m.status = 'active'
-        )
-    );
+CREATE POLICY organization_participants_member_read ON public.organization_participants
+  FOR SELECT TO authenticated
+  USING (user_id = (
+    SELECT
+      auth.uid ())
+      OR EXISTS (
+        SELECT
+          1
+        FROM
+          public.organization_members m
+        WHERE
+          m.organization_id = organization_participants.organization_id
+          AND m.user_id = (
+            SELECT
+              auth.uid ())
+              AND m.status = 'active'));
+
+DROP POLICY IF EXISTS organization_exam_templates_member_read ON public.organization_exam_templates;
+
+CREATE POLICY organization_exam_templates_member_read ON public.organization_exam_templates
+  FOR SELECT TO authenticated
+  USING (organization_id IS NULL
+    OR EXISTS (
+      SELECT
+        1
+      FROM
+        public.organization_members m
+      WHERE
+        m.organization_id = organization_exam_templates.organization_id
+        AND m.user_id = (
+          SELECT
+            auth.uid ())
+            AND m.status = 'active'));
 
 -- -----------------------------------------------------------------------------
 -- 8. ACL: SELECT untuk `authenticated`, penuh hanya untuk `service_role`.
 --    INSERT/UPDATE/DELETE sengaja TIDAK diberikan ke `authenticated`.
 -- -----------------------------------------------------------------------------
-revoke all on public.organization_batches        from anon;
-revoke all on public.organization_participants   from anon;
-revoke all on public.organization_exam_templates from anon;
+REVOKE ALL ON public.organization_batches FROM anon;
 
-revoke insert, update, delete, truncate, references, trigger on public.organization_batches        from authenticated;
-revoke insert, update, delete, truncate, references, trigger on public.organization_participants   from authenticated;
-revoke insert, update, delete, truncate, references, trigger on public.organization_exam_templates from authenticated;
+REVOKE ALL ON public.organization_participants FROM anon;
 
-grant select on public.organization_batches        to authenticated;
-grant select on public.organization_participants   to authenticated;
-grant select on public.organization_exam_templates to authenticated;
+REVOKE ALL ON public.organization_exam_templates FROM anon;
 
-grant all on public.organization_batches        to service_role;
-grant all on public.organization_participants   to service_role;
-grant all on public.organization_exam_templates to service_role;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.organization_batches FROM authenticated;
+
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.organization_participants FROM authenticated;
+
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER ON public.organization_exam_templates FROM authenticated;
+
+GRANT SELECT ON public.organization_batches TO authenticated;
+
+GRANT SELECT ON public.organization_participants TO authenticated;
+
+GRANT SELECT ON public.organization_exam_templates TO authenticated;
+
+GRANT ALL ON public.organization_batches TO service_role;
+
+GRANT ALL ON public.organization_participants TO service_role;
+
+GRANT ALL ON public.organization_exam_templates TO service_role;
 
 -- -----------------------------------------------------------------------------
 -- 9. Kualifikasi schema untuk pgcrypto.
@@ -328,5 +330,5 @@ grant all on public.organization_exam_templates to service_role;
 --    pernyataan ALTER berikut menegaskannya untuk database yang tabelnya sudah
 --    terlanjur dibuat dengan bentuk tak terkualifikasi.
 -- -----------------------------------------------------------------------------
-alter table public.organization_batches
-    alter column invite_token set default encode(extensions.gen_random_bytes(16), 'hex');
+ALTER TABLE public.organization_batches
+  ALTER COLUMN invite_token SET DEFAULT encode(extensions.gen_random_bytes(16), 'hex');

@@ -1,347 +1,337 @@
-create unique index if not exists learning_recommendations_user_track_type_node_uq
-  on public.learning_recommendations(user_id, track_id, recommendation_type, knowledge_node_id);
+CREATE UNIQUE INDEX IF NOT EXISTS learning_recommendations_user_track_type_node_uq ON public.learning_recommendations (user_id, track_id, recommendation_type, knowledge_node_id);
 
-create or replace function app_private.refresh_tka_smp_learning_recommendations_for_user(
-  p_user_id uuid
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
+CREATE OR REPLACE FUNCTION app_private.refresh_tka_smp_learning_recommendations_for_user (p_user_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
   v_track_id uuid;
   v_user_track_id uuid;
   v_active_count integer := 0;
-begin
-  select t.id
-    into v_track_id
-  from public.programs p
-  join public.tracks t on t.program_id = p.id
-  where upper(p.code) = 'TKA'
-    and upper(t.code) = 'SMP'
-  limit 1;
+BEGIN
+  SELECT
+    t.id
+  INTO
+    v_track_id
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+  WHERE
+    upper(p.code) = 'TKA'
+    AND upper(t.code) = 'SMP'
+  LIMIT 1;
 
-  if v_track_id is null then
-    return jsonb_build_object('applied', false, 'reason', 'TKA_SMP_TRACK_NOT_FOUND');
-  end if;
+  IF v_track_id IS NULL THEN
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'TKA_SMP_TRACK_NOT_FOUND');
+  END IF;
 
-  select ut.id
-    into v_user_track_id
-  from public.user_tracks ut
-  where ut.user_id = p_user_id
-    and ut.track_id = v_track_id
-    and lower(ut.status) = 'active'
-  order by ut.updated_at desc nulls last, ut.started_at desc nulls last
-  limit 1;
+  SELECT
+    ut.id
+  INTO
+    v_user_track_id
+  FROM
+    public.user_tracks ut
+  WHERE
+    ut.user_id = p_user_id
+    AND ut.track_id = v_track_id
+    AND lower(ut.status) = 'active'
+  ORDER BY
+    ut.updated_at DESC nulls LAST,
+    ut.started_at DESC nulls LAST
+  LIMIT 1;
 
-  if v_user_track_id is null then
-    update public.learning_recommendations lr
-       set status = 'inactive',
-           expires_at = coalesce(lr.expires_at, now())
-     where lr.user_id = p_user_id
-       and lr.track_id = v_track_id
-       and lr.recommendation_type = 'weakest_topic_v1'
-       and lr.status = 'active';
+  IF v_user_track_id IS NULL THEN
+    UPDATE
+      public.learning_recommendations lr
+    SET
+      status = 'inactive',
+      expires_at = coalesce(lr.expires_at, now())
+    WHERE
+      lr.user_id = p_user_id
+      AND lr.track_id = v_track_id
+      AND lr.recommendation_type = 'weakest_topic_v1'
+      AND lr.status = 'active';
 
-    return jsonb_build_object('applied', false, 'reason', 'ACTIVE_USER_TRACK_NOT_FOUND');
-  end if;
+    RETURN jsonb_build_object('applied', FALSE, 'reason', 'ACTIVE_USER_TRACK_NOT_FOUND');
+  END IF;
 
-  update public.learning_recommendations lr
-     set status = 'inactive',
-         expires_at = coalesce(lr.expires_at, now())
-   where lr.user_id = p_user_id
-     and lr.track_id = v_track_id
-     and lr.recommendation_type = 'weakest_topic_v1'
-     and lr.status = 'active';
+  UPDATE
+    public.learning_recommendations lr
+  SET
+    status = 'inactive',
+    expires_at = coalesce(lr.expires_at, now())
+  WHERE
+    lr.user_id = p_user_id
+    AND lr.track_id = v_track_id
+    AND lr.recommendation_type = 'weakest_topic_v1'
+    AND lr.status = 'active';
 
-  with ranked as (
-    select
+  WITH ranked AS (
+    SELECT
       ukp.knowledge_node_id,
-      row_number() over (
-        order by
-          ukp.mastery_score asc,
-          ukp.attempted_questions desc,
-          ukp.accuracy asc,
-          ukp.knowledge_node_id
-      )::integer as priority,
-      round(greatest(0::numeric, 1::numeric - ukp.mastery_score), 6) as weakness_score
-    from public.user_knowledge_progress ukp
-    join public.knowledge_nodes kn on kn.id = ukp.knowledge_node_id
-    join public.subjects s on s.id = kn.subject_id
-    where ukp.user_id = p_user_id
-      and ukp.user_track_id = v_user_track_id
-      and s.track_id = v_track_id
-      and ukp.attempted_questions > 0
-      and ukp.mastery_score < 0.85
-      and lower(kn.status) = 'active'
-      and lower(s.status) = 'active'
-    order by
-      ukp.mastery_score asc,
-      ukp.attempted_questions desc,
-      ukp.accuracy asc,
+      row_number() OVER (ORDER BY ukp.mastery_score ASC,
+        ukp.attempted_questions DESC,
+        ukp.accuracy ASC,
+        ukp.knowledge_node_id)::integer AS priority,
+      round(greatest (0::numeric, 1::numeric - ukp.mastery_score), 6) AS weakness_score
+    FROM
+      public.user_knowledge_progress ukp
+      JOIN public.knowledge_nodes kn ON kn.id = ukp.knowledge_node_id
+      JOIN public.subjects s ON s.id = kn.subject_id
+    WHERE
+      ukp.user_id = p_user_id
+      AND ukp.user_track_id = v_user_track_id
+      AND s.track_id = v_track_id
+      AND ukp.attempted_questions > 0
+      AND ukp.mastery_score < 0.85
+      AND lower(kn.status) = 'active'
+      AND lower(s.status) = 'active'
+    ORDER BY
+      ukp.mastery_score ASC,
+      ukp.attempted_questions DESC,
+      ukp.accuracy ASC,
       ukp.knowledge_node_id
-    limit 3
-  )
-  insert into public.learning_recommendations (
-    user_id,
-    track_id,
-    recommendation_type,
-    knowledge_node_id,
-    resource_id,
-    reason_code,
-    priority,
-    score,
-    status,
-    expires_at
-  )
-  select
-    p_user_id,
-    v_track_id,
-    'weakest_topic_v1',
-    r.knowledge_node_id,
-    null,
-    'weakest_mastery_v1',
-    r.priority,
-    r.weakness_score,
-    'active',
-    null
-  from ranked r
-  on conflict (user_id, track_id, recommendation_type, knowledge_node_id)
-  do update set
+    LIMIT 3)
+INSERT INTO public.learning_recommendations (user_id, track_id, recommendation_type, knowledge_node_id, resource_id, reason_code, priority, score, status, expires_at)
+SELECT
+  p_user_id,
+  v_track_id,
+  'weakest_topic_v1',
+  r.knowledge_node_id,
+  NULL,
+  'weakest_mastery_v1',
+  r.priority,
+  r.weakness_score,
+  'active',
+  NULL
+FROM
+  ranked r
+ON CONFLICT (user_id,
+  track_id,
+  recommendation_type,
+  knowledge_node_id)
+  DO UPDATE SET
     reason_code = excluded.reason_code,
     priority = excluded.priority,
     score = excluded.score,
     status = 'active',
-    expires_at = null;
+    expires_at = NULL;
 
-  select count(*)::integer
-    into v_active_count
-  from public.learning_recommendations lr
-  where lr.user_id = p_user_id
-    and lr.track_id = v_track_id
-    and lr.recommendation_type = 'weakest_topic_v1'
-    and lr.status = 'active';
+  SELECT
+    count(*)::integer
+  INTO
+    v_active_count
+  FROM
+    public.learning_recommendations lr
+  WHERE
+    lr.user_id = p_user_id
+    AND lr.track_id = v_track_id
+    AND lr.recommendation_type = 'weakest_topic_v1'
+    AND lr.status = 'active';
 
-  return jsonb_build_object(
-    'applied', true,
-    'track', 'TKA/SMP',
-    'active_recommendations', v_active_count,
-    'max_recommendations', 3,
-    'rule', 'mastery_asc_evidence_desc_accuracy_asc_v1'
-  );
-end;
+  RETURN jsonb_build_object('applied', TRUE, 'track', 'TKA/SMP', 'active_recommendations', v_active_count, 'max_recommendations', 3, 'rule', 'mastery_asc_evidence_desc_accuracy_asc_v1');
+END;
 $$;
 
-revoke all on function app_private.refresh_tka_smp_learning_recommendations_for_user(uuid) from public;
-revoke all on function app_private.refresh_tka_smp_learning_recommendations_for_user(uuid) from anon;
-revoke all on function app_private.refresh_tka_smp_learning_recommendations_for_user(uuid) from authenticated;
+REVOKE ALL ON FUNCTION app_private.refresh_tka_smp_learning_recommendations_for_user (uuid) FROM public;
 
-create or replace function app_private.refresh_tka_smp_recommendations_from_new_progress()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
+REVOKE ALL ON FUNCTION app_private.refresh_tka_smp_learning_recommendations_for_user (uuid) FROM anon;
+
+REVOKE ALL ON FUNCTION app_private.refresh_tka_smp_learning_recommendations_for_user (uuid) FROM authenticated;
+
+CREATE OR REPLACE FUNCTION app_private.refresh_tka_smp_recommendations_from_new_progress ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
   v_user_id uuid;
-begin
-  for v_user_id in
-    select distinct nr.user_id
-    from new_rows nr
-    where nr.user_id is not null
-  loop
-    perform app_private.refresh_tka_smp_learning_recommendations_for_user(v_user_id);
-  end loop;
-  return null;
-end;
+BEGIN
+  FOR v_user_id IN SELECT DISTINCT
+    nr.user_id
+  FROM
+    new_rows nr
+  WHERE
+    nr.user_id IS NOT NULL LOOP
+      PERFORM
+        app_private.refresh_tka_smp_learning_recommendations_for_user (v_user_id);
+    END LOOP;
+  RETURN NULL;
+END;
 $$;
 
-create or replace function app_private.refresh_tka_smp_recommendations_from_old_progress()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
+CREATE OR REPLACE FUNCTION app_private.refresh_tka_smp_recommendations_from_old_progress ()
+  RETURNS TRIGGER
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
   v_user_id uuid;
-begin
-  for v_user_id in
-    select distinct orow.user_id
-    from old_rows orow
-    where orow.user_id is not null
-  loop
-    perform app_private.refresh_tka_smp_learning_recommendations_for_user(v_user_id);
-  end loop;
-  return null;
-end;
+BEGIN
+  FOR v_user_id IN SELECT DISTINCT
+    orow.user_id
+  FROM
+    old_rows orow
+  WHERE
+    orow.user_id IS NOT NULL LOOP
+      PERFORM
+        app_private.refresh_tka_smp_learning_recommendations_for_user (v_user_id);
+    END LOOP;
+  RETURN NULL;
+END;
 $$;
 
-revoke all on function app_private.refresh_tka_smp_recommendations_from_new_progress() from public, anon, authenticated;
-revoke all on function app_private.refresh_tka_smp_recommendations_from_old_progress() from public, anon, authenticated;
+REVOKE ALL ON FUNCTION app_private.refresh_tka_smp_recommendations_from_new_progress () FROM public, anon, authenticated;
 
-drop trigger if exists trg_tka_smp_recommendations_after_progress_insert on public.user_knowledge_progress;
-create trigger trg_tka_smp_recommendations_after_progress_insert
-after insert on public.user_knowledge_progress
-referencing new table as new_rows
-for each statement
-execute function app_private.refresh_tka_smp_recommendations_from_new_progress();
+REVOKE ALL ON FUNCTION app_private.refresh_tka_smp_recommendations_from_old_progress () FROM public, anon, authenticated;
 
-drop trigger if exists trg_tka_smp_recommendations_after_progress_update on public.user_knowledge_progress;
-create trigger trg_tka_smp_recommendations_after_progress_update
-after update on public.user_knowledge_progress
-referencing new table as new_rows
-for each statement
-execute function app_private.refresh_tka_smp_recommendations_from_new_progress();
+DROP TRIGGER IF EXISTS trg_tka_smp_recommendations_after_progress_insert ON public.user_knowledge_progress;
 
-drop trigger if exists trg_tka_smp_recommendations_after_progress_delete on public.user_knowledge_progress;
-create trigger trg_tka_smp_recommendations_after_progress_delete
-after delete on public.user_knowledge_progress
-referencing old table as old_rows
-for each statement
-execute function app_private.refresh_tka_smp_recommendations_from_old_progress();
+CREATE TRIGGER trg_tka_smp_recommendations_after_progress_insert
+  AFTER INSERT ON public.user_knowledge_progress referencing new TABLE AS new_rows
+  FOR EACH statement
+  EXECUTE FUNCTION app_private.refresh_tka_smp_recommendations_from_new_progress ();
 
-create or replace function public.get_tka_smp_learning_focus()
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_user uuid := auth.uid();
+DROP TRIGGER IF EXISTS trg_tka_smp_recommendations_after_progress_update ON public.user_knowledge_progress;
+
+CREATE TRIGGER trg_tka_smp_recommendations_after_progress_update
+  AFTER UPDATE ON public.user_knowledge_progress referencing new TABLE AS new_rows
+  FOR EACH statement
+  EXECUTE FUNCTION app_private.refresh_tka_smp_recommendations_from_new_progress ();
+
+DROP TRIGGER IF EXISTS trg_tka_smp_recommendations_after_progress_delete ON public.user_knowledge_progress;
+
+CREATE TRIGGER trg_tka_smp_recommendations_after_progress_delete
+  AFTER DELETE ON public.user_knowledge_progress referencing old TABLE AS old_rows
+  FOR EACH statement
+  EXECUTE FUNCTION app_private.refresh_tka_smp_recommendations_from_old_progress ();
+
+CREATE OR REPLACE FUNCTION public.get_tka_smp_learning_focus ()
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
+  v_user uuid := auth.uid ();
   v_track_id uuid;
   v_refresh jsonb;
   v_items jsonb := '[]'::jsonb;
-begin
-  if v_user is null then
-    raise exception 'Authentication required';
-  end if;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-  select t.id
-    into v_track_id
-  from public.programs p
-  join public.tracks t on t.program_id = p.id
-  where upper(p.code) = 'TKA'
-    and upper(t.code) = 'SMP'
-  limit 1;
+  SELECT
+    t.id
+  INTO
+    v_track_id
+  FROM
+    public.programs p
+    JOIN public.tracks t ON t.program_id = p.id
+  WHERE
+    upper(p.code) = 'TKA'
+    AND upper(t.code) = 'SMP'
+  LIMIT 1;
 
-  if v_track_id is null then
-    return jsonb_build_object(
-      'items', '[]'::jsonb,
-      'count', 0,
-      'refresh', jsonb_build_object('applied', false, 'reason', 'TKA_SMP_TRACK_NOT_FOUND')
-    );
-  end if;
+  IF v_track_id IS NULL THEN
+    RETURN jsonb_build_object('items', '[]'::jsonb, 'count', 0, 'refresh', jsonb_build_object('applied', FALSE, 'reason', 'TKA_SMP_TRACK_NOT_FOUND'));
+  END IF;
 
-  v_refresh := app_private.refresh_tka_smp_learning_recommendations_for_user(v_user);
+  v_refresh := app_private.refresh_tka_smp_learning_recommendations_for_user (v_user);
 
-  select coalesce(jsonb_agg(item order by priority), '[]'::jsonb)
-    into v_items
-  from (
-    select
+  SELECT
+    coalesce(jsonb_agg(item ORDER BY priority), '[]'::jsonb)
+  INTO
+    v_items
+  FROM (
+    SELECT
       lr.priority,
-      jsonb_build_object(
-        'id', lr.id,
-        'priority', lr.priority,
-        'score', lr.score,
-        'reason_code', lr.reason_code,
-        'knowledge_node_id', lr.knowledge_node_id,
-        'topic_code', kn.code,
-        'topic_name', kn.name,
-        'parent_topic_name', parent_kn.name,
-        'subject_code', s.code,
-        'subject_name', s.name,
-        'mastery_score', ukp.mastery_score,
-        'mastery_level', ukp.mastery_level,
-        'attempted_questions', ukp.attempted_questions,
-        'correct_questions', ukp.correct_questions,
-        'accuracy', ukp.accuracy,
-        'open_gap_count', coalesce(gaps.open_gap_count, 0),
-        'next_action', case
-          when remedial.session_id is not null then jsonb_build_object(
-            'type', 'continue_remedial',
-            'label', 'Lanjutkan remedial',
-            'href', '/tka/smp/remedial/' || remedial.session_id::text
-          )
-          when coalesce(gaps.open_gap_count, 0) > 0 then jsonb_build_object(
-            'type', 'repeat_wrong',
-            'label', 'Ulang soal salah',
-            'href', '/tka/smp/wrong-questions'
-          )
-          else jsonb_build_object(
-            'type', 'practice_tka',
-            'label', 'Latihan TKA SMP',
-            'href', '/tka/smp'
-          )
-        end
-      ) as item
-    from public.learning_recommendations lr
-    join public.knowledge_nodes kn on kn.id = lr.knowledge_node_id
-    left join public.knowledge_nodes parent_kn on parent_kn.id = kn.parent_id
-    join public.subjects s on s.id = kn.subject_id
-    join public.user_tracks ut
-      on ut.user_id = lr.user_id
-     and ut.track_id = lr.track_id
-     and lower(ut.status) = 'active'
-    join public.user_knowledge_progress ukp
-      on ukp.user_id = lr.user_id
-     and ukp.user_track_id = ut.id
-     and ukp.knowledge_node_id = lr.knowledge_node_id
-    left join lateral (
-      select count(*)::integer as open_gap_count
-      from public.user_wrong_questions uwq
-      where uwq.user_id = lr.user_id
-        and uwq.track_id = lr.track_id
-        and uwq.knowledge_node_id = lr.knowledge_node_id
-        and uwq.status = 'open'
-    ) gaps on true
-    left join lateral (
-      select rs.id as session_id
-      from public.remedial_session_items rsi
-      join public.remedial_sessions rs on rs.id = rsi.session_id
-      where rs.user_id = lr.user_id
-        and rs.track_id = lr.track_id
-        and rs.status = 'active'
-        and rsi.status = 'pending'
-        and rsi.knowledge_node_id = lr.knowledge_node_id
-      order by rs.created_at desc, rsi.position, rsi.id
-      limit 1
-    ) remedial on true
-    where lr.user_id = v_user
-      and lr.track_id = v_track_id
-      and lr.recommendation_type = 'weakest_topic_v1'
-      and lr.status = 'active'
-    order by lr.priority, lr.knowledge_node_id
-    limit 3
-  ) focus_rows;
+      jsonb_build_object('id', lr.id, 'priority', lr.priority, 'score', lr.score, 'reason_code', lr.reason_code, 'knowledge_node_id', lr.knowledge_node_id, 'topic_code', kn.code, 'topic_name', kn.name, 'parent_topic_name', parent_kn.name, 'subject_code', s.code, 'subject_name', s.name, 'mastery_score', ukp.mastery_score, 'mastery_level', ukp.mastery_level, 'attempted_questions', ukp.attempted_questions, 'correct_questions', ukp.correct_questions, 'accuracy', ukp.accuracy, 'open_gap_count', coalesce(gaps.open_gap_count, 0), 'next_action', CASE WHEN remedial.session_id IS NOT NULL THEN
+          jsonb_build_object('type', 'continue_remedial', 'label', 'Lanjutkan remedial', 'href', '/tka/smp/remedial/' || remedial.session_id::text)
+        WHEN coalesce(gaps.open_gap_count, 0) > 0 THEN
+          jsonb_build_object('type', 'repeat_wrong', 'label', 'Ulang soal salah', 'href', '/tka/smp/wrong-questions')
+        ELSE
+          jsonb_build_object('type', 'practice_tka', 'label', 'Latihan TKA SMP', 'href', '/tka/smp')
+        END) AS item
+    FROM
+      public.learning_recommendations lr
+      JOIN public.knowledge_nodes kn ON kn.id = lr.knowledge_node_id
+      LEFT JOIN public.knowledge_nodes parent_kn ON parent_kn.id = kn.parent_id
+      JOIN public.subjects s ON s.id = kn.subject_id
+      JOIN public.user_tracks ut ON ut.user_id = lr.user_id
+        AND ut.track_id = lr.track_id
+        AND lower(ut.status) = 'active'
+      JOIN public.user_knowledge_progress ukp ON ukp.user_id = lr.user_id
+        AND ukp.user_track_id = ut.id
+        AND ukp.knowledge_node_id = lr.knowledge_node_id
+    LEFT JOIN LATERAL (
+      SELECT
+        count(*)::integer AS open_gap_count
+      FROM
+        public.user_wrong_questions uwq
+      WHERE
+        uwq.user_id = lr.user_id
+        AND uwq.track_id = lr.track_id
+        AND uwq.knowledge_node_id = lr.knowledge_node_id
+        AND uwq.status = 'open') gaps ON TRUE
+    LEFT JOIN LATERAL (
+      SELECT
+        rs.id AS session_id
+      FROM
+        public.remedial_session_items rsi
+        JOIN public.remedial_sessions rs ON rs.id = rsi.session_id
+      WHERE
+        rs.user_id = lr.user_id
+        AND rs.track_id = lr.track_id
+        AND rs.status = 'active'
+        AND rsi.status = 'pending'
+        AND rsi.knowledge_node_id = lr.knowledge_node_id
+      ORDER BY
+        rs.created_at DESC,
+        rsi.position,
+        rsi.id
+      LIMIT 1) remedial ON TRUE
+  WHERE
+    lr.user_id = v_user
+    AND lr.track_id = v_track_id
+    AND lr.recommendation_type = 'weakest_topic_v1'
+    AND lr.status = 'active'
+  ORDER BY
+    lr.priority,
+    lr.knowledge_node_id
+  LIMIT 3) focus_rows;
 
-  return jsonb_build_object(
-    'items', v_items,
-    'count', jsonb_array_length(v_items),
-    'rule', 'mastery_asc_evidence_desc_accuracy_asc_v1',
-    'refresh', v_refresh
-  );
-end;
+  RETURN jsonb_build_object('items', v_items, 'count', jsonb_array_length(v_items), 'rule', 'mastery_asc_evidence_desc_accuracy_asc_v1', 'refresh', v_refresh);
+END;
 $$;
 
-revoke all on function public.get_tka_smp_learning_focus() from public;
-revoke all on function public.get_tka_smp_learning_focus() from anon;
-grant execute on function public.get_tka_smp_learning_focus() to authenticated;
+REVOKE ALL ON FUNCTION public.get_tka_smp_learning_focus () FROM public;
 
-do $$
-declare
+REVOKE ALL ON FUNCTION public.get_tka_smp_learning_focus () FROM anon;
+
+GRANT EXECUTE ON FUNCTION public.get_tka_smp_learning_focus () TO authenticated;
+
+DO $$
+DECLARE
   r record;
-begin
-  for r in
-    select distinct ukp.user_id
-    from public.user_knowledge_progress ukp
-    join public.user_tracks ut on ut.id = ukp.user_track_id
-    join public.tracks t on t.id = ut.track_id
-    join public.programs p on p.id = t.program_id
-    where upper(p.code) = 'TKA'
-      and upper(t.code) = 'SMP'
-  loop
-    perform app_private.refresh_tka_smp_learning_recommendations_for_user(r.user_id);
-  end loop;
-end;
+BEGIN
+  FOR r IN SELECT DISTINCT
+    ukp.user_id
+  FROM
+    public.user_knowledge_progress ukp
+    JOIN public.user_tracks ut ON ut.id = ukp.user_track_id
+    JOIN public.tracks t ON t.id = ut.track_id
+    JOIN public.programs p ON p.id = t.program_id
+  WHERE
+    upper(p.code) = 'TKA'
+    AND upper(t.code) = 'SMP' LOOP
+      PERFORM
+        app_private.refresh_tka_smp_learning_recommendations_for_user (r.user_id);
+    END LOOP;
+END;
 $$;

@@ -1,26 +1,36 @@
 -- Phase 3 Security Hardening: Audit Logging and Quota Deductions
-
 -- 1. Create audit_logs table
 CREATE TABLE IF NOT EXISTS audit_logs (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    action text NOT NULL,
-    actor_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
-    target_type text NOT NULL,
-    target_id text,
-    details jsonb,
-    ip_address text,
-    created_at timestamptz DEFAULT now()
+  id uuid DEFAULT gen_random_uuid () PRIMARY KEY,
+  action text NOT NULL,
+  actor_id uuid REFERENCES profiles (id) ON DELETE SET NULL,
+  target_type text NOT NULL,
+  target_id text,
+  details jsonb,
+  ip_address text,
+  created_at timestamptz DEFAULT now()
 );
 
 -- Protect audit_logs (insert only by service_role, no updates or deletes)
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Admins can view audit logs" ON audit_logs FOR SELECT USING (
-  (select role from profiles where id = auth.uid()) IN ('admin', 'superadmin')
-);
+CREATE POLICY "Admins can view audit logs" ON audit_logs
+  FOR SELECT
+  USING ((
+    SELECT
+      ROLE
+    FROM
+      profiles
+    WHERE
+      id = auth.uid ()) IN ('admin', 'superadmin'));
 
-CREATE POLICY "No updates on audit logs" ON audit_logs FOR UPDATE USING (false);
-CREATE POLICY "No deletes on audit logs" ON audit_logs FOR DELETE USING (false);
+CREATE POLICY "No updates on audit logs" ON audit_logs
+  FOR UPDATE
+  USING (FALSE);
+
+CREATE POLICY "No deletes on audit logs" ON audit_logs
+  FOR DELETE
+  USING (FALSE);
 
 -- 2. Add advisory lock to start_tryout_session to prevent race conditions during quota deduction
 -- We will replace the start_tryout_session function to add the lock.

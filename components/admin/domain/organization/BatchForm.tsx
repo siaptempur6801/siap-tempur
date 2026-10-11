@@ -1,8 +1,8 @@
 import { saveBatchAction } from '@/app/actions/admin-organization'
-import { AdminField,adminInputClass,adminPrimaryButtonClass } from '@/components/admin/AdminUi'
+import { AdminField, adminInputClass, adminPrimaryButtonClass } from '@/components/admin/AdminUi'
 import { AdminFormActions } from '@/components/admin/forms/AdminFormActions'
 import { AdminFormSection } from '@/components/admin/forms/AdminFormSection'
-import { adminStatusLabel,formatLocalDateTimeInput } from '@/lib/admin-format'
+import { adminStatusLabel, formatLocalDateTimeInput } from '@/lib/admin-format'
 import { organizationService } from '@/src/services/organization.service'
 type Detail = NonNullable<Awaited<ReturnType<typeof organizationService.getOrganization>>>
 type Context = Record<string, string | undefined>
@@ -12,7 +12,7 @@ export function BatchForm({
   selectedBatch,
   params,
   tab,
-  cancelHref
+  cancelHref,
 }: {
   editingOrg: Detail['organization']
   selectedBatch: Detail['batches'][number] | null

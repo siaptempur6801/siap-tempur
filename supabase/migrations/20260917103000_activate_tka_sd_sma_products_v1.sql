@@ -7,36 +7,55 @@
 --     pembeli belum bisa mengerjakan apa pun. Produksi tetap belum mengaktifkan pembayaran, jadi
 --     aktivasi ini hanya berlaku di staging sampai SMA punya konten.
 --   * Bundle `TKA_PASS_ALL_30/90` meng-grant fitur TKA SD+SMP+SMA; karena itu ikut terdampak.
-
 -- 1. Pass SMA: aktifkan + harga setara SD/SMP (Rp29.000 / Rp69.000)
-update public.products
-   set status = 'ACTIVE',
-       updated_at = now()
- where code in ('TKA_SMA_PASS_30', 'TKA_SMA_PASS_90')
-   and status is distinct from 'ACTIVE';
+UPDATE
+  public.products
+SET
+  status = 'ACTIVE',
+  updated_at = now()
+WHERE
+  code IN ('TKA_SMA_PASS_30', 'TKA_SMA_PASS_90')
+  AND status IS DISTINCT FROM 'ACTIVE';
 
-insert into public.product_prices (product_id, currency, amount, starts_at, ends_at, status)
-select p.id, 'IDR', v.amount, now(), null, 'ACTIVE'
-  from public.products p
-  join (values
-        ('TKA_SMA_PASS_30', 29000.00::numeric),
-        ('TKA_SMA_PASS_90', 69000.00::numeric)
-       ) as v(code, amount) on v.code = p.code
- where not exists (
-        select 1 from public.product_prices pp
-         where pp.product_id = p.id
-       );
+INSERT INTO public.product_prices (product_id, currency, amount, starts_at, ends_at, status)
+SELECT
+  p.id,
+  'IDR',
+  v.amount,
+  now(),
+  NULL,
+  'ACTIVE'
+FROM
+  public.products p
+  JOIN (
+    VALUES ('TKA_SMA_PASS_30', 29000.00::numeric),
+      ('TKA_SMA_PASS_90', 69000.00::numeric)) AS v (code, amount) ON v.code = p.code
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.product_prices pp
+    WHERE
+      pp.product_id = p.id);
 
 -- 2. Bundle lintas jenjang: aktifkan produk + harga yang sudah disiapkan (DRAFT → ACTIVE)
-update public.products
-   set status = 'ACTIVE',
-       updated_at = now()
- where code in ('TKA_PASS_ALL_30', 'TKA_PASS_ALL_90')
-   and status is distinct from 'ACTIVE';
+UPDATE
+  public.products
+SET
+  status = 'ACTIVE',
+  updated_at = now()
+WHERE
+  code IN ('TKA_PASS_ALL_30', 'TKA_PASS_ALL_90')
+  AND status IS DISTINCT FROM 'ACTIVE';
 
-update public.product_prices pp
-   set status = 'ACTIVE'
-  from public.products p
- where p.id = pp.product_id
-   and p.code in ('TKA_PASS_ALL_30', 'TKA_PASS_ALL_90')
-   and upper(pp.status) <> 'ACTIVE';
+UPDATE
+  public.product_prices pp
+SET
+  status = 'ACTIVE'
+FROM
+  public.products p
+WHERE
+  p.id = pp.product_id
+  AND p.code IN ('TKA_PASS_ALL_30', 'TKA_PASS_ALL_90')
+  AND upper(pp.status) <> 'ACTIVE';

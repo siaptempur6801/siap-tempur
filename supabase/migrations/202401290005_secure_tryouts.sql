@@ -1,14 +1,16 @@
 -- Enable RLS
-alter table tryouts enable row level security;
-alter table tryout_questions enable row level security;
+ALTER TABLE tryouts ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE tryout_questions ENABLE ROW LEVEL SECURITY;
 
 -- Policies for Tryouts
 -- Anyone (authenticated) can view active tryouts
-create policy "Authenticated read tryouts" on tryouts
-  for select to authenticated using (true);
+CREATE POLICY "Authenticated read tryouts" ON tryouts
+  FOR SELECT TO authenticated
+  USING (TRUE);
 
 -- Only service role can manage (insert/update/delete) - Implicit by lack of policy, but good to know.
-
 -- Policies for Tryout Questions
-create policy "Authenticated read tryout questions" on tryout_questions
-  for select to authenticated using (true);
+CREATE POLICY "Authenticated read tryout questions" ON tryout_questions
+  FOR SELECT TO authenticated
+  USING (TRUE);

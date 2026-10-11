@@ -1,22 +1,23 @@
 -- Tryouts Table
-create table tryouts (
-  id uuid default uuid_generate_v4() primary key,
-  title text not null,
+CREATE TABLE tryouts (
+  id uuid DEFAULT uuid_generate_v4 () PRIMARY KEY,
+  title text NOT NULL,
   description text,
-  start_time timestamp with time zone not null,
-  end_time timestamp with time zone not null,
-  duration_minutes int not null,
-  is_active boolean default true,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+  start_time timestamp with time zone NOT NULL,
+  end_time timestamp with time zone NOT NULL,
+  duration_minutes int NOT NULL,
+  is_active boolean DEFAULT TRUE,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Link Sessions to Tryouts (Optional, if session is linked to a specific tryout event)
-alter table test_sessions add column tryout_id uuid references tryouts(id);
+ALTER TABLE test_sessions
+  ADD COLUMN tryout_id uuid REFERENCES tryouts (id);
 
 -- Questions in a Tryout (Many-to-Many)
-create table tryout_questions (
-  tryout_id uuid references tryouts(id) on delete cascade not null,
-  question_id uuid references questions(id) on delete cascade not null,
-  order_index int not null,
-  primary key (tryout_id, question_id)
+CREATE TABLE tryout_questions (
+  tryout_id uuid REFERENCES tryouts (id) ON DELETE CASCADE NOT NULL,
+  question_id uuid REFERENCES questions (id) ON DELETE CASCADE NOT NULL,
+  order_index int NOT NULL,
+  PRIMARY KEY (tryout_id, question_id)
 );

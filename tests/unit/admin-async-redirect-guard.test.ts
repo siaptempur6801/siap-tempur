@@ -35,19 +35,19 @@ import { describe, expect, it } from 'vitest'
 const repoRoot = resolve(__dirname, '../..')
 
 const ACTION_FILES = [
-    'app/actions/admin-v2.ts',
-    'app/actions/admin-exams.ts',
-    'app/actions/admin-platform.ts',
-    'app/actions/admin-directory.ts',
-    'app/actions/admin-organization.ts',
-    'app/actions/admin-organization-exam.ts',
-    'app/actions/admin-participant-import.ts',
-    'app/actions/articles.ts',
+  'app/actions/admin-v2.ts',
+  'app/actions/admin-exams.ts',
+  'app/actions/admin-platform.ts',
+  'app/actions/admin-directory.ts',
+  'app/actions/admin-organization.ts',
+  'app/actions/admin-organization-exam.ts',
+  'app/actions/admin-participant-import.ts',
+  'app/actions/articles.ts',
 ]
 
 /** Memotong komentar agar contoh di dokumentasi tidak ikut diperiksa. */
 function stripComments(code: string) {
-    return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+  return code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
 }
 
 type FunctionBlock = { name: string; isAsync: boolean; isExported: boolean; body: string }
@@ -60,61 +60,70 @@ type FunctionBlock = { name: string; isAsync: boolean; isExported: boolean; body
  * atas. Batas blok diambil dari kurung kurawal yang seimbang.
  */
 function topLevelFunctions(code: string): FunctionBlock[] {
-    const blocks: FunctionBlock[] = []
-    const pattern = /^(export\s+)?(async\s+)?function\s+(\w+)\s*\([^)]*\)[^{]*\{/gm
-    let match: RegExpExecArray | null
-    while ((match = pattern.exec(code)) !== null) {
-        const braceStart = code.indexOf('{', match.index + match[0].length - 1)
-        let depth = 0
-        let index = braceStart
-        for (; index < code.length; index += 1) {
-            if (code[index] === '{') depth += 1
-            else if (code[index] === '}') {
-                depth -= 1
-                if (depth === 0) break
-            }
-        }
-        blocks.push({
-            name: match[3],
-            isAsync: Boolean(match[2]),
-            isExported: Boolean(match[1]),
-            body: code.slice(braceStart, index + 1),
-        })
+  const blocks: FunctionBlock[] = []
+  const pattern = /^(export\s+)?(async\s+)?function\s+(\w+)\s*\([^)]*\)[^{]*\{/gm
+  let match: RegExpExecArray | null
+  while ((match = pattern.exec(code)) !== null) {
+    const braceStart = code.indexOf('{', match.index + match[0].length - 1)
+    let depth = 0
+    let index = braceStart
+    for (; index < code.length; index += 1) {
+      if (code[index] === '{') depth += 1
+      else if (code[index] === '}') {
+        depth -= 1
+        if (depth === 0) break
+      }
     }
-    return blocks
+    blocks.push({
+      name: match[3],
+      isAsync: Boolean(match[2]),
+      isExported: Boolean(match[1]),
+      body: code.slice(braceStart, index + 1),
+    })
+  }
+  return blocks
 }
 
 describe('helper redirect tidak boleh async', () => {
-    for (const file of ACTION_FILES) {
-        it(`${file} memanggil redirect() hanya dari fungsi sinkron`, () => {
-            const code = stripComments(readFileSync(resolve(repoRoot, file), 'utf8'))
-            const offenders = topLevelFunctions(code)
-                // Action yang diekspor memang `async` (Server Action) dan boleh
-                // memanggil redirect(); yang berbahaya adalah HELPER async, karena
-                // pemanggilnya meng-`await` dan redirect-nya berubah menjadi
-                // penolakan yang tidak tertangani.
-                .filter((block) => block.isAsync && !block.isExported && block.body.includes('redirect('))
-                .map((block) => block.name)
-            expect(offenders, `${file}: helper async yang memanggil redirect()`).toEqual([])
-        })
+  for (const file of ACTION_FILES) {
+    it(`${file} memanggil redirect() hanya dari fungsi sinkron`, () => {
+      const code = stripComments(readFileSync(resolve(repoRoot, file), 'utf8'))
+      const offenders = topLevelFunctions(code)
+        // Action yang diekspor memang `async` (Server Action) dan boleh
+        // memanggil redirect(); yang berbahaya adalah HELPER async, karena
+        // pemanggilnya meng-`await` dan redirect-nya berubah menjadi
+        // penolakan yang tidak tertangani.
+        .filter((block) => block.isAsync && !block.isExported && block.body.includes('redirect('))
+        .map((block) => block.name)
+      expect(offenders, `${file}: helper async yang memanggil redirect()`).toEqual([])
+    })
+  }
+
+  it('helper redirect pada modul instansi benar-benar sinkron', () => {
+    for (const file of [
+      'app/actions/admin-organization.ts',
+      'app/actions/admin-organization-exam.ts',
+    ]) {
+      const code = stripComments(readFileSync(resolve(repoRoot, file), 'utf8'))
+      const backTo = topLevelFunctions(code).find((block) => block.name === 'backTo')
+      expect(backTo, `${file} harus punya backTo`).toBeDefined()
+      expect(backTo?.isAsync, `${file}: backTo tidak boleh async`).toBe(false)
     }
+  })
 
-    it('helper redirect pada modul instansi benar-benar sinkron', () => {
-        for (const file of ['app/actions/admin-organization.ts', 'app/actions/admin-organization-exam.ts']) {
-            const code = stripComments(readFileSync(resolve(repoRoot, file), 'utf8'))
-            const backTo = topLevelFunctions(code).find((block) => block.name === 'backTo')
-            expect(backTo, `${file} harus punya backTo`).toBeDefined()
-            expect(backTo?.isAsync, `${file}: backTo tidak boleh async`).toBe(false)
-        }
-    })
-
-    it('pekerjaan audit di-await terpisah sebelum redirect', () => {
-        // Bentuk yang benar: `await auditXAction(…)` lalu `backTo(…)` / `finish(…)`.
-        const organization = readFileSync(resolve(repoRoot, 'app/actions/admin-organization.ts'), 'utf8')
-        expect(organization).toMatch(/await auditOrgAction\(/)
-        const exams = readFileSync(resolve(repoRoot, 'app/actions/admin-exams.ts'), 'utf8')
-        expect(exams).toMatch(/await auditExamAction\(/)
-        const orgExam = readFileSync(resolve(repoRoot, 'app/actions/admin-organization-exam.ts'), 'utf8')
-        expect(orgExam).toMatch(/await auditOrgExamAction\(/)
-    })
+  it('pekerjaan audit di-await terpisah sebelum redirect', () => {
+    // Bentuk yang benar: `await auditXAction(…)` lalu `backTo(…)` / `finish(…)`.
+    const organization = readFileSync(
+      resolve(repoRoot, 'app/actions/admin-organization.ts'),
+      'utf8',
+    )
+    expect(organization).toMatch(/await auditOrgAction\(/)
+    const exams = readFileSync(resolve(repoRoot, 'app/actions/admin-exams.ts'), 'utf8')
+    expect(exams).toMatch(/await auditExamAction\(/)
+    const orgExam = readFileSync(
+      resolve(repoRoot, 'app/actions/admin-organization-exam.ts'),
+      'utf8',
+    )
+    expect(orgExam).toMatch(/await auditOrgExamAction\(/)
+  })
 })

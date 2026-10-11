@@ -10,137 +10,175 @@
 --   3. `debit_exam_token_once` menjadi program-aware (tipe wallet diturunkan dari program exam).
 --      Signature & seluruh semantik lama dipertahankan: idempotensi per attempt, kuota 0 token,
 --      dan pesan error WALLET_NOT_FOUND / INSUFFICIENT_TOKEN_BALANCE / ATTEMPT_NOT_CHARGEABLE.
-
 -- 1. Pemetaan program → tipe wallet token
-alter table public.programs
-    add column if not exists token_wallet_type text;
+ALTER TABLE public.programs
+  ADD COLUMN IF NOT EXISTS token_wallet_type text;
 
-update public.programs
-   set token_wallet_type = 'exam_token_cpns'
- where code = 'CPNS'
-   and token_wallet_type is distinct from 'exam_token_cpns';
+UPDATE
+  public.programs
+SET
+  token_wallet_type = 'exam_token_cpns'
+WHERE
+  code = 'CPNS'
+  AND token_wallet_type IS DISTINCT FROM 'exam_token_cpns';
 
-update public.programs
-   set token_wallet_type = 'exam_token_tka'
- where code = 'TKA'
-   and token_wallet_type is distinct from 'exam_token_tka';
+UPDATE
+  public.programs
+SET
+  token_wallet_type = 'exam_token_tka'
+WHERE
+  code = 'TKA'
+  AND token_wallet_type IS DISTINCT FROM 'exam_token_tka';
 
-comment on column public.programs.token_wallet_type is
-    'Tipe wallet token untuk program ini (mis. exam_token_cpns / exam_token_tka).';
-
+COMMENT ON COLUMN public.programs.token_wallet_type IS TEXTVALUE0E;
 -- 2. Migrasi saldo lama 'exam_token' → wallet program CPNS
-insert into public.wallets (user_id, wallet_type, balance, updated_at)
-select w.user_id, 'exam_token_cpns', w.balance, now()
-  from public.wallets w
- where w.wallet_type = 'exam_token'
-on conflict (user_id, wallet_type) do update
-   set balance = public.wallets.balance + excluded.balance,
-       updated_at = now();
+INSERT INTO public.wallets (user_id, wallet_type, balance, updated_at)
+SELECT
+  w.user_id,
+  'exam_token_cpns',
+  w.balance,
+  now()
+FROM
+  public.wallets w
+WHERE
+  w.wallet_type = 'exam_token'
+ON CONFLICT (user_id,
+  wallet_type)
+  DO UPDATE SET
+    balance = public.wallets.balance + excluded.balance,
+    updated_at = now();
 
-update public.wallets
-   set balance = 0,
-       updated_at = now()
- where wallet_type = 'exam_token';
+UPDATE
+  public.wallets
+SET
+  balance = 0,
+  updated_at = now()
+WHERE
+  wallet_type = 'exam_token';
 
 -- Indeks untuk pemeriksaan idempotensi debit per attempt.
-create index if not exists wallet_transactions_attempt_debit_idx
-    on public.wallet_transactions (wallet_id, source_id)
- where source_type = 'exam_attempt' and type = 'debit';
+CREATE INDEX IF NOT EXISTS wallet_transactions_attempt_debit_idx ON public.wallet_transactions (wallet_id, source_id)
+WHERE
+  source_type = 'exam_attempt' AND type = 'debit';
 
 -- 3. RPC debit program-aware
-create or replace function public.debit_exam_token_once(p_user_id uuid, p_attempt_id uuid)
-returns table(debited boolean, balance_after integer, amount integer)
-language plpgsql
-set search_path to 'public'
-as $function$
-declare
-    v_wallet_type text;
-    v_wallet_id uuid;
-    v_balance integer;
-    v_token_cost integer;
-    v_existing_balance integer;
-begin
-    select e.token_cost,
-           coalesce(nullif(pr.token_wallet_type, ''), 'exam_token_cpns')
-      into v_token_cost, v_wallet_type
-      from public.exam_attempts a
-      join public.exams e on e.id = a.exam_id
-      left join public.programs pr on pr.id = e.program_id
-     where a.id = p_attempt_id
-       and a.user_id = p_user_id
-       and lower(a.status) in ('created', 'in_progress', 'completed');
+CREATE OR REPLACE FUNCTION public.debit_exam_token_once (p_user_id uuid, p_attempt_id uuid)
+  RETURNS TABLE (
+    debited boolean,
+    balance_after integer,
+    amount integer)
+  LANGUAGE plpgsql
+  SET search_path TO 'public'
+  AS $function$
+DECLARE
+  v_wallet_type text;
+  v_wallet_id uuid;
+  v_balance integer;
+  v_token_cost integer;
+  v_existing_balance integer;
+BEGIN
+  SELECT
+    e.token_cost,
+    coalesce(nullif (pr.token_wallet_type, ''), 'exam_token_cpns')
+  INTO
+    v_token_cost,
+    v_wallet_type
+  FROM
+    public.exam_attempts a
+    JOIN public.exams e ON e.id = a.exam_id
+    LEFT JOIN public.programs pr ON pr.id = e.program_id
+  WHERE
+    a.id = p_attempt_id
+    AND a.user_id = p_user_id
+    AND lower(a.status) IN ('created', 'in_progress', 'completed');
 
-    if not found then
-        raise exception 'ATTEMPT_NOT_CHARGEABLE'
-            using errcode = 'P0001';
-    end if;
+  IF NOT found THEN
+    RAISE EXCEPTION 'ATTEMPT_NOT_CHARGEABLE'
+      USING errcode = 'P0001';
+  END IF;
 
-    v_token_cost := coalesce(v_token_cost, 0);
+  v_token_cost := coalesce(v_token_cost, 0);
 
-    select w.id, w.balance
-      into v_wallet_id, v_balance
-      from public.wallets w
-     where w.user_id = p_user_id
-       and w.wallet_type = v_wallet_type
-     for update;
+  SELECT
+    w.id,
+    w.balance
+  INTO
+    v_wallet_id,
+    v_balance
+  FROM
+    public.wallets w
+  WHERE
+    w.user_id = p_user_id
+    AND w.wallet_type = v_wallet_type
+  FOR UPDATE;
 
-    if not found then
-        if v_token_cost = 0 then
-            return query select false, 0, 0;
-            return;
-        end if;
+  IF NOT found THEN
+    IF v_token_cost = 0 THEN
+      RETURN QUERY
+      SELECT
+        FALSE,
+        0,
+        0;
+      RETURN;
+    END IF;
 
-        raise exception 'WALLET_NOT_FOUND'
-            using errcode = 'P0001';
-    end if;
+    RAISE EXCEPTION 'WALLET_NOT_FOUND'
+      USING errcode = 'P0001';
+  END IF;
 
-    select wt.balance_after
-      into v_existing_balance
-      from public.wallet_transactions wt
-     where wt.wallet_id = v_wallet_id
-       and wt.source_type = 'exam_attempt'
-       and wt.source_id = p_attempt_id
-       and wt.type = 'debit'
-     limit 1;
+  SELECT
+    wt.balance_after
+  INTO
+    v_existing_balance
+  FROM
+    public.wallet_transactions wt
+  WHERE
+    wt.wallet_id = v_wallet_id
+    AND wt.source_type = 'exam_attempt'
+    AND wt.source_id = p_attempt_id
+    AND wt.type = 'debit'
+  LIMIT 1;
 
-    if found then
-        return query select false, v_existing_balance, v_token_cost;
-        return;
-    end if;
+  IF found THEN
+    RETURN QUERY
+    SELECT
+      FALSE,
+      v_existing_balance,
+      v_token_cost;
+    RETURN;
+  END IF;
 
-    if v_token_cost = 0 then
-        return query select false, v_balance, 0;
-        return;
-    end if;
+  IF v_token_cost = 0 THEN
+    RETURN QUERY
+    SELECT
+      FALSE,
+      v_balance,
+      0;
+    RETURN;
+  END IF;
 
-    if v_balance < v_token_cost then
-        raise exception 'INSUFFICIENT_TOKEN_BALANCE'
-            using errcode = 'P0001';
-    end if;
+  IF v_balance < v_token_cost THEN
+    RAISE EXCEPTION 'INSUFFICIENT_TOKEN_BALANCE'
+      USING errcode = 'P0001';
+  END IF;
 
-    v_balance := v_balance - v_token_cost;
+  v_balance := v_balance - v_token_cost;
 
-    update public.wallets
-       set balance = v_balance,
-           updated_at = now()
-     where id = v_wallet_id;
+  UPDATE
+    public.wallets
+  SET
+    balance = v_balance,
+    updated_at = now()
+  WHERE
+    id = v_wallet_id;
 
-    insert into public.wallet_transactions (
-        wallet_id,
-        type,
-        amount,
-        source_type,
-        source_id,
-        balance_after
-    ) values (
-        v_wallet_id,
-        'debit',
-        -v_token_cost,
-        'exam_attempt',
-        p_attempt_id,
-        v_balance
-    );
+  INSERT INTO public.wallet_transactions (wallet_id, type, amount, source_type, source_id, balance_after)
+    VALUES (v_wallet_id, 'debit', - v_token_cost, 'exam_attempt', p_attempt_id, v_balance);
 
-    return query select true, v_balance, v_token_cost;
-end;
+  RETURN QUERY
+  SELECT
+    TRUE,
+    v_balance,
+    v_token_cost;
+END;
 $function$;

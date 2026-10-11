@@ -1,221 +1,205 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useRef, useEffect, useId } from 'react'
+import SignoutConfirmation from './SignoutConfirmation'
 import { BarChart3, Clock3, Compass, Library, LogOut, Sparkles, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 
 interface MobileProfileDropdownProps {
-    user: {
-        email?: string
-        user_metadata?: {
-            full_name?: string
-            name?: string
-        }
+  user: {
+    email?: string
+    user_metadata?: {
+      full_name?: string
+      name?: string
     }
-    profile: {
-        avatar_url?: string
-        full_name?: string
-    } | null
-    tokenBalance: number
-    hasActiveTempurPass: boolean
+  }
+  profile: {
+    avatar_url?: string
+    full_name?: string
+  } | null
+  tokenBalance: number
+  hasActiveTempurPass: boolean
 
-    signoutAction: (redirectTo?: string) => Promise<{ success: boolean }>
-    signoutRedirectTo?: string
+  signoutAction: (redirectTo?: string) => Promise<{ success: boolean }>
+  signoutRedirectTo?: string
 }
 
 export default function MobileProfileDropdown({
-    user,
-    profile,
-    tokenBalance,
-    hasActiveTempurPass,
-    signoutAction,
-    signoutRedirectTo = '/',
+  user,
+  profile,
+  tokenBalance,
+  hasActiveTempurPass,
+  signoutAction,
+  signoutRedirectTo = '/',
 }: MobileProfileDropdownProps) {
-    const [isOpen, setIsOpen] = useState(false)
-    const [showModal, setShowModal] = useState(false)
-    const [isLoading, setIsLoading] = useState(false)
-    const [mounted, setMounted] = useState(false)
-    const dropdownRef = useRef<HTMLDivElement>(null)
+  const [isOpen, setIsOpen] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const contentId = useId()
 
-    useEffect(() => {
-        const timer = setTimeout(() => setMounted(true), 0)
-        function handleClickOutside(event: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false)
-            }
-        }
-        document.addEventListener("mousedown", handleClickOutside)
-        return () => {
-            clearTimeout(timer)
-            document.removeEventListener("mousedown", handleClickOutside)
-        }
-    }, [])
-
-    const displayName = profile?.full_name ||
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        'Pejuang Tryout'
-    const avatarUrl = profile?.avatar_url
-
-    const handleSignout = async () => {
-        setIsLoading(true)
-        const result = await signoutAction(signoutRedirectTo)
-        if (!result?.success) {
-            setIsLoading(false)
-        }
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
     }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
-    return (
-        <div className="relative" ref={dropdownRef}>
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                aria-label={isOpen ? 'Tutup menu profil' : 'Buka menu profil'}
-                aria-expanded={isOpen}
-                className="relative w-10 h-10 bg-white border-2 border-gray-900 flex items-center justify-center overflow-hidden hover:st-shadow-sm transition-all"
+  const displayName =
+    profile?.full_name ||
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    'Pejuang Tryout'
+  const avatarUrl = profile?.avatar_url
+
+  return (
+    <div
+      className="relative"
+      ref={dropdownRef}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || !isOpen) return
+        event.preventDefault()
+        setIsOpen(false)
+        triggerRef.current?.focus()
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false)
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-controls={isOpen ? contentId : undefined}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? 'Tutup menu profil' : 'Buka menu profil'}
+        aria-expanded={isOpen}
+        className="st-focus relative size-11 rounded-xl border border-border bg-white flex items-center justify-center overflow-hidden transition-colors hover:bg-muted"
+      >
+        {avatarUrl ? (
+          <Image
+            src={avatarUrl}
+            alt="Foto profil"
+            fill
+            priority
+            className="object-cover"
+            sizes="40px"
+          />
+        ) : (
+          <span className="text-sm font-semibold font-body text-foreground">
+            {user.email?.[0]?.toUpperCase() || '?'}
+          </span>
+        )}
+      </button>
+
+      {isOpen && (
+        <nav
+          id={contentId}
+          aria-label="Menu profil"
+          className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-border bg-white shadow-lg z-50 overflow-hidden font-body"
+        >
+          <div className="p-4 border-b border-border bg-muted/50">
+            <p className="font-semibold text-sm truncate text-foreground">{displayName}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground truncate">{user.email}</p>
+
+            <div className="mt-2.5 flex items-center gap-2">
+              <span className="text-xs px-2 py-1 font-medium inline-flex items-center gap-1 rounded-md border border-info-border bg-info-muted text-info-foreground">
+                <Ticket size={12} className="fill-current" />
+                {tokenBalance} Token
+              </span>
+              {hasActiveTempurPass && (
+                <TempurPassIndicator
+                  href="/cpns/dashboard/pass"
+                  label="Tempur Pass CPNS aktif"
+                  compact
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="p-2 relative z-10">
+            <Link
+              href="/cpns/dashboard/materi"
+              className="st-focus flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              onClick={() => setIsOpen(false)}
             >
-                {avatarUrl ? (
-                    <Image
-                        src={avatarUrl}
-                        alt="Profile"
-                        fill
-                        priority
-                        className="object-cover"
-                        sizes="40px"
-                    />
-                ) : (
-                    <span className="text-sm font-bold font-display text-gray-900">{user.email?.[0]?.toUpperCase() || '?'}</span>
-                )}
+              <Library size={18} />
+              Kisi-Kisi
+            </Link>
+
+            <Link
+              href="/cpns/dashboard/riwayat"
+              className="st-focus flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <Clock3 size={18} />
+              Hasil
+            </Link>
+
+            <Link
+              href="/cpns/dashboard/ranking"
+              className="st-focus flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <BarChart3 size={18} />
+              Ranking Nasional
+            </Link>
+
+            <Link
+              href="/cpns/dashboard/pilih-jalur"
+              className="st-focus flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <Compass size={18} />
+              Pilih Jalur
+            </Link>
+
+            <Link
+              href="/cpns/dashboard/pass"
+              className="st-focus flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <Sparkles size={18} />
+              Tempur Pass CPNS
+            </Link>
+
+            <Link
+              href="/cpns/dashboard/profile"
+              className="st-focus flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <User size={18} />
+              Profil Saya
+            </Link>
+
+            <button
+              onClick={() => {
+                setIsOpen(false)
+                setShowModal(true)
+              }}
+              type="button"
+              className="st-focus flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-danger hover:bg-danger-muted transition-colors"
+            >
+              <LogOut size={18} />
+              Keluar
             </button>
+          </div>
+        </nav>
+      )}
 
-            {isOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white border-2 border-gray-900 st-shadow-md rounded-lg z-50 animate-in fade-in zoom-in-95 duration-200 overflow-hidden font-display">
-                    {/* Pattern Overlay */}
-                    <div className="absolute inset-0 opacity-10 pointer-events-none z-0" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "10px 10px" }}></div>
-
-                    <div className="p-4 border-b-2 border-gray-900 bg-yellow-50 relative z-10">
-                        <p className="font-bold text-xl truncate text-gray-900">{displayName}</p>
-                        <p className="text-sm text-gray-600 truncate font-sans">{user.email}</p>
-
-                        <div className="mt-2.5 flex items-center gap-2">
-                            <span className="text-xs px-2 py-0.5 font-bold uppercase inline-flex items-center gap-1 border border-gray-900 bg-blue-100 text-blue-900 st-shadow-sm">
-                                <Ticket size={12} className="fill-current" />
-                                {tokenBalance} Token
-                            </span>
-                            {hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" compact theme="paper" />}
-
-                        </div>
-                    </div>
-
-                    <div className="p-2 relative z-10">
-                        <Link
-                            href="/cpns/dashboard/materi"
-                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <Library size={18} />
-                            Kisi-Kisi
-                        </Link>
-
-                        <Link
-                            href="/cpns/dashboard/riwayat"
-                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <Clock3 size={18} />
-                            Hasil
-                        </Link>
-
-                        <Link
-                            href="/cpns/dashboard/ranking"
-                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <BarChart3 size={18} />
-                            Ranking Nasional
-                        </Link>
-
-                        <Link
-                            href="/cpns/dashboard/pilih-jalur"
-                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-yellow-50 hover:text-gray-900 transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <Compass size={18} />
-                            Pilih Jalur
-                        </Link>
-
-                        <Link
-                            href="/cpns/dashboard/pass"
-                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <Sparkles size={18} />
-                            Tempur Pass CPNS
-                        </Link>
-
-                        <Link
-                            href="/cpns/dashboard/profile"
-                            className="flex items-center gap-3 px-3 py-2.5 text-lg font-bold text-gray-700 rounded-md hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <User size={18} />
-                            Profil Saya
-                        </Link>
-
-                        <button
-                            onClick={() => {
-                                setIsOpen(false)
-                                setShowModal(true)
-                            }}
-                            className="flex w-full items-center gap-3 px-3 py-2.5 text-lg font-bold text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                        >
-                            <LogOut size={18} />
-                            Keluar
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {showModal && mounted && createPortal(
-                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200 font-sans">
-                    <div className="bg-[#fff9c4] border-2 border-gray-900 rounded-xl st-shadow-lg max-w-sm w-full p-8 animate-in zoom-in-95 duration-200 relative overflow-hidden">
-                        {/* Tape Effect */}
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-red-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
-
-                        <div className="relative z-10 flex flex-col items-center text-center space-y-4 font-display">
-                            <div className="w-16 h-16 bg-red-100 border-2 border-red-600 rounded-full flex items-center justify-center mb-2 rotate-3 shadow-sm">
-                                <LogOut size={32} className="text-red-600" />
-                            </div>
-
-                            <h3 className="text-3xl font-bold text-gray-900">Yakin mau keluar?</h3>
-
-                            <p className="text-lg text-gray-700 font-medium leading-relaxed">
-                                Nanti kangen lho belajar bareng kita. Yakin udah selesai belajarnya?
-                            </p>
-
-                            <div className="grid grid-cols-2 gap-4 w-full mt-4">
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    disabled={isLoading}
-                                    className="px-4 py-2 rounded-lg border-2 border-gray-900 bg-white hover:bg-gray-50 transition font-bold st-shadow-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={handleSignout}
-                                    disabled={isLoading}
-                                    className="px-4 py-2 rounded-lg bg-red-600 text-white border-2 border-gray-900 hover:bg-red-700 transition font-bold st-shadow-sm active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-70 disabled:cursor-not-allowed"
-                                >
-                                    {isLoading ? 'Keluar...' : 'Ya, Keluar'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>,
-                document.body
-            )}
-        </div>
-    )
+      <SignoutConfirmation
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        signoutAction={signoutAction}
+        redirectTo={signoutRedirectTo}
+        returnFocusRef={triggerRef}
+      />
+    </div>
+  )
 }

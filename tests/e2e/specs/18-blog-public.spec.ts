@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '@playwright/test'
 
 /**
  * Regresi blog publik.
@@ -18,27 +18,27 @@ import { expect, test } from '@playwright/test';
  */
 
 test.describe('Blog publik', () => {
-  test.use({ storageState: { cookies: [], origins: [] } });
+  test.use({ storageState: { cookies: [], origins: [] } })
 
   test('indeks blog merender daftar artikel terbit', async ({ page }) => {
-    const response = await page.goto('/blog', { waitUntil: 'domcontentloaded' });
-    expect(response?.status()).toBe(200);
+    const response = await page.goto('/blog', { waitUntil: 'domcontentloaded' })
+    expect(response?.status()).toBe(200)
 
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     // Minimal satu tautan artikel harus ada.
-    const articleLinks = page.locator('a[href^="/blog/"]');
-    expect(await articleLinks.count()).toBeGreaterThan(0);
-  });
+    const articleLinks = page.locator('a[href^="/blog/"]')
+    expect(await articleLinks.count()).toBeGreaterThan(0)
+  })
 
   test('halaman detail artikel merender isi', async ({ page }) => {
-    await page.goto('/blog', { waitUntil: 'domcontentloaded' });
-    const href = await page.locator('a[href^="/blog/"]').first().getAttribute('href');
-    expect(href).toBeTruthy();
+    await page.goto('/blog', { waitUntil: 'domcontentloaded' })
+    const href = await page.locator('a[href^="/blog/"]').first().getAttribute('href')
+    expect(href).toBeTruthy()
 
-    const response = await page.goto(href!, { waitUntil: 'domcontentloaded' });
-    expect(response?.status()).toBe(200);
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  });
+    const response = await page.goto(href!, { waitUntil: 'domcontentloaded' })
+    expect(response?.status()).toBe(200)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  })
 
   test('slug yang tidak ada menghasilkan 404', async ({ page }) => {
     // Diambil dua kali: permintaan pertama mengisi cache, yang kedua harus tetap
@@ -46,8 +46,8 @@ test.describe('Blog publik', () => {
     for (const attempt of [1, 2]) {
       const response = await page.goto('/blog/slug-yang-tidak-pernah-ada-untuk-test', {
         waitUntil: 'domcontentloaded',
-      });
-      expect(response?.status(), `percobaan ke-${attempt}`).toBe(404);
+      })
+      expect(response?.status(), `percobaan ke-${attempt}`).toBe(404)
     }
-  });
-});
+  })
+})

@@ -16,49 +16,73 @@
 --   pengerjaan peserta — dasar penilaian, ranking (§7.6), dan export (§7.7).
 --   Untuk kasus itu exam harus diarsipkan, bukan dihapus.
 -- =============================================================================
+CREATE OR REPLACE FUNCTION public.admin_delete_composed_exam (p_exam_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+DECLARE
+  v_actor uuid := auth.uid ();
+  v_title text;
+  v_attempts integer;
+  v_items integer;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-create or replace function public.admin_delete_composed_exam(p_exam_id uuid)
-returns jsonb
-language plpgsql
-security definer
-set search_path to ''
-as $function$
-declare
-    v_actor    uuid := auth.uid();
-    v_title    text;
-    v_attempts integer;
-    v_items    integer;
-begin
-    if v_actor is null then
-        raise exception 'Authentication required';
-    end if;
+  IF NOT app_private.current_user_has_permission ('organization.manage') THEN
+    RAISE EXCEPTION 'Organization manage permission required';
+  END IF;
 
-    if not app_private.current_user_has_permission('organization.manage') then
-        raise exception 'Organization manage permission required';
-    end if;
+  SELECT
+    title
+  INTO
+    v_title
+  FROM
+    public.exams
+  WHERE
+    id = p_exam_id;
+  IF v_title IS NULL THEN
+    RAISE EXCEPTION 'Exam not found';
+  END IF;
 
-    select title into v_title from public.exams where id = p_exam_id;
-    if v_title is null then
-        raise exception 'Exam not found';
-    end if;
+  SELECT
+    count(*)
+  INTO
+    v_attempts
+  FROM
+    public.exam_attempts
+  WHERE
+    exam_id = p_exam_id;
+  IF v_attempts > 0 THEN
+    RAISE EXCEPTION 'Cannot delete an exam that has % attempt(s)', v_attempts;
+  END IF;
 
-    select count(*) into v_attempts from public.exam_attempts where exam_id = p_exam_id;
-    if v_attempts > 0 then
-        raise exception 'Cannot delete an exam that has % attempt(s)', v_attempts;
-    end if;
+  SELECT
+    count(*)
+  INTO
+    v_items
+  FROM
+    public.exam_question_items
+  WHERE
+    exam_id = p_exam_id;
+  -- Assignment dihapus lebih dulu: FK-nya ON DELETE SET NULL, jadi membiarkannya
+  -- akan meninggalkan assignment tanpa exam alias baris yang tidak bisa dibuka.
+  DELETE FROM public.organization_exam_assignments
+  WHERE exam_id = p_exam_id;
+  DELETE FROM public.exam_question_items
+  WHERE exam_id = p_exam_id;
+  DELETE FROM public.exam_sections
+  WHERE exam_id = p_exam_id;
+  DELETE FROM public.exams
+  WHERE id = p_exam_id;
 
-    select count(*) into v_items from public.exam_question_items where exam_id = p_exam_id;
-
-    -- Assignment dihapus lebih dulu: FK-nya ON DELETE SET NULL, jadi membiarkannya
-    -- akan meninggalkan assignment tanpa exam alias baris yang tidak bisa dibuka.
-    delete from public.organization_exam_assignments where exam_id = p_exam_id;
-    delete from public.exam_question_items where exam_id = p_exam_id;
-    delete from public.exam_sections where exam_id = p_exam_id;
-    delete from public.exams where id = p_exam_id;
-
-    return jsonb_build_object('id', p_exam_id, 'title', v_title, 'deleted_items', v_items, 'deleted', true);
-end;
+  RETURN jsonb_build_object('id', p_exam_id, 'title', v_title, 'deleted_items', v_items, 'deleted', TRUE);
+END;
 $function$;
 
-revoke all on function public.admin_delete_composed_exam(uuid) from public, anon;
-grant execute on function public.admin_delete_composed_exam(uuid) to authenticated;
+REVOKE ALL ON FUNCTION public.admin_delete_composed_exam (uuid) FROM public, anon;
+
+GRANT EXECUTE ON FUNCTION public.admin_delete_composed_exam (uuid) TO authenticated;

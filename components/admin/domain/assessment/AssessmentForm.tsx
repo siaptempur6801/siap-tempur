@@ -1,12 +1,18 @@
 'use client'
 
 import AdminSubmitButton from '@/components/admin/AdminSubmitButton'
-import { AdminBadge,AdminField,adminInputClass } from '@/components/admin/AdminUi'
+import {
+  AdminBadge,
+  AdminField,
+  adminInputClass,
+  adminPrimaryButtonClass,
+  adminSecondaryButtonClass,
+} from '@/components/admin/AdminUi'
 import { AdminFormActions } from '@/components/admin/forms/AdminFormActions'
 import { AdminFormSection } from '@/components/admin/forms/AdminFormSection'
-import { adminExamTypeLabel,adminStatusLabel } from '@/lib/admin-format'
-import { Save } from 'lucide-react'
-import { useMemo,useState } from 'react'
+import { adminExamTypeLabel, adminStatusLabel } from '@/lib/admin-format'
+import { Pencil, Save } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 export type ExamFormExam = {
   id: string
@@ -55,10 +61,11 @@ export default function AssessmentForm({
   subjects,
   knowledgeNodes,
   editedExam,
+  editedSection,
   drillRule,
   closeHref,
   returnTo,
-  canActivate = false
+  canActivate = false,
 }: {
   action: (formData: FormData) => void | Promise<void>
   program: string
@@ -67,6 +74,12 @@ export default function AssessmentForm({
   subjects: ExamFormSubject[]
   knowledgeNodes: ExamFormKnowledgeNode[]
   editedExam?: ExamFormExam
+  editedSection?: {
+    subjectId: string | null
+    title: string
+    questionCount: number | null
+    config: Record<string, unknown> | null
+  }
   drillRule: ExamFormDrillRule
   closeHref: string
   returnTo?: string
@@ -75,33 +88,45 @@ export default function AssessmentForm({
   const typeById = useMemo(() => new Map(examTypes.map((type) => [type.id, type])), [examTypes])
   const editedTypeCode = editedExam ? (typeById.get(editedExam.exam_type_id)?.code ?? '') : ''
   const [examTypeCode, setExamTypeCode] = useState(
-    editedTypeCode || examTypes[0]?.code || 'FULL_TRYOUT'
+    editedTypeCode || examTypes[0]?.code || 'FULL_TRYOUT',
   )
   const initialSubject =
-    subjects.find((subject) => subject.id === drillRule?.subjectId) ?? subjects[0]
+    subjects.find((subject) => subject.id === drillRule?.subjectId) ??
+    subjects.find((subject) => subject.id === editedSection?.subjectId) ??
+    subjects[0]
   const [subjectCode, setSubjectCode] = useState(initialSubject?.code ?? '')
   const subjectByCode = useMemo(
     () => new Map(subjects.map((subject) => [subject.code, subject])),
-    [subjects]
+    [subjects],
   )
   const subjectId = subjectByCode.get(subjectCode)?.id ?? ''
   const nodesForSubject = useMemo(
     () => knowledgeNodes.filter((node) => node.subjectId === subjectId),
-    [knowledgeNodes, subjectId]
+    [knowledgeNodes, subjectId],
   )
   const initialNode =
-    nodesForSubject.find((node) => node.id === drillRule?.knowledgeNodeId) ?? nodesForSubject[0]
+    nodesForSubject.find((node) => node.id === drillRule?.knowledgeNodeId) ??
+    nodesForSubject.find((node) => node.id === editedSection?.config?.knowledge_node_id) ??
+    nodesForSubject.find((node) => node.name === editedSection?.title) ??
+    (editedExam && editedTypeCode === 'DRILL' ? undefined : nodesForSubject[0])
   const [knowledgeNodeId, setKnowledgeNodeId] = useState(initialNode?.id ?? '')
   const selectedNode =
-    nodesForSubject.find((node) => node.id === knowledgeNodeId) ?? nodesForSubject[0]
+    nodesForSubject.find((node) => node.id === knowledgeNodeId) ??
+    (editedExam && editedTypeCode === 'DRILL' && !drillRule ? undefined : nodesForSubject[0])
   const initialQuestionCount =
-    drillRule?.questionCount ?? Math.min(20, selectedNode?.availableQuestionCount || 20)
+    editedSection?.questionCount ??
+    drillRule?.questionCount ??
+    Math.min(20, selectedNode?.availableQuestionCount || 20)
   const [questionCount, setQuestionCount] = useState(Math.max(1, initialQuestionCount))
   const [manualTitle, setManualTitle] = useState(Boolean(editedExam?.title))
   const [title, setTitle] = useState(editedExam?.title ?? '')
+  const [isEditing, setIsEditing] = useState(!editedExam)
   const isDrill = examTypeCode === 'DRILL'
+  const needsManualDrillSelection = Boolean(
+    isDrill && editedExam && editedSection && !drillRule && !initialNode,
+  )
   const poolTooSmall =
-    isDrill && selectedNode ? questionCount > selectedNode.availableQuestionCount : isDrill
+    isDrill && (!selectedNode || questionCount > selectedNode.availableQuestionCount)
 
   function updateAutoTitle(nextSubjectCode: string, nextNodeId: string) {
     if (manualTitle) return
@@ -111,7 +136,11 @@ export default function AssessmentForm({
   }
 
   const form = (
-    <form action={action} data-admin-form className="flex w-full max-w-4xl flex-col gap-6">
+    <form
+      action={action}
+      data-admin-form
+      className="admin-assessment-form flex w-full flex-col gap-6 rounded-lg border border-border bg-card p-5 sm:p-6"
+    >
       <input type="hidden" name="return_to" value={returnTo || closeHref} />
       <input type="hidden" name="program_code" value={program} />
       <input type="hidden" name="track_code" value={track} />
@@ -120,12 +149,13 @@ export default function AssessmentForm({
       <AdminFormSection
         title="Informasi dasar"
         description="Tipe assessment menentukan pola pengerjaan dan tidak dapat diubah setelah dibuat."
+        showDivider={false}
       >
         <AdminField label="Jenis assessment">
           {editedExam ? (
             <>
               <input type="hidden" name="exam_type_code" value={examTypeCode} />
-              <div className="flex min-h-11 items-center rounded-lg border border-border bg-muted px-3 text-sm font-medium text-foreground">
+              <div className="flex h-9 items-center rounded-lg border border-border bg-muted px-3 text-sm font-medium text-foreground max-md:h-11">
                 {adminExamTypeLabel(examTypeCode)}
               </div>
             </>
@@ -193,10 +223,20 @@ export default function AssessmentForm({
         <AdminFormSection
           title="Pengaturan Drill"
           description="Tentukan subtes, submateri, dan jumlah soal yang tersedia untuk latihan ini."
+          showDivider={false}
         >
           <div className="sm:col-span-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
             Drill mengambil soal dari satu submateri. Bagian assessment dibuat otomatis.
           </div>
+          {needsManualDrillSelection ? (
+            <p
+              role="status"
+              className="sm:col-span-2 rounded-lg border border-warning-border bg-warning-muted px-4 py-3 text-sm text-warning"
+            >
+              Submateri dari bagian assessment lama belum dapat dicocokkan. Pilih submateri yang
+              benar sebelum menyimpan agar konfigurasi Drill tidak berubah ke topik yang keliru.
+            </p>
+          ) : null}
 
           <AdminField label="Subtes / mata pelajaran" className="sm:col-span-2">
             <select
@@ -241,6 +281,7 @@ export default function AssessmentForm({
               }}
               required
             >
+              {!selectedNode ? <option value="">Pilih submateri</option> : null}
               {nodesForSubject.map((node) => (
                 <option key={node.id} value={node.id} disabled={node.availableQuestionCount === 0}>
                   {'— '.repeat(Math.max(0, node.depth))}
@@ -265,7 +306,11 @@ export default function AssessmentForm({
             label="Jumlah soal"
             fieldId="exam-question-count"
             error={
-              poolTooSmall ? 'Jumlah soal melebihi soal yang tersedia pada submateri.' : undefined
+              poolTooSmall
+                ? selectedNode
+                  ? 'Jumlah soal melebihi soal yang tersedia pada submateri.'
+                  : 'Pilih submateri untuk melanjutkan.'
+                : undefined
             }
           >
             <input
@@ -284,11 +329,15 @@ export default function AssessmentForm({
       ) : null}
 
       <AdminFormSection
-        title="Aturan pengerjaan"
-        description="Atur durasi dan cara assessment dikerjakan peserta."
+        title="Pengerjaan dan akses peserta"
+        description="Atur waktu, jumlah percobaan, urutan soal, dan cara peserta mengakses assessment."
         columns={3}
+        showDivider={false}
       >
-        <AdminField label="Durasi (detik)" hint="Contoh: 1200 detik sama dengan 20 menit.">
+        <AdminField
+          label="Durasi pengerjaan (detik)"
+          hint="Masukkan detik. Contoh: 1.800 detik = 30 menit."
+        >
           <input
             className={adminInputClass}
             name="duration_seconds"
@@ -299,7 +348,7 @@ export default function AssessmentForm({
           />
         </AdminField>
 
-        <AdminField label="Batas percobaan" hint="Berapa kali peserta boleh mengerjakan.">
+        <AdminField label="Batas percobaan" hint="Jumlah kesempatan untuk setiap peserta.">
           <input
             className={adminInputClass}
             name="attempt_limit"
@@ -310,7 +359,7 @@ export default function AssessmentForm({
           />
         </AdminField>
 
-        <AdminField label="Urutan soal" hint="Acak soal untuk tiap peserta.">
+        <AdminField label="Urutan soal" hint="Acak urutan soal untuk setiap peserta.">
           <select
             className={adminInputClass}
             name="question_order"
@@ -320,43 +369,49 @@ export default function AssessmentForm({
             <option value="fixed">Tetap</option>
           </select>
         </AdminField>
+        <div className="sm:col-span-3 rounded-lg border border-border bg-muted/20 p-4">
+          <div className="mb-3">
+            <h3 className="text-sm font-semibold text-foreground">Akses peserta</h3>
+            <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+              Tentukan model akses dan biaya token untuk assessment ini.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <AdminField label="Model akses" hint="Pilih gratis, freemium, atau premium.">
+              <select
+                className={adminInputClass}
+                name="access_type"
+                defaultValue={editedExam?.access_type || 'FREE'}
+              >
+                <option value="FREE">Gratis</option>
+                <option value="FREEMIUM">Freemium</option>
+                <option value="PREMIUM">Premium</option>
+              </select>
+            </AdminField>
+
+            <AdminField label="Biaya token" hint="Isi 0 jika assessment tidak memakai token.">
+              <input
+                className={adminInputClass}
+                name="token_cost"
+                type="number"
+                min="0"
+                defaultValue={editedExam?.token_cost ?? 0}
+              />
+            </AdminField>
+          </div>
+        </div>
       </AdminFormSection>
 
       <AdminFormSection
-        title="Akses peserta"
-        description="Pilih model akses dan biaya token yang diperlukan."
-      >
-        <AdminField label="Akses" hint="Gratis, Freemium, atau Premium.">
-          <select
-            className={adminInputClass}
-            name="access_type"
-            defaultValue={editedExam?.access_type || 'FREE'}
-          >
-            <option value="FREE">Gratis</option>
-            <option value="FREEMIUM">Freemium</option>
-            <option value="PREMIUM">Premium</option>
-          </select>
-        </AdminField>
-
-        <AdminField label="Biaya token" hint="Isi 0 jika assessment tidak memakai token.">
-          <input
-            className={adminInputClass}
-            name="token_cost"
-            type="number"
-            min="0"
-            defaultValue={editedExam?.token_cost ?? 0}
-          />
-        </AdminField>
-      </AdminFormSection>
-
-      <AdminFormSection
-        title="Status"
-        description="Tentukan apakah assessment masih disiapkan atau sudah tersedia untuk peserta."
-        columns={1}
+        title="Ketersediaan"
+        description="Atur tahap assessment di workspace dan tentukan apakah peserta dapat mengaksesnya."
+        columns={2}
+        showDivider={false}
       >
         <AdminField
-          label="Ketersediaan"
-          hint="Draft belum tersedia bagi peserta. Status lain mengikuti readiness dan aturan akses."
+          label="Status assessment"
+          hint="Draft belum tersedia bagi peserta. Status aktif mengikuti kesiapan dan aturan akses."
+          className="sm:max-w-md"
         >
           <select
             className={adminInputClass}
@@ -369,7 +424,7 @@ export default function AssessmentForm({
               'active',
               'scheduled',
               ...(editedExam?.status === 'published' ? ['published'] : []),
-              ...(editedExam?.status === 'archived' ? ['archived'] : [])
+              ...(editedExam?.status === 'archived' ? ['archived'] : []),
             ].map((status) => (
               <option
                 key={status}
@@ -394,13 +449,143 @@ export default function AssessmentForm({
         value={editedExam?.result_visibility || 'instant'}
       />
 
-      <AdminFormActions cancelHref={closeHref}>
-        <AdminSubmitButton disabled={poolTooSmall || (isDrill && !selectedNode)}>
-          <Save size={16} />
-          {editedExam ? 'Simpan perubahan' : 'Simpan assessment'}
-        </AdminSubmitButton>
-      </AdminFormActions>
+      {editedExam ? (
+        <div className="flex flex-wrap justify-end gap-2 pt-2">
+          <button
+            type="button"
+            className={adminSecondaryButtonClass}
+            onClick={() => {
+              setExamTypeCode(editedTypeCode || examTypes[0]?.code || 'FULL_TRYOUT')
+              setSubjectCode(initialSubject?.code ?? '')
+              setKnowledgeNodeId(initialNode?.id ?? '')
+              setQuestionCount(Math.max(1, initialQuestionCount))
+              setManualTitle(Boolean(editedExam.title))
+              setTitle(editedExam.title)
+              setIsEditing(false)
+            }}
+          >
+            Batal
+          </button>
+          <AdminSubmitButton disabled={poolTooSmall || (isDrill && !selectedNode)}>
+            <Save size={16} />
+            Simpan perubahan
+          </AdminSubmitButton>
+        </div>
+      ) : (
+        <AdminFormActions cancelHref={closeHref}>
+          <AdminSubmitButton disabled={poolTooSmall || (isDrill && !selectedNode)}>
+            <Save size={16} />
+            Simpan assessment
+          </AdminSubmitButton>
+        </AdminFormActions>
+      )}
     </form>
   )
+
+  if (editedExam && !isEditing) {
+    const subject = subjects.find(
+      (item) => item.id === (drillRule?.subjectId ?? editedSection?.subjectId),
+    )
+    const questionCountLabel = editedSection?.questionCount ?? drillRule?.questionCount
+    const accessLabel =
+      {
+        FREE: 'Gratis',
+        FREEMIUM: 'Freemium',
+        PREMIUM: 'Premium',
+      }[editedExam.access_type.toUpperCase()] ?? editedExam.access_type
+
+    return (
+      <div className="flex w-full flex-col gap-4">
+        <section className="rounded-lg border border-border bg-card p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Identitas assessment</p>
+              <h2 className="mt-1 text-lg font-semibold text-foreground">{editedExam.title}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {adminExamTypeLabel(editedTypeCode)}
+              </p>
+            </div>
+            <button
+              type="button"
+              className={adminPrimaryButtonClass}
+              onClick={() => setIsEditing(true)}
+            >
+              <Pencil size={16} />
+              Edit konfigurasi
+            </button>
+          </div>
+        </section>
+
+        {isDrill ? (
+          <section className="rounded-lg border border-border bg-card p-5">
+            <h2 className="text-sm font-semibold text-foreground">Sumber soal Drill</h2>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div>
+                <dt className="text-xs text-muted-foreground">Subtes</dt>
+                <dd className="mt-1 text-sm font-medium text-foreground">
+                  {subject ? `${subject.code} · ${subject.name}` : 'Belum dipilih'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Submateri</dt>
+                <dd className="mt-1 text-sm font-medium text-foreground">
+                  {selectedNode?.name ?? editedSection?.title ?? 'Belum dipilih'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted-foreground">Jumlah soal</dt>
+                <dd className="mt-1 text-sm font-medium text-foreground">
+                  {questionCountLabel ?? 'Belum ditentukan'}
+                </dd>
+              </div>
+            </dl>
+          </section>
+        ) : null}
+
+        <section className="rounded-lg border border-border bg-card p-5">
+          <h2 className="text-sm font-semibold text-foreground">
+            Pengerjaan, akses, dan ketersediaan
+          </h2>
+          <dl className="mt-4 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <dt className="text-xs text-muted-foreground">Durasi</dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">
+                {editedExam.duration_seconds == null
+                  ? 'Tidak dibatasi'
+                  : `${Math.ceil(editedExam.duration_seconds / 60)} menit`}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Batas percobaan</dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">
+                {editedExam.attempt_limit ?? 'Tidak dibatasi'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Urutan soal</dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">
+                {editedExam.question_order === 'random' ? 'Acak' : 'Tetap'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Model akses</dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">{accessLabel}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Biaya token</dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">{editedExam.token_cost}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Status assessment</dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">
+                {adminStatusLabel(editedExam.status)}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+    )
+  }
+
   return form
 }

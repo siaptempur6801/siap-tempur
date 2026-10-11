@@ -109,11 +109,10 @@ Kosong. Seluruh workspace P1, context-preservation task flows dan required gates
 
 ### P2
 
-- Role ADMIN memiliki satu retry pada final gate: batas 5 detik habis ketika Dashboard masih menampilkan skeleton. Perbaiki timeout readiness test dan kurangi latency/duplicate read bila diperlukan.
-- Pemilih scope penugasan tambahan pada monitoring batch; saat ini link per penugasan memberikan scope spesifik.
-- Filter drawer untuk ruang tablet/mobile yang sempit dan optimasi jumlah klik.
-- Advanced filtering dan visual refinement/spacing.
-- Audit aksesibilitas lebih luas dengan kombinasi screen reader.
+- **Selesai (11 Oktober 2026):** Monitoring dan Reports batch kini menyediakan pemilih cakupan Semua Penugasan / assessment tertentu. Query baru mempertahankan organisasi, batch, dan return context; perubahan cakupan memulai daftar dengan filter pencarian/status yang bersih.
+- **Selesai (11 Oktober 2026):** Filter tabel memakai disclosure button ber-ARIA pada lebar mobile/tablet; filter utama dan tindakan Terapkan/Reset mudah ditemukan, Escape menutup panel serta mengembalikan fokus, sedangkan filter lanjutan tetap terkelompok. Pada desktop filter utama tetap tampil langsung dan filter lanjutan tetap opsional.
+- Role ADMIN pernah membutuhkan satu retry pada final gate karena batas readiness 5 detik habis ketika Dashboard masih menampilkan skeleton. Itu temuan gate lama, bukan defect tampilan yang dapat dipastikan masih ada dari source saat ini; perlu direproduksi pada gate terbaru sebelum mengubah perilaku produksi.
+- Audit aksesibilitas screen-reader yang lebih luas masih terbuka. Baseline keyboard/native disclosure sudah diterapkan, tetapi pemeriksaan NVDA/VoiceOver dan kombinasi perangkat bantu belum dilakukan.
 
 ### P3
 

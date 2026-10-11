@@ -1,17 +1,17 @@
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('avatars', 'avatars', true, 1048576, array['image/jpeg']::text[])
-on conflict (id) do update set
-  public = excluded.public,
-  file_size_limit = excluded.file_size_limit,
-  allowed_mime_types = excluded.allowed_mime_types;
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  VALUES ('avatars', 'avatars', TRUE, 1048576, ARRAY['image/jpeg']::text[])
+ON CONFLICT (id)
+  DO UPDATE SET
+    public = excluded.public,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
 
-drop policy if exists avatars_insert_own_folder on storage.objects;
-create policy avatars_insert_own_folder
-on storage.objects
-for insert
-to authenticated
-with check (
-  bucket_id = 'avatars'
-  and (storage.foldername(name))[1] = (select auth.uid())::text
-  and lower(storage.extension(name)) = 'jpg'
-);
+DROP POLICY IF EXISTS avatars_insert_own_folder ON storage.objects;
+
+CREATE POLICY avatars_insert_own_folder ON storage.objects
+  FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'avatars'
+  AND (storage.foldername (name))[1] = (
+    SELECT
+      auth.uid ())::text
+      AND lower(storage.extension (name)) = 'jpg');

@@ -12,7 +12,8 @@ requireEnv('CPNS_SCHEMA_V2_STAGING_SERVICE_ROLE_KEY', STAGING_KEY)
 
 const targetOrigin = new URL(STAGING_URL).origin
 const storagePrefix = `${targetOrigin}/storage/v1/object/public/question-images/`
-const inlineImagePattern = /https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/question-images\/([^\]\s"'<>]+)/gi
+const inlineImagePattern =
+  /https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/question-images\/([^\]\s"'<>]+)/gi
 
 const staging = createClient(STAGING_URL, STAGING_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -113,8 +114,11 @@ async function verifyStoragePaths(paths) {
 
 function assertNoForeignInlineAssetUrls(text, questionCode, location) {
   if (!text) return
-  const urls = [...text.matchAll(/https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/question-images\/[^\]\s"'<>]+/gi)]
-    .map((match) => match[0])
+  const urls = [
+    ...text.matchAll(
+      /https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/question-images\/[^\]\s"'<>]+/gi,
+    ),
+  ].map((match) => match[0])
   const foreign = urls.filter((url) => !url.startsWith(storagePrefix))
   if (foreign.length) {
     throw new Error(`${questionCode} still contains a foreign inline asset URL in ${location}`)
@@ -139,7 +143,10 @@ async function main() {
 
     requiredPaths.push(...stemResult.storagePaths, ...explanationResult.storagePaths)
 
-    if (stemResult.text !== question.stem || explanationResult.text !== (explanation?.content ?? null)) {
+    if (
+      stemResult.text !== question.stem ||
+      explanationResult.text !== (explanation?.content ?? null)
+    ) {
       repairs.push({
         question,
         explanation,
@@ -161,7 +168,10 @@ async function main() {
         .update({ stem: repair.stem })
         .eq('id', repair.question.id)
         .eq('source_type', 'legacy_migration')
-      if (error) throw new Error(`Failed to repair stem for ${repair.question.question_code}: ${error.message}`)
+      if (error)
+        throw new Error(
+          `Failed to repair stem for ${repair.question.question_code}: ${error.message}`,
+        )
       questionUpdates += 1
     }
 
@@ -171,14 +181,19 @@ async function main() {
         .update({ content: repair.explanationContent })
         .eq('id', repair.explanation.id)
         .eq('question_id', repair.question.id)
-      if (error) throw new Error(`Failed to repair explanation for ${repair.question.question_code}: ${error.message}`)
+      if (error)
+        throw new Error(
+          `Failed to repair explanation for ${repair.question.question_code}: ${error.message}`,
+        )
       explanationUpdates += 1
     }
   }
 
   const refreshedQuestions = await loadLegacyQuestions()
   const refreshedExplanations = await loadExplanations(refreshedQuestions.map((row) => row.id))
-  const refreshedExplanationByQuestionId = new Map(refreshedExplanations.map((row) => [row.question_id, row]))
+  const refreshedExplanationByQuestionId = new Map(
+    refreshedExplanations.map((row) => [row.question_id, row]),
+  )
 
   for (const question of refreshedQuestions) {
     assertNoForeignInlineAssetUrls(question.stem, question.question_code, 'stem')

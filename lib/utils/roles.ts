@@ -1,18 +1,5 @@
-export type AppRole =
-    | 'user'
-    | 'article_writer'
-    | 'admin'
-    | 'superadmin'
-    | 'CONTENT_EDITOR'
-    | 'CONTENT_REVIEWER'
-    | 'ADMIN'
-    | 'SUPER_ADMIN'
-    | 'FINANCE'
-    | 'SUPPORT'
-    | 'SCHOOL_ADMIN'
-
 function normalizeRole(role: string | null | undefined) {
-    return role?.trim().toUpperCase() ?? ''
+  return role?.trim().toUpperCase() ?? ''
 }
 
 /**
@@ -21,21 +8,26 @@ function normalizeRole(role: string | null | undefined) {
  * These helpers remain while legacy admin/article routes are migrated.
  */
 export function isAdminRole(role: string | null | undefined): boolean {
-    const normalized = normalizeRole(role)
-    return normalized === 'ADMIN' || normalized === 'SUPERADMIN' || normalized === 'SUPER_ADMIN'
+  const normalized = normalizeRole(role)
+  return normalized === 'ADMIN' || normalized === 'SUPERADMIN' || normalized === 'SUPER_ADMIN'
 }
 
 export function isArticleWriterRole(role: string | null | undefined): boolean {
-    const normalized = normalizeRole(role)
-    return normalized === 'ARTICLE_WRITER' || normalized === 'CONTENT_EDITOR'
+  const normalized = normalizeRole(role)
+  return normalized === 'ARTICLE_WRITER' || normalized === 'CONTENT_EDITOR'
 }
 
 export function canAccessArticleAdmin(role: string | null | undefined): boolean {
-    const normalized = normalizeRole(role)
-    return isAdminRole(role) || normalized === 'CONTENT_EDITOR' || normalized === 'CONTENT_REVIEWER' || normalized === 'ARTICLE_WRITER'
+  const normalized = normalizeRole(role)
+  return (
+    isAdminRole(role) ||
+    normalized === 'CONTENT_EDITOR' ||
+    normalized === 'CONTENT_REVIEWER' ||
+    normalized === 'ARTICLE_WRITER'
+  )
 }
 
 export function canPublishArticle(role: string | null | undefined): boolean {
-    const normalized = normalizeRole(role)
-    return isAdminRole(role) || normalized === 'CONTENT_REVIEWER'
+  const normalized = normalizeRole(role)
+  return isAdminRole(role) || normalized === 'CONTENT_REVIEWER'
 }

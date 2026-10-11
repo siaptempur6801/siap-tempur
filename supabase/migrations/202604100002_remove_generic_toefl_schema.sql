@@ -1,41 +1,44 @@
 -- Remove deprecated generic/TOEFL schema now that the product is CPNS-only.
 -- Safe to rerun.
+DO $cleanup$
+BEGIN
+  IF to_regclass('public.generic_tests') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Public read generic_tests" ON public.generic_tests;
+  END IF;
 
-do $cleanup$
-begin
-  if to_regclass('public.generic_tests') is not null then
-    drop policy if exists "Public read generic_tests" on public.generic_tests;
-  end if;
+  IF to_regclass('public.generic_questions') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Public read generic_questions" ON public.generic_questions;
+  END IF;
 
-  if to_regclass('public.generic_questions') is not null then
-    drop policy if exists "Public read generic_questions" on public.generic_questions;
-  end if;
+  IF to_regclass('public.generic_options') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Public read generic_options" ON public.generic_options;
+  END IF;
 
-  if to_regclass('public.generic_options') is not null then
-    drop policy if exists "Public read generic_options" on public.generic_options;
-  end if;
+  IF to_regclass('public.generic_sessions') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Users can view own generic_sessions" ON public.generic_sessions;
+    DROP POLICY IF EXISTS "Users can insert own generic_sessions" ON public.generic_sessions;
+    DROP POLICY IF EXISTS "Users can update own generic_sessions" ON public.generic_sessions;
+  END IF;
 
-  if to_regclass('public.generic_sessions') is not null then
-    drop policy if exists "Users can view own generic_sessions" on public.generic_sessions;
-    drop policy if exists "Users can insert own generic_sessions" on public.generic_sessions;
-    drop policy if exists "Users can update own generic_sessions" on public.generic_sessions;
-  end if;
-
-  if to_regclass('public.generic_answers') is not null then
-    drop policy if exists "Users can view own generic_answers" on public.generic_answers;
-    drop policy if exists "Users can insert own generic_answers" on public.generic_answers;
-    drop policy if exists "Users can update own generic_answers" on public.generic_answers;
-  end if;
-end
+  IF to_regclass('public.generic_answers') IS NOT NULL THEN
+    DROP POLICY IF EXISTS "Users can view own generic_answers" ON public.generic_answers;
+    DROP POLICY IF EXISTS "Users can insert own generic_answers" ON public.generic_answers;
+    DROP POLICY IF EXISTS "Users can update own generic_answers" ON public.generic_answers;
+  END IF;
+END
 $cleanup$;
 
-drop table if exists public.generic_answers;
-drop table if exists public.generic_sessions;
-drop table if exists public.generic_options;
-drop table if exists public.generic_questions;
-drop table if exists public.generic_tests;
+DROP TABLE IF EXISTS public.generic_answers;
 
-drop function if exists public.increment_toefl_quota(uuid, int);
+DROP TABLE IF EXISTS public.generic_sessions;
 
-alter table if exists public.profiles
-  drop column if exists tryout_quota_toefl;
+DROP TABLE IF EXISTS public.generic_options;
+
+DROP TABLE IF EXISTS public.generic_questions;
+
+DROP TABLE IF EXISTS public.generic_tests;
+
+DROP FUNCTION IF EXISTS public.increment_toefl_quota (uuid, int);
+
+ALTER TABLE IF EXISTS public.profiles
+  DROP COLUMN IF EXISTS tryout_quota_toefl;

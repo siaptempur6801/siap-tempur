@@ -1,87 +1,84 @@
 -- Complete the Schema V2 event certificate model used by the application.
+ALTER TABLE public.certificates
+  ADD COLUMN IF NOT EXISTS certificate_name text,
+  ADD COLUMN IF NOT EXISTS certificate_kind text,
+  ADD COLUMN IF NOT EXISTS rank integer,
+  ADD COLUMN IF NOT EXISTS score numeric,
+  ADD COLUMN IF NOT EXISTS name_locked_at timestamptz,
+  ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
 
-alter table public.certificates
-  add column if not exists certificate_name text,
-  add column if not exists certificate_kind text,
-  add column if not exists rank integer,
-  add column if not exists score numeric,
-  add column if not exists name_locked_at timestamptz,
-  add column if not exists updated_at timestamptz not null default now();
-
-update public.certificates c
-set
-  certificate_name = coalesce(nullif(trim(p.full_name), ''), 'Nama Peserta'),
+UPDATE
+  public.certificates c
+SET
+  certificate_name = coalesce(nullif (trim(p.full_name), ''), 'Nama Peserta'),
   certificate_kind = 'participant',
   name_locked_at = coalesce(c.name_locked_at, c.issued_at)
-from public.profiles p
-where p.id = c.user_id
-  and (c.certificate_name is null or c.certificate_kind is null);
+FROM
+  public.profiles p
+WHERE
+  p.id = c.user_id
+  AND (c.certificate_name IS NULL
+    OR c.certificate_kind IS NULL);
 
-update public.certificates
-set
+UPDATE
+  public.certificates
+SET
   certificate_name = coalesce(certificate_name, 'Nama Peserta'),
   certificate_kind = coalesce(certificate_kind, 'participant'),
   name_locked_at = coalesce(name_locked_at, issued_at);
 
-alter table public.certificates
-  alter column certificate_name set not null,
-  alter column certificate_kind set not null;
+ALTER TABLE public.certificates
+  ALTER COLUMN certificate_name SET NOT NULL,
+  ALTER COLUMN certificate_kind SET NOT NULL;
 
-alter table public.certificates
-  drop constraint if exists certificates_kind_check,
-  add constraint certificates_kind_check check (
-    certificate_kind in ('winner_1', 'winner_2', 'winner_3', 'participant')
-  ),
-  drop constraint if exists certificates_rank_check,
-  add constraint certificates_rank_check check (
-    (certificate_kind = 'winner_1' and rank = 1)
-    or (certificate_kind = 'winner_2' and rank = 2)
-    or (certificate_kind = 'winner_3' and rank = 3)
-    or (certificate_kind = 'participant' and (rank is null or rank > 3))
-  ),
-  drop constraint if exists certificates_name_check,
-  add constraint certificates_name_check check (
-    char_length(trim(certificate_name)) between 3 and 100
-  );
+ALTER TABLE public.certificates
+  DROP CONSTRAINT IF EXISTS certificates_kind_check,
+  ADD CONSTRAINT certificates_kind_check CHECK (certificate_kind IN ('winner_1', 'winner_2', 'winner_3', 'participant')),
+  DROP CONSTRAINT IF EXISTS certificates_rank_check,
+  ADD CONSTRAINT certificates_rank_check CHECK ((certificate_kind = 'winner_1' AND rank = 1) OR (certificate_kind = 'winner_2' AND rank = 2) OR (certificate_kind = 'winner_3' AND rank = 3) OR (certificate_kind = 'participant' AND (rank IS NULL OR rank > 3))),
+  DROP CONSTRAINT IF EXISTS certificates_name_check,
+  ADD CONSTRAINT certificates_name_check CHECK (char_length(trim(certificate_name)) BETWEEN 3 AND 100);
 
-create unique index if not exists certificates_event_user_uq
-  on public.certificates(event_id, user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS certificates_event_user_uq ON public.certificates (event_id, user_id);
 
-insert into public.certificate_templates (name, template_url, config)
-select
+INSERT INTO public.certificate_templates (name, template_url, config)
+SELECT
   'Sertifikat Event Bawaan',
   'builtin:event-certificate-v1',
   '{"renderer":"event-certificate-v1"}'::jsonb
-where not exists (
-  select 1
-  from public.certificate_templates
-  where template_url = 'builtin:event-certificate-v1'
-);
+WHERE
+  NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.certificate_templates
+    WHERE
+      template_url = 'builtin:event-certificate-v1');
 
-insert into storage.buckets (id, name, public)
-values ('event-certificates', 'event-certificates', false)
-on conflict (id) do update set public = false;
+INSERT INTO storage.buckets (id, name, public)
+  VALUES ('event-certificates', 'event-certificates', FALSE)
+ON CONFLICT (id)
+  DO UPDATE SET
+    public = FALSE;
 
-drop policy if exists "Users can read own event certificate files" on storage.objects;
-create policy "Users can read own event certificate files"
-on storage.objects
-for select
-to authenticated
-using (
-  bucket_id = 'event-certificates'
-  and (storage.foldername(name))[2] = (select auth.uid())::text
-);
+DROP POLICY IF EXISTS "Users can read own event certificate files" ON storage.objects;
 
-drop policy if exists "Admins can manage event certificate files" on storage.objects;
-create policy "Admins can manage event certificate files"
-on storage.objects
-for all
-to authenticated
-using (
-  bucket_id = 'event-certificates'
-  and (select app_private.has_permission('admin.access'))
-)
-with check (
-  bucket_id = 'event-certificates'
-  and (select app_private.has_permission('admin.access'))
-);
+CREATE POLICY "Users can read own event certificate files" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (bucket_id = 'event-certificates'
+    AND (storage.foldername (name))[2] = (
+      SELECT
+        auth.uid ())::text);
+
+DROP POLICY IF EXISTS "Admins can manage event certificate files" ON storage.objects;
+
+CREATE POLICY "Admins can manage event certificate files" ON storage.objects
+  FOR ALL TO authenticated
+  USING (bucket_id = 'event-certificates'
+    AND (
+      SELECT
+        app_private.has_permission ('admin.access')))
+  WITH CHECK (bucket_id = 'event-certificates'
+  AND (
+    SELECT
+      app_private.has_permission ('admin.access')));

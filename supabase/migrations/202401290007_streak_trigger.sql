@@ -1,40 +1,64 @@
 -- Function to update streak
-create or replace function update_user_streak()
-returns trigger as $$
-declare
+CREATE OR REPLACE FUNCTION update_user_streak ()
+  RETURNS TRIGGER
+  AS $$
+DECLARE
   current_streak int;
   last_date date;
-  today date := current_date;
-begin
+  today date := CURRENT_DATE;
+BEGIN
   -- Only run if status changed to completed
-  if new.status = 'completed' and old.status != 'completed' then
-    
-    select streak_count, last_activity_date 
-    into current_streak, last_date
-    from profiles
-    where id = new.user_id;
-    
-    if last_date is null then
-       -- First time
-       update profiles set streak_count = 1, last_activity_date = today where id = new.user_id;
-    elsif last_date = today - 1 then
-       -- Consecutive day
-       update profiles set streak_count = current_streak + 1, last_activity_date = today where id = new.user_id;
-    elsif last_date < today - 1 then
-       -- Streak broken (unless freeze used - logic to be added later)
-       update profiles set streak_count = 1, last_activity_date = today where id = new.user_id;
-    elsif last_date = today then
-       -- Already done today, just ensure date matches (idempotent)
-       -- Do nothing to streak
-    end if;
-    
-  end if;
-  return new;
-end;
-$$ language plpgsql security definer;
+  IF NEW.status = 'completed' AND OLD.status != 'completed' THEN
+    SELECT
+      streak_count,
+      last_activity_date
+    INTO
+      current_streak,
+      last_date
+    FROM
+      profiles
+    WHERE
+      id = NEW.user_id;
+    IF last_date IS NULL THEN
+      -- First time
+      UPDATE
+        profiles
+      SET
+        streak_count = 1,
+        last_activity_date = today
+      WHERE
+        id = NEW.user_id;
+    ELSIF last_date = today - 1 THEN
+      -- Consecutive day
+      UPDATE
+        profiles
+      SET
+        streak_count = current_streak + 1,
+        last_activity_date = today
+      WHERE
+        id = NEW.user_id;
+    ELSIF last_date < today - 1 THEN
+      -- Streak broken (unless freeze used - logic to be added later)
+      UPDATE
+        profiles
+      SET
+        streak_count = 1,
+        last_activity_date = today
+      WHERE
+        id = NEW.user_id;
+    ELSIF last_date = today THEN
+      -- Already done today, just ensure date matches (idempotent)
+      -- Do nothing to streak
+    END IF;
+  END IF;
+  RETURN new;
+END;
+$$
+LANGUAGE plpgsql
+SECURITY DEFINER;
 
 -- Trigger
-create trigger on_session_complete
-  after update on test_sessions
-  for each row
-  execute function update_user_streak();
+CREATE TRIGGER on_session_complete
+  AFTER UPDATE ON test_sessions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_user_streak ();

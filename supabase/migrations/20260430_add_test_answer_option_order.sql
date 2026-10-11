@@ -1,2 +1,2 @@
-alter table public.test_answers
-  add column if not exists option_order uuid[] null;
+ALTER TABLE public.test_answers
+  ADD COLUMN IF NOT EXISTS option_order uuid[] NULL;

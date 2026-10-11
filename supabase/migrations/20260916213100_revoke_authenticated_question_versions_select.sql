@@ -24,6 +24,6 @@
 --   from information_schema.role_table_grants
 --   where table_schema = 'public' and table_name = 'question_versions'
 --     and grantee in ('anon', 'authenticated');
+REVOKE SELECT ON TABLE public.question_versions FROM public, anon, authenticated;
 
-revoke select on table public.question_versions from public, anon, authenticated;
-drop policy if exists question_versions_authoring_select on public.question_versions;
+DROP POLICY IF EXISTS question_versions_authoring_select ON public.question_versions;

@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { verifySignoutConfirmation } from '../pages/SignoutConfirmation'
 import { verifyProfileSettingsDialogs } from '../pages/ProfileSettings'
+import { verifyExamDialogs } from '../pages/ExamDialogs'
 
 const SESSION_URL = /\/cpns\/dashboard\/tryout\/[0-9a-f-]{36}(?:\?.*)?$/i
 const RESULT_URL = /\/cpns\/dashboard\/tryout\/[0-9a-f-]{36}\/result(?:\?.*)?$/i
@@ -61,17 +63,58 @@ test.describe('CPNS SKD release-candidate', () => {
   // failed try and invalidate exactly-once token assertions.
   test.describe.configure({ retries: 0, mode: 'serial' })
 
+  test('learner signout supports keyboard cancellation and failed pending requests', async ({
+    page,
+  }, testInfo) => {
+    await verifySignoutConfirmation(page, '/cpns/dashboard', 'cpns', testInfo)
+  })
+
   test('dashboard uses canonical track/wallet state', async ({ page }) => {
     await page.goto('/cpns/dashboard', NAVIGATION_OPTIONS)
     await expect(page).toHaveURL(/\/cpns\/dashboard(?:\?.*)?$/)
-    await expect(page.getByRole('heading', { name: 'Apa yang sebaiknya kamu kerjakan hari ini?', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', {
+        name: 'Apa yang sebaiknya kamu kerjakan hari ini?',
+        exact: true,
+      }),
+    ).toBeVisible()
     await expectDashboardTokenBalance(page, 3)
   })
 
-  test('token confirmation stays reachable on short mobile screens and cancels without charging', async ({ page }, testInfo) => {
+  test('learner work surfaces remain visibly rendered with reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.setViewportSize({ width: 390, height: 844 })
+    for (const path of [
+      '/cpns/dashboard/tryout',
+      '/cpns/dashboard/mini-tryout',
+      '/cpns/dashboard/drilling-materi',
+      '/cpns/dashboard/profile?tab=settings',
+    ]) {
+      await page.goto(path, NAVIGATION_OPTIONS)
+      const heading = page.getByRole('heading', { level: 1 }).first()
+      await expect(heading).toBeVisible()
+      // Visibility alone accepts opacity:0; inspect every ancestor of the real heading.
+      expect(
+        await heading.evaluate((element) => {
+          for (let node: Element | null = element; node; node = node.parentElement) {
+            const style = getComputedStyle(node)
+            if (style.opacity === '0' || style.visibility === 'hidden' || style.display === 'none')
+              return false
+          }
+          return true
+        }),
+      ).toBe(true)
+    }
+  })
+
+  test('token confirmation stays reachable on short mobile screens and cancels without charging', async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width: 390, height: 568 })
     await page.goto('/cpns/dashboard/tryout', NAVIGATION_OPTIONS)
-    await page.evaluate(() => { document.body.style.overflow = 'clip' })
+    await page.evaluate(() => {
+      document.body.style.overflow = 'clip'
+    })
     const start = page.getByRole('button', { name: 'Mulai Full Tryout', exact: true })
     const dialog = await openTokenDialog(page, start)
     await expect(dialog).toHaveAccessibleName('Konfirmasi Token')
@@ -80,12 +123,16 @@ test.describe('CPNS SKD release-candidate', () => {
     expect(box).not.toBeNull()
     expect(box!.y).toBeGreaterThanOrEqual(16)
     expect(box!.y + box!.height).toBeLessThanOrEqual(552)
-    await expect(dialog.getByRole('heading', { name: 'Konfirmasi Token', exact: true })).toBeInViewport()
+    await expect(
+      dialog.getByRole('heading', { name: 'Konfirmasi Token', exact: true }),
+    ).toBeInViewport()
     const confirm = dialog.getByRole('button', { name: /Gunakan 1 Token/i })
     await expect(confirm).toBeInViewport()
     expect((await confirm.boundingBox())!.height).toBeGreaterThanOrEqual(44)
     await page.keyboard.press('Shift+Tab')
-    await expect(dialog.getByRole('region', { name: 'Ringkasan sesi dan token', exact: true })).toBeFocused()
+    await expect(
+      dialog.getByRole('region', { name: 'Ringkasan sesi dan token', exact: true }),
+    ).toBeFocused()
     await page.keyboard.press('Shift+Tab')
     await expect(dialog.getByRole('button', { name: 'Tutup dialog', exact: true })).toBeFocused()
     await page.keyboard.press('Shift+Tab')
@@ -137,16 +184,22 @@ test.describe('CPNS SKD release-candidate', () => {
     await expectListingTokenBalance(page, 3)
   })
 
-  test('profile dialogs explain validation and clear cancelled destructive confirmation', async ({ page }, testInfo) => {
+  test('profile dialogs explain validation and clear cancelled destructive confirmation', async ({
+    page,
+  }, testInfo) => {
     await verifyProfileSettingsDialogs(page, '/cpns/dashboard/profile?tab=settings', testInfo)
   })
 
-  test('full lifecycle, mini tryout, and drill preserve state and charge exactly once', async ({ page }) => {
+  test('full lifecycle, mini tryout, and drill preserve state and charge exactly once', async ({
+    page,
+  }, testInfo) => {
     test.setTimeout(180_000)
 
     // FULL TRYOUT: 3 -> 2 tokens.
     await page.goto('/cpns/dashboard/tryout', NAVIGATION_OPTIONS)
-    await expect(page.getByRole('heading', { name: 'Uji kesiapanmu dalam satu sesi penuh.', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Uji kesiapanmu dalam satu sesi penuh.', exact: true }),
+    ).toBeVisible()
     await expectListingTokenBalance(page, 3)
 
     const fullStartButton = page.getByRole('button', { name: 'Mulai Full Tryout', exact: true })
@@ -158,18 +211,24 @@ test.describe('CPNS SKD release-candidate', () => {
     const fullSessionUrl = page.url()
     await expect(page.getByText('Soal 1', { exact: true })).toBeVisible()
     await expect(page.getByText('dari 110', { exact: true })).toBeVisible()
+    await verifyExamDialogs(page, testInfo)
 
     // Answer question 1 and wait for the Next.js server action response.
     // Locator berbasis data-testid, bukan teks tombol: filter teks /^A/ cocok
     // dengan tombol apa pun yang diawali "A" dan rapuh terhadap perubahan copy.
     const firstOption = page.getByTestId('answer-option-0').first()
     await expect(firstOption).toBeVisible()
-    const answerSaved = page.waitForResponse((response) => {
-      const request = response.request()
-      return request.method() === 'POST'
-        && Boolean(request.headers()['next-action'])
-        && response.url().includes('/cpns/dashboard/tryout/')
-    }, { timeout: 20_000 })
+    const answerSaved = page.waitForResponse(
+      (response) => {
+        const request = response.request()
+        return (
+          request.method() === 'POST' &&
+          Boolean(request.headers()['next-action']) &&
+          response.url().includes('/cpns/dashboard/tryout/')
+        )
+      },
+      { timeout: 20_000 },
+    )
     await firstOption.click()
     const answerResponse = await answerSaved
     expect(answerResponse.ok()).toBeTruthy()
@@ -194,8 +253,10 @@ test.describe('CPNS SKD release-candidate', () => {
       await page.getByTestId('answer-option-2').first().click()
       await expect(page.getByTestId('answer-option-2').first()).toHaveClass(/border-blue-600/)
     } finally {
-      const onlineSave = page.waitForResponse(response =>
-        response.request().headers()['next-action'] === saveActionId, { timeout: 20_000 })
+      const onlineSave = page.waitForResponse(
+        (response) => response.request().headers()['next-action'] === saveActionId,
+        { timeout: 20_000 },
+      )
       await page.context().setOffline(false)
       expect((await onlineSave).ok()).toBeTruthy()
     }
@@ -221,17 +282,26 @@ test.describe('CPNS SKD release-candidate', () => {
       await expect(page.getByText('Gagal menyimpan jawaban', { exact: true }).first()).toBeVisible()
       await page.getByRole('button', { name: 'Buka soal 110', exact: true }).click()
       await page.getByRole('button', { name: 'Kumpulkan jawaban', exact: true }).click()
-      await page.getByRole('heading', { name: 'Kumpulkan jawaban?', exact: true })
-        .locator('..').getByRole('button', { name: 'Kumpulkan jawaban', exact: true }).click()
-      await expect(page.getByText('Jawaban belum berhasil disimpan. Coba lagi sebelum menyelesaikan sesi.', { exact: true })).toBeVisible()
+      await page
+        .getByRole('heading', { name: 'Kumpulkan jawaban?', exact: true })
+        .locator('..')
+        .getByRole('button', { name: 'Kumpulkan jawaban', exact: true })
+        .click()
+      await expect(
+        page.getByText('Jawaban belum berhasil disimpan. Coba lagi sebelum menyelesaikan sesi.', {
+          exact: true,
+        }),
+      ).toBeVisible()
       await expect(page).toHaveURL(fullSessionUrl)
       expect(blockedSaves).toBe(2)
       expect(completionActions).toBe(0)
     } finally {
       await page.unroute('**/cpns/dashboard/tryout/**', failAnswerSave)
     }
-    const recoveredSave = page.waitForResponse(response =>
-      response.request().headers()['next-action'] === saveActionId, { timeout: 20_000 })
+    const recoveredSave = page.waitForResponse(
+      (response) => response.request().headers()['next-action'] === saveActionId,
+      { timeout: 20_000 },
+    )
     await page.evaluate(() => window.dispatchEvent(new Event('online')))
     expect((await recoveredSave).ok()).toBeTruthy()
     await page.reload(NAVIGATION_OPTIONS)
@@ -263,16 +333,28 @@ test.describe('CPNS SKD release-candidate', () => {
 
     const finishPrompt = page.getByRole('heading', { name: 'Kumpulkan jawaban?', exact: true })
     await expect(finishPrompt).toBeVisible()
-    await finishPrompt.locator('..').getByRole('button', { name: 'Kumpulkan jawaban', exact: true }).click()
+    await finishPrompt
+      .locator('..')
+      .getByRole('button', { name: 'Kumpulkan jawaban', exact: true })
+      .click()
 
     await page.waitForURL(RESULT_URL, { ...NAVIGATION_OPTIONS, timeout: 60_000 })
-    await expect(page.getByRole('heading', { name: /Hasilnya sudah jelas|Sesi selesai/i })).toBeVisible()
-    await expect(page.getByRole('heading', { name: 'Pahami jawabanmu satu per satu.', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: /Hasilnya sudah jelas|Sesi selesai/i }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('heading', { name: 'Pahami jawabanmu satu per satu.', exact: true }),
+    ).toBeVisible()
     await expect(page.getByText('Jawaban kamu', { exact: true }).first()).toBeVisible()
 
     // MINI TRYOUT TWK: 2 -> 1 token, start a real session, then exit/resume-save.
     await page.goto('/cpns/dashboard/mini-tryout', NAVIGATION_OPTIONS)
-    await expect(page.getByRole('heading', { name: 'Uji satu bagian sebelum mencoba sesi penuh.', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', {
+        name: 'Uji satu bagian sebelum mencoba sesi penuh.',
+        exact: true,
+      }),
+    ).toBeVisible()
     await expectListingTokenBalance(page, 2)
     const miniStartButton = page.getByRole('button', { name: 'Mulai TWK', exact: true })
     const miniDialog = await openTokenDialog(page, miniStartButton)
@@ -290,7 +372,12 @@ test.describe('CPNS SKD release-candidate', () => {
 
     // LATIHAN FOKUS: choose the first material with >=30 published questions; 1 -> 0.
     await page.goto('/cpns/dashboard/drilling-materi', NAVIGATION_OPTIONS)
-    await expect(page.getByRole('heading', { name: 'Perkuat materi yang paling perlu kamu kuasai.', exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('heading', {
+        name: 'Perkuat materi yang paling perlu kamu kuasai.',
+        exact: true,
+      }),
+    ).toBeVisible()
     await waitForInteractivePreview(page)
 
     const drillButtons = page.getByRole('button', { name: 'Mulai Latihan Fokus', exact: true })
@@ -303,7 +390,10 @@ test.describe('CPNS SKD release-candidate', () => {
         break
       }
     }
-    expect(drillStartButton, 'Expected at least one Latihan Fokus material with >=30 published questions').not.toBeNull()
+    expect(
+      drillStartButton,
+      'Expected at least one Latihan Fokus material with >=30 published questions',
+    ).not.toBeNull()
 
     const drillDialog = await openTokenDialog(page, drillStartButton!)
     await expect(drillDialog.getByText(/^Mulai Latihan Fokus /).first()).toBeVisible()

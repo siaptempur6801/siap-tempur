@@ -1,7 +1,7 @@
 import { signout } from '@/app/auth/actions'
 import UnifiedAdminShell from '@/components/admin/UnifiedAdminShell'
-import { adminLandingPath,hasAdminSurface } from '@/lib/admin-nav'
-import { createV2Client,getAuthUser } from '@/lib/utils/supabase/server'
+import { adminLandingPath, hasAdminSurface } from '@/lib/admin-nav'
+import { createV2Client, getAuthUser } from '@/lib/utils/supabase/server'
 import { authorizationService } from '@/src/services/authorization.service'
 import { getActivePassScopes } from '@/src/services/tempur-pass.service'
 import { headers } from 'next/headers'
@@ -47,47 +47,43 @@ export const revalidate = 0
  */
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-    const supabase = await createV2Client()
-    const pathname = (await headers()).get('x-pathname') || '/admin'
-    const { user } = await getAuthUser()
+  const supabase = await createV2Client()
+  const pathname = (await headers()).get('x-pathname') || '/admin'
+  const { user } = await getAuthUser()
 
-    if (!user) {
-        redirect(`/login?returnTo=${encodeURIComponent(pathname)}`)
-    }
+  if (!user) {
+    redirect(`/login?returnTo=${encodeURIComponent(pathname)}`)
+  }
 
-    const authorization = await authorizationService.getCurrentAuthorization()
-    if (!authorization) redirect('/login?returnTo=%2Fadmin')
+  const authorization = await authorizationService.getCurrentAuthorization()
+  if (!authorization) redirect('/login?returnTo=%2Fadmin')
 
-    const permissions = authorization.permissions
-    const landingPath = adminLandingPath(permissions)
+  const permissions = authorization.permissions
+  const landingPath = adminLandingPath(permissions)
 
-    // Tidak punya permukaan admin sama sekali -> beri tahu, jangan diam-diam
-    // dilempar. `?admin=no-access` dibaca dashboard peserta untuk menampilkan
-    // penjelasan; tanpa itu pun pengguna tetap mendarat di tempat yang masuk akal.
-    if (!landingPath || !hasAdminSurface(permissions)) {
-        redirect('/cpns/dashboard?admin=no-access')
-    }
+  // Tidak punya permukaan admin sama sekali -> beri tahu, jangan diam-diam
+  // dilempar. `?admin=no-access` dibaca dashboard peserta untuk menampilkan
+  // penjelasan; tanpa itu pun pengguna tetap mendarat di tempat yang masuk akal.
+  if (!landingPath || !hasAdminSurface(permissions)) {
+    redirect('/cpns/dashboard?admin=no-access')
+  }
 
-    const [{ data: profile }, hasTempurPass] = await Promise.all([
-        supabase
-            .from('profiles')
-            .select('avatar_url, full_name')
-            .eq('id', user.id)
-            .maybeSingle(),
-        getActivePassScopes(user.id).then((scopes) => scopes.length > 0),
-    ])
+  const [{ data: profile }, hasTempurPass] = await Promise.all([
+    supabase.from('profiles').select('avatar_url, full_name').eq('id', user.id).maybeSingle(),
+    getActivePassScopes(user.id).then((scopes) => scopes.length > 0),
+  ])
 
-    return (
-        <UnifiedAdminShell
-            user={user}
-            profile={profile}
-            roles={authorization.roles}
-            permissions={permissions}
-            hasActiveTempurPass={hasTempurPass}
-            landingPath={landingPath}
-            signoutAction={signout}
-        >
-            {children}
-        </UnifiedAdminShell>
-    )
+  return (
+    <UnifiedAdminShell
+      user={user}
+      profile={profile}
+      roles={authorization.roles}
+      permissions={permissions}
+      hasActiveTempurPass={hasTempurPass}
+      landingPath={landingPath}
+      signoutAction={signout}
+    >
+      {children}
+    </UnifiedAdminShell>
+  )
 }

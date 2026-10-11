@@ -13,9 +13,9 @@ export const SUPABASE_IN_FILTER_BATCH_SIZE = 100
 
 /** Pecah array menjadi potongan berukuran `size` (default 100). */
 export function chunkValues<T>(values: T[], size = SUPABASE_IN_FILTER_BATCH_SIZE): T[][] {
-    const chunks: T[][] = []
-    for (let index = 0; index < values.length; index += size) {
-        chunks.push(values.slice(index, index + size))
-    }
-    return chunks
+  const chunks: T[][] = []
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size))
+  }
+  return chunks
 }

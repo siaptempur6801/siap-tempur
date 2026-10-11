@@ -5,8 +5,8 @@ import { formatLocalDateTimeInput } from '@/lib/admin-format'
 import { adminEventStatusLabel } from '@/lib/admin-event-format'
 import { useState } from 'react'
 import AdminSubmitButton from './AdminSubmitButton'
-import { AdminField,adminInputClass,adminSecondaryButtonClass } from './AdminUi'
-import AssessmentSelector,{ type AssessmentOption } from './AssessmentSelector'
+import { AdminField, adminInputClass, adminSecondaryButtonClass } from './AdminUi'
+import AssessmentSelector, { type AssessmentOption } from './AssessmentSelector'
 import { AdminFormActions } from './forms/AdminFormActions'
 import { AdminFormSection } from './forms/AdminFormSection'
 
@@ -33,13 +33,15 @@ const EVENT_STATUS_OPTIONS: { value: string; label: string; aliases: string[] }[
 
 function eventStatusOptions(currentStatus?: string) {
   const normalized = currentStatus?.toLowerCase()
-  const currentOption = EVENT_STATUS_OPTIONS.find((option) => option.aliases.includes(normalized || ''))
-  const options = EVENT_STATUS_OPTIONS
-    .filter((option) => option.value !== 'archived' || currentStatus?.toLowerCase() === 'archived')
-    .map((option) => ({
-      value: currentOption?.value === option.value && currentStatus ? currentStatus : option.value,
-      label: option.label,
-    }))
+  const currentOption = EVENT_STATUS_OPTIONS.find((option) =>
+    option.aliases.includes(normalized || ''),
+  )
+  const options = EVENT_STATUS_OPTIONS.filter(
+    (option) => option.value !== 'archived' || currentStatus?.toLowerCase() === 'archived',
+  ).map((option) => ({
+    value: currentOption?.value === option.value && currentStatus ? currentStatus : option.value,
+    label: option.label,
+  }))
 
   if (currentStatus && !currentOption) {
     options.push({ value: currentStatus, label: adminEventStatusLabel(currentStatus) })
@@ -58,7 +60,7 @@ export default function EventWorkflowForm({
   returnTo,
   total,
   page,
-  showInformationHeading = true
+  showInformationHeading = true,
 }: {
   event?: EventFormValue
   assessmentSummary?: string
@@ -80,7 +82,7 @@ export default function EventWorkflowForm({
     starts_at: formatLocalDateTimeInput(event?.starts_at),
     ends_at: formatLocalDateTimeInput(event?.ends_at),
     capacity: '100',
-    status: event?.status || 'draft'
+    status: event?.status || 'draft',
   })
   const [activeStep, setActiveStep] = useState(0)
   const [stepError, setStepError] = useState('')
@@ -105,7 +107,11 @@ export default function EventWorkflowForm({
     if (step === 1) {
       if (!event && !assessment?.eligible) return 'Pilih assessment yang siap digunakan.'
       if (!event && Number(values.capacity) < 1) return 'Kapasitas harus lebih dari 0.'
-      if (values.registration_start && values.registration_end && values.registration_start >= values.registration_end) {
+      if (
+        values.registration_start &&
+        values.registration_end &&
+        values.registration_start >= values.registration_end
+      ) {
         return 'Waktu selesai registrasi harus setelah waktu mulai.'
       }
     }
@@ -156,7 +162,10 @@ export default function EventWorkflowForm({
   return (
     <div className="mx-auto w-full max-w-[960px]">
       {!event && (
-        <nav aria-label="Tahapan pembuatan event" className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <nav
+          aria-label="Tahapan pembuatan event"
+          className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4"
+        >
           {steps.map((step, index) => {
             const isCurrent = activeStep === index
             const isComplete = activeStep > index
@@ -168,12 +177,16 @@ export default function EventWorkflowForm({
                 onClick={() => goToStep(index)}
                 className={`flex min-h-14 items-center gap-2 rounded-md border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${isCurrent ? 'border-primary bg-primary/5 text-foreground' : 'border-border bg-card text-muted-foreground hover:bg-muted'}`}
               >
-                <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${isCurrent || isComplete ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                <span
+                  className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${isCurrent || isComplete ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+                >
                   {index + 1}
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold">{step.title}</span>
-                  <span className="hidden text-xs text-muted-foreground md:block">{step.description}</span>
+                  <span className="hidden text-xs text-muted-foreground md:block">
+                    {step.description}
+                  </span>
                 </span>
               </button>
             )
@@ -189,10 +202,24 @@ export default function EventWorkflowForm({
         {event?.id && <input type="hidden" name="id" value={event.id} />}
 
         <div hidden={!event && activeStep !== 0}>
-          <AdminFormSection title="Informasi event" description="Tentukan nama dan identitas yang akan dikenali peserta." showHeading={showInformationHeading}>
+          <AdminFormSection
+            title="Informasi event"
+            description="Tentukan nama dan identitas yang akan dikenali peserta."
+            showHeading={showInformationHeading}
+          >
             {input('title', 'Nama event', 'text', true, 'Nama yang akan dilihat peserta.')}
-            {input('code', 'Kode event', 'text', true, 'Gunakan kode singkat agar admin mudah menemukan event.')}
-            <AdminField label="Deskripsi event" fieldId="event-description" className="min-w-0 sm:col-span-2">
+            {input(
+              'code',
+              'Kode event',
+              'text',
+              true,
+              'Gunakan kode singkat agar admin mudah menemukan event.',
+            )}
+            <AdminField
+              label="Deskripsi event"
+              fieldId="event-description"
+              className="min-w-0 sm:col-span-2"
+            >
               <textarea
                 id="event-description"
                 className={`${adminInputClass} min-h-24 py-2`}
@@ -201,7 +228,12 @@ export default function EventWorkflowForm({
                 onChange={() => setStepError('')}
               />
             </AdminField>
-            <AdminField label="URL gambar event" fieldId="event-flyer" hint="Opsional. Tautan gambar harus dapat diakses." className="min-w-0">
+            <AdminField
+              label="URL gambar event"
+              fieldId="event-flyer"
+              hint="Opsional. Tautan gambar harus dapat diakses."
+              className="min-w-0"
+            >
               <input
                 id="event-flyer"
                 className={adminInputClass}
@@ -211,7 +243,11 @@ export default function EventWorkflowForm({
                 onChange={() => setStepError('')}
               />
             </AdminField>
-            <AdminField label="Status event" fieldId="event-status" hint="Status mengatur tampilan event; jadwal menentukan waktunya.">
+            <AdminField
+              label="Status event"
+              fieldId="event-status"
+              hint="Status mengatur tampilan event; jadwal menentukan waktunya."
+            >
               <select
                 id="event-status"
                 className={adminInputClass}
@@ -220,7 +256,9 @@ export default function EventWorkflowForm({
                 onChange={(event) => updateValue('status', event.target.value)}
               >
                 {statusOptions.map((status) => (
-                  <option key={status.value} value={status.value}>{status.label}</option>
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
                 ))}
               </select>
             </AdminField>
@@ -229,37 +267,98 @@ export default function EventWorkflowForm({
 
         <div hidden={!event && activeStep !== 1}>
           {!event && (
-            <AdminFormSection title="Assessment & akses" description="Assessment dari halaman sebelumnya dipilih otomatis. Pilih assessment yang siap digunakan.">
+            <AdminFormSection
+              title="Assessment & akses"
+              description="Assessment dari halaman sebelumnya dipilih otomatis. Pilih assessment yang siap digunakan."
+            >
               <div className="sm:col-span-2">
-                <AssessmentSelector options={options} selectedId={exam} onSelect={(id) => { setExam(id); setStepError('') }} name="next_exam_id" total={total} page={page}/>
+                <AssessmentSelector
+                  options={options}
+                  selectedId={exam}
+                  onSelect={(id) => {
+                    setExam(id)
+                    setStepError('')
+                  }}
+                  name="next_exam_id"
+                  total={total}
+                  page={page}
+                />
               </div>
             </AdminFormSection>
           )}
-          <AdminFormSection title="Pendaftaran" description={event ? 'Atur periode pendaftaran. Ubah batas peserta pada tiap sesi di tab Sesi & assessment.' : 'Tentukan periode pendaftaran dan batas peserta sesi assessment pertama.'}>
-            {input('registration_start', 'Pendaftaran dibuka', 'datetime-local', false, 'Kosongkan agar pendaftaran dibuka segera.')}
-            {input('registration_end', 'Pendaftaran ditutup', 'datetime-local', false, 'Pilih waktu sebelum event berakhir.')}
-            {!event && input('capacity', 'Batas peserta sesi pertama', 'number', true, 'Jumlah maksimal peserta pada sesi assessment pertama.')}
+          <AdminFormSection
+            title="Pendaftaran"
+            description={
+              event
+                ? 'Atur periode pendaftaran. Ubah batas peserta pada tiap sesi di tab Sesi & assessment.'
+                : 'Tentukan periode pendaftaran dan batas peserta sesi assessment pertama.'
+            }
+          >
+            {input(
+              'registration_start',
+              'Pendaftaran dibuka',
+              'datetime-local',
+              false,
+              'Kosongkan agar pendaftaran dibuka segera.',
+            )}
+            {input(
+              'registration_end',
+              'Pendaftaran ditutup',
+              'datetime-local',
+              false,
+              'Pilih waktu sebelum event berakhir.',
+            )}
+            {!event &&
+              input(
+                'capacity',
+                'Batas peserta sesi pertama',
+                'number',
+                true,
+                'Jumlah maksimal peserta pada sesi assessment pertama.',
+              )}
           </AdminFormSection>
         </div>
 
         <div hidden={!event && activeStep !== 2}>
-          <AdminFormSection title="Jadwal event" description="Atur waktu mulai dan berakhir dalam WIB. Waktu berakhir harus setelah waktu mulai.">
+          <AdminFormSection
+            title="Jadwal event"
+            description="Atur waktu mulai dan berakhir dalam WIB. Waktu berakhir harus setelah waktu mulai."
+          >
             {input('starts_at', 'Waktu mulai', 'datetime-local', true)}
             {input('ends_at', 'Waktu berakhir', 'datetime-local', true)}
           </AdminFormSection>
         </div>
 
         <div hidden={Boolean(event) || activeStep !== 3}>
-          <AdminFormSection title="Tinjau event" description="Pastikan identitas, assessment, akses, dan jadwal sudah benar sebelum menyimpan.">
+          <AdminFormSection
+            title="Tinjau event"
+            description="Pastikan identitas, assessment, akses, dan jadwal sudah benar sebelum menyimpan."
+          >
             <dl className="grid gap-x-8 gap-y-4 rounded-md border border-border bg-card p-4 text-sm sm:grid-cols-2">
               {[
                 ['Nama event', values.title || 'Belum diisi'],
                 ['Kode event', values.code || 'Belum diisi'],
                 ['Status', adminEventStatusLabel(values.status)],
-                ['Assessment', assessment?.title || assessmentSummary || (event ? 'Assessment diatur melalui sesi' : 'Belum dipilih')],
-                ['Pendaftaran', `${values.registration_start || 'Dibuka segera'} — ${values.registration_end || 'Sampai event berakhir'}`],
-                ['Jadwal', `${values.starts_at || 'Belum diatur'} — ${values.ends_at || 'Belum diatur'} WIB`],
-                ['Kapasitas', event ? 'Mengikuti kapasitas sesi' : `${values.capacity || 'Belum diatur'} peserta`],
+                [
+                  'Assessment',
+                  assessment?.title ||
+                    assessmentSummary ||
+                    (event ? 'Assessment diatur melalui sesi' : 'Belum dipilih'),
+                ],
+                [
+                  'Pendaftaran',
+                  `${values.registration_start || 'Dibuka segera'} — ${values.registration_end || 'Sampai event berakhir'}`,
+                ],
+                [
+                  'Jadwal',
+                  `${values.starts_at || 'Belum diatur'} — ${values.ends_at || 'Belum diatur'} WIB`,
+                ],
+                [
+                  'Kapasitas',
+                  event
+                    ? 'Mengikuti kapasitas sesi'
+                    : `${values.capacity || 'Belum diatur'} peserta`,
+                ],
               ].map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
@@ -267,23 +366,48 @@ export default function EventWorkflowForm({
                 </div>
               ))}
             </dl>
-            {stepError && <p id="event-form-error" role="alert" className="mt-4 text-sm font-medium text-danger">{stepError}</p>}
+            {stepError && (
+              <p
+                id="event-form-error"
+                role="alert"
+                className="mt-4 text-sm font-medium text-danger"
+              >
+                {stepError}
+              </p>
+            )}
           </AdminFormSection>
         </div>
 
-        {stepError && !event && activeStep !== 3 && <p id="event-form-error" role="alert" className="-mt-3 text-sm font-medium text-danger">{stepError}</p>}
+        {stepError && !event && activeStep !== 3 && (
+          <p id="event-form-error" role="alert" className="-mt-3 text-sm font-medium text-danger">
+            {stepError}
+          </p>
+        )}
 
         {event ? (
-          <AdminFormActions cancelHref={returnTo}><AdminSubmitButton>Simpan perubahan</AdminSubmitButton></AdminFormActions>
+          <AdminFormActions cancelHref={returnTo}>
+            <AdminSubmitButton>Simpan perubahan</AdminSubmitButton>
+          </AdminFormActions>
         ) : (
           <AdminFormActions cancelHref={returnTo}>
             {activeStep > 0 && (
-              <button type="button" className={adminSecondaryButtonClass} onClick={() => { setStepError(''); setActiveStep((step) => step - 1) }}>
+              <button
+                type="button"
+                className={adminSecondaryButtonClass}
+                onClick={() => {
+                  setStepError('')
+                  setActiveStep((step) => step - 1)
+                }}
+              >
                 Kembali
               </button>
             )}
             {activeStep < steps.length - 1 ? (
-              <button type="button" className="admin-action inline-flex min-h-8 items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2" onClick={() => goToStep(activeStep + 1)}>
+              <button
+                type="button"
+                className="admin-action inline-flex min-h-8 items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                onClick={() => goToStep(activeStep + 1)}
+              >
                 Lanjut
               </button>
             ) : (

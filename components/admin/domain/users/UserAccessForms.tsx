@@ -1,19 +1,25 @@
 import {
-assignUserRoleAction,
-revokeUserRoleAction,
-setUserStatusAction
+  assignUserRoleAction,
+  revokeUserRoleAction,
+  setUserStatusAction,
 } from '@/app/actions/admin-directory'
 import AdminSubmitButton from '@/components/admin/AdminSubmitButton'
-import { AdminField,adminInputClass,adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import {
+  AdminField,
+  adminInputClass,
+  adminPrimaryButtonClass,
+  adminSecondaryButtonClass,
+} from '@/components/admin/AdminUi'
 import ConfirmSubmit from '@/components/admin/ConfirmSubmit'
+import { AdminFormActions } from '@/components/admin/forms/AdminFormActions'
 import { AdminFormSection } from '@/components/admin/forms/AdminFormSection'
-import { adminDirectoryService,roleLabel } from '@/src/services/admin-directory.service'
+import { adminDirectoryService, roleLabel } from '@/src/services/admin-directory.service'
 export async function UserAccessForms({
   userId,
   returnTo,
   assignedRoles,
   status,
-  mode
+  mode,
 }: {
   userId: string
   returnTo: string
@@ -38,9 +44,9 @@ export async function UserAccessForms({
           <AdminField label="Status pengguna">
             <select className={adminInputClass} name="status" defaultValue={status}>
               {[
-                ['active', 'Active'],
-                ['inactive', 'Unavailable'],
-                ['suspended', 'Blocked']
+                ['active', 'Aktif'],
+                ['inactive', 'Nonaktif'],
+                ['suspended', 'Ditangguhkan'],
               ].map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -49,15 +55,20 @@ export async function UserAccessForms({
             </select>
           </AdminField>
         </AdminFormSection>
-        <ConfirmSubmit
-          message="Ubah status pengguna?"
-          confirmLabel="Simpan status"
-          trigger={
-            <button type="button" className={adminSecondaryButtonClass}>
-              Simpan status
-            </button>
-          }
-        />
+        <AdminFormActions cancelHref={returnTo}>
+          <ConfirmSubmit
+            title="Simpan perubahan status pengguna?"
+            message="Status akun akan diperbarui setelah konfirmasi."
+            detail="Status baru mengubah kemampuan pengguna untuk masuk ke aplikasi."
+            confirmLabel="Simpan status"
+            confirmClassName={adminPrimaryButtonClass}
+            trigger={
+              <button type="button" className={adminPrimaryButtonClass}>
+                Simpan status
+              </button>
+            }
+          />
+        </AdminFormActions>
       </form>
     )
   const roles = await adminDirectoryService.listRoles()

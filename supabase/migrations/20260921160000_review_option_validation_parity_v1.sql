@@ -10,34 +10,15 @@
 --
 -- Perbaikan hanya memperketat (menolak lebih banyak), jadi tidak mengubah data
 -- lama. Signature tidak berubah; wrapper dan grant tidak perlu diubah.
-begin;
-
-create or replace function app_private.save_question_draft(
-  p_question_id uuid,
-  p_program_code text,
-  p_track_code text,
-  p_subject_code text,
-  p_question_type text,
-  p_stem text,
-  p_difficulty text,
-  p_cognitive_level text,
-  p_estimated_seconds integer,
-  p_source_reference text,
-  p_stimulus_id uuid,
-  p_explanation text,
-  p_knowledge_node_id uuid,
-  p_options jsonb,
-  p_change_reason text,
-  p_expected_version integer,
-  p_expected_updated_at timestamptz
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_actor uuid := auth.uid();
+BEGIN;
+CREATE OR REPLACE FUNCTION app_private.save_question_draft (p_question_id uuid, p_program_code text, p_track_code text, p_subject_code text, p_question_type text, p_stem text, p_difficulty text, p_cognitive_level text, p_estimated_seconds integer, p_source_reference text, p_stimulus_id uuid, p_explanation text, p_knowledge_node_id uuid, p_options jsonb, p_change_reason text, p_expected_version integer, p_expected_updated_at timestamptz)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SECURITY DEFINER
+  SET search_path = ''
+  AS $$
+DECLARE
+  v_actor uuid := auth.uid ();
   v_program_id uuid;
   v_track_id uuid;
   v_subject_id uuid;
@@ -50,202 +31,391 @@ declare
   v_group_count integer;
   v_snapshot jsonb;
   v_can_manage boolean;
-  v_is_new boolean := p_question_id is null;
-begin
-  if v_actor is null then raise exception 'Authentication required'; end if;
+  v_is_new boolean := p_question_id IS NULL;
+BEGIN
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
 
-  v_can_manage := app_private.current_user_has_permission('question.manage');
-  if v_is_new then
-    if not app_private.current_user_has_permission('content.create') and not v_can_manage then
-      raise exception 'Content create permission required';
-    end if;
-  else
-    if not app_private.current_user_has_permission('content.update') and not v_can_manage then
-      raise exception 'Content update permission required';
-    end if;
-  end if;
+  v_can_manage := app_private.current_user_has_permission ('question.manage');
+  IF v_is_new THEN
+    IF NOT app_private.current_user_has_permission ('content.create') AND NOT v_can_manage THEN
+      RAISE EXCEPTION 'Content create permission required';
+    END IF;
+  ELSE
+    IF NOT app_private.current_user_has_permission ('content.update') AND NOT v_can_manage THEN
+      RAISE EXCEPTION 'Content update permission required';
+    END IF;
+  END IF;
 
-  select id into v_program_id from public.programs
-  where upper(code)=upper(trim(p_program_code)) and upper(status)='ACTIVE' limit 1;
-  if v_program_id is null then raise exception 'Program not found'; end if;
+  SELECT
+    id
+  INTO
+    v_program_id
+  FROM
+    public.programs
+  WHERE
+    upper(code) = upper(trim(p_program_code))
+    AND upper(status) = 'ACTIVE'
+  LIMIT 1;
+  IF v_program_id IS NULL THEN
+    RAISE EXCEPTION 'Program not found';
+  END IF;
 
-  select id into v_track_id from public.tracks
-  where program_id=v_program_id and upper(code)=upper(trim(p_track_code)) and upper(status)='ACTIVE' limit 1;
-  if v_track_id is null then raise exception 'Track not found'; end if;
+  SELECT
+    id
+  INTO
+    v_track_id
+  FROM
+    public.tracks
+  WHERE
+    program_id = v_program_id
+    AND upper(code) = upper(trim(p_track_code))
+    AND upper(status) = 'ACTIVE'
+  LIMIT 1;
+  IF v_track_id IS NULL THEN
+    RAISE EXCEPTION 'Track not found';
+  END IF;
 
-  select id into v_subject_id from public.subjects
-  where track_id=v_track_id and upper(code)=upper(trim(p_subject_code)) and upper(status)='ACTIVE' limit 1;
-  if v_subject_id is null then raise exception 'Subject not found'; end if;
+  SELECT
+    id
+  INTO
+    v_subject_id
+  FROM
+    public.subjects
+  WHERE
+    track_id = v_track_id
+    AND upper(code) = upper(trim(p_subject_code))
+    AND upper(status) = 'ACTIVE'
+  LIMIT 1;
+  IF v_subject_id IS NULL THEN
+    RAISE EXCEPTION 'Subject not found';
+  END IF;
 
-  if lower(trim(p_question_type)) not in ('single_choice','multiple_choice','category') then raise exception 'Invalid question type'; end if;
-  if nullif(trim(p_stem),'') is null then raise exception 'Question stem required'; end if;
-  if p_estimated_seconds is not null and p_estimated_seconds <= 0 then raise exception 'Estimated seconds invalid'; end if;
+  IF lower(trim(p_question_type))
+    NOT IN ('single_choice', 'multiple_choice', 'category') THEN
+    RAISE EXCEPTION 'Invalid question type';
+  END IF;
+  IF nullif (trim(p_stem), '') IS NULL THEN
+    RAISE EXCEPTION 'Question stem required';
+  END IF;
+  IF p_estimated_seconds IS NOT NULL AND p_estimated_seconds <= 0 THEN
+    RAISE EXCEPTION 'Estimated seconds invalid';
+  END IF;
 
-  if p_stimulus_id is not null and not exists(
-    select 1 from public.question_stimuli s
-    where s.id=p_stimulus_id and s.program_id=v_program_id and s.track_id=v_track_id and s.subject_id=v_subject_id
-  ) then raise exception 'Stimulus does not match question context'; end if;
+  IF p_stimulus_id IS NOT NULL AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.question_stimuli s
+    WHERE
+      s.id = p_stimulus_id AND s.program_id = v_program_id AND s.track_id = v_track_id AND s.subject_id = v_subject_id) THEN
+    RAISE EXCEPTION 'Stimulus does not match question context';
+  END IF;
 
-  if p_knowledge_node_id is not null and not exists(
-    select 1 from public.knowledge_nodes k
-    where k.id=p_knowledge_node_id and k.subject_id=v_subject_id and upper(k.status)='ACTIVE'
-  ) then raise exception 'Knowledge node does not match subject'; end if;
+  IF p_knowledge_node_id IS NOT NULL AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      public.knowledge_nodes k
+    WHERE
+      k.id = p_knowledge_node_id AND k.subject_id = v_subject_id AND upper(k.status) = 'ACTIVE') THEN
+    RAISE EXCEPTION 'Knowledge node does not match subject';
+  END IF;
 
-  if p_options is null or jsonb_typeof(p_options) <> 'array' then raise exception 'Options must be an array'; end if;
+  IF p_options IS NULL OR jsonb_typeof(p_options) <> 'array' THEN
+    RAISE EXCEPTION 'Options must be an array';
+  END IF;
   v_option_count := jsonb_array_length(p_options);
-  if v_option_count < 2 then raise exception 'At least two options required'; end if;
-  if v_option_count > 100 then raise exception 'At most 100 options required'; end if;
-  if exists(select 1 from jsonb_array_elements(p_options) o where nullif(trim(o->>'key'),'') is null or nullif(trim(o->>'content'),'') is null) then raise exception 'Option key and content required'; end if;
-  select count(distinct upper(trim(o->>'key'))) into v_distinct_keys from jsonb_array_elements(p_options) o;
-  if v_distinct_keys <> v_option_count then raise exception 'Option keys must be unique'; end if;
-  if exists(select 1 from jsonb_array_elements(p_options) o where nullif(o->>'score','') is not null and (o->>'score')::numeric < 0) then raise exception 'Option score cannot be negative'; end if;
-
+  IF v_option_count < 2 THEN
+    RAISE EXCEPTION 'At least two options required';
+  END IF;
+  IF v_option_count > 100 THEN
+    RAISE EXCEPTION 'At most 100 options required';
+  END IF;
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      jsonb_array_elements(p_options) o
+    WHERE
+      nullif (trim(o ->> 'key'), '') is null or nullif(trim(o->>'content'),'') IS NULL) THEN
+  RAISE EXCEPTION 'Option key and content required';
+END IF;
+  SELECT
+    count(DISTINCT upper(trim(o ->> 'key')))
+  INTO
+    v_distinct_keys
+  FROM
+    jsonb_array_elements(p_options) o;
+  IF v_distinct_keys <> v_option_count THEN
+    RAISE EXCEPTION 'Option keys must be unique';
+  END IF;
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      jsonb_array_elements(p_options) o
+    WHERE
+      nullif (o ->> 'score', '') IS NOT NULL
+      AND (o ->> 'score')::numeric < 0) THEN
+  RAISE EXCEPTION 'Option score cannot be negative';
+END IF;
   -- Paritas dengan `mutate_question_bank`: jalur Review Queue dulu menerima
   -- kode opsi berformat bebas, skor 3 desimal, dan URL gambar non-https.
-  if exists(select 1 from jsonb_array_elements(p_options) o where
-      upper(trim(o->>'key')) !~ '^[A-Z0-9_-]{1,16}$'
-      or length(o->>'content') > 20000
-      or length(coalesce(o->>'response_group','')) > 200
-      or (nullif(o->>'score','') is not null and (
-            (o->>'score')::numeric > 99999999.99
-            or (o->>'score')::numeric <> round((o->>'score')::numeric, 2)))
-      or (nullif(o->>'response_group_order','') is not null and (o->>'response_group_order')::integer < 1)
-      or (nullif(o->>'image_url','') is not null and (
-            length(o->>'image_url') > 2000
-            or o->>'image_url' !~ '^https://[^/@[:space:]]+([/:?#][^[:space:]]*)?$'))
-  ) then raise exception 'Question options invalid'; end if;
-  select count(*) filter (where coalesce((o->>'is_correct')::boolean,false)) into v_correct_count from jsonb_array_elements(p_options) o;
+  IF EXISTS (
+    SELECT
+      1
+    FROM
+      jsonb_array_elements(p_options) o
+    WHERE
+      upper(trim(o ->> 'key')) !~ '^[A-Z0-9_-]{1,16}$'
+      OR length(o ->> 'content') > 20000
+      OR length(coalesce(o ->> 'response_group', '')) > 200
+      OR (nullif (o ->> 'score', '') IS NOT NULL
+        AND ((o ->> 'score')::numeric > 99999999.99
+          OR (o ->> 'score')::numeric <> round((o ->> 'score')::numeric, 2)))
+      OR (nullif (o ->> 'response_group_order', '') IS NOT NULL
+        AND (o ->> 'response_group_order')::integer < 1)
+      OR (nullif (o ->> 'image_url', '') IS NOT NULL
+        AND (length(o ->> 'image_url') > 2000
+          OR o ->> 'image_url' !~ '^https://[^/@[:space:]]+([/:?#][^[:space:]]*)?$'))) THEN
+  RAISE EXCEPTION 'Question options invalid';
+END IF;
+  SELECT
+    count(*) FILTER (WHERE coalesce((o ->> 'is_correct')::boolean, FALSE))
+  INTO
+    v_correct_count
+  FROM
+    jsonb_array_elements(p_options) o;
 
-  if lower(trim(p_question_type))='single_choice' and v_correct_count <> 1 then raise exception 'Single choice requires exactly one correct option'; end if;
-  if lower(trim(p_question_type))='multiple_choice' and (v_option_count < 3 or v_correct_count < 2 or v_correct_count >= v_option_count) then
-    raise exception 'Multiple choice requires at least three options and at least two, but not all, correct options';
-  end if;
-  if lower(trim(p_question_type))='category' then
-    select count(distinct nullif(trim(o->>'response_group'),'')) into v_group_count from jsonb_array_elements(p_options) o;
-    if v_group_count < 2 then raise exception 'Category requires at least two response groups'; end if;
-    if exists(
-      select 1 from (
-        select nullif(trim(o->>'response_group'),'') as response_group,
-               count(*) as option_count,
-               count(*) filter (where coalesce((o->>'is_correct')::boolean,false)) as correct_count
-        from jsonb_array_elements(p_options) o
-        group by nullif(trim(o->>'response_group'),'')
-      ) g
-      where g.response_group is null or g.option_count < 2 or g.correct_count <> 1
-    ) then raise exception 'Each category response group requires at least two options and exactly one correct option'; end if;
-  end if;
+  IF lower(trim(p_question_type)) = 'single_choice' AND v_correct_count <> 1 THEN
+    RAISE EXCEPTION 'Single choice requires exactly one correct option';
+  END IF;
+  IF lower(trim(p_question_type)) = 'multiple_choice' AND (v_option_count < 3 OR v_correct_count < 2 OR v_correct_count >= v_option_count) THEN
+    RAISE EXCEPTION 'Multiple choice requires at least three options and at least two, but not all, correct options';
+  END IF;
+  IF lower(trim(p_question_type)) = 'category' THEN
+    SELECT
+      count(DISTINCT nullif (trim(o ->> 'response_group'), ''))
+    INTO
+      v_group_count
+    FROM
+      jsonb_array_elements(p_options) o;
+    IF v_group_count < 2 THEN
+      RAISE EXCEPTION 'Category requires at least two response groups';
+    END IF;
+    IF EXISTS (
+      SELECT
+        1
+      FROM (
+        SELECT
+          nullif (trim(o ->> 'response_group'), '') AS response_group,
+          count(*) AS option_count,
+          count(*) FILTER (WHERE coalesce((o ->> 'is_correct')::boolean, FALSE)) AS correct_count
+        FROM
+          jsonb_array_elements(p_options) o
+        GROUP BY
+          nullif (trim(o ->> 'response_group'), '')) g
+      WHERE
+        g.response_group IS NULL
+        OR g.option_count < 2
+        OR g.correct_count <> 1) THEN
+    RAISE EXCEPTION 'Each category response group requires at least two options and exactly one correct option';
+  END IF;
+END IF;
 
-  if not v_is_new then
-    select * into v_q from public.questions where id=p_question_id for update;
-    if not found then raise exception 'Question not found'; end if;
-    if v_q.program_id<>v_program_id or v_q.track_id<>v_track_id then raise exception 'Question context mismatch'; end if;
-    if lower(v_q.status) not in ('draft','revision_required','rejected') then raise exception 'Question not editable in current status'; end if;
-    if v_q.author_id<>v_actor and not v_can_manage then raise exception 'Only author or question manager can edit this question'; end if;
-
+  IF NOT v_is_new THEN
+    SELECT
+      *
+    INTO
+      v_q
+    FROM
+      public.questions
+    WHERE
+      id = p_question_id
+    FOR UPDATE;
+    IF NOT found THEN
+      RAISE EXCEPTION 'Question not found';
+    END IF;
+    IF v_q.program_id <> v_program_id OR v_q.track_id <> v_track_id THEN
+      RAISE EXCEPTION 'Question context mismatch';
+    END IF;
+    IF lower(v_q.status)
+      NOT IN ('draft', 'revision_required', 'rejected') THEN
+      RAISE EXCEPTION 'Question not editable in current status';
+    END IF;
+    IF v_q.author_id <> v_actor AND NOT v_can_manage THEN
+      RAISE EXCEPTION 'Only author or question manager can edit this question';
+    END IF;
     -- Token concurrency: form harus membawa versi + updated_at yang sedang
     -- dilihat editor. Bila soal sudah berubah, tolak alih-alih menimpa.
-    if p_expected_version is distinct from v_q.version
-       or p_expected_updated_at is distinct from v_q.updated_at then
-      raise exception 'QUESTION_VERSION_CONFLICT';
-    end if;
+    IF p_expected_version IS DISTINCT FROM v_q.version OR p_expected_updated_at IS DISTINCT FROM v_q.updated_at THEN
+      RAISE EXCEPTION 'QUESTION_VERSION_CONFLICT';
+    END IF;
 
-    select jsonb_build_object(
-      'question', to_jsonb(v_q),
-      'options', coalesce((select jsonb_agg(to_jsonb(o) order by o.sort_order) from public.question_options o where o.question_id=v_q.id),'[]'::jsonb),
-      'explanations', coalesce((select jsonb_agg(to_jsonb(e) order by e.version desc, e.created_at desc) from public.question_explanations e where e.question_id=v_q.id),'[]'::jsonb),
-      'knowledge_nodes', coalesce((select jsonb_agg(to_jsonb(qk)) from public.question_knowledge_nodes qk where qk.question_id=v_q.id),'[]'::jsonb),
-      'stimulus', (select to_jsonb(s) from public.question_stimuli s where s.id=v_q.stimulus_id)
-    ) into v_snapshot;
+    SELECT
+      jsonb_build_object('question', to_jsonb (v_q), 'options', coalesce((
+          SELECT
+            jsonb_agg(to_jsonb (o)
+          ORDER BY o.sort_order)
+          FROM public.question_options o
+          WHERE
+            o.question_id = v_q.id), '[]'::jsonb), 'explanations', coalesce((
+          SELECT
+            jsonb_agg(to_jsonb (e)
+            ORDER BY e.version DESC, e.created_at DESC)
+          FROM public.question_explanations e
+          WHERE
+            e.question_id = v_q.id), '[]'::jsonb), 'knowledge_nodes', coalesce((
+          SELECT
+            jsonb_agg(to_jsonb (qk))
+          FROM public.question_knowledge_nodes qk
+        WHERE
+          qk.question_id = v_q.id), '[]'::jsonb), 'stimulus', (
+        SELECT
+          to_jsonb (s)
+        FROM public.question_stimuli s
+      WHERE
+        s.id = v_q.stimulus_id))
+    INTO
+      v_snapshot;
 
-    insert into public.question_versions(question_id,version,snapshot,changed_by,change_reason)
-    values(v_q.id,v_q.version,v_snapshot,v_actor,coalesce(nullif(trim(p_change_reason),''),'Content workspace update'))
-    on conflict (question_id,version) do nothing;
+    INSERT INTO public.question_versions (question_id, version, snapshot, changed_by, change_reason)
+      VALUES (v_q.id, v_q.version, v_snapshot, v_actor, coalesce(nullif (trim(p_change_reason), ''), 'Content workspace update'))
+    ON CONFLICT (question_id, version)
+      DO NOTHING;
 
     v_question_id := v_q.id;
     v_next_version := v_q.version + 1;
-    update public.questions set
-      subject_id=v_subject_id,
-      question_type=lower(trim(p_question_type)),
-      stem=trim(p_stem),
-      difficulty=lower(trim(p_difficulty)),
-      cognitive_level=nullif(trim(p_cognitive_level),''),
-      source_reference=nullif(trim(p_source_reference),''),
-      estimated_seconds=p_estimated_seconds,
-      stimulus_id=p_stimulus_id,
-      status=case when lower(v_q.status)='rejected' then 'draft' else v_q.status end,
-      version=v_next_version,
-      reviewer_id=null,
-      updated_at=now()
-    where id=v_question_id;
-  else
-    if p_expected_version is not null or p_expected_updated_at is not null then
-      raise exception 'QUESTION_VERSION_INVALID';
-    end if;
+    UPDATE
+      public.questions
+    SET
+      subject_id = v_subject_id,
+      question_type = lower(trim(p_question_type)),
+      stem = trim(p_stem),
+      difficulty = lower(trim(p_difficulty)),
+      cognitive_level = nullif (trim(p_cognitive_level), ''),
+      source_reference = nullif (trim(p_source_reference), ''),
+      estimated_seconds = p_estimated_seconds,
+      stimulus_id = p_stimulus_id,
+      status = CASE WHEN lower(v_q.status) = 'rejected' THEN
+        'draft'
+      ELSE
+        v_q.status
+      END,
+      version = v_next_version,
+      reviewer_id = NULL,
+      updated_at = now()
+    WHERE
+      id = v_question_id;
+  ELSE
+    IF p_expected_version IS NOT NULL OR p_expected_updated_at IS NOT NULL THEN
+      RAISE EXCEPTION 'QUESTION_VERSION_INVALID';
+    END IF;
     v_next_version := 1;
-    insert into public.questions(
-      question_code,program_id,track_id,subject_id,question_type,stem,difficulty,cognitive_level,
-      source_type,source_reference,estimated_seconds,status,version,author_id,reviewer_id,published_at,
-      stimulus_id,stimulus_order,response_config,created_at,updated_at
-    ) values (
-      format('CWS-%s-%s-%s-%s',upper(trim(p_track_code)),upper(trim(p_subject_code)),to_char(clock_timestamp(),'YYYYMMDDHH24MISSMS'),upper(substr(replace(gen_random_uuid()::text,'-',''),1,6))),
-      v_program_id,v_track_id,v_subject_id,lower(trim(p_question_type)),trim(p_stem),lower(trim(p_difficulty)),nullif(trim(p_cognitive_level),''),
-      'internal',nullif(trim(p_source_reference),''),p_estimated_seconds,'draft',1,v_actor,null,null,
-      p_stimulus_id,0,'{}'::jsonb,now(),now()
-    ) returning id into v_question_id;
-  end if;
-
+    INSERT INTO public.questions (question_code, program_id, track_id, subject_id, question_type, stem, difficulty, cognitive_level, source_type, source_reference, estimated_seconds, status, version, author_id, reviewer_id, published_at, stimulus_id, stimulus_order, response_config, created_at, updated_at)
+      VALUES (format('CWS-%s-%s-%s-%s', upper(trim(p_track_code)), upper(trim(p_subject_code)), to_char(clock_timestamp(), 'YYYYMMDDHH24MISSMS'), upper(substr(replace(gen_random_uuid ()::text, '-', ''), 1, 6))), v_program_id, v_track_id, v_subject_id, lower(trim(p_question_type)), trim(p_stem), lower(trim(p_difficulty)), nullif (trim(p_cognitive_level), ''), 'internal', nullif (trim(p_source_reference), ''), p_estimated_seconds, 'draft', 1, v_actor, NULL, NULL, p_stimulus_id, 0, '{}'::jsonb, now(), now())
+  RETURNING
+    id
+  INTO
+    v_question_id;
+  END IF;
   -- Hanya opsi yang benar-benar dihapus dari form yang dihapus dari database;
   -- opsi yang masih ada di-upsert sehingga ID-nya dipertahankan.
-  delete from public.question_options where question_id=v_question_id
-    and option_key not in (select upper(trim(o->>'key')) from jsonb_array_elements(p_options) o);
-  insert into public.question_options(question_id,option_key,content,is_correct,score,sort_order,image_url,response_group,response_group_order,metadata)
-  select v_question_id,
-         upper(trim(o.value->>'key')),
-         trim(o.value->>'content'),
-         case when o.value ? 'is_correct' then (o.value->>'is_correct')::boolean else null end,
-         case when nullif(o.value->>'score','') is null then null else (o.value->>'score')::numeric end,
-         coalesce(nullif(o.value->>'sort_order','')::integer,o.ordinality::integer),
-         nullif(trim(o.value->>'image_url'),''),
-         nullif(trim(o.value->>'response_group'),''),
-         case when nullif(o.value->>'response_group_order','') is null then null else (o.value->>'response_group_order')::integer end,
-         coalesce(o.value->'metadata','{}'::jsonb)
-  from jsonb_array_elements(p_options) with ordinality as o(value,ordinality)
-  on conflict (question_id,option_key) do update set
-    content=excluded.content,
-    is_correct=excluded.is_correct,
-    score=excluded.score,
-    sort_order=excluded.sort_order,
-    image_url=excluded.image_url,
-    response_group=excluded.response_group,
-    response_group_order=excluded.response_group_order,
-    metadata=excluded.metadata;
-
-  delete from public.question_explanations where question_id=v_question_id;
-  if nullif(trim(p_explanation),'') is not null then
-    insert into public.question_explanations(question_id,content,format,video_url,version,created_at,updated_at)
-    values(v_question_id,trim(p_explanation),'markdown',null,v_next_version,now(),now());
-  end if;
-
-  delete from public.question_knowledge_nodes where question_id=v_question_id and relation_type='primary';
-  if p_knowledge_node_id is not null then
-    insert into public.question_knowledge_nodes(question_id,knowledge_node_id,relation_type)
-    values(v_question_id,p_knowledge_node_id,'primary')
-    on conflict (question_id,knowledge_node_id) do update set relation_type='primary';
-  end if;
-
-  insert into public.audit_logs(actor_user_id,action,entity_type,entity_id,old_data,new_data)
-  values(
-    v_actor,
-    case when v_is_new then 'question.content.created' else 'question.content.updated' end,
-    'question',
+  DELETE FROM public.question_options
+  WHERE question_id = v_question_id
+    AND option_key NOT IN (
+      SELECT
+        upper(trim(o ->> 'key'))
+      FROM
+        jsonb_array_elements(p_options) o);
+  INSERT INTO public.question_options (question_id, option_key, content, is_correct, score, sort_order, image_url, response_group, response_group_order, metadata)
+  SELECT
     v_question_id,
-    case when v_is_new then null else v_snapshot end,
-    jsonb_build_object('version',v_next_version,'status',case when v_is_new then 'draft' else case when lower(v_q.status)='rejected' then 'draft' else v_q.status end end,'subject_id',v_subject_id)
-  );
+    upper(trim(o.value ->> 'key')),
+    trim(o.value ->> 'content'),
+    CASE WHEN o.value ? 'is_correct' THEN
+      (o.value ->> 'is_correct')::boolean
+    ELSE
+      NULL
+    END,
+    CASE WHEN nullif (o.value ->> 'score', '') IS NULL THEN
+      NULL
+    ELSE
+      (o.value ->> 'score')::numeric
+    END,
+    coalesce(nullif (o.value ->> 'sort_order', '')::integer, o.ordinality::integer),
+    nullif (trim(o.value ->> 'image_url'), ''),
+    nullif (trim(o.value ->> 'response_group'), ''),
+    CASE WHEN nullif (o.value ->> 'response_group_order', '') IS NULL THEN
+      NULL
+    ELSE
+      (o.value ->> 'response_group_order')::integer
+    END,
+    coalesce(o.value -> 'metadata', '{}'::jsonb)
+  FROM
+    jsonb_array_elements(p_options)
+  WITH ORDINALITY AS o (value, ORDINALITY)
+ON CONFLICT (question_id, option_key)
+  DO UPDATE SET
+    content = excluded.content,
+    is_correct = excluded.is_correct,
+    score = excluded.score,
+    sort_order = excluded.sort_order,
+    image_url = excluded.image_url,
+    response_group = excluded.response_group,
+    response_group_order = excluded.response_group_order,
+    metadata = excluded.metadata;
 
-  return jsonb_build_object('question_id',v_question_id,'version',v_next_version,'status',case when v_is_new then 'draft' else case when lower(v_q.status)='rejected' then 'draft' else v_q.status end end);
-end;
+  DELETE FROM public.question_explanations
+  WHERE question_id = v_question_id;
+  IF nullif (trim(p_explanation), '') IS NOT NULL THEN
+    INSERT INTO public.question_explanations (question_id, content, format, video_url, version, created_at, updated_at)
+      VALUES (v_question_id, trim(p_explanation), 'markdown', NULL, v_next_version, now(), now());
+  END IF;
+
+  DELETE FROM public.question_knowledge_nodes
+  WHERE question_id = v_question_id
+    AND relation_type = 'primary';
+  IF p_knowledge_node_id IS NOT NULL THEN
+    INSERT INTO public.question_knowledge_nodes (question_id, knowledge_node_id, relation_type)
+      VALUES (v_question_id, p_knowledge_node_id, 'primary')
+    ON CONFLICT (question_id, knowledge_node_id)
+      DO UPDATE SET
+        relation_type = 'primary';
+  END IF;
+
+INSERT INTO public.audit_logs (actor_user_id, action, entity_type, entity_id, old_data, new_data)
+  VALUES (v_actor, CASE WHEN v_is_new THEN
+      'question.content.created'
+    ELSE
+      'question.content.updated'
+    END, 'question', v_question_id, CASE WHEN v_is_new THEN
+      NULL
+    ELSE
+      v_snapshot
+    END, jsonb_build_object('version', v_next_version, 'status', CASE WHEN v_is_new THEN
+        'draft'
+      ELSE
+        CASE WHEN lower(v_q.status) = 'rejected' THEN
+          'draft'
+        ELSE
+          v_q.status
+        END
+      END, 'subject_id', v_subject_id));
+
+  RETURN jsonb_build_object('question_id', v_question_id, 'version', v_next_version, 'status', CASE WHEN v_is_new THEN
+      'draft'
+    ELSE
+      CASE WHEN lower(v_q.status) = 'rejected' THEN
+        'draft'
+      ELSE
+        v_q.status
+      END
+    END);
+END;
 $$;
-
-notify pgrst,'reload schema';
-commit;
+NOTIFY pgrst,
+'reload schema';
+COMMIT;

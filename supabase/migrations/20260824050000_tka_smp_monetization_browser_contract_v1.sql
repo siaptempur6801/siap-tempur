@@ -1,16 +1,19 @@
-create or replace function public.is_tka_smp_monetization_enforced()
-returns boolean
-language sql
-stable
-security definer
-set search_path to ''
-as $function$
-  select coalesce((
-    select ff.enabled
-    from public.feature_flags ff
-    where ff.key = 'tka.smp.monetization_enforcement'
-  ), false);
+CREATE OR REPLACE FUNCTION public.is_tka_smp_monetization_enforced ()
+  RETURNS boolean
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+  SELECT
+    coalesce((
+      SELECT
+        ff.enabled
+      FROM public.feature_flags ff
+      WHERE
+        ff.key = 'tka.smp.monetization_enforcement'), FALSE);
 $function$;
 
-revoke all on function public.is_tka_smp_monetization_enforced() from public, anon;
-grant execute on function public.is_tka_smp_monetization_enforced() to authenticated;
+REVOKE ALL ON FUNCTION public.is_tka_smp_monetization_enforced () FROM public, anon;
+
+GRANT EXECUTE ON FUNCTION public.is_tka_smp_monetization_enforced () TO authenticated;
