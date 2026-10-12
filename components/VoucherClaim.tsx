@@ -97,8 +97,8 @@ export default function VoucherClaim({ onSuccessClaim, isTka = false }: VoucherC
           disabled={loading}
           className={
             isTka
-              ? 'flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold tracking-widest text-slate-900 placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed transition'
-              : 'flex-1 border-2 border-gray-900 bg-[#fdfbf7] px-4 py-2.5 text-gray-900 placeholder-gray-400 font-display text-base tracking-widest uppercase focus:border-blue-600 focus:outline-none focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition'
+              ? 'flex-1 rounded-xl border border-input bg-white px-4 py-2.5 text-sm font-bold tracking-widest text-slate-900 placeholder:text-muted-foreground placeholder:font-normal placeholder:tracking-normal focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed transition'
+              : 'flex-1 border-2 border-gray-900 bg-background px-4 py-2.5 text-gray-900 placeholder-gray-400 font-display text-base tracking-widest uppercase focus:border-blue-600 focus:outline-none focus:ring-0 disabled:opacity-50 disabled:cursor-not-allowed transition'
           }
         />
 

@@ -1,4 +1,8 @@
+import { loadEnvConfig } from '@next/env'
 import { defineConfig, devices } from '@playwright/test'
+
+// Load the ignored local env file for local E2E runs; CI-provided process env keeps precedence.
+loadEnvConfig(process.cwd(), true)
 
 // Final RC retrigger after repairing Vercel ↔ GitHub author authentication.
 const hasParticipantCredentials = Boolean(
@@ -40,9 +44,19 @@ export default defineConfig({
         /.*7-content-review-workflow\.spec\.ts/,
         /.*17-authenticated-route-health\.spec\.ts/,
         /.*(?:19-admin-role-navigation|20-instansi-join|21-instansi-exam|22-landing-authenticated|23-organization-participant-lifecycle|24-event-context-lifecycle|25-organization-dual-assignment-isolation|26-event-assessment-matrix)\.spec\.ts/,
+        /.*30-dashboard-mobile-shell\.spec\.ts/,
       ],
       use: {
         ...devices['Desktop Chrome'],
+        storageState: { cookies: [], origins: [] },
+      },
+    },
+    {
+      name: 'webkit-mobile-public',
+      testMatch: /.*12-product-experience-mobile-a11y\.spec\.ts/,
+      use: {
+        ...devices['iPhone 13'],
+        browserName: 'webkit',
         storageState: { cookies: [], origins: [] },
       },
     },
@@ -57,6 +71,16 @@ export default defineConfig({
             testMatch: /.*(?:3-dashboard|17-authenticated-route-health)\.spec\.ts/,
             use: {
               ...devices['Desktop Chrome'],
+              storageState: 'playwright/.auth/user.json',
+            },
+            dependencies: ['setup'],
+          },
+          {
+            name: 'webkit-mobile-authenticated',
+            testMatch: /.*30-dashboard-mobile-shell\.spec\.ts/,
+            use: {
+              ...devices['iPhone 13'],
+              browserName: 'webkit' as const,
               storageState: 'playwright/.auth/user.json',
             },
             dependencies: ['setup'],

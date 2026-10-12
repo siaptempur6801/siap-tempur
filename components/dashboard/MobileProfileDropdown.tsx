@@ -80,7 +80,7 @@ export default function MobileProfileDropdown({
         onClick={() => setIsOpen(!isOpen)}
         aria-label={isOpen ? 'Tutup menu profil' : 'Buka menu profil'}
         aria-expanded={isOpen}
-        className="st-focus relative size-11 rounded-xl border border-border bg-white flex items-center justify-center overflow-hidden transition-colors hover:bg-muted"
+        className="st-focus relative size-11 rounded-xl border border-border-strong bg-white flex items-center justify-center overflow-hidden transition-colors hover:bg-muted"
       >
         {avatarUrl ? (
           <Image
@@ -102,14 +102,14 @@ export default function MobileProfileDropdown({
         <nav
           id={contentId}
           aria-label="Menu profil"
-          className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-border bg-white shadow-lg z-50 overflow-hidden font-body"
+          className="absolute right-0 top-full mt-2 w-72 rounded-xl border border-border-strong bg-white shadow-lg z-50 overflow-hidden font-body"
         >
           <div className="p-4 border-b border-border bg-muted/50">
             <p className="font-semibold text-sm truncate text-foreground">{displayName}</p>
             <p className="mt-0.5 text-xs text-muted-foreground truncate">{user.email}</p>
 
             <div className="mt-2.5 flex items-center gap-2">
-              <span className="text-xs px-2 py-1 font-medium inline-flex items-center gap-1 rounded-md border border-info-border bg-info-muted text-info-foreground">
+              <span className="text-xs px-2 py-1 font-medium inline-flex items-center gap-1 rounded-md border border-info-border bg-info-muted text-info">
                 <Ticket size={12} className="fill-current" />
                 {tokenBalance} Token
               </span>

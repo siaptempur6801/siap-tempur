@@ -49,7 +49,7 @@ export default function TkaError({
           </button>
           <Link
             href="/tka"
-            className="st-focus inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            className="st-focus inline-flex min-h-11 items-center justify-center rounded-lg border border-border-strong bg-white px-5 text-sm font-bold text-slate-700 hover:bg-slate-50"
           >
             Kembali ke TKA
           </Link>

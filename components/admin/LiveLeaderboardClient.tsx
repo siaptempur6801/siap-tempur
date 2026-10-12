@@ -195,7 +195,7 @@ export default function LiveLeaderboardClient({
 
   if (loading && entries.length === 0) {
     return (
-      <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
+      <div className="st-product flex h-screen w-full items-center justify-center bg-background px-4 font-body text-slate-950">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="flex h-12 w-12 items-center justify-center border-2 border-slate-900 bg-yellow-300 st-">
             <RefreshCw className="animate-spin text-slate-900" size={24} />
@@ -210,7 +210,7 @@ export default function LiveLeaderboardClient({
 
   if (errorMessage && entries.length === 0) {
     return (
-      <div className="st-product flex h-screen w-full items-center justify-center bg-[#fbfaf7] px-4 font-body text-slate-950">
+      <div className="st-product flex h-screen w-full items-center justify-center bg-background px-4 font-body text-slate-950">
         <div className="max-w-lg border-2 border-slate-900 bg-white p-6 text-center st-shadow-md">
           <Trophy className="mx-auto mb-4 text-blue-600" size={36} />
           <h2 className="font-display text-2xl font-semibold sm:text-3xl">
@@ -226,9 +226,9 @@ export default function LiveLeaderboardClient({
     <div
       data-experience-mode="event-leaderboard"
       data-program="cpns"
-      className="st-product flex h-screen flex-col overflow-hidden bg-[#fbfaf7] font-body text-slate-950"
+      className="st-product flex h-screen flex-col overflow-hidden bg-background font-body text-slate-950"
     >
-      <header className="relative z-10 flex flex-col gap-3 border-b-2 border-slate-900 bg-[#fbfaf7]/95 px-4 py-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+      <header className="relative z-10 flex flex-col gap-3 border-b-2 border-slate-900 bg-background/95 px-4 py-3 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-slate-900 bg-yellow-300 st-">
             <Trophy className="text-slate-900" size={20} />

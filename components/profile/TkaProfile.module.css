@@ -1,16 +1,16 @@
 .profile,
 .profile :global(.st-product) {
-  --st-paper: #f6f7fb;
-  --st-paper-strong: #eef1f7;
-  --st-yellow: #e0e7ff;
-  --st-yellow-soft: #eef2ff;
-  --st-border: 1px solid #e2e8f0;
+  --st-paper: var(--px-canvas);
+  --st-paper-strong: var(--px-surface-subtle);
+  --st-yellow: var(--brand-blue-100);
+  --st-yellow-soft: var(--px-surface-blue);
+  --st-border: 1px solid var(--px-border-strong);
   --st-shadow-sm: none;
   --st-shadow-md: none;
   --st-shadow-lg: none;
-  --st-radius-sm: 8px;
-  --st-radius-md: 8px;
-  --st-radius-lg: 8px;
+  --st-radius-sm: var(--px-radius-sm);
+  --st-radius-md: var(--px-radius-md);
+  --st-radius-lg: var(--px-radius-md);
   font-family: var(--font-body), sans-serif;
 }
 
@@ -20,7 +20,7 @@
 
 .profile > header {
   max-width: none;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   border-radius: 0;
   padding-bottom: 20px;
 }
@@ -47,26 +47,25 @@
 
 .profile :is([class~='border-2'], [class~='border-4']) {
   border-width: 1px;
-  border-radius: 8px;
+  border-radius: var(--px-radius-sm);
   box-shadow: none;
 }
 
 .profile :is([class~='border-gray-900'], [class~='border-[var(--st-ink)]']) {
-  border-color: #e2e8f0;
+  border-color: var(--px-border-strong);
 }
 
 .profile :is([class~='border-b-4'], [class~='border-t-4']) {
   border-width: 1px;
-  border-color: #e2e8f0;
+  border-color: var(--border);
 }
 
-.profile :is([class~='bg-yellow-300'], [class~='bg-[#fdfbf7]']) {
-  background-color: #eef2ff;
+.profile :is([class~='bg-yellow-300'], [class~='bg-background']) {
+  background-color: var(--px-surface-blue);
 }
 
 .profile :global(.st-button) {
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 8px !important;
+  border-radius: var(--px-radius-sm);
   box-shadow: none !important;
   font-weight: 600;
 }
@@ -85,11 +84,19 @@
   font-weight: 500;
 }
 
+.profile :is(input, select, textarea):not([aria-invalid='true']):not(:focus-visible) {
+  border-color: var(--input);
+}
+
+.profile :is(input, textarea)::placeholder {
+  color: var(--muted-foreground);
+}
+
 .profile :is([role='dialog'], [role='alertdialog']) {
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 16px 48px rgb(15 23 42 / 15%);
+  border: 1px solid var(--px-border-strong);
+  border-radius: var(--px-radius-md);
+  background: var(--px-surface);
+  box-shadow: var(--px-shadow-lg);
 }

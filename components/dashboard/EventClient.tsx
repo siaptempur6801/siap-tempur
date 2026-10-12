@@ -139,7 +139,7 @@ function StatusTimeline({ step }: { step: number }) {
               <span
                 className={cn(
                   'mt-1 text-[9px] font-semibold uppercase tracking-wider',
-                  isActive ? 'text-gray-900' : 'text-gray-400',
+                  isActive ? 'text-gray-900' : 'text-gray-600',
                 )}
               >
                 {label}
@@ -230,7 +230,7 @@ function EventCard({
     <article
       data-event-live={isLive || undefined}
       className={cn(
-        'relative overflow-hidden rounded-2xl border border-border bg-card shadow-xs',
+        'relative overflow-hidden rounded-2xl border border-border-strong bg-card shadow-xs',
         isLive && 'border-danger-border',
       )}
     >
@@ -394,9 +394,9 @@ function EventCard({
           )}
           {event.max_participants && (
             <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-3">
-              <Users className="h-5 w-5 shrink-0 text-gray-400" />
+              <Users className="h-5 w-5 shrink-0 text-gray-600" />
               <div>
-                <p className="text-[10px] font-semibold uppercase text-gray-400">Kuota</p>
+                <p className="text-[10px] font-semibold uppercase text-gray-600">Kuota</p>
                 <p className="text-xs font-bold text-gray-800">{event.max_participants} peserta</p>
               </div>
             </div>
@@ -707,7 +707,7 @@ export default function EventClient({ events }: EventClientProps) {
                           <Lock size={14} className="shrink-0 text-info" aria-hidden="true" />
                           <label
                             htmlFor={`event-code-${event.id}`}
-                            className="text-sm font-medium text-info-foreground"
+                            className="text-sm font-medium text-info"
                           >
                             Kode masuk
                           </label>

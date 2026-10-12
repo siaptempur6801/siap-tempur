@@ -523,7 +523,7 @@ export default function PracticeSessionClient({
   return (
     <div
       data-experience-mode="exam"
-      className="flex flex-col lg:flex-row gap-4 xl:gap-6 p-2 md:p-4 xl:p-6 h-auto md:h-[calc(100vh-56px)] xl:h-[calc(100vh-64px)] md:overflow-hidden relative font-body text-foreground"
+      className="flex flex-col lg:flex-row gap-4 xl:gap-6 p-2 md:p-4 xl:p-6 h-auto md:h-[calc(100dvh-56px)] xl:h-[calc(100dvh-64px)] md:overflow-hidden relative font-body text-foreground"
     >
       {/* Native drawer shares focus containment; question order/handlers are unchanged. */}
       <DialogSurface
@@ -750,7 +750,7 @@ export default function PracticeSessionClient({
           showNav ? '' : 'lg:max-w-6xl lg:mx-auto',
         )}
       >
-        <div className="flex-1 flex flex-col bg-white border border-border rounded-xl md:overflow-hidden relative">
+        <div className="flex-1 flex flex-col bg-white border border-border rounded-xl md:min-h-0 md:overflow-hidden relative">
           {/* Header - Optimized for Mobile */}
           <div className="border-b border-border bg-slate-50 p-2 md:p-4">
             <div className="flex items-center justify-between gap-2">
@@ -770,7 +770,7 @@ export default function PracticeSessionClient({
                       {currentQuestion.type}
                     </span>
                     {currentQuestion.category && (
-                      <span className="px-2 py-1 bg-info-muted text-info-foreground border border-info-border text-xs font-medium rounded-md">
+                      <span className="px-2 py-1 bg-info-muted text-info border border-info-border text-xs font-medium rounded-md">
                         {formatSubjectName(currentQuestion.category)}
                       </span>
                     )}
@@ -843,8 +843,8 @@ export default function PracticeSessionClient({
           </div>
 
           {/* Content Area - Unified Scroll */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 flex flex-col overflow-hidden md:min-h-0">
+            <div className="flex-1 overflow-y-auto md:min-h-0">
               <div className="p-4 md:p-6 flex flex-col gap-6">
                 <div className="pb-4 md:pb-6 border-b-2 border-dashed border-gray-200 flex flex-col gap-4">
                   <QuestionPrompt question={currentQuestion} />
@@ -884,7 +884,7 @@ export default function PracticeSessionClient({
                   onClick={onFinishClick}
                   aria-label="Kumpulkan jawaban"
                   disabled={finishing}
-                  className="st-focus flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-primary bg-primary px-4 text-primary-foreground font-body font-semibold text-base hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="st-focus flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border border-primary bg-primary px-4 text-primary-foreground font-body font-semibold text-base hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-100 disabled:bg-disabled disabled:text-disabled-foreground disabled:border-input"
                 >
                   {finishing ? '...' : 'Kumpulkan'}
                   <CheckCircle2 size={20} />
@@ -893,7 +893,7 @@ export default function PracticeSessionClient({
                 <button
                   onClick={handleNextQuestion}
                   aria-label="Soal berikutnya"
-                  className="st-focus flex size-12 items-center justify-center bg-primary text-primary-foreground rounded-xl border border-primary hover:bg-primary/90"
+                  className="st-focus flex size-12 items-center justify-center bg-primary text-primary-foreground rounded-xl border border-primary hover:bg-primary-hover"
                 >
                   <ChevronRight size={24} />
                 </button>
@@ -917,7 +917,7 @@ export default function PracticeSessionClient({
                 data-prevent-double="true"
                 onClick={onFinishClick}
                 disabled={finishing}
-                className="st-focus flex min-h-11 items-center gap-2 px-5 py-2 bg-primary text-primary-foreground border border-primary rounded-lg hover:bg-primary/90 transition-colors font-body font-semibold text-base disabled:cursor-not-allowed disabled:opacity-60"
+                className="st-focus flex min-h-11 items-center gap-2 px-5 py-2 bg-primary text-primary-foreground border border-primary rounded-lg hover:bg-primary-hover transition-colors font-body font-semibold text-base disabled:cursor-not-allowed disabled:opacity-100 disabled:bg-disabled disabled:text-disabled-foreground disabled:border-input"
               >
                 {finishing ? 'Mengumpulkan...' : 'Kumpulkan jawaban'}
                 <CheckCircle2 size={20} />

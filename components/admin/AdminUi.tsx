@@ -6,22 +6,26 @@ import { cloneElement, isValidElement, type ReactElement, type ReactNode, useId 
 
 /** Shared native-control styles keep server actions and URL forms unchanged. */
 export const adminInputClass =
-  'admin-input w-full rounded-md border border-border bg-card px-3 text-sm font-normal text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground'
+  'admin-input w-full rounded-md border border-input bg-card px-3 text-sm font-normal text-foreground transition-colors placeholder:text-muted-foreground focus:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground'
 export const adminLabelClass = 'text-sm font-medium text-foreground'
 
+/** Editor controls stay compact on desktop and provide full touch targets on mobile. */
+export const adminEditorButtonClass =
+  'inline-flex h-11 min-w-11 shrink-0 items-center justify-center rounded-md border border-input bg-card text-muted-foreground transition-colors hover:border-primary hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground md:h-8 md:min-w-8 [&>svg]:size-4'
+
 const adminActionClass =
-  'admin-action inline-flex min-h-8 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm leading-5 font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0'
-export const adminPrimaryButtonClass = `${adminActionClass} bg-primary text-primary-foreground hover:bg-primary/90`
-export const adminSecondaryButtonClass = `${adminActionClass} border border-border bg-card text-foreground hover:bg-muted`
+  'admin-action inline-flex min-h-8 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm leading-5 font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:bg-disabled disabled:text-disabled-foreground disabled:opacity-100 [&>svg]:size-4 [&>svg]:shrink-0'
+export const adminPrimaryButtonClass = `${adminActionClass} bg-primary text-primary-foreground hover:bg-primary-hover`
+export const adminSecondaryButtonClass = `${adminActionClass} border border-input bg-card text-foreground hover:bg-muted`
 export const adminDangerButtonClass = `${adminActionClass} border border-danger-border bg-danger-muted text-danger hover:bg-danger-muted/80`
 export const adminSuccessButtonClass = `${adminActionClass} border border-success-border bg-success-muted text-success hover:bg-success-muted/80`
 export const adminWarningButtonClass = `${adminActionClass} border border-warning-border bg-warning-muted text-warning hover:bg-warning-muted/80`
 
 /** Compact, consistent action link/button for an admin table row. */
-export const adminTableActionClass = `${adminActionClass} h-7 min-h-7 border border-border bg-card px-2.5 py-1 text-xs text-foreground hover:bg-muted max-md:h-9 max-md:min-h-9`
+export const adminTableActionClass = `${adminActionClass} h-7 min-h-7 border border-input bg-card px-2.5 py-1 text-xs text-foreground hover:bg-muted max-md:h-9 max-md:min-h-9`
 /** Square, compact overflow action for dense admin table rows. */
 export const adminTableIconActionClass =
-  'admin-action admin-table-icon-action inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-card !p-0 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:h-9 max-md:w-9'
+  'admin-action admin-table-icon-action inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-input bg-card !p-0 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring max-md:h-9 max-md:w-9'
 
 /** Shared alignment and spacing for every table row's actions. */
 export function AdminRowActions({
@@ -45,7 +49,7 @@ export function AdminRowActions({
 
 export function AdminCard({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <section className={cn('rounded-lg border border-border bg-card ', className)}>
+    <section className={cn('rounded-lg border border-input bg-card ', className)}>
       {children}
     </section>
   )

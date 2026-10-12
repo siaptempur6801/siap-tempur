@@ -1,10 +1,13 @@
 import { createQrisCharge, createTransaction } from '@/lib/midtrans'
 import { env } from '@/lib/env'
+import { logger } from '@/lib/logger'
 import {
   canonicalMidtransStatus,
   isMidtransSuccessStatus,
   isSupportedMidtransStatus,
+  normalizeFraudStatus,
   normalizeMidtransStatus,
+  resolveMidtransFulfilment,
 } from '@/lib/midtrans-status'
 import { createAdminClient, createV2AdminClient } from '@/lib/utils/supabase/server'
 import { commerceService } from '@/src/services/commerce.service'
@@ -271,9 +274,19 @@ class PaymentService {
       throw new Error('PAYMENT_AMOUNT_MISMATCH')
     }
 
+    const fulfilment = resolveMidtransFulfilment(status, result.fraud_status)
+    if (fulfilment.blockedReason) {
+      logger.warn('Midtrans status sync menahan pemenuhan order karena keputusan fraud', {
+        orderId: canonicalOrderId,
+        transactionStatus: status,
+        fraudStatus: normalizeFraudStatus(result.fraud_status),
+        reason: fulfilment.blockedReason,
+      })
+    }
+
     await commerceService.applyProviderStatus({
       orderId: canonicalOrderId,
-      status: canonicalMidtransStatus(status),
+      status: canonicalMidtransStatus(fulfilment.status),
       providerTransactionId:
         typeof result.transaction_id === 'string' ? result.transaction_id : null,
       paymentMethod: typeof result.payment_type === 'string' ? result.payment_type : null,
@@ -281,7 +294,10 @@ class PaymentService {
       rawResponse: asJson(result),
     })
 
-    return { status, paid: isMidtransSuccessStatus(status) }
+    return {
+      status: fulfilment.status,
+      paid: isMidtransSuccessStatus(fulfilment.status),
+    }
   }
 
   async processWebhook(input: {

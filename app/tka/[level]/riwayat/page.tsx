@@ -270,7 +270,7 @@ export default async function TkaHistoryPage({ params }: { params: Promise<{ lev
                   <Link
                     key={attempt.id}
                     href={resultHref(base, attempt, exam, type.code)}
-                    className="st-focus group flex flex-col justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md md:flex-row md:items-center"
+                    className="st-focus group flex flex-col justify-between gap-4 rounded-2xl border border-border-strong bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md md:flex-row md:items-center"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -323,7 +323,7 @@ export default async function TkaHistoryPage({ params }: { params: Promise<{ lev
               })}
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-xs md:p-12">
+            <div className="rounded-3xl border border-dashed border-border-strong bg-white p-8 text-center shadow-xs md:p-12">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs">
                 <History size={26} />
               </div>
@@ -363,7 +363,7 @@ function SummaryCard({
   description: string
 }) {
   return (
-    <div className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md">
+    <div className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border-strong bg-white p-5 md:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-600 hover:shadow-md">
       <div>
         <div className="flex items-center justify-between">
           <div

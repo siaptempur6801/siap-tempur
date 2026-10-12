@@ -160,7 +160,7 @@ export default function TkaWrongQuestionModeClient({
         data-program={`tka-${level.toLowerCase()}`}
         className="min-h-screen px-4 py-12 md:py-16"
       >
-        <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-xs md:p-8">
+        <section className="mx-auto max-w-2xl rounded-2xl border border-border-strong bg-white p-6 text-center shadow-xs md:p-8">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/50">
             <CheckCircle2 size={36} />
           </div>
@@ -185,7 +185,7 @@ export default function TkaWrongQuestionModeClient({
             </Link>
             <Link
               href={`/tka/${level.toLowerCase()}/tryout`}
-              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-border-strong bg-white px-6 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-50"
             >
               <ListChecks size={18} /> Coba Tryout Baru
             </Link>
@@ -218,7 +218,7 @@ export default function TkaWrongQuestionModeClient({
           'disabled:cursor-not-allowed disabled:opacity-75',
           selected
             ? 'border-indigo-600 bg-indigo-50/70 text-indigo-950 ring-2 ring-indigo-600/20'
-            : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50/80 text-slate-800',
+            : 'border-border-strong bg-white hover:border-primary hover:bg-slate-50/80 text-slate-800',
         )}
       >
         <span
@@ -256,7 +256,7 @@ export default function TkaWrongQuestionModeClient({
     >
       <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
         {/* Header Evaluasi Soal Salah */}
-        <header className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
+        <header className="rounded-2xl border border-border-strong bg-white p-5 md:p-6 shadow-xs">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-rose-600">
@@ -294,7 +294,7 @@ export default function TkaWrongQuestionModeClient({
           {/* Filter Mata Pelajaran */}
           {availableSubjects.length > 1 && (
             <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-              <span className="mr-1 text-xs font-bold text-slate-400">Filter Mapel:</span>
+              <span className="mr-1 text-xs font-bold text-slate-600">Filter Mapel:</span>
               <button
                 type="button"
                 onClick={() => setSubjectFilter('ALL')}
@@ -340,7 +340,7 @@ export default function TkaWrongQuestionModeClient({
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1fr_18rem]">
-          <article className="min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs">
+          <article className="min-w-0 rounded-2xl border border-border-strong bg-white p-5 md:p-6 shadow-xs">
             {/* Meta Soal */}
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -462,7 +462,7 @@ export default function TkaWrongQuestionModeClient({
                 </div>
 
                 {feedback.explanation && (
-                  <div className="mt-4 rounded-lg border border-slate-200/90 bg-white/95 p-4 text-slate-800 shadow-xs">
+                  <div className="mt-4 rounded-lg border border-border-strong bg-white/95 p-4 text-slate-800 shadow-xs">
                     <div className="mb-2 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-700">
                       <Sparkles size={14} /> Pembahasan
                     </div>
@@ -478,7 +478,7 @@ export default function TkaWrongQuestionModeClient({
             <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-5">
               <Link
                 href={`/tka/${level.toLowerCase()}`}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border-strong bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
               >
                 <ArrowLeft size={16} /> Kembali ke TKA {level}
               </Link>
@@ -487,7 +487,7 @@ export default function TkaWrongQuestionModeClient({
                 <button
                   type="button"
                   onClick={nextResolved}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-black text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-emerald-700 px-6 py-2.5 text-sm font-black text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-800"
                 >
                   Lanjut <ChevronRight size={17} />
                 </button>
@@ -496,7 +496,7 @@ export default function TkaWrongQuestionModeClient({
                   type="button"
                   onClick={checkAnswer}
                   disabled={processing || selectedIds.length === 0}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-100 disabled:bg-disabled disabled:text-disabled-foreground disabled:border-input"
                 >
                   {processing ? 'Memeriksa...' : feedback ? 'Periksa lagi' : 'Periksa jawaban'}
                 </button>
@@ -506,7 +506,7 @@ export default function TkaWrongQuestionModeClient({
 
           {/* Aside: Navigator Cepat Nomor Soal */}
           <aside className="space-y-4 h-fit lg:sticky lg:top-5">
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+            <div className="rounded-2xl border border-border-strong bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-500">
                   Daftar Soal
@@ -553,7 +553,7 @@ export default function TkaWrongQuestionModeClient({
                   type="button"
                   onClick={() => navigate(-1)}
                   disabled={currentIndex === 0 || processing || feedback?.isCorrect === true}
-                  className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+                  className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl border border-border-strong bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-100 disabled:bg-disabled disabled:text-disabled-foreground disabled:border-input"
                 >
                   <ChevronLeft size={16} /> Sebelumnya
                 </button>
@@ -563,7 +563,7 @@ export default function TkaWrongQuestionModeClient({
                   disabled={
                     currentIndex >= items.length - 1 || processing || feedback?.isCorrect === true
                   }
-                  className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+                  className="inline-flex min-h-10 items-center justify-center gap-1 rounded-xl border border-border-strong bg-white px-3 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50 disabled:opacity-100 disabled:bg-disabled disabled:text-disabled-foreground disabled:border-input"
                 >
                   Berikutnya <ChevronRight size={16} />
                 </button>

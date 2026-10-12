@@ -33,6 +33,7 @@
 .agent/
 .agents/
 .codex/
+.playwright-cli/
 .commandcode/
 supabase/.temp/
 testsprite_tests/tmp/*

@@ -205,12 +205,12 @@ export default function PracticeClient({
               role="status"
             >
               <div className="flex items-start gap-3">
-                <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-info-foreground" />
+                <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-info" />
                 <div>
-                  <p className="font-semibold text-info-foreground">Lanjutkan sesi aktif</p>
+                  <p className="font-semibold text-info">Lanjutkan sesi aktif</p>
                   <p className="mt-1 text-sm leading-6 text-slate-600">{bannerMessage}</p>
                   {hasSavedProgress && resumeDetails.length > 0 && (
-                    <p className="mt-1 text-xs font-medium text-info-foreground">
+                    <p className="mt-1 text-xs font-medium text-info">
                       {resumeDetails.join(' • ')}
                     </p>
                   )}

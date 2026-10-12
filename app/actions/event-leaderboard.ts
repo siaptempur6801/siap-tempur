@@ -6,6 +6,57 @@ import { eventRepository } from '@/src/repositories/event.repository'
 import { PERMISSIONS } from '@/src/auth/permissions'
 import type { Json } from '@/types/database.types'
 
+const POSTGREST_PAGE_SIZE = 1000
+const POSTGREST_FILTER_BATCH_SIZE = 200
+const POSTGREST_BATCH_CONCURRENCY = 8
+
+type PostgrestPageResult = {
+  data: unknown[] | null
+  error: { message: string } | null
+}
+
+async function fetchAllPages<T>(
+  loadPage: (from: number, to: number) => Promise<PostgrestPageResult>,
+): Promise<T[]> {
+  const rows: T[] = []
+
+  for (let from = 0; ; from += POSTGREST_PAGE_SIZE) {
+    const { data, error } = await loadPage(from, from + POSTGREST_PAGE_SIZE - 1)
+    if (error) throw error
+
+    const page = (data ?? []) as T[]
+    rows.push(...page)
+    if (page.length < POSTGREST_PAGE_SIZE) return rows
+  }
+}
+
+async function fetchRowsByIds<T>(
+  ids: string[],
+  loadPage: (idBatch: string[], from: number, to: number) => Promise<PostgrestPageResult>,
+): Promise<T[]> {
+  const rows: T[] = []
+  const idBatches: string[][] = []
+
+  // Keep `in (...)` filters bounded so large events do not create enormous URLs.
+  for (let index = 0; index < ids.length; index += POSTGREST_FILTER_BATCH_SIZE) {
+    idBatches.push(ids.slice(index, index + POSTGREST_FILTER_BATCH_SIZE))
+  }
+
+  // Bound concurrency to keep complete pagination from flooding PostgREST.
+  for (let index = 0; index < idBatches.length; index += POSTGREST_BATCH_CONCURRENCY) {
+    const batchRows = await Promise.all(
+      idBatches
+        .slice(index, index + POSTGREST_BATCH_CONCURRENCY)
+        .map((idBatch) => fetchAllPages<T>((from, to) => loadPage(idBatch, from, to))),
+    )
+    for (const batch of batchRows) {
+      for (const row of batch) rows.push(row)
+    }
+  }
+
+  return rows
+}
+
 export interface LiveLeaderboardEntry {
   entry_id: string
   user_id: string
@@ -74,18 +125,19 @@ export async function getLiveLeaderboardAction(eventId: string) {
   }
 
   const admin = await createV2AdminClient()
-  const { data: attemptData, error: attemptError } = await admin
-    .from('exam_attempts')
-    .select(
-      'id, user_id, status, started_at, submitted_at, duration_used_seconds, total_score, metadata',
-    )
-    .contains('metadata', { eventId })
-    .in('status', ['created', 'CREATED', 'in_progress', 'IN_PROGRESS', 'completed', 'COMPLETED'])
-    .order('started_at', { ascending: true, nullsFirst: false })
-    .limit(5000)
-  if (attemptError) throw attemptError
-
-  const attempts = (attemptData ?? []) as AttemptRow[]
+  const attempts = await fetchAllPages<AttemptRow>(async (from, to) => {
+    const { data, error } = await admin
+      .from('exam_attempts')
+      .select(
+        'id, user_id, status, started_at, submitted_at, duration_used_seconds, total_score, metadata',
+      )
+      .contains('metadata', { eventId })
+      .in('status', ['created', 'CREATED', 'in_progress', 'IN_PROGRESS', 'completed', 'COMPLETED'])
+      .order('started_at', { ascending: true, nullsFirst: false })
+      .order('id', { ascending: true })
+      .range(from, to)
+    return { data, error }
+  })
   if (attempts.length === 0) {
     return {
       event: { id: event.id, title: event.title, status: finished ? 'closed' : 'live' },
@@ -95,19 +147,31 @@ export async function getLiveLeaderboardAction(eventId: string) {
 
   const attemptIds = attempts.map((row) => row.id)
   const userIds = Array.from(new Set(attempts.map((row) => row.user_id)))
-  const [{ data: profileData, error: profileError }, { data: questionData, error: questionError }] =
-    await Promise.all([
-      admin.from('profiles').select('id, full_name, avatar_url').in('id', userIds),
-      admin
+  const [profileData, questions] = await Promise.all([
+    fetchRowsByIds<{
+      id: string
+      full_name: string | null
+      avatar_url: string | null
+    }>(userIds, async (idBatch, from, to) => {
+      const { data, error } = await admin
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', idBatch)
+        .order('id', { ascending: true })
+        .range(from, to)
+      return { data, error }
+    }),
+    fetchRowsByIds<AttemptQuestionRow>(attemptIds, async (idBatch, from, to) => {
+      const { data, error } = await admin
         .from('attempt_questions')
         .select('id, attempt_id, question_snapshot')
-        .in('attempt_id', attemptIds)
-        .limit(20000),
-    ])
-  if (profileError) throw profileError
-  if (questionError) throw questionError
-
-  const questions = (questionData ?? []) as AttemptQuestionRow[]
+        .in('attempt_id', idBatch)
+        .order('attempt_id', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
+      return { data, error }
+    }),
+  ])
   const questionIds = questions.map((row) => row.id)
   const subjectIds = Array.from(
     new Set(
@@ -117,58 +181,53 @@ export async function getLiveLeaderboardAction(eventId: string) {
     ),
   )
 
-  const [{ data: answerData, error: answerError }, { data: subjectData, error: subjectError }] =
-    await Promise.all([
-      questionIds.length
-        ? admin
-            .from('attempt_answers')
-            .select('attempt_question_id, selected_option_id')
-            .in('attempt_question_id', questionIds)
-            .limit(20000)
-        : Promise.resolve({ data: [], error: null }),
-      subjectIds.length
-        ? admin.from('subjects').select('id, code').in('id', subjectIds)
-        : Promise.resolve({ data: [], error: null }),
-    ])
-  if (answerError) throw answerError
-  if (subjectError) throw subjectError
+  const [answers, subjectData] = await Promise.all([
+    fetchRowsByIds<{
+      id: string
+      attempt_question_id: string
+      selected_option_id: string | null
+    }>(questionIds, async (idBatch, from, to) => {
+      const { data, error } = await admin
+        .from('attempt_answers')
+        .select('id, attempt_question_id, selected_option_id')
+        .in('attempt_question_id', idBatch)
+        .order('attempt_question_id', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
+      return { data, error }
+    }),
+    fetchRowsByIds<{ id: string; code: string }>(subjectIds, async (idBatch, from, to) => {
+      const { data, error } = await admin
+        .from('subjects')
+        .select('id, code')
+        .in('id', idBatch)
+        .order('id', { ascending: true })
+        .range(from, to)
+      return { data, error }
+    }),
+  ])
 
-  const answers = (answerData ?? []) as Array<{
-    attempt_question_id: string
-    selected_option_id: string | null
-  }>
   const selectedOptionIds = Array.from(
     new Set(answers.map((row) => row.selected_option_id).filter((id): id is string => Boolean(id))),
   )
-  const { data: optionData, error: optionError } = selectedOptionIds.length
-    ? await admin
-        .from('question_options')
-        .select('id, score, is_correct')
-        .in('id', selectedOptionIds)
-    : { data: [], error: null }
-  if (optionError) throw optionError
+  const optionData = await fetchRowsByIds<{
+    id: string
+    score: number | null
+    is_correct: boolean | null
+  }>(selectedOptionIds, async (idBatch, from, to) => {
+    const { data, error } = await admin
+      .from('question_options')
+      .select('id, score, is_correct')
+      .in('id', idBatch)
+      .order('id', { ascending: true })
+      .range(from, to)
+    return { data, error }
+  })
 
-  const profileById = new Map(
-    (
-      (profileData ?? []) as Array<{
-        id: string
-        full_name: string | null
-        avatar_url: string | null
-      }>
-    ).map((row) => [row.id, row]),
-  )
-  const subjectCodeById = new Map(
-    ((subjectData ?? []) as Array<{ id: string; code: string }>).map((row) => [
-      row.id,
-      row.code.toUpperCase(),
-    ]),
-  )
+  const profileById = new Map(profileData.map((row) => [row.id, row]))
+  const subjectCodeById = new Map(subjectData.map((row) => [row.id, row.code.toUpperCase()]))
   const questionById = new Map(questions.map((row) => [row.id, row]))
-  const optionById = new Map(
-    (
-      (optionData ?? []) as Array<{ id: string; score: number | null; is_correct: boolean | null }>
-    ).map((row) => [row.id, row]),
-  )
+  const optionById = new Map(optionData.map((row) => [row.id, row]))
 
   const questionCountByAttempt = new Map<string, number>()
   for (const question of questions) {
@@ -208,17 +267,16 @@ export async function getLiveLeaderboardAction(eventId: string) {
       p_event_id: eventId,
     })
     if (recalcError) throw recalcError
-    const { data: rankingData, error: rankingError } = await admin
-      .from('event_rankings')
-      .select('user_id, rank')
-      .eq('event_id', eventId)
-    if (rankingError) throw rankingError
-    finalRankByUser = new Map(
-      ((rankingData ?? []) as Array<{ user_id: string; rank: number }>).map((row) => [
-        row.user_id,
-        row.rank,
-      ]),
-    )
+    const rankingData = await fetchAllPages<{ user_id: string; rank: number }>(async (from, to) => {
+      const { data, error } = await admin
+        .from('event_rankings')
+        .select('user_id, rank')
+        .eq('event_id', eventId)
+        .order('user_id', { ascending: true })
+        .range(from, to)
+      return { data, error }
+    })
+    finalRankByUser = new Map(rankingData.map((row) => [row.user_id, row.rank]))
   }
 
   const entries = attempts.map((attempt) => {

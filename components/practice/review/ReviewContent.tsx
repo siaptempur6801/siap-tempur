@@ -59,7 +59,7 @@ export default function ReviewContent({
               }
             } else if (isSelected && isCorrect) {
               containerClass = 'border-emerald-500 bg-emerald-50'
-              indicatorClass = 'border-emerald-600 bg-emerald-600 text-white'
+              indicatorClass = 'border-emerald-700 bg-emerald-700 text-white'
               textClass = 'font-bold text-emerald-950'
             } else if (isSelected && !isCorrect) {
               containerClass = 'border-red-500 bg-red-50'

@@ -19,6 +19,7 @@ type ReconcileSummary = {
   pending: number
   skipped: number
   failed: number
+  hasMorePending?: boolean
 }
 
 function createSummary(): ReconcileSummary {
@@ -77,8 +78,11 @@ async function reconcilePendingPayments(): Promise<ReconcileSummary> {
     .select('order_id, created_at')
     .eq('provider', 'midtrans')
     .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(BATCH_SIZE)
+    // Proses yang paling lama lebih dulu agar transaksi lama tidak terus
+    // tersisih ketika ada lebih dari satu batch pembayaran baru.
+    .order('created_at', { ascending: true })
+    // Satu baris tambahan hanya untuk mendeteksi backlog tanpa memperbesar batch.
+    .limit(BATCH_SIZE + 1)
 
   if (paymentError) {
     logger.error('Payment reconcile pending payment query failed', paymentError)
@@ -86,9 +90,20 @@ async function reconcilePendingPayments(): Promise<ReconcileSummary> {
     return summary
   }
 
+  const paymentsToCheck = pendingPayments ?? []
+  if (paymentsToCheck.length > BATCH_SIZE) {
+    summary.hasMorePending = true
+    logger.warn('Payment reconcile has pending rows outside the current batch', {
+      batchSize: BATCH_SIZE,
+    })
+  }
+
   const orderIds = Array.from(
     new Set(
-      (pendingPayments ?? []).map((payment) => String(payment.order_id || '')).filter(Boolean),
+      paymentsToCheck
+        .slice(0, BATCH_SIZE)
+        .map((payment) => String(payment.order_id || ''))
+        .filter(Boolean),
     ),
   )
 

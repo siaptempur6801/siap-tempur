@@ -2,6 +2,7 @@
 import dynamic from 'next/dynamic'
 
 import {
+  adminEditorButtonClass,
   adminInputClass,
   adminLabelClass,
   adminSecondaryButtonClass,
@@ -107,6 +108,7 @@ function OptionContentField({
       <span className={`${adminLabelClass} block`}>Isi opsi {suffix}</span>
       <QuestionRichTextEditor
         compact
+        minHeight="min-h-24"
         hiddenInput={false}
         name={`option-content-${suffix}`}
         label={`Isi opsi ${suffix}`}
@@ -275,10 +277,12 @@ export default function QuestionOptionsEditor({
           <div
             key={row.id}
             data-option-row={row.key}
-            className="min-w-0 rounded-lg border border-border bg-card p-3 sm:p-4"
+            className="min-w-0 rounded-lg border border-input bg-card p-3 sm:p-4"
           >
-            <div className="grid min-w-0 grid-cols-12 items-end gap-x-3 gap-y-3">
-              <label className="col-span-4 min-w-0 space-y-1 sm:col-span-3 lg:col-span-1">
+            <OptionContentField row={row} index={index} update={update} editable={editable} />
+
+            <div className="mt-4 grid min-w-0 grid-cols-2 items-end gap-3 border-t border-border pt-4 sm:grid-cols-[6rem_9rem_8rem_minmax(0,1fr)]">
+              <label className="min-w-0 space-y-1">
                 <span className={adminLabelClass}>Kode</span>
                 <input
                   className={adminInputClass}
@@ -289,10 +293,7 @@ export default function QuestionOptionsEditor({
                   aria-label={`Kode opsi ${index + 1}`}
                 />
               </label>
-              <div className="col-span-12 min-w-0 lg:col-span-5">
-                <OptionContentField row={row} index={index} update={update} editable={editable} />
-              </div>
-              <label className="col-span-5 min-w-0 space-y-1 sm:col-span-4 lg:col-span-2">
+              <label className="min-w-0 space-y-1">
                 <span className={adminLabelClass}>Skor opsi</span>
                 <input
                   type="number"
@@ -306,7 +307,7 @@ export default function QuestionOptionsEditor({
                   placeholder="Opsional"
                 />
               </label>
-              <label className="col-span-3 flex min-h-9 min-w-0 items-center gap-1.5 rounded-md border border-border bg-muted px-2 text-sm font-medium text-foreground sm:col-span-5 lg:col-span-2 lg:justify-center lg:px-2">
+              <label className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-md border border-input bg-muted px-3 text-sm font-medium text-foreground md:min-h-9">
                 <input
                   type={isSingleChoice ? 'radio' : 'checkbox'}
                   name={isSingleChoice ? 'question-correct-answer' : undefined}
@@ -317,7 +318,7 @@ export default function QuestionOptionsEditor({
                 />
                 Benar
               </label>
-              <div className="col-span-4 flex min-w-0 items-center justify-end gap-1.5 sm:col-span-3 lg:col-span-2">
+              <div className="flex min-h-11 min-w-0 flex-wrap items-center justify-end gap-2 md:min-h-9">
                 <QuestionImageButton
                   compact
                   ariaLabel={`Gambar opsi ${row.key || index + 1}`}
@@ -330,7 +331,7 @@ export default function QuestionOptionsEditor({
                   type="button"
                   onClick={() => removeRow(index)}
                   disabled={rows.length <= 2}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-danger-border text-red-500 transition hover:bg-danger-muted disabled:cursor-not-allowed disabled:opacity-30"
+                  className={`${adminEditorButtonClass} text-danger hover:bg-danger-muted`}
                   aria-label={`Hapus opsi ${row.key || index + 1}`}
                 >
                   <Trash2 size={15} />

@@ -228,8 +228,8 @@ export default function CommercePackagesClient({
       />
 
       {/* Quick Context & Stat Tiles */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+        <div className="col-span-2 flex items-center gap-3 rounded-xl border border-border-strong bg-card p-4 sm:col-span-1">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary-muted text-primary">
             <Wallet size={20} />
           </div>
@@ -251,7 +251,7 @@ export default function CommercePackagesClient({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-border-strong bg-card p-4 sm:flex-row sm:items-center">
           <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-success-muted text-success">
             <Sparkles size={20} />
           </div>
@@ -262,8 +262,8 @@ export default function CommercePackagesClient({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-info-muted text-info-foreground">
+        <div className="flex flex-col items-start gap-3 rounded-xl border border-border-strong bg-card p-4 sm:flex-row sm:items-center">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-info-muted text-info">
             <ShieldCheck size={20} />
           </div>
           <div className="min-w-0">
@@ -301,7 +301,7 @@ export default function CommercePackagesClient({
 
       {/* Empty State */}
       {packages.length === 0 ? (
-        <section className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
+        <section className="rounded-xl border border-dashed border-border-strong bg-card p-8 text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <Package size={24} />
           </div>
@@ -329,7 +329,7 @@ export default function CommercePackagesClient({
                 className={`relative flex flex-col justify-between rounded-xl border bg-card p-5 transition-colors ${
                   isBestValue
                     ? 'border-primary ring-1 ring-primary/20'
-                    : 'border-border hover:border-primary/40'
+                    : 'border-border-strong hover:border-primary'
                 }`}
               >
                 {/* Best Value Top Badge */}
@@ -455,7 +455,7 @@ export default function CommercePackagesClient({
 
       {/* Staging Simulator Panel */}
       {qaQrisEnabled && qaQris && (
-        <section className="rounded-xl border border-border bg-card p-5 sm:p-6">
+        <section className="rounded-xl border border-border-strong bg-card p-5 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
             <div>
               <span className="text-xs font-medium text-warning">Staging QA Simulator</span>
@@ -469,7 +469,7 @@ export default function CommercePackagesClient({
           </div>
 
           <div className="grid gap-6 md:grid-cols-[240px_1fr]">
-            <div className="rounded-lg border border-border bg-background p-3">
+            <div className="rounded-lg border border-border-strong bg-background p-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={qaQris.qrImageUrlV2 || qaQris.qrImageUrl}
@@ -535,9 +535,9 @@ export default function CommercePackagesClient({
       )}
 
       {/* Reassurance Footer Notice */}
-      <section className="rounded-xl border border-info-border bg-info-muted/50 p-4 text-sm text-info-foreground sm:p-5">
+      <section className="rounded-xl border border-info-border bg-info-muted/50 p-4 text-sm text-info sm:p-5">
         <div className="flex items-start gap-3.5">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-info-muted text-info-foreground">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-info-muted text-info">
             <ShieldCheck size={20} />
           </div>
           <div className="min-w-0">

@@ -15,6 +15,8 @@
   --color-info-border: var(--info-border);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-muted: var(--primary-muted);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -23,6 +25,10 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
+  --color-border-strong: var(--px-border-strong);
+  --color-input: var(--input);
+  --color-disabled: var(--disabled);
+  --color-disabled-foreground: var(--disabled-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-warning: var(--warning);
@@ -333,25 +339,39 @@
 :root {
   --background: var(--brand-paper);
   --foreground: var(--brand-ink);
+  --card: var(--brand-white);
+  --card-foreground: var(--brand-ink);
   --primary: var(--brand-blue);
+  --primary-hover: var(--brand-blue-700);
+  --primary-muted: var(--brand-blue-50);
   --primary-foreground: #ffffff;
   --secondary: var(--brand-ink-100);
   --secondary-foreground: var(--brand-ink);
   --accent: var(--brand-amber);
   --accent-foreground: var(--brand-ink);
   --muted: var(--brand-ink-100);
-  --muted-foreground: var(--brand-ink-500);
+  --muted-foreground: var(--brand-ink-600);
   --border: var(--brand-ink-200);
-  --input: var(--brand-ink-300);
+  --input: var(--brand-ink-500);
+  --disabled: var(--brand-ink-200);
+  --disabled-foreground: var(--brand-ink-700);
   --ring: var(--brand-blue);
-  --success: #059669;
+  --success: #047857;
   --success-foreground: #ffffff;
-  --warning: var(--brand-amber-600);
+  --success-muted: #ecfdf5;
+  --success-border: #a7f3d0;
+  --warning: var(--brand-amber-700);
   --warning-foreground: #ffffff;
+  --warning-muted: var(--brand-amber-50);
+  --warning-border: var(--brand-amber-200);
   --danger: #dc2626;
   --danger-foreground: #ffffff;
+  --danger-muted: #fef2f2;
+  --danger-border: #fecaca;
   --info: var(--brand-blue-600);
   --info-foreground: #ffffff;
+  --info-muted: var(--brand-blue-50);
+  --info-border: var(--brand-blue-200);
 
   --px-canvas: var(--brand-paper);
   --px-surface: var(--brand-white);
@@ -361,9 +381,9 @@
   --px-surface-amber: var(--brand-amber-50);
   --px-surface-violet: var(--brand-blue-50);
   --px-text: var(--brand-ink);
-  --px-text-muted: var(--brand-ink-500);
+  --px-text-muted: var(--brand-ink-600);
   --px-border: var(--brand-ink-200);
-  --px-border-strong: var(--brand-ink-300);
+  --px-border-strong: var(--brand-ink-500);
   --px-primary: var(--brand-blue);
   --px-primary-hover: var(--brand-blue-700);
   --px-success: #059669;
@@ -456,14 +476,14 @@ body {
 }
 
 .px-surface {
-  border: 1px solid var(--px-border);
+  border: 1px solid var(--px-border-strong);
   border-radius: var(--px-radius-md);
   background: var(--px-surface);
   box-shadow: var(--px-shadow-xs);
 }
 
 .px-panel {
-  border: 1px solid var(--px-border);
+  border: 1px solid var(--px-border-strong);
   border-radius: var(--px-radius-lg);
   background: var(--px-surface);
   box-shadow: var(--px-shadow-sm);
@@ -554,7 +574,7 @@ body {
 
 /* Mode tokens, not marketing overrides on every learner component. */
 .st-product[data-experience-mode='learning'] {
-  --st-border: 1px solid var(--px-border);
+  --st-border: 1px solid var(--px-border-strong);
   --st-shadow-sm: var(--px-shadow-xs);
   --st-shadow-md: var(--px-shadow-sm);
   --st-shadow-lg: var(--px-shadow-sm);
@@ -601,6 +621,8 @@ body {
 }
 
 [data-experience-mode='learning'] [class*='bg-gradient-to-'] {
+  /* Keep a solid backing for white copy and progress indicators when flattening gradients. */
+  background-color: var(--tw-gradient-from, var(--px-surface));
   background-image: none;
 }
 
@@ -729,11 +751,25 @@ body {
   width: 100%;
   border: var(--st-border);
   border-radius: var(--st-radius-sm);
-  background: #ffffff;
+  background: var(--card);
   padding: 0.65rem 0.8rem;
   font-weight: 650;
   color: var(--st-ink);
   outline: none;
+}
+
+[data-experience-mode='learning'] .st-input:not([aria-invalid='true']):not(:focus-visible),
+[data-experience-mode='exam'] .st-input:not([aria-invalid='true']):not(:focus-visible) {
+  border-color: var(--input);
+}
+
+.st-product .st-button:disabled {
+  border-color: var(--input) !important;
+  background: var(--disabled) !important;
+  color: var(--disabled-foreground) !important;
+  box-shadow: none !important;
+  opacity: 1;
+  transform: none !important;
 }
 
 .st-product .st-input:focus-visible {
@@ -1018,7 +1054,9 @@ main a[href^='/tka/'][href*='/tryout/']:not([class*='inline-flex']) {
   --muted: #f1f5f9;
   --muted-foreground: #526277;
   --border: #e2e8f0;
+  --input: #64748b;
   --primary: #2563eb;
+  --primary-hover: #1d4ed8;
   --primary-foreground: #ffffff;
   --ring: #2563eb;
   --success: #047857;
@@ -1040,7 +1078,9 @@ main a[href^='/tka/'][href*='/tryout/']:not([class*='inline-flex']) {
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
+  --color-input: var(--input);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-ring: var(--ring);
   --color-success: var(--success);
@@ -1067,7 +1107,8 @@ main a[href^='/tka/'][href*='/tryout/']:not([class*='inline-flex']) {
   --muted: #202c40;
   --muted-foreground: #a7b4c6;
   --border: #334155;
-  --primary: #3b82f6;
+  --input: #94a3b8;
+  --primary: #2563eb;
   --ring: #60a5fa;
   --success: #6ee7b7;
   --success-muted: #14342e;
@@ -1174,6 +1215,19 @@ input.admin-input[type='file'] {
 .admin-workspace form.admin-article-form[data-admin-form] {
   max-width: none;
 }
+.admin-workspace .admin-question-form fieldset[id] {
+  scroll-margin-top: 96px;
+}
+.admin-workspace .admin-content-editor {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+@media (min-width: 768px) {
+  .admin-workspace .admin-content-editor {
+    font-size: 14px;
+  }
+}
 .admin-workspace :where(h1, h2, h3, h4) {
   text-wrap: balance;
 }
@@ -1265,6 +1319,7 @@ input.admin-input[type='file'] {
   }
   .admin-workspace .admin-input {
     min-height: 44px;
+    font-size: 16px;
   }
   .admin-workspace .admin-data-table .admin-action {
     height: 36px;

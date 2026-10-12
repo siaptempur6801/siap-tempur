@@ -123,7 +123,7 @@ export default async function TkaDiagnosticPage({
     >
       <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
         {/* Hero Section */}
-        <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm md:p-7">
+        <section className="overflow-hidden rounded-2xl border border-border-strong bg-white p-5 shadow-sm md:p-7">
           <div className="grid gap-6 text-slate-950 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-center">
             <div>
               <PageHeader
@@ -220,7 +220,7 @@ export default async function TkaDiagnosticPage({
 
         {/* Cara Kerja & Yang Dipetakan */}
         <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm md:p-6">
+          <article className="rounded-2xl border border-border-strong bg-white p-5 shadow-sm md:p-6">
             <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600">
               <span>Alur Pengerjaan</span>
             </div>
@@ -250,7 +250,7 @@ export default async function TkaDiagnosticPage({
             </div>
           </article>
 
-          <article className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm md:p-6">
+          <article className="rounded-2xl border border-border-strong bg-white p-5 shadow-sm md:p-6">
             <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600">
               <span>Cakupan Materi</span>
             </div>
@@ -271,7 +271,7 @@ export default async function TkaDiagnosticPage({
                     {index + 1}
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    <p className="text-xs font-black uppercase tracking-wider text-slate-600">
                       {subject}
                     </p>
                     <p className="mt-0.5 text-sm font-bold text-slate-900 leading-snug">
@@ -290,7 +290,7 @@ export default async function TkaDiagnosticPage({
 
 function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   return (
-    <div className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm">
+    <div className="flex flex-col justify-between rounded-2xl border border-border-strong bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50">
           {icon}

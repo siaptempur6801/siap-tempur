@@ -113,7 +113,7 @@ export function SettingsTab() {
       <section
         className={
           isTka
-            ? 'rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs'
+            ? 'rounded-2xl border border-border-strong bg-white p-6 shadow-xs'
             : 'st-card-md bg-white p-5 md:p-6'
         }
       >
@@ -231,7 +231,7 @@ export function SettingsTab() {
           labelledBy={passwordTitleId}
           className={
             isTka
-              ? 'relative max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-xl'
+              ? 'relative max-w-md rounded-2xl border border-border-strong bg-white p-6 md:p-8 shadow-xl'
               : 'st-product st-card-lg relative max-w-md bg-[var(--st-paper)] p-6 md:p-8'
           }
         >
@@ -242,7 +242,7 @@ export function SettingsTab() {
             aria-label="Tutup"
             className={
               isTka
-                ? 'absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition disabled:opacity-50'
+                ? 'absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-600 transition disabled:opacity-50'
                 : 'st-focus absolute right-3 top-3 flex h-11 w-11 items-center justify-center hover:bg-white disabled:opacity-50'
             }
           >
@@ -359,7 +359,7 @@ export function SettingsTab() {
                 disabled={isChangingPassword}
                 className={
                   isTka
-                    ? 'inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-bold text-slate-700 transition disabled:opacity-50'
+                    ? 'inline-flex min-h-11 items-center justify-center rounded-xl border border-border-strong bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-bold text-slate-700 transition disabled:opacity-50'
                     : 'st-button min-h-12 bg-white px-5 py-3 font-black disabled:opacity-50'
                 }
               >
@@ -380,7 +380,7 @@ export function SettingsTab() {
           describedBy={deleteDescriptionId}
           className={
             isTka
-              ? 'relative max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 md:p-8 shadow-xl'
+              ? 'relative max-w-md rounded-2xl border border-border-strong bg-white p-6 md:p-8 shadow-xl'
               : 'st-product st-card-lg relative max-w-md bg-white p-6 md:p-8'
           }
         >
@@ -459,7 +459,7 @@ export function SettingsTab() {
               onChange={(event) => setDeleteConfirmText(event.target.value.toUpperCase())}
               className={
                 isTka
-                  ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-center font-bold tracking-widest text-slate-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 shadow-2xs'
+                  ? 'w-full rounded-xl border border-border-strong bg-white px-3.5 py-2.5 text-center font-bold tracking-widest text-slate-900 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 shadow-2xs'
                   : 'st-input text-center font-black tracking-[0.15em] focus:border-red-700'
               }
               placeholder="HAPUS"
@@ -493,7 +493,7 @@ export function SettingsTab() {
               disabled={isDeleting}
               className={
                 isTka
-                  ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-bold text-slate-700 transition disabled:opacity-50'
+                  ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-border-strong bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-bold text-slate-700 transition disabled:opacity-50'
                   : 'st-button min-h-12 w-full bg-white px-5 py-3 font-black disabled:opacity-50'
               }
             >
@@ -547,7 +547,7 @@ function PasswordField({
         onChange={(event) => onChange(event.target.value)}
         className={
           isTka
-            ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base font-medium text-slate-800 sm:text-sm placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
+            ? 'w-full rounded-xl border border-border-strong bg-white px-3.5 py-2.5 text-base font-medium text-slate-800 sm:text-sm placeholder:text-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
             : 'st-input'
         }
         placeholder={placeholder}

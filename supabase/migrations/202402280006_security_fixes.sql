@@ -25,13 +25,13 @@ BEGIN
   BEGIN
     ALTER FUNCTION public.start_practice_session (uuid, varchar) SET search_path = public;
   EXCEPTION
-    WHEN OTHERS THEN
+    WHEN undefined_function THEN
       NULL;
   END;
   BEGIN
     ALTER FUNCTION public.start_practice_session (uuid) SET search_path = public;
   EXCEPTION
-    WHEN OTHERS THEN
+    WHEN undefined_function THEN
       NULL;
   END;
 END IF;
@@ -39,47 +39,47 @@ END
 $$;
 
 -- 4. increment_tryout_quota
+DO $$
 BEGIN
   ALTER FUNCTION public.increment_tryout_quota (uuid, int) SET search_path = public;
-
 EXCEPTION
-  WHEN OTHERS THEN
+  WHEN undefined_function THEN
     NULL;
-
-END;
+END
+$$;
 
 -- 5. handle_new_user (Usually a trigger function)
 ALTER FUNCTION public.handle_new_user () SET search_path = public;
 
 -- 6. update_user_streak
+DO $$
 BEGIN
   ALTER FUNCTION public.update_user_streak (uuid) SET search_path = public;
-
 EXCEPTION
-  WHEN OTHERS THEN
+  WHEN undefined_function THEN
     NULL;
-
-END;
+END
+$$;
 
 -- 7. calculate_session_score
+DO $$
 BEGIN
   ALTER FUNCTION public.calculate_session_score (uuid) SET search_path = public;
-
 EXCEPTION
-  WHEN OTHERS THEN
+  WHEN undefined_function THEN
     NULL;
-
-END;
+END
+$$;
 
 -- 8. is_admin
+DO $$
 BEGIN
   ALTER FUNCTION public.is_admin () SET search_path = public;
-
 EXCEPTION
-  WHEN OTHERS THEN
+  WHEN undefined_function THEN
     NULL;
-
-END;
+END
+$$;
 
 -- 9. update_tryout_configurations_updated_at (Trigger function)
 ALTER FUNCTION public.update_tryout_configurations_updated_at () SET search_path = public;

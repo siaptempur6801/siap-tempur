@@ -9,7 +9,7 @@ export const revalidate = 0
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#fdfbf7] font-sans relative">
+    <div className="min-h-screen bg-background font-sans relative">
       <PaperBackground variant="light" />
 
       <main className="relative z-10 max-w-4xl mx-auto px-6 py-12">

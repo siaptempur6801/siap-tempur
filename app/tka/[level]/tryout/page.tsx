@@ -465,51 +465,57 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
 
                 {/* 4 Stat Tiles */}
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
+                  <div className="rounded-xl border border-border-strong bg-white p-3 shadow-2xs">
                     <div className="flex items-center gap-1.5 text-indigo-600">
                       <Clock3 size={15} />
-                      <span className="text-[11px] font-bold text-slate-500">Total Waktu</span>
+                      <span className="text-xs font-medium text-slate-600">Total Waktu</span>
                     </div>
                     <p className="mt-1 text-lg font-black text-slate-900">
                       {featuredTryout.duration ?? '—'}{' '}
                       <span className="text-xs font-medium text-slate-500">menit</span>
                     </p>
-                    <p className="text-[10px] text-slate-400">Mengikuti batas waktu tiap bagian</p>
+                    <p className="text-sm leading-relaxed text-slate-600">
+                      Mengikuti batas waktu tiap bagian
+                    </p>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
+                  <div className="rounded-xl border border-border-strong bg-white p-3 shadow-2xs">
                     <div className="flex items-center gap-1.5 text-indigo-600">
                       <BookOpenCheck size={15} />
-                      <span className="text-[11px] font-bold text-slate-500">Total Soal</span>
+                      <span className="text-xs font-medium text-slate-600">Total Soal</span>
                     </div>
                     <p className="mt-1 text-lg font-black text-slate-900">
                       {featuredTryout.questionCount || '—'}{' '}
                       <span className="text-xs font-medium text-slate-500">butir</span>
                     </p>
-                    <p className="text-[10px] text-slate-400">Jumlah sesuai paket yang dipilih</p>
+                    <p className="text-sm leading-relaxed text-slate-600">
+                      Jumlah sesuai paket yang dipilih
+                    </p>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
+                  <div className="rounded-xl border border-border-strong bg-white p-3 shadow-2xs">
                     <div className="flex items-center gap-1.5 text-indigo-600">
                       <Layers size={15} />
-                      <span className="text-[11px] font-bold text-slate-500">Sistem Sesi</span>
+                      <span className="text-xs font-medium text-slate-600">Sistem Sesi</span>
                     </div>
                     <p className="mt-1 text-lg font-black text-slate-900">
                       {featuredTryout.sections.length || '—'}{' '}
                       <span className="text-xs font-medium text-slate-500">bagian</span>
                     </p>
-                    <p className="text-[10px] text-slate-400">Berurutan otomatis</p>
+                    <p className="text-sm leading-relaxed text-slate-600">Berurutan otomatis</p>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
+                  <div className="rounded-xl border border-border-strong bg-white p-3 shadow-2xs">
                     <div className="flex items-center gap-1.5 text-indigo-600">
                       <Trophy size={15} />
-                      <span className="text-[11px] font-bold text-slate-500">Output</span>
+                      <span className="text-xs font-medium text-slate-600">Output</span>
                     </div>
                     <p className="mt-1 text-lg font-black text-slate-900">
                       Rapor <span className="text-xs font-medium text-slate-500">&amp; Nilai</span>
                     </p>
-                    <p className="text-[10px] text-slate-400">Analisis &amp; remedial</p>
+                    <p className="text-sm leading-relaxed text-slate-600">
+                      Analisis &amp; remedial
+                    </p>
                   </div>
                 </div>
 
@@ -552,7 +558,7 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
               {additionalFullTryouts.map((exam) => (
                 <article
                   key={exam.id}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-all duration-200 hover:border-indigo-200 hover:shadow-md"
+                  className="flex flex-col justify-between rounded-2xl border border-border-strong bg-white p-6 shadow-sm transition-all duration-200 hover:border-primary hover:shadow-md"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-3">
@@ -606,7 +612,7 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
                   key={exam.id}
                   data-testid="tka-catalog-drill"
                   data-exam-id={exam.id}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md"
+                  className="flex flex-col justify-between rounded-2xl border border-border-strong bg-white p-6 shadow-sm transition-all hover:border-primary hover:shadow-md"
                 >
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
@@ -668,7 +674,7 @@ function MetaChip({
 
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center shadow-xs">
+    <div className="rounded-2xl border border-dashed border-border-strong bg-white px-6 py-10 text-center shadow-xs">
       <BookOpenCheck size={26} className="mx-auto text-slate-400" />
       <h3 className="mt-3 text-base font-bold text-slate-950">{title}</h3>
       <p className="mt-1 text-xs text-slate-500 leading-relaxed max-w-md mx-auto">{description}</p>

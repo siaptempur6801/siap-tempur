@@ -341,7 +341,7 @@ export default function TkaFullExamSessionClient({
         data-program={`tka-${level.toLowerCase()}`}
         className="min-h-screen bg-slate-50/70 p-6 text-center text-slate-900"
       >
-        <div className="mx-auto max-w-xl rounded-2xl border border-slate-200/80 bg-white p-6 font-bold text-slate-900 shadow-xs">
+        <div className="mx-auto max-w-xl rounded-2xl border border-border-strong bg-white p-6 font-bold text-slate-900 shadow-xs">
           Tidak ada bagian aktif. Muat ulang halaman atau kembali ke TKA {level}.
         </div>
       </main>
@@ -369,7 +369,7 @@ export default function TkaFullExamSessionClient({
           'group relative w-full rounded-2xl border p-4 text-left transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2',
           selected
             ? 'border-indigo-600 bg-indigo-50/70 shadow-xs ring-1 ring-indigo-500/20'
-            : 'border-slate-200/80 bg-white hover:border-indigo-200 hover:bg-slate-50/60 shadow-2xs',
+            : 'border-border-strong bg-white hover:border-primary hover:bg-slate-50/60 shadow-2xs',
         )}
       >
         <div className="flex items-start gap-3.5">
@@ -389,7 +389,7 @@ export default function TkaFullExamSessionClient({
           </span>
           <div className="min-w-0 flex-1 space-y-2 text-sm sm:text-base font-medium leading-relaxed text-slate-800">
             {option.imageUrl && (
-              <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white p-2">
+              <div className="overflow-hidden rounded-xl border border-border-strong bg-white p-2">
                 <Image
                   src={option.imageUrl}
                   alt="Pilihan jawaban"
@@ -414,7 +414,7 @@ export default function TkaFullExamSessionClient({
       className="min-h-screen bg-slate-50/70 p-3 text-slate-900 md:p-6"
     >
       <div className="mx-auto max-w-7xl space-y-4">
-        <header className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs">
+        <header className="rounded-2xl border border-border-strong bg-white p-4 sm:p-5 shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700 ring-1 ring-indigo-200/60 shadow-2xs">
@@ -447,7 +447,7 @@ export default function TkaFullExamSessionClient({
               <button
                 type="button"
                 onClick={() => router.push(returnPath)}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border-strong bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               >
                 <LogOut size={16} className="text-slate-500" />
                 <span className="hidden sm:inline">Keluar</span>
@@ -473,7 +473,7 @@ export default function TkaFullExamSessionClient({
                 <span
                   className={cn(
                     'text-[11px] font-medium',
-                    section.status === 'active' ? 'text-indigo-100' : 'text-slate-500',
+                    section.status === 'active' ? 'text-white' : 'text-slate-500',
                   )}
                 >
                   {section.questionCount} soal · {Math.round(section.durationSeconds / 60)} menit
@@ -485,7 +485,7 @@ export default function TkaFullExamSessionClient({
 
         <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
           <section className="min-w-0 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border-strong bg-white p-3.5 sm:p-4 shadow-xs">
               <div>
                 <div className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700 ring-1 ring-indigo-200/60 shadow-2xs">
                   {activeSection.subjectCode}
@@ -509,7 +509,7 @@ export default function TkaFullExamSessionClient({
                   className={
                     flags[currentQuestion.attemptQuestionId]
                       ? 'fill-amber-500 text-amber-600'
-                      : 'text-slate-400'
+                      : 'text-slate-600'
                   }
                 />
                 {flags[currentQuestion.attemptQuestionId] ? 'Ditandai' : 'Tandai untuk ditinjau'}
@@ -541,7 +541,7 @@ export default function TkaFullExamSessionClient({
               </article>
             )}
 
-            <article className="rounded-2xl border border-slate-200/80 bg-white p-5 md:p-7 shadow-xs">
+            <article className="rounded-2xl border border-border-strong bg-white p-5 md:p-7 shadow-xs">
               <div className="whitespace-pre-wrap text-base sm:text-lg md:text-xl font-medium leading-relaxed text-slate-950">
                 <MathRenderer text={currentQuestion.stem} />
               </div>
@@ -572,7 +572,7 @@ export default function TkaFullExamSessionClient({
                 type="button"
                 disabled={currentIndex === 0}
                 onClick={() => navigate(currentIndex - 1)}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs sm:text-sm font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border-strong bg-white px-4 py-2 text-xs sm:text-sm font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
               >
                 <ChevronLeft size={18} /> Sebelumnya
               </button>
@@ -603,7 +603,7 @@ export default function TkaFullExamSessionClient({
             </div>
           </section>
 
-          <aside className="h-fit rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5 shadow-xs lg:sticky lg:top-5">
+          <aside className="h-fit rounded-2xl border border-border-strong bg-white p-4 sm:p-5 shadow-xs lg:sticky lg:top-5">
             <div className="flex items-center justify-between gap-2">
               <h2 className="inline-flex items-center gap-2 font-bold text-sm text-slate-900">
                 <MapIcon size={16} className="text-indigo-600" /> Navigasi soal
@@ -630,11 +630,11 @@ export default function TkaFullExamSessionClient({
                     className={cn(
                       'relative flex aspect-square min-h-10 items-center justify-center rounded-xl text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
                       isCurrent && answered
-                        ? 'z-10 bg-emerald-600 text-white shadow-xs font-black ring-2 ring-indigo-600 ring-offset-2 border border-emerald-700'
+                        ? 'z-10 bg-emerald-700 text-white shadow-xs font-black ring-2 ring-indigo-600 ring-offset-2 border border-emerald-700'
                         : isCurrent
                           ? 'z-10 bg-indigo-600 text-white shadow-xs font-black ring-2 ring-indigo-600 ring-offset-2'
                           : answered
-                            ? 'bg-emerald-600 text-white font-bold shadow-xs hover:bg-emerald-700 border border-emerald-700'
+                            ? 'bg-emerald-700 text-white font-bold shadow-xs hover:bg-emerald-800 border border-emerald-700'
                             : 'border border-slate-200/90 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900',
                     )}
                   >
@@ -658,7 +658,7 @@ export default function TkaFullExamSessionClient({
             <div className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 text-xs font-medium text-slate-600">
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200/70 bg-slate-50/70 p-2.5 text-[11px] font-semibold text-slate-700">
                 <div className="flex items-center gap-1.5">
-                  <span className="flex h-4 w-4 items-center justify-center rounded-md bg-emerald-600 text-[9px] font-bold text-white shadow-2xs">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-md bg-emerald-700 text-[9px] font-bold text-white shadow-2xs">
                     ✓
                   </span>
                   <span className="text-slate-800">Terjawab</span>

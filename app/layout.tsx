@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
+import { Suspense, type CSSProperties } from 'react'
 import { Analytics } from '@vercel/analytics/next'
 import { cn } from '@/lib/utils'
 import { Geist, Geist_Mono, Patrick_Hand, Poppins } from 'next/font/google'
@@ -159,14 +159,16 @@ export default function RootLayout({
           position="top-center"
           richColors
           theme="light"
-          toastOptions={{
-            className: 'font-display border-2 border-gray-900 st-shadow-md bg-[#fdfbf7]',
-            style: {
-              background: 'var(--background)',
-              color: 'var(--foreground)',
-              fontFamily: 'var(--font-display)',
-            },
-          }}
+          toastOptions={{ className: 'font-body' }}
+          style={
+            {
+              fontFamily: 'var(--font-body)',
+              '--border-radius': 'var(--radius-st-md)',
+              '--normal-bg': 'var(--background)',
+              '--normal-border': 'var(--border)',
+              '--normal-text': 'var(--foreground)',
+            } as CSSProperties
+          }
         />
       </body>
     </html>

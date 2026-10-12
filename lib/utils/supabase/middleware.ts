@@ -17,6 +17,11 @@ function copyCustomHeaders(response: NextResponse, customHeaders?: Headers) {
   return response
 }
 
+function copyResponseCookies(target: NextResponse, source: NextResponse) {
+  source.cookies.getAll().forEach((cookie) => target.cookies.set(cookie))
+  return target
+}
+
 /**
  * Nama cookie sesi Supabase adalah `sb-<project-ref>-auth-token`, dan JWKS yang
  * besar dapat dipecah menjadi `<nama>.0`, `<nama>.1`, dst. Karena itu pencocokan
@@ -29,13 +34,18 @@ function hasSupabaseAuthCookie(request: NextRequest) {
     .some(({ name }) => name.startsWith('sb-') && name.includes('-auth-token'))
 }
 
-function redirectToLogin(request: NextRequest, customHeaders?: Headers) {
+function redirectToLogin(
+  request: NextRequest,
+  customHeaders?: Headers,
+  sourceResponse?: NextResponse,
+) {
   const url = request.nextUrl.clone()
   const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`
   url.pathname = '/login'
   url.search = ''
   url.searchParams.set('returnTo', returnTo)
-  return copyCustomHeaders(NextResponse.redirect(url), customHeaders)
+  const redirect = copyCustomHeaders(NextResponse.redirect(url), customHeaders)
+  return sourceResponse ? copyResponseCookies(redirect, sourceResponse) : redirect
 }
 
 export async function updateSession(request: NextRequest, customHeaders?: Headers) {
@@ -104,11 +114,12 @@ export async function updateSession(request: NextRequest, customHeaders?: Header
   if (user && AUTH_ROUTES.some((route) => pathname.startsWith(route))) {
     const returnTo = request.nextUrl.searchParams.get('returnTo')
     const target = new URL(resolvePostLoginRedirect(returnTo), request.url)
-    return copyCustomHeaders(NextResponse.redirect(target), customHeaders)
+    const redirect = copyCustomHeaders(NextResponse.redirect(target), customHeaders)
+    return copyResponseCookies(redirect, supabaseResponse)
   }
 
   if (!user && PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
-    return redirectToLogin(request, customHeaders)
+    return redirectToLogin(request, customHeaders, supabaseResponse)
   }
 
   return supabaseResponse

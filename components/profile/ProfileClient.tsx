@@ -161,7 +161,7 @@ export default function ProfileClient({
         />
       )}
 
-      <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Bagian profil">
+      <nav className="grid grid-cols-3 gap-2 pb-1 sm:flex" aria-label="Bagian profil">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -170,11 +170,11 @@ export default function ProfileClient({
             onClick={() => handleTabChange(tab.id)}
             aria-current={activeTab === tab.id ? 'page' : undefined}
             className={cn(
-              'inline-flex min-h-11 shrink-0 items-center gap-2 px-4 py-2.5 text-xs font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
+              'inline-flex min-h-11 min-w-0 flex-col items-center justify-center gap-1.5 px-2 py-2.5 text-center text-xs font-bold leading-snug transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 sm:flex-row sm:gap-2 sm:px-4 [&>svg]:shrink-0',
               isTka
                 ? activeTab === tab.id
-                  ? 'rounded-xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs'
-                  : 'rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-slate-200/80 shadow-2xs'
+                  ? 'rounded-xl border border-primary bg-indigo-50 text-indigo-700 shadow-2xs'
+                  : 'rounded-xl bg-white text-slate-600 hover:bg-slate-50 border border-border-strong shadow-2xs'
                 : activeTab === tab.id
                   ? 'border-2 border-[var(--st-ink)] bg-[var(--st-yellow)] st-shadow-sm font-black text-sm'
                   : 'border-2 border-[var(--st-ink)] bg-white text-gray-600 hover:bg-blue-50 font-black text-sm',

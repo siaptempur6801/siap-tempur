@@ -17,7 +17,7 @@ export default function Error({
   }, [error])
 
   return (
-    <main className="st-product flex min-h-screen items-center justify-center bg-[#fbfaf7] px-4 py-12 font-body">
+    <main className="st-product flex min-h-screen items-center justify-center bg-background px-4 py-12 font-body">
       <section className="w-full max-w-lg border-2 border-slate-900 bg-white p-6 text-center sm:p-8">
         <MascotBubble name="tara" size="sm" bubbleTone="peach" className="mx-auto w-fit">
           Ada gangguan kecil di halaman ini. Coba lagi, ya — kalau masih, kembali ke dashboard.

@@ -560,7 +560,7 @@ function MetaChip({
 
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center shadow-xs">
+    <div className="rounded-2xl border border-dashed border-border-strong bg-white px-6 py-10 text-center shadow-xs">
       <BookOpenCheck size={26} className="mx-auto text-slate-400" />
       <h3 className="mt-3 text-base font-bold text-slate-950">{title}</h3>
       <p className="mt-1 text-xs text-slate-500 leading-relaxed max-w-md mx-auto">{description}</p>

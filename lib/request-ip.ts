@@ -1,14 +1,13 @@
 /**
  * Ekstraksi IP client untuk rate limiting.
  *
- * Urutan header sengaja mendahulukan header yang **di-set platform** (Vercel),
- * karena header itu ditimpa oleh edge dan tidak bisa ditentukan oleh client.
- * `x-forwarded-for` ditaruh paling akhir dan hanya sebagai fallback: nilai kiriman
- * client bisa ikut terbawa di entri pertama.
+ * Di deployment Vercel, dokumentasi platform menyatakan ketiga header ini
+ * mengidentifikasi IP client dan Vercel menimpa `x-forwarded-for`. Header
+ * `x-vercel-forwarded-for` diprioritaskan. Jika ada proxy/CDN lain di depan
+ * Vercel, sanitasi header di proxy tersebut tetap perlu diverifikasi.
  *
- * Untuk memverifikasi urutan ini terhadap deployment nyata, `/api/health`
- * melaporkan `clientIpSource` (nama header yang dipakai, bukan IP-nya) sehingga
- * bisa diuji dengan mengirim header palsu dan melihat apakah sumbernya berubah.
+ * `/api/health` melaporkan nama header sumber untuk diagnosis. Nama ini tidak
+ * membuktikan bahwa nilai yang diterima aman atau telah disanitasi oleh ingress.
  */
 export type ClientIpSource = 'x-vercel-forwarded-for' | 'x-real-ip' | 'x-forwarded-for' | 'fallback'
 

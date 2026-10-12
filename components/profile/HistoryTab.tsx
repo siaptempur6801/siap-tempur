@@ -225,7 +225,7 @@ export function HistoryTab({
                   key={transaction.id}
                   className={
                     isTka
-                      ? 'rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs transition hover:border-indigo-100'
+                      ? 'rounded-xl border border-border-strong bg-white p-4 shadow-2xs transition hover:border-primary'
                       : 'border-2 border-[var(--st-ink)] bg-white p-4'
                   }
                 >
@@ -572,7 +572,7 @@ function HistorySection({
     <section
       className={
         isTka
-          ? 'rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs'
+          ? 'rounded-2xl border border-border-strong bg-white p-6 shadow-xs'
           : 'st-card-md bg-white p-5 md:p-6'
       }
     >
@@ -693,7 +693,7 @@ function HistoryControls({
               title="Reset filter tanggal"
               className={
                 isTka
-                  ? 'flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs transition disabled:opacity-50'
+                  ? 'flex h-11 w-11 items-center justify-center rounded-xl border border-border-strong bg-white hover:bg-slate-50 text-slate-700 shadow-2xs transition disabled:opacity-50'
                   : 'st-button st-focus flex h-11 w-11 items-center justify-center bg-white disabled:opacity-50'
               }
             >
@@ -744,7 +744,7 @@ function DateField({
         onChange={(event) => onChange(event.target.value)}
         className={
           isTka
-            ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
+            ? 'w-full rounded-xl border border-border-strong bg-white px-3.5 py-2 text-sm font-medium text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
             : 'st-input text-sm font-bold'
         }
       />
@@ -803,7 +803,7 @@ function HistoryPagination({
           title="Halaman sebelumnya"
           className={
             isTka
-              ? 'flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs transition disabled:opacity-40'
+              ? 'flex h-10 w-10 items-center justify-center rounded-xl border border-border-strong bg-white hover:bg-slate-50 text-slate-700 shadow-2xs transition disabled:opacity-40'
               : 'st-button st-focus flex h-11 w-11 items-center justify-center bg-white disabled:opacity-40'
           }
         >

@@ -205,7 +205,7 @@ export default async function JoinBatchPage({
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="space-y-1.5 sm:col-span-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
                   Nama lengkap
                 </span>
                 <input
@@ -215,7 +215,7 @@ export default async function JoinBatchPage({
                 />
               </label>
               <label className="space-y-1.5">
-                <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
                   Nomor HP
                 </span>
                 <input
@@ -225,7 +225,7 @@ export default async function JoinBatchPage({
                 />
               </label>
               <label className="space-y-1.5">
-                <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
                   Unit / bagian
                 </span>
                 <input
@@ -235,7 +235,7 @@ export default async function JoinBatchPage({
                 />
               </label>
               <label className="space-y-1.5 sm:col-span-2">
-                <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-400">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-slate-600">
                   Jabatan
                 </span>
                 <input
@@ -253,7 +253,7 @@ export default async function JoinBatchPage({
         )}
       </div>
 
-      <p className="mt-4 text-center text-xs font-medium leading-6 text-slate-400">
+      <p className="mt-4 text-center text-xs font-medium leading-6 text-slate-600">
         Kode peserta akan dibuat otomatis setelah Anda bergabung. Bila instansi sudah mengirimkan
         daftar peserta, data Anda akan ditautkan — bukan diduplikasi.
       </p>
@@ -263,7 +263,7 @@ export default async function JoinBatchPage({
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f4f7fb] px-4 py-10 font-body text-slate-950">
+    <div className="min-h-screen bg-[var(--brand-admin-canvas)] px-4 py-10 font-body text-slate-950">
       <div className="mx-auto w-full max-w-xl">{children}</div>
     </div>
   )

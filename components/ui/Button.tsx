@@ -21,13 +21,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       secondary:
         'bg-slate-900 text-white border border-slate-900 shadow-sm hover:bg-slate-800 hover:border-slate-800',
       outline:
-        'bg-white text-slate-800 border border-slate-300 shadow-sm hover:bg-slate-50 hover:border-slate-400',
+        'bg-white text-slate-800 border border-input shadow-sm hover:bg-slate-50 hover:border-slate-600',
       ghost:
         'bg-transparent text-slate-700 border border-transparent hover:bg-slate-100 hover:text-slate-950',
       danger:
         'bg-red-600 text-white border border-red-600 shadow-sm hover:bg-red-700 hover:border-red-700',
       success:
-        'bg-emerald-600 text-white border border-emerald-600 shadow-sm hover:bg-emerald-700 hover:border-emerald-700',
+        'bg-emerald-700 text-white border border-emerald-700 shadow-sm hover:bg-emerald-800 hover:border-emerald-800',
       warning:
         'bg-amber-500 text-slate-950 border border-amber-500 shadow-sm hover:bg-amber-400 hover:border-amber-400',
       white:
@@ -50,7 +50,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         data-ui-button
         className={cn(
-          'st-button inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background [&>svg]:shrink-0',
+          'st-button inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px disabled:pointer-events-none disabled:border-input disabled:bg-disabled disabled:text-disabled-foreground disabled:shadow-none disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background [&>svg]:shrink-0',
           handwriting ? 'font-display' : 'font-body',
           variants[variant],
           sizes[size],

@@ -164,7 +164,7 @@ export default function TkaInteractiveReviewClient({
   if (!currentItem) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-6 text-center">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs max-w-md">
+        <div className="rounded-2xl border border-border-strong bg-white p-6 shadow-xs max-w-md">
           <BookOpen className="mx-auto text-indigo-600 mb-3" size={36} />
           <h2 className="text-xl font-black text-slate-900">Belum ada soal untuk ditinjau</h2>
           <p className="mt-2 text-sm text-slate-500 font-semibold">
@@ -193,7 +193,7 @@ export default function TkaInteractiveReviewClient({
 
     if (isSelected && isCorrect) {
       containerClass = 'border-emerald-500 bg-emerald-50/70 ring-1 ring-emerald-500'
-      badgeClass = 'border-emerald-600 bg-emerald-600 text-white'
+      badgeClass = 'border-emerald-700 bg-emerald-700 text-white'
     } else if (isSelected && !isCorrect) {
       containerClass = 'border-rose-400 bg-rose-50/70 ring-1 ring-rose-400'
       badgeClass = 'border-rose-600 bg-rose-600 text-white'
@@ -269,7 +269,7 @@ export default function TkaInteractiveReviewClient({
           className={cn(
             'rounded-lg px-2 py-1.5 text-[11px] font-black transition',
             statusFilter === 'correct'
-              ? 'bg-emerald-600 text-white'
+              ? 'bg-emerald-700 text-white'
               : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
           )}
         >
@@ -323,7 +323,7 @@ export default function TkaInteractiveReviewClient({
 
                 let colorClass = 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
                 if (status === 'correct') {
-                  colorClass = 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600'
+                  colorClass = 'bg-emerald-700 text-white hover:bg-emerald-800 border-emerald-700'
                 } else if (status === 'wrong') {
                   colorClass = 'bg-rose-600 text-white hover:bg-rose-700 border-rose-600'
                 }
@@ -356,7 +356,7 @@ export default function TkaInteractiveReviewClient({
 
       {/* Legend */}
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] font-bold text-slate-600 space-y-1.5">
-        <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+        <div className="text-xs font-black uppercase tracking-wider text-slate-600">
           Keterangan Warna
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -405,7 +405,7 @@ export default function TkaInteractiveReviewClient({
             {fullReviewUrl && (
               <Link
                 href={fullReviewUrl}
-                className="st-focus inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-[0.98]"
+                className="st-focus inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-border-strong bg-white px-3 text-xs font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 active:scale-[0.98]"
                 title="Buka pembahasan dalam mode satu layar penuh"
               >
                 <ExternalLink size={13} className="shrink-0 text-slate-500" />
@@ -436,7 +436,7 @@ export default function TkaInteractiveReviewClient({
           <div className="flex items-center gap-3">
             <Link
               href={backUrl}
-              className="st-focus inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+              className="st-focus inline-flex items-center gap-1.5 rounded-xl border border-border-strong bg-white px-3 py-1.5 text-xs font-black text-slate-700 transition hover:bg-slate-50"
               aria-label="Kembali ke ringkasan hasil tryout"
             >
               <ArrowLeft size={16} />
@@ -549,7 +549,7 @@ export default function TkaInteractiveReviewClient({
                     <MathRenderer text={currentItem.stimulus.content} />
                   </div>
                   {currentItem.stimulus.sourceReference && (
-                    <div className="text-xs italic text-slate-400">
+                    <div className="text-xs italic text-slate-600">
                       Sumber: {currentItem.stimulus.sourceReference}
                     </div>
                   )}
@@ -581,7 +581,7 @@ export default function TkaInteractiveReviewClient({
               </div>
 
               {/* Explanation Card */}
-              <section className="rounded-xl border border-slate-200 bg-white p-5 md:p-6 shadow-xs">
+              <section className="rounded-xl border border-border-strong bg-white p-5 md:p-6 shadow-xs">
                 <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <Lightbulb size={18} className="text-slate-500" />
                   Pembahasan Lengkap
@@ -606,7 +606,7 @@ export default function TkaInteractiveReviewClient({
                 type="button"
                 onClick={() => goTo(currentIndex - 1)}
                 disabled={currentIndex === 0}
-                className="st-focus inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs md:text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35"
+                className="st-focus inline-flex items-center gap-2 rounded-xl border border-border-strong bg-white px-4 py-2 text-xs md:text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-35"
               >
                 <ChevronLeft size={17} />
                 <span className="hidden sm:inline">Sebelumnya</span>
@@ -665,7 +665,7 @@ export default function TkaInteractiveReviewClient({
                 type="button"
                 onClick={() => setMobilePaletteOpen(false)}
                 aria-label="Tutup navigasi soal"
-                className="st-focus flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                className="st-focus flex h-9 w-9 items-center justify-center rounded-lg border border-border-strong bg-white text-slate-600 hover:bg-slate-100"
               >
                 <X size={18} />
               </button>

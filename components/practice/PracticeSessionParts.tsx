@@ -281,7 +281,7 @@ export const TryoutTimerBadge = memo(function TryoutTimerBadge({
           ? 'bg-danger-muted text-danger border-danger-border'
           : timeLeftMs <= 300000
             ? 'bg-warning-muted text-warning border-warning-border'
-            : 'bg-info-muted text-info-foreground border-info-border',
+            : 'bg-info-muted text-info border-info-border',
       )}
     >
       <Clock size={11} className="md:w-3.5 md:h-3.5" />

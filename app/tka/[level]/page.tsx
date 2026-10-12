@@ -389,11 +389,11 @@ export default async function TkaLevelPage({
 
           <article
             data-testid={activeTrack ? 'tka-track-active' : 'tka-track-inactive'}
-            className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition-shadow duration-200 hover:shadow-sm md:p-5"
+            className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition-shadow duration-200 hover:shadow-sm md:p-5"
           >
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-600">
                   Status Akses
                 </span>
                 <div
@@ -546,7 +546,7 @@ export default async function TkaLevelPage({
           </div>
 
           {latestCompletedAttempt ? (
-            <article className="grid gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
+            <article className="grid gap-3 rounded-2xl border border-border-strong bg-white p-4 shadow-xs sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center">
               <div className="min-w-0">
                 <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 ring-1 ring-emerald-200">
                   <CheckCircle2 size={13} /> Capaian terakhir
@@ -562,9 +562,7 @@ export default async function TkaLevelPage({
                 </p>
               </div>
               <div className="rounded-xl bg-slate-50 px-4 py-2.5 text-center ring-1 ring-slate-100">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  Skor
-                </p>
+                <p className="text-xs font-black uppercase tracking-wider text-slate-600">Skor</p>
                 <p className="mt-0.5 text-lg font-black tabular-nums text-slate-950">
                   {latestScore}
                 </p>
@@ -577,7 +575,7 @@ export default async function TkaLevelPage({
               </Link>
             </article>
           ) : (
-            <article className="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-center">
+            <article className="rounded-2xl border border-dashed border-border-strong bg-white p-5 text-center">
               <h3 className="text-base font-black tracking-tight text-slate-950">
                 Belum ada capaian
               </h3>
@@ -613,8 +611,8 @@ function SummaryMetric({
   detail: string
 }) {
   return (
-    <article className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-xs">
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+    <article className="rounded-xl border border-border-strong bg-white p-3.5 shadow-xs">
+      <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
         <span className="text-blue-700">{icon}</span>
         {label}
       </div>
@@ -641,7 +639,7 @@ function TkaComingSoonPage({ level }: { level: TkaLevel }) {
     >
       <div className="mx-auto max-w-4xl space-y-6 md:space-y-8">
         {/* Hero Section */}
-        <section className="relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-6 shadow-xs sm:p-9 md:p-12">
+        <section className="relative overflow-hidden rounded-3xl border border-border-strong bg-white p-6 shadow-xs sm:p-9 md:p-12">
           <div
             className={`pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full border-2 border-dashed ${
               isSd
@@ -674,7 +672,7 @@ function TkaComingSoonPage({ level }: { level: TkaLevel }) {
               <span className="rounded-full bg-[var(--brand-blue-50)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-blue-700">
                 Segera hadir
               </span>
-              <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-[0.1em] text-slate-600">
                 Tahap penyiapan
               </span>
             </div>
@@ -724,7 +722,7 @@ function TkaComingSoonPage({ level }: { level: TkaLevel }) {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <TkaSurfaceLink
                 href="/tka"
-                className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all duration-200 hover:bg-slate-50 active:scale-[0.98]"
+                className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-border-strong bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all duration-200 hover:bg-slate-50 active:scale-[0.98]"
               >
                 Kembali ke TKA
               </TkaSurfaceLink>
@@ -746,7 +744,7 @@ function TkaComingSoonPage({ level }: { level: TkaLevel }) {
 
         {/* Features preview cards */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
             <Sparkles size={14} className="text-blue-700" />
             <span>Fitur yang sedang disiapkan untuk TKA {level}</span>
           </div>
@@ -788,9 +786,9 @@ function TkaAssessmentUnavailablePage({ level }: { level: TkaLevel }) {
     <main
       data-experience-mode="learning"
       data-program={`tka-${level.toLowerCase()}`}
-      className="min-h-screen bg-[#f8fafc] px-4 py-10 font-body text-slate-950 sm:px-6"
+      className="min-h-screen bg-slate-50 px-4 py-10 font-body text-slate-950 sm:px-6"
     >
-      <section className="mx-auto max-w-2xl rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm sm:p-10">
+      <section className="mx-auto max-w-2xl rounded-3xl border border-border-strong bg-white p-7 text-center shadow-sm sm:p-10">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
           <School size={23} />
         </div>
@@ -826,7 +824,7 @@ function FeaturePreviewCard({
   description: string
 }) {
   return (
-    <article className="group flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md">
+    <article className="group flex flex-col justify-between rounded-2xl border border-border-strong bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md">
       <div>
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl shadow-2xs ${tone}`}>
           {icon}

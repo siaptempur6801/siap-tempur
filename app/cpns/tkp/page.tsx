@@ -36,7 +36,7 @@ export default async function TKPPage() {
   const authed = Boolean(user)
 
   return (
-    <div className="min-h-screen bg-[#fdfbf7]">
+    <div className="min-h-screen bg-background">
       <SeoNavbar />
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-4xl">

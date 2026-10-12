@@ -132,12 +132,19 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ slu
           </header>
 
           {article.cover_image_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={article.cover_image_url}
-              alt={article.title}
-              className="my-8 max-h-[440px] w-full rounded-st-lg border-2 border-[var(--st-ink)] object-cover st-shadow-md md:my-10"
-            />
+            <div className="relative my-8 aspect-video max-h-[440px] w-full overflow-hidden rounded-st-lg border-2 border-[var(--st-ink)] bg-blue-100 st-shadow-md md:my-10">
+              {/* URL cover bisa berasal dari sumber eksternal yang belum tentu terdaftar di next.config. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={article.cover_image_url}
+                alt={article.title}
+                width={1200}
+                height={675}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
+            </div>
           )}
 
           <ArticleToc items={tocItems} />

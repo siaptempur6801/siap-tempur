@@ -424,7 +424,7 @@ export default function QuestionBankForm({
             <a
               key={href}
               href={href}
-              className="flex min-h-11 items-center gap-2 rounded-lg border border-border bg-muted px-3 text-sm font-medium text-foreground transition hover:border-info-border hover:bg-info-muted hover:text-info"
+              className="flex min-h-11 items-center gap-2 rounded-md border border-input bg-muted px-3 text-sm font-medium text-foreground transition hover:border-primary hover:bg-info-muted hover:text-info"
             >
               <Icon size={16} aria-hidden="true" />
               {label}
@@ -614,7 +614,7 @@ export default function QuestionBankForm({
             </div>
           </AdminFormSection>
         </fieldset>
-        <div className="sticky bottom-0 z-10 -mx-1 flex flex-col gap-3 rounded-lg border border-border bg-card/95 p-3 shadow-[0_-8px_30px_rgba(15,23,42,0.10)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <div className="sticky bottom-0 z-10 -mx-1 flex flex-col gap-3 rounded-lg border border-input bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-lg sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <span
               aria-label={`Kelengkapan dasar ${readyCount} dari ${readyChecks.length}`}

@@ -207,7 +207,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
       <section
         className={
           isTka
-            ? 'rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs'
+            ? 'rounded-2xl border border-border-strong bg-white p-6 shadow-xs'
             : 'st-card-md bg-white p-5 md:p-7'
         }
       >
@@ -288,7 +288,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                     <input
                       className={
                         isTka
-                          ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
+                          ? 'w-full rounded-xl border border-border-strong bg-white px-3.5 py-2.5 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
                           : 'st-input'
                       }
                       value={editedName}
@@ -303,7 +303,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                     <textarea
                       className={
                         isTka
-                          ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium min-h-28 resize-y focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
+                          ? 'w-full rounded-xl border border-border-strong bg-white px-3.5 py-2.5 text-sm font-medium min-h-28 resize-y focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
                           : 'st-input min-h-28 resize-y'
                       }
                       value={editedBio}
@@ -317,7 +317,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                       type="tel"
                       className={
                         isTka
-                          ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
+                          ? 'w-full rounded-xl border border-border-strong bg-white px-3.5 py-2.5 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
                           : 'st-input'
                       }
                       value={editedPhone}
@@ -332,7 +332,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                       type="date"
                       className={
                         isTka
-                          ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
+                          ? 'w-full rounded-xl border border-border-strong bg-white px-3.5 py-2.5 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
                           : 'st-input'
                       }
                       value={editedBirthDate}
@@ -345,7 +345,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
                     <select
                       className={
                         isTka
-                          ? 'w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
+                          ? 'w-full rounded-xl border border-border-strong bg-white px-3.5 py-2.5 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-2xs'
                           : 'st-input'
                       }
                       value={editedGender}

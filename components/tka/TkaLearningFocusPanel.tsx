@@ -60,7 +60,7 @@ export default async function TkaLearningFocusPanel({ items }: { items?: TkaLear
             <article
               key={item.id}
               data-testid="tka-learning-focus-card"
-              className="group flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-md"
+              className="group flex flex-col justify-between rounded-2xl border border-border-strong bg-white p-5 md:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-primary hover:shadow-md"
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
@@ -68,7 +68,7 @@ export default async function TkaLearningFocusPanel({ items }: { items?: TkaLear
                     <span
                       className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black shadow-2xs ${
                         isTopPriority
-                          ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-white ring-2 ring-amber-200/60'
+                          ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-slate-950 ring-2 ring-amber-200/60'
                           : 'bg-indigo-600 text-white'
                       }`}
                     >
@@ -97,7 +97,7 @@ export default async function TkaLearningFocusPanel({ items }: { items?: TkaLear
                   {item.topicName}
                 </h3>
                 {item.parentTopicName && (
-                  <p className="mt-1 text-xs font-medium text-slate-400">{item.parentTopicName}</p>
+                  <p className="mt-1 text-xs font-medium text-slate-600">{item.parentTopicName}</p>
                 )}
 
                 <div className="mt-4">

@@ -405,7 +405,7 @@ export default function EventWorkflowForm({
             {activeStep < steps.length - 1 ? (
               <button
                 type="button"
-                className="admin-action inline-flex min-h-8 items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="admin-action inline-flex min-h-8 items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 onClick={() => goToStep(activeStep + 1)}
               >
                 Lanjut

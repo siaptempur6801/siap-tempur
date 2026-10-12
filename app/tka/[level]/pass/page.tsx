@@ -114,7 +114,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
         {/* Only describe benefits that learners can use today. */}
         {canPurchasePass ? (
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-indigo-200">
+            <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-primary">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
                 <Sparkles size={20} />
               </div>
@@ -127,7 +127,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
               </div>
             </div>
 
-            <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-emerald-200">
+            <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-emerald-200">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
                 <CalendarDays size={20} />
               </div>
@@ -140,7 +140,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
               </div>
             </div>
 
-            <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-blue-200">
+            <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-primary">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
                 <CheckCircle2 size={20} />
               </div>
@@ -202,7 +202,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
         ) : (
           <section
             data-testid="tka-pass-status-inactive"
-            className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs"
+            className="rounded-2xl border border-border-strong bg-white p-5 shadow-xs"
           >
             <div className="flex items-start gap-3.5">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700">
@@ -230,7 +230,7 @@ export default async function TkaPassPage({ params }: { params: Promise<{ level:
           />
         ) : (
           <section
-            className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8"
+            className="rounded-2xl border border-border-strong bg-white p-6 sm:p-8"
             role="status"
           >
             <div className="mx-auto max-w-2xl text-center">

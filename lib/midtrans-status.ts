@@ -63,15 +63,7 @@ export function canonicalMidtransStatus(value: unknown) {
   }
 }
 
-/**
- * Keputusan fraud Midtrans. Hanya relevan untuk `transaction_status = 'capture'`.
- *
- * `fraud_status` sebelumnya TIDAK PERNAH dibaca di mana pun — satu-satunya
- * kemunculannya adalah deklarasi tipe. Akibatnya kanal yang mengembalikan
- * `capture` + `fraud_status='deny'` tetap diproses sebagai pembayaran sukses:
- * order ditandai paid, token/entitlement bertambah, dan karena guard status
- * bersifat monotonik, keputusan itu tidak dapat ditarik kembali.
- */
+/** Keputusan fraud Midtrans. Hanya relevan untuk `transaction_status = 'capture'`. */
 export type FraudStatus = 'accept' | 'challenge' | 'deny' | null
 
 export function normalizeFraudStatus(value: unknown): FraudStatus {
@@ -84,18 +76,19 @@ export type MidtransFulfilmentDecision = {
   /** Status efektif yang boleh dipakai untuk memutuskan pemenuhan order. */
   status: string
   /** Alasan bila pemenuhan sengaja tidak diberikan; `null` bila aman diproses. */
-  blockedReason: 'FRAUD_DENIED' | 'FRAUD_CHALLENGED' | null
+  blockedReason: 'FRAUD_DENIED' | 'FRAUD_CHALLENGED' | 'FRAUD_STATUS_UNKNOWN' | null
 }
 
 /**
- * Menentukan status efektif sebuah notifikasi Midtrans dengan menghormati
- * `fraud_status`.
+ * Menentukan status efektif respons Midtrans dengan menghormati `fraud_status`.
  *
  * Aturan Midtrans:
  * - `settlement` sudah final dan tidak lagi membawa keputusan fraud → diteruskan.
- * - `capture` HANYA final bila `fraud_status='accept'`.
+ * - `capture` final bila `fraud_status='accept'`, atau field tidak dikirim
+ *   oleh metode pembayaran yang tidak memakai FDS.
  *   - `deny`     → diturunkan menjadi `deny`  (tidak boleh memenuhi order)
  *   - `challenge`→ diturunkan menjadi `pending` (menunggu review manual Midtrans)
+ *   - nilai yang ada tetapi tidak dikenal → `pending` sampai ditinjau
  * - Status lain diteruskan apa adanya.
  *
  * Fungsi ini murni supaya keputusannya dapat diuji tanpa jaringan.
@@ -108,7 +101,11 @@ export function resolveMidtransFulfilment(
   if (status !== 'capture') return { status, blockedReason: null }
 
   const fraud = normalizeFraudStatus(fraudStatus)
+  if (fraud === 'accept') return { status, blockedReason: null }
   if (fraud === 'deny') return { status: 'deny', blockedReason: 'FRAUD_DENIED' }
   if (fraud === 'challenge') return { status: 'pending', blockedReason: 'FRAUD_CHALLENGED' }
+  if (fraudStatus !== undefined && fraudStatus !== null) {
+    return { status: 'pending', blockedReason: 'FRAUD_STATUS_UNKNOWN' }
+  }
   return { status, blockedReason: null }
 }

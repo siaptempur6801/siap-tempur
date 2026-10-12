@@ -240,7 +240,7 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
           'st-focus flex w-full items-start gap-3 rounded-xl border p-3 text-left transition',
           selected
             ? 'border-indigo-300 bg-indigo-50 ring-1 ring-indigo-200'
-            : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-indigo-50/40',
+            : 'border-border-strong bg-white hover:border-primary hover:bg-indigo-50/40',
         )}
       >
         <span
@@ -272,10 +272,10 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
     <main
       data-experience-mode="exam"
       data-program={`tka-${level.toLowerCase()}`}
-      className="st-product min-h-screen bg-[#f8f9fd] p-3 md:p-5"
+      className="st-product min-h-screen bg-background p-3 md:p-5"
     >
       <div className="mx-auto max-w-6xl space-y-3">
-        <header className="rounded-[1.15rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <header className="rounded-[1.15rem] border border-border-strong bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-indigo-600">
@@ -342,13 +342,13 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_16rem]">
           <article
             data-testid="diagnostic-question-card"
-            className="rounded-[1.15rem] border border-slate-200 bg-white p-4 shadow-sm md:p-5"
+            className="rounded-[1.15rem] border border-border-strong bg-white p-4 shadow-sm md:p-5"
           >
             <div className="flex items-center justify-between gap-3">
               <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-indigo-700">
                 Soal {currentIndex + 1} dari {questions.length}
               </span>
-              <span className="text-[11px] font-bold text-slate-400">
+              <span className="text-xs font-bold text-slate-600">
                 {instruction(currentQuestion.responseType)}
               </span>
             </div>
@@ -424,10 +424,10 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
           </article>
 
           <aside
-            className="rounded-[1.15rem] border border-slate-200 bg-white p-3 shadow-sm lg:sticky lg:top-3 lg:self-start"
+            className="rounded-[1.15rem] border border-border-strong bg-white p-3 shadow-sm lg:sticky lg:top-3 lg:self-start"
             aria-label="Navigasi soal diagnostik"
           >
-            <div className="flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">
+            <div className="flex items-center justify-between gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-600">
               <span className="flex items-center gap-2">
                 <Grid3X3 size={15} /> Navigasi soal
               </span>
@@ -455,11 +455,11 @@ export default function TkaDiagnosticSessionClient({ state }: { state: TkaFullEx
                     className={cn(
                       'st-focus relative flex h-9 items-center justify-center rounded-lg text-xs font-black transition-all',
                       isCurrent && answered
-                        ? 'z-10 bg-emerald-600 text-white shadow-xs ring-2 ring-indigo-600 ring-offset-2 border border-emerald-700'
+                        ? 'z-10 bg-emerald-700 text-white shadow-xs ring-2 ring-indigo-600 ring-offset-2 border border-emerald-700'
                         : isCurrent
                           ? 'z-10 bg-indigo-600 text-white shadow-xs ring-2 ring-indigo-600 ring-offset-2'
                           : answered
-                            ? 'bg-emerald-600 text-white shadow-xs border border-emerald-700'
+                            ? 'bg-emerald-700 text-white shadow-xs border border-emerald-700'
                             : 'bg-slate-100 text-slate-600 border border-slate-200/80 hover:bg-slate-200 hover:text-slate-900',
                     )}
                   >

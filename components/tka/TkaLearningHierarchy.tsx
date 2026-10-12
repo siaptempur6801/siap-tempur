@@ -147,7 +147,7 @@ export default async function TkaLearningHierarchy({
     >
       {/* Quick Context & Stats Banner */}
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-indigo-200">
+        <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-primary">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
             <Clock3 size={20} />
           </div>
@@ -160,7 +160,7 @@ export default async function TkaLearningHierarchy({
           </div>
         </div>
 
-        <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-emerald-200">
+        <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-success">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
             <CheckCircle2 size={20} />
           </div>
@@ -181,8 +181,8 @@ export default async function TkaLearningHierarchy({
           </div>
         </div>
 
-        <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-amber-200">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-xs">
+        <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-warning">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-slate-950 shadow-xs">
             <Target size={20} />
           </div>
           <div className="min-w-0">
@@ -291,7 +291,7 @@ export default async function TkaLearningHierarchy({
                     return (
                       <article
                         key={item.drill!.examSlug}
-                        className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-200 hover:border-indigo-300 hover:shadow-md"
+                        className="group relative flex flex-col justify-between rounded-2xl border border-border-strong bg-white p-5 shadow-xs transition-all duration-200 hover:border-primary hover:shadow-md"
                       >
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-2">
@@ -321,13 +321,13 @@ export default async function TkaLearningHierarchy({
                                     Akurasi: <b className="text-slate-900">{accuracyPct}%</b>
                                   </>
                                 ) : (
-                                  <span className="text-slate-400 font-normal">
+                                  <span className="text-slate-600 font-normal">
                                     Belum dikerjakan
                                   </span>
                                 )}
                               </span>
                               {hasAttempt && (
-                                <span className="text-[11px] text-slate-400">
+                                <span className="text-xs text-slate-600">
                                   {item.correctQuestions}/{item.attemptedQuestions} dinilai
                                 </span>
                               )}
@@ -362,8 +362,8 @@ export default async function TkaLearningHierarchy({
                   })}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
-                  <BookOpenCheck size={20} className="mx-auto text-slate-400 mb-1.5" />
+                <div className="rounded-2xl border border-dashed border-border-strong bg-white p-6 text-center text-sm text-slate-500">
+                  <BookOpenCheck size={20} className="mx-auto text-slate-600 mb-1.5" />
                   <span>Materi latihan untuk mata pelajaran ini sedang disiapkan.</span>
                 </div>
               )}
@@ -405,7 +405,7 @@ function LearningState({
     <section
       id="tka-learning-hierarchy"
       data-testid="tka-learning-hierarchy"
-      className="scroll-mt-6 rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center"
+      className="scroll-mt-6 rounded-2xl border border-dashed border-border-strong bg-white p-6 text-center"
     >
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
         {icon}

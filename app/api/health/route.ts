@@ -12,25 +12,28 @@ type HealthChecks = {
   env: boolean
   database: boolean
   leaderboard: boolean
+  rateLimitStore: boolean
 }
 
-function healthResponse(statusCode: number, checks: HealthChecks, clientIpSource: ClientIpSource) {
+type RateLimitStoreStatus = 'redis' | 'memory' | 'unconfigured'
+
+function healthResponse(
+  statusCode: number,
+  checks: HealthChecks,
+  clientIpSource: ClientIpSource,
+  rateLimitStore: RateLimitStoreStatus,
+) {
   const isOk = Object.values(checks).every(Boolean)
   const deploymentCommitSha = process.env.VERCEL_GIT_COMMIT_SHA ?? null
   const deploymentEnvironment = process.env.VERCEL_ENV ?? null
-
-  // Configuration indicator only: production now rejects rate-limited actions
-  // when the shared store is missing; local/staging can use memory fallback.
-  const rateLimitStore =
-    env.upstashRedisRestUrl() && env.upstashRedisRestToken() ? 'redis' : 'memory'
 
   return NextResponse.json(
     {
       status: isOk ? 'ok' : 'degraded',
       checks,
       rateLimitStore,
-      // Nama header yang dipakai sebagai IP client — berguna untuk membuktikan
-      // urutan header aman (header kiriman client tidak boleh menang).
+      // Nama header sumber untuk diagnosis. Ini tidak membuktikan ingress telah
+      // membersihkan header; sanitasi tetap bergantung pada konfigurasi proxy.
       clientIpSource,
       timestamp: new Date().toISOString(),
       deploymentCommitSha,
@@ -51,10 +54,19 @@ function healthResponse(statusCode: number, checks: HealthChecks, clientIpSource
 }
 
 export async function GET(request: Request) {
+  const isProduction = env.appEnvironment() === 'production'
+  const rateLimitConfigured = Boolean(env.upstashRedisRestUrl() && env.upstashRedisRestToken())
+  const rateLimitStore: RateLimitStoreStatus = rateLimitConfigured
+    ? 'redis'
+    : isProduction
+      ? 'unconfigured'
+      : 'memory'
   const checks: HealthChecks = {
     env: false,
     database: false,
     leaderboard: false,
+    // This is a configuration/readiness check. It does not ping Redis.
+    rateLimitStore: !isProduction || rateLimitConfigured,
   }
   const clientIpSource = resolveClientIp(request.headers).source
 
@@ -86,5 +98,10 @@ export async function GET(request: Request) {
     })
   }
 
-  return healthResponse(Object.values(checks).every(Boolean) ? 200 : 503, checks, clientIpSource)
+  return healthResponse(
+    Object.values(checks).every(Boolean) ? 200 : 503,
+    checks,
+    clientIpSource,
+    rateLimitStore,
+  )
 }

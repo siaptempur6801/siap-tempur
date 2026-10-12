@@ -22,6 +22,21 @@ function isSafeImageUrl(value: string) {
   }
 }
 
+function canOptimizeImageUrl(value: string) {
+  if (value.startsWith('/') && !value.startsWith('//')) return true
+
+  try {
+    const url = new URL(value)
+    return (
+      url.protocol === 'https:' &&
+      !url.port &&
+      /^[a-z0-9-]+\.supabase\.(?:co|in)$/i.test(url.hostname)
+    )
+  } catch {
+    return false
+  }
+}
+
 function sanitizeRichText(value: string) {
   return sanitizeHtmlAllowlist(
     value,
@@ -72,6 +87,7 @@ export default function MathRenderer({ text, className }: MathRendererProps) {
       {segments.map((segment, index) => {
         if (segment.kind === 'image') {
           if (!segment.url || !isSafeImageUrl(segment.url)) return null
+          const optimizeImage = canOptimizeImageUrl(segment.url)
           return (
             <span
               key={index}
@@ -82,7 +98,8 @@ export default function MathRenderer({ text, className }: MathRendererProps) {
                 alt={segment.alt || 'Gambar soal'}
                 width={720}
                 height={420}
-                unoptimized
+                sizes="(min-width: 28rem) 28rem, calc(100vw - 2rem)"
+                unoptimized={!optimizeImage}
                 className="max-h-72 w-full object-contain"
               />
             </span>

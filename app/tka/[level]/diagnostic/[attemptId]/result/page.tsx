@@ -255,12 +255,12 @@ export default async function TkaDiagnosticResultPage({
                 <article
                   key={row.knowledge_node_id}
                   data-testid="diagnostic-competency-card"
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all duration-200 hover:border-slate-300 hover:shadow-md"
+                  className="flex flex-col justify-between rounded-2xl border border-border-strong bg-white p-5 shadow-sm transition-all duration-200 hover:border-slate-600 hover:shadow-md"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                        <p className="text-xs font-black uppercase tracking-wide text-slate-600">
                           {subject?.name ?? subject?.code ?? `TKA ${level}`}
                         </p>
                         <h3 className="mt-1 text-base font-black text-slate-900">
@@ -291,7 +291,7 @@ export default async function TkaDiagnosticResultPage({
                       }
                     />
                   </div>
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-slate-400">
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs font-bold text-slate-600">
                     <span>Prioritas #{Number(row.priority_rank)}</span>
                     <span>Keyakinan {(Number(row.confidence ?? 0) * 100).toFixed(0)}%</span>
                   </div>
@@ -319,7 +319,7 @@ export default async function TkaDiagnosticResultPage({
             </div>
           </div>
           {primaryRecommendation && (
-            <div className="mt-6 flex flex-col gap-4 rounded-lg border border-border bg-card p-5 md:flex-row md:items-center md:justify-between">
+            <div className="mt-6 flex flex-col gap-4 rounded-lg border border-border-strong bg-card p-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <div className="inline-flex rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                   Prioritas utama
@@ -345,7 +345,7 @@ export default async function TkaDiagnosticResultPage({
             </div>
           )}
           {recommendations.length > 1 && (
-            <p className="mt-6 text-xs font-black uppercase tracking-wider text-slate-400">
+            <p className="mt-6 text-xs font-black uppercase tracking-wider text-slate-600">
               Pilihan fokus berikutnya
             </p>
           )}
@@ -369,7 +369,7 @@ export default async function TkaDiagnosticResultPage({
                           Prioritas {Number(row.priority)}
                         </span>
                         {competency && (
-                          <span className="text-xs font-bold text-slate-400">
+                          <span className="text-xs font-bold text-slate-600">
                             Baseline {Number(competency.baseline_score).toFixed(0)}%
                           </span>
                         )}
@@ -381,7 +381,7 @@ export default async function TkaDiagnosticResultPage({
                         {subject?.name ?? `TKA ${level}`}
                       </p>
                       {resource?.title && (
-                        <p className="mt-2 text-xs font-medium leading-relaxed text-slate-400">
+                        <p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">
                           Jalur terkait: {resource.title}
                         </p>
                       )}
@@ -403,9 +403,9 @@ export default async function TkaDiagnosticResultPage({
           )}
         </section>
 
-        <section className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+        <section className="flex flex-col gap-4 rounded-2xl border border-border-strong bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
           <div className="max-w-2xl">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-600">
               <CircleAlert size={16} /> Langkah berikutnya
             </div>
             <h2 className="mt-1.5 text-xl font-black text-slate-900">
@@ -448,8 +448,8 @@ function Strength({ label }: { label: string }) {
 
 function Summary({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+    <div className="rounded-2xl border border-border-strong bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-600">
         {icon}
         {label}
       </div>

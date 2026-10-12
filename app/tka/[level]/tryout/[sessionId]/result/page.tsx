@@ -193,7 +193,7 @@ export default async function TkaResultPage({
             <div className="flex items-center gap-2">
               <Link
                 href={returnHref}
-                className="st-focus inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs md:text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+                className="st-focus inline-flex items-center gap-2 rounded-xl border border-border-strong bg-white px-3.5 py-2 text-xs md:text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
               >
                 <ArrowLeft size={16} />{' '}
                 {result.accessContext === 'organization' || result.accessContext === 'event'
@@ -221,7 +221,7 @@ export default async function TkaResultPage({
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link
                   href={`${base}/tryout/${sessionId}/review`}
-                  className="st-button st-focus inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 px-5 text-sm sm:w-auto"
+                  className="st-button st-focus inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 border border-primary bg-primary px-5 text-sm text-primary-foreground transition-colors hover:bg-primary-hover sm:w-auto"
                 >
                   <BookOpenCheck size={17} className="shrink-0" />
                   <span className="truncate">Buka Pembahasan Soal</span>
@@ -229,7 +229,7 @@ export default async function TkaResultPage({
                 {automaticRemedialEnabled && remedial?.session && (
                   <Link
                     href={`${base}/remedial/${remedial.session.id}`}
-                    className="st-focus inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-border bg-background px-5 text-sm font-medium text-foreground transition hover:bg-muted sm:w-auto"
+                    className="st-focus inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-border-strong bg-background px-5 text-sm font-medium text-foreground transition hover:bg-muted sm:w-auto"
                   >
                     <RotateCcw size={17} className="shrink-0" />
                     <span className="truncate">
@@ -304,7 +304,7 @@ export default async function TkaResultPage({
                   return (
                     <article
                       key={subject.subjectId}
-                      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+                      className="rounded-2xl border border-border-strong bg-white p-5 shadow-sm transition hover:shadow-md"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div>
@@ -324,7 +324,7 @@ export default async function TkaResultPage({
                       <div className="mt-4 flex items-baseline justify-between">
                         <div className="text-3xl font-black text-slate-950">
                           {subject.score}
-                          <span className="text-base font-semibold text-slate-400">
+                          <span className="text-base font-semibold text-slate-600">
                             {' '}
                             / {subject.maxScore} poin
                           </span>
@@ -430,7 +430,7 @@ export default async function TkaResultPage({
               <div className="flex shrink-0">
                 <Link
                   href={`${base}/tryout/${sessionId}/review`}
-                  className="st-focus inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-indigo-600 hover:border-slate-300 active:scale-[0.98] w-full sm:w-auto"
+                  className="st-focus inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-border-strong bg-white px-5 text-sm font-bold text-slate-700 shadow-2xs transition hover:bg-slate-50 hover:text-indigo-600 hover:border-slate-600 active:scale-[0.98] w-full sm:w-auto"
                 >
                   <ExternalLink size={16} className="shrink-0 text-slate-500" />
                   <span>Mode Layar Penuh</span>
@@ -449,7 +449,7 @@ export default async function TkaResultPage({
                 embedded
               />
             ) : (
-              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center font-bold text-slate-500">
+              <div className="rounded-2xl border border-border-strong bg-white p-8 text-center font-bold text-slate-500">
                 Belum ada soal yang dapat ditinjau dari sesi ini.
               </div>
             )}
@@ -513,15 +513,15 @@ function MetricCard({
   helper?: string
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-400">
+    <div className="rounded-2xl border border-border-strong bg-white p-5 shadow-sm transition hover:shadow-md">
+      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-slate-600">
         {icon}
         {label}
       </div>
       <div className="mt-2 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">
         {value}
       </div>
-      {helper && <p className="mt-1 text-xs font-semibold text-slate-400">{helper}</p>}
+      {helper && <p className="mt-1 text-xs font-semibold text-slate-600">{helper}</p>}
     </div>
   )
 }

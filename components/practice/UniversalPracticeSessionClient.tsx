@@ -282,7 +282,7 @@ export default function UniversalPracticeSessionClient({
           'group relative w-full rounded-2xl border p-4 text-left transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2',
           selected
             ? 'border-indigo-600 bg-indigo-50/70 shadow-xs ring-1 ring-indigo-500/20'
-            : 'border-slate-200/80 bg-white hover:border-indigo-200 hover:bg-slate-50/60 shadow-2xs',
+            : 'border-border-strong bg-white hover:border-primary hover:bg-slate-50/60 shadow-2xs',
         )}
       >
         <div className="flex items-start gap-3.5">
@@ -348,7 +348,7 @@ export default function UniversalPracticeSessionClient({
                 <Flag
                   size={16}
                   className={
-                    marked[currentQuestion.id] ? 'fill-amber-500 text-amber-600' : 'text-slate-400'
+                    marked[currentQuestion.id] ? 'fill-amber-500 text-amber-600' : 'text-slate-600'
                   }
                 />
                 <span className="hidden sm:inline">
@@ -485,11 +485,11 @@ export default function UniversalPracticeSessionClient({
                   className={cn(
                     'relative flex aspect-square min-h-10 items-center justify-center rounded-xl text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600',
                     isCurrent && answered
-                      ? 'z-10 bg-emerald-600 text-white shadow-xs font-black ring-2 ring-indigo-600 ring-offset-2 border border-emerald-700'
+                      ? 'z-10 bg-emerald-700 text-white shadow-xs font-black ring-2 ring-indigo-600 ring-offset-2 border border-emerald-700'
                       : isCurrent
                         ? 'z-10 bg-indigo-600 text-white shadow-xs font-black ring-2 ring-indigo-600 ring-offset-2'
                         : answered
-                          ? 'bg-emerald-600 text-white font-bold shadow-xs hover:bg-emerald-700 border border-emerald-700'
+                          ? 'bg-emerald-700 text-white font-bold shadow-xs hover:bg-emerald-800 border border-emerald-700'
                           : 'border border-slate-200/90 bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900',
                   )}
                 >
@@ -513,7 +513,7 @@ export default function UniversalPracticeSessionClient({
           <div className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 text-xs font-medium text-slate-600">
             <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-200/70 bg-slate-50/70 p-2.5 text-[11px] font-semibold text-slate-700">
               <div className="flex items-center gap-1.5">
-                <span className="flex h-4 w-4 items-center justify-center rounded-md bg-emerald-600 text-[9px] font-bold text-white shadow-2xs">
+                <span className="flex h-4 w-4 items-center justify-center rounded-md bg-emerald-700 text-[9px] font-bold text-white shadow-2xs">
                   ✓
                 </span>
                 <span className="text-slate-800">Terjawab</span>

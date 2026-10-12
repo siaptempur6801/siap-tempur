@@ -29,7 +29,7 @@ export default function TkaLevelSwitcher({
     <nav aria-label="Pilih jenjang TKA" className={cn('w-full', compact && 'max-w-sm')}>
       {!compact && (
         <div className="mb-1.5 flex items-center justify-between px-1">
-          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+          <span className="text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
             Jenjang TKA
           </span>
           <span className="rounded-full bg-[var(--brand-blue-50)] px-2 py-0.5 text-[10px] font-bold text-blue-700">

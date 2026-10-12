@@ -1,6 +1,7 @@
 'use client'
 
 import { LATEX_SNIPPETS, compactLatexSnippets, type LatexSnippet } from '@/lib/latex-snippets'
+import { adminEditorButtonClass } from '@/components/admin/AdminUi'
 import { cn } from '@/lib/utils'
 import { Sigma } from 'lucide-react'
 
@@ -30,7 +31,7 @@ export default function FormulaToolbar({
       <span
         className={cn(
           'inline-flex items-center gap-1 font-semibold uppercase tracking-wide text-muted-foreground',
-          compact ? 'text-[10px]' : 'text-[11px]',
+          'text-xs',
         )}
       >
         <Sigma size={compact ? 11 : 13} aria-hidden="true" />
@@ -44,8 +45,9 @@ export default function FormulaToolbar({
           aria-label={`Sisipkan rumus: ${snippet.title}`}
           onClick={() => onInsert(snippet)}
           className={cn(
-            'inline-flex items-center justify-center rounded-lg border border-border bg-card font-bold text-muted-foreground transition hover:border-info-border hover:bg-info-muted hover:text-info focus:outline-none focus:ring-2 focus:ring-ring/20',
-            compact ? 'h-7 min-w-7 px-1 text-[11px]' : 'h-8 min-w-8 px-1.5 text-xs',
+            adminEditorButtonClass,
+            'font-semibold',
+            compact ? 'px-1 text-xs' : 'px-1.5 text-sm md:text-xs',
           )}
         >
           {snippet.label}

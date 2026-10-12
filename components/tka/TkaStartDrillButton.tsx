@@ -78,7 +78,7 @@ export default function TkaStartDrillButton({
         aria-describedby={
           errorMessage ? `drill-${subjectCode}-${knowledgeNodeName}-error` : undefined
         }
-        className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+        className="st-focus inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-700 disabled:shadow-none"
       >
         {loading ? (
           <LoadingSpinner label="Menyiapkan latihan" size="sm" />
@@ -90,13 +90,13 @@ export default function TkaStartDrillButton({
       {passRequired && (
         <Link
           href={`/tka/${level.toLowerCase()}/pass`}
-          className="st-focus mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 transition hover:border-indigo-200 hover:bg-indigo-50"
+          className="st-focus mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-border-strong bg-white px-3 py-2 text-xs font-bold text-indigo-700 transition hover:border-primary hover:bg-indigo-50"
         >
           Lihat paket Tempur Pass <ArrowRight size={14} aria-hidden="true" />
         </Link>
       )}
       {!compact && (
-        <p className="mt-2 text-center text-[11px] font-bold text-slate-400">
+        <p className="mt-2 text-center text-sm leading-relaxed font-medium text-slate-600">
           10 soal fokus · sekitar 15 menit
         </p>
       )}

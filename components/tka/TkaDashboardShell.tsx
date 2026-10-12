@@ -104,15 +104,15 @@ export default function TkaDashboardShell({
     'Pejuang SiapTempur'
 
   const learnerSurface = {
-    '--st-paper': '#f8fafc',
-    '--st-paper-strong': '#f1f5f9',
-    '--st-border': '1px solid #e2e8f0',
-    '--st-shadow-sm': '0 2px 8px rgba(15, 23, 42, 0.04)',
-    '--st-shadow-md': '0 8px 24px rgba(15, 23, 42, 0.06)',
-    '--st-shadow-lg': '0 16px 36px rgba(79, 70, 229, 0.08)',
-    '--st-radius-sm': '0.625rem',
-    '--st-radius-md': '0.875rem',
-    '--st-radius-lg': '1rem',
+    '--st-paper': 'var(--px-canvas)',
+    '--st-paper-strong': 'var(--px-surface-subtle)',
+    '--st-border': '1px solid var(--px-border-strong)',
+    '--st-shadow-sm': 'var(--px-shadow-xs)',
+    '--st-shadow-md': 'var(--px-shadow-sm)',
+    '--st-shadow-lg': 'var(--px-shadow-md)',
+    '--st-radius-sm': 'var(--px-radius-sm)',
+    '--st-radius-md': 'var(--px-radius-md)',
+    '--st-radius-lg': 'var(--px-radius-md)',
   } as React.CSSProperties
 
   return (
@@ -152,7 +152,7 @@ export default function TkaDashboardShell({
           aria-label={`Navigasi TKA ${level}`}
         >
           <div>
-            <p className="mb-1 px-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            <p className="mb-1 px-2.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
               Pusat Belajar
             </p>
             <div className="space-y-1">
@@ -210,7 +210,7 @@ export default function TkaDashboardShell({
           </div>
 
           <div className="border-t border-dashed border-slate-200 pt-2.5">
-            <p className="mb-1 px-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            <p className="mb-1 px-2.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
               Evaluasi
             </p>
             <div className="space-y-1">
@@ -240,7 +240,7 @@ export default function TkaDashboardShell({
           </div>
 
           <div className="border-t border-dashed border-slate-200 pt-2.5">
-            <p className="mb-1 px-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            <p className="mb-1 px-2.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
               Akun & Akses
             </p>
             <div className="space-y-1">
@@ -268,7 +268,7 @@ export default function TkaDashboardShell({
         </nav>
 
         <div className="shrink-0 border-t border-slate-100 p-3">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs">
+          <div className="rounded-2xl border border-border-strong bg-white p-3 shadow-xs">
             <div className="flex items-center gap-3">
               <Link
                 href={`${basePath}/profile`}
@@ -384,14 +384,14 @@ export default function TkaDashboardShell({
                 variant="soft"
                 href={basePath}
                 icon={<LayoutDashboard size={20} />}
-                label="Ringkasan"
+                label={<>Ringka&shy;san</>}
                 exact
               />
               <MobileNavItem
                 variant="soft"
                 href={featureHref('/diagnostic')}
                 icon={<BrainCircuit size={20} />}
-                label="Diagnostik"
+                label={<>Diagno&shy;stik</>}
               />
               <MobileNavItem
                 variant="soft"
@@ -425,7 +425,7 @@ export default function TkaDashboardShell({
                 variant="soft"
                 href={basePath}
                 icon={<LayoutDashboard size={20} />}
-                label="Ringkasan"
+                label={<>Ringka&shy;san</>}
                 exact
               />
               <MobileNavItem

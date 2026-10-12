@@ -95,7 +95,7 @@ export default function TkaStartExamButton({
             : disabledReason || `Mulai ${isDrill ? 'drill' : 'tryout'}`
         }
         aria-describedby={errorMessage ? `${examSlug}-start-error` : undefined}
-        className="st-focus inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-black leading-tight text-white shadow-none transition hover:bg-blue-700 shadow-none disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+        className="st-focus inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-black leading-tight text-white shadow-none transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-700 disabled:shadow-none"
       >
         {loading ? (
           <LoadingSpinner label="Menyiapkan tryout TKA" size="sm" />
@@ -107,7 +107,7 @@ export default function TkaStartExamButton({
       {passRequired && (
         <Link
           href={`/tka/${level.toLowerCase()}/pass`}
-          className="st-focus mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-indigo-700 transition hover:border-indigo-200 hover:bg-indigo-50"
+          className="st-focus mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-border-strong bg-white px-3 py-2 text-xs font-bold text-indigo-700 transition hover:border-primary hover:bg-indigo-50"
         >
           Lihat paket Tempur Pass <ArrowRight size={14} aria-hidden="true" />
         </Link>

@@ -267,7 +267,7 @@ export default function PassPackagesClient({
               className={`relative flex h-full flex-col justify-between rounded-xl border bg-white p-5 shadow-xs transition-[border-color,box-shadow] duration-150 hover:shadow-sm ${
                 isBestValue
                   ? 'border-primary ring-1 ring-primary/20'
-                  : 'border-border hover:border-slate-300'
+                  : 'border-border-strong hover:border-primary'
               }`}
             >
               {/* Best value badge */}

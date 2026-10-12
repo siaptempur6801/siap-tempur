@@ -77,7 +77,7 @@ export default function TkaProgressDashboard({
       {dashboard.readiness ? (
         <TkaReadinessCard readiness={dashboard.readiness} level={level} showDashboardLink={false} />
       ) : (
-        <section className="rounded-2xl border border-slate-200/80 bg-white p-6 text-center shadow-xs md:p-8">
+        <section className="rounded-2xl border border-border-strong bg-white p-6 text-center shadow-xs md:p-8">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200 shadow-2xs">
             <TrendingUp size={24} />
           </div>
@@ -121,7 +121,7 @@ export default function TkaProgressDashboard({
             return (
               <article
                 key={subject.subjectId}
-                className="group flex flex-col justify-between rounded-3xl border border-slate-200/80 bg-white p-6 md:p-7 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md"
+                className="group flex flex-col justify-between rounded-3xl border border-border-strong bg-white p-6 md:p-7 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-600 hover:shadow-md"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
@@ -193,7 +193,7 @@ export default function TkaProgressDashboard({
       <TkaLearningFocusPanel items={dashboard.focus.items} />
 
       <section className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 md:p-7 shadow-xs">
+        <div className="rounded-3xl border border-border-strong bg-white p-6 md:p-7 shadow-xs">
           <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
             <History size={14} className="text-indigo-600" />
             <span>Aktivitas terbaru</span>
@@ -214,7 +214,7 @@ export default function TkaProgressDashboard({
                     <div className="font-bold text-slate-900 transition-colors group-hover:text-indigo-950">
                       {attempt.examTitle}
                     </div>
-                    <div className="mt-1 text-xs font-medium text-slate-400">
+                    <div className="mt-1 text-xs font-medium text-slate-600">
                       {formatAttemptDate(attempt.updatedAt)}
                     </div>
                   </div>
@@ -233,23 +233,23 @@ export default function TkaProgressDashboard({
               ))}
             </div>
           ) : (
-            <p className="mt-4 text-xs font-medium text-slate-400">
+            <p className="mt-4 text-xs font-medium text-slate-600">
               Belum ada hasil tryout yang tersimpan.
             </p>
           )}
         </div>
 
-        <aside className="relative flex flex-col justify-between overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-600 via-indigo-700 to-blue-800 p-6 md:p-7 text-white shadow-md">
+        <aside className="relative flex flex-col justify-between overflow-hidden rounded-3xl border border-indigo-200/60 bg-gradient-to-br from-indigo-800 via-indigo-800 to-blue-900 p-6 md:p-7 text-white shadow-md">
           {/* Decorative aura */}
           <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
           <div className="pointer-events-none absolute -bottom-10 left-10 h-32 w-32 rounded-full bg-blue-400/20 blur-xl" />
 
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-100 backdrop-blur-xs">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-xs">
               Langkah berikutnya
             </div>
             <h2 className="mt-3 text-xl font-bold sm:text-2xl">Jangan berhenti di skor.</h2>
-            <p className="mt-2.5 text-xs font-normal leading-relaxed text-indigo-100/90 sm:text-sm">
+            <p className="mt-2.5 text-sm font-normal leading-relaxed text-white">
               Nilai tryout adalah peta diagnostik, bukan hasil akhir. Tingkatkan kemampuanmu secara
               terarah dengan menuntaskan soal salah dan melatih materi prioritas.
             </p>
@@ -281,7 +281,7 @@ function MetricCard({
   description: string
 }) {
   return (
-    <article className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 md:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-md">
+    <article className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-border-strong bg-white p-5 md:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:border-slate-600 hover:shadow-md">
       <div>
         <div className="flex items-center justify-between">
           <div

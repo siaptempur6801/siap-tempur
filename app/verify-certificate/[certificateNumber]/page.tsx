@@ -72,7 +72,7 @@ export default async function VerifyCertificatePage({
   })
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] px-4 py-10 text-gray-900">
+    <main className="min-h-screen bg-slate-50 px-4 py-10 text-gray-900">
       <section className="mx-auto max-w-2xl border-2 border-gray-900 bg-white p-6 st-shadow-md sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center border-2 border-green-700 bg-green-100">

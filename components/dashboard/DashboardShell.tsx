@@ -79,7 +79,7 @@ export default function DashboardShell({
     <div
       data-experience-mode="learning"
       data-program="cpns"
-      className={`${styles.compact} st-product flex h-screen overflow-hidden bg-brand-paper font-body text-slate-950`}
+      className={`${styles.compact} st-product flex h-dvh overflow-hidden bg-brand-paper font-body text-slate-950`}
     >
       <aside className="relative z-20 hidden w-[15.75rem] min-h-0 flex-col border-r border-border bg-brand-paper md:flex">
         <div className="shrink-0 border-b border-border px-5 pb-4 pt-5">
@@ -193,7 +193,7 @@ export default function DashboardShell({
         </nav>
 
         <div className="shrink-0 border-t border-border p-3">
-          <div className="flex items-center gap-2.5 rounded-xl border border-border bg-white p-2.5 shadow-xs">
+          <div className="flex items-center gap-2.5 rounded-xl border border-border-strong bg-white p-2.5 shadow-xs">
             <Link
               href="/cpns/dashboard/profile"
               prefetch={false}
@@ -251,7 +251,7 @@ export default function DashboardShell({
               href="/cpns/dashboard/beli-paket"
               prefetch={false}
               aria-label={`${tokenBalance} token tersisa`}
-              className="st-focus inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-info-border bg-info-muted px-2.5 text-xs font-semibold text-info-foreground"
+              className="st-focus inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-info-border bg-info-muted px-2.5 text-xs font-semibold text-info"
             >
               <Ticket size={14} aria-hidden="true" />
               <span className="tabular-nums">{tokenBalance}</span>

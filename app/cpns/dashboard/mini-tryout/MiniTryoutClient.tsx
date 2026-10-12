@@ -217,12 +217,12 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
               className="st-card flex items-start gap-3 border-info-border bg-info-muted p-4"
               role="status"
             >
-              <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-info-foreground" />
+              <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-info" />
               <div>
-                <p className="font-semibold text-info-foreground">
+                <p className="font-semibold text-info">
                   Ada {totalActiveSessions} sesi yang bisa dilanjutkan
                 </p>
-                <p className="mt-1 text-sm leading-6 text-info-foreground">
+                <p className="mt-1 text-sm leading-6 text-info">
                   Sesi aktif tidak memakai token baru saat kamu melanjutkannya.
                 </p>
               </div>
@@ -325,13 +325,11 @@ export default function MiniTryoutClient({ activeSessionsByType, quota }: MiniTr
 
                   {activeSession && (
                     <div className="mt-5 rounded-lg border border-info-border bg-info-muted p-3">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-info-foreground">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-info">
                         <Clock3 className="h-4 w-4" /> Sesi aktif
                       </div>
                       {activeDetails && (
-                        <p className="mt-1 text-xs font-medium text-info-foreground">
-                          {activeDetails}
-                        </p>
+                        <p className="mt-1 text-xs font-medium text-info">{activeDetails}</p>
                       )}
                     </div>
                   )}

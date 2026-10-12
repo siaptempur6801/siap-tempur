@@ -34,7 +34,7 @@ export default function TkaReadinessCard({
   const confidencePercent = percent(readiness.confidencePercent)
 
   return (
-    <section className="group rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-xs transition-all duration-200 hover:border-slate-300 hover:shadow-md">
+    <section className="group rounded-2xl border border-border-strong bg-white p-5 sm:p-6 shadow-xs transition-all duration-200 hover:border-slate-600 hover:shadow-md">
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700 ring-1 ring-indigo-200/70 shadow-2xs">
@@ -67,7 +67,7 @@ export default function TkaReadinessCard({
             {readinessPercent.toFixed(1)}%
           </div>
           <div className="mt-2">
-            <span className="inline-flex items-center rounded-full bg-emerald-600 px-3 py-0.5 text-xs font-bold text-white shadow-2xs">
+            <span className="inline-flex items-center rounded-full bg-emerald-700 px-3 py-0.5 text-xs font-bold text-white shadow-2xs">
               {levelLabel(readiness.readinessLevel)}
             </span>
           </div>
@@ -81,7 +81,7 @@ export default function TkaReadinessCard({
             return (
               <article
                 key={subject.subjectId}
-                className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-slate-50/70 p-5 transition-all duration-200 hover:border-indigo-200 hover:bg-white hover:shadow-2xs"
+                className="flex flex-col justify-between rounded-2xl border border-border-strong bg-slate-50/70 p-5 transition-all duration-200 hover:border-primary hover:bg-white hover:shadow-2xs"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">

@@ -34,8 +34,8 @@ const programOptions = [
     details: ['Pilih jenjang belajar', 'Latihan dan diagnostik', 'Pantau perkembangan'],
     icon: GraduationCap,
     badgeClass: 'bg-emerald-100 text-emerald-800',
-    iconClass: 'bg-emerald-600 text-white',
-    actionClass: 'bg-emerald-600 text-white',
+    iconClass: 'bg-emerald-700 text-white',
+    actionClass: 'bg-emerald-700 text-white',
   },
 ] as const
 

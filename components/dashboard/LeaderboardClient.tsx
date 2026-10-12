@@ -118,7 +118,7 @@ export default function LeaderboardClient({
         </PageAnimateItem>
 
         {/* Table Layout */}
-        <PageAnimateItem className="relative overflow-hidden rounded-xl border border-border bg-white shadow-xs">
+        <PageAnimateItem className="relative overflow-hidden rounded-xl border border-border-strong bg-white shadow-xs">
           {/* Header Row */}
           <div className="hidden xl:grid grid-cols-12 bg-muted px-4 py-3 text-xs font-semibold text-muted-foreground border-b border-border">
             <div className="col-span-1 text-center">Pos</div>
@@ -144,7 +144,7 @@ export default function LeaderboardClient({
                   )}
                 >
                   {isCurrentUser && (
-                    <div className="absolute right-3 top-3 rounded-md bg-info-muted px-2 py-1 text-xs font-medium text-info-foreground">
+                    <div className="absolute right-3 top-3 rounded-md bg-info-muted px-2 py-1 text-xs font-medium text-info">
                       Anda
                     </div>
                   )}
@@ -325,16 +325,16 @@ export default function LeaderboardClient({
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="flex-shrink-0 text-center sm:w-20">
                     <div className="text-xs font-medium text-muted-foreground">Posisi</div>
-                    <div className="text-xl font-semibold text-info-foreground">
+                    <div className="text-xl font-semibold text-info">
                       #{resolvedCurrentUserRank.rank_pos}
                     </div>
                   </div>
                   <div className="hidden h-14 w-px bg-info-border sm:block" />
                   <div className="flex-1">
-                    <div className="text-sm font-semibold text-info-foreground">
+                    <div className="text-sm font-semibold text-info">
                       Posisi kamu belum masuk Top 100 saat ini
                     </div>
-                    <div className="mt-0.5 text-xs text-info-foreground">
+                    <div className="mt-0.5 text-xs text-info">
                       Skor terbaikmu: <strong>{resolvedCurrentUserRank.top_score}</strong>
                     </div>
                   </div>

@@ -10,6 +10,7 @@ import {
   AdminPage,
   AdminPageHeader,
   adminInputClass,
+  adminLabelClass,
   adminPrimaryButtonClass,
   adminSecondaryButtonClass,
 } from '@/components/admin/AdminUi'
@@ -64,7 +65,7 @@ function SubmitButton() {
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
-  return <span className="text-xs font-medium text-muted-foreground">{children}</span>
+  return <span className={adminLabelClass}>{children}</span>
 }
 
 export default function ArticleForm({ title, action, defaultValues, returnTo }: ArticleFormProps) {
@@ -164,7 +165,7 @@ export default function ArticleForm({ title, action, defaultValues, returnTo }: 
                 placeholder="contoh-artikel-cpns"
                 className={adminInputClass}
               />
-              <span className="block text-xs font-medium text-muted-foreground">
+              <span className="block break-all text-xs font-medium text-muted-foreground">
                 URL publik: /blog/{slug || 'slug-artikel'}
               </span>
             </label>
@@ -243,11 +244,11 @@ export default function ArticleForm({ title, action, defaultValues, returnTo }: 
             </span>
           </label>
 
-          <label className="block space-y-1.5">
+          <div className="space-y-1.5">
             <FieldLabel>Konten artikel</FieldLabel>
             <ArticleRichTextEditor content={content} onChange={setContent} />
             <input type="hidden" name="content" value={content} />
-          </label>
+          </div>
 
           <AdminFormActions cancelHref={returnTo}>
             <SubmitButton />

@@ -210,7 +210,7 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
         </button>
       </form>
 
-      <div className="my-6 flex items-center gap-3 text-xs font-black uppercase tracking-[0.12em] text-gray-400">
+      <div className="my-6 flex items-center gap-3 text-xs font-black uppercase tracking-[0.12em] text-gray-600">
         <span className="h-px flex-1 bg-gray-300" /> atau{' '}
         <span className="h-px flex-1 bg-gray-300" />
       </div>

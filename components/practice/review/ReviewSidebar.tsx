@@ -61,13 +61,13 @@ export default function ReviewSidebar({
               let colorClass = 'border-slate-300 bg-white text-slate-500'
               if (question.type === 'TKP') {
                 if (status === 'perfect')
-                  colorClass = 'border-emerald-600 bg-emerald-600 text-white'
+                  colorClass = 'border-emerald-700 bg-emerald-700 text-white'
                 else if (status === 'good') colorClass = 'border-blue-600 bg-blue-600 text-white'
-                else colorClass = 'border-amber-600 bg-amber-500 text-white'
+                else colorClass = 'border-amber-600 bg-amber-500 text-slate-950'
               } else {
                 colorClass =
                   status === 'correct'
-                    ? 'border-emerald-600 bg-emerald-600 text-white'
+                    ? 'border-emerald-700 bg-emerald-700 text-white'
                     : 'border-red-600 bg-red-600 text-white'
               }
 

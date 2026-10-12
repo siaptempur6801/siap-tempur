@@ -1,6 +1,11 @@
 'use client'
 
-import { adminLabelClass, adminSecondaryButtonClass } from '@/components/admin/AdminUi'
+import {
+  adminEditorButtonClass,
+  adminInputClass,
+  adminLabelClass,
+  adminSecondaryButtonClass,
+} from '@/components/admin/AdminUi'
 import FormulaToolbar from '@/components/admin/FormulaToolbar'
 import type { LatexSnippet } from '@/lib/latex-snippets'
 import { QUESTION_IMAGE_ACCEPT } from '@/lib/question-media'
@@ -77,7 +82,7 @@ function MathEditor({
   return (
     <span
       className={cn(
-        'inline-flex flex-wrap items-center gap-1 rounded-lg border border-info-border bg-info-muted/70 p-1 align-middle',
+        'inline-flex max-w-full flex-wrap items-center gap-1 rounded-lg border border-input bg-info-muted/70 p-1 align-middle',
         block && 'w-full flex-col items-stretch',
       )}
       contentEditable={false}
@@ -101,7 +106,7 @@ function MathEditor({
               onApply(draft.trim())
             }
           }}
-          className="w-full rounded border border-border px-2 py-1 font-mono text-xs text-foreground"
+          className={cn(adminInputClass, 'min-w-0 font-mono')}
         />
       ) : (
         <input
@@ -120,7 +125,7 @@ function MathEditor({
               onCancel()
             }
           }}
-          className="w-44 rounded border border-border px-2 py-1 font-mono text-xs text-foreground"
+          className={cn(adminInputClass, 'w-44 max-w-full font-mono')}
         />
       )}
       <span className="inline-flex items-center gap-1">
@@ -129,7 +134,7 @@ function MathEditor({
           onClick={() => onApply(draft.trim())}
           aria-label="Terapkan rumus"
           title="Terapkan (Enter)"
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-success-border bg-card text-success hover:bg-success-muted"
+          className={cn(adminEditorButtonClass, 'text-success hover:bg-success-muted')}
         >
           <Check size={14} />
         </button>
@@ -138,7 +143,7 @@ function MathEditor({
           onClick={onCancel}
           aria-label="Batal mengubah rumus"
           title="Batal (Esc)"
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-card text-muted-foreground hover:bg-muted"
+          className={adminEditorButtonClass}
         >
           <X size={14} />
         </button>
@@ -147,7 +152,7 @@ function MathEditor({
           onClick={onDelete}
           aria-label="Hapus rumus"
           title="Hapus rumus"
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-danger-border bg-card text-red-500 hover:bg-danger-muted"
+          className={cn(adminEditorButtonClass, 'text-danger hover:bg-danger-muted')}
         >
           <Trash2 size={14} />
         </button>
@@ -346,13 +351,9 @@ function ToolbarButton({
       type="button"
       title={title}
       aria-label={title}
+      aria-pressed={active}
       onClick={onClick}
-      className={cn(
-        'flex h-8 w-8 items-center justify-center rounded-lg border text-muted-foreground transition focus:outline-none focus:ring-4 focus:ring-ring/10',
-        active
-          ? 'border-info-border bg-info-muted text-info'
-          : 'border-transparent bg-card hover:border-border hover:bg-muted hover:text-foreground',
-      )}
+      className={cn(adminEditorButtonClass, active ? 'border-primary bg-info-muted text-info' : '')}
     >
       {children}
     </button>
@@ -441,7 +442,7 @@ export default function QuestionRichTextEditor({
     editorProps: {
       attributes: {
         class: cn(
-          'px-3 py-2.5 text-sm font-medium leading-7 text-foreground outline-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:my-1 [&_img]:max-w-full',
+          'admin-content-editor px-3 py-2.5 font-medium leading-7 text-foreground outline-none [&_p]:mb-2 [&_p:last-child]:mb-0 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_img]:my-1 [&_img]:max-w-full',
           heightClass,
         ),
         // Tanpa role eksplisit, Chromium mengekspos div contenteditable
@@ -588,7 +589,7 @@ export default function QuestionRichTextEditor({
         </span>
       ) : null}
       <div
-        className="overflow-hidden rounded-lg border border-border bg-card focus-within:border-primary focus-within:ring-4 focus-within:ring-ring/10"
+        className="overflow-hidden rounded-lg border border-input bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20"
         onPasteCapture={handlePasteCapture}
         onDropCapture={handleDropCapture}
       >
@@ -632,7 +633,7 @@ export default function QuestionRichTextEditor({
                   </ToolbarButton>
                 </>
               ) : null}
-              <div className="mx-1 h-6 w-px bg-slate-200" />
+              <div className="mx-1 h-6 w-px bg-border" />
             </>
           ) : null}
           <FormulaToolbar compact={compact} onInsert={insertSnippet} />
@@ -643,7 +644,7 @@ export default function QuestionRichTextEditor({
               onClick={() => fileInputRef.current?.click()}
               title={`Sisipkan gambar ke ${label.toLowerCase()}`}
               aria-label={`Sisipkan gambar ke ${label.toLowerCase()}`}
-              className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition hover:border-info-border hover:bg-info-muted hover:text-info focus:outline-none focus:ring-2 focus:ring-ring/20"
+              className={cn(adminEditorButtonClass, 'ml-auto')}
             >
               {uploading ? <Loader2 className="animate-spin" size={13} /> : <ImagePlus size={13} />}
             </button>

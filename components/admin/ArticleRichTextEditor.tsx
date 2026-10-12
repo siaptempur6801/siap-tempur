@@ -1,6 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
+import { adminEditorButtonClass } from '@/components/admin/AdminUi'
 import { createClient } from '@/lib/utils/supabase/client'
 import { Color } from '@tiptap/extension-color'
 import Highlight from '@tiptap/extension-highlight'
@@ -59,7 +60,7 @@ const TEXT_COLORS = [
 
 function ToolbarButton({
   onClick,
-  isActive = false,
+  isActive,
   disabled = false,
   title,
   children,
@@ -77,12 +78,10 @@ function ToolbarButton({
       disabled={disabled}
       title={title}
       aria-label={title}
+      aria-pressed={isActive}
       className={cn(
-        'flex h-8 w-8 items-center justify-center rounded-lg border text-muted-foreground transition focus:outline-none focus:ring-4 focus:ring-ring/10',
-        isActive
-          ? 'border-info-border bg-info-muted text-info'
-          : 'border-transparent bg-card hover:border-border hover:bg-muted hover:text-foreground',
-        disabled && 'cursor-not-allowed opacity-30',
+        adminEditorButtonClass,
+        isActive ? 'border-primary bg-info-muted text-info' : '',
       )}
     >
       {children}
@@ -91,7 +90,7 @@ function ToolbarButton({
 }
 
 function ToolbarDivider() {
-  return <div className="mx-1 h-6 w-px bg-slate-200" />
+  return <div className="mx-1 h-6 w-px bg-border" />
 }
 
 function ColorPicker({ editor }: { editor: Editor }) {
@@ -109,7 +108,7 @@ function ColorPicker({ editor }: { editor: Editor }) {
   }, [isOpen])
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="md:relative">
       <ToolbarButton
         title="Warna teks"
         isActive={Boolean(currentColor) || isOpen}
@@ -118,12 +117,12 @@ function ColorPicker({ editor }: { editor: Editor }) {
         <Palette size={15} />
       </ToolbarButton>
       {isOpen ? (
-        <div className="absolute left-0 top-full z-50 mt-2 w-52 rounded-lg border border-border bg-card p-3 shadow-xl shadow-slate-900/10">
+        <div className="absolute left-2 top-full z-50 mt-2 w-72 max-w-[calc(100%-1rem)] rounded-lg border border-input bg-card p-3 shadow-lg md:left-0 md:w-52 md:max-w-none">
           <div className="mb-2 flex items-center justify-between border-b border-border pb-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Warna teks
             </span>
-            <span className="text-[10px] font-bold text-muted-foreground">
+            <span className="text-xs font-semibold text-muted-foreground">
               {TEXT_COLORS.find((color) => color.value === currentColor)?.label || 'Custom'}
             </span>
           </div>
@@ -134,16 +133,15 @@ function ColorPicker({ editor }: { editor: Editor }) {
                 type="button"
                 title={color.label}
                 aria-label={color.label}
+                aria-pressed={currentColor === color.value}
                 onClick={() => {
                   if (color.value) editor.chain().focus().setColor(color.value).run()
                   else editor.chain().focus().unsetColor().run()
                   setIsOpen(false)
                 }}
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-lg border bg-card transition hover:bg-muted',
-                  currentColor === color.value
-                    ? 'border-blue-400 ring-2 ring-blue-100'
-                    : 'border-border',
+                  adminEditorButtonClass,
+                  currentColor === color.value ? 'border-primary ring-2 ring-ring' : '',
                 )}
               >
                 {color.value ? (
@@ -234,7 +232,7 @@ function ImageButton({ editor }: { editor: Editor }) {
 
 function EditorToolbar({ editor }: { editor: Editor }) {
   return (
-    <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/80 p-2">
+    <div className="relative flex flex-wrap items-center gap-1 border-b border-border bg-muted/80 p-2">
       <ToolbarButton
         title="Paragraf"
         isActive={editor.isActive('paragraph') && !editor.isActive('heading')}
@@ -422,8 +420,11 @@ export default function ArticleRichTextEditor({
     immediatelyRender: false,
     editorProps: {
       attributes: {
+        role: 'textbox',
+        'aria-multiline': 'true',
+        'aria-label': 'Konten artikel',
         class:
-          'min-h-[400px] max-w-none prose prose-lg prose-slate whitespace-pre-wrap [tab-size:4] bg-card px-5 py-5 text-foreground outline-none sm:px-6 ' +
+          'admin-content-editor min-h-[400px] max-w-none prose prose-lg prose-slate whitespace-pre-wrap [tab-size:4] bg-card px-5 py-5 text-foreground outline-none sm:px-6 ' +
           '[&_p]:mb-5 [&_h1]:mb-4 [&_h1]:mt-6 [&_h1]:text-3xl [&_h1]:font-semibold ' +
           '[&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-2xl [&_h2]:font-semibold [&_h3]:mb-3 [&_h3]:mt-4 [&_h3]:text-xl [&_h3]:font-semibold ' +
           '[&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:mb-1 [&_mark]:bg-warning-muted [&_mark]:px-0.5 ' +
@@ -443,7 +444,7 @@ export default function ArticleRichTextEditor({
     return <div className="min-h-[400px] animate-pulse rounded-lg border border-border bg-muted" />
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card transition focus-within:border-primary focus-within:ring-4 focus-within:ring-ring/10">
+    <div className="overflow-hidden rounded-lg border border-input bg-card transition focus-within:border-primary focus-within:ring-2 focus-within:ring-ring/20">
       <EditorToolbar editor={editor} />
       <EditorContent editor={editor} />
       {!content ? (

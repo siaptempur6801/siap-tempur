@@ -71,7 +71,7 @@ export default function TkaPilihJalurContent({
 
   return (
     <div className="space-y-6 md:space-y-8">
-      <header className="rounded-2xl border border-slate-200/80 bg-white p-5 sm:p-6">
+      <header className="rounded-2xl border border-border-strong bg-white p-5 sm:p-6">
         <p className="inline-flex items-center gap-2 rounded-full bg-[var(--brand-blue-50)] px-3 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-blue-700 ring-1 ring-blue-200/70">
           <Compass size={14} /> Pilih jalur TKA {level}
         </p>
@@ -102,9 +102,9 @@ export default function TkaPilihJalurContent({
               <li key={step.path}>
                 <Link
                   href={`${base}${step.path}`}
-                  className="st-focus group flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
+                  className="st-focus group flex h-full flex-col rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:-translate-y-0.5 hover:border-slate-600 hover:shadow-md"
                 >
-                  <span className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.12em] text-slate-400">
+                  <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-slate-600">
                     <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 text-[10px] text-slate-600">
                       {index + 1}
                     </span>
@@ -146,14 +146,14 @@ export default function TkaPilihJalurContent({
               <Link
                 key={item.path}
                 href={`${base}${item.path}`}
-                className="st-focus group flex items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs transition hover:border-slate-300 hover:shadow-md"
+                className="st-focus group flex items-center justify-between gap-3 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-slate-600 hover:shadow-md"
               >
                 <span className="inline-flex items-center gap-2 text-sm font-black text-slate-950 group-hover:text-blue-700">
                   <Icon size={17} className="text-blue-700" /> {item.title}
                 </span>
                 <ArrowRight
                   size={15}
-                  className="text-slate-400 transition-transform group-hover:translate-x-0.5"
+                  className="text-slate-600 transition-transform group-hover:translate-x-0.5"
                 />
               </Link>
             )
@@ -163,7 +163,7 @@ export default function TkaPilihJalurContent({
 
       <section
         aria-labelledby="akses-tka"
-        className="rounded-2xl border border-slate-200/80 bg-white p-5"
+        className="rounded-2xl border border-border-strong bg-white p-5"
       >
         <h2 id="akses-tka" className="text-base font-black tracking-tight text-slate-950">
           {level === 'SMP' ? `Akses Tempur Pass TKA ${level}` : `Status akses TKA ${level}`}
@@ -185,7 +185,7 @@ export default function TkaPilihJalurContent({
         <div className="mt-3 flex flex-wrap gap-2">
           <Link
             href={`${base}/pass`}
-            className={`st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${level === 'SMP' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+            className={`st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${level === 'SMP' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-border-strong bg-white text-slate-700 hover:bg-slate-50'}`}
           >
             <Sparkles size={15} />{' '}
             {hasActivePass
@@ -196,7 +196,7 @@ export default function TkaPilihJalurContent({
           </Link>
           <Link
             href="/cpns/dashboard/pilih-jalur"
-            className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+            className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl border border-border-strong bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
           >
             Buka jalur CPNS
           </Link>

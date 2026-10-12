@@ -55,73 +55,89 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-md space-y-8 relative z-10 bg-white p-8 border-2 border-gray-900 st-shadow-lg rounded-xl rotate-1">
+    <div className="st-card-lg relative z-10 w-full max-w-lg space-y-6 bg-card p-6 sm:p-8">
       {/* Tape Effect */}
       <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-8 bg-green-100/80 border-l border-r border-white/50 shadow-sm -rotate-2"></div>
 
       <div className="text-center">
-        <h2 className="font-display text-4xl font-bold tracking-tight text-gray-900">
+        <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-4xl">
           Buat Password Baru
-        </h2>
-        <p className="mt-2 text-gray-600 font-display text-xl">
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
           Masukkan password baru untuk akun Anda.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {/* Field Password Baru */}
-        <div className="relative">
-          <label htmlFor="password" className="sr-only">
+        <div>
+          <label htmlFor="password" className="mb-2 block text-sm font-semibold text-foreground">
             Password Baru
           </label>
-          <input
-            id="password"
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-            autoComplete="new-password"
-            required
-            minLength={8}
-            className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-display"
-            placeholder="Password Baru (Min. 8 karakter)"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
-          >
-            {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
-          </button>
+          <div className="relative">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              minLength={8}
+              className="st-input !pr-14 text-base placeholder:text-sm placeholder:font-normal placeholder:text-muted-foreground"
+              aria-describedby="new-password-hint"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'}
+              className="st-focus absolute right-1 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {showPassword ? <EyeOff size={24} /> : <Eye size={24} />}
+            </button>
+          </div>
+          <p id="new-password-hint" className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Password Baru (Min. 8 karakter)
+          </p>
         </div>
 
         {/* Field Konfirmasi Password Baru */}
-        <div className="relative">
-          <label htmlFor="confirmPassword" className="sr-only">
+        <div>
+          <label
+            htmlFor="confirmPassword"
+            className="mb-2 block text-sm font-semibold text-foreground"
+          >
             Konfirmasi Password Baru
           </label>
-          <input
-            id="confirmPassword"
-            name="confirmPassword"
-            type={showConfirmPassword ? 'text' : 'password'}
-            autoComplete="new-password"
-            required
-            minLength={8}
-            className="relative block w-full rounded-lg border-2 border-gray-900 bg-[#fdfbf7] px-4 py-3 pr-12 text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-0 sm:text-lg font-display"
-            placeholder="Ulangi Password Baru"
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 transition focus:outline-none"
-          >
-            {showConfirmPassword ? <EyeOff size={24} /> : <Eye size={24} />}
-          </button>
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              minLength={8}
+              className="st-input !pr-14 text-base placeholder:text-sm placeholder:font-normal placeholder:text-muted-foreground"
+              placeholder="Ulangi Password Baru"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={
+                showConfirmPassword
+                  ? 'Sembunyikan konfirmasi password'
+                  : 'Tampilkan konfirmasi password'
+              }
+              className="st-focus absolute right-1 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              {showConfirmPassword ? <EyeOff size={24} /> : <Eye size={24} />}
+            </button>
+          </div>
         </div>
 
         <div>
           <button
             type="submit"
             disabled={loading}
-            className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-xl font-bold font-display text-white hover:bg-blue-600 hover:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 transition-all border-2 border-transparent shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="st-button st-focus flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed"
           >
             {loading && <Loader2 className="animate-spin" size={24} />}
             {loading ? 'Menyimpan...' : 'Simpan Password'}

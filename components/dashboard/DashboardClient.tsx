@@ -230,7 +230,7 @@ export default function DashboardClient({ data, greeting }: Props) {
               </p>
               <p className="mt-1 text-sm text-muted-foreground">token tersisa</p>
             </div>
-            <div className="flex size-11 items-center justify-center rounded-xl border border-border bg-white text-primary">
+            <div className="flex size-11 items-center justify-center rounded-xl border border-border-strong bg-white text-primary">
               <Ticket size={20} aria-hidden="true" />
             </div>
           </div>

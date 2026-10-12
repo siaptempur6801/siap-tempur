@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -7,7 +8,7 @@ import { cn } from '@/lib/utils'
 interface NavItemProps {
   href: string
   icon: React.ReactNode
-  label: string
+  label: ReactNode
   badge?: string
   exact?: boolean
   active?: boolean
@@ -104,7 +105,7 @@ export function MobileNavItem({
       prefetch={false}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1 text-[10px] font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-inset',
+        'flex min-h-14 flex-col items-center justify-center gap-0.5 px-0 py-1 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-inset',
         soft
           ? isActive
             ? 'text-indigo-600 rounded-xl'
@@ -128,7 +129,7 @@ export function MobileNavItem({
       >
         {icon}
       </span>
-      <span className="leading-none">{label}</span>
+      <span className="max-w-full text-center leading-tight tracking-tight">{label}</span>
     </Link>
   )
 }

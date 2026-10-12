@@ -345,7 +345,7 @@ export default function DrillingMateriClient({
                         </div>
 
                         {activeSession && (
-                          <div className="mt-3 rounded-lg border border-info-border bg-info-muted px-3 py-3 text-sm text-info-foreground">
+                          <div className="mt-3 rounded-lg border border-info-border bg-info-muted px-3 py-3 text-sm text-info">
                             <div className="flex items-center gap-2 font-semibold">
                               <Clock3 size={15} /> Sesi tersimpan
                             </div>
