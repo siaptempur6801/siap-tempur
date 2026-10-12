@@ -12,6 +12,7 @@ import {
   RotateCcw,
   School,
   Sparkles,
+  Ticket,
 } from 'lucide-react'
 import { activateTkaTrackAction } from '@/app/actions/user-track'
 import PageHeader from '@/components/ui/PageHeader'
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/Button'
 import { env } from '@/lib/env'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { getAuthenticatedTkaCatalogContext } from '@/src/repositories/tka-catalog-read.repository'
+import { walletService } from '@/src/services/wallet.service'
 import {
   isTkaLevelAvailable,
   parseTkaLevel,
@@ -38,21 +40,6 @@ const LEVEL_LABEL: Record<TkaLevel, string> = {
   SD: 'Sekolah Dasar',
   SMP: 'Sekolah Menengah Pertama',
   SMA: 'Sekolah Menengah Atas',
-}
-
-function entitlementUsable(input: {
-  starts_at: string
-  expires_at: string | null
-  usage_limit: number | null
-  usage_count: number
-}) {
-  const now = Date.now()
-  const startsAt = Date.parse(input.starts_at)
-  const expiresAt = input.expires_at ? Date.parse(input.expires_at) : null
-  const withinWindow =
-    Number.isFinite(startsAt) && startsAt <= now && (expiresAt === null || expiresAt > now)
-  const withinUsage = input.usage_limit === null || input.usage_count < input.usage_limit
-  return withinWindow && withinUsage
 }
 
 function formatAttemptDate(value: unknown) {
@@ -116,7 +103,7 @@ export default async function TkaLevelPage({
       .maybeSingle(),
     supabase
       .from('exams')
-      .select('id, exam_type_id, title, slug, required_feature_id')
+      .select('id, exam_type_id, title, slug')
       .eq('program_id', program.id)
       .eq('track_id', track.id)
       .in('status', ['active', 'ACTIVE', 'scheduled', 'SCHEDULED'])
@@ -139,26 +126,7 @@ export default async function TkaLevelPage({
   }
 
   const examIds = (exams ?? []).map((exam) => String(exam.id))
-  const featureIds = Array.from(
-    new Set(
-      (exams ?? [])
-        .map((exam) => (exam.required_feature_id ? String(exam.required_feature_id) : ''))
-        .filter(Boolean),
-    ),
-  )
-
-  const [
-    { data: entitlementRows, error: entitlementError },
-    { data: attemptRows, error: attemptError },
-  ] = await Promise.all([
-    featureIds.length > 0
-      ? supabase
-          .from('entitlements')
-          .select('feature_id, starts_at, expires_at, usage_limit, usage_count, status')
-          .eq('user_id', user.id)
-          .in('feature_id', featureIds)
-          .in('status', ['active', 'ACTIVE'])
-      : Promise.resolve({ data: [], error: null }),
+  const [{ data: attemptRows, error: attemptError }, tokenBalance] = await Promise.all([
     examIds.length > 0
       ? supabase
           .from('exam_attempts')
@@ -170,23 +138,9 @@ export default async function TkaLevelPage({
           .order('updated_at', { ascending: false })
           .limit(20)
       : Promise.resolve({ data: [], error: null }),
+    walletService.getExamTokenBalance(user.id, program.id),
   ])
-  if (entitlementError) throw entitlementError
   if (attemptError) throw attemptError
-
-  const entitledFeatures = new Set<string>()
-  for (const row of entitlementRows ?? []) {
-    if (
-      entitlementUsable({
-        starts_at: String(row.starts_at),
-        expires_at: row.expires_at ? String(row.expires_at) : null,
-        usage_limit: row.usage_limit === null ? null : Number(row.usage_limit),
-        usage_count: Number(row.usage_count ?? 0),
-      })
-    ) {
-      entitledFeatures.add(String(row.feature_id))
-    }
-  }
 
   const examTypeById = new Map((examTypes ?? []).map((row) => [String(row.id), row]))
   const examById = new Map((exams ?? []).map((exam) => [String(exam.id), exam]))
@@ -232,16 +186,6 @@ export default async function TkaLevelPage({
       ? `${Number(latestCompletedAttempt.percentage).toFixed(0)}%`
       : Number(latestCompletedAttempt.total_score ?? 0).toFixed(0)
     : '-'
-  const fullTryoutExam =
-    (exams ?? []).find((exam) => String(exam.slug).toLowerCase() === 'tka-smp-full') ??
-    (exams ?? []).find((exam) => {
-      const typeCode = String(examTypeById.get(String(exam.exam_type_id))?.code ?? '').toUpperCase()
-      return typeCode === 'FULL_TRYOUT' || typeCode.includes('FULL')
-    })
-  const fullTryoutFeatureId = fullTryoutExam?.required_feature_id
-    ? String(fullTryoutExam.required_feature_id)
-    : null
-  const hasTempurPass = Boolean(fullTryoutFeatureId && entitledFeatures.has(fullTryoutFeatureId))
   const diagnosticExam = (exams ?? []).find(
     (exam) => String(exam.slug).toLowerCase() === 'tka-smp-diagnostic-awal',
   )
@@ -394,7 +338,7 @@ export default async function TkaLevelPage({
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-600">
-                  Status Akses
+                  Saldo Token TKA
                 </span>
                 <div
                   className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black ring-1 ${activeTrack ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-800 ring-amber-200'}`}
@@ -412,34 +356,25 @@ export default async function TkaLevelPage({
               </div>
 
               <div className="mt-4">
-                <p className="text-2xl font-black tracking-tight text-slate-950">
-                  {hasTempurPass ? 'Tempur Pass' : activeTrack ? 'Jalur Terhubung' : 'Belum Aktif'}
+                <p className="flex items-center gap-2 text-2xl font-black tracking-tight text-slate-950">
+                  <Ticket size={22} className="shrink-0 text-indigo-700" aria-hidden="true" />
+                  {tokenBalance} token
                 </p>
-                <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                  {hasTempurPass
-                    ? level === 'SMP'
-                      ? 'Akses tryout TKA SMP tanpa batas selama masa aktif pass, termasuk ringkasan hasil dan remedial yang tersedia.'
-                      : `Tempur Pass TKA ${level} aktif. Alur pengerjaan tryout untuk jenjang ini masih disiapkan.`
-                    : activeTrack
-                      ? level === 'SMP'
-                        ? 'Jalur belajar TKA SMP aktif. Nilai dan progres latihanmu otomatis tersimpan di profil.'
-                        : `Jalur belajar TKA ${level} aktif. Status akses dan riwayat yang tersedia tersimpan di profil.`
-                      : level === 'SMP'
-                        ? 'Aktifkan jalur belajar di bawah agar riwayat tryout dan statistik belajar tersimpan.'
-                        : `Aktifkan jalur belajar TKA ${level} untuk menghubungkan status akses ke akunmu.`}
+                <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                  Tryout, Mini Tryout, dan Latihan Fokus memakai 1 token untuk setiap sesi baru.
+                  Sesi aktif bisa dilanjutkan tanpa biaya tambahan.
                 </p>
+                {level === 'SMP' && (
+                  <Link
+                    href={`${path}/beli-token`}
+                    className="st-focus mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-800"
+                  >
+                    Kelola token <ArrowRight size={16} aria-hidden="true" />
+                  </Link>
+                )}
               </div>
             </div>
 
-            <div className="mt-6 border-t border-slate-100 pt-4">
-              <Link
-                href={`${path}/pass`}
-                className="st-focus inline-flex items-center gap-2 text-xs font-black text-indigo-600 hover:text-indigo-800 hover:underline"
-              >
-                <span>{hasTempurPass ? 'Detail Tempur Pass' : 'Lihat Akses & Tempur Pass'}</span>
-                <ArrowRight size={14} />
-              </Link>
-            </div>
           </article>
         </section>
 
@@ -794,12 +729,10 @@ function TkaAssessmentUnavailablePage({ level }: { level: TkaLevel }) {
         </div>
         <h1 className="mt-4 text-2xl font-black">Assessment TKA {level} belum tersedia</h1>
         <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
-          Konten ujian untuk jenjang ini sedang disiapkan. Pembelian pass baru tidak tersedia sampai
-          assessment siap.
+          Konten ujian untuk jenjang ini sedang disiapkan. Akses assessment tambahan belum tersedia.
         </p>
         <p className="mt-3 text-xs font-semibold leading-5 text-slate-500">
-          Jika akun Anda sudah memiliki pass TKA {level}, entitlement tetap tersimpan dan tidak
-          dihapus.
+          Assessment ini akan tersedia kembali setelah persiapan kontennya selesai.
         </p>
         <Link
           href="/tka"

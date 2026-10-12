@@ -29,12 +29,8 @@ describe('TKA navigation selection', () => {
       const tryout = renderToStaticMarkup(
         <Component href="/tka/smp/tryout" label="Tryout" icon={null} />,
       )
-      const pass = renderToStaticMarkup(
-        <Component href="/tka/smp/pass" label="Tempur Pass" icon={null} />,
-      )
       expect(dashboard).toContain('aria-current="page"')
       expect(tryout).not.toContain('aria-current')
-      expect(pass).not.toContain('aria-current')
 
       navigation.pathname = '/tka/smp/tryout'
       const activeTryout = renderToStaticMarkup(
@@ -51,7 +47,6 @@ describe('TKA navigation selection', () => {
         level="SMP"
         user={{ id: 'user-1', email: 'user@example.com' }}
         profile={null}
-        activePassScopes={[]}
         signoutAction={async () => ({ success: true })}
       >
         <div>Dashboard</div>
@@ -76,7 +71,6 @@ describe('TKA navigation selection', () => {
         level="SMP"
         user={{ id: 'user-1', email: 'user@example.com' }}
         profile={null}
-        activePassScopes={[]}
         signoutAction={async () => ({ success: true })}
       >
         <div>Dashboard</div>
@@ -114,7 +108,6 @@ describe('TKA navigation selection', () => {
         level="SMP"
         user={{ id: 'user-1', email: 'user@example.com' }}
         profile={null}
-        activePassScopes={[]}
         signoutAction={async () => ({ success: true })}
       >
         <div>Mini Tryout</div>
@@ -140,23 +133,19 @@ describe('TKA navigation selection', () => {
     expect(markup).toContain('aria-current="page"')
   })
 
-  it('menjelaskan cakupan pass saat pass aktif ada di jenjang lain', () => {
+  it('does not surface retired access products in learner navigation', () => {
     navigation.pathname = '/tka/smp'
     const markup = renderToStaticMarkup(
       <TkaDashboardShell
         level="SMP"
         user={{ id: 'user-1', email: 'user@example.com' }}
         profile={null}
-        activePassScopes={['tka:sd']}
         signoutAction={async () => ({ success: true })}
       >
         <div>Dashboard</div>
       </TkaDashboardShell>,
     )
 
-    // Pass aktif untuk jenjang lain dijelaskan, dan nav menyebut jenjang yang sedang dibuka.
-    expect(markup).toContain('Pass aktif · SD')
-    expect(markup).toContain('Tempur Pass SMP')
-    expect(markup).toContain('href="/tka/smp/pass"')
+    expect(markup).not.toContain('href="/tka/smp/pass"')
   })
 })

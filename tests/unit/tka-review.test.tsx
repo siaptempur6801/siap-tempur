@@ -99,7 +99,6 @@ describe('TKA Review Experience', () => {
         level="SMP"
         user={{ id: 'user-1', email: 'user@example.com' }}
         profile={null}
-        activePassScopes={[]}
         signoutAction={async () => ({ success: true })}
       >
         <div id="review-content">Konten Review</div>
@@ -118,7 +117,6 @@ describe('TKA Review Experience', () => {
         level="SMP"
         user={{ id: 'user-1', email: 'user@example.com' }}
         profile={null}
-        activePassScopes={[]}
         signoutAction={async () => ({ success: true })}
       >
         <div id="pembahasan-content">Konten Pembahasan</div>
@@ -133,7 +131,6 @@ describe('TKA Review Experience', () => {
         level="SMP"
         user={{ id: 'user-1', email: 'user@example.com' }}
         profile={null}
-        activePassScopes={[]}
         signoutAction={async () => ({ success: true })}
       >
         <div id="result-content">Konten Result</div>

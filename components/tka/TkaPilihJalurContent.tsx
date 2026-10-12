@@ -8,8 +8,6 @@ import {
   Dumbbell,
   History,
   ListChecks,
-  ShieldCheck,
-  Sparkles,
   Timer,
 } from 'lucide-react'
 import { tkaLevelPath, type TkaLevel } from '@/src/tka/context'
@@ -18,7 +16,7 @@ import { tkaLevelPath, type TkaLevel } from '@/src/tka/context'
  * Konten halaman **Pilih Jalur khusus TKA**.
  *
  * Fokus ke jenjang yang sedang dibuka: memilih jalur latihan (diagnostik → fokus → mini tryout →
- * full tryout) dan status Tempur Pass jenjang tersebut. Berbeda dari halaman
+ * full tryout). Berbeda dari halaman
  * CPNS yang berfokus pada subtes SKD.
  */
 const LADDER = [
@@ -54,13 +52,7 @@ const EVALUATION = [
   { path: '/progress', title: 'Perkembangan belajar', icon: BarChart3 },
 ] as const
 
-export default function TkaPilihJalurContent({
-  level,
-  hasActivePass,
-}: {
-  level: TkaLevel
-  hasActivePass: boolean
-}) {
+export default function TkaPilihJalurContent({ level }: { level: TkaLevel }) {
   const base = tkaLevelPath(level)
   const availableSteps =
     level === 'SMP'
@@ -161,47 +153,12 @@ export default function TkaPilihJalurContent({
         </div>
       </section>
 
-      <section
-        aria-labelledby="akses-tka"
-        className="rounded-2xl border border-border-strong bg-white p-5"
+      <Link
+        href="/cpns/dashboard/pilih-jalur"
+        className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl border border-border-strong bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
       >
-        <h2 id="akses-tka" className="text-base font-black tracking-tight text-slate-950">
-          {level === 'SMP' ? `Akses Tempur Pass TKA ${level}` : `Status akses TKA ${level}`}
-        </h2>
-        {hasActivePass ? (
-          <p className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-emerald-700">
-            <ShieldCheck size={16} />
-            {level === 'SMP'
-              ? `Tempur Pass TKA ${level} aktif — mini tryout dan full tryout tanpa hitung token.`
-              : `Tempur Pass TKA ${level} aktif — alur pengerjaan tryout jenjang ini sedang disiapkan.`}
-          </p>
-        ) : (
-          <p className="mt-2 text-sm font-medium text-slate-600">
-            {level === 'SMP'
-              ? `Pass TKA dihitung per jenjang. Pass untuk jenjang lain tidak berlaku di ${level}.`
-              : `Pembelian Tempur Pass TKA ${level} belum tersedia karena alur Mini Tryout dan Full Tryout masih disiapkan.`}
-          </p>
-        )}
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Link
-            href={`${base}/pass`}
-            className={`st-focus inline-flex min-h-10 items-center gap-2 rounded-xl px-4 py-2 text-xs font-black transition ${level === 'SMP' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'border border-border-strong bg-white text-slate-700 hover:bg-slate-50'}`}
-          >
-            <Sparkles size={15} />{' '}
-            {hasActivePass
-              ? `Kelola Tempur Pass ${level}`
-              : level === 'SMP'
-                ? `Lihat Tempur Pass ${level}`
-                : `Lihat status akses ${level}`}
-          </Link>
-          <Link
-            href="/cpns/dashboard/pilih-jalur"
-            className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl border border-border-strong bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
-          >
-            Buka jalur CPNS
-          </Link>
-        </div>
-      </section>
+        Buka jalur CPNS
+      </Link>
     </div>
   )
 }

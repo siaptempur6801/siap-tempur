@@ -78,11 +78,17 @@ function friendlyError(error: unknown) {
     'Voucher not found': 'Voucher tidak ditemukan.',
     'Quota must be greater than zero': 'Kuota harus lebih besar dari 0.',
     'Max uses must be greater than zero': 'Batas pemakaian harus lebih besar dari 0.',
+    'Voucher code must be 3-32 characters of A-Z, 0-9, _ or -':
+      'Kode voucher harus 3–32 karakter dan hanya berisi A–Z, angka, _ atau -.',
+    'Cannot change the code of a voucher that already has claims':
+      'Kode voucher yang sudah pernah diklaim tidak dapat diubah.',
     'Quota must not be negative': 'Kuota tidak boleh negatif.',
     'Rollout percentage must be between 0 and 100': 'Rollout harus antara 0 dan 100.',
   }
-  // Galat berparameter dari database dikembalikan apa adanya; pesannya sudah
-  // spesifik (mis. "Max uses cannot be lower than the 5 times already used").
+  const maxUsesError = message.match(/^Max uses cannot be lower than the (\d+) times already used$/)
+  if (maxUsesError) {
+    return `Batas pemakaian tidak boleh kurang dari jumlah klaim yang sudah digunakan (${maxUsesError[1]}).`
+  }
   return known[message] || message
 }
 
@@ -92,11 +98,22 @@ type BackContext = {
 }
 
 function contextFrom(form: FormData, path: BackContext['path']): BackContext {
-  const keys = path === '/admin/users/access' ? ['q', 'wallet_type', 'user', 'status'] : []
+  const keys =
+    path === '/admin/users/access'
+      ? [
+          ['return_wallet_q', 'wallet_q'],
+          ['return_entitlement_q', 'entitlement_q'],
+          ['return_wallet_type', 'wallet_type'],
+          ['return_user', 'user'],
+          ['return_status', 'status'],
+          ['return_wallet_page', 'wallet_page'],
+          ['return_entitlement_page', 'entitlement_page'],
+        ]
+      : []
   const params: Record<string, string> = {}
-  for (const key of keys) {
-    const value = text(form, key)
-    if (value) params[key] = value
+  for (const [formKey, queryKey] of keys) {
+    const value = text(form, formKey)
+    if (value) params[queryKey] = value
   }
   return { path, params }
 }

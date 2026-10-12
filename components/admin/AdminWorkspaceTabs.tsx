@@ -34,6 +34,10 @@ export default function AdminWorkspaceTabs({
     const value = pathContext?.[key] ?? params.get(key)
     if (value) context.set(key, value)
   }
+  if (workspace === 'users') {
+    const user = pathContext?.userId ?? params.get('user')
+    if (user) context.set('user', user)
+  }
   const reportsHref = `/admin/monitoring/reports${context.size ? `?${context}` : ''}`
   const tabs =
     workspace === 'monitoring'
@@ -73,8 +77,8 @@ export default function AdminWorkspaceTabs({
         : [
             {
               label: 'Pengguna',
-              href: '/admin/users',
-              active: pathContext?.tab !== 'roles',
+              href: `/admin/users${context.size ? `?${context}` : ''}`,
+              active: pathname !== '/admin/users/access' && pathContext?.tab !== 'roles',
               visible: has(
                 PERMISSIONS.USER_READ,
                 PERMISSIONS.USER_MANAGE,
@@ -86,6 +90,12 @@ export default function AdminWorkspaceTabs({
               href: '/admin/users/roles',
               active: pathContext?.tab === 'roles',
               visible: has(PERMISSIONS.USER_READ, PERMISSIONS.USER_MANAGE),
+            },
+            {
+              label: 'Akses & token',
+              href: `/admin/users/access${context.size ? `?${context}` : ''}`,
+              active: pathname === '/admin/users/access',
+              visible: has(PERMISSIONS.ENTITLEMENT_MANAGE),
             },
           ]
   const visible = tabs.filter((tab) => tab.visible)

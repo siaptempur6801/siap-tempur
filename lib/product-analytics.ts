@@ -18,7 +18,7 @@ export type ProductEventName =
 
 export type ProductAnalyticsProperties = Partial<{
   program: 'cpns' | 'tka_sd' | 'tka_smp' | 'tka_sma'
-  surface: 'landing' | 'auth' | 'dashboard' | 'exam' | 'diagnostic' | 'result' | 'pass'
+  surface: 'landing' | 'auth' | 'dashboard' | 'exam' | 'diagnostic' | 'result'
   cta: string
   mode: 'latihan_fokus' | 'mini_tryout' | 'full_tryout' | 'diagnostic' | 'event'
   section: string

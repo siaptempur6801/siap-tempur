@@ -61,8 +61,11 @@ async function hasActiveTrack(
 
 function friendlyDrillRpcError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
+  if (message.includes('INSUFFICIENT_TOKEN_BALANCE') || message.includes('WALLET_NOT_FOUND')) {
+    return 'Token TKA kamu belum cukup. Beli token untuk memulai sesi baru.'
+  }
   if (message.includes('ENTITLEMENT_REQUIRED')) {
-    return 'Latihan gratis untuk topik ini sudah digunakan. Tempur Pass diperlukan untuk latihan fokus berikutnya.'
+    return 'Akses latihan fokus belum tersedia. Muat ulang halaman atau hubungi admin.'
   }
   if (message.includes('ACTIVE_USER_TRACK_REQUIRED'))
     return 'Aktifkan jalur TKA SMP terlebih dahulu.'
@@ -71,8 +74,6 @@ function friendlyDrillRpcError(error: unknown) {
   if (message.includes('DRILL_KNOWLEDGE_NODE_INVALID'))
     return 'Topik rekomendasi belum memiliki latihan fokus.'
   if (message.includes('DRILL_SUBJECT_INVALID')) return 'Mata pelajaran latihan fokus tidak valid.'
-  if (message.includes('DRILL_ENTITLEMENT_FEATURE_MISSING'))
-    return 'Konfigurasi Tempur Pass untuk latihan fokus belum siap.'
   if (
     message.includes('Exam item count') ||
     message.includes('question count') ||
@@ -85,8 +86,11 @@ function friendlyDrillRpcError(error: unknown) {
 
 function friendlyTkaRpcError(error: unknown, level: string) {
   const message = error instanceof Error ? error.message : String(error)
+  if (message.includes('INSUFFICIENT_TOKEN_BALANCE') || message.includes('WALLET_NOT_FOUND')) {
+    return 'Token TKA kamu belum cukup. Beli token untuk memulai sesi baru.'
+  }
   if (message.includes('ENTITLEMENT_REQUIRED'))
-    return 'Paket aktif diperlukan untuk membuka tryout ini.'
+    return 'Akses tryout belum tersedia. Muat ulang halaman atau hubungi admin.'
   if (message.includes('Attempt limit reached')) return 'Batas percobaan tryout sudah tercapai.'
   if (message.includes('Active user track required'))
     return `Aktifkan jalur TKA ${level} terlebih dahulu.`
@@ -134,8 +138,8 @@ export async function startTkaDrill(
 
   try {
     // Use the authenticated learner RPC rather than the privileged generic
-    // repository path. The RPC enforces ownership, free quota, entitlement,
-    // exact competency mapping, and starts the frozen section-engine attempt.
+    // repository path. The RPC validates ownership and competency mapping,
+    // then starts a frozen section-engine attempt charged to the TKA wallet.
     const learnerClient = await createClient()
     const { data, error } = await learnerClient.rpc('start_tka_smp_drill', {
       p_subject_code: subjectCode,

@@ -4,7 +4,6 @@ import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import DashboardShell from '@/components/dashboard/DashboardShell'
 import { logger } from '@/lib/logger'
-import { hasActivePass } from '@/src/services/tempur-pass.service'
 import { walletService } from '@/src/services/wallet.service'
 
 type UserMetadata = {
@@ -60,10 +59,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
   }
 
-  const [tokenBalance, hasTempurPass] = await Promise.all([
-    walletService.getExamTokenBalance(user.id),
-    hasActivePass(user.id, 'cpns'),
-  ])
+  const tokenBalance = await walletService.getExamTokenBalance(user.id)
 
   return (
     <>
@@ -71,7 +67,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         user={user}
         profile={profile}
         tokenBalance={tokenBalance}
-        hasActiveTempurPass={hasTempurPass}
         signoutAction={signout}
       >
         {children}

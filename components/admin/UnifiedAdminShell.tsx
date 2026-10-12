@@ -2,7 +2,6 @@
 import { adminHref, adminRouteState } from '@/lib/admin-routes'
 
 import { useAdminConfirm } from '@/components/admin/useAdminConfirm'
-import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 import {
   adminNavHref,
   adminNavIsActive,
@@ -89,7 +88,6 @@ interface UnifiedAdminShellProps {
   } | null
   roles: string[]
   permissions: string[]
-  hasActiveTempurPass: boolean
   landingPath: string | null
   signoutAction: () => Promise<{ success: boolean }>
 }
@@ -257,7 +255,6 @@ export default function UnifiedAdminShell({
   profile,
   roles,
   permissions,
-  hasActiveTempurPass,
   landingPath,
   signoutAction,
 }: UnifiedAdminShellProps) {
@@ -580,7 +577,7 @@ export default function UnifiedAdminShell({
         <header
           className={cn(
             'sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm',
-            !showProgramContext && !hasActiveTempurPass && 'md:hidden',
+            !showProgramContext && 'md:hidden',
           )}
         >
           <div className="flex min-h-16 items-center gap-3 px-4 md:px-6 xl:px-8">
@@ -631,7 +628,6 @@ export default function UnifiedAdminShell({
                   </label>
                 </>
               ) : null}
-              {hasActiveTempurPass && <TempurPassIndicator href="/tka/smp/pass" compact />}
             </div>
           </div>
         </header>

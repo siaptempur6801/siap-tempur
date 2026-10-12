@@ -37,6 +37,7 @@ type Transaction = {
   amount: number
   status: string
   package_name: string
+  product_type: string
   order_id: string
   snap_token?: string
 }
@@ -123,7 +124,7 @@ export default function ProfileClient({
     { id: 'profile', label: 'Profil', icon: <User size={18} /> },
     {
       id: 'history',
-      label: isTka ? 'Transaksi & pass' : 'Transaksi & penggunaan',
+      label: 'Transaksi & penggunaan',
       icon: <Clock size={18} />,
     },
     { id: 'settings', label: 'Pengaturan', icon: <Shield size={18} /> },
@@ -145,7 +146,7 @@ export default function ProfileClient({
             Profil & Pengaturan Akun
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 sm:text-base">
-            Kelola identitas belajar, riwayat pembelian Tempur Pass, dan keamanan akun SiapTempur
+            Kelola identitas belajar, riwayat transaksi, dan keamanan akun SiapTempur
             dalam satu dashboard.
           </p>
         </header>

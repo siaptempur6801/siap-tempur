@@ -3,7 +3,9 @@ import { Dumbbell } from 'lucide-react'
 import TkaLearningHierarchy from '@/components/tka/TkaLearningHierarchy'
 import TkaFeatureNotice from '@/components/tka/TkaFeatureNotice'
 import PageHeader from '@/components/ui/PageHeader'
+import TkaTokenAccessSummary from '@/components/tka/TkaTokenAccessSummary'
 import { createV2Client } from '@/lib/utils/supabase/server'
+import { walletService } from '@/src/services/wallet.service'
 import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
@@ -61,6 +63,7 @@ export default async function TkaFocusPage({ params }: { params: Promise<{ level
   if (userTrackError) throw userTrackError
 
   const activeTrack = userTrack?.status.toLowerCase() === 'active'
+  const tokenBalance = await walletService.getExamTokenBalance(user.id, program.id)
 
   return (
     <main
@@ -80,7 +83,15 @@ export default async function TkaFocusPage({ params }: { params: Promise<{ level
           description="Pilih bab atau materi yang ingin kamu perkuat. Setiap sesi berisi 10 butir soal terarah dengan pembahasan instan untuk mematangkan konsep."
         />
 
-        <TkaLearningHierarchy activeTrack={activeTrack} level={level} />
+        <TkaTokenAccessSummary
+          tokenBalance={tokenBalance}
+          href={`${base}/beli-token`}
+        />
+        <TkaLearningHierarchy
+          activeTrack={activeTrack}
+          level={level}
+          tokenBalance={tokenBalance}
+        />
       </div>
     </main>
   )

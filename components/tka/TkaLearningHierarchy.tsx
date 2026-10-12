@@ -51,9 +51,11 @@ function exactDrills(items: TkaHierarchyItem[]) {
 export default async function TkaLearningHierarchy({
   activeTrack,
   level,
+  tokenBalance,
 }: {
   activeTrack: boolean
   level: TkaLevel
+  tokenBalance: number
 }) {
   if (!activeTrack) {
     return (
@@ -355,6 +357,7 @@ export default async function TkaLearningHierarchy({
                             subjectCode={subject.code}
                             knowledgeNodeName={item.drill!.knowledgeNodeName}
                             compact
+                            tokenBalance={tokenBalance}
                           />
                         </div>
                       </article>

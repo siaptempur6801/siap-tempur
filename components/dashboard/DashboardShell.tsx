@@ -13,14 +13,12 @@ import {
   Library,
   ListChecks,
   Dumbbell,
-  Sparkles,
   User,
   Building2,
 } from 'lucide-react'
 
 import MobileProfileDropdown from '@/components/dashboard/MobileProfileDropdown'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
-import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
 import styles from '@/components/dashboard/CompactLearning.module.css'
 
@@ -39,7 +37,6 @@ interface DashboardShellProps {
     full_name?: string
   } | null
   tokenBalance: number
-  hasActiveTempurPass: boolean
   signoutAction: () => Promise<{ success: boolean }>
 }
 
@@ -48,7 +45,6 @@ export default function DashboardShell({
   user,
   profile,
   tokenBalance,
-  hasActiveTempurPass,
   signoutAction,
 }: DashboardShellProps) {
   const pathname = usePathname()
@@ -175,14 +171,6 @@ export default function DashboardShell({
               icon={<Ticket size={17} />}
               label="Beli Token"
             />
-            {/* Selalu tampil: halaman Tempur Pass CPNS harus bisa dibuka walau belum berlangganan. */}
-            <NavItem
-              variant="soft"
-              href="/cpns/dashboard/pass"
-              icon={<Sparkles size={17} />}
-              label="Tempur Pass CPNS"
-              badge={hasActiveTempurPass ? 'Aktif' : undefined}
-            />
             <NavItem
               variant="soft"
               href="/cpns/dashboard/profile"
@@ -221,14 +209,6 @@ export default function DashboardShell({
               >
                 <Ticket size={12} /> {tokenBalance} token tersisa
               </Link>
-              {hasActiveTempurPass && (
-                <TempurPassIndicator
-                  href="/cpns/dashboard/pass"
-                  label="Tempur Pass CPNS aktif"
-                  className="mt-1.5"
-                  compact
-                />
-              )}
             </div>
           </div>
           <div className="mt-1.5 flex justify-end">
@@ -257,18 +237,10 @@ export default function DashboardShell({
               <span className="tabular-nums">{tokenBalance}</span>
               <span className="hidden min-[360px]:inline">token</span>
             </Link>
-            {hasActiveTempurPass && (
-              <TempurPassIndicator
-                href="/cpns/dashboard/pass"
-                label="Tempur Pass CPNS aktif"
-                compact
-              />
-            )}
             <MobileProfileDropdown
               user={user}
               profile={profile}
               tokenBalance={tokenBalance}
-              hasActiveTempurPass={hasActiveTempurPass}
               signoutAction={signoutAction}
               signoutRedirectTo="/cpns"
             />

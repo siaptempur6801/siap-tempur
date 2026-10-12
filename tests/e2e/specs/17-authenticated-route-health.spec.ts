@@ -36,7 +36,6 @@ const STABLE_ROUTES = [
   '/tka/smp',
   '/tka/smp/progress',
   '/tka/smp/riwayat',
-  '/tka/smp/pass',
   '/tka/smp/wrong-questions',
   '/tka/smp/focus',
   '/tka/smp/pilih-jalur',
@@ -51,7 +50,8 @@ const STABLE_ROUTES = [
 /** Redirect yang memang disengaja oleh produk. */
 const INTENTIONAL_REDIRECTS: Array<{ from: string; to: string }> = [
   { from: '/tka', to: '/tka/smp' },
-  { from: '/tka/smp/beli-token', to: '/tka/smp/pass' },
+  { from: '/tka/smp/beli-token', to: '/tka/smp' },
+  { from: '/tka/smp/pass', to: '/tka/smp' },
 ]
 
 function collectCriticalErrors(page: Page) {
@@ -117,7 +117,6 @@ const OVERFLOW_ROUTES = [
   '/tka/smp/riwayat',
   '/tka/smp/wrong-questions',
   '/tka/smp/progress',
-  '/tka/smp/pass',
   '/tka/smp/focus',
   '/tka/smp/pilih-jalur',
 ]

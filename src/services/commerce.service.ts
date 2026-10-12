@@ -80,6 +80,11 @@ class CommerceService {
     if (productError) throw productError
     if (!products?.length) return []
 
+    const availableProducts = products.filter(
+      (product) => stringValue(product.product_type).toUpperCase() !== 'PASS',
+    )
+    if (availableProducts.length === 0) return []
+
     if (programCode.trim().toUpperCase() === 'TKA') {
       const assessments = await assessmentCatalogService.listDistributable()
       if (
@@ -92,7 +97,7 @@ class CommerceService {
         return []
     }
 
-    const productIds = products.map((product) => stringValue(product.id)).filter(Boolean)
+    const productIds = availableProducts.map((product) => stringValue(product.id)).filter(Boolean)
     const { data: prices, error: priceError } = await admin
       .from('product_prices')
       .select('id, product_id, currency, amount, starts_at, ends_at, status')
@@ -130,7 +135,7 @@ class CommerceService {
       )
     }
 
-    return products.flatMap((product) => {
+    return availableProducts.flatMap((product) => {
       const productId = stringValue(product.id)
       const price = activePriceByProduct.get(productId)
       if (!price) return []
@@ -226,6 +231,9 @@ class CommerceService {
   async createOrder(userId: string, productCode: string, adminFee = 0): Promise<CommerceOrder> {
     const offer = await this.getProductOfferByCode(productCode)
     if (!offer) throw new Error('PRODUCT_NOT_AVAILABLE')
+    if (offer.productType.toUpperCase() === 'PASS') {
+      throw new Error('PRODUCT_NOT_AVAILABLE')
+    }
     if (offer.price <= 0) throw new Error('PRODUCT_PRICE_INVALID')
     if (!Number.isInteger(adminFee) || adminFee < 0) throw new Error('ADMIN_FEE_INVALID')
 

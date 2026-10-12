@@ -19,6 +19,8 @@ import {
 import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
 import PageHeader from '@/components/ui/PageHeader'
 import TkaFeatureNotice from '@/components/tka/TkaFeatureNotice'
+import TkaTokenAccessSummary from '@/components/tka/TkaTokenAccessSummary'
+import { walletService } from '@/src/services/wallet.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -36,10 +38,9 @@ interface TryoutOption {
   details: string[]
   accessLabel: string
   accessTone: AccessTone
+  tokenCost: number
   disabledReason: string | null
   activeAttemptId: string | null
-  full: boolean
-  drill: boolean
 }
 
 function minutes(seconds: unknown) {
@@ -54,21 +55,6 @@ function examWindowDisabledReason(input: { starts_at: string | null; ends_at: st
   if (startsAt !== null && Number.isFinite(startsAt) && startsAt > now) return 'Belum dimulai'
   if (endsAt !== null && Number.isFinite(endsAt) && endsAt < now) return 'Sudah berakhir'
   return null
-}
-
-function entitlementUsable(input: {
-  starts_at: string
-  expires_at: string | null
-  usage_limit: number | null
-  usage_count: number
-}) {
-  const now = Date.now()
-  const startsAt = Date.parse(input.starts_at)
-  const expiresAt = input.expires_at ? Date.parse(input.expires_at) : null
-  const withinWindow =
-    Number.isFinite(startsAt) && startsAt <= now && (expiresAt === null || expiresAt > now)
-  const withinUsage = input.usage_limit === null || input.usage_count < input.usage_limit
-  return withinWindow && withinUsage
 }
 
 export default async function TkaTryoutPage({ params }: { params: Promise<{ level: string }> }) {
@@ -119,7 +105,7 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
     supabase
       .from('exams')
       .select(
-        'id, exam_type_id, title, slug, duration_seconds, attempt_limit, access_type, required_feature_id, starts_at, ends_at',
+        'id, exam_type_id, title, slug, duration_seconds, token_cost, starts_at, ends_at',
       )
       .eq('program_id', program.id)
       .eq('track_id', track.id)
@@ -135,12 +121,7 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
   const catalogExams = (exams ?? []).filter((exam) => {
     const typeCode = String(examTypeById.get(String(exam.exam_type_id))?.code ?? '').toUpperCase()
     const slug = String(exam.slug ?? '').toLowerCase()
-    return (
-      typeCode.includes('TRYOUT') ||
-      (level === 'SMP' && typeCode.includes('DRILL')) ||
-      slug.includes('-mini-') ||
-      slug.endsWith('-full')
-    )
+    return typeCode.includes('FULL') || slug.includes('full')
   })
   const examIds = catalogExams.map((exam) => String(exam.id))
   const { data: sectionRows, error: sectionError } =
@@ -167,44 +148,11 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
     })
     sectionsByExam.set(examId, sections)
   }
-  const featureIds = Array.from(
-    new Set(
-      catalogExams
-        .map((exam) => (exam.required_feature_id ? String(exam.required_feature_id) : ''))
-        .filter(Boolean),
-    ),
-  )
-
-  const [{ data: entitlementRows, error: entitlementError }, attemptSummaries] = await Promise.all([
-    featureIds.length > 0
-      ? supabase
-          .from('entitlements')
-          .select('feature_id, starts_at, expires_at, usage_limit, usage_count')
-          .eq('user_id', user.id)
-          .in('feature_id', featureIds)
-          .in('status', ['active', 'ACTIVE'])
-      : Promise.resolve({ data: [], error: null }),
+  const [attemptSummaries, tokenBalance] = await Promise.all([
     getTkaAttemptSummaries(supabase, examIds, true),
+    walletService.getExamTokenBalance(user.id, program.id),
   ])
-  if (entitlementError) throw entitlementError
 
-  const entitledFeatures = new Set<string>()
-  for (const row of entitlementRows ?? []) {
-    if (
-      entitlementUsable({
-        starts_at: String(row.starts_at),
-        expires_at: row.expires_at ? String(row.expires_at) : null,
-        usage_limit: row.usage_limit === null ? null : Number(row.usage_limit),
-        usage_count: Number(row.usage_count ?? 0),
-      })
-    ) {
-      entitledFeatures.add(String(row.feature_id))
-    }
-  }
-
-  const attemptCountByExam = new Map(
-    attemptSummaries.map((row) => [row.exam_id, row.attempt_count]),
-  )
   const activeAttemptByExam = new Map(
     attemptSummaries.flatMap((row) =>
       row.active_attempt_id ? [[row.exam_id, row.active_attempt_id] as const] : [],
@@ -215,27 +163,7 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
     const type = examTypeById.get(String(exam.exam_type_id))
     const typeCode = String(type?.code ?? '').toUpperCase()
     const slug = String(exam.slug)
-    const full = slug.toLowerCase().includes('full') || typeCode.includes('FULL')
-    const featureId = exam.required_feature_id ? String(exam.required_feature_id) : null
-    const hasEntitlement = featureId ? entitledFeatures.has(featureId) : false
-    const usedAttempts = attemptCountByExam.get(String(exam.id)) ?? 0
-    const access = String(exam.access_type ?? 'FREE').toUpperCase()
-    const freeLimit = Number(exam.attempt_limit ?? 1)
-    const freemiumLocked = access === 'FREEMIUM' && !hasEntitlement && usedAttempts >= freeLimit
-    const premiumLocked = access === 'PREMIUM' && !hasEntitlement
-    const accessReason = premiumLocked
-      ? 'Butuh Tempur Pass'
-      : freemiumLocked
-        ? 'Kuota gratis habis - Butuh Tempur Pass'
-        : null
-    const accessLabel = hasEntitlement
-      ? 'Tempur Pass aktif'
-      : access === 'FREEMIUM'
-        ? `Gratis ${Math.max(0, freeLimit - usedAttempts)}x tersisa`
-        : access === 'PREMIUM'
-          ? 'Premium - Tempur Pass'
-          : 'Gratis'
-    const drill = typeCode.includes('DRILL')
+    const tokenCost = Math.max(1, Number(exam.token_cost ?? 1))
     const sections = sectionsByExam.get(String(exam.id)) ?? []
     const questionCount = sections.reduce((total, section) => total + section.questionCount, 0)
     const sectionDurationSeconds = sections.reduce(
@@ -244,25 +172,16 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
     )
     const duration =
       sectionDurationSeconds > 0 ? minutes(sectionDurationSeconds) : minutes(exam.duration_seconds)
-    const details = full
-      ? [
-          ...(questionCount > 0 ? [`${questionCount} soal`] : []),
-          ...(sections.length > 0 ? [`${sections.length} bagian`] : []),
-        ]
-      : drill
-        ? ['Latihan materi terarah']
-        : [
-            ...(questionCount > 0 ? [`${questionCount} soal`] : []),
-            ...(sections.length > 0 ? [`${sections.length} mapel`] : []),
-          ]
+    const details = [
+      ...(questionCount > 0 ? [`${questionCount} soal`] : []),
+      ...(sections.length > 0 ? [`${sections.length} bagian`] : []),
+    ]
 
     return {
       id: String(exam.id),
       title: String(exam.title),
       slug,
-      typeLabel: String(
-        type?.name || type?.code || (drill ? 'Drill' : full ? 'Full Tryout' : 'Mini Tryout'),
-      ),
+      typeLabel: String(type?.name || type?.code || 'Full Tryout'),
       duration,
       questionCount,
       sections: sections.map((section, index) => ({
@@ -271,35 +190,19 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
         duration: section.durationSeconds ? minutes(section.durationSeconds) : null,
       })),
       details,
-      accessLabel,
-      accessTone: hasEntitlement ? 'success' : accessReason ? 'warning' : 'default',
+      accessLabel: `${tokenCost} token per sesi baru`,
+      accessTone: 'default',
+      tokenCost,
       disabledReason: activeAttemptByExam.has(String(exam.id))
         ? null
         : !activeTrack
           ? 'Aktifkan jalur belajar terlebih dahulu'
-          : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }) ||
-            accessReason,
+          : examWindowDisabledReason({ starts_at: exam.starts_at, ends_at: exam.ends_at }),
       activeAttemptId: activeAttemptByExam.get(String(exam.id)) ?? null,
-      full,
-      drill,
     }
   })
-  const tryoutOptions = catalogOptions.filter((exam) => !exam.drill)
-  const drillOptions = catalogOptions.filter((exam) => exam.drill)
-  const fullTryouts = tryoutOptions.filter((exam) => exam.full)
-  const featuredTryout = fullTryouts[0] ?? null
-  const additionalFullTryouts = fullTryouts.slice(1)
-  const miniTryoutExample = tryoutOptions.find((exam) => !exam.full)
-  const miniTryoutSummary = miniTryoutExample
-    ? [
-        miniTryoutExample.questionCount > 0
-          ? `${miniTryoutExample.questionCount} butir soal`
-          : null,
-        miniTryoutExample.duration ? `${miniTryoutExample.duration} menit` : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : null
+  const featuredTryout = catalogOptions[0] ?? null
+  const additionalFullTryouts = catalogOptions.slice(1)
 
   return (
     <main
@@ -312,16 +215,18 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
           className="border-b border-slate-200/80 pb-6"
           eyebrow={
             <>
-              <ListChecks size={14} aria-hidden="true" /> Simulasi &amp; Tryout · TKA {level}
+              <ListChecks size={14} aria-hidden="true" /> Full Tryout · TKA {level}
             </>
           }
-          title="Tryout & Simulasi Ujian"
+          title="Full Tryout TKA"
           description={
             featuredTryout
               ? `Simulasi berstandar CAT dengan ${featuredTryout.questionCount || 'jumlah soal sesuai paket'} butir soal${featuredTryout.duration ? ` · ${featuredTryout.duration} menit` : ''} untuk mengukur kesiapan TKA ${level}.`
               : `Lihat paket simulasi dan tryout yang tersedia untuk TKA ${level}.`
           }
         />
+
+        <TkaTokenAccessSummary tokenBalance={tokenBalance} href={`${base}/beli-token`} />
 
         {!activeTrack && (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900 shadow-sm">
@@ -438,8 +343,11 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
                       <TkaStartExamButton
                         level={level}
                         examSlug={featuredTryout.slug}
+                        examTitle={featuredTryout.title}
                         disabledReason={featuredTryout.disabledReason}
                         activeAttemptId={featuredTryout.activeAttemptId}
+                        tokenBalance={tokenBalance}
+                        tokenCost={featuredTryout.tokenCost}
                       />
                     </div>
                   </div>
@@ -519,27 +427,6 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
                   </div>
                 </div>
 
-                {/* Guidance & Mini Tryout Shortcut Box */}
-                <div className="rounded-xl border border-indigo-100 bg-white p-3.5 text-xs shadow-2xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                      <Sparkles size={13} className="text-indigo-600" />
-                      <span>Latihan Kilat per Mapel?</span>
-                    </div>
-                    <Link
-                      href={`${base}/mini-tryout`}
-                      className="st-focus inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition"
-                    >
-                      <span>Buka Mini Tryout</span>
-                      <ArrowRight size={12} />
-                    </Link>
-                  </div>
-                  <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-                    {miniTryoutExample
-                      ? `Tersedia paket Mini Tryout${miniTryoutSummary ? ` (${miniTryoutSummary})` : ''} untuk mengasah topik sebelum simulasi penuh.`
-                      : 'Paket Mini Tryout untuk jenjang ini sedang disiapkan.'}
-                  </p>
-                </div>
               </div>
             </div>
           </article>
@@ -586,8 +473,11 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
                     <TkaStartExamButton
                       level={level}
                       examSlug={exam.slug}
+                      examTitle={exam.title}
                       disabledReason={exam.disabledReason}
                       activeAttemptId={exam.activeAttemptId}
+                      tokenBalance={tokenBalance}
+                      tokenCost={exam.tokenCost}
                     />
                   </div>
                 </article>
@@ -596,52 +486,6 @@ export default async function TkaTryoutPage({ params }: { params: Promise<{ leve
           </section>
         )}
 
-        {drillOptions.length > 0 && (
-          <section className="space-y-4 pt-4" aria-labelledby="tka-drill-catalog-title">
-            <div>
-              <h3 id="tka-drill-catalog-title" className="text-lg font-bold text-slate-950">
-                Drill TKA {level}
-              </h3>
-              <p className="mt-1 text-sm text-slate-600">
-                Pilih latihan materi untuk mulai, menyimpan progres, dan melanjutkannya kapan saja.
-              </p>
-            </div>
-            <div className="grid gap-5 md:grid-cols-2">
-              {drillOptions.map((exam) => (
-                <article
-                  key={exam.id}
-                  data-testid="tka-catalog-drill"
-                  data-exam-id={exam.id}
-                  className="flex flex-col justify-between rounded-2xl border border-border-strong bg-white p-6 shadow-sm transition-all hover:border-primary hover:shadow-md"
-                >
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-                      {exam.typeLabel}
-                    </p>
-                    <h4 className="mt-2 text-xl font-bold text-slate-950">{exam.title}</h4>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {exam.duration && (
-                        <MetaChip icon={<Clock3 size={13} />} text={`${exam.duration} menit`} />
-                      )}
-                      {exam.details.map((detail) => (
-                        <MetaChip key={detail} text={detail} />
-                      ))}
-                      <MetaChip text={exam.accessLabel} tone={exam.accessTone} />
-                    </div>
-                  </div>
-                  <div className="mt-6">
-                    <TkaStartExamButton
-                      level={level}
-                      examSlug={exam.slug}
-                      disabledReason={exam.disabledReason}
-                      activeAttemptId={exam.activeAttemptId}
-                    />
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
       </div>
     </main>
   )

@@ -71,6 +71,7 @@ function errorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : 'ADMIN_ACTION_FAILED'
   const friendly: Record<string, string> = {
     PRODUCT_FIELDS_REQUIRED: 'Kode dan nama produk wajib diisi.',
+    PRODUCT_TYPE_NOT_SUPPORTED: 'Jenis produk tersebut sudah tidak tersedia.',
     PRODUCT_PRICE_INVALID: 'Harga produk tidak valid.',
     PRODUCT_CATALOG_MISMATCH: 'Produk tidak berada pada program/track yang sedang aktif.',
     TOKEN_GRANT_INVALID: 'Jumlah token tidak valid.',

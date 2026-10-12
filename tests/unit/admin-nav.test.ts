@@ -125,7 +125,7 @@ describe('visibleAdminNavGroups — primary workspaces remain permission-aware',
     const items = visibleAdminNavGroups(ROLE_PERMISSIONS.ADMIN).flatMap((group) => group.items)
     expect(
       items.find((item) => item.label === 'Content')?.children?.map((item) => item.label),
-    ).toEqual(['Question Bank', 'Review', 'Articles'])
+    ).toEqual(['Question Bank', 'Review', 'Articles', 'Content Readiness'])
     expect(
       items.find((item) => item.label === 'Commerce')?.children?.map((item) => item.label),
     ).toEqual(['Products', 'Orders'])
@@ -167,14 +167,18 @@ describe('visibleAdminNavGroups — primary workspaces remain permission-aware',
     expect(labels(ROLE_PERMISSIONS.SUPPORT)).toEqual(['Dashboard', 'Commerce', 'Users'])
   })
 
-  it('editor and reviewer see Content with Review and Articles only', () => {
-    for (const role of ['CONTENT_EDITOR', 'CONTENT_REVIEWER']) {
-      expect(labels(ROLE_PERMISSIONS[role])).toEqual(['Content'])
-      expect(visibleAdminHrefs(ROLE_PERMISSIONS[role])).toEqual([
-        '/admin/content/review',
-        '/admin/content/articles',
-      ])
-    }
+  it('content roles only see readiness when their page permission allows it', () => {
+    expect(labels(ROLE_PERMISSIONS.CONTENT_EDITOR)).toEqual(['Content'])
+    expect(visibleAdminHrefs(ROLE_PERMISSIONS.CONTENT_EDITOR)).toEqual([
+      '/admin/content/review',
+      '/admin/content/articles',
+    ])
+    expect(labels(ROLE_PERMISSIONS.CONTENT_REVIEWER)).toEqual(['Content'])
+    expect(visibleAdminHrefs(ROLE_PERMISSIONS.CONTENT_REVIEWER)).toEqual([
+      '/admin/content/review',
+      '/admin/content/articles',
+      '/admin/content/readiness',
+    ])
   })
 
   it('SCHOOL_ADMIN sees Instansi and Monitoring', () => {

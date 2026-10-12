@@ -208,6 +208,17 @@ async function provision(body: Body) {
         { onConflict: 'user_id,track_id' },
       )
       if (userTrackError) throw userTrackError
+
+      const { error: walletError } = await admin.from('wallets').upsert(
+        {
+          user_id: userId,
+          wallet_type: 'exam_token_tka',
+          balance: 50,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,wallet_type' },
+      )
+      if (walletError) throw walletError
     } else if (kind === 'content_editor') {
       await assignContentRole(admin, userId, 'CONTENT_EDITOR')
     } else {

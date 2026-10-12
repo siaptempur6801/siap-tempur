@@ -62,8 +62,7 @@ interface ProfileTabProps {
 }
 
 export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps) {
-  const { isTka, purchasePath, accessPath, level: tkaLevel } = useProfileNavigation()
-  const canPurchaseTkaPass = tkaLevel === 'SMP'
+  const { isTka, purchasePath, level: tkaLevel } = useProfileNavigation()
   const router = useRouter()
   const avatarPreviewTitleId = useId()
   const [isEditing, setIsEditing] = useState(false)
@@ -519,33 +518,7 @@ export function ProfileTab({ profile, setProfile, user, level }: ProfileTabProps
       </section>
 
       {/* Token Balance Card */}
-      {isTka ? (
-        <section className="flex flex-col gap-4 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50/70 via-white to-blue-50/30 p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
-              <Ticket size={22} />
-            </div>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
-                Akses belajar TKA {tkaLevel}
-              </p>
-              <h3 className="text-lg font-extrabold text-slate-950">
-                {canPurchaseTkaPass ? 'Kelola Tempur Pass' : 'Status Tempur Pass'}
-              </h3>
-              <p className="text-xs font-medium text-slate-500">
-                {canPurchaseTkaPass
-                  ? 'Lihat status, masa aktif, dan paket pass untuk jenjang ini.'
-                  : `Lihat masa aktif pass. Pembelian baru TKA ${tkaLevel} belum tersedia saat alur tryout disiapkan.`}
-              </p>
-            </div>
-          </div>
-          <Button asChild size="md">
-            <Link href={accessPath}>
-              {canPurchaseTkaPass ? 'Lihat Tempur Pass' : 'Lihat status akses'}
-            </Link>
-          </Button>
-        </section>
-      ) : (
+      {!isTka && (
         <section className="st-card flex flex-col gap-4 bg-green-50 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center border-2 border-[var(--st-ink)] bg-[var(--st-yellow)]">

@@ -91,8 +91,8 @@ export default async function ContentReadinessPage() {
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             {audit.totalNodes - audit.nodes.length} materi lainnya belum memiliki manifest kesiapan
-            dan belum dapat dinyatakan siap. Materi parsial tersedia sebagai konten terbatas. CPNS
-            Pass tetap HOLD sampai seluruh materi memenuhi gate.
+            dan belum dapat dinyatakan siap. Materi parsial tersedia sebagai konten terbatas. Cakupan
+            drill tetap HOLD sampai seluruh materi memenuhi gate.
           </p>
         </div>
         <AdminDataTable className="w-full min-w-[650px] text-sm">

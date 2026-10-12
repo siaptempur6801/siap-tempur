@@ -8,7 +8,6 @@ import { isServerActionRateLimited } from '@/lib/server-rate-limit'
 import { paymentService } from '@/src/services/payment.service'
 import { authorizationService } from '@/src/services/authorization.service'
 import { PERMISSIONS } from '@/src/auth/permissions'
-import { parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 
 export type CreatePackageTransactionResult =
   | {
@@ -109,64 +108,6 @@ export async function createPackageTransaction(
     }
   } catch (error) {
     logger.error('Package checkout creation failed', error, { productCode, userId: user.id })
-    return { success: false, message: checkoutErrorMessage(error) }
-  }
-}
-
-export async function createTkaPassTransaction(
-  productCodeValue: string,
-  levelValue: string,
-): Promise<CreatePackageTransactionResult> {
-  try {
-    await validateCsrf()
-  } catch {
-    return {
-      success: false,
-      message: 'Sesi keamanan kadaluarsa. Muat ulang halaman lalu coba lagi.',
-    }
-  }
-
-  const level = parseTkaLevel(levelValue)
-  if (!level) return { success: false, message: 'Jenjang TKA tidak valid.' }
-
-  const productCode = productCodeValue.trim().toUpperCase()
-  const allowedCodes = new Set([`TKA_${level}_PASS_30`, `TKA_${level}_PASS_90`])
-  if (!allowedCodes.has(productCode)) {
-    return { success: false, message: 'Paket tidak sesuai dengan jenjang TKA ini.' }
-  }
-
-  const user = await currentUser()
-  if (!user) return { success: false, message: 'Sesi login tidak ditemukan. Silakan login ulang.' }
-
-  if (
-    await isServerActionRateLimited(user.id, `create_tka_${level.toLowerCase()}_pass`, 5, 60000)
-  ) {
-    return { success: false, message: 'Terlalu banyak permintaan. Silakan coba lagi nanti.' }
-  }
-
-  try {
-    const checkout = await paymentService.createCheckout({
-      userId: user.id,
-      email: user.email,
-      fullName:
-        typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : null,
-      productCode,
-      returnPath: tkaLevelPath(level),
-    })
-
-    return {
-      success: true,
-      token: checkout.token,
-      orderId: checkout.orderId,
-      orderNumber: checkout.orderNumber,
-      redirectUrl: checkout.redirectUrl,
-    }
-  } catch (error) {
-    logger.error('TKA Pass checkout creation failed', error, {
-      productCode,
-      userId: user.id,
-      level,
-    })
     return { success: false, message: checkoutErrorMessage(error) }
   }
 }

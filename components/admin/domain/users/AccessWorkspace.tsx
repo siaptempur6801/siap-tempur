@@ -1,6 +1,8 @@
 import { adjustWalletAction, upsertVoucherAction } from '@/app/actions/admin-platform'
 import AdminPagination from '@/components/admin/AdminPagination'
 import AdminTableToolbar from '@/components/admin/AdminTableToolbar'
+import AdminSubmitButton from '@/components/admin/AdminSubmitButton'
+import AdminWorkspaceTabs from '@/components/admin/AdminWorkspaceTabs'
 import {
   AdminBadge,
   AdminCard,
@@ -39,7 +41,7 @@ import { Coins, Plus, Ticket, UserCheck, Wallet } from 'lucide-react'
 import Link from '@/components/admin/navigation/AdminLink'
 
 /**
- * Entitlements — token, voucher, dan pass.
+ * Entitlements — token, voucher, dan hak akses fitur.
  *
  * Halaman ini mengisi permission `entitlement.manage` yang dipegang FINANCE dan
  * ADMIN. Sebelumnya tidak ada UI sama sekali, padahal produksi memegang 426
@@ -55,6 +57,8 @@ import Link from '@/components/admin/navigation/AdminLink'
 
 type SearchParams = {
   q?: string
+  wallet_q?: string
+  entitlement_q?: string
   wallet_type?: string
   user?: string
   status?: string
@@ -95,7 +99,7 @@ export default async function AdminEntitlementsPage({
       <AdminPage>
         <AdminPageHeader
           title="Akses dan token"
-          description="Kelola token ujian, voucher, dan pass yang dimiliki pengguna."
+          description="Kelola token ujian, voucher, dan hak akses fitur yang dimiliki pengguna."
         />
         <AdminCard>
           <AdminEmptyState
@@ -109,6 +113,8 @@ export default async function AdminEntitlementsPage({
 
   const actorId = authorization.userId
   const selectedUserId = params.user || null
+  const walletSearch = params.wallet_q ?? params.q ?? ''
+  const entitlementSearch = params.entitlement_q ?? params.q ?? ''
 
   const selectedData = selectedUserId
     ? Promise.all([getAdminUserDetail(selectedUserId), getAdminUserAccess(selectedUserId)])
@@ -118,19 +124,23 @@ export default async function AdminEntitlementsPage({
     adminPlatformService.getEntitlementOverview(),
     selectedData
       ? selectedData.then(([user, access]) => ({
-          wallets: access.wallets.map((wallet) => ({
-            id: String(wallet.id),
-            user_id: selectedUserId!,
-            wallet_type: String(wallet.wallet_type),
-            balance: Number(wallet.balance),
-            updated_at: wallet.updated_at ? String(wallet.updated_at) : null,
-            full_name: user?.full_name || user?.display_name || 'Pengguna',
-            email: null,
-          })),
-          total: access.wallets.length,
+          wallets: access.wallets
+            .filter((wallet) => !params.wallet_type || wallet.wallet_type === params.wallet_type)
+            .map((wallet) => ({
+              id: String(wallet.id),
+              user_id: selectedUserId!,
+              wallet_type: String(wallet.wallet_type),
+              balance: Number(wallet.balance),
+              updated_at: wallet.updated_at ? String(wallet.updated_at) : null,
+              full_name: user?.full_name || user?.display_name || 'Pengguna',
+              email: null,
+            })),
+          total: access.wallets.filter(
+            (wallet) => !params.wallet_type || wallet.wallet_type === params.wallet_type,
+          ).length,
         }))
       : adminPlatformService.listWallets({
-          search: params.q || null,
+          search: walletSearch || null,
           walletType: params.wallet_type || null,
           limit: 50,
           offset: parseListPage(params.wallet_page).offset,
@@ -140,6 +150,13 @@ export default async function AdminEntitlementsPage({
       ? selectedData.then(([user, access]) => {
           const rows = access.entitlements
             .filter((item) => !params.status || item.status === params.status)
+            .filter(
+              (item) =>
+                !entitlementSearch ||
+                `${user?.full_name || user?.display_name || ''} ${item.feature_name || ''} ${item.feature_code || ''}`
+                  .toLowerCase()
+                  .includes(entitlementSearch.toLowerCase()),
+            )
             .map((item) => ({
               ...item,
               user_id: selectedUserId!,
@@ -150,34 +167,44 @@ export default async function AdminEntitlementsPage({
           return { entitlements: rows.slice(offset, offset + LIST_PAGE_SIZE), total: rows.length }
         })
       : adminPlatformService.listEntitlements({
-          search: params.q || null,
+          search: entitlementSearch || null,
           status: params.status || null,
           limit: 50,
           offset: parseListPage(params.entitlement_page).offset,
         }),
     selectedUserId
-      ? adminPlatformService.listWalletTransactions({ userId: selectedUserId, limit: 25 })
+      ? adminPlatformService.listWalletTransactions({
+          userId: selectedUserId,
+          walletType: params.wallet_type || null,
+          limit: 25,
+        })
       : Promise.resolve({ transactions: [], total: 0 }),
   ])
 
   const totalBalance = overview.wallets.reduce((sum, wallet) => sum + wallet.balance, 0)
-  const selectedWallet = selectedUserId
-    ? (wallets.wallets.find((wallet) => wallet.user_id === selectedUserId) ?? null)
-    : null
+  const selectedWallet = selectedUserId ? (wallets.wallets[0] ?? null) : null
   const editingVoucher = params.voucher
     ? (vouchers.find((voucher) => voucher.id === params.voucher) ?? null)
     : null
   const isSelf = selectedUserId === actorId
 
   const backQuery = new URLSearchParams()
-  if (params.q) backQuery.set('q', params.q)
+  if (walletSearch) backQuery.set('wallet_q', walletSearch)
+  if (entitlementSearch) backQuery.set('entitlement_q', entitlementSearch)
   if (params.wallet_type) backQuery.set('wallet_type', params.wallet_type)
   if (params.status) backQuery.set('status', params.status)
+  if (selectedUserId) backQuery.set('user', selectedUserId)
+  if (params.wallet_page) backQuery.set('wallet_page', params.wallet_page)
+  if (params.entitlement_page) backQuery.set('entitlement_page', params.entitlement_page)
   const hidden = (
     <>
-      <input type="hidden" name="q" value={params.q || ''} />
-      <input type="hidden" name="wallet_type" value={params.wallet_type || ''} />
-      <input type="hidden" name="status" value={params.status || ''} />
+      <input type="hidden" name="return_wallet_q" value={walletSearch} />
+      <input type="hidden" name="return_entitlement_q" value={entitlementSearch} />
+      <input type="hidden" name="return_wallet_type" value={params.wallet_type || ''} />
+      <input type="hidden" name="return_status" value={params.status || ''} />
+      <input type="hidden" name="return_user" value={selectedUserId || ''} />
+      <input type="hidden" name="return_wallet_page" value={params.wallet_page || ''} />
+      <input type="hidden" name="return_entitlement_page" value={params.entitlement_page || ''} />
     </>
   )
 
@@ -185,12 +212,13 @@ export default async function AdminEntitlementsPage({
     <AdminPage>
       <AdminPageHeader
         title="Akses dan token"
-        description="Kelola token ujian, voucher, dan pass yang dimiliki pengguna. Semua penyalur token lewat voucher dan penyesuaian saldo tercatat permanen di buku besar dompet."
+        description="Kelola token ujian, voucher, dan hak akses fitur yang dimiliki pengguna. Semua penyalur token lewat voucher dan penyesuaian saldo tercatat permanen di buku besar dompet."
       />
+      <AdminWorkspaceTabs workspace="users" permissions={authorization.permissions} />
 
       <AdminFeedbackBanner ok={params.ok} error={params.error} />
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
         <AdminMetric
           label="Total token"
           value={formatNumber(totalBalance)}
@@ -218,13 +246,6 @@ export default async function AdminEntitlementsPage({
           helper="Sepanjang waktu"
           icon={<UserCheck size={18} />}
           tone="neutral"
-        />
-        <AdminMetric
-          label="Pass aktif"
-          value={formatNumber(overview.entitlements_active)}
-          helper={`${formatNumber(overview.entitlements_total)} entitlement`}
-          icon={<Coins size={18} />}
-          tone={overview.entitlements_active > 0 ? 'green' : 'neutral'}
         />
       </section>
 
@@ -268,7 +289,14 @@ export default async function AdminEntitlementsPage({
             title="Voucher"
             description="Kuota token yang bisa diklaim pengguna dengan kode."
           />
-          <Link className={adminPrimaryButtonClass} href="/admin/users/access?voucher=new">
+          <Link
+            className={adminPrimaryButtonClass}
+            href={`/admin/users/access?${(() => {
+              const query = new URLSearchParams(backQuery)
+              query.set('voucher', 'new')
+              return query.toString()
+            })()}`}
+          >
             <Plus size={16} />
             Voucher baru
           </Link>
@@ -289,6 +317,11 @@ export default async function AdminEntitlementsPage({
                 className={adminInputClass}
                 name="code"
                 required
+                minLength={3}
+                maxLength={32}
+                pattern="[A-Z0-9][A-Z0-9_-]{2,31}"
+                autoCapitalize="characters"
+                readOnly={Boolean(editingVoucher && editingVoucher.claims > 0)}
                 defaultValue={editingVoucher?.code ?? ''}
                 placeholder="PROMO-2026"
               />
@@ -305,6 +338,7 @@ export default async function AdminEntitlementsPage({
                 name="quota_amount"
                 type="number"
                 min="1"
+                step="1"
                 required
                 defaultValue={editingVoucher?.quota_amount ?? 10}
               />
@@ -317,9 +351,10 @@ export default async function AdminEntitlementsPage({
                 className={adminInputClass}
                 name="max_uses"
                 type="number"
-                min="1"
+                min={Math.max(1, editingVoucher?.claims ?? 1)}
+                step="1"
                 required
-                defaultValue={editingVoucher?.max_uses ?? 100}
+                defaultValue={Math.max(editingVoucher?.max_uses ?? 100, editingVoucher?.claims ?? 0)}
               />
             </label>
             <label className="space-y-1.5">
@@ -359,9 +394,9 @@ export default async function AdminEntitlementsPage({
               <span className="text-sm font-medium text-foreground">Aktif</span>
             </label>
             <div className="flex flex-wrap items-end gap-2 lg:col-span-3">
-              <button className={adminPrimaryButtonClass}>
+              <AdminSubmitButton pendingLabel="Menyimpan voucher...">
                 {editingVoucher ? 'Simpan voucher' : 'Buat voucher'}
-              </button>
+              </AdminSubmitButton>
               <Link
                 className={adminSecondaryButtonClass}
                 href={`/admin/users/access?${backQuery.toString()}`}
@@ -462,10 +497,17 @@ export default async function AdminEntitlementsPage({
           <div className="mt-4">
             <AdminTableToolbar
               pathname="/admin/users/access"
-              search={params.q || ''}
-              placeholder="Cari nama atau email..."
+              search={walletSearch}
+              {...(!selectedUserId
+                ? { placeholder: 'Cari nama atau email...', searchName: 'wallet_q' }
+                : {})}
               resultCount={wallets.total}
-              hiddenFields={{ status: params.status, voucher: params.voucher }}
+              hiddenFields={{
+                entitlement_q: entitlementSearch,
+                status: params.status,
+                voucher: params.voucher,
+                user: selectedUserId || undefined,
+              }}
               selects={[
                 {
                   name: 'wallet_type',
@@ -536,6 +578,9 @@ export default async function AdminEntitlementsPage({
                         href={`/admin/users/access?${(() => {
                           const query = new URLSearchParams(backQuery)
                           query.set('user', wallet.user_id)
+                          query.set('wallet_type', wallet.wallet_type)
+                          query.delete('wallet_page')
+                          query.delete('entitlement_page')
                           return query.toString()
                         })()}`}
                       >
@@ -553,7 +598,8 @@ export default async function AdminEntitlementsPage({
           <AdminPagination
             pathname="/admin/users/access"
             params={{
-              q: params.q,
+              wallet_q: walletSearch,
+              entitlement_q: entitlementSearch,
               wallet_type: params.wallet_type,
               status: params.status,
               user: params.user,
@@ -564,6 +610,7 @@ export default async function AdminEntitlementsPage({
               wallets.total,
             )}
             noun="dompet"
+            pageKey="wallet_page"
           />
         ) : null}
 
@@ -579,7 +626,11 @@ export default async function AdminEntitlementsPage({
               action={
                 <Link
                   className="text-sm font-semibold text-muted-foreground hover:text-foreground"
-                  href={`/admin/users/access?${backQuery.toString()}`}
+                  href={`/admin/users/access?${(() => {
+                    const query = new URLSearchParams(backQuery)
+                    query.delete('user')
+                    return query.toString()
+                  })()}`}
                 >
                   Tutup
                 </Link>
@@ -596,7 +647,7 @@ export default async function AdminEntitlementsPage({
             ) : (
               <form
                 action={adjustWalletAction}
-                className="mt-4 grid gap-3 rounded-lg border border-border bg-card p-4 lg:grid-cols-[1fr_1fr_1.6fr_auto]"
+                className="mt-4 grid gap-3 rounded-lg border border-border bg-card p-4 xl:grid-cols-[1fr_1fr_1.6fr_auto]"
               >
                 {hidden}
                 <input type="hidden" name="user_id" value={selectedUserId} />
@@ -608,6 +659,9 @@ export default async function AdminEntitlementsPage({
                     className={adminInputClass}
                     name="amount"
                     type="number"
+                    step="1"
+                    min="-1000000"
+                    max="1000000"
                     required
                     placeholder="mis. 10 atau -5"
                   />
@@ -646,17 +700,18 @@ export default async function AdminEntitlementsPage({
                   />
                 </label>
                 <div className="flex items-end">
-                  <button className={adminPrimaryButtonClass}>
+                  <AdminSubmitButton pendingLabel="Menyesuaikan...">
                     <Coins size={16} />
                     Sesuaikan
-                  </button>
+                  </AdminSubmitButton>
                 </div>
               </form>
             )}
 
             <div className="mt-4">
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Riwayat transaksi ({transactions.total})
+                Riwayat transaksi ({transactions.transactions.length} terbaru dari{' '}
+                {transactions.total})
               </div>
               {transactions.transactions.length === 0 ? (
                 <p className="mt-2 text-sm font-semibold text-muted-foreground">
@@ -700,21 +755,27 @@ export default async function AdminEntitlementsPage({
         ) : null}
       </AdminCard>
 
-      {/* ------------------------------------------------------------- pass */}
+      {/* ------------------------------------------------------------- feature access */}
       <AdminCard className="overflow-hidden">
         <div className="border-b border-border p-5">
           <AdminSectionHeading
-            title="Pass & entitlement"
+            title="Hak akses fitur"
             description="Akses fitur yang dimiliki pengguna, biasanya berasal dari pembelian atau event."
           />
           <div className="mt-4">
             <AdminTableToolbar
               pathname="/admin/users/access"
-              search=""
+              search={entitlementSearch}
+              placeholder="Cari pengguna atau fitur..."
+              searchName="entitlement_q"
               status={params.status || ''}
               statusOptions={ENTITLEMENT_STATUS_OPTIONS}
               resultCount={entitlements.total}
-              hiddenFields={{ q: params.q, wallet_type: params.wallet_type }}
+              hiddenFields={{
+                wallet_q: walletSearch,
+                wallet_type: params.wallet_type,
+                user: selectedUserId || undefined,
+              }}
             />
           </div>
         </div>
@@ -722,7 +783,7 @@ export default async function AdminEntitlementsPage({
         {entitlements.entitlements.length === 0 ? (
           <AdminEmptyState
             title="Tidak ada entitlement"
-            description="Belum ada pass atau hak akses fitur yang tercatat untuk filter ini."
+            description="Belum ada hak akses fitur yang tercatat untuk filter ini."
           />
         ) : (
           <AdminDataTable className="w-full min-w-[900px] text-left text-sm">
@@ -780,13 +841,20 @@ export default async function AdminEntitlementsPage({
         {entitlements.entitlements.length > 0 && entitlements.total > LIST_PAGE_SIZE ? (
           <AdminPagination
             pathname="/admin/users/access"
-            params={{ q: params.q, wallet_type: params.wallet_type, status: params.status }}
+            params={{
+              wallet_q: walletSearch,
+              entitlement_q: entitlementSearch,
+              wallet_type: params.wallet_type,
+              status: params.status,
+              user: params.user,
+            }}
             summary={adminPageSummary(
               parseListPage(params.entitlement_page).page,
               entitlements.entitlements.length,
               entitlements.total,
             )}
             noun="entitlement"
+            pageKey="entitlement_page"
           />
         ) : null}
       </AdminCard>

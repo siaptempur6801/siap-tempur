@@ -368,14 +368,14 @@ for (const [name, args] of [
   const r = await anon.rpc(name, args)
   same(r.error?.code, '42501')
 }
-// Verify the pass feature join against the previous two-read implementation.
-const passCodes = [
-  'cpns.full_tryout.regular',
-  'tka.sd.full_tryout.regular',
-  'tka.smp.full_tryout.regular',
-  'tka.sma.full_tryout.regular',
+// Verify the generic entitlement feature join against the previous two-read implementation.
+const entitlementCodes = [
+  'cpns.drill.unlimited',
+  'tka.sd.mini_tryout.unlimited',
+  'tka.smp.drill.unlimited',
+  'tka.smp.mini_tryout.unlimited',
 ]
-const features = await data(db.from('features').select('id,code').in('code', passCodes))
+const features = await data(db.from('features').select('id,code').in('code', entitlementCodes))
 const grants = await all(() =>
   db
     .from('entitlements')
@@ -386,7 +386,7 @@ const joined = await all(() =>
   db
     .from('entitlements')
     .select('id,user_id,starts_at,expires_at,usage_limit,usage_count,status,features!inner(code)')
-    .in('features.code', passCodes)
+    .in('features.code', entitlementCodes)
     .in('status', ['active', 'ACTIVE'])
     .order('id'),
 )

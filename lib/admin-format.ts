@@ -201,7 +201,6 @@ export function adminQuestionTypeLabel(value: unknown): string {
 /** Label jenis produk untuk daftar admin. */
 const PRODUCT_TYPE_LABELS: Record<string, string> = {
   TOKEN_PACK: 'Paket token',
-  PASS: 'Langganan (pass)',
   EVENT_TICKET: 'Tiket event',
 }
 

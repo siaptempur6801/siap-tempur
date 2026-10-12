@@ -11,7 +11,6 @@ export function useProfileNavigation() {
     level: match?.[1].toUpperCase(),
     profilePath: `${base}/profile`,
     purchasePath: match ? `${base}/beli-token` : `${base}/beli-paket`,
-    accessPath: match ? `${base}/pass` : `${base}/dashboard/pass`,
     landingPath: match ? '/tka' : '/cpns',
   }
 }

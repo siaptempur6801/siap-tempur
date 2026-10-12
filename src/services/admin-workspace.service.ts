@@ -102,6 +102,12 @@ class AdminWorkspaceService {
       builder: T,
     ): T => {
       let query = builder.eq('program_id', catalog.program.id).eq('track_id', catalog.track.id)
+      if (domain === 'products') {
+        query = (query as T & { neq: (column: string, value: string) => T }).neq(
+          'product_type',
+          'PASS',
+        )
+      }
       // `id` dipakai untuk memuat satu baris di luar halaman yang sedang
       // tampil (mis. tautan edit lama), sehingga admin tidak pernah
       // menyimpan baris baru hanya karena barisnya tidak termuat. Sengaja

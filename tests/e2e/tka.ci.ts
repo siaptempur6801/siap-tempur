@@ -342,3 +342,9 @@ export async function freshDisposableTkaSession(page: Page): Promise<DisposableT
     throw error
   }
 }
+
+export async function cleanupCiTkaUser(userId: string) {
+  const supabaseUrl = required('NEXT_PUBLIC_SUPABASE_URL')
+  assertStagingUrl(supabaseUrl)
+  return callCiUserHelper(supabaseUrl, { action: 'cleanup', userId })
+}

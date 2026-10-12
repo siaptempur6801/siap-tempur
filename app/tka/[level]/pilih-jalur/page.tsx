@@ -1,9 +1,6 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import TkaPilihJalurContent from '@/components/tka/TkaPilihJalurContent'
-import { createV2Client } from '@/lib/utils/supabase/server'
-import { getPassAccess } from '@/src/services/pass-catalog.service'
-import { passScopeForTkaLevel } from '@/src/tka/pass-scope'
 import { isTkaLevelAvailable, parseTkaLevel } from '@/src/tka/context'
 
 export const metadata: Metadata = {
@@ -27,14 +24,6 @@ export default async function TkaPilihJalurPage({
   const level = parseTkaLevel(rawLevel)
   if (!level || !isTkaLevelAvailable(level)) notFound()
 
-  const supabase = await createV2Client()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const passAccess = user
-    ? await getPassAccess(supabase, user.id, passScopeForTkaLevel(level))
-    : { hasActivePass: false, accessThrough: null, scheduledExtensions: 0 }
-
   return (
     <main
       data-experience-mode="learning"
@@ -42,7 +31,7 @@ export default async function TkaPilihJalurPage({
       className="min-h-screen px-4 py-6 md:px-8 md:py-8"
     >
       <div className="mx-auto max-w-6xl">
-        <TkaPilihJalurContent level={level} hasActivePass={passAccess.hasActivePass} />
+        <TkaPilihJalurContent level={level} />
       </div>
     </main>
   )

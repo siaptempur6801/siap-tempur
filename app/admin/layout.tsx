@@ -3,7 +3,6 @@ import UnifiedAdminShell from '@/components/admin/UnifiedAdminShell'
 import { adminLandingPath, hasAdminSurface } from '@/lib/admin-nav'
 import { createV2Client, getAuthUser } from '@/lib/utils/supabase/server'
 import { authorizationService } from '@/src/services/authorization.service'
-import { getActivePassScopes } from '@/src/services/tempur-pass.service'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import React from 'react'
@@ -68,10 +67,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/cpns/dashboard?admin=no-access')
   }
 
-  const [{ data: profile }, hasTempurPass] = await Promise.all([
-    supabase.from('profiles').select('avatar_url, full_name').eq('id', user.id).maybeSingle(),
-    getActivePassScopes(user.id).then((scopes) => scopes.length > 0),
-  ])
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('avatar_url, full_name')
+    .eq('id', user.id)
+    .maybeSingle()
 
   return (
     <UnifiedAdminShell
@@ -79,7 +79,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       profile={profile}
       roles={authorization.roles}
       permissions={permissions}
-      hasActiveTempurPass={hasTempurPass}
       landingPath={landingPath}
       signoutAction={signout}
     >

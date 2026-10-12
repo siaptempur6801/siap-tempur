@@ -24,7 +24,7 @@ export default async function ProductForm({
 }) {
   const readiness = Object.fromEntries(
     await Promise.all(
-      ['PASS', 'TOKEN_PACK', 'EVENT_TICKET'].map(async (type) => [
+      ['TOKEN_PACK', 'EVENT_TICKET'].map(async (type) => [
         type,
         await productReadiness(program, track, type, product ? s(product.id) : undefined),
       ]),
@@ -99,7 +99,7 @@ export default async function ProductForm({
         description="Persyaratan konten harus terpenuhi sebelum produk dapat diaktifkan."
       >
         <ProductAvailabilityFields
-          type={s(product?.product_type) || 'PASS'}
+          type={s(product?.product_type) || 'TOKEN_PACK'}
           status={s(product?.status) || 'DRAFT'}
           readiness={readiness}
         />

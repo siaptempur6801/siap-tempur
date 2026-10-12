@@ -55,9 +55,9 @@ ctx AS (
 seed (
   slug, title, exam_type_code, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, token_cost, required_feature_code
 ) AS (
-  VALUES ('tka-smp-full', 'Tryout Lengkap TKA SMP', 'FULL_TRYOUT', 9000, NULL::integer, 'section_random', 'instant', 'PREMIUM', 'draft', 0, 'tka.smp.full_tryout.regular'),
-    ('tka-smp-mini-matematika', 'Mini Tryout Matematika TKA SMP', 'MINI_TRYOUT', 4500, 1, 'section_random', 'instant', 'FREEMIUM', 'draft', 0, 'tka.smp.mini_tryout.unlimited'),
-    ('tka-smp-mini-bahasa-indonesia', 'Mini Tryout Bahasa Indonesia TKA SMP', 'MINI_TRYOUT', 4500, 1, 'section_random', 'instant', 'FREEMIUM', 'draft', 0, 'tka.smp.mini_tryout.unlimited'))
+  VALUES ('tka-smp-full', 'Tryout Lengkap TKA SMP', 'FULL_TRYOUT', 9000, NULL::integer, 'section_random', 'instant', 'FREE', 'draft', 1, NULL::text),
+    ('tka-smp-mini-matematika', 'Mini Tryout Matematika TKA SMP', 'MINI_TRYOUT', 4500, NULL::integer, 'section_random', 'instant', 'FREE', 'draft', 1, NULL::text),
+    ('tka-smp-mini-bahasa-indonesia', 'Mini Tryout Bahasa Indonesia TKA SMP', 'MINI_TRYOUT', 4500, NULL::integer, 'section_random', 'instant', 'FREE', 'draft', 1, NULL::text))
 INSERT INTO exams (program_id, track_id, exam_type_id, title, slug, duration_seconds, attempt_limit, question_order, result_visibility, access_type, status, token_cost, required_feature_id, created_by, updated_at)
 SELECT
   ctx.program_id,
@@ -80,7 +80,7 @@ FROM
   CROSS JOIN ctx
   CROSS JOIN actor
   JOIN exam_types et ON et.code = seed.exam_type_code
-  JOIN features f ON f.code = seed.required_feature_code
+  LEFT JOIN features f ON f.code = seed.required_feature_code
 ON CONFLICT (slug)
   DO UPDATE SET
     program_id = excluded.program_id,
@@ -143,9 +143,9 @@ resolved AS (
     question_count = r.question_count,
     duration_seconds = r.duration_seconds,
     config = coalesce(es.config, '{}'::jsonb) || jsonb_build_object('scoring_strategy', 'standard', 'blueprint', 'official_tka_smp_2026', 'official_subject', TRUE, 'access_policy', CASE WHEN r.access_type = 'FREEMIUM' THEN
-        'one_free_then_pass'
+        'one_free_then_entitlement'
       ELSE
-        'pass_required'
+        'entitlement_required'
       END)
   FROM
     resolved r
@@ -199,9 +199,9 @@ resolved AS (
     r.question_count,
     r.duration_seconds,
     jsonb_build_object('scoring_strategy', 'standard', 'blueprint', 'official_tka_smp_2026', 'official_subject', TRUE, 'access_policy', CASE WHEN r.access_type = 'FREEMIUM' THEN
-        'one_free_then_pass'
+        'one_free_then_entitlement'
       ELSE
-        'pass_required'
+        'entitlement_required'
       END)
   FROM
     resolved r
@@ -214,12 +214,4 @@ WHERE
     WHERE
       es.exam_id = r.exam_id
       AND es.subject_id = r.subject_id);
--- Keep SMP pass products unavailable until the SMP question bank and E2E gates pass.
-UPDATE
-  products p
-SET
-  status = 'DRAFT',
-  updated_at = now()
-WHERE
-  p.code IN ('TKA_SMP_PASS_30', 'TKA_SMP_PASS_90');
 COMMIT;

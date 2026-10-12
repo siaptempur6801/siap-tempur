@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/utils/supabase/server'
 
 /**
- * Modul admin: Entitlements (token, voucher, pass) dan Settings (konfigurasi).
+ * Modul admin: Entitlements, token, voucher, dan Settings (konfigurasi).
  *
  * Semuanya lewat RPC (`20260919140000_admin_entitlements_settings.sql`) karena
  * tabel-tabelnya mengaktifkan RLS tanpa policy tulis untuk `authenticated`, dan
@@ -42,7 +42,7 @@ type AdminWalletRow = {
 }
 
 type AdminWalletTransaction = {
-  id: number
+  id: string
   type: string
   amount: number
   source_type: string
@@ -181,7 +181,7 @@ function bool(value: unknown): boolean {
 class AdminPlatformService {
   /* ---------------------------------------------------------- entitlements */
 
-  /** Ringkasan token/voucher/pass. Butuh `entitlement.manage`. */
+  /** Ringkasan dompet, voucher, dan entitlement. Butuh `entitlement.manage`. */
   async getEntitlementOverview(): Promise<EntitlementOverview> {
     const client = await createClient()
     const { data, error } = await client.rpc('admin_entitlement_overview', {})
@@ -263,7 +263,7 @@ class AdminPlatformService {
       transactions: asArray(payload.transactions).map((row): AdminWalletTransaction => {
         const tx = asObject(row)
         return {
-          id: num(tx.id),
+          id: str(tx.id),
           type: str(tx.type),
           amount: num(tx.amount),
           source_type: str(tx.source_type),
@@ -298,7 +298,7 @@ class AdminPlatformService {
     })
   }
 
-  /** Daftar entitlement (pass) per pengguna. */
+  /** Daftar entitlement per pengguna. */
   async listEntitlements(
     filters: {
       search?: string | null

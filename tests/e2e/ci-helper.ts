@@ -1,7 +1,7 @@
 import { createHmac, createHash } from 'node:crypto'
 
 /**
- * Helper untuk memanggil endpoint CI E2E (`ci-e2e-user`, `ci-e2e-cpns`, `ci-e2e-admin`, `ci-e2e-m4`).
+ * Helper untuk memanggil endpoint CI E2E (`ci-e2e-user`, `ci-e2e-cpns`, `ci-e2e-admin`).
  *
  * Di GitHub Actions, endpoint itu adalah Supabase Edge Function di project staging dan
  * diverifikasi lewat GitHub OIDC. Untuk menjalankan gate yang sama **lokal** (mis. via Docker,

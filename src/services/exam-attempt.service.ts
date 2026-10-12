@@ -218,8 +218,12 @@ class ExamAttemptService {
         )
       }
       await attemptRepository.waitForAttemptQuestions(existing.id)
-      const resumeCoveredByPass = await this.isSessionCoveredByPass(input.userId, exam)
-      await this.chargeAttempt(input.userId, existing.id, resumeCoveredByPass ? 0 : exam.tokenCost)
+      const resumeCoveredByEntitlement = await this.isSessionCoveredByEntitlement(input.userId, exam)
+      await this.chargeAttempt(
+        input.userId,
+        existing.id,
+        resumeCoveredByEntitlement ? 0 : exam.tokenCost,
+      )
       return { attemptId: existing.id, resumed: true }
     }
 
@@ -282,7 +286,11 @@ class ExamAttemptService {
     }
 
     try {
-      await this.chargeAttempt(input.userId, attempt.id, access.coveredByPass ? 0 : exam.tokenCost)
+      await this.chargeAttempt(
+        input.userId,
+        attempt.id,
+        access.coveredByEntitlement ? 0 : exam.tokenCost,
+      )
     } catch (error) {
       if (error instanceof PracticeDomainError && error.code === 'INSUFFICIENT_TOKEN_BALANCE') {
         await attemptRepository.deleteAttempt(attempt.id).catch(() => undefined)
@@ -305,8 +313,8 @@ class ExamAttemptService {
     return ((data ?? []) as EntitlementRow[]).find(isEntitlementUsable) ?? null
   }
 
-  /** Sesudah `assertAccess`: apakah pass/entitlement menutup sesi ini (token tidak dipotong). */
-  private async isSessionCoveredByPass(userId: string, exam: ResolvedExam) {
+  /** Sesudah `assertAccess`: apakah entitlement menutup sesi ini (token tidak dipotong). */
+  private async isSessionCoveredByEntitlement(userId: string, exam: ResolvedExam) {
     if (exam.tokenCost <= 0 || !exam.requiredFeatureId) return false
     return Boolean(await this.findUsableEntitlement(userId, exam.requiredFeatureId))
   }
@@ -315,7 +323,7 @@ class ExamAttemptService {
     userId: string,
     exam: ResolvedExam,
     usedAttempts: number | null = null,
-  ): Promise<{ coveredByPass: boolean }> {
+  ): Promise<{ coveredByEntitlement: boolean }> {
     const hasActiveEntitlement = exam.requiredFeatureId
       ? Boolean(await this.findUsableEntitlement(userId, exam.requiredFeatureId))
       : false
@@ -340,7 +348,7 @@ class ExamAttemptService {
       throw new PracticeDomainError(decision.code, decision.message, decision.details)
     }
 
-    if (exam.tokenCost > 0 && !decision.coveredByPass) {
+    if (exam.tokenCost > 0 && !decision.coveredByEntitlement) {
       try {
         await walletService.assertCanAfford(userId, exam.tokenCost, exam.programId)
       } catch (error) {
@@ -353,7 +361,7 @@ class ExamAttemptService {
       }
     }
 
-    return { coveredByPass: decision.coveredByPass }
+    return { coveredByEntitlement: decision.coveredByEntitlement }
   }
 
   private async chargeAttempt(userId: string, attemptId: string, tokenCost: number) {

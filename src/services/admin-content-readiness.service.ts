@@ -55,34 +55,13 @@ export const productReadiness = cache(
     )
     const has = (kind: string) => catalog.some((a) => a.kind === kind)
     const items: ReadinessItem[] = []
-    if (type === 'TOKEN_PACK' || type === 'PASS')
+    if (type === 'TOKEN_PACK')
       items.push({
         label: 'Full Tryout tersedia',
         ready: has('TRYOUT'),
         detail: 'Assessment aktif dengan konten yang dapat digunakan.',
       })
-    if (type === 'PASS') {
-      if (program !== 'CPNS')
-        items.push({ label: 'Mini Tryout tersedia', ready: has('MINI_TRYOUT') })
-      if (program === 'CPNS') {
-        const audit = await cpnsContentAudit()
-        const minis = audit.assessments.filter((a) => a.name.startsWith('Mini'))
-        const readyMinis = minis.filter((a) => a.approved === a.total && a.frozen).length
-        items.push({
-          label: 'Mini Tryout production',
-          ready: readyMinis === minis.length && has('MINI_TRYOUT'),
-          detail: `${readyMinis} / ${minis.length} Mini siap — audit production ${audit.date}. ${minis.map((a) => `${a.name}: ${a.approved} / ${a.total}`).join('; ')}.`,
-          href: '/admin/content/readiness?program=CPNS&track=SKD',
-        })
-        items.push({
-          label: 'Cakupan Drill',
-          ready: audit.readyNodes === audit.totalNodes,
-          detail: `${audit.readyNodes} / ${audit.totalNodes} materi siap — audit production ${audit.date}. Pass memerlukan seluruh materi.`,
-          href: '/admin/content/readiness?program=CPNS&track=SKD',
-        })
-      } else items.push({ label: 'Drill tersedia', ready: has('DRILL') })
-    }
-    if (program === 'CPNS' && (type === 'PASS' || type === 'TOKEN_PACK')) {
+    if (program === 'CPNS' && type === 'TOKEN_PACK') {
       const audit = await cpnsContentAudit()
       const full = audit.assessments[0]
       items.push({

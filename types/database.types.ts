@@ -670,6 +670,78 @@ type EntitlementsTable = {
   ]
 }
 
+type DiagnosticProfilesTable = {
+  Row: {
+    id: string
+    user_id: string
+    user_track_id: string
+    track_id: string
+    exam_id: string
+    exam_attempt_id: string
+    version: string
+    overall_score: number
+    evidence_count: number
+    recommended_subject_id: string | null
+    recommended_knowledge_node_id: string | null
+    recommendation_reason: string | null
+    completed_at: string
+    created_at: string
+    updated_at: string
+  }
+  Insert: {
+    id?: string
+    user_id: string
+    user_track_id: string
+    track_id: string
+    exam_id: string
+    exam_attempt_id: string
+    version?: string
+    overall_score?: number
+    evidence_count?: number
+    recommended_subject_id?: string | null
+    recommended_knowledge_node_id?: string | null
+    recommendation_reason?: string | null
+    completed_at: string
+    created_at?: string
+    updated_at?: string
+  }
+  Update: Partial<DiagnosticProfilesTable['Insert']>
+  Relationships: []
+}
+
+type DiagnosticCompetencyResultsTable = {
+  Row: {
+    id: string
+    diagnostic_profile_id: string
+    subject_id: string
+    knowledge_node_id: string
+    attempted_questions: number
+    correct_questions: number
+    accuracy: number
+    baseline_score: number
+    confidence: number
+    strength_label: string
+    priority_rank: number
+    created_at: string
+  }
+  Insert: {
+    id?: string
+    diagnostic_profile_id: string
+    subject_id: string
+    knowledge_node_id: string
+    attempted_questions?: number
+    correct_questions?: number
+    accuracy?: number
+    baseline_score?: number
+    confidence?: number
+    strength_label: string
+    priority_rank: number
+    created_at?: string
+  }
+  Update: Partial<DiagnosticCompetencyResultsTable['Insert']>
+  Relationships: []
+}
+
 export type Database = {
   __InternalSupabase: { PostgrestVersion: '14.15' }
   public: {
@@ -716,6 +788,8 @@ export type Database = {
       user_readiness: GenericTable
       user_question_state: GenericTable
       learning_recommendations: GenericTable
+      diagnostic_profiles: DiagnosticProfilesTable
+      diagnostic_competency_results: DiagnosticCompetencyResultsTable
       remedial_sessions: GenericTable
       remedial_session_items: GenericTable
       user_activity_daily: GenericTable

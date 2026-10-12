@@ -3,10 +3,11 @@ import { notFound, redirect } from 'next/navigation'
 import { ArrowRight, BrainCircuit, CheckCircle2, CircleAlert, Sparkles, Target } from 'lucide-react'
 import TkaStartDrillButton from '@/components/tka/TkaStartDrillButton'
 import ProgressBar from '@/components/ui/ProgressBar'
-import { createClient } from '@/lib/utils/supabase/server'
+import { createV2Client } from '@/lib/utils/supabase/server'
 import { cn } from '@/lib/utils'
 import { isTkaLevelAvailable, parseTkaLevel, tkaLevelPath } from '@/src/tka/context'
 import PageHeader from '@/components/ui/PageHeader'
+import { walletService } from '@/src/services/wallet.service'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -43,13 +44,23 @@ export default async function TkaDiagnosticResultPage({
   if (!isTkaLevelAvailable(level)) redirect(base)
   if (level !== 'SMP') redirect(`${base}/diagnostic`)
 
-  const supabase = await createClient()
+  const supabase = await createV2Client()
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser()
   if (authError || !user)
     redirect(`/login?returnTo=${encodeURIComponent(`${base}/diagnostic/${attemptId}/result`)}`)
+
+  const { data: program, error: programError } = await supabase
+    .from('programs')
+    .select('id')
+    .eq('code', 'TKA')
+    .maybeSingle()
+  if (programError) throw programError
+  const tokenBalance = program
+    ? await walletService.getExamTokenBalance(user.id, program.id)
+    : 0
 
   const { data: attempt } = await supabase
     .from('exam_attempts')
@@ -336,6 +347,7 @@ export default async function TkaDiagnosticResultPage({
                   level={level}
                   subjectCode={primarySubject?.code ?? ''}
                   knowledgeNodeName={primaryNode?.name ?? 'Fokus belajar'}
+                  tokenBalance={tokenBalance}
                   disabledReason={
                     primaryDrillReady ? null : 'Latihan fokus belum tersedia untuk topik ini.'
                   }
@@ -391,6 +403,7 @@ export default async function TkaDiagnosticResultPage({
                         level={level}
                         subjectCode={subject?.code ?? ''}
                         knowledgeNodeName={node?.name ?? 'Fokus belajar'}
+                        tokenBalance={tokenBalance}
                         disabledReason={
                           drillReady ? null : 'Latihan fokus belum tersedia untuk topik ini.'
                         }

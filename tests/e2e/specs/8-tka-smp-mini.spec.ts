@@ -166,22 +166,26 @@ async function finishMini(page: Page, expectedSubject: string) {
 }
 
 test.describe.serial('TKA SMP Mini Tryout core', () => {
-  test('Direct catalog Drill is discoverable, starts, autosaves, resumes, and completes', async ({
+  test('Focus page drill starts once across two tabs, autosaves, resumes, and completes', async ({
     page,
   }) => {
     test.setTimeout(120_000)
     const learner = await freshDisposableTkaSession(page)
-    await page.goto('/tka/smp/tryout')
-    const card = page.getByTestId('tka-catalog-drill').filter({ hasText: /Aljabar/i })
+    await page.goto('/tka/smp/focus')
+    const card = page.getByTestId('tka-learning-hierarchy').filter({ hasText: /Aljabar/i })
     await expect(card).toBeVisible()
-    await expect(card.getByRole('heading')).toContainText(/Aljabar/i)
+    await expect(card.getByText('Aljabar', { exact: true }).first()).toBeVisible()
     const twinPage = await page.context().newPage()
-    await twinPage.goto('/tka/smp/tryout')
-    const twinCard = twinPage.getByTestId('tka-catalog-drill').filter({ hasText: /Aljabar/i })
+    await twinPage.goto('/tka/smp/focus')
+    const twinCard = twinPage.getByTestId('tka-learning-hierarchy').filter({ hasText: /Aljabar/i })
     await expect(twinCard).toBeVisible()
     await Promise.all([
-      card.getByRole('button', { name: 'Mulai Drill', exact: true }).click(),
-      twinCard.getByRole('button', { name: 'Mulai Drill', exact: true }).click(),
+      card.getByRole('button', { name: 'Latih topik Aljabar' }).click(),
+      twinCard.getByRole('button', { name: 'Latih topik Aljabar' }).click(),
+    ])
+    await Promise.all([
+      page.getByRole('button', { name: 'Gunakan 1 Token TKA', exact: true }).click(),
+      twinPage.getByRole('button', { name: 'Gunakan 1 Token TKA', exact: true }).click(),
     ])
     await page.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
     await twinPage.waitForURL(/\/tka\/smp\/tryout\/[0-9a-f-]+$/i)
@@ -239,7 +243,7 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
     }
   })
 
-  test('Bahasa Indonesia: mobile resume, result, history, projection, dashboard, error state, and one-free-attempt limit', async ({
+  test('Bahasa Indonesia: mobile resume, result, history, projection, dashboard, and token debit', async ({
     page,
   }) => {
     test.setTimeout(150_000)
@@ -262,12 +266,13 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
     await page.goto('/tka/smp/mini-tryout')
     const card = await examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
     await expect(card.getByText('35 menit')).toBeVisible()
-    await expect(card.getByText(/Gratis 1x tersisa/)).toBeVisible()
+    await expect(card.getByText(/1 token per sesi baru/)).toBeVisible()
     await assertNoDocumentOverflow(page)
 
-    const startButton = card.getByRole('button', { name: 'Mulai Tryout', exact: true })
+    const startButton = card.getByRole('button', { name: /Mulai Mini Tryout · 1 token/ })
     await expect(startButton).toBeEnabled()
     await startButton.click()
+    await page.getByRole('button', { name: 'Gunakan 1 Token TKA', exact: true }).click()
     await finishMini(page, 'Bahasa Indonesia')
     await assertMiniProjection(session)
     await assertProgressDashboard(page, session, 'Mini Tryout Bahasa Indonesia TKA SMP')
@@ -276,18 +281,17 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
     await assertHistoryOpensResult(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
     await page.goto('/tka/smp/mini-tryout')
     const usedCard = await examCard(page, 'Mini Tryout Bahasa Indonesia TKA SMP')
-    const locked = usedCard.getByRole('button', {
-      name: 'Kuota gratis habis · Butuh Tempur Pass',
-      exact: true,
-    })
-    await expect(locked).toBeDisabled()
+    await expect(usedCard.getByRole('button', { name: /Mulai Mini Tryout · 1 token/ })).toBeEnabled()
+    await expect(page.getByRole('region', { name: 'Informasi token TKA' })).toContainText(
+      'Saldo kamu 49 token',
+    )
 
     await page.goto('/tka/smp?error=Tahun+target+tidak+valid.')
     await expect(page.getByText('Tahun target tidak valid.')).toBeVisible()
     await assertNoDocumentOverflow(page)
   })
 
-  test('Matematika: tablet resume, result, history, projection, and one-free-attempt limit', async ({
+  test('Matematika: tablet resume, result, history, projection, and token debit', async ({
     page,
   }) => {
     test.setTimeout(120_000)
@@ -299,12 +303,13 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
     await page.goto('/tka/smp/mini-tryout')
     const card = await examCard(page, 'Mini Tryout Matematika TKA SMP')
     await expect(card.getByText('35 menit')).toBeVisible()
-    await expect(card.getByText(/Gratis 1x tersisa/)).toBeVisible()
+    await expect(card.getByText(/1 token per sesi baru/)).toBeVisible()
     await assertNoDocumentOverflow(page)
 
-    const startButton = card.getByRole('button', { name: 'Mulai Tryout', exact: true })
+    const startButton = card.getByRole('button', { name: /Mulai Mini Tryout · 1 token/ })
     await expect(startButton).toBeEnabled()
     await startButton.click()
+    await page.getByRole('button', { name: 'Gunakan 1 Token TKA', exact: true }).click()
     await finishMini(page, 'Matematika')
     await assertMiniProjection(session)
 
@@ -312,11 +317,10 @@ test.describe.serial('TKA SMP Mini Tryout core', () => {
     await assertHistoryOpensResult(page, 'Mini Tryout Matematika TKA SMP')
     await page.goto('/tka/smp/mini-tryout')
     const usedCard = await examCard(page, 'Mini Tryout Matematika TKA SMP')
-    const locked = usedCard.getByRole('button', {
-      name: 'Kuota gratis habis · Butuh Tempur Pass',
-      exact: true,
-    })
-    await expect(locked).toBeDisabled()
+    await expect(usedCard.getByRole('button', { name: /Mulai Mini Tryout · 1 token/ })).toBeEnabled()
+    await expect(page.getByRole('region', { name: 'Informasi token TKA' })).toContainText(
+      'Saldo kamu 49 token',
+    )
     await assertNoDocumentOverflow(page)
   })
 

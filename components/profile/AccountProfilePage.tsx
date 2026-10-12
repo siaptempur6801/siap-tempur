@@ -303,6 +303,7 @@ export default async function AccountProfilePage({
         amount: Number(order.total_amount || 0),
         status: paymentStatus(order.status, payment?.status),
         package_name: String(product.name || 'Paket Token'),
+        product_type: String(product.product_type || ''),
         order_id: String(order.id),
         snap_token: snapToken || undefined,
       },

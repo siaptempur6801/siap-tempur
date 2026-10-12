@@ -247,10 +247,6 @@ async function cleanStagingLeftovers() {
       console.warn(`[gate] user ${user.email} gagal dihapus: ${authError.message}`)
     }
   }
-  await admin
-    .from('feature_flags')
-    .update({ enabled: false, rollout_percentage: 0 })
-    .eq('key', 'tka.smp.monetization_enforcement')
   console.log(`[gate] pembersihan staging selesai (${targets.length} user ci-* dihapus)`)
 }
 
@@ -328,10 +324,6 @@ async function runGate(name) {
     startProcess('npm', ['run', 'start'], appEnv, 'app')
     await waitForHttp(`${gate.appBaseUrl}/login`, 60_000, 'aplikasi')
   }
-  await waitForHttp(`http://127.0.0.1:${HELPER_PORT}/functions/v1/ci-e2e-m4`, 30_000, 'ci-helper', {
-    acceptAnyStatus: true,
-  })
-
   const testEnv = {
     ...gate.env,
     ...(gate.manageApp

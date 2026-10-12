@@ -52,7 +52,6 @@ import { redirect } from 'next/navigation'
  *
  *   - `feature_flags`      → saklar fitur
  *   - `features`           → katalog fitur yang dirujuk `entitlements`
- *                            (`tempur-pass.service.ts`, `pass-catalog.service.ts`)
  *   - `certificate_templates` → dipakai `app/actions/event-certificate.ts`
  *   - `periods`/`track_periods` → periode aktif per track
  *   - `system_settings`    → key-value bebas untuk konfigurasi operasional
@@ -286,7 +285,7 @@ export default async function AdminSettingsPage({
         <div className="border-b border-border p-5">
           <AdminSectionHeading
             title="Katalog fitur"
-            description="Daftar fitur yang bisa dimiliki pengguna lewat pass atau pembelian. Hanya-baca: kode fitur dirujuk langsung oleh kode aplikasi."
+            description="Daftar fitur akses yang dapat dimiliki pengguna melalui entitlement. Hanya-baca: kode fitur dirujuk langsung oleh aplikasi."
           />
         </div>
         <AdminDataTable

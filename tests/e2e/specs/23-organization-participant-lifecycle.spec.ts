@@ -823,7 +823,7 @@ test('Organization participant discovers, resumes, submits, and receives the sha
       page.getByRole('heading', { name: 'Assessment TKA SMA belum tersedia', exact: true }),
     ).toBeVisible()
     await expect(
-      page.getByText('Pembelian pass baru tidak tersedia sampai assessment siap.', {
+      page.getByText('Akses assessment tambahan belum tersedia.', {
         exact: false,
       }),
     ).toBeVisible()

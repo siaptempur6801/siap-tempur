@@ -2,10 +2,9 @@
 
 import { useState, useRef, useEffect, useId } from 'react'
 import SignoutConfirmation from './SignoutConfirmation'
-import { BarChart3, Clock3, Compass, Library, LogOut, Sparkles, User, Ticket } from 'lucide-react'
+import { BarChart3, Clock3, Compass, Library, LogOut, User, Ticket } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import TempurPassIndicator from '@/components/dashboard/TempurPassIndicator'
 
 interface MobileProfileDropdownProps {
   user: {
@@ -20,7 +19,6 @@ interface MobileProfileDropdownProps {
     full_name?: string
   } | null
   tokenBalance: number
-  hasActiveTempurPass: boolean
 
   signoutAction: (redirectTo?: string) => Promise<{ success: boolean }>
   signoutRedirectTo?: string
@@ -30,7 +28,6 @@ export default function MobileProfileDropdown({
   user,
   profile,
   tokenBalance,
-  hasActiveTempurPass,
   signoutAction,
   signoutRedirectTo = '/',
 }: MobileProfileDropdownProps) {
@@ -113,13 +110,6 @@ export default function MobileProfileDropdown({
                 <Ticket size={12} className="fill-current" />
                 {tokenBalance} Token
               </span>
-              {hasActiveTempurPass && (
-                <TempurPassIndicator
-                  href="/cpns/dashboard/pass"
-                  label="Tempur Pass CPNS aktif"
-                  compact
-                />
-              )}
             </div>
           </div>
 
@@ -158,15 +148,6 @@ export default function MobileProfileDropdown({
             >
               <Compass size={18} />
               Pilih Jalur
-            </Link>
-
-            <Link
-              href="/cpns/dashboard/pass"
-              className="st-focus flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              <Sparkles size={18} />
-              Tempur Pass CPNS
             </Link>
 
             <Link

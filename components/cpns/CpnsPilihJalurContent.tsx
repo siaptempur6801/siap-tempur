@@ -3,15 +3,13 @@ import {
   ArrowRight,
   BrainCircuit,
   ClipboardCheck,
-  Coins,
   Compass,
   Layers3,
-  ShieldCheck,
   Sparkles,
+  ShieldCheck,
   Target,
 } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
-import { Button } from '@/components/ui/Button'
 
 /**
  * Konten halaman **Pilih Jalur khusus CPNS**.
@@ -68,7 +66,7 @@ const LADDER = [
   },
 ] as const
 
-export default function CpnsPilihJalurContent({ hasActivePass }: { hasActivePass: boolean }) {
+export default function CpnsPilihJalurContent() {
   return (
     <div className="space-y-6 md:space-y-8">
       <PageHeader
@@ -157,30 +155,23 @@ export default function CpnsPilihJalurContent({ hasActivePass }: { hasActivePass
 
       <section aria-labelledby="akses-cpns" className="st-card-md p-5">
         <h2 id="akses-cpns" className="text-lg font-semibold text-foreground">
-          Akses &amp; token CPNS
+          Token CPNS
         </h2>
-        {hasActivePass ? (
-          <p className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-success">
-            <ShieldCheck size={16} aria-hidden="true" /> Tempur Pass CPNS aktif — Mini Tryout dan
-            Full Tryout tanpa hitung token.
-          </p>
-        ) : (
-          <p className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-slate-600">
-            <Coins size={16} className="text-warning" aria-hidden="true" /> Kamu masih memakai token
-            per sesi. Tempur Pass CPNS membuat tryout berulang tanpa token.
-          </p>
-        )}
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button asChild size="sm">
-            <Link href="/cpns/dashboard/pass">
-              <Sparkles size={15} aria-hidden="true" />{' '}
-              {hasActivePass ? 'Kelola Tempur Pass CPNS' : 'Lihat Tempur Pass CPNS'}
-            </Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/tka">Buka jalur TKA</Link>
-          </Button>
-        </div>
+        <p className="mt-2 text-sm font-medium text-slate-600">
+          Sesi tertentu menggunakan token. Saldo token dan riwayat penggunaannya tersedia di profil.
+        </p>
+        <Link
+          href="/cpns/dashboard/beli-paket"
+          className="st-focus mt-3 inline-flex min-h-10 items-center rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition hover:opacity-90"
+        >
+          Lihat paket token
+        </Link>
+        <Link
+          href="/tka"
+          className="st-focus ml-2 mt-3 inline-flex min-h-10 items-center rounded-xl border border-border px-4 py-2 text-xs font-bold text-foreground transition hover:bg-muted"
+        >
+          Buka jalur TKA
+        </Link>
       </section>
     </div>
   )

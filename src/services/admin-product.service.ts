@@ -34,6 +34,9 @@ class AdminProductService {
     if (!validNonNegative(input.price)) throw new Error('PRODUCT_PRICE_INVALID')
     if (!validNonNegative(input.tokenGrant)) throw new Error('TOKEN_GRANT_INVALID')
     if (!validPositive(input.durationDays)) throw new Error('PRODUCT_DURATION_INVALID')
+    if (input.productType.trim().toUpperCase() === 'PASS') {
+      throw new Error('PRODUCT_TYPE_NOT_SUPPORTED')
+    }
 
     // `products`/`product_prices` memakai HURUF BESAR (dikunci CHECK
     // constraint `status = upper(status)`), sedangkan nilai dari form huruf

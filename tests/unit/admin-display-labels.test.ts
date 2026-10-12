@@ -18,7 +18,7 @@ function source(relativePath: string) {
  * Audit tampilan: nilai teknis/mentah yang bocor ke layar admin.
  *   - status pembayaran Midtrans (`settlement`, `capture`, …) tampil apa adanya;
  *   - tipe soal tampil `single_choice` di header detail Review;
- *   - jenis produk tampil `PASS`/`TOKEN_PACK` di daftar produk.
+ *   - jenis produk tampil `TOKEN_PACK` di daftar produk.
  */
 describe('label tampilan admin', () => {
   it('status pembayaran Midtrans tidak lagi tampil mentah', () => {
@@ -41,7 +41,7 @@ describe('label tampilan admin', () => {
   })
 
   it('jenis produk dilabeli; fallback ke huruf kecil yang terbaca', () => {
-    expect(adminProductTypeLabel('PASS')).toBe('Langganan (pass)')
+    expect(adminProductTypeLabel('PASS')).toBe('pass')
     expect(adminProductTypeLabel('TOKEN_PACK')).toBe('Paket token')
     expect(adminProductTypeLabel('EVENT_TICKET')).toBe('Tiket event')
     expect(adminProductTypeLabel('NEW_THING')).toBe('new thing')

@@ -123,7 +123,7 @@ export function HistoryTab({
   usagePage,
   creditPage,
 }: HistoryTabProps) {
-  const { purchasePath, accessPath, level: tkaLevel, isTka } = useProfileNavigation()
+  const { purchasePath, isTka } = useProfileNavigation()
   const handlePayPending = (token: string, orderId: string, event: React.MouseEvent) => {
     event.preventDefault()
     event.stopPropagation()
@@ -203,11 +203,11 @@ export function HistoryTab({
   return (
     <div className="space-y-6">
       <HistorySection
-        eyebrow={isTka ? 'Pembelian Tempur Pass' : 'Pembelian token'}
+        eyebrow={isTka ? 'Transaksi TKA' : 'Pembelian token'}
         title="Riwayat pembayaran"
         description={
           isTka
-            ? 'Lihat pembelian Tempur Pass TKA dan lanjutkan pembayaran yang masih tersedia.'
+            ? 'Lihat riwayat transaksi TKA.'
             : 'Lihat paket yang pernah kamu pilih dan lanjutkan pembayaran yang masih tersedia.'
         }
         icon={<CreditCard size={21} />}
@@ -319,20 +319,20 @@ export function HistoryTab({
             }
             description={
               isTka
-                ? 'Pembelian Tempur Pass untuk jenjang TKA ini akan muncul di sini.'
+                ? 'Transaksi TKA akan muncul di sini.'
                 : 'Paket token yang kamu pilih akan muncul di sini.'
             }
             action={
-              !transactionPage.from && !transactionPage.to ? (
+              !isTka && !transactionPage.from && !transactionPage.to ? (
                 <Link
-                  href={isTka ? accessPath : purchasePath}
+                  href={purchasePath}
                   className={
                     isTka
                       ? 'inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition active:scale-[0.98]'
                       : 'st-button inline-flex min-h-11 items-center justify-center bg-blue-600 px-4 py-2.5 text-sm font-black text-white'
                   }
                 >
-                  {isTka ? 'Lihat Tempur Pass' : 'Lihat paket token'}
+                  Lihat paket token
                 </Link>
               ) : undefined
             }
@@ -341,29 +341,7 @@ export function HistoryTab({
         )}
       </HistorySection>
 
-      {isTka ? (
-        <section
-          className="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-5 sm:p-6"
-          aria-labelledby="tka-pass-history-title"
-        >
-          <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-700">
-            Akses TKA
-          </p>
-          <h2 id="tka-pass-history-title" className="mt-1 text-lg font-bold text-slate-950">
-            Tempur Pass TKA {tkaLevel}
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Status, masa aktif, dan pengelolaan akses belajar tersedia di halaman Tempur Pass
-            jenjang ini.
-          </p>
-          <Link
-            href={accessPath}
-            className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-700"
-          >
-            Kelola Tempur Pass
-          </Link>
-        </section>
-      ) : (
+      {!isTka && (
         <>
           <HistorySection
             eyebrow="Penggunaan token"

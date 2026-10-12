@@ -21,6 +21,12 @@ const CONTENT_PERMISSIONS = [
   PERMISSIONS.CONTENT_REVIEW,
   PERMISSIONS.CONTENT_PUBLISH,
 ]
+const READINESS_PERMISSIONS = [
+  PERMISSIONS.QUESTION_MANAGE,
+  PERMISSIONS.CONTENT_REVIEW,
+  PERMISSIONS.PRODUCT_MANAGE,
+  PERMISSIONS.EXAM_MANAGE,
+]
 
 const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
   {
@@ -49,7 +55,12 @@ const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
         href: '/admin/content',
         label: 'Content',
         icon: 'BookOpen',
-        requiresAny: [PERMISSIONS.QUESTION_MANAGE, ...CONTENT_PERMISSIONS],
+        requiresAny: [
+          PERMISSIONS.QUESTION_MANAGE,
+          ...CONTENT_PERMISSIONS,
+          PERMISSIONS.PRODUCT_MANAGE,
+          PERMISSIONS.EXAM_MANAGE,
+        ],
         contextual: false,
         children: [
           {
@@ -76,6 +87,13 @@ const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
               PERMISSIONS.CONTENT_UPDATE,
               PERMISSIONS.CONTENT_PUBLISH,
             ],
+            contextual: false,
+          },
+          {
+            href: '/admin/content/readiness',
+            label: 'Content Readiness',
+            icon: 'ShieldCheck',
+            requiresAny: READINESS_PERMISSIONS,
             contextual: false,
           },
         ],

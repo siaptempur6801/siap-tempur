@@ -1,14 +1,14 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Dumbbell } from 'lucide-react'
+import { Dumbbell } from 'lucide-react'
 import { toast } from 'sonner'
 import { startTkaDrill } from '@/app/actions/tka-practice'
 import { trackProductEvent } from '@/lib/product-analytics'
 import { LoadingSpinner } from '@/components/ui/LoadingState'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
+import TokenUsageConfirmModal from '@/components/practice/TokenUsageConfirmModal'
 
 export default function TkaStartDrillButton({
   level,
@@ -16,20 +16,20 @@ export default function TkaStartDrillButton({
   knowledgeNodeName,
   disabledReason,
   compact = false,
+  tokenBalance,
 }: {
   level: string
   subjectCode: string
   knowledgeNodeName: string
   disabledReason?: string | null
   compact?: boolean
+  tokenBalance: number
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [showTokenConfirm, setShowTokenConfirm] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const startLockRef = useRef(false)
-  const passRequired = /tempur pass|paket aktif/i.test(
-    `${disabledReason ?? ''} ${errorMessage ?? ''}`,
-  )
 
   const start = async () => {
     if (disabledReason || !acquireSingleFlightLock(startLockRef)) return
@@ -67,12 +67,27 @@ export default function TkaStartDrillButton({
     }
   }
 
+  const handleClick = () => {
+    if (disabledReason || loading) return
+    if (tokenBalance < 1) {
+      toast.error('Token TKA belum cukup', {
+        description: 'Kamu membutuhkan 1 token untuk memulai sesi baru.',
+        action: {
+          label: 'Beli Token',
+          onClick: () => router.push(`/tka/${level.toLowerCase()}/beli-token`),
+        },
+      })
+      return
+    }
+    setShowTokenConfirm(true)
+  }
+
   return (
     <div className={compact ? 'm-0 w-full' : 'mt-4'}>
       <button
         type="button"
         data-testid="diagnostic-start-drill"
-        onClick={() => void start()}
+        onClick={handleClick}
         disabled={Boolean(disabledReason) || loading}
         aria-label={`Latih topik ${knowledgeNodeName}`}
         aria-describedby={
@@ -87,14 +102,6 @@ export default function TkaStartDrillButton({
         )}
         {loading ? 'Menyiapkan...' : compact ? 'Mulai Latihan' : 'Latih topik ini'}
       </button>
-      {passRequired && (
-        <Link
-          href={`/tka/${level.toLowerCase()}/pass`}
-          className="st-focus mt-2 inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-border-strong bg-white px-3 py-2 text-xs font-bold text-indigo-700 transition hover:border-primary hover:bg-indigo-50"
-        >
-          Lihat paket Tempur Pass <ArrowRight size={14} aria-hidden="true" />
-        </Link>
-      )}
       {!compact && (
         <p className="mt-2 text-center text-sm leading-relaxed font-medium text-slate-600">
           10 soal fokus · sekitar 15 menit
@@ -109,6 +116,25 @@ export default function TkaStartDrillButton({
           {errorMessage}
         </p>
       )}
+      <TokenUsageConfirmModal
+        isOpen={showTokenConfirm}
+        title={`Latihan ${knowledgeNodeName}`}
+        description="Sesi baru memakai 1 token TKA. Jika ada sesi yang masih berjalan, sesi itu dilanjutkan tanpa potongan token tambahan."
+        details={[
+          { label: 'Mata pelajaran', value: subjectCode },
+          { label: 'Format', value: '10 soal fokus' },
+          { label: 'Biaya sesi baru', value: '1 token' },
+        ]}
+        quota={tokenBalance}
+        tokenCost={1}
+        confirmLabel="Gunakan 1 Token TKA"
+        isLoading={loading}
+        onConfirm={() => {
+          setShowTokenConfirm(false)
+          void start()
+        }}
+        onCancel={() => setShowTokenConfirm(false)}
+      />
     </div>
   )
 }

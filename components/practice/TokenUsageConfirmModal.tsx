@@ -13,6 +13,7 @@ type TokenUsageConfirmModalProps = {
   description: string
   details: Array<{ label: string; value: string | number }>
   quota: number
+  tokenCost?: number
   confirmLabel?: string
   isLoading: boolean
   onConfirm: () => void
@@ -25,14 +26,15 @@ export default function TokenUsageConfirmModal({
   description,
   details,
   quota,
-  confirmLabel = `Gunakan ${TRYOUT_TOKEN_COST} Token`,
+  tokenCost = TRYOUT_TOKEN_COST,
+  confirmLabel = `Gunakan ${tokenCost} Token`,
   isLoading,
   onConfirm,
   onCancel,
 }: TokenUsageConfirmModalProps) {
   const titleId = useId()
   const descriptionId = useId()
-  const remainingQuota = Math.max(0, quota - TRYOUT_TOKEN_COST)
+  const remainingQuota = Math.max(0, quota - tokenCost)
 
   return (
     <DialogSurface

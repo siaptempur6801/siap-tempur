@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { AdminField, adminInputClass, adminPrimaryButtonClass } from './AdminUi'
 
 export default function ProductAvailabilityFields({
-  type = 'PASS',
+  type = 'TOKEN_PACK',
   status = 'DRAFT',
   readiness,
 }: {
@@ -39,7 +39,6 @@ export default function ProductAvailabilityFields({
           onChange={(event) => changeType(event.target.value)}
         >
           <option value="TOKEN_PACK">Paket token</option>
-          <option value="PASS">Langganan (pass)</option>
           <option value="EVENT_TICKET">Tiket event</option>
         </select>
       </AdminField>
