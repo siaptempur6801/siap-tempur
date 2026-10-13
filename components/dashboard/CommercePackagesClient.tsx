@@ -219,10 +219,10 @@ export default function CommercePackagesClient({
             {program === 'TKA' ? `Beli Token · TKA ${effectiveLevel}` : 'Beli Paket Token CPNS'}
           </>
         }
-        title={program === 'TKA' ? 'Beli paket token ujian' : 'Beli paket token Tryout SKD CPNS'}
+        title={program === 'TKA' ? 'Beli Token TKA' : 'Beli paket token Tryout SKD CPNS'}
         description={
           program === 'TKA'
-            ? 'Siapkan token untuk mengikuti tryout CAT dan sesi latihan terpandu. Pilih paket sesuai kebutuhan belajarmu, token berlaku selamanya dan tersimpan aman di akunmu.'
+            ? 'Pilih jumlah token sesuai kebutuhanmu. Gunakan untuk Tryout, Mini Tryout, atau Latihan Fokus saat memulai sesi baru.'
             : 'Pilih token sesuai ritme tryout-mu. Token digunakan untuk akses simulasi CAT SKD dan drilling materi berstandar nasional.'
         }
       />
@@ -234,9 +234,11 @@ export default function CommercePackagesClient({
             <Wallet size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground">Saldo akun</p>
-            <p className="text-sm font-semibold text-foreground">
-              {tokenBalance !== undefined ? `${tokenBalance} Token Tersedia` : 'Token Terintegrasi'}
+            <p className="text-sm font-medium text-muted-foreground">
+              {program === 'TKA' ? 'Saldo Token TKA' : 'Saldo akun'}
+            </p>
+            <p className="text-xl font-semibold tabular-nums text-foreground">
+              {tokenBalance !== undefined ? `${tokenBalance} token` : 'Lihat saldo di profil'}
             </p>
             <Link
               href={
@@ -256,9 +258,17 @@ export default function CommercePackagesClient({
             <Sparkles size={20} />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-medium text-muted-foreground">Masa berlaku</p>
-            <p className="text-sm font-semibold text-foreground">Aktif selamanya</p>
-            <p className="text-xs text-muted-foreground">Tanpa batas waktu kedaluwarsa</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              {program === 'TKA' ? 'Pemakaian token' : 'Masa berlaku'}
+            </p>
+            <p className="text-sm font-semibold text-foreground">
+              {program === 'TKA' ? 'Hanya untuk sesi baru' : 'Aktif selamanya'}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {program === 'TKA'
+                ? 'Lanjutkan sesi aktif tanpa token tambahan'
+                : 'Tanpa batas waktu kedaluwarsa'}
+            </p>
           </div>
         </div>
 
@@ -276,40 +286,15 @@ export default function CommercePackagesClient({
         </div>
       </div>
 
-      {/* QA QRIS Panel (Staging Admin Only) */}
-      {qaQrisEnabled && (
-        <section
-          className="rounded-xl border border-warning-border bg-warning-muted p-4"
-          aria-label="Staging QRIS QA"
-        >
-          <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-card text-warning">
-              <QrCode size={20} />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-warning">
-                Staging Admin · QRIS Sandbox QA
-              </div>
-              <p className="mt-0.5 text-sm text-warning">
-                Panel ini hanya tampil untuk akun berizin di staging. Pembelian pengguna biasa tetap
-                menggunakan alur checkout resmi Midtrans.
-              </p>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Empty State */}
       {packages.length === 0 ? (
         <section className="rounded-xl border border-dashed border-border-strong bg-card p-8 text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <Package size={24} />
           </div>
-          <h2 className="mt-3 text-lg font-semibold text-foreground">
-            Belum ada paket token aktif
-          </h2>
+          <h2 className="mt-3 text-lg font-semibold text-foreground">Paket token belum tersedia</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Pilihan paket akan muncul di sini setelah katalog diperbarui.
+            Coba kembali nanti untuk melihat pilihan paket token.
           </p>
         </section>
       ) : (
@@ -402,7 +387,7 @@ export default function CommercePackagesClient({
                     <Benefit
                       text={
                         program === 'TKA'
-                          ? 'Digunakan untuk Tryout CAT & modul latihan terpandu'
+                          ? 'Untuk Tryout, Mini Tryout, dan Latihan Fokus'
                           : 'Digunakan untuk simulasi Tryout CAT & drilling materi'
                       }
                     />
@@ -429,109 +414,15 @@ export default function CommercePackagesClient({
                     ) : (
                       <>
                         <Zap size={16} />
-                        <span>Pilih & Beli {pkg.tokenGrant} Token</span>
+                        <span>Beli {pkg.tokenGrant} Token</span>
                       </>
                     )}
                   </Button>
-
-                  {qaQrisEnabled && (
-                    <Button
-                      type="button"
-                      onClick={() => handleQaQris(pkg.code)}
-                      variant="warning"
-                      size="sm"
-                      className="w-full"
-                    >
-                      <QrCode size={14} />
-                      <span>QRIS QA Sandbox</span>
-                    </Button>
-                  )}
                 </div>
               </article>
             )
           })}
         </div>
-      )}
-
-      {/* Staging Simulator Panel */}
-      {qaQrisEnabled && qaQris && (
-        <section className="rounded-xl border border-border-strong bg-card p-5 sm:p-6">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-            <div>
-              <span className="text-xs font-medium text-warning">Staging QA Simulator</span>
-              <h2 className="text-lg font-semibold text-foreground">
-                QRIS Sandbox siap disimulasikan
-              </h2>
-            </div>
-            <div className="rounded-xl bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-900 ring-1 ring-amber-200">
-              {rupiah(qaQris.amount)}
-            </div>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-[240px_1fr]">
-            <div className="rounded-lg border border-border-strong bg-background p-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={qaQris.qrImageUrlV2 || qaQris.qrImageUrl}
-                alt="QRIS Sandbox QA"
-                className="h-auto w-full rounded-lg"
-              />
-            </div>
-            <div className="space-y-3.5">
-              <div>
-                <span className="text-xs font-medium text-muted-foreground">Order ID</span>
-                <code className="mt-1 block break-all rounded-lg border border-border bg-muted/50 p-2 text-xs font-mono text-foreground">
-                  {qaQris.orderNumber}
-                </code>
-              </div>
-              <div>
-                <span className="text-xs font-medium text-muted-foreground">URL gambar QR</span>
-                <div className="mt-1 flex gap-2">
-                  <input
-                    readOnly
-                    value={qaQris.qrImageUrl}
-                    className="st-input min-w-0 flex-1 text-xs"
-                    aria-label="URL gambar QR"
-                  />
-                  <Button
-                    type="button"
-                    onClick={copyQrisUrl}
-                    variant="outline"
-                    size="sm"
-                    title="Salin URL QR"
-                    aria-label="Salin URL gambar QR"
-                  >
-                    <Copy size={14} /> Salin
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-col gap-2.5 sm:flex-row pt-1">
-                <Button
-                  type="button"
-                  onClick={openSimulator}
-                  variant="success"
-                  size="sm"
-                  className="flex-1"
-                >
-                  <ExternalLink size={14} /> Buka Simulator QRIS
-                </Button>
-                <Button
-                  type="button"
-                  onClick={checkQaStatus}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                >
-                  <RefreshCw size={14} /> Sinkronkan Status
-                </Button>
-              </div>
-              <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 border border-amber-200/60">
-                Gunakan hanya Sandbox Simulator resmi Midtrans. Jangan scan QR Sandbox dengan
-                aplikasi e-wallet nyata.
-              </p>
-            </div>
-          </div>
-        </section>
       )}
 
       {/* Reassurance Footer Notice */}
@@ -543,17 +434,127 @@ export default function CommercePackagesClient({
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-foreground">
               {program === 'TKA'
-                ? 'Pembayaran Aman & Verifikasi Otomatis'
+                ? 'Token masuk setelah pembayaran berhasil'
                 : 'Token Masuk Otomatis Setelah Pembayaran'}
             </h3>
             <p className="mt-1 leading-relaxed text-muted-foreground">
               {program === 'TKA'
-                ? 'Seluruh pembayaran diproses secara resmi melalui payment gateway Midtrans. Token akan otomatis ditambahkan ke saldo akunmu seketika setelah transaksi terverifikasi. Jika proses pembayaran ditutup sebelum selesai, saldo tidak akan berkurang.'
+                ? 'Pilih metode pembayaran yang tersedia dan ikuti petunjuknya. Token ditambahkan setelah pembayaran terkonfirmasi. Kamu bisa memeriksa statusnya di riwayat transaksi.'
                 : 'Jika pembayaran masih menunggu atau ditutup sebelum selesai, saldo token tidak berubah. Status terbaru akan otomatis diperbarui setelah pembayaran berhasil diverifikasi.'}
             </p>
           </div>
         </div>
       </section>
+
+      {qaQrisEnabled && (
+        <details className="rounded-xl border border-border-strong bg-card">
+          <summary className="st-focus min-h-11 cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold text-muted-foreground">
+            Pengujian pembayaran · khusus admin
+          </summary>
+          <div className="space-y-4 border-t border-border p-4">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Uji pembayaran QRIS di sandbox tanpa transaksi uang asli. Pilih paket yang ingin
+              diuji. Bagian ini hanya terlihat oleh admin yang memiliki izin pengujian.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {packages.map((pkg) => (
+                <Button
+                  key={pkg.code}
+                  type="button"
+                  onClick={() => handleQaQris(pkg.code)}
+                  disabled={Boolean(buying)}
+                  variant="warning"
+                >
+                  <QrCode size={16} aria-hidden="true" />
+                  Uji QRIS · {pkg.tokenGrant} token
+                </Button>
+              ))}
+            </div>
+            {/* Staging Simulator Panel */}
+            {qaQris && (
+              <section className="rounded-xl border border-border-strong bg-card p-5 sm:p-6">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+                  <div>
+                    <span className="text-xs font-medium text-warning">Staging QA Simulator</span>
+                    <h2 className="text-lg font-semibold text-foreground">
+                      QRIS Sandbox siap disimulasikan
+                    </h2>
+                  </div>
+                  <div className="rounded-xl bg-amber-50 px-3 py-1.5 text-sm font-bold text-amber-900 ring-1 ring-amber-200">
+                    {rupiah(qaQris.amount)}
+                  </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-[240px_1fr]">
+                  <div className="rounded-lg border border-border-strong bg-background p-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={qaQris.qrImageUrlV2 || qaQris.qrImageUrl}
+                      alt="QRIS Sandbox QA"
+                      className="h-auto w-full rounded-lg"
+                    />
+                  </div>
+                  <div className="space-y-3.5">
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground">Order ID</span>
+                      <code className="mt-1 block break-all rounded-lg border border-border bg-muted/50 p-2 text-xs font-mono text-foreground">
+                        {qaQris.orderNumber}
+                      </code>
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-muted-foreground">
+                        URL gambar QR
+                      </span>
+                      <div className="mt-1 flex gap-2">
+                        <input
+                          readOnly
+                          value={qaQris.qrImageUrl}
+                          className="st-input min-w-0 flex-1 text-xs"
+                          aria-label="URL gambar QR"
+                        />
+                        <Button
+                          type="button"
+                          onClick={copyQrisUrl}
+                          variant="outline"
+                          size="sm"
+                          title="Salin URL QR"
+                          aria-label="Salin URL gambar QR"
+                        >
+                          <Copy size={14} /> Salin
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2.5 sm:flex-row pt-1">
+                      <Button
+                        type="button"
+                        onClick={openSimulator}
+                        variant="success"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <ExternalLink size={14} /> Buka Simulator QRIS
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={checkQaStatus}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <RefreshCw size={14} /> Sinkronkan Status
+                      </Button>
+                    </div>
+                    <p className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 border border-amber-200/60">
+                      Gunakan hanya Sandbox Simulator resmi Midtrans. Jangan scan QR Sandbox dengan
+                      aplikasi e-wallet nyata.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
+        </details>
+      )}
     </div>
   )
 }

@@ -8,15 +8,17 @@ import {
   CheckCircle2,
   GraduationCap,
   History,
-  LockKeyhole,
   RotateCcw,
   School,
   Sparkles,
-  Ticket,
+  Dumbbell,
+  Timer,
+  ListChecks,
 } from 'lucide-react'
 import { activateTkaTrackAction } from '@/app/actions/user-track'
 import PageHeader from '@/components/ui/PageHeader'
 import TkaNextStep from '@/components/tka/TkaNextStep'
+import TkaTokenAccessSummary from '@/components/tka/TkaTokenAccessSummary'
 import { Mascot } from '@/components/brand/Mascot'
 import { MascotBubble } from '@/components/brand/playful'
 import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
@@ -27,6 +29,7 @@ import { getAuthenticatedTkaCatalogContext } from '@/src/repositories/tka-catalo
 import { walletService } from '@/src/services/wallet.service'
 import {
   isTkaLevelAvailable,
+  isTkaTokenEnabled,
   parseTkaLevel,
   tkaContext,
   tkaLevelPath,
@@ -138,7 +141,9 @@ export default async function TkaLevelPage({
           .order('updated_at', { ascending: false })
           .limit(20)
       : Promise.resolve({ data: [], error: null }),
-    walletService.getExamTokenBalance(user.id, program.id),
+    isTkaTokenEnabled(level)
+      ? walletService.getExamTokenBalance(user.id, program.id)
+      : Promise.resolve(0),
   ])
   if (attemptError) throw attemptError
 
@@ -173,7 +178,7 @@ export default async function TkaLevelPage({
       ? 'Latihan Fokus'
       : activeSlug.includes('mini')
         ? 'Mini Tryout'
-        : 'Full Tryout'
+        : 'Tryout'
   const latestCompletedAttempt =
     learnerAttempts.find((attempt) =>
       ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase()),
@@ -200,6 +205,7 @@ export default async function TkaLevelPage({
     ['completed', 'submitted'].includes(String(attempt.status ?? '').toLowerCase()),
   )
 
+  const hasRunningSession = Boolean(activeTrack && (activeAttempt || diagnosticInProgress))
   const recommendation = !activeTrack
     ? {
         href: path,
@@ -265,10 +271,10 @@ export default async function TkaLevelPage({
       data-program={`tka-${level.toLowerCase()}`}
       className="min-h-screen overflow-x-clip px-4 py-6 md:px-8 md:py-8"
     >
-      <div data-testid="tka-level-ready" className="mx-auto max-w-6xl space-y-6 md:space-y-8">
+      <div data-testid="tka-level-ready" className="mx-auto max-w-6xl space-y-6">
         {/* Welcoming Learner Header */}
         <PageHeader
-          className="border-b border-slate-200/80 pb-6"
+          className="pb-1"
           eyebrow={
             <>
               <Sparkles size={13} aria-hidden="true" />
@@ -279,30 +285,10 @@ export default async function TkaLevelPage({
           }
           title={`Ringkasan TKA ${level}`}
           description={
-            <>
-              Halo, {studentName}. Pantau langkah belajar, status jalur, dan capaian terakhirmu dari
-              sini.
-            </>
+            <>Halo, {studentName}. Pilih latihan, cek saldo token, atau lanjutkan sesi belajarmu.</>
           }
           aside={
-            <>
-              <Mascot
-                name="tama"
-                size="sm"
-                tone="plain"
-                className="hidden shrink-0 sm:inline-flex xl:hidden"
-              />
-              <MascotBubble
-                name="tama"
-                size="sm"
-                soft
-                bubbleTone="blue"
-                className="hidden shrink-0 xl:flex"
-                bubbleClassName="max-w-[15rem]"
-              >
-                Kita latih pelan-pelan, ya. Pilih satu langkah dulu, sisanya nanti mengikuti.
-              </MascotBubble>
-            </>
+            <Mascot name="tama" size="sm" tone="plain" className="hidden shrink-0 sm:inline-flex" />
           }
         />
 
@@ -324,59 +310,15 @@ export default async function TkaLevelPage({
           </div>
         )}
 
-        {/* Hero Step & Access Status */}
-        <section
-          className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,0.65fr)]"
-          aria-label="Langkah berikutnya TKA"
-        >
-          <TkaNextStep recommendation={recommendation} />
-
-          <article
-            data-testid={activeTrack ? 'tka-track-active' : 'tka-track-inactive'}
-            className="relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition-shadow duration-200 hover:shadow-sm md:p-5"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-600">
-                  Saldo Token TKA
-                </span>
-                <div
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black ring-1 ${activeTrack ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-800 ring-amber-200'}`}
-                >
-                  {activeTrack ? (
-                    <>
-                      <CheckCircle2 size={13} /> Jalur Aktif
-                    </>
-                  ) : (
-                    <>
-                      <LockKeyhole size={13} /> Belum Aktif
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <p className="flex items-center gap-2 text-2xl font-black tracking-tight text-slate-950">
-                  <Ticket size={22} className="shrink-0 text-indigo-700" aria-hidden="true" />
-                  {tokenBalance} token
-                </p>
-                <p className="mt-2 text-xs leading-relaxed text-slate-600">
-                  Tryout, Mini Tryout, dan Latihan Fokus memakai 1 token untuk setiap sesi baru.
-                  Sesi aktif bisa dilanjutkan tanpa biaya tambahan.
-                </p>
-                {level === 'SMP' && (
-                  <Link
-                    href={`${path}/beli-token`}
-                    className="st-focus mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-indigo-800"
-                  >
-                    Kelola token <ArrowRight size={16} aria-hidden="true" />
-                  </Link>
-                )}
-              </div>
-            </div>
-
-          </article>
-        </section>
+        <div data-testid={activeTrack ? 'tka-track-active' : 'tka-track-inactive'}>
+          {isTkaTokenEnabled(level) ? (
+            <TkaTokenAccessSummary tokenBalance={tokenBalance} href={`${path}/beli-token`} />
+          ) : (
+            <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+              Latihan dan tryout TKA {level} belum tersedia.
+            </p>
+          )}
+        </div>
 
         {/* Form Aktivasi Jalur (jika belum aktif) */}
         {!activeTrack && (
@@ -392,7 +334,7 @@ export default async function TkaLevelPage({
                 {level === 'SMP'
                   ? 'Aktifkan jalur ini agar hasil latihan, tryout, dan riwayat remedial tersimpan di akunmu.'
                   : 'Aktifkan jalur ini untuk menyimpan status akses dan riwayat evaluasi yang tersedia di akunmu.'}{' '}
-                Data sekolah bersifat opsional.
+                Aktivasi ini tidak memakai token. Data sekolah boleh diisi nanti.
               </p>
             </div>
             <form
@@ -427,13 +369,75 @@ export default async function TkaLevelPage({
           </section>
         )}
 
+        {hasRunningSession && (
+          <section aria-label="Langkah berikutnya TKA">
+            <TkaNextStep recommendation={recommendation} />
+          </section>
+        )}
+
+        <section aria-labelledby="tka-practice-options" className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="tka-practice-options" className="text-lg font-bold text-foreground">
+              Mau latihan apa hari ini?
+            </h2>
+            <span className="text-sm text-muted-foreground">Pilih sesuai tujuan belajarmu</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
+            {[
+              {
+                href: `${path}/focus`,
+                title: 'Latihan Fokus',
+                description: 'Perkuat satu materi dan pelajari pembahasannya.',
+                icon: Dumbbell,
+              },
+              {
+                href: `${path}/mini-tryout`,
+                title: 'Mini Tryout',
+                description: 'Ukur kemampuan per mata pelajaran.',
+                icon: Timer,
+              },
+              {
+                href: `${path}/tryout`,
+                title: 'Tryout',
+                description: 'Latihan ujian lengkap dengan batas waktu.',
+                icon: ListChecks,
+              },
+            ].map((mode) => (
+              <Link
+                key={mode.href}
+                href={mode.href}
+                className="st-focus group flex items-center gap-4 rounded-xl border border-border-strong bg-card p-4 transition-colors hover:border-primary hover:bg-primary-muted sm:flex-col sm:items-start sm:p-5 md:flex-row md:items-center lg:flex-col lg:items-start"
+              >
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary-muted text-primary">
+                  <mode.icon size={21} aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-bold text-foreground">{mode.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                    {mode.description}
+                  </p>
+                </div>
+                <span className="text-primary sm:inline-flex sm:items-center sm:gap-2 sm:text-sm sm:font-semibold">
+                  <span className="hidden sm:inline">Pilih latihan</span>
+                  <ArrowRight size={17} aria-hidden="true" />
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {!hasRunningSession && (
+          <section aria-label="Langkah berikutnya TKA">
+            <TkaNextStep recommendation={recommendation} />
+          </section>
+        )}
+
         <section aria-labelledby="tka-learning-summary" className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3">
             <div>
-              <div className="st-kicker">Ringkasan</div>
               <h2
                 id="tka-learning-summary"
-                className="mt-1.5 text-lg font-black tracking-tight text-slate-950"
+                className="text-lg font-bold tracking-tight text-foreground"
               >
                 Ringkasan Belajar
               </h2>
@@ -464,7 +468,7 @@ export default async function TkaLevelPage({
               icon={<BookOpenCheck size={17} />}
               label="Bank soal"
               value={String(totalQuestions)}
-              detail={level === 'SMP' ? 'soal tersedia' : 'soal terdata'}
+              detail={level === 'SMP' ? 'soal tersedia' : 'soal tersedia'}
             />
             <SummaryMetric
               icon={<History size={17} />}
@@ -627,8 +631,8 @@ function TkaComingSoonPage({ level }: { level: TkaLevel }) {
                     Coba ekosistem TKA sekarang melalui jalur TKA {level}
                   </h2>
                   <p className="text-xs text-slate-600">
-                    Modul Tes Diagnostik, Latihan Fokus, Mini Tryout, dan Tryout Lengkap sudah aktif
-                    dan siap digunakan.
+                    Kenali kemampuanmu lewat Tes Diagnostik, lalu pilih Latihan Fokus, Mini Tryout,
+                    atau Tryout.
                   </p>
                 </div>
                 <TkaSurfaceLink
@@ -695,12 +699,12 @@ function TkaComingSoonPage({ level }: { level: TkaLevel }) {
               icon={<RotateCcw size={20} />}
               tone="bg-blue-50 text-blue-700 ring-1 ring-blue-200/70"
               title="Latihan Fokus per Bab"
-              description="Drilling butir soal bertingkat per topik materi dengan pembahasan komprehensif dan latihan remedial terarah."
+              description="Latih materi yang ingin kamu kuasai, baca pembahasannya, lalu ulangi soal yang masih sulit."
             />
             <FeaturePreviewCard
               icon={<BookOpenCheck size={20} />}
               tone="bg-amber-50 text-amber-800 ring-1 ring-amber-200/70"
-              title="Mini & Full Tryout"
+              title="Mini Tryout & Tryout"
               description="Simulasi ujian dengan format CBT standar, timer realistis, dan sistem navigasi soal mutakhir."
             />
             <FeaturePreviewCard

@@ -52,7 +52,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         search={params.q || ''}
         placeholder="Cari nomor pesanan..."
         status={params.status}
-        statusOptions={['pending', 'paid', 'cancelled', 'failed'].map((value) => ({
+        statusOptions={[
+          'pending',
+          'paid',
+          'partial_refund_review',
+          'partial_chargeback_review',
+          'refunded',
+          'chargeback',
+          'cancelled',
+          'failed',
+        ].map((value) => ({
           value,
           label: adminStatusLabel(value),
         }))}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   canonicalMidtransStatus,
   isMidtransFinalNonSuccessStatus,
+  isMidtransReversalStatus,
   isMidtransSuccessStatus,
   isSupportedMidtransStatus,
   normalizeMidtransStatus,
@@ -57,5 +58,13 @@ describe('Midtrans status normalization', () => {
     expect(isMidtransFinalNonSuccessStatus('chargeback')).toBe(true)
     expect(isMidtransFinalNonSuccessStatus('pending')).toBe(false)
     expect(isMidtransFinalNonSuccessStatus('authorize')).toBe(false)
+  })
+
+  it('identifies full and partial payment reversals', () => {
+    expect(isMidtransReversalStatus(' Refund ')).toBe(true)
+    expect(isMidtransReversalStatus('chargeback')).toBe(true)
+    expect(isMidtransReversalStatus('partial_refund')).toBe(true)
+    expect(isMidtransReversalStatus('partial_chargeback')).toBe(true)
+    expect(isMidtransReversalStatus('settlement')).toBe(false)
   })
 })

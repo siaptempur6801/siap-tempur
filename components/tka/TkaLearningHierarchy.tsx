@@ -6,7 +6,6 @@ import {
   BookOpenCheck,
   Calculator,
   CheckCircle2,
-  Clock3,
   Dumbbell,
   LockKeyhole,
   School,
@@ -105,8 +104,8 @@ export default async function TkaLearningHierarchy({
     return (
       <LearningState
         icon={<BookOpenCheck size={22} />}
-        title="Katalog Latihan Fokus Sedang Disiapkan"
-        description="Materi dan bab latihan akan segera tersedia untuk jenjang ini."
+        title="Latihan Fokus belum tersedia"
+        description="Belum ada materi yang bisa dipilih. Cek kembali nanti untuk mulai latihan."
         level={level}
       />
     )
@@ -145,81 +144,75 @@ export default async function TkaLearningHierarchy({
     <section
       id="tka-learning-hierarchy"
       data-testid="tka-learning-hierarchy"
-      className="scroll-mt-6 space-y-8"
+      className="scroll-mt-6 space-y-5"
     >
-      {/* Quick Context & Stats Banner */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-primary">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
-            <Clock3 size={20} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Format Latihan
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Pilih materi latihan</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              10 soal · sekitar 15 menit · Pembahasan setiap soal
             </p>
-            <p className="text-base font-extrabold text-slate-900">10 Soal Fokus</p>
-            <p className="text-xs text-slate-500">±15 menit · Pembahasan instan</p>
           </div>
+          <Link
+            href={`/tka/${level.toLowerCase()}/progress`}
+            className="st-focus inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-semibold text-primary hover:bg-primary-muted"
+          >
+            Lihat perkembangan <BarChart3 size={16} aria-hidden="true" />
+          </Link>
         </div>
+        <nav aria-label="Pilih mata pelajaran" className="flex flex-wrap gap-2">
+          {subjects.map((subject) => (
+            <a
+              key={subject.id}
+              href={`#tka-subject-${subject.id}`}
+              className="st-focus inline-flex min-h-11 items-center rounded-lg border border-border-strong bg-card px-4 text-sm font-semibold text-foreground hover:border-primary hover:bg-primary-muted"
+            >
+              {subject.name}
+            </a>
+          ))}
+          <Link
+            href={`/tka/${level.toLowerCase()}/riwayat`}
+            className="st-focus inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-primary hover:bg-primary-muted"
+          >
+            Lanjutkan sesi dari Riwayat
+          </Link>
+        </nav>
+      </div>
 
-        <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-success">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
-            <CheckCircle2 size={20} />
-          </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+          <CheckCircle2
+            size={21}
+            className="hidden shrink-0 text-success lg:block"
+            aria-hidden="true"
+          />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Materi Dikuasai
-            </p>
-            <p className="text-base font-extrabold text-slate-900">{masteredCount} Topik Kuat</p>
-            <div className="mt-1 flex items-center gap-2">
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+            <p className="text-sm font-semibold text-foreground">{masteredCount} materi dikuasai</p>
+            <div className="mt-2 flex items-center gap-2">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
                 <div
-                  className="h-full rounded-full bg-emerald-500"
+                  className="h-full rounded-full bg-success"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className="text-[11px] font-bold text-emerald-700">{progressPercent}%</span>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {progressPercent}%
+              </span>
             </div>
           </div>
         </div>
-
-        <div className="flex items-center gap-3.5 rounded-2xl border border-border-strong bg-white p-4 shadow-xs transition hover:border-warning">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-slate-950 shadow-xs">
-            <Target size={20} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Prioritas Belajar
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
+          <Target size={21} className="hidden shrink-0 text-warning lg:block" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {needsFocusCount} materi perlu diasah
             </p>
-            <p className="text-base font-extrabold text-slate-900">
-              {needsFocusCount} Perlu Diasah
+            <p className="mt-1 text-sm text-muted-foreground">
+              {notStartedCount} topik belum dicoba
             </p>
-            <p className="text-xs text-slate-500">{notStartedCount} topik belum dicoba</p>
           </div>
         </div>
-      </div>
-
-      {/* Catalog Section Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200/80 pb-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600">
-            <Sparkles size={13} />
-            <span>Katalog Latihan per Bab</span>
-          </div>
-          <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
-            Pilih mata pelajaran, lalu materi
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Pilih materi yang ingin diperkuat untuk meningkatkan pemahaman dan skor tryout.
-          </p>
-        </div>
-        <Link
-          href={`/tka/${level.toLowerCase()}/progress`}
-          className="st-focus inline-flex items-center gap-1.5 rounded-xl bg-slate-50 px-3 py-1.5 text-xs font-bold text-indigo-700 ring-1 ring-slate-200 transition hover:bg-indigo-50 hover:ring-indigo-200"
-        >
-          <span>Lihat Analisis Perkembangan</span>
-          <BarChart3 size={14} aria-hidden="true" />
-        </Link>
       </div>
 
       {/* Subjects and Topic Cards */}
@@ -227,13 +220,14 @@ export default async function TkaLearningHierarchy({
         {subjects.map((subject) => {
           const drills = exactDrills(items.filter((item) => item.subjectId === subject.id))
           const isMath = subject.code.toLowerCase().includes('mat')
-          const isIndo = subject.code.toLowerCase().includes('ind')
+          const isIndo = subject.code === 'BIN' || subject.code.toLowerCase().includes('ind')
 
           return (
             <div
               key={subject.id}
+              id={`tka-subject-${subject.id}`}
               data-testid={`tka-subject-${subject.code.toLowerCase()}`}
-              className="space-y-4"
+              className="scroll-mt-36 space-y-4 md:scroll-mt-6"
             >
               {/* Subject Header Banner */}
               <div
@@ -262,11 +256,8 @@ export default async function TkaLearningHierarchy({
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-extrabold text-slate-950">{subject.name}</h3>
-                      <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-black tracking-wide text-slate-700 ring-1 ring-slate-200/80 shadow-2xs">
-                        {subject.code}
-                      </span>
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-500 font-medium">
+                    <p className="mt-0.5 text-sm text-muted-foreground">
                       {isIndo
                         ? 'Penguasaan wacana teks, ide pokok, penalaran kontekstual, dan kaidah bahasa.'
                         : isMath
@@ -284,7 +275,7 @@ export default async function TkaLearningHierarchy({
 
               {/* Drill Topic Cards Grid */}
               {drills.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 min-[600px]:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                   {drills.map((item) => {
                     const badge = masteryBadge(item)
                     const hasAttempt = item.attemptedQuestions > 0

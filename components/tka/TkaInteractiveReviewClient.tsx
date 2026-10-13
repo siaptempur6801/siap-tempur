@@ -37,7 +37,7 @@ interface Props {
 function practiceLabel(kind: string | null | undefined) {
   if (kind === 'mini_tryout') return 'Mini Tryout'
   if (kind === 'drill') return 'Latihan Fokus'
-  return 'Full Tryout'
+  return 'Tryout'
 }
 
 function groupedOptions(item: UniversalReviewItem) {

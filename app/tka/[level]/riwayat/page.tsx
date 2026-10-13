@@ -98,7 +98,7 @@ function modeView(exam: ExamRow, typeCode: string, typeName: string) {
     }
   }
   return {
-    label: typeName || 'Full Tryout',
+    label: typeName || 'Tryout',
     icon: <ListChecks size={14} />,
     tone: 'bg-brand-ink-soft text-slate-700 ring-1 ring-brand-ink-line',
   }
@@ -331,8 +331,8 @@ export default async function TkaHistoryPage({ params }: { params: Promise<{ lev
                 Belum ada riwayat pengerjaan
               </h3>
               <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500">
-                Mulai dari Tes Diagnostik atau pilih Full Tryout untuk membangun peta kesiapan dan
-                riwayat belajarmu.
+                Mulai dari Tes Diagnostik atau pilih Tryout. Hasil dan sesi yang belum selesai akan
+                muncul di sini.
               </p>
               <Link
                 href={`${base}/diagnostic`}

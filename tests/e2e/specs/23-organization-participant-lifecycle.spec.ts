@@ -567,7 +567,7 @@ test('Organization participant discovers, resumes, submits, and receives the sha
       .from('wallets')
       .select('balance')
       .eq('user_id', participant.userId)
-      .eq('wallet_type', 'exam_token_tka_smp')
+      .eq('wallet_type', 'exam_token_tka')
       .maybeSingle()
     if (tokenBeforeTka.error) throw tokenBeforeTka.error
     originalTkaWallet = {
@@ -685,7 +685,7 @@ test('Organization participant discovers, resumes, submits, and receives the sha
       .from('wallets')
       .select('balance')
       .eq('user_id', participant.userId)
-      .eq('wallet_type', 'exam_token_tka_smp')
+      .eq('wallet_type', 'exam_token_tka')
       .maybeSingle()
     if (tokenAfterTka.error) throw tokenAfterTka.error
     expect(Number(tokenAfterTka.data?.balance ?? 0)).toBe(originalTkaWallet.balance)
@@ -696,12 +696,12 @@ test('Organization participant discovers, resumes, submits, and receives the sha
         .from('wallets')
         .update({ balance: 0 })
         .eq('user_id', participant.userId)
-        .eq('wallet_type', 'exam_token_tka_smp')
+        .eq('wallet_type', 'exam_token_tka')
       if (error) throw error
     } else {
       const { error } = await db
         .from('wallets')
-        .insert({ user_id: participant.userId, wallet_type: 'exam_token_tka_smp', balance: 0 })
+        .insert({ user_id: participant.userId, wallet_type: 'exam_token_tka', balance: 0 })
       if (error) throw error
     }
 
@@ -855,13 +855,13 @@ test('Organization participant discovers, resumes, submits, and receives the sha
           .from('wallets')
           .update({ balance: originalTkaWallet.balance })
           .eq('user_id', participant.userId)
-          .eq('wallet_type', 'exam_token_tka_smp')
+          .eq('wallet_type', 'exam_token_tka')
       } else {
         await db
           .from('wallets')
           .delete()
           .eq('user_id', participant.userId)
-          .eq('wallet_type', 'exam_token_tka_smp')
+          .eq('wallet_type', 'exam_token_tka')
       }
     }
   }

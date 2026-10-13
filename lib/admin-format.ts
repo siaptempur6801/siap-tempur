@@ -91,6 +91,8 @@ export function adminStatusVariant(value: unknown): AdminStatusVariant {
     case 'completed':
       return 'green'
     case 'unavailable':
+    case 'partial_refund_review':
+    case 'partial_chargeback_review':
       return 'yellow'
     case 'blocked':
     case 'blocked_asset':
@@ -118,6 +120,7 @@ export function adminStatusVariant(value: unknown): AdminStatusVariant {
     case 'cancelled':
     case 'expired':
     case 'revoked':
+    case 'chargeback':
     case 'suspended':
       return 'red'
     case 'archived':
@@ -172,6 +175,9 @@ export function adminStatusLabel(value: unknown): string {
     not_started: 'Belum mulai',
     in_progress: 'Mengerjakan',
     paid: 'Lunas',
+    refunded: 'Dana dikembalikan',
+    partial_refund_review: 'Tinjau refund sebagian',
+    partial_chargeback_review: 'Tinjau sengketa sebagian',
     // Status pembayaran Midtrans (sebelumnya tampil mentah dalam bahasa Inggris).
     settlement: 'Selesai',
     capture: 'Tertangkap',
@@ -181,6 +187,7 @@ export function adminStatusLabel(value: unknown): string {
     refund: 'Dana dikembalikan',
     partial_refund: 'Dana dikembalikan sebagian',
     chargeback: 'Sengketa bank',
+    partial_chargeback: 'Sengketa bank sebagian',
   }
   return labels[status] || raw || '—'
 }

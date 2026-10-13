@@ -45,8 +45,8 @@ export default function TkaReadinessCard({
             {level ? `Kesiapan TKA ${level}` : 'Kesiapan belajar'}
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Indikator kesiapan berbasis akumulasi akurasi tryout, latihan bab materi, dan
-            konsistensi perbaikan soal salah.
+            Lihat perkembanganmu dari hasil tryout, latihan per materi, dan soal yang sudah kamu
+            perbaiki.
           </p>
           {showDashboardLink && (
             <Link

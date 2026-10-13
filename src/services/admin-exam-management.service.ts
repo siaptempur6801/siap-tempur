@@ -9,6 +9,7 @@ import {
   validPositive,
 } from '@/src/services/admin-service-utils'
 import type { ProgramTrackContext } from '@/src/services/catalog-context.service'
+import { requiresTkaTokenForActiveAssessment } from '@/src/tka/context'
 
 class AdminExamManagementService {
   async saveExam(input: {
@@ -35,7 +36,17 @@ class AdminExamManagementService {
     if (!input.title.trim()) throw new Error('EXAM_TITLE_REQUIRED')
     if (!validPositive(input.durationSeconds)) throw new Error('EXAM_DURATION_INVALID')
     if (!validPositive(input.attemptLimit)) throw new Error('EXAM_ATTEMPT_LIMIT_INVALID')
-    if (!validNonNegative(input.tokenCost)) throw new Error('EXAM_TOKEN_COST_INVALID')
+    if (!Number.isInteger(input.tokenCost) || !validNonNegative(input.tokenCost)) {
+      throw new Error('EXAM_TOKEN_COST_INVALID')
+    }
+    if (
+      catalog.program.code.toUpperCase() === 'TKA' &&
+      catalog.track.code.toUpperCase() === 'SMP' &&
+      requiresTkaTokenForActiveAssessment('SMP', examType.code, input.status) &&
+      input.tokenCost < 1
+    ) {
+      throw new Error('EXAM_TOKEN_COST_REQUIRED')
+    }
     if (input.startsAt && input.endsAt && Date.parse(input.startsAt) >= Date.parse(input.endsAt))
       throw new Error('EXAM_TIME_INVALID')
     const slug = slugify(input.slug || input.title)

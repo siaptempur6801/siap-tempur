@@ -1,7 +1,7 @@
 # STATUS — Siap Tempur
 
 > **Ini satu-satunya sumber kebenaran status project.**
-> Terakhir diperbarui: **2026-10-12**
+> Terakhir diperbarui: **2026-10-13**
 > Dokumen roadmap/checklist lama bersifat **historis** dan tidak boleh dijadikan acuan status — lihat [Peta dokumen](#peta-dokumen).
 
 ---
@@ -18,6 +18,24 @@ primary key dan indeksnya. Data pengguna, soal, transaksi, jawaban, dan hasil uj
 tidak disalin atau diubah. Riwayat migrasi lama dipertahankan; timestamp penerapan
 remote berbeda dari nama file lokal. Detail dan bukti pemeriksaan ada di
 [catatan sinkronisasi](releases/2026-10-12-database-sync.md).
+
+### Sinkronisasi akses token TKA — 2026-10-13
+
+Dua migration diterapkan berurutan di staging lalu production: `enforce_tka_smp_token_cost`
+dan `reverse_tka_tokens_on_payment_reversal`. Ledger staging: `20261013082343` dan
+`20261013082408`; production: `20261013082430` dan `20261013082447`. Keduanya sehat
+dan aktif. Tiga paket TKA SMP (1/5/10 token) beserta harga dan wallet grant cocok di
+kedua lingkungan. Seluruh 25 assessment TKA SMP aktif (22 drill, 1 tryout penuh,
+2 mini tryout) berbiaya 1 token; trigger mencegah assessment aktif baru tanpa biaya token. RPC reversal
+dibatasi ke `service_role`, memakai `search_path` kosong, dan debit refund idempoten.
+
+Fingerprint read-only objek runtime bersama cocok: 167 fungsi, 110 tabel, 100 policy, 419 indeks,
+20 baris trigger-event, 5 bucket Storage, dan 9 policy Storage. Ledger tetap menyimpan
+riwayat historis yang berbeda: tiga nama migration lama hanya tercatat di staging
+(`learner_overview_read_models`, `learner_reward_totals`, `learner_overview_aggregates`)
+dan sebagian versi remote memang berbeda. Riwayat tidak diperbaiki atau ditulis ulang;
+tidak ada data pengguna, soal, order, saldo, attempt, jawaban, atau hasil ujian yang
+disalin maupun diubah.
 
 Platform tryout/latihan ujian berbasis web (B2C): **CPNS/SKD** dan **TKA** (jenjang sekolah).
 

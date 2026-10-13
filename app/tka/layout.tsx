@@ -2,6 +2,7 @@ import { headers } from 'next/headers'
 import { signout } from '@/app/auth/actions'
 import TkaDashboardShell from '@/components/tka/TkaDashboardShell'
 import { createClient, getAuthUser } from '@/lib/utils/supabase/server'
+import { walletService } from '@/src/services/wallet.service'
 import { isTkaLevelAvailable, parseTkaLevel, type TkaLevel } from '@/src/tka/context'
 
 export const dynamic = 'force-dynamic'
@@ -32,11 +33,18 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
 
   const activeLevel = levelFromPath(pathname)
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('avatar_url, full_name, display_name')
-    .eq('id', user.id)
-    .maybeSingle()
+  const [{ data: profile }, { data: program, error: programError }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('avatar_url, full_name, display_name')
+      .eq('id', user.id)
+      .maybeSingle(),
+    supabase.from('programs').select('id').eq('code', 'TKA').maybeSingle(),
+  ])
+  if (programError) throw programError
+  if (!program) throw new Error('Program TKA tidak ditemukan')
+
+  const tokenBalance = await walletService.getExamTokenBalance(user.id, program.id)
 
   // Script Midtrans Snap sengaja TIDAK dimuat di sini. Satu-satunya halaman TKA
   // yang memakainya adalah alur pembayaran khusus, sehingga tidak dimuat di layout.
@@ -48,6 +56,7 @@ export default async function TkaRootLayout({ children }: { children: React.Reac
         user={user}
         profile={profile}
         level={activeLevel}
+        tokenBalance={tokenBalance}
         signoutAction={signout}
       >
         {children}

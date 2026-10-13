@@ -97,6 +97,32 @@ export default async function OrderDetailPage({
           </div>
         </dl>
       </AdminCard>
+      {['partial_refund_review', 'partial_chargeback_review'].includes(
+        String(order.status).toLowerCase(),
+      ) ? (
+        <AdminCard className="border-warning-border bg-warning-muted p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-semibold text-warning">
+                Perlu tinjauan manual sebelum saldo token disesuaikan
+              </h2>
+              <p className="mt-1 text-sm text-warning">
+                {String(order.status).toLowerCase() === 'partial_refund_review'
+                  ? 'Refund sebagian tercatat. Saldo Token TKA belum berubah otomatis; tinjau jumlah refund dan pemakaian token, lalu sesuaikan secara manual bila diperlukan.'
+                  : 'Sengketa sebagian tercatat. Saldo Token TKA belum berubah otomatis; tinjau kasus dan pemakaian token sebelum melakukan penyesuaian manual.'}
+              </p>
+            </div>
+            {actor.permissions.includes(PERMISSIONS.ENTITLEMENT_MANAGE) ? (
+              <Link
+                className={`${adminSecondaryButtonClass} shrink-0`}
+                href={`/admin/users/access?${new URLSearchParams({ user: String(order.user_id), wallet_type: 'exam_token_tka' })}`}
+              >
+                Buka penyesuaian Token TKA
+              </Link>
+            ) : null}
+          </div>
+        </AdminCard>
+      ) : null}
       <section>
         <h2 className="mb-3 text-base font-semibold">Produk dan harga</h2>
         <AdminCard>

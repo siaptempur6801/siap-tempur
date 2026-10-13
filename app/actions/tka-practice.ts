@@ -79,7 +79,7 @@ function friendlyDrillRpcError(error: unknown) {
     message.includes('question count') ||
     message.includes('question version')
   ) {
-    return 'Konfigurasi soal latihan fokus belum siap.'
+    return 'Soal latihan ini belum siap. Pilih materi lain atau coba lagi nanti.'
   }
   return 'Gagal memulai latihan fokus.'
 }
@@ -101,7 +101,7 @@ function friendlyTkaRpcError(error: unknown, level: string) {
     message.includes('question count') ||
     message.includes('question version')
   ) {
-    return 'Konfigurasi soal tryout belum siap.'
+    return 'Soal tryout ini belum siap. Pilih tryout lain atau coba lagi nanti.'
   }
   return `Tryout TKA ${level} belum dapat dimulai.`
 }
@@ -114,7 +114,7 @@ export async function startTkaDrill(
   try {
     await validateCsrf()
   } catch {
-    return { error: 'Invalid request' }
+    return { error: 'Halaman perlu dimuat ulang. Setelah itu, coba lagi.' }
   }
 
   const level = parseTkaLevel(levelValue)
@@ -126,7 +126,9 @@ export async function startTkaDrill(
     !knowledgeNodeName ||
     knowledgeNodeName.length > 120
   ) {
-    return { error: 'Konfigurasi latihan fokus tidak valid.' }
+    return {
+      error: 'Latihan ini belum bisa dipilih. Muat ulang halaman, lalu pilih materi kembali.',
+    }
   }
 
   const path = tkaLevelPath(level)
@@ -176,16 +178,18 @@ export async function startTkaExam(levelValue: string, examSlugValue: string) {
   try {
     await validateCsrf()
   } catch {
-    return { error: 'Invalid request' }
+    return { error: 'Halaman perlu dimuat ulang. Setelah itu, coba lagi.' }
   }
 
   const level = parseTkaLevel(levelValue)
   const examSlug = examSlugValue.trim().toLowerCase()
   if (!level || !EXAM_SLUG_PATTERN.test(examSlug))
-    return { error: 'Konfigurasi tryout tidak valid.' }
+    return {
+      error: 'Tryout ini belum bisa dipilih. Muat ulang halaman, lalu pilih tryout kembali.',
+    }
   if (!isTkaLevelAvailable(level)) return { error: `Tryout TKA ${level} belum tersedia.` }
   if (level !== 'SMP') {
-    return { error: `Alur pengerjaan tryout TKA ${level} sedang disiapkan.` }
+    return { error: `Tryout TKA ${level} belum tersedia. Silakan cek kembali nanti.` }
   }
 
   const path = tkaLevelPath(level)

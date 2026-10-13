@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   Target,
 } from 'lucide-react'
-import PageHeader from '@/components/ui/PageHeader'
 
 /**
  * Konten halaman **Pilih Jalur khusus CPNS**.
@@ -60,7 +59,7 @@ const LADDER = [
   },
   {
     href: '/cpns/dashboard/tryout',
-    title: 'Full tryout',
+    title: 'Tryout lengkap',
     description: 'Simulasi lengkap berstandar CAT dengan waktu dan susunan subtes penuh.',
     icon: Sparkles,
   },
@@ -69,15 +68,18 @@ const LADDER = [
 export default function CpnsPilihJalurContent() {
   return (
     <div className="space-y-6 md:space-y-8">
-      <PageHeader
-        eyebrow={
-          <>
-            <Compass size={14} aria-hidden="true" /> Pilih jalur CPNS
-          </>
-        }
-        title="Mulai dari satu subtes, lalu naik ke tryout penuh."
-        description="Jalur CPNS menekankan penguasaan SKD. Pilih fokus yang paling perlu dikejar sekarang, kerjakan latihannya, lalu ukur lagi dengan mini tryout atau full tryout."
-      />
+      <header className="rounded-2xl border border-border-strong bg-white p-5 sm:p-6">
+        <p className="inline-flex items-center gap-2 rounded-full bg-primary-muted px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-primary ring-1 ring-info-border">
+          <Compass size={14} aria-hidden="true" /> Pilih jalur CPNS
+        </p>
+        <h1 className="mt-3 text-xl font-bold leading-tight tracking-tight text-foreground sm:text-2xl">
+          Tentukan langkah belajar CPNS berikutnya
+        </h1>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+          Jalur CPNS menekankan penguasaan SKD. Pilih fokus yang paling perlu dikejar sekarang,
+          kerjakan latihannya, lalu ukur lagi dengan mini tryout atau full tryout.
+        </p>
+      </header>
 
       <section aria-labelledby="fokus-skd" className="space-y-3">
         <div>
@@ -88,14 +90,14 @@ export default function CpnsPilihJalurContent() {
             Tiga subtes SKD, masing-masing punya halaman latihan sendiri.
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {SUBTESTS.map((subtest) => {
             const Icon = subtest.icon
             return (
               <Link
                 key={subtest.code}
                 href={subtest.href}
-                className="st-card-md st-focus group flex flex-col p-4 transition-colors hover:border-primary/30 hover:bg-muted/20"
+                className="st-card-md st-focus group flex h-full flex-col p-4 transition duration-200 hover:border-primary/40 hover:bg-muted/20 hover:shadow-md motion-reduce:transition-none"
               >
                 <span
                   className={`flex size-10 items-center justify-center rounded-lg border border-border ${subtest.tone}`}
@@ -119,23 +121,23 @@ export default function CpnsPilihJalurContent() {
       <section aria-labelledby="tangga-latihan" className="space-y-3">
         <div>
           <h2 id="tangga-latihan" className="text-lg font-semibold text-foreground">
-            Tangga latihan
+            Jalur latihan CPNS
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Urutan yang disarankan: kuasai materi, ukur dengan mini tryout, lalu full tryout.
           </p>
         </div>
-        <ol className="grid gap-3 md:grid-cols-3">
+        <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {LADDER.map((step, index) => {
             const Icon = step.icon
             return (
               <li key={step.href}>
                 <Link
                   href={step.href}
-                  className="st-card-md st-focus group flex h-full flex-col p-4 transition-colors hover:border-primary/30 hover:bg-muted/20"
+                  className="st-card-md st-focus group flex h-full flex-col p-4 transition duration-200 hover:border-primary/40 hover:bg-muted/20 hover:shadow-md motion-reduce:transition-none"
                 >
-                  <span className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground">
-                    <span className="flex size-6 items-center justify-center rounded-full bg-muted text-xs tabular-nums">
+                  <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                    <span className="flex size-6 items-center justify-center rounded-md bg-primary-muted text-xs tabular-nums text-primary">
                       {index + 1}
                     </span>
                     Langkah
@@ -153,25 +155,33 @@ export default function CpnsPilihJalurContent() {
         </ol>
       </section>
 
-      <section aria-labelledby="akses-cpns" className="st-card-md p-5">
-        <h2 id="akses-cpns" className="text-lg font-semibold text-foreground">
-          Token CPNS
-        </h2>
-        <p className="mt-2 text-sm font-medium text-slate-600">
-          Sesi tertentu menggunakan token. Saldo token dan riwayat penggunaannya tersedia di profil.
-        </p>
-        <Link
-          href="/cpns/dashboard/beli-paket"
-          className="st-focus mt-3 inline-flex min-h-10 items-center rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground transition hover:opacity-90"
-        >
-          Lihat paket token
-        </Link>
-        <Link
-          href="/tka"
-          className="st-focus ml-2 mt-3 inline-flex min-h-10 items-center rounded-xl border border-border px-4 py-2 text-xs font-bold text-foreground transition hover:bg-muted"
-        >
-          Buka jalur TKA
-        </Link>
+      <section
+        aria-labelledby="akses-cpns"
+        className="flex flex-col gap-4 rounded-2xl border border-border-strong bg-white p-5 sm:p-6 xl:flex-row xl:items-center xl:justify-between"
+      >
+        <div className="max-w-2xl">
+          <h2 id="akses-cpns" className="text-lg font-semibold text-foreground">
+            Token CPNS
+          </h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            Sesi tertentu menggunakan token. Saldo token dan riwayat penggunaannya tersedia di
+            profil.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/cpns/dashboard/beli-paket"
+            className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 motion-reduce:transition-none"
+          >
+            Lihat paket token
+          </Link>
+          <Link
+            href="/tka"
+            className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted motion-reduce:transition-none"
+          >
+            Buka jalur TKA
+          </Link>
+        </div>
       </section>
     </div>
   )

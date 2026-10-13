@@ -10,8 +10,8 @@ export default function TkaFeatureNotice({
   description,
   actionHref,
   actionLabel,
-  noticeTitle = 'Konten jenjang ini sedang disiapkan',
-  noticeDescription = `Gunakan riwayat atau katalog evaluasi TKA ${level} untuk melanjutkan kegiatan belajar.`,
+  noticeTitle = 'Belum tersedia untuk jenjang ini',
+  noticeDescription = `Kamu bisa melihat kegiatan belajar TKA ${level} yang tersedia dari Ringkasan, atau membuka hasil sebelumnya di Riwayat.`,
 }: {
   level: TkaLevel
   title: string

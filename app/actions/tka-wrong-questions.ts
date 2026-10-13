@@ -1,7 +1,6 @@
 'use server'
 
 import { validateCsrf } from '@/lib/csrf'
-import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { tkaWrongQuestionService } from '@/src/services/tka-wrong-question.service'
 
@@ -29,10 +28,6 @@ export async function reviewTkaWrongQuestion(input: {
     await validateCsrf()
   } catch {
     return { error: 'Invalid request' }
-  }
-
-  if (env.appEnvironment() === 'production') {
-    return { error: 'Mode ulang soal salah belum tersedia di production.' }
   }
 
   const optionIds = Array.from(new Set(input.optionIds))

@@ -65,7 +65,7 @@ test('TKA SMP diagnostic maps seven competencies and drives the first focused dr
     ).toBeVisible()
   }
 
-  await expect(page.getByText('Baseline tersimpan', { exact: true })).toBeVisible()
+  await expect(page.getByText('Hasil tes tersimpan', { exact: true })).toBeVisible()
   await expect(page.getByText(/28 soal dipetakan/i)).toBeVisible()
   await expect(
     page.getByRole('heading', { name: 'Mulai dari prioritas utama', exact: true }),

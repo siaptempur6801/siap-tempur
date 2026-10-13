@@ -49,7 +49,7 @@ function formatDuration(startedAt: string | null, submittedAt: string | null) {
 function practiceLabel(kind: string | null | undefined) {
   if (kind === 'mini_tryout') return 'Mini Tryout'
   if (kind === 'drill') return 'Latihan Fokus'
-  return 'Full Tryout'
+  return 'Tryout'
 }
 
 function formatSubjectTitle(code: string) {
@@ -474,8 +474,8 @@ export default async function TkaResultPage({
               </h2>
               <p className="mt-1 text-sm font-semibold text-slate-500">
                 {level === 'SMP'
-                  ? 'Pilih Mini Tryout atau Full Tryout berikutnya saat kamu sudah siap.'
-                  : `Alur Mini Tryout dan Full Tryout TKA ${level} masih disiapkan. Kamu bisa membuka hasil ini lagi dari riwayat.`}
+                  ? 'Pilih Mini Tryout atau Tryout berikutnya saat kamu sudah siap.'
+                  : `Mini Tryout dan Tryout TKA ${level} belum tersedia. Kamu bisa membuka hasil ini lagi dari riwayat.`}
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">

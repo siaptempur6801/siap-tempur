@@ -24,6 +24,7 @@ const FINAL_NON_SUCCESS_STATUSES = new Set([
   'chargeback',
   'partial_chargeback',
 ])
+const REVERSAL_STATUSES = new Set(['refund', 'partial_refund', 'chargeback', 'partial_chargeback'])
 
 export function normalizeMidtransStatus(value: unknown) {
   return typeof value === 'string'
@@ -43,6 +44,10 @@ export function isMidtransSuccessStatus(value: unknown) {
 
 export function isMidtransFinalNonSuccessStatus(value: unknown) {
   return FINAL_NON_SUCCESS_STATUSES.has(normalizeMidtransStatus(value))
+}
+
+export function isMidtransReversalStatus(value: unknown) {
+  return REVERSAL_STATUSES.has(normalizeMidtransStatus(value))
 }
 
 export function canonicalMidtransStatus(value: unknown) {

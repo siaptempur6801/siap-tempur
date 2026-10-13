@@ -3,38 +3,45 @@ import { ArrowRight, Ticket } from 'lucide-react'
 
 export default function TkaTokenAccessSummary({
   tokenBalance,
-  tokenCost = 1,
+  tokenCost,
   href,
 }: {
   tokenBalance: number
   tokenCost?: number
   href: string
 }) {
-  const canStart = tokenBalance >= tokenCost
-
   return (
     <section
       aria-label="Informasi token TKA"
-      className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 rounded-xl border border-border-strong bg-card p-4 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-6"
     >
-      <div className="flex min-w-0 items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white">
+      <div className="flex shrink-0 items-center gap-3">
+        <span className="hidden size-10 shrink-0 items-center justify-center rounded-lg bg-primary-muted text-primary min-[390px]:flex">
           <Ticket size={18} aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <p className="font-bold text-slate-950">
-            {tokenCost} token TKA untuk sesi baru
-          </p>
-          <p className="mt-0.5 text-sm leading-relaxed text-slate-700">
-            Saldo kamu {tokenBalance} token. Melanjutkan sesi aktif tidak memakai token lagi.
+          <p className="text-sm font-medium text-muted-foreground">Saldo Token TKA</p>
+          <p className="mt-0.5 text-2xl font-bold tabular-nums text-foreground">
+            {tokenBalance} <span className="text-sm font-medium text-muted-foreground">token</span>
           </p>
         </div>
       </div>
+      <div className="col-span-2 row-start-2 min-w-0 border-t border-border pt-3 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0">
+        <p className="text-sm font-semibold text-foreground">
+          {tokenCost
+            ? `${tokenCost} token untuk satu sesi baru`
+            : 'Gunakan token saat mulai sesi baru'}
+        </p>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          {!tokenCost && 'Kebutuhan token tertera di setiap pilihan. '}
+          Sesi yang masih berjalan bisa dilanjutkan tanpa token tambahan.
+        </p>
+      </div>
       <Link
         href={href}
-        className="st-focus inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-300 bg-white px-4 py-2 text-sm font-bold text-indigo-800 transition hover:bg-indigo-100"
+        className="st-focus col-start-2 row-start-1 inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover lg:col-start-3"
       >
-        {canStart ? 'Kelola token' : 'Beli token'}
+        {tokenBalance > 0 ? 'Tambah Token' : 'Beli Token'}
         <ArrowRight size={16} aria-hidden="true" />
       </Link>
     </section>

@@ -1,7 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import MidtransSnapScript from '@/components/payments/MidtransSnapScript'
 import TokenPackagesPage from '@/components/dashboard/TokenPackagesPage'
-import PageHeader from '@/components/ui/PageHeader'
 import { createV2Client } from '@/lib/utils/supabase/server'
 import { walletService } from '@/src/services/wallet.service'
 import { isTkaLevelAvailable, parseTkaLevel, tkaContext, tkaLevelPath } from '@/src/tka/context'
@@ -29,9 +28,7 @@ export default async function TkaBuyTokensPage({ params }: { params: Promise<{ l
     .eq('code', context.programCode)
     .maybeSingle()
   if (error) throw error
-  const tokenBalance = program
-    ? await walletService.getExamTokenBalance(user.id, program.id)
-    : 0
+  const tokenBalance = program ? await walletService.getExamTokenBalance(user.id, program.id) : 0
 
   return (
     <main
@@ -41,11 +38,6 @@ export default async function TkaBuyTokensPage({ params }: { params: Promise<{ l
     >
       <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
         <MidtransSnapScript />
-        <PageHeader
-          eyebrow="Akses belajar · TKA SMP"
-          title="Beli Token TKA"
-          description="Gunakan token TKA untuk memulai Tryout, Mini Tryout, dan Latihan Fokus. Sesi aktif bisa dilanjutkan tanpa potongan token tambahan."
-        />
         <TokenPackagesPage program="TKA" level={level} tokenBalance={tokenBalance} />
       </div>
     </main>

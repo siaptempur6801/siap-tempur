@@ -65,6 +65,8 @@ function friendlyError(error: unknown) {
     EXAM_DURATION_INVALID: 'Durasi exam harus lebih dari 0 detik.',
     EXAM_ATTEMPT_LIMIT_INVALID: 'Batas percobaan harus lebih dari 0.',
     EXAM_TOKEN_COST_INVALID: 'Biaya token exam tidak valid.',
+    EXAM_TOKEN_COST_REQUIRED:
+      'Tryout, Mini Tryout, dan Drill TKA SMP aktif membutuhkan minimal 1 token.',
     SUBJECT_INVALID: 'Subtes tidak valid untuk context aktif.',
     DRILL_KNOWLEDGE_NODE_INVALID: 'Submateri Drill tidak cocok dengan subtes yang dipilih.',
     DRILL_KNOWLEDGE_NODE_INACTIVE: 'Submateri Drill sedang tidak aktif.',

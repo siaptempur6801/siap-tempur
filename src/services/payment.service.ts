@@ -3,6 +3,7 @@ import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import {
   canonicalMidtransStatus,
+  isMidtransReversalStatus,
   isMidtransSuccessStatus,
   isSupportedMidtransStatus,
   normalizeFraudStatus,
@@ -362,13 +363,31 @@ class PaymentService {
       rawResponse: asJson(input.payload),
     })
 
+    if (isMidtransReversalStatus(status)) {
+      await commerceService.applyTkaTokenReversal({
+        orderId: canonicalOrderId,
+        eventId: input.eventId,
+        status,
+        rawResponse: asJson(input.payload),
+      })
+    }
+
     const { error: processedError } = await admin
       .from('payment_webhook_events')
       .update({ processed: true, processed_at: new Date().toISOString() })
       .eq('id', webhookId)
     if (processedError) throw processedError
 
-    return { alreadyProcessed: false, paid: isMidtransSuccessStatus(status) }
+    const orderWasReversed = [
+      'refunded',
+      'chargeback',
+      'partial_refund_review',
+      'partial_chargeback_review',
+    ].includes(orderStatus)
+    return {
+      alreadyProcessed: false,
+      paid: isMidtransSuccessStatus(status) && !orderWasReversed,
+    }
   }
 }
 

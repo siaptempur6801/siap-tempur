@@ -24,7 +24,7 @@ function diagnosticError(error: unknown) {
     message.includes('question count') ||
     message.includes('question version')
   ) {
-    return 'Konfigurasi soal diagnostik belum siap.'
+    return 'Tes diagnostik belum siap. Silakan coba lagi nanti.'
   }
   return 'Tes diagnostik belum dapat dimulai.'
 }
@@ -33,7 +33,7 @@ export async function startTkaSmpDiagnostic() {
   try {
     await validateCsrf()
   } catch {
-    return { error: 'Invalid request' }
+    return { error: 'Halaman perlu dimuat ulang. Setelah itu, coba lagi.' }
   }
 
   const supabase = await createClient()

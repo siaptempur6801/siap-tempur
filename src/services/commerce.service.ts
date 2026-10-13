@@ -376,6 +376,22 @@ class CommerceService {
     if (error) throw error
   }
 
+  async applyTkaTokenReversal(input: {
+    orderId: string
+    eventId: string
+    status: string
+    rawResponse: Json
+  }) {
+    const admin = await createAdminClient()
+    const { error } = await admin.rpc('reverse_tka_token_order', {
+      p_order_id: input.orderId,
+      p_event_id: input.eventId,
+      p_status: input.status,
+      p_raw_response: input.rawResponse,
+    })
+    if (error) throw error
+  }
+
   async getEventOffer(eventId: string) {
     const untyped = await createAdminClient()
     const { data: mapping, error: mappingError } = await untyped

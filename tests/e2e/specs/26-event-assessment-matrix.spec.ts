@@ -123,7 +123,7 @@ test('Event runs CPNS Mini/Drill and TKA SMP Mini/Drill through isolated assessm
       .from('wallets')
       .select('balance')
       .eq('user_id', participant.userId)
-      .eq('wallet_type', 'exam_token_tka_smp')
+      .eq('wallet_type', 'exam_token_tka')
       .maybeSingle()
     if (walletBefore.error) throw walletBefore.error
     originalTkaWallet = {
@@ -135,12 +135,12 @@ test('Event runs CPNS Mini/Drill and TKA SMP Mini/Drill through isolated assessm
         .from('wallets')
         .update({ balance: 0 })
         .eq('user_id', participant.userId)
-        .eq('wallet_type', 'exam_token_tka_smp')
+        .eq('wallet_type', 'exam_token_tka')
       if (error) throw error
     } else {
       const { error } = await db
         .from('wallets')
-        .insert({ user_id: participant.userId, wallet_type: 'exam_token_tka_smp', balance: 0 })
+        .insert({ user_id: participant.userId, wallet_type: 'exam_token_tka', balance: 0 })
       if (error) throw error
     }
     const admin = await provisionRoleUser(supabaseUrl, 'ADMIN')
@@ -341,13 +341,13 @@ test('Event runs CPNS Mini/Drill and TKA SMP Mini/Drill through isolated assessm
           .from('wallets')
           .update({ balance: originalTkaWallet.balance })
           .eq('user_id', participant.userId)
-          .eq('wallet_type', 'exam_token_tka_smp')
+          .eq('wallet_type', 'exam_token_tka')
       } else {
         await db
           .from('wallets')
           .delete()
           .eq('user_id', participant.userId)
-          .eq('wallet_type', 'exam_token_tka_smp')
+          .eq('wallet_type', 'exam_token_tka')
       }
     }
   }

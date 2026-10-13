@@ -11,6 +11,7 @@ import {
 import { AdminFormActions } from '@/components/admin/forms/AdminFormActions'
 import { AdminFormSection } from '@/components/admin/forms/AdminFormSection'
 import { adminExamTypeLabel, adminStatusLabel } from '@/lib/admin-format'
+import { isTkaTokenAssessment } from '@/src/tka/context'
 import { Pencil, Save } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
@@ -125,6 +126,10 @@ export default function AssessmentForm({
   const needsManualDrillSelection = Boolean(
     isDrill && editedExam && editedSection && !drillRule && !initialNode,
   )
+  const requiresTkaToken =
+    program.toUpperCase() === 'TKA' &&
+    track.toUpperCase() === 'SMP' &&
+    isTkaTokenAssessment('SMP', examTypeCode)
   const poolTooSmall =
     isDrill && (!selectedNode || questionCount > selectedNode.availableQuestionCount)
 
@@ -389,12 +394,19 @@ export default function AssessmentForm({
               </select>
             </AdminField>
 
-            <AdminField label="Biaya token" hint="Isi 0 jika assessment tidak memakai token.">
+            <AdminField
+              label="Biaya token"
+              hint={
+                requiresTkaToken
+                  ? 'Assessment TKA SMP yang aktif memakai minimal 1 token per sesi.'
+                  : 'Isi 0 jika assessment tidak memakai token.'
+              }
+            >
               <input
                 className={adminInputClass}
                 name="token_cost"
                 type="number"
-                min="0"
+                min={requiresTkaToken ? '1' : '0'}
                 defaultValue={editedExam?.token_cost ?? 0}
               />
             </AdminField>

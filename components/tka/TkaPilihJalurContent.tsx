@@ -29,19 +29,20 @@ const LADDER = [
   {
     path: '/focus',
     title: 'Latihan fokus',
-    description: 'Latihan terarah per materi, termasuk mengulang soal yang pernah salah.',
+    description: 'Pilih materi yang ingin kamu kuasai. Setiap sesi baru memakai 1 token.',
     icon: Dumbbell,
   },
   {
     path: '/mini-tryout',
     title: 'Mini tryout',
-    description: 'Sesi singkat per mata pelajaran untuk mengukur kesiapan.',
+    description: 'Uji pemahaman satu mata pelajaran. Gunakan token saat memulai sesi baru.',
     icon: Timer,
   },
   {
     path: '/tryout',
-    title: 'Full tryout',
-    description: 'Simulasi lengkap sesuai komposisi ujian jenjang ini.',
+    title: 'Tryout lengkap',
+    description:
+      'Latih kesiapanmu dengan semua bagian ujian. Kebutuhan token terlihat sebelum mulai.',
     icon: ListChecks,
   },
 ] as const
@@ -108,12 +109,12 @@ export default function TkaPilihJalurContent({ level }: { level: TkaLevel }) {
                       ? step.title
                       : step.path === '/mini-tryout'
                         ? 'Status Mini Tryout'
-                        : 'Status Full Tryout'}
+                        : 'Status Tryout'}
                   </span>
                   <span className="mt-1.5 text-xs font-medium leading-relaxed text-slate-600">
                     {level === 'SMP'
                       ? step.description
-                      : `Lihat kesiapan alur ${step.path === '/mini-tryout' ? 'mini tryout' : 'full tryout'} TKA ${level}.`}
+                      : `Lihat ketersediaan ${step.path === '/mini-tryout' ? 'mini tryout' : 'full tryout'} TKA ${level}.`}
                   </span>
                 </Link>
               </li>
@@ -128,7 +129,7 @@ export default function TkaPilihJalurContent({ level }: { level: TkaLevel }) {
             Evaluasi hasil
           </h2>
           <p className="mt-1 text-xs font-semibold text-slate-500">
-            Pakai data pengerjaanmu untuk memutuskan langkah berikutnya.
+            Lihat hasilmu, pelajari soal yang masih sulit, lalu pilih latihan berikutnya.
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
@@ -153,12 +154,26 @@ export default function TkaPilihJalurContent({ level }: { level: TkaLevel }) {
         </div>
       </section>
 
-      <Link
-        href="/cpns/dashboard/pilih-jalur"
-        className="st-focus inline-flex min-h-10 items-center gap-2 rounded-xl border border-border-strong bg-white px-4 py-2 text-xs font-black text-slate-700 transition hover:bg-slate-50"
+      <section
+        aria-labelledby="jalur-cpns"
+        className="flex flex-col gap-4 rounded-2xl border border-border-strong bg-white p-5 sm:p-6 xl:flex-row xl:items-center xl:justify-between"
       >
-        Buka jalur CPNS
-      </Link>
+        <div className="max-w-2xl">
+          <h2 id="jalur-cpns" className="text-lg font-semibold text-foreground">
+            Jalur CPNS
+          </h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+            Jalur CPNS menekankan penguasaan SKD. Pilih fokus yang paling perlu dikejar sekarang,
+            kerjakan latihannya, lalu ukur lagi dengan mini tryout atau full tryout.
+          </p>
+        </div>
+        <Link
+          href="/cpns/dashboard/pilih-jalur"
+          className="st-focus inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted motion-reduce:transition-none"
+        >
+          Buka jalur CPNS
+        </Link>
+      </section>
     </div>
   )
 }

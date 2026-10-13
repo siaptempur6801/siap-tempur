@@ -52,8 +52,8 @@ export default async function TkaDiagnosticPage({
         level={level}
         title={`Tes diagnostik TKA ${level}`}
         description={`Tes diagnostik terstruktur untuk TKA ${level} belum tersedia. Kamu tetap bisa memilih evaluasi yang tersedia untuk jenjang ini.`}
-        actionHref={`${base}/tryout`}
-        actionLabel="Lihat katalog evaluasi"
+        actionHref={base}
+        actionLabel="Kembali ke Ringkasan"
       />
     )
   }
@@ -129,7 +129,7 @@ export default async function TkaDiagnosticPage({
               <PageHeader
                 eyebrow={
                   <>
-                    <BrainCircuit size={14} aria-hidden="true" /> Baseline Kemampuan · TKA {level}
+                    <BrainCircuit size={14} aria-hidden="true" /> Kenali kemampuanmu · TKA {level}
                   </>
                 }
                 title={`Tes Diagnostik TKA ${level}`}
@@ -168,7 +168,7 @@ export default async function TkaDiagnosticPage({
                         <span>Lihat Hasil & Rekomendasi Diagnostik</span>
                       </Link>
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
-                        <CheckCircle2 size={14} /> Baseline tersimpan
+                        <CheckCircle2 size={14} /> Hasil tes tersimpan
                       </span>
                     </div>
                   ) : (
@@ -245,7 +245,7 @@ export default async function TkaDiagnosticPage({
               <Step
                 icon={<BarChart3 size={18} className="text-emerald-600" />}
                 title="Hasil Analisis Personal"
-                description="Peta baseline 7 kompetensi + 3 prioritas materi drill pertama"
+                description="Hasil 7 kemampuan utama dan 3 saran materi untuk Latihan Fokus"
               />
             </div>
           </article>

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { tkaLevelFromPathname } from '@/src/tka/context'
+import {
+  isTkaTokenEnabled,
+  isTkaTokenAssessment,
+  requiresTkaTokenForActiveAssessment,
+  tkaLevelFromPathname,
+} from '@/src/tka/context'
 
 describe('jenjang TKA dari pathname', () => {
   it('mengenali halaman jenjang dan sub-halamannya', () => {
@@ -15,5 +20,22 @@ describe('jenjang TKA dari pathname', () => {
     expect(tkaLevelFromPathname('/cpns/dashboard')).toBeNull()
     expect(tkaLevelFromPathname(null)).toBeNull()
     expect(tkaLevelFromPathname(undefined)).toBeNull()
+  })
+})
+
+describe('cakupan token TKA', () => {
+  it('hanya menandai SMP sebagai jenjang dengan token aktif', () => {
+    expect(isTkaTokenEnabled('SMP')).toBe(true)
+    expect(isTkaTokenEnabled('SD')).toBe(false)
+    expect(isTkaTokenEnabled('SMA')).toBe(false)
+  })
+
+  it('mewajibkan minimal 1 token hanya untuk sesi langsung yang aktif atau terjadwal', () => {
+    expect(requiresTkaTokenForActiveAssessment('SMP', 'FULL_TRYOUT', 'active')).toBe(true)
+    expect(requiresTkaTokenForActiveAssessment('SMP', 'DRILL', 'scheduled')).toBe(true)
+    expect(requiresTkaTokenForActiveAssessment('SMP', 'DIAGNOSTIC', 'active')).toBe(false)
+    expect(requiresTkaTokenForActiveAssessment('SMP', 'MINI_TRYOUT', 'draft')).toBe(false)
+    expect(requiresTkaTokenForActiveAssessment('SD', 'FULL_TRYOUT', 'active')).toBe(false)
+    expect(isTkaTokenAssessment('SMA', 'FULL_TRYOUT')).toBe(false)
   })
 })

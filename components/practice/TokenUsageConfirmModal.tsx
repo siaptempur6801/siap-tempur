@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingState'
 
 type TokenUsageConfirmModalProps = {
   isOpen: boolean
+  heading?: string
   title: string
   description: string
   details: Array<{ label: string; value: string | number }>
@@ -22,6 +23,7 @@ type TokenUsageConfirmModalProps = {
 
 export default function TokenUsageConfirmModal({
   isOpen,
+  heading = 'Konfirmasi Token',
   title,
   description,
   details,
@@ -49,7 +51,7 @@ export default function TokenUsageConfirmModal({
         <div className="flex items-center gap-3">
           <Ticket className="h-5 w-5 shrink-0 text-amber-800" aria-hidden="true" />
           <h2 id={titleId} className="text-lg font-bold text-gray-900">
-            Konfirmasi Token
+            {heading}
           </h2>
         </div>
         <button
@@ -93,18 +95,18 @@ export default function TokenUsageConfirmModal({
           <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
             <div className="flex items-center gap-2 text-blue-700">
               <Ticket size={16} />
-              <p className="text-xs font-semibold">Token Saat Ini</p>
+              <p className="text-sm font-semibold">Saldo saat ini</p>
             </div>
             <p className="mt-1 text-xl font-bold text-gray-900">{quota}</p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-600">Setelah Mulai</p>
+            <p className="text-sm font-semibold text-slate-600">Sisa setelah sesi baru</p>
             <p className="mt-1 text-xl font-bold text-gray-900">{remainingQuota}</p>
           </div>
         </div>
 
-        <p className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 font-sans text-xs font-bold leading-relaxed text-gray-500">
-          Token hanya dipakai untuk sesi baru. Kalau sesi sudah tersimpan, lanjutkan sesi tidak
+        <p className="rounded-xl border border-border bg-muted px-3 py-2 text-sm leading-relaxed text-muted-foreground">
+          Token dipakai saat sesi baru berhasil dimulai. Melanjutkan sesi yang masih berjalan tidak
           memakai token tambahan.
         </p>
       </div>

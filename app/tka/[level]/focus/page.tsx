@@ -29,9 +29,9 @@ export default async function TkaFocusPage({ params }: { params: Promise<{ level
       <TkaFeatureNotice
         level={level}
         title={`Latihan fokus TKA ${level}`}
-        description={`Materi latihan bertingkat TKA ${level} belum tersedia di katalog.`}
-        actionHref={`${base}/tryout`}
-        actionLabel="Lihat katalog evaluasi"
+        description={`Latihan Fokus TKA ${level} belum tersedia. Cek kembali nanti untuk berlatih per materi.`}
+        actionHref={base}
+        actionLabel="Kembali ke Ringkasan"
       />
     )
   }
@@ -71,27 +71,24 @@ export default async function TkaFocusPage({ params }: { params: Promise<{ level
       data-program={`tka-${level.toLowerCase()}`}
       className="min-h-screen px-4 py-6 md:px-8 md:py-8"
     >
-      <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
+      <div className="mx-auto max-w-6xl space-y-5">
         <PageHeader
-          className="border-b border-slate-200/80 pb-6"
+          className="pb-1"
           eyebrow={
             <>
               <Dumbbell size={14} aria-hidden="true" /> Latihan Fokus · TKA {level}
             </>
           }
           title="Latihan Fokus per Materi"
-          description="Pilih bab atau materi yang ingin kamu perkuat. Setiap sesi berisi 10 butir soal terarah dengan pembahasan instan untuk mematangkan konsep."
+          description="Pilih materi yang ingin kamu kuasai. Gunakan 1 token untuk latihan 10 soal, lalu pelajari pembahasannya."
         />
 
         <TkaTokenAccessSummary
           tokenBalance={tokenBalance}
+          tokenCost={1}
           href={`${base}/beli-token`}
         />
-        <TkaLearningHierarchy
-          activeTrack={activeTrack}
-          level={level}
-          tokenBalance={tokenBalance}
-        />
+        <TkaLearningHierarchy activeTrack={activeTrack} level={level} tokenBalance={tokenBalance} />
       </div>
     </main>
   )

@@ -2,7 +2,8 @@
 
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Play } from 'lucide-react'
+import Link from 'next/link'
+import { Play, Ticket } from 'lucide-react'
 import { toast } from 'sonner'
 import { startTkaExam } from '@/app/actions/tka-practice'
 import { trackProductEvent } from '@/lib/product-analytics'
@@ -113,28 +114,45 @@ export default function TkaStartExamButton({
     : hasActiveAttempt
       ? `Lanjutkan ${practiceType}`
       : disabledReason || `Mulai ${practiceType} · ${tokenCost} token`
+  const needsTokens = !hasActiveAttempt && !disabledReason && tokenBalance < tokenCost
+  const actionClassName =
+    'st-focus inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-center text-sm font-semibold leading-snug text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground'
 
   return (
     <div className="mt-5">
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={(!hasActiveAttempt && Boolean(disabledReason)) || loading}
-        title={
-          hasActiveAttempt
-            ? `Lanjutkan ${practiceType.toLowerCase()} yang sedang berjalan`
-            : disabledReason || `Mulai ${practiceType.toLowerCase()} dengan ${tokenCost} token`
-        }
-        aria-describedby={errorMessage ? `${examSlug}-start-error` : undefined}
-        className="st-focus inline-flex min-h-11 w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-black leading-tight text-white shadow-none transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-700 disabled:shadow-none"
-      >
-        {loading ? (
-          <LoadingSpinner label="Menyiapkan sesi TKA" size="sm" />
-        ) : (
-          <Play size={17} className="shrink-0" aria-hidden="true" />
-        )}
-        <span className="min-w-0 whitespace-normal break-words">{label}</span>
-      </button>
+      {needsTokens ? (
+        <Link href={`/tka/${level.toLowerCase()}/beli-token`} className={actionClassName}>
+          <Ticket size={17} className="shrink-0" aria-hidden="true" />
+          Beli Token untuk Mulai
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={handleClick}
+          disabled={(!hasActiveAttempt && Boolean(disabledReason)) || loading}
+          title={
+            hasActiveAttempt
+              ? `Lanjutkan ${practiceType.toLowerCase()} yang sedang berjalan`
+              : disabledReason || `Mulai ${practiceType.toLowerCase()} dengan ${tokenCost} token`
+          }
+          aria-describedby={errorMessage ? `${examSlug}-start-error` : undefined}
+          className={actionClassName}
+        >
+          {loading ? (
+            <LoadingSpinner label="Menyiapkan sesi TKA" size="sm" />
+          ) : (
+            <Play size={17} className="shrink-0" aria-hidden="true" />
+          )}
+          <span className="min-w-0 whitespace-normal break-words">{label}</span>
+        </button>
+      )}
+      {hasActiveAttempt || needsTokens ? (
+        <p className="mt-2 text-center text-sm leading-relaxed text-muted-foreground">
+          {hasActiveAttempt
+            ? 'Lanjutkan tanpa token tambahan.'
+            : `Butuh ${tokenCost} token untuk sesi ini. Saldo kamu ${tokenBalance} token.`}
+        </p>
+      ) : null}
       {errorMessage && (
         <p
           id={`${examSlug}-start-error`}
@@ -146,8 +164,9 @@ export default function TkaStartExamButton({
       )}
       <TokenUsageConfirmModal
         isOpen={showTokenConfirm}
+        heading="Gunakan token untuk sesi ini?"
         title={`Mulai ${examTitle}`}
-        description={`Sesi baru memakai ${tokenCost} token TKA. Melanjutkan sesi aktif tidak memakai token tambahan.`}
+        description={`Gunakan ${tokenCost} token TKA untuk memulai sesi ini. Sesi yang masih berjalan bisa dilanjutkan tanpa token tambahan.`}
         details={[
           { label: 'Jenis sesi', value: practiceType },
           { label: 'Biaya sesi baru', value: `${tokenCost} token` },

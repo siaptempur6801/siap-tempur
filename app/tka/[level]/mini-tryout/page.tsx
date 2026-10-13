@@ -7,7 +7,7 @@ import {
   Calculator,
   Clock3,
   Timer,
-  Zap,
+  Ticket,
 } from 'lucide-react'
 import TkaStartExamButton from '@/components/tka/TkaStartExamButton'
 import { createV2Client } from '@/lib/utils/supabase/server'
@@ -105,7 +105,7 @@ function getSubjectConfig(slug: string, title: string) {
     iconBg: 'bg-slate-100 text-slate-600',
     icon: <Timer size={18} />,
     chipIcon: <Timer size={12} className="text-slate-600" />,
-    topics: ['Latihan Fokus', 'Standar CAT', 'Simpan Otomatis'],
+    topics: [],
     description:
       'Latihan ringkas berstandar ujian untuk mengukur penguasaan materi per mata pelajaran.',
   }
@@ -126,11 +126,11 @@ export default async function TkaMiniTryoutPage({
       <TkaFeatureNotice
         level={level}
         title={`Mini Tryout TKA ${level}`}
-        description={`Latihan singkat TKA ${level} sedang dirapikan agar pengerjaan, hasil, dan riwayatnya berjalan utuh.`}
-        actionHref={`${base}/tryout`}
-        actionLabel="Lihat status tryout"
-        noticeTitle="Alur mini tryout sedang disiapkan"
-        noticeDescription={`Mini tryout TKA ${level} belum dapat dimulai. Lihat status tryout jenjang ini atau kembali ke dashboard.`}
+        description={`Mini Tryout TKA ${level} belum tersedia. Cek kembali nanti untuk latihan per mata pelajaran.`}
+        actionHref={base}
+        actionLabel="Kembali ke Ringkasan"
+        noticeTitle="Mini Tryout belum tersedia"
+        noticeDescription="Sambil menunggu, buka Ringkasan untuk melihat kegiatan belajar dan hasil yang sudah kamu kerjakan."
       />
     )
   }
@@ -162,9 +162,7 @@ export default async function TkaMiniTryoutPage({
       .maybeSingle(),
     supabase
       .from('exams')
-      .select(
-        'id, exam_type_id, title, slug, duration_seconds, token_cost, starts_at, ends_at',
-      )
+      .select('id, exam_type_id, title, slug, duration_seconds, token_cost, starts_at, ends_at')
       .eq('program_id', program.id)
       .eq('track_id', track.id)
       .in('status', ['active', 'ACTIVE', 'scheduled', 'SCHEDULED'])
@@ -222,7 +220,6 @@ export default async function TkaMiniTryoutPage({
   )
   const activeTrack = userTrack?.status.toLowerCase() === 'active'
   const miniTryouts: TryoutOption[] = miniTryoutExams.map((exam) => {
-    const type = examTypeById.get(String(exam.exam_type_id))
     const slug = String(exam.slug)
     const tokenCost = Math.max(1, Number(exam.token_cost ?? 1))
     const sections = sectionsByExam.get(String(exam.id)) ?? []
@@ -237,7 +234,7 @@ export default async function TkaMiniTryoutPage({
       id: String(exam.id),
       title: String(exam.title),
       slug,
-      typeLabel: String(type?.name || type?.code || 'Mini Tryout'),
+      typeLabel: 'Mini Tryout',
       duration,
       questionCount,
       accessLabel: `${tokenCost} token per sesi baru`,
@@ -251,7 +248,6 @@ export default async function TkaMiniTryoutPage({
       activeAttemptId: activeAttemptByExam.get(String(exam.id)) ?? null,
     }
   })
-  const miniTryoutExample = miniTryouts[0]
 
   return (
     <main
@@ -259,20 +255,16 @@ export default async function TkaMiniTryoutPage({
       data-program={`tka-${level.toLowerCase()}`}
       className="min-h-screen px-4 py-6 md:px-8 md:py-8"
     >
-      <div className="mx-auto max-w-6xl space-y-6 md:space-y-8">
+      <div className="mx-auto max-w-6xl space-y-5">
         <PageHeader
-          className="border-b border-slate-200/80 pb-6"
+          className="pb-1"
           eyebrow={
             <>
               <Timer size={14} aria-hidden="true" /> Mini Tryout · TKA {level}
             </>
           }
           title="Mini Tryout per Mata Pelajaran"
-          description={
-            miniTryoutExample
-              ? `Ukur penguasaan per mata pelajaran melalui paket${miniTryoutExample.questionCount ? ` ${miniTryoutExample.questionCount} butir` : ''}${miniTryoutExample.duration ? ` selama ${miniTryoutExample.duration} menit` : ''}. Cocok untuk evaluasi berkala dan menemukan topik yang perlu diperdalam.`
-              : `Paket evaluasi per mata pelajaran untuk TKA ${level} sedang disiapkan.`
-          }
+          description="Pilih mata pelajaran untuk mengukur kemampuanmu dalam sesi yang lebih singkat."
         />
 
         <TkaTokenAccessSummary tokenBalance={tokenBalance} href={`${base}/beli-token`} />
@@ -295,34 +287,29 @@ export default async function TkaMiniTryoutPage({
 
         {/* Mini Tryout Subject Cards */}
         <section aria-labelledby="mini-tryout-list" className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 id="mini-tryout-list" className="text-xl font-bold text-slate-950">
-                Pilih Paket Ujian
+                Pilih Mini Tryout
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Pilih mata pelajaran yang ingin kamu uji secara terpisah hari ini.
               </p>
             </div>
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-              {miniTryouts.length} modul aktif
+              {miniTryouts.length} pilihan
             </span>
           </div>
 
           {miniTryouts.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 items-stretch">
+            <div className="grid items-stretch gap-4 lg:grid-cols-2">
               {miniTryouts.map((exam) => {
                 const config = getSubjectConfig(exam.slug, exam.title)
                 return (
                   <article
                     key={exam.id}
-                    className={`relative flex flex-col justify-between overflow-hidden rounded-3xl ${config.cardBorder} bg-white p-6 shadow-md shadow-blue-950/5 ring-1 ring-indigo-500/5 transition-all duration-200 hover:shadow-lg sm:p-7`}
+                    className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border-strong bg-card p-4 shadow-xs sm:p-5"
                   >
-                    {/* Ambient decorative glow in card corner */}
-                    <div
-                      className={`pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br ${config.glowColor} blur-2xl`}
-                    />
-
                     <div className="relative z-10 space-y-4">
                       {/* Top Bar: Subject Badge + Access / Status */}
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
@@ -335,29 +322,20 @@ export default async function TkaMiniTryoutPage({
                           </span>
                           <MetaChip text={exam.accessLabel} tone={exam.accessTone} />
                         </div>
-                        {exam.activeAttemptId ? (
+                        {exam.activeAttemptId && (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-700 ring-1 ring-amber-500/30">
                             <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                             Sesi Berjalan
                           </span>
-                        ) : (
-                          <div
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${config.iconBg}`}
-                          >
-                            {config.icon}
-                          </div>
                         )}
                       </div>
 
                       {/* Title & Description */}
                       <div>
-                        <p className="text-[11px] font-black uppercase tracking-wider text-indigo-600">
-                          {exam.typeLabel}
-                        </p>
                         <h3 className="mt-1 text-lg font-extrabold tracking-tight text-slate-950 sm:text-xl">
                           {exam.title}
                         </h3>
-                        <p className="mt-1 text-xs leading-relaxed text-slate-600 sm:text-sm">
+                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                           {config.description}
                         </p>
                       </div>
@@ -367,58 +345,60 @@ export default async function TkaMiniTryoutPage({
                         <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-center">
                           <div className="flex items-center justify-center gap-1 text-indigo-600">
                             <Clock3 size={13} />
-                            <span className="text-[10px] font-bold uppercase text-slate-500">
+                            <span className="text-xs font-medium text-muted-foreground">
                               Durasi
                             </span>
                           </div>
                           <p className="mt-1 text-sm font-extrabold text-slate-900">
                             {exam.duration ?? '—'}{' '}
-                            <span className="text-[11px] font-medium text-slate-500">menit</span>
+                            <span className="text-xs font-medium text-muted-foreground">menit</span>
                           </p>
                         </div>
 
                         <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-center">
                           <div className="flex items-center justify-center gap-1 text-indigo-600">
                             <BookOpenCheck size={13} />
-                            <span className="text-[10px] font-bold uppercase text-slate-500">
+                            <span className="text-xs font-medium text-muted-foreground">
                               Jumlah
                             </span>
                           </div>
                           <p className="mt-1 text-sm font-extrabold text-slate-900">
                             {exam.questionCount || '—'}{' '}
-                            <span className="text-[11px] font-medium text-slate-500">butir</span>
+                            <span className="text-xs font-medium text-muted-foreground">butir</span>
                           </p>
                         </div>
 
                         <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 text-center">
                           <div className="flex items-center justify-center gap-1 text-indigo-600">
-                            <Zap size={13} />
-                            <span className="text-[10px] font-bold uppercase text-slate-500">
-                              Sistem
-                            </span>
+                            <Ticket size={15} aria-hidden="true" />
+                            <span className="text-xs font-semibold text-slate-600">Token</span>
                           </div>
-                          <p className="mt-1 text-sm font-extrabold text-slate-900">CAT</p>
+                          <p className="mt-1 text-sm font-bold text-slate-900">
+                            {exam.tokenCost} token
+                          </p>
                         </div>
                       </div>
 
                       {/* Focus Topics */}
-                      <div className="space-y-1.5 pt-1">
-                        <p className="text-[11px] font-bold text-slate-700">Cakupan Materi:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {config.topics.map((topic) => (
-                            <span
-                              key={topic}
-                              className="rounded-md border border-slate-200/80 bg-slate-50/80 px-2 py-0.5 text-[11px] font-medium text-slate-600"
-                            >
-                              {topic}
-                            </span>
-                          ))}
+                      {config.topics.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <p className="text-sm font-semibold text-foreground">Cakupan Materi:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {config.topics.map((topic) => (
+                              <span
+                                key={topic}
+                                className="rounded-md border border-slate-200/80 bg-slate-50/80 px-2 py-0.5 text-xs font-medium text-muted-foreground"
+                              >
+                                {topic}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Start Button */}
-                    <div className="relative z-10 mt-5 border-t border-slate-100 pt-2">
+                    <div className="relative z-10 mt-5 border-t border-border pt-4 [&>div]:mt-0">
                       <TkaStartExamButton
                         level={level}
                         examSlug={exam.slug}
@@ -440,7 +420,6 @@ export default async function TkaMiniTryoutPage({
             />
           )}
         </section>
-
       </div>
     </main>
   )

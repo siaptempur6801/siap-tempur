@@ -58,9 +58,7 @@ export default async function TkaDiagnosticResultPage({
     .eq('code', 'TKA')
     .maybeSingle()
   if (programError) throw programError
-  const tokenBalance = program
-    ? await walletService.getExamTokenBalance(user.id, program.id)
-    : 0
+  const tokenBalance = program ? await walletService.getExamTokenBalance(user.id, program.id) : 0
 
   const { data: attempt } = await supabase
     .from('exam_attempts')
@@ -197,7 +195,7 @@ export default async function TkaDiagnosticResultPage({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200/70">
             <CheckCircle2 size={14} className="text-emerald-600" />
-            Baseline tersimpan
+            Hasil tes tersimpan
           </span>
           <Link
             href={`${base}/diagnostic`}
@@ -216,11 +214,11 @@ export default async function TkaDiagnosticResultPage({
                 </>
               }
               title="Peta kemampuan awalmu sudah siap."
-              description="Ini bukan nilai kelulusan. Baseline ini membantu menentukan kompetensi yang paling berguna untuk diperkuat lebih dulu."
+              description="Gunakan hasil ini untuk memilih materi yang perlu dilatih lebih dulu. Skor ini menunjukkan kemampuan awalmu, bukan nilai kelulusan."
             />
           </div>
           <div className="st-card bg-muted/50 p-5 text-center">
-            <div className="text-xs font-medium text-muted-foreground">Baseline keseluruhan</div>
+            <div className="text-xs font-medium text-muted-foreground">Kemampuan awal</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums tracking-tight text-foreground">
               {overall.toFixed(0)}%
             </div>
@@ -254,7 +252,7 @@ export default async function TkaDiagnosticResultPage({
               Peta kompetensi
             </p>
             <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
-              7 kompetensi, satu baseline yang mudah dibaca
+              Kenali kemampuanmu di 7 bidang
             </h2>
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -323,9 +321,8 @@ export default async function TkaDiagnosticResultPage({
                 Mulai dari prioritas utama
               </h2>
               <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground leading-relaxed">
-                Kerjakan prioritas pertama terlebih dahulu. Setelah punya bukti belajar baru,
-                rekomendasi diagnostik akan digantikan oleh rekomendasi berbasis perkembangan
-                aktual.
+                Mulai dari materi prioritas pertama. Saran belajar akan mengikuti perkembanganmu
+                setelah kamu menyelesaikan latihan berikutnya.
               </p>
             </div>
           </div>
@@ -382,7 +379,7 @@ export default async function TkaDiagnosticResultPage({
                         </span>
                         {competency && (
                           <span className="text-xs font-bold text-slate-600">
-                            Baseline {Number(competency.baseline_score).toFixed(0)}%
+                            Skor awal {Number(competency.baseline_score).toFixed(0)}%
                           </span>
                         )}
                       </div>
@@ -422,7 +419,7 @@ export default async function TkaDiagnosticResultPage({
               <CircleAlert size={16} /> Langkah berikutnya
             </div>
             <h2 className="mt-1.5 text-xl font-black text-slate-900">
-              Gunakan baseline ini, lalu kumpulkan bukti belajar nyata.
+              Sudah tahu titik awalmu? Saatnya berlatih.
             </h2>
             <p className="mt-1 text-sm font-semibold text-slate-500 leading-relaxed">
               Mulai dari Latihan Fokus rekomendasi di atas. Hasil latihan akan memperbarui

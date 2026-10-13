@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useId, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -12,10 +13,14 @@ import {
   History,
   LayoutDashboard,
   ListChecks,
+  Menu,
+  X,
+  Ticket,
   Timer,
   User,
 } from 'lucide-react'
 import { NavItem, MobileNavItem } from '@/components/dashboard/NavItem'
+import DialogSurface from '@/components/ui/DialogSurface'
 import TkaSurfaceLink from '@/components/tka/TkaSurfaceLink'
 import SidebarSignoutButton from '@/components/dashboard/SidebarSignoutButton'
 import styles from '@/components/tka/TkaLearning.module.css'
@@ -25,6 +30,7 @@ import { parseTkaLevel } from '@/src/tka/context'
 interface TkaDashboardShellProps {
   children: React.ReactNode
   level: 'SD' | 'SMP' | 'SMA'
+  tokenBalance?: number
   user: {
     id: string
     email?: string
@@ -44,11 +50,18 @@ interface TkaDashboardShellProps {
 export default function TkaDashboardShell({
   children,
   level: initialLevel,
+  tokenBalance = 0,
   user,
   profile,
   signoutAction,
 }: TkaDashboardShellProps) {
   const pathname = usePathname()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuTitleId = useId()
+  const contentRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0
+  }, [pathname])
   const levelFromPath = pathname?.match(/^\/tka\/(sd|smp|sma)(?:\/|$)/i)?.[1]
   const level = parseTkaLevel(levelFromPath) ?? initialLevel
   const basePath = `/tka/${level.toLowerCase()}`
@@ -58,10 +71,65 @@ export default function TkaDashboardShell({
   const isRemedialSession = /^\/tka\/(?:sd|smp|sma)\/remedial\/[^/]+$/i.test(pathname)
   const isFocusedSession =
     isTryoutSession || isDiagnosticSession || isRemedialSession || isReviewSession
-  const isTryoutArea =
-    pathname.startsWith(`${basePath}/tryout`) || pathname.startsWith(`${basePath}/mini-tryout`)
   const hasSmpLearningTools = level === 'SMP'
   const featureHref = (path: string) => `${basePath}${path}`
+
+  const navigation = [
+    {
+      label: 'Menu utama',
+      items: [
+        { href: basePath, label: 'Ringkasan', icon: LayoutDashboard, exact: true },
+        ...(hasSmpLearningTools
+          ? [
+              { href: featureHref('/diagnostic'), label: 'Tes Diagnostik', icon: BrainCircuit },
+              { href: featureHref('/focus'), label: 'Latihan Fokus', icon: Dumbbell },
+            ]
+          : []),
+        { href: featureHref('/mini-tryout'), label: 'Mini Tryout', icon: Timer },
+        { href: featureHref('/tryout'), label: 'Tryout', icon: ListChecks },
+        { href: featureHref('/riwayat'), label: 'Riwayat & Hasil', icon: History },
+        ...(hasSmpLearningTools
+          ? [
+              {
+                href: featureHref('/wrong-questions'),
+                label: 'Bank Soal Salah',
+                icon: BookOpenCheck,
+              },
+              { href: featureHref('/progress'), label: 'Perkembangan', icon: BarChart3 },
+            ]
+          : []),
+      ],
+    },
+    {
+      label: 'Akun & akses',
+      items: [
+        { href: featureHref('/pilih-jalur'), label: 'Pilih Jalur', icon: Compass },
+        ...(hasSmpLearningTools
+          ? [{ href: featureHref('/beli-token'), label: 'Beli Token', icon: Ticket }]
+          : []),
+        { href: featureHref('/profile'), label: 'Profil', icon: User },
+      ],
+    },
+  ]
+
+  const navigationItems = navigation.map((group) => (
+    <div
+      key={group.label}
+      className="space-y-1 border-border first:border-0 [&+&]:mt-3 [&+&]:border-t [&+&]:pt-3"
+    >
+      <p className="px-3 pb-1 text-xs font-medium text-muted-foreground">{group.label}</p>
+      {group.items.map((item) => (
+        <NavItem
+          key={item.href}
+          variant="soft"
+          href={item.href}
+          label={item.label}
+          icon={<item.icon size={17} />}
+          exact={'exact' in item && item.exact}
+        />
+      ))}
+    </div>
+  ))
 
   if (isFocusedSession) {
     return (
@@ -101,7 +169,7 @@ export default function TkaDashboardShell({
       className={`${styles.learning} flex h-dvh overflow-hidden bg-slate-50/60 font-body text-slate-950`}
       style={learnerSurface}
     >
-      <aside className="relative z-20 hidden w-[16rem] min-h-0 flex-col border-r border-slate-200/80 bg-white md:flex">
+      <aside className="relative z-20 hidden w-[15.75rem] shrink-0 min-h-0 flex-col border-r border-slate-200/80 bg-white md:flex">
         <div className="shrink-0 border-b border-slate-100 px-4 pb-3.5 pt-4">
           <div className="flex items-center justify-between">
             <TkaSurfaceLink
@@ -122,165 +190,68 @@ export default function TkaDashboardShell({
             </span>
           </div>
           <div className="mt-3">
-            <TkaLevelSwitcher activeLevel={level} />
+            <TkaLevelSwitcher activeLevel={level} compact />
           </div>
         </div>
 
         <nav
-          className="flex min-h-0 flex-1 flex-col overflow-y-auto px-2.5 py-3 scrollbar-none space-y-2.5"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3"
           aria-label={`Navigasi TKA ${level}`}
         >
-          <div>
-            <p className="mb-1 px-2.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
-              Pusat Belajar
-            </p>
-            <div className="space-y-1">
-              <NavItem
-                variant="soft"
-                href={basePath}
-                icon={<LayoutDashboard size={17} />}
-                label="Ringkasan"
-                exact
-              />
-              {hasSmpLearningTools ? (
-                <>
-                  <NavItem
-                    variant="soft"
-                    href={featureHref('/diagnostic')}
-                    icon={<BrainCircuit size={17} />}
-                    label="Tes Diagnostik"
-                  />
-                  <NavItem
-                    variant="soft"
-                    href={featureHref('/focus')}
-                    icon={<Dumbbell size={17} />}
-                    label="Latihan Fokus"
-                  />
-                  <NavItem
-                    variant="soft"
-                    href={featureHref('/mini-tryout')}
-                    icon={<Timer size={17} />}
-                    label="Mini Tryout"
-                  />
-                  <NavItem
-                    variant="soft"
-                    href={featureHref('/tryout')}
-                    icon={<ListChecks size={17} />}
-                    label="Tryout"
-                  />
-                </>
-              ) : (
-                <>
-                  <NavItem
-                    variant="soft"
-                    href={featureHref('/mini-tryout')}
-                    icon={<Timer size={17} />}
-                    label="Mini Tryout"
-                  />
-                  <NavItem
-                    variant="soft"
-                    href={featureHref('/tryout')}
-                    icon={<ListChecks size={17} />}
-                    label="Tryout"
-                  />
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="border-t border-dashed border-slate-200 pt-2.5">
-            <p className="mb-1 px-2.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
-              Evaluasi
-            </p>
-            <div className="space-y-1">
-              <NavItem
-                variant="soft"
-                href={featureHref('/riwayat')}
-                icon={<History size={17} />}
-                label="Riwayat"
-              />
-              {hasSmpLearningTools && (
-                <>
-                  <NavItem
-                    variant="soft"
-                    href={featureHref('/wrong-questions')}
-                    icon={<BookOpenCheck size={17} />}
-                    label="Bank Soal Salah"
-                  />
-                  <NavItem
-                    variant="soft"
-                    href={featureHref('/progress')}
-                    icon={<BarChart3 size={17} />}
-                    label="Perkembangan"
-                  />
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="border-t border-dashed border-slate-200 pt-2.5">
-            <p className="mb-1 px-2.5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600">
-              Akun & Akses
-            </p>
-            <div className="space-y-1">
-              <NavItem
-                variant="soft"
-                href={`${basePath}/pilih-jalur`}
-                icon={<Compass size={17} />}
-                label="Pilih Jalur"
-              />
-              <NavItem
-                variant="soft"
-                href={`${basePath}/profile`}
-                icon={<User size={17} />}
-                label="Profil Siswa"
-              />
-            </div>
-          </div>
+          {navigationItems}
         </nav>
 
-        <div className="shrink-0 border-t border-slate-100 p-3">
-          <div className="rounded-2xl border border-border-strong bg-white p-3 shadow-xs">
-            <div className="flex items-center gap-3">
-              <Link
-                href={`${basePath}/profile`}
-                aria-label="Buka profil"
-                className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[var(--brand-blue-50)] text-sm font-bold text-blue-700 transition hover:scale-105"
-              >
-                {profile?.avatar_url ? (
-                  <Image
-                    src={profile.avatar_url}
-                    alt="Foto profil"
-                    fill
-                    className="object-cover"
-                    sizes="40px"
-                  />
-                ) : (
-                  <span>{user.email?.[0]?.toUpperCase() || '?'}</span>
-                )}
-              </Link>
-              <div className="min-w-0 flex-1">
+        <div className="shrink-0 border-t border-border p-3">
+          <div className="flex items-center gap-2.5 rounded-xl border border-border-strong bg-white p-2.5 shadow-xs">
+            <Link
+              href={`${basePath}/profile`}
+              aria-label="Buka profil"
+              className="st-focus relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-muted text-sm font-semibold text-foreground"
+            >
+              {profile?.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt="Foto profil"
+                  fill
+                  className="object-cover"
+                  sizes="36px"
+                />
+              ) : (
+                <span>{user.email?.[0]?.toUpperCase() || '?'}</span>
+              )}
+            </Link>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
+              {hasSmpLearningTools ? (
+                <Link
+                  href={`${basePath}/beli-token`}
+                  aria-label={`Saldo TKA ${tokenBalance} token. Beli Token TKA`}
+                  className="st-focus mt-0.5 inline-flex min-h-9 items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+                >
+                  <Ticket size={12} aria-hidden="true" /> {tokenBalance} token tersisa
+                </Link>
+              ) : (
                 <Link
                   href={`${basePath}/profile`}
-                  className="block truncate text-xs font-bold text-slate-900 hover:text-indigo-600 transition-colors"
+                  className="st-focus mt-0.5 inline-flex min-h-9 items-center text-xs font-semibold text-primary hover:underline"
                 >
-                  {displayName}
+                  Profil siswa
                 </Link>
-              </div>
+              )}
             </div>
-            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-              <SidebarSignoutButton
-                signoutAction={signoutAction}
-                redirectTo="/tka"
-                program="tka"
-                variant="soft"
-              />
-            </div>
+          </div>
+          <div className="mt-1.5 flex justify-end">
+            <SidebarSignoutButton
+              signoutAction={signoutAction}
+              redirectTo="/tka"
+              program="tka"
+              variant="soft"
+            />
           </div>
         </div>
       </aside>
 
-      <div className="relative min-w-0 flex-1 overflow-y-auto pb-24 md:pb-0">
+      <div ref={contentRef} className="relative min-w-0 flex-1 overflow-y-auto pb-24 md:pb-0">
         <div className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl md:hidden">
           <div className="flex h-14 items-center justify-between px-4">
             <TkaSurfaceLink
@@ -295,23 +266,27 @@ export default function TkaDashboardShell({
               .
             </TkaSurfaceLink>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-[var(--brand-blue-50)] px-2 py-0.5 text-[10px] font-bold text-blue-700">
-                TKA
-              </span>
-              <Link
-                href={`${basePath}/profile`}
-                aria-label="Buka profil"
-                title="Profil dan pengaturan"
-                className="st-focus flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-[var(--brand-blue-50)] hover:text-blue-700"
+              {hasSmpLearningTools && (
+                <Link
+                  href={`${basePath}/beli-token`}
+                  aria-label={`Saldo TKA ${tokenBalance} token. Beli Token TKA`}
+                  aria-current={pathname === `${basePath}/beli-token` ? 'page' : undefined}
+                  className="st-focus inline-flex min-h-11 min-w-11 flex-col items-center justify-center gap-0.5 rounded-lg bg-primary-muted px-2 text-primary hover:bg-primary hover:text-primary-foreground"
+                >
+                  <Ticket size={16} aria-hidden="true" />
+                  <span className="text-xs font-semibold tabular-nums">{tokenBalance} token</span>
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => setMenuOpen(true)}
+                aria-label="Buka semua menu TKA"
+                aria-haspopup="dialog"
+                aria-expanded={menuOpen}
+                className="st-focus flex size-11 items-center justify-center rounded-lg border border-border bg-card text-foreground"
               >
-                <User size={17} />
-              </Link>
-              <SidebarSignoutButton
-                signoutAction={signoutAction}
-                redirectTo="/tka"
-                program="tka"
-                compact
-              />
+                <Menu size={20} aria-hidden="true" />
+              </button>
             </div>
           </div>
           <div className="px-3 pb-2.5">
@@ -323,92 +298,90 @@ export default function TkaDashboardShell({
       </div>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200/80 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(13,43,69,0.04)] backdrop-blur-xl md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
         aria-label="Navigasi utama TKA"
       >
-        <div
-          className={`grid ${hasSmpLearningTools ? 'grid-cols-6' : 'grid-cols-5'} gap-1 px-2 py-1.5`}
-        >
+        <div className="grid grid-cols-5 gap-1 px-2 py-1.5">
+          <MobileNavItem
+            variant="soft"
+            href={basePath}
+            icon={<LayoutDashboard size={20} />}
+            label="Ringkasan"
+            exact
+          />
           {hasSmpLearningTools ? (
-            <>
-              <MobileNavItem
-                variant="soft"
-                href={basePath}
-                icon={<LayoutDashboard size={20} />}
-                label={<>Ringka&shy;san</>}
-                exact
-              />
-              <MobileNavItem
-                variant="soft"
-                href={featureHref('/diagnostic')}
-                icon={<BrainCircuit size={20} />}
-                label={<>Diagno&shy;stik</>}
-              />
-              <MobileNavItem
-                variant="soft"
-                href={featureHref('/focus')}
-                icon={<Dumbbell size={20} />}
-                label="Latihan"
-              />
-              <MobileNavItem
-                variant="soft"
-                active={isTryoutArea}
-                href={featureHref('/tryout')}
-                icon={<ListChecks size={20} />}
-                label="Tryout"
-              />
-              <MobileNavItem
-                variant="soft"
-                href={featureHref('/riwayat')}
-                icon={<History size={20} />}
-                label="Riwayat"
-              />
-              <MobileNavItem
-                variant="soft"
-                href={featureHref('/wrong-questions')}
-                icon={<BookOpenCheck size={20} />}
-                label="Soal Salah"
-              />
-            </>
+            <MobileNavItem
+              variant="soft"
+              href={featureHref('/focus')}
+              icon={<Dumbbell size={20} />}
+              label="Latihan"
+            />
           ) : (
-            <>
-              <MobileNavItem
-                variant="soft"
-                href={basePath}
-                icon={<LayoutDashboard size={20} />}
-                label={<>Ringka&shy;san</>}
-                exact
-              />
-              <MobileNavItem
-                variant="soft"
-                active={pathname.startsWith(`${basePath}/mini-tryout`)}
-                href={featureHref('/mini-tryout')}
-                icon={<Timer size={20} />}
-                label="Mini Tryout"
-              />
-              <MobileNavItem
-                variant="soft"
-                active={pathname.startsWith(`${basePath}/tryout`)}
-                href={featureHref('/tryout')}
-                icon={<ListChecks size={20} />}
-                label="Tryout"
-              />
-              <MobileNavItem
-                variant="soft"
-                href={featureHref('/riwayat')}
-                icon={<History size={20} />}
-                label="Riwayat"
-              />
-              <MobileNavItem
-                variant="soft"
-                href={`${basePath}/profile`}
-                icon={<User size={20} />}
-                label="Profil"
-              />
-            </>
+            <MobileNavItem
+              variant="soft"
+              href={featureHref('/pilih-jalur')}
+              icon={<Compass size={20} />}
+              label="Jalur"
+            />
           )}
+          <MobileNavItem
+            variant="soft"
+            href={featureHref('/mini-tryout')}
+            icon={<Timer size={20} />}
+            label="Mini Tryout"
+          />
+          <MobileNavItem
+            variant="soft"
+            href={featureHref('/tryout')}
+            icon={<ListChecks size={20} />}
+            label="Tryout"
+          />
+          <MobileNavItem
+            variant="soft"
+            href={featureHref('/riwayat')}
+            icon={<History size={20} />}
+            label="Hasil"
+          />
         </div>
       </nav>
+
+      <DialogSurface
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        labelledBy={menuTitleId}
+        className="max-w-sm border border-border font-body"
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-2">
+          <h2 id={menuTitleId} className="text-base font-bold text-foreground">
+            Menu TKA {level}
+          </h2>
+          <button
+            type="button"
+            aria-label="Tutup menu"
+            onClick={() => setMenuOpen(false)}
+            className="st-focus flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+        <nav
+          aria-label="Semua menu TKA"
+          className="p-3"
+          onClick={(event) => {
+            if (event.target instanceof Element && event.target.closest('a')) setMenuOpen(false)
+          }}
+        >
+          {navigationItems}
+        </nav>
+        <div className="border-t border-border px-4 py-3">
+          <SidebarSignoutButton
+            signoutAction={signoutAction}
+            redirectTo="/tka"
+            program="tka"
+            variant="soft"
+          />
+        </div>
+      </DialogSurface>
     </div>
   )
 }
