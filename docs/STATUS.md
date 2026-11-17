@@ -28,16 +28,23 @@ Halaman privat (dashboard, admin, `/tka/<jenjang>/**`, onboarding, persetujuan, 
 instansi, verifikasi sertifikat) memakai `noindex` dan diblokir `robots.txt`.
 
 Audit menyeluruh dan perbaikannya ada di [`docs/audits/AUDIT_2026-11-17.md`](audits/AUDIT_2026-11-17.md)
-(branch `audit/2026-11-17`, belum di-merge). Butir yang menunggu tindakan pemilik:
+(branch `audit/2026-11-17`, sudah di `main`). Diselesaikan 2026-11-17: ketiga migration audit
+(`20261117090000`, `20261117100000`, `20261117110000`) ter-apply dan tercatat di ledger staging &
+production; skrip verifikasi read-only bersih (tanpa grant kunci jawaban, tanpa RPC server-only yang
+dapat dipanggil klien, tanpa SECURITY DEFINER tak terpin, 0 tabel `public` tanpa RLS);
+`HEALTH_CHECK_TOKEN` terpasang di Vercel Production dan terverifikasi; `/api/health` dengan token
+menunjukkan `rateLimitStore: "redis"`.
 
-- Jalankan `scripts/db-verify/audit-2026-11-17-readonly.sql` di staging lalu production.
-- Apply migration `20261117090000_scope_ranking_reads_and_drop_unused_write_policies.sql`
-  ke staging dulu; migration menggagalkan diri bila ACL live memberi hak tulis ke `authenticated`.
-- Set `HEALTH_CHECK_TOKEN` (production) dan, bila perlu, `ALLOWED_DEV_ORIGINS` di `.env.local`.
-- Pastikan kotak surat `halo@siaptempur.id` aktif — dipakai di Kebijakan Privasi dan S&K.
-- Apply migration `20261117100000_retain_anonymized_transactions_on_account_delete.sql` sebelum
-  atau bersamaan dengan deploy: keputusan pemilik — transaksi disimpan, data pribadinya dianonimkan
-  saat akun dihapus; Kebijakan Privasi baru sudah menyatakan perilaku ini.
+Masih menunggu tindakan pemilik:
+
+- **Deploy otomatis Vercel**: tim Vercel (paket Hobby) hanya punya satu anggota tanpa koneksi GitHub,
+  sehingga push ke `main` repo `8shagrid/siap-tempur` diblokir ("Git author … must have access").
+  Hubungkan akun GitHub yang dipakai untuk commit di Vercel → Account Settings → Authentication.
+  Sampai itu selesai, deploy production lewat `vercel deploy --prod` dari ekspor `git archive`.
+- Pastikan kotak surat `halo@siaptempur.id` ada di Hostinger (MX/SPF domain sudah benar).
+- Hapus `SUPABASE_DB_PASSWORD` dan `DATABASE_URL` dari env Vercel Production bila tidak dipakai
+  (kode aplikasi tidak membacanya); rotasi bila pernah terpapar.
+- Aktifkan 2FA akun Vercel.
 
 ### Sinkronisasi database — 2026-10-12
 
@@ -918,7 +925,7 @@ Daftar historis; domain publik sudah aktif (lihat Bagian 1, 2026-11-17). Butir y
 - [x] Regression test kebocoran kunci jawaban berjalan di CI — `answer-key-access-contract` + `acl-sensitive-objects-contract` (unit, dijalankan job CI; 2026-11-17).
 - [x] Enforcement timer ujian server-side (2026-09-16).
 - [x] Critical user journey diverifikasi di browser: publik (30 test) + ber-auth (30 test: login → onboarding → dashboard, seluruh route CPNS/TKA).
-- [ ] Rate limit efektif lintas instance: env Upstash terpasang di staging & produksi.
+- [x] Rate limit efektif lintas instance: production terverifikasi `rateLimitStore: "redis"` lewat `/api/health` bertoken (2026-11-17); Preview tercatat redis pada Round 8.
 - [x] Verifikasi header IP tepercaya di deployment nyata (2026-09-16) — header palsu tidak menang.
 - [ ] (Disarankan) Product Experience V1.1 selesai.
 
