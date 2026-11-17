@@ -32,10 +32,12 @@ dan `VERCEL_ENV=preview` → staging.
 | `CSP_REPORT_URI` | opsional | opsional | Endpoint laporan pelanggaran CSP |
 | `HEALTH_CHECK_TOKEN` | disarankan | — | `Authorization: Bearer …` membuka detail `/api/health` (commit SHA, store rate limit) di production; tanpa token publik hanya melihat `status` |
 
-**Rate limit.** Di production, limiter auth/payment bersifat **fail-closed**:
-tanpa Upstash atau saat Upstash gagal, permintaan dianggap terkena limit
-(`lib/api-utils.ts`). Artinya env Upstash yang hilang membuat login/daftar
-ditolak, bukan sekadar tidak terlindungi. `/api/health` melaporkan
+**Rate limit.** Di production, limiter pembayaran dan aksi auth yang mengirim
+email (lupa kata sandi, kirim ulang verifikasi) bersifat **fail-closed**: tanpa
+Upstash atau saat Upstash gagal, permintaan dianggap terkena limit
+(`lib/api-utils.ts`). Login dan daftar jatuh ke limiter memori per-instance
+(keputusan 2026-11-17, audit B-06), sehingga gangguan Redis tidak mematikan login;
+rate limit Supabase Auth tetap menjadi lapis terluar. `/api/health` melaporkan
 `rateLimitStore: "unconfigured"` dan status 503 untuk kondisi ini, tetapi tidak
 melakukan ping ke Redis. Di luar production, limiter jatuh ke memori
 per-instance.

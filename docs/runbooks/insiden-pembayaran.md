@@ -75,10 +75,9 @@ Perbarui bila alurnya berubah. Rujukan kode ada di setiap langkah.
 
 - Midtrans down: checkout gagal dengan pesan "Terjadi kesalahan sistem…"; order ditandai `failed`.
   Tidak ada data yang perlu dipulihkan.
-- Upstash down di production: limiter auth/pembayaran **fail-closed** → login, daftar, checkout,
-  dan cek status pembayaran oleh peserta ditolak seolah terkena rate limit. Webhook dan cron
-  tidak terdampak.
-  Pengerjaan ujian fail-open (tetap jalan).
+- Upstash down di production: checkout dan cek status pembayaran oleh peserta, serta lupa kata
+  sandi/kirim ulang verifikasi, ditolak seolah terkena rate limit (fail-closed). Login dan daftar
+  tetap jalan memakai limiter memori. Webhook dan cron tidak terdampak. Pengerjaan ujian fail-open.
 - Supabase down: `/api/health` 503. Webhook menjawab 500 dan Midtrans mengulang notifikasi;
   setelah pulih, notifikasi ulang + cron menyelesaikan order.
 
