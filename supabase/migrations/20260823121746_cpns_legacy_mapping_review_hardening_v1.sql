@@ -154,7 +154,9 @@ WHERE
   AND (r.secondary_node_code IS NULL
     OR skn.id IS NOT NULL);
 
-COMMENT ON VIEW app_private.cpns_legacy_import_ready IS 'Only raw-staged CPNS legacy questions with an explicit reviewed mapping and valid same-subject knowledge nodes. Importers must consume this view rather than infer mappings from legacy categories.'; CREATE OR REPLACE VIEW app_private.cpns_legacy_mapping_review_summary AS
+COMMENT ON VIEW app_private.cpns_legacy_import_ready IS 'Only raw-staged CPNS legacy questions with an explicit reviewed mapping and valid same-subject knowledge nodes. Importers must consume this view rather than infer mappings from legacy categories.';
+
+CREATE OR REPLACE VIEW app_private.cpns_legacy_mapping_review_summary AS
 SELECT
   subject_code,
   review_status,
@@ -165,7 +167,9 @@ GROUP BY
   subject_code,
   review_status;
 
-COMMENT ON VIEW app_private.cpns_legacy_mapping_review_summary IS 'Operational summary of the manual CPNS legacy mapping review registry.'; REVOKE ALL ON FUNCTION app_private.validate_cpns_legacy_mapping_review () FROM public;
+COMMENT ON VIEW app_private.cpns_legacy_mapping_review_summary IS 'Operational summary of the manual CPNS legacy mapping review registry.';
+
+REVOKE ALL ON FUNCTION app_private.validate_cpns_legacy_mapping_review () FROM public;
 
 REVOKE ALL ON app_private.cpns_legacy_import_ready FROM public;
 

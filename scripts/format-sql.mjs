@@ -2,18 +2,44 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const checkOnly = process.argv.includes('--check')
-const protectedStatements = String.raw`COMMENT\s+ON\b(?:(?:'(?:''|\\.|[^'])*')|[^';])*;|INSERT INTO public\.review_batches\b(?:(?:'(?:''|\\.|[^'])*')|[^';])*;`
-const pgFormatArgs = [
-  '-X',
-  '-s',
-  '2',
-  '-k',
-  '-L',
-  '--redundant-parenthesis',
-  '-M',
-  '-p',
-  protectedStatements,
-]
+// Statements pg_format must leave byte-for-byte untouched: multi-line string
+// literals in them otherwise gain one space of indentation on every pass.
+//
+// They are swapped for opaque tokens here instead of using pg_format's own
+// `-p` option. pgFormatter 5.11 replaces every `COMMENT ... IS '...'` literal
+// with an internal TEXTVALUEnE placeholder *before* applying `-p`, and restores
+// those placeholders *before* the `-p` ones, so a protected COMMENT statement
+// came back as `IS TEXTVALUE0E;` — invalid SQL (see commit 24ec945).
+const protectedStatements = new RegExp(
+  String.raw`COMMENT\s+ON\b(?:(?:'(?:''|\\.|[^'])*')|[^';])*;|INSERT INTO public\.review_batches\b(?:(?:'(?:''|\\.|[^'])*')|[^';])*;`,
+  'g',
+)
+const protectedToken = /PGFPROTECTED(\d+)PGFPROTECTED;/g
+const pgFormatArgs = ['-X', '-s', '2', '-k', '-L', '--redundant-parenthesis', '-M']
+
+function protect(sql) {
+  if (/PGFPROTECTED\d+PGFPROTECTED/.test(sql)) {
+    throw new Error('input already contains a PGFPROTECTED token')
+  }
+  const statements = []
+  const masked = sql.replace(protectedStatements, (statement) => {
+    statements.push(statement)
+    return `PGFPROTECTED${statements.length - 1}PGFPROTECTED;`
+  })
+  return { masked, statements }
+}
+
+function restore(sql, statements) {
+  let restored = 0
+  const output = sql.replace(protectedToken, (_, index) => {
+    restored += 1
+    return statements[Number(index)]
+  })
+  if (restored !== statements.length || /PGFPROTECTED\d+PGFPROTECTED/.test(output)) {
+    throw new Error(`restored ${restored} of ${statements.length} protected statement(s)`)
+  }
+  return output
+}
 const tracked = execFileSync('git', ['ls-files', '-z', '--', '*.sql'], { encoding: 'utf8' })
 const untracked = execFileSync(
   'git',
@@ -32,19 +58,26 @@ for (const file of files) {
   let stable = false
 
   for (let pass = 0; pass < 5; pass += 1) {
-    const result = spawnSync('pg_format', pgFormatArgs, { encoding: 'utf8', input: formatted })
-    if (result.status !== 0) {
+    let next
+    try {
+      const { masked, statements } = protect(formatted)
+      const result = spawnSync('pg_format', pgFormatArgs, { encoding: 'utf8', input: masked })
+      if (result.status !== 0) {
+        throw new Error(result.stderr.trim() || `pg_format exited ${result.status}`)
+      }
+      next = restore(result.stdout, statements)
+    } catch (error) {
       failed.push(file)
-      console.error(`${file}: ${result.stderr.trim() || `pg_format exited ${result.status}`}`)
+      console.error(`${file}: ${error.message}`)
       break
     }
 
-    if (result.stdout === formatted) {
+    if (next === formatted) {
       stable = true
       break
     }
 
-    formatted = result.stdout
+    formatted = next
   }
 
   if (failed.at(-1) === file) continue

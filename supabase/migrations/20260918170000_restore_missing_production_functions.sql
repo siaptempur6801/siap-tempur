@@ -74,7 +74,13 @@ CREATE TABLE IF NOT EXISTS app_private.cpns_legacy_mapping_reviews (
 
 CREATE INDEX IF NOT EXISTS idx_cpns_legacy_mapping_reviews_queue ON app_private.cpns_legacy_mapping_reviews (review_status, subject_code, source_question_code);
 
-COMMENT ON TABLE app_private.cpns_legacy_mapping_reviews IS 'Manual mapping review registry for legacy CPNS questions. Migration must never derive target knowledge nodes from legacy categories automatically.'; COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.primary_node_code IS 'Explicit reviewer decision. NULL while pending. Never auto-filled from legacy_category by migration.'; COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.secondary_node_code IS 'Optional explicit reviewer decision for cross-topic questions.'; CREATE TABLE IF NOT EXISTS app_private.cpns_legacy_import_stage (
+COMMENT ON TABLE app_private.cpns_legacy_mapping_reviews IS 'Manual mapping review registry for legacy CPNS questions. Migration must never derive target knowledge nodes from legacy categories automatically.';
+
+COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.primary_node_code IS 'Explicit reviewer decision. NULL while pending. Never auto-filled from legacy_category by migration.';
+
+COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.secondary_node_code IS 'Optional explicit reviewer decision for cross-topic questions.';
+
+CREATE TABLE IF NOT EXISTS app_private.cpns_legacy_import_stage (
   source_question_id uuid PRIMARY KEY,
   source_question_code text NOT NULL UNIQUE,
   payload jsonb NOT NULL,
@@ -84,7 +90,9 @@ COMMENT ON TABLE app_private.cpns_legacy_mapping_reviews IS 'Manual mapping revi
 
 CREATE INDEX IF NOT EXISTS idx_cpns_legacy_import_stage_code ON app_private.cpns_legacy_import_stage (source_question_code);
 
-COMMENT ON TABLE app_private.cpns_legacy_import_stage IS 'Raw legacy CPNS question payload staged before canonical Schema V2 import. Knowledge mapping is intentionally absent here and must come only from cpns_legacy_mapping_reviews.'; CREATE OR REPLACE FUNCTION app_private.validate_cpns_legacy_mapping_review ()
+COMMENT ON TABLE app_private.cpns_legacy_import_stage IS 'Raw legacy CPNS question payload staged before canonical Schema V2 import. Knowledge mapping is intentionally absent here and must come only from cpns_legacy_mapping_reviews.';
+
+CREATE OR REPLACE FUNCTION app_private.validate_cpns_legacy_mapping_review ()
   RETURNS TRIGGER
   LANGUAGE plpgsql
   SET search_path = pg_catalog, public, app_private
@@ -240,7 +248,9 @@ WHERE
   AND (r.secondary_node_code IS NULL
     OR skn.id IS NOT NULL);
 
-COMMENT ON VIEW app_private.cpns_legacy_import_ready IS 'Only raw-staged CPNS legacy questions with an explicit reviewed mapping and valid same-subject knowledge nodes. Importers must consume this view rather than infer mappings from legacy categories.'; CREATE OR REPLACE VIEW app_private.cpns_legacy_mapping_review_summary AS
+COMMENT ON VIEW app_private.cpns_legacy_import_ready IS 'Only raw-staged CPNS legacy questions with an explicit reviewed mapping and valid same-subject knowledge nodes. Importers must consume this view rather than infer mappings from legacy categories.';
+
+CREATE OR REPLACE VIEW app_private.cpns_legacy_mapping_review_summary AS
 SELECT
   subject_code,
   review_status,
@@ -251,7 +261,9 @@ GROUP BY
   subject_code,
   review_status;
 
-COMMENT ON VIEW app_private.cpns_legacy_mapping_review_summary IS 'Operational summary of the manual CPNS legacy mapping review registry.'; REVOKE ALL ON FUNCTION app_private.validate_cpns_legacy_mapping_review () FROM public;
+COMMENT ON VIEW app_private.cpns_legacy_mapping_review_summary IS 'Operational summary of the manual CPNS legacy mapping review registry.';
+
+REVOKE ALL ON FUNCTION app_private.validate_cpns_legacy_mapping_review () FROM public;
 
 REVOKE ALL ON app_private.cpns_legacy_import_ready FROM public;
 
@@ -768,7 +780,9 @@ WHERE
   AND (nullif (btrim(st.payload ->> 'imageUrl'), '') IS NULL
     OR nullif (btrim(st.payload ->> 'canonicalAssetStoragePath'), '') IS NOT NULL);
 
-COMMENT ON VIEW app_private.cpns_legacy_import_ready IS 'Only raw-staged CPNS legacy questions with explicit reviewed mappings, valid same-subject nodes, and any required legacy question image already copied to canonical storage.'; CREATE OR REPLACE FUNCTION public.import_reviewed_cpns_legacy_question (p_source_question_id uuid, p_publish boolean DEFAULT FALSE)
+COMMENT ON VIEW app_private.cpns_legacy_import_ready IS 'Only raw-staged CPNS legacy questions with explicit reviewed mappings, valid same-subject nodes, and any required legacy question image already copied to canonical storage.';
+
+CREATE OR REPLACE FUNCTION public.import_reviewed_cpns_legacy_question (p_source_question_id uuid, p_publish boolean DEFAULT FALSE)
   RETURNS uuid
   LANGUAGE plpgsql
   SECURITY DEFINER

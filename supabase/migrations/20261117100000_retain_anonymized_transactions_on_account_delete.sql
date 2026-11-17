@@ -51,8 +51,8 @@ BEGIN
         AND c.confrelid = 'public.profiles'::regclass
         AND a.attname = v_target.column_name LOOP
           EXECUTE format('ALTER TABLE %s DROP CONSTRAINT %I', v_target.table_oid, v_constraint.conname);
-        END LOOP;
     END LOOP;
+  END LOOP;
 END
 $$;
 

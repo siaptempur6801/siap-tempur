@@ -64,7 +64,9 @@ BEGIN
 END;
 $function$;
 
-COMMENT ON FUNCTION public.update_attempt_answer_scores (jsonb) IS 'Menulis skor seluruh jawaban satu attempt dalam satu round trip. Hanya service_role.'; REVOKE ALL ON FUNCTION public.update_attempt_answer_scores (jsonb) FROM public;
+COMMENT ON FUNCTION public.update_attempt_answer_scores (jsonb) IS 'Menulis skor seluruh jawaban satu attempt dalam satu round trip. Hanya service_role.';
+
+REVOKE ALL ON FUNCTION public.update_attempt_answer_scores (jsonb) FROM public;
 
 REVOKE ALL ON FUNCTION public.update_attempt_answer_scores (jsonb) FROM anon;
 

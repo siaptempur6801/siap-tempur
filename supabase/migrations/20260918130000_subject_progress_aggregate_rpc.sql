@@ -106,7 +106,9 @@ ORDER BY
 $$;
 
 COMMENT ON FUNCTION public.get_user_subject_progress (uuid) IS 'Agregat progres per subjek untuk satu user (menggantikan agregasi di Node). '
-      'Hanya membaca; EXECUTE terbatas untuk service_role.'; REVOKE ALL ON FUNCTION public.get_user_subject_progress (uuid) FROM public;
+      'Hanya membaca; EXECUTE terbatas untuk service_role.';
+
+REVOKE ALL ON FUNCTION public.get_user_subject_progress (uuid) FROM public;
 
 REVOKE ALL ON FUNCTION public.get_user_subject_progress (uuid) FROM anon;
 

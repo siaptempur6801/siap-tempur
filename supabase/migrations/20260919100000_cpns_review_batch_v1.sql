@@ -64,13 +64,16 @@ CREATE TABLE IF NOT EXISTS public.review_batches (
 );
 
 COMMENT ON TABLE public.review_batches IS 'Penanda batch review konten. Dipakai bersama response_config.pilotBatch '
-    'agar bulk_review_pilot_stage dapat menyaring satu batch sekaligus.'; REVOKE ALL ON public.review_batches FROM anon, authenticated;
+    'agar bulk_review_pilot_stage dapat menyaring satu batch sekaligus.';
+
+REVOKE ALL ON public.review_batches FROM anon, authenticated;
 
 INSERT INTO public.review_batches (batch_code, description)
   VALUES ('cpns-full-tryout-1', 'Soal CPNS untuk membentuk satu set Full Tryout SKD: TIU 35 + TKP 45. '
       'TWK sudah terbit 30. Menunggu review manusia sebelum diterbitkan.')
 ON CONFLICT (batch_code)
   DO NOTHING;
+
 DO $$
 DECLARE
   v_batch constant text := 'cpns-full-tryout-1';

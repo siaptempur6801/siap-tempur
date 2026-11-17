@@ -287,6 +287,7 @@ COMMENT ON FUNCTION public.recalculate_leaderboard (uuid, uuid) IS 'Sinkronkan p
     'baris user itu yang dihitung ulang (jalur submit ujian). Bila NULL, seluruh '
     'papan disinkronkan. Untuk hitung ulang penuh setelah perubahan konfigurasi '
     'papan, pakai rebuild_leaderboard().';
+
 -- -----------------------------------------------------------------------------
 -- 2. Hitung ulang PENUH (untuk perubahan konfigurasi papan / perbaikan kunci)
 -- -----------------------------------------------------------------------------
@@ -392,6 +393,7 @@ $$;
 COMMENT ON FUNCTION public.rebuild_leaderboard (uuid) IS 'Hitung ulang PENUH (delete + insert) seluruh papan. Dipakai setelah '
     'perubahan konfigurasi papan (starts_at/ends_at/program/track) atau '
     'perbaikan skor historis — BUKAN di jalur submit ujian.';
+
 -- -----------------------------------------------------------------------------
 -- 3. Buang overload lama `recalculate_leaderboard(uuid)`
 --

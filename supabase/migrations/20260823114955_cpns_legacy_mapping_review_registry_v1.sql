@@ -21,4 +21,8 @@ CREATE TABLE IF NOT EXISTS app_private.cpns_legacy_mapping_reviews (
 
 CREATE INDEX IF NOT EXISTS idx_cpns_legacy_mapping_reviews_queue ON app_private.cpns_legacy_mapping_reviews (review_status, subject_code, source_question_code);
 
-COMMENT ON TABLE app_private.cpns_legacy_mapping_reviews IS 'Manual mapping review registry for legacy CPNS questions. Migration must never derive target knowledge nodes from legacy categories automatically.'; COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.primary_node_code IS 'Explicit reviewer decision. NULL while pending. Never auto-filled from legacy_category by migration.'; COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.secondary_node_code IS 'Optional explicit reviewer decision for cross-topic questions.';
+COMMENT ON TABLE app_private.cpns_legacy_mapping_reviews IS 'Manual mapping review registry for legacy CPNS questions. Migration must never derive target knowledge nodes from legacy categories automatically.';
+
+COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.primary_node_code IS 'Explicit reviewer decision. NULL while pending. Never auto-filled from legacy_category by migration.';
+
+COMMENT ON COLUMN app_private.cpns_legacy_mapping_reviews.secondary_node_code IS 'Optional explicit reviewer decision for cross-topic questions.';

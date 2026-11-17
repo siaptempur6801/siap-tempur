@@ -4,7 +4,11 @@ ALTER TABLE public.tryout_events
   ADD COLUMN IF NOT EXISTS certificate_enabled boolean NOT NULL DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS certificate_released_at timestamptz;
 
-COMMENT ON COLUMN public.tryout_events.certificate_enabled IS 'When true, completed participants can claim event certificates after ranking is final/released.'; COMMENT ON COLUMN public.tryout_events.certificate_released_at IS 'Timestamp when certificates are released for this event. Null means not released yet.'; CREATE TABLE IF NOT EXISTS public.event_certificates (
+COMMENT ON COLUMN public.tryout_events.certificate_enabled IS 'When true, completed participants can claim event certificates after ranking is final/released.';
+
+COMMENT ON COLUMN public.tryout_events.certificate_released_at IS 'Timestamp when certificates are released for this event. Null means not released yet.';
+
+CREATE TABLE IF NOT EXISTS public.event_certificates (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid (),
   event_id uuid NOT NULL REFERENCES public.tryout_events (id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,

@@ -3,7 +3,6 @@
 -- `supabase db query --linked --file ...`). Seluruh isi dibungkus transaksi
 -- READ ONLY; tidak ada data atau skema yang berubah.
 BEGIN TRANSACTION READ ONLY;
-
 -- 1. Kunci jawaban: harus 0 baris.
 SELECT
   table_name,
@@ -15,7 +14,6 @@ WHERE
   table_schema = 'public'
   AND table_name IN ('attempt_questions', 'attempt_answers', 'attempt_answer_options', 'question_versions', 'question_options', 'question_explanations')
   AND grantee IN ('anon', 'authenticated', 'PUBLIC');
-
 -- 2. RPC khusus server: kolom client_can_execute harus false semua.
 SELECT
   p.oid::regprocedure AS fn,
@@ -28,7 +26,6 @@ FROM
 WHERE
   n.nspname = 'public'
   AND p.proname IN ('recalculate_leaderboard', 'recalculate_event_rankings', 'fulfill_paid_order', 'update_attempt_answer_scores', 'rebuild_leaderboard');
-
 -- 3. SECURITY DEFINER tanpa search_path terpin: harus 0 baris untuk public/app_private.
 SELECT
   n.nspname,
@@ -49,7 +46,6 @@ WHERE
 ORDER BY
   1,
   2;
-
 -- 4. Preflight migration 20261117090000: harus false semua sebelum apply.
 SELECT
   t AS table_name,
@@ -59,7 +55,6 @@ SELECT
   OR has_any_column_privilege('authenticated', t, 'UPDATE') AS authenticated_can_write
 FROM
   unnest(ARRAY['public.exam_attempts', 'public.attempt_answers', 'public.event_registrations']) AS t;
-
 -- 5. Policy ranking & tulis: setelah apply, *_read tidak lagi USING (true)
 --    dan policy *_insert_own/*_update_own di tiga tabel di atas tidak ada.
 SELECT
@@ -75,7 +70,6 @@ WHERE
 ORDER BY
   1,
   2;
-
 -- 5b. Setelah migration 20261117100000: FK pemilik transaksi harus SET NULL
 --     (confdeltype = 'n') untuk orders.user_id dan refunds.requested_by; refunds.processed_by
 --     (staf) tetap 'r'. Trigger anonimisasi harus ada dan aktif (tgenabled = 'O').
@@ -89,7 +83,6 @@ WHERE
   c.contype = 'f'
   AND c.confrelid = 'public.profiles'::regclass
   AND c.conrelid IN ('public.orders'::regclass, 'public.refunds'::regclass);
-
 SELECT
   tgname,
   tgenabled
@@ -98,11 +91,9 @@ FROM
 WHERE
   tgrelid = 'public.profiles'::regclass
   AND tgname = 'anonymize_commerce_before_profile_delete';
-
 -- 6. Skema yang diekspos Data API: legacy_prod dan app_private tidak boleh ada.
 SELECT
   current_setting('pgrst.db_schemas', TRUE) AS exposed_schemas;
-
 -- 7. Tabel public tanpa RLS: harus 0 baris.
 SELECT
   c.relname
@@ -113,5 +104,4 @@ WHERE
   n.nspname = 'public'
   AND c.relkind = 'r'
   AND NOT c.relrowsecurity;
-
 ROLLBACK;

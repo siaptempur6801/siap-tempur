@@ -1,7 +1,9 @@
 ALTER TABLE public.events
   ADD COLUMN IF NOT EXISTS flyer_image_url text;
 
-COMMENT ON COLUMN public.events.flyer_image_url IS 'Public URL for the event poster stored in the event-flyers bucket.'; INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+COMMENT ON COLUMN public.events.flyer_image_url IS 'Public URL for the event poster stored in the event-flyers bucket.';
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
   VALUES ('event-flyers', 'event-flyers', TRUE, 4194304, ARRAY['image/jpeg', 'image/png', 'image/webp']::text[])
 ON CONFLICT (id)
   DO UPDATE SET

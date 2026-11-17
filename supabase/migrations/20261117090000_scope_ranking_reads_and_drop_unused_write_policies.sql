@@ -21,12 +21,8 @@ DO $$
 DECLARE
   v_table text;
 BEGIN
-  FOREACH v_table IN ARRAY ARRAY['public.exam_attempts', 'public.attempt_answers', 'public.event_registrations']
-  LOOP
-    IF has_table_privilege('authenticated', v_table, 'INSERT')
-      OR has_table_privilege('authenticated', v_table, 'UPDATE')
-      OR has_any_column_privilege('authenticated', v_table, 'INSERT')
-      OR has_any_column_privilege('authenticated', v_table, 'UPDATE') THEN
+  FOREACH v_table IN ARRAY ARRAY['public.exam_attempts', 'public.attempt_answers', 'public.event_registrations'] LOOP
+    IF has_table_privilege('authenticated', v_table, 'INSERT') OR has_table_privilege('authenticated', v_table, 'UPDATE') OR has_any_column_privilege('authenticated', v_table, 'INSERT') OR has_any_column_privilege('authenticated', v_table, 'UPDATE') THEN
       RAISE EXCEPTION 'Preflight gagal: authenticated memiliki hak tulis pada %. Tinjau ACL sebelum menghapus policy tulis.', v_table;
     END IF;
   END LOOP;
