@@ -21,8 +21,10 @@ const SESSION_CLIENTS = [
   'components/practice/UniversalPracticeSessionClient.tsx',
 ] as const
 
+// 6-tka-smp-full.spec.ts is intentionally absent: since the Tempur Pass removal
+// (2042811) it only checks the full tryout's token cost and no longer completes
+// sections. Re-add it here if the full-tryout lifecycle E2E is restored.
 const SECTION_COMPLETION_SPECS = [
-  'tests/e2e/specs/6-tka-smp-full.spec.ts',
   'tests/e2e/specs/8-tka-smp-mini.spec.ts',
   'tests/e2e/specs/13-tka-diagnostic.spec.ts',
 ] as const

@@ -18,7 +18,8 @@ function source(relativePath: string) {
 
 const migration = source('supabase/migrations/20260921120000_review_queue_draft_concurrency_v1.sql')
 const action = source('app/actions/content-review.ts')
-const page = source('components/admin/domain/content/ReviewWorkspace.tsx')
+// The draft form lives in the selected-question panel extracted from ReviewWorkspace.
+const page = source('components/admin/domain/content/ReviewQuestionWorkspace.tsx')
 
 describe('Review — concurrency token & ID opsi', () => {
   it('RPC membandingkan versi dan updated_at, lalu menolak token basi', () => {

@@ -175,7 +175,7 @@ describe('TKA Review Experience', () => {
     )
 
     // Top bar elements
-    expect(markup).toContain('Pembahasan Full Tryout · TKA/SMP')
+    expect(markup).toContain('Pembahasan Tryout · TKA/SMP')
     expect(markup).toContain('Ringkasan Hasil')
     expect(markup).toContain('href="/tka/smp/tryout/session-123/result"')
 

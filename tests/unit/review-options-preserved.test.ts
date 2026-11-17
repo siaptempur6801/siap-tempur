@@ -21,7 +21,7 @@ describe('form edit Review mempertahankan opsi tersimpan', () => {
   })
 
   it('form edit mengirim opsi dari detail soal', () => {
-    expect(source('components/admin/domain/content/ReviewWorkspace.tsx')).toContain(
+    expect(source('components/admin/domain/content/ReviewQuestionWorkspace.tsx')).toContain(
       'optionsDefaultValue={serializeOptionRows(data.options)}',
     )
   })

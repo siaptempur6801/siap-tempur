@@ -83,7 +83,7 @@ describe('TKA navigation selection', () => {
       'Latihan Fokus',
       'Mini Tryout',
       'Tryout',
-      'Riwayat',
+      'Riwayat &amp; Hasil',
       'Bank Soal Salah',
       'Perkembangan',
     ].map((label) => markup.indexOf(`>${label}</span>`))
@@ -101,7 +101,7 @@ describe('TKA navigation selection', () => {
     expect(focus).toContain('aria-current="page"')
   })
 
-  it('keeps the mobile Tryout shortcut active for Mini Tryout', () => {
+  it('gives Mini Tryout its own active mobile shortcut', () => {
     navigation.pathname = '/tka/smp/mini-tryout'
     const markup = renderToStaticMarkup(
       <TkaDashboardShell
@@ -115,12 +115,12 @@ describe('TKA navigation selection', () => {
     )
 
     const mobileNav = markup.slice(markup.lastIndexOf('aria-label="Navigasi utama TKA"'))
-    const mobileTryoutHref = mobileNav.indexOf('href="/tka/smp/tryout"')
-    const mobileTryoutLink = mobileNav.slice(
-      mobileNav.lastIndexOf('<a', mobileTryoutHref),
-      mobileTryoutHref + 320,
-    )
-    expect(mobileTryoutLink).toContain('aria-current="page"')
+    const mobileLink = (href: string) => {
+      const start = mobileNav.lastIndexOf('<a', mobileNav.indexOf(`href="${href}"`))
+      return mobileNav.slice(start, mobileNav.indexOf('</a>', start))
+    }
+    expect(mobileLink('/tka/smp/mini-tryout')).toContain('aria-current="page"')
+    expect(mobileLink('/tka/smp/tryout')).not.toContain('aria-current')
     expect(mobileNav).toContain('href="/tka/smp/riwayat"')
   })
 

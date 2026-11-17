@@ -16,7 +16,11 @@ function source(relativePath: string) {
 
 const migration = source('supabase/migrations/20260922010000_review_assign_policy_v1.sql')
 const action = source('app/actions/content-review.ts')
-const page = source('components/admin/domain/content/ReviewWorkspace.tsx')
+// The review list computes permissions; the selected-question panel renders the controls.
+const page = [
+  source('components/admin/domain/content/ReviewWorkspace.tsx'),
+  source('components/admin/domain/content/ReviewQuestionWorkspace.tsx'),
+].join('\n')
 const permissions = source('src/auth/permissions.ts')
 
 describe('kebijakan penugasan reviewer', () => {
