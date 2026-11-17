@@ -18,6 +18,7 @@ import {
   Zap,
 } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
+import { negativeTokenBalanceNote } from '@/lib/token-balance'
 import { Button } from '@/components/ui/Button'
 import { toast } from 'sonner'
 import {
@@ -240,6 +241,9 @@ export default function CommercePackagesClient({
             <p className="text-xl font-semibold tabular-nums text-foreground">
               {tokenBalance !== undefined ? `${tokenBalance} token` : 'Lihat saldo di profil'}
             </p>
+            {negativeTokenBalanceNote(tokenBalance) && (
+              <p className="text-xs text-danger">{negativeTokenBalanceNote(tokenBalance)}</p>
+            )}
             <Link
               href={
                 program === 'TKA'
