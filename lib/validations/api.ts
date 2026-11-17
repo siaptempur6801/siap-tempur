@@ -11,6 +11,7 @@ export const webhookPayloadSchema = z
   .passthrough() // Allow other Midtrans fields to pass through
 
 export const beaconPayloadSchema = z.object({
-  currentQuestionIndex: z.number().int().min(0).optional(),
+  // Dibatasi supaya `last_question_position` (integer) tidak overflow → 500.
+  currentQuestionIndex: z.number().int().min(0).max(10_000).optional(),
   markedQuestions: z.record(z.string(), z.boolean()).optional(),
 })

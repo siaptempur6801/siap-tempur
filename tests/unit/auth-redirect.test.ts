@@ -34,6 +34,20 @@ describe('auth redirect helpers', () => {
     expect(sanitizeAuthReturnTo('/\\example.com')).toBe('/')
   })
 
+  it('rejects control characters that URL parsers strip into protocol-relative targets', () => {
+    expect(sanitizeAuthReturnTo('/\t/example.com')).toBe('/')
+    expect(sanitizeAuthReturnTo('/\n/example.com')).toBe('/')
+    expect(sanitizeAuthReturnTo('/\r/example.com')).toBe('/')
+    expect(resolvePostLoginRedirect('/\t/example.com')).toBe('/onboarding')
+    expect(resolvePostLogoutRedirect('/\t/example.com')).toBe('/?logout=success')
+  })
+
+  it('falls back safely for non-string values such as repeated query params', () => {
+    expect(sanitizeAuthReturnTo(['/cpns', '/tka'])).toBe('/')
+    expect(sanitizeAuthReturnTo(undefined)).toBe('/')
+    expect(sanitizeAuthReturnTo(42)).toBe('/')
+  })
+
   it('adds a one-time success marker to safe logout targets', () => {
     expect(resolvePostLogoutRedirect('/cpns')).toBe('/cpns?logout=success')
     expect(resolvePostLogoutRedirect('/tka?level=smp#mulai')).toBe(

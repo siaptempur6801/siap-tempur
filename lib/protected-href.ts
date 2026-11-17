@@ -6,7 +6,10 @@
  * pengguna yang sudah login tidak dilempar ke halaman login lagi.
  */
 export function protectedHref(href: string, isLoggedIn: boolean) {
-  return isLoggedIn ? href : `/login?returnTo=${href}`
+  if (isLoggedIn) return href
+  // `/` dan `?` boleh tetap terbaca di nilai query; `&`, `#`, `+`, `%` akan memotong
+  // atau mengubah `returnTo` (mis. `/x?a=1&b=2` kehilangan `b`).
+  return `/login?returnTo=${href.replace(/[&#+%]/g, (char) => encodeURIComponent(char))}`
 }
 
 /**

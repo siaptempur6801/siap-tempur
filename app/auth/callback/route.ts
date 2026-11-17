@@ -173,6 +173,14 @@ export async function POST(request: NextRequest) {
   const { origin } = request.nextUrl
   let body: unknown
 
+  // Login CSRF: `request.json()` mem-parse body apa pun content-type-nya, sehingga
+  // form lintas situs (`enctype="text/plain"`) bisa menanamkan sesi akun penyerang.
+  // Mewajibkan `application/json` memaksa preflight CORS untuk request lintas origin.
+  const contentType = request.headers.get('content-type') ?? ''
+  if (!contentType.toLowerCase().includes('application/json')) {
+    return NextResponse.json({ message: 'unsupported_media_type' }, { status: 415 })
+  }
+
   try {
     body = await request.json()
   } catch {

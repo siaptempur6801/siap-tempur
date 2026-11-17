@@ -33,7 +33,9 @@ function friendlyError(error: unknown) {
     'This batch is no longer open': 'Batch ini sudah ditutup dan tidak menerima peserta baru.',
     'This organization is inactive': 'Instansi ini sedang nonaktif.',
   }
-  return known[message] || message
+  // Pesan lain berasal dari database/PostgREST (constraint, kolom, dsb.) dan
+  // akan ditaruh di URL — jangan bocorkan detail internal ke pengguna.
+  return known[message] || 'Gagal bergabung ke batch. Coba lagi beberapa saat lagi.'
 }
 
 function backTo(token: string, ok?: string, error?: unknown): never {

@@ -143,7 +143,8 @@ export async function startDrillingMateri(type: MiniTryoutType, subCategory: str
   }
 
   if (!isMiniTryoutType(type)) return { error: 'Tipe drilling tidak valid' }
-  const normalizedSubCategory = subCategory.trim()
+  // Argumen server action datang dari klien; jangan anggap tipenya selalu string.
+  const normalizedSubCategory = typeof subCategory === 'string' ? subCategory.trim() : ''
   if (!normalizedSubCategory) return { error: 'Materi drilling tidak valid' }
 
   const userId = await getCurrentUserId()
