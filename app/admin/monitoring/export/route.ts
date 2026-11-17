@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const report = data.report
     const escape = (v: unknown) =>
       `"${String(v ?? '')
-        .replace(/^[=+@-]/, "'$&")
+        .replace(/^[=+@\-\t\r]/, "'$&")
         .replaceAll('"', '""')}"`
     const rows = [
       ['Workspace', data.context.title],

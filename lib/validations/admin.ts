@@ -90,11 +90,29 @@ export const ArticleFormSchema = z.object({
   cover_image_url: z
     .string()
     .url('URL cover tidak valid')
+    // CSP `img-src` hanya mengizinkan Supabase Storage; cover dari host lain
+    // diblokir browser sehingga tidak pernah tampil (audit N-12).
+    .refine(isSupabaseStorageImageUrl, 'Cover harus diunggah ke penyimpanan SiapTempur (Supabase).')
     .optional()
     .nullable()
     .or(z.literal(''))
     .transform((value) => value?.trim() || null),
 })
+
+function isSupabaseStorageImageUrl(value: string) {
+  try {
+    const url = new URL(value.trim())
+    return (
+      url.protocol === 'https:' &&
+      !url.port &&
+      !url.username &&
+      !url.password &&
+      /^[a-z0-9-]+\.supabase\.(?:co|in)$/i.test(url.hostname)
+    )
+  } catch {
+    return false
+  }
+}
 
 const optionalText = z
   .string()

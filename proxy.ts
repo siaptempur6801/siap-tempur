@@ -58,7 +58,7 @@ export async function proxy(request: NextRequest) {
         script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'production' ? '' : "'unsafe-eval'"} https://app.midtrans.com https://app.sandbox.midtrans.com;
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
-        img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in;
+        img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://api.midtrans.com https://api.sandbox.midtrans.com;
         connect-src 'self' https://*.supabase.co https://*.supabase.in https://app.midtrans.com https://api.midtrans.com https://app.sandbox.midtrans.com https://api.sandbox.midtrans.com;
         frame-src 'self' https://app.midtrans.com https://app.sandbox.midtrans.com;
         object-src 'none';
@@ -107,7 +107,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Berkas statis/metadata (robots.txt, sitemap.xml, manifest, font) tidak butuh CSP,
+  // refresh sesi, maupun cookie CSRF. Melewatinya menghindari `Set-Cookie` yang
+  // membuat respons tersebut tidak bisa di-cache CDN (audit N-10).
   matcher: [
-    '/((?!_next/static|_next/image|_next/hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|_next/hmr|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest|woff2?|ttf|csv)$).*)',
   ],
 }
