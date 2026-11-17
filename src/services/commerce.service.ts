@@ -392,7 +392,13 @@ class CommerceService {
     if (error) throw error
   }
 
-  async getEventOffer(eventId: string) {
+  /**
+   * Status tiket event. `mapped` = event punya produk tiket aktif (`event_products`).
+   * `offer` bernilai `null` bila produk diarsipkan atau tidak punya harga yang berlaku;
+   * event seperti itu tetap berbayar dan pendaftaran harus ditolak, bukan dianggap
+   * gratis (audit A-02).
+   */
+  async getEventTicket(eventId: string) {
     const untyped = await createAdminClient()
     const { data: mapping, error: mappingError } = await untyped
       .from('event_products')
@@ -401,7 +407,7 @@ class CommerceService {
       .eq('status', 'active')
       .maybeSingle()
     if (mappingError) throw mappingError
-    if (!mapping) return null
+    if (!mapping) return { mapped: false as const, offer: null }
 
     const admin = await createV2AdminClient()
     const { data: product, error: productError } = await admin
@@ -410,11 +416,18 @@ class CommerceService {
       .eq('id', String(mapping.product_id))
       .maybeSingle()
     if (productError) throw productError
-    if (!product) return null
+    if (!product) return { mapped: true as const, offer: null }
 
     const offer = await this.getProductOfferByCode(stringValue(product.code))
-    if (!offer) return null
-    return { ...offer, eventId, sessionId: String(mapping.session_id || '') || null }
+    if (!offer) return { mapped: true as const, offer: null }
+    return {
+      mapped: true as const,
+      offer: { ...offer, eventId, sessionId: String(mapping.session_id || '') || null },
+    }
+  }
+
+  async getEventOffer(eventId: string) {
+    return (await this.getEventTicket(eventId)).offer
   }
 
   async getLatestOrderForProduct(userId: string, productId: string) {

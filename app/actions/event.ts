@@ -35,8 +35,11 @@ export async function registerTryoutEvent(eventId: string, _eventCode?: string) 
   }
 
   try {
-    const paidOffer = await commerceService.getEventOffer(eventId)
-    if (paidOffer && paidOffer.price > 0) {
+    // Event yang punya produk tiket aktif tetap berbayar walau harganya sedang tidak
+    // berlaku atau produknya diarsipkan; jangan diperlakukan gratis (audit A-02).
+    const ticket = await commerceService.getEventTicket(eventId)
+    const paidOffer = ticket.offer
+    if (ticket.mapped && (!paidOffer || paidOffer.price > 0)) {
       const admin = await createV2AdminClient()
       const { data: registration, error } = await admin
         .from('event_registrations')
@@ -46,7 +49,12 @@ export async function registerTryoutEvent(eventId: string, _eventCode?: string) 
         .maybeSingle()
       if (error) throw error
       if (!registration) {
-        return { success: false, message: 'Selesaikan pembayaran tiket event terlebih dahulu' }
+        return {
+          success: false,
+          message: paidOffer
+            ? 'Selesaikan pembayaran tiket event terlebih dahulu'
+            : 'Tiket event ini sedang tidak dijual. Hubungi admin.',
+        }
       }
     }
 
