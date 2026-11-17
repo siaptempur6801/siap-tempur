@@ -25,6 +25,7 @@ import CpnsLandingHero from '@/components/home/CpnsLandingHero'
 import { MascotPair } from '@/components/brand/Mascot'
 import { Doodle, Sticker } from '@/components/brand/playful'
 import ReadingProgress from '@/components/blog/ReadingProgress'
+import { serializeJsonLd } from '@/components/StructuredData'
 
 export type CpnsLandingUser = { id: string } | null
 
@@ -331,7 +332,7 @@ export default function CpnsProductLandingV12({
       <ReadingProgress />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(structuredData) }}
       />
 
       <CpnsLandingInteractions primaryAccountHref={primaryAccountHref} isLoggedIn={Boolean(user)} />
