@@ -34,7 +34,7 @@ async function getCurrentUserId() {
 function practiceErrorMessage(error: PracticeDomainError) {
   switch (error.code) {
     case 'EXAM_NOT_CONFIGURED':
-      return 'Ujian Schema V2 belum dikonfigurasi atau belum diaktifkan di staging.'
+      return 'Ujian ini belum tersedia. Coba lagi nanti atau hubungi admin.'
     case 'QUESTION_BANK_EMPTY':
       return 'Bank soal untuk ujian ini masih kosong.'
     case 'QUESTION_BANK_INCOMPLETE': {
@@ -53,11 +53,21 @@ function practiceErrorMessage(error: PracticeDomainError) {
     case 'ATTEMPT_TIME_EXPIRED':
       return 'Waktu ujian sudah berakhir. Jawaban tidak dapat disimpan lagi — kumpulkan jawabanmu.'
     case 'EXAM_CONFIGURATION_ERROR':
-      return 'Konfigurasi ujian Schema V2 belum lengkap.'
+      return 'Pengaturan ujian ini belum lengkap. Hubungi admin.'
     default:
       return 'Gagal memproses ujian.'
   }
 }
+
+/**
+ * Pesan untuk peserta saat penyimpanan/penyelesaian gagal karena error tak terduga
+ * (jaringan, database). Menyelesaikan ujian bersifat idempoten — attempt yang sudah
+ * selesai dikembalikan apa adanya — sehingga aman meminta peserta mencoba lagi.
+ */
+const SAVE_ANSWER_FAILED_MESSAGE =
+  'Jawaban belum tersimpan karena gangguan koneksi atau server. Coba pilih jawaban lagi.'
+const FINISH_FAILED_MESSAGE =
+  'Ujian belum berhasil dikumpulkan karena gangguan koneksi atau server. Jawaban yang sudah tersimpan tidak hilang — tekan kumpulkan sekali lagi.'
 
 async function runStartWithExpiredAttemptRecovery(
   userId: string,
@@ -237,7 +247,7 @@ export async function submitAnswer(sessionId: string, questionId: string, option
       userId,
     })
     if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
-    return { error: 'Failed to save answer' }
+    return { error: SAVE_ANSWER_FAILED_MESSAGE }
   }
 }
 
@@ -281,7 +291,7 @@ export async function submitAnswerOptions(
       userId,
     })
     if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
-    return { error: 'Failed to save answers' }
+    return { error: SAVE_ANSWER_FAILED_MESSAGE }
   }
 }
 
@@ -309,6 +319,6 @@ export async function finishPractice(sessionId: string) {
       userId,
     })
     if (error instanceof PracticeDomainError) return { error: practiceErrorMessage(error) }
-    return { error: 'Failed to finish session' }
+    return { error: FINISH_FAILED_MESSAGE }
   }
 }
