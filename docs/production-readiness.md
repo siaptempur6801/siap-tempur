@@ -13,20 +13,31 @@ This project should only be deployed from a clean branch after these gates pass.
 
 ## Required Environment Variables
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `MIDTRANS_SERVER_KEY`
-- `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`
-- `NEXT_PUBLIC_SITE_URL`
+Sumber kebenaran: `lib/env.ts`. Lingkungan ditentukan oleh `APP_ENV`
+(atau `NEXT_PUBLIC_APP_ENV`); bila kosong, `VERCEL_ENV=production` → production
+dan `VERCEL_ENV=preview` → staging.
 
-Required for effective distributed rate limiting (auth actions dan payment):
+| Variabel | Production | Staging/Preview | Catatan |
+|---|---|---|---|
+| `APP_ENV`, `NEXT_PUBLIC_APP_ENV` | `production` | `staging` | Set eksplisit; jangan andalkan fallback `VERCEL_ENV` |
+| `NEXT_PUBLIC_SUPABASE_URL` | wajib | wajib | Staging diblokir memakai project ref production |
+| `NEXT_PUBLIC_SUPABASE_EXPECTED_PROJECT_REF` | — | disarankan | Guard project ref staging |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | wajib | wajib | `NEXT_PUBLIC_SUPABASE_ANON_KEY` hanya fallback lama |
+| `SUPABASE_SERVICE_ROLE_KEY` | wajib | wajib | Rahasia; server saja |
+| `MIDTRANS_SERVER_KEY`, `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY` | wajib | diabaikan | Kunci production |
+| `MIDTRANS_SERVER_KEY_SANDBOX`, `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SANDBOX` | diabaikan | wajib | Kunci sandbox |
+| `NEXT_PUBLIC_SITE_URL` | wajib | wajib | Dipakai sitemap, robots, CSRF origin, metadata |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | wajib | disarankan | Lihat catatan rate limit |
+| `CRON_SECRET` | wajib | bila cron dijadwalkan | Kosong → `/api/cron/*` selalu 401 dan rekonsiliasi berhenti diam-diam |
+| `CSP_REPORT_URI` | opsional | opsional | Endpoint laporan pelanggaran CSP |
 
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
-
-Tanpa keduanya, rate limiter jatuh ke penyimpanan in-memory yang bersifat
-per-instance, sehingga mudah ditembus pada deployment serverless multi-instance.
+**Rate limit.** Di production, limiter auth/payment bersifat **fail-closed**:
+tanpa Upstash atau saat Upstash gagal, permintaan dianggap terkena limit
+(`lib/api-utils.ts`). Artinya env Upstash yang hilang membuat login/daftar
+ditolak, bukan sekadar tidak terlindungi. `/api/health` melaporkan
+`rateLimitStore: "unconfigured"` dan status 503 untuk kondisi ini, tetapi tidak
+melakukan ping ke Redis. Di luar production, limiter jatuh ke memori
+per-instance.
 
 ## Supabase Checks Before Deploy
 
@@ -68,4 +79,30 @@ menangani selisih yang disengaja:
 - Confirm rollback path is available before release.
 - **Jalankan gate paritas skema** (`run-gate.mjs parity`) setelah setiap
   `db push` ke produksi, dan pastikan hijau sebelum deploy dianggap selesai.
+
+## Operasional yang belum terdokumentasi (audit 2026-11-17)
+
+Butir di bawah belum punya bukti di repo. Isi pemilik, lokasi, dan tanggal
+verifikasi terakhir sebelum menandainya selesai; jangan centang berdasarkan
+asumsi.
+
+- [ ] **Backup database production**: tier Supabase, aktif/tidaknya PITR,
+      periode retensi, dan tanggal uji restore terakhir ke project terpisah.
+- [ ] **Rollback aplikasi**: deployment Vercel sebelumnya yang dipakai untuk
+      "Instant Rollback", siapa yang berwenang, dan cara memastikan migration
+      yang sudah ter-apply tetap kompatibel dengan kode lama.
+- [ ] **Rollback database**: migration bersifat maju-saja. Untuk setiap
+      migration yang mengubah data/ACL, catat SQL kompensasi atau prosedur
+      restore sebelum apply.
+- [ ] **Monitoring dan alert**: tujuan log (`lib/logger.ts`), alert untuk
+      `/api/health` 503, kegagalan webhook Midtrans, kegagalan cron rekonsiliasi,
+      dan pelanggaran CSP (`CSP_REPORT_URI`).
+- [ ] **Jadwal cron**: `vercel.json` menjalankan rekonsiliasi pembayaran sekali
+      sehari (`0 0 * * *`, UTC). Pembayaran yang webhook-nya hilang bisa tertunda
+      hingga 24 jam; putuskan apakah itu dapat diterima.
+- [ ] **Pemisahan staging/production**: env Vercel Preview menunjuk staging,
+      Production menunjuk project production, dan Edge Function `ci-e2e-*` tidak
+      ter-deploy di project production.
+- [ ] **Kontak insiden** dan kanal eskalasi, termasuk kontak Midtrans dan
+      Supabase.
 
