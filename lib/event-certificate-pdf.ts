@@ -246,9 +246,9 @@ function createPdfFromJpeg(jpeg: Buffer) {
 export async function createEventCertificateImage(input: CertificateRenderInput) {
   const [logo, signature, fontFiles] = await Promise.all([
     readFile(path.join(process.cwd(), 'public', 'logos', 'siap-tempur-logo-transparent.png')),
-    readFile(
-      path.join(process.cwd(), 'public', 'signatures', 'dirga-halim-susilo-transparent.png'),
-    ),
+    // Tanda tangan sengaja di luar `public/` agar tidak bisa diunduh langsung;
+    // disertakan ke bundle route sertifikat lewat `outputFileTracingIncludes`.
+    readFile(path.join(process.cwd(), 'assets', 'certificates', 'signature-transparent.png')),
     loadCertificateFontFiles(),
   ])
   const svg = buildCertificateSvg(

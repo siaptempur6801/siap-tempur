@@ -2,9 +2,18 @@ import type { NextConfig } from 'next'
 import { LEGACY_ADMIN_REDIRECTS } from './lib/admin-redirects'
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  allowedDevOrigins: ['192.168.1.5', '*.192.168.1.5', '192.168.1.6', '*.192.168.1.6'],
+  // Origin LAN untuk `next dev` diambil dari env lokal, bukan IP yang di-hardcode.
+  // Contoh `.env.local`: ALLOWED_DEV_ORIGINS=192.168.1.5,*.192.168.1.5
+  allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   serverExternalPackages: ['@resvg/resvg-js'],
+  // Aset privat sertifikat (tanda tangan) tidak berada di `public/`, jadi wajib
+  // disertakan eksplisit ke bundle serverless route yang merendernya.
+  outputFileTracingIncludes: {
+    '/api/certificates/**': ['./assets/certificates/**/*'],
+  },
   images: {
     remotePatterns: [
       {

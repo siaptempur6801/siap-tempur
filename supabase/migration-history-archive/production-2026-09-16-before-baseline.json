@@ -894,85 +894,85 @@
     "version": "202608190011"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "tka_diagnostic_baseline_v1",
     "version": "20260902043347"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "tka_diagnostic_recommendations_v1",
     "version": "20260902043439"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "tka_diagnostic_performance_hardening_v1",
     "version": "20260902043452"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "activate_tka_smp_diagnostic_v1",
     "version": "20260902055548"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "tka_smp_diagnostic_drill_v1",
     "version": "20260902072722"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "lock_tka_smp_drill_trigger_function",
     "version": "20260902072749"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "tka_smp_drill_rpc_v1",
     "version": "20260902072821"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "allow_users_to_update_own_profile",
     "version": "20260904110604"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "create_profile_avatar_bucket",
     "version": "20260904110612"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "canonical_event_certificates",
     "version": "20260904161534"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "canonical_event_flyers",
     "version": "20260904161548"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "remove_legacy_event_flyer_policies",
     "version": "20260904161652"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "tka_smp_access_guard_and_token_contract",
     "version": "20260912064358"
   },
   {
-    "created_by": "halimdirga8@gmail.com",
+    "created_by": "<pemilik-project>",
     "idempotency_key": null,
     "name": "enable_tka_smp_monetization_enforcement",
     "version": "20260912074625"

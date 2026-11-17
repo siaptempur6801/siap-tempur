@@ -27,7 +27,7 @@ exam engine, scoring, result, drill, remedial, dan akses pengguna.
 - [x] P0 kebocoran kunci jawaban — `get_content_question_detail` (guard status approved/published) dan
       `GRANT SELECT question_versions TO authenticated` + policy. Migration + sinkronisasi bootstrap +
       regression test. **Diterapkan & diverifikasi di staging DAN produksi.**
-- [x] Admin produksi ditetapkan (`SUPER_ADMIN` untuk `halimdirga8@gmail.com`) — sebelumnya `user_roles` kosong
+- [x] Admin produksi ditetapkan (`SUPER_ADMIN` untuk akun pemilik project) — sebelumnya `user_roles` kosong
       sehingga `/admin` tidak bisa diakses siapa pun.
 - [x] Baseline ledger migrasi remote (staging 82→155, produksi 165→155) sehingga `supabase db push` normal;
       riwayat lama diarsipkan di `supabase/migration-history-archive/`.

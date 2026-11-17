@@ -672,7 +672,7 @@ Snapshot sebelum hotfix dan status verifikasi terkini:
 
 ### P1 — operasional produksi (temuan 2026-09-16)
 
-- ✅ **Admin produksi sudah ditetapkan (2026-09-16):** `SUPER_ADMIN` untuk `halimdirga8@gmail.com` (`d8c37906-29c8-4a47-8c10-ed2e19dc0de2`). Terverifikasi via `get_user_authorization` → 21 permission termasuk `admin.access`. Sebelumnya `public.user_roles` = 0 baris sehingga **tidak ada seorang pun** yang bisa mengakses `/admin`. *Perbaikan P0-1/P0-2 tidak menimbulkan masalah ini — guard baru hanya menegakkan apa yang seharusnya.*
+- ✅ **Admin produksi sudah ditetapkan (2026-09-16):** `SUPER_ADMIN` untuk akun pemilik project. Terverifikasi via `get_user_authorization` → 21 permission termasuk `admin.access`. Sebelumnya `public.user_roles` = 0 baris sehingga **tidak ada seorang pun** yang bisa mengakses `/admin`. *Perbaikan P0-1/P0-2 tidak menimbulkan masalah ini — guard baru hanya menegakkan apa yang seharusnya.*
 - [ ] User konten (`CONTENT_EDITOR` / `CONTENT_REVIEWER`) di produksi belum ada — bisa ditetapkan oleh admin dari panel.
 - ⚠️ **Flag `tka.smp.monetization_enforcement` = ON (rollout 100%, mode `enforced`) di produksi**, padahal `docs/TKA_SMP_MONETIZATION_AUDIT.md` menyatakan enforcement produksi masih NO-GO. Dampak: TKA SMP Full Tryout terkunci penuh tanpa Tempur Pass, Mini Tryout hanya 1 percobaan gratis. Perlu keputusan sebelum domain dibuka.
 - ✅ **Diperbaiki (2026-09-16):** `updateEventCertificateName` (`app/actions/admin.ts`) dulu membaca kolom `profiles.role` yang **sudah tidak ada** di Schema V2 → query error tanpa dicek, sehingga aksi ini selalu `Unauthorized` bahkan untuk admin asli. Kini memakai `isAdmin()` (permission service). Regression test: `tests/unit/admin-authorization-contract.test.ts`.
@@ -880,7 +880,7 @@ Domain tidak boleh diaktifkan sebelum **semua** ini hijau:
 - [x] P0-1 & P0-2 ditutup **dan diverifikasi di staging** (2026-09-16).
 - [x] P0-1 RPC answer-key guard lulus verifikasi produksi setelah migration `20261006165617` (2026-10-06).
 - [x] Status produksi diverifikasi (fungsi, grant, policy, feature flag) — 2026-09-16.
-- [x] **Admin produksi ditetapkan** — `SUPER_ADMIN` untuk `halimdirga8@gmail.com` (2026-09-16).
+- [x] **Admin produksi ditetapkan** — `SUPER_ADMIN` untuk akun pemilik project (2026-09-16).
 - [x] **Keputusan flag monetisasi TKA SMP** — diputuskan tetap **ON** (2026-09-16).
 - [x] CI `main` hijau di GitHub (2026-09-16) — 35 commit di-push, seluruh job lolos.
 - [x] Riwayat migrasi remote disamakan (baseline 2026-09-16, staging & produksi).

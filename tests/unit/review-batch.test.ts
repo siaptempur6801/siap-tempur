@@ -22,7 +22,7 @@ import {
  * `reviewer_id = author_id` sebagai sisa importer legacy.
  */
 
-const ACTOR = 'd8c37906-29c8-4a47-8c10-ed2e19dc0de2'
+const ACTOR = '0f4b9c2e-6a1d-4e8b-9c3f-2d7a5b1e8c40'
 const AUTHOR = '93b4d35b-a1fb-4a16-9304-fef1116002cf'
 
 /** Batch apa adanya di produksi saat migration batch di-apply. */
