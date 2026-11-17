@@ -45,3 +45,13 @@ describe('migration 20261117090000 — ranking reads & policy tulis mati', () =>
     },
   )
 })
+
+describe('migration 20261117110000 — RLS review_batches', () => {
+  it('mengaktifkan RLS pada satu-satunya tabel public yang belum ber-RLS', () => {
+    const sql = readFileSync(
+      resolve(__dirname, '../../supabase/migrations/20261117110000_enable_rls_review_batches.sql'),
+      'utf8',
+    )
+    expect(sql).toContain('ALTER TABLE IF EXISTS public.review_batches ENABLE ROW LEVEL SECURITY;')
+  })
+})
