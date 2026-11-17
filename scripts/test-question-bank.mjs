@@ -47,7 +47,14 @@ async function databaseTests() {
         email,
         password,
         email_confirm: true,
-        user_metadata: { full_name: 'Question Bank QA' },
+        user_metadata: {
+          full_name: 'Question Bank QA',
+          consent: {
+            version: '2026-11-17',
+            accepted_at: new Date().toISOString(),
+            age_basis: 'adult',
+          },
+        },
       }),
     )
     fixtures.users.push({ id: user.id, email, password, role: roleCode })
@@ -607,7 +614,14 @@ async function workflowTests(f, authState) {
       email: user.email,
       password: user.password,
       email_confirm: true,
-      user_metadata: { full_name: 'Question Bank Reviewer QA' },
+      user_metadata: {
+        full_name: 'Question Bank Reviewer QA',
+        consent: {
+          version: '2026-11-17',
+          accepted_at: new Date().toISOString(),
+          age_basis: 'adult',
+        },
+      },
     }),
   )
   user.id = created.user.id

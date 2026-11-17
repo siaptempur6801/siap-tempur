@@ -167,6 +167,8 @@ async function provision(body: Body) {
     password,
     email_confirm: true,
     user_metadata: {
+      // Akun uji sudah menyetujui S&K agar tidak dialihkan ke /persetujuan (lib/consent.ts).
+      consent: { version: '2026-11-17', accepted_at: new Date().toISOString(), age_basis: 'adult' },
       full_name: 'CI Admin Workspace',
       ci_e2e: true,
       ci_kind: 'admin',

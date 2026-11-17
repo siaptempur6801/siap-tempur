@@ -27,6 +27,8 @@
  *   yang terlihat identik, tanpa pekerjaan sia-sia.
  */
 
+import { consentFieldErrors, type AgeBasis } from '@/lib/consent'
+
 /**
  * Regex email Zod v4 (`z.email()`), disalin apa adanya.
  *
@@ -48,6 +50,12 @@ export type RegisterFormData = {
   fullName: string
 }
 
+/** Form daftar di UI: data akun + persetujuan (dipisah agar paritas `registerSchema` tetap). */
+export type RegisterWithConsentFormData = RegisterFormData & {
+  acceptTerms: boolean
+  ageBasis: '' | AgeBasis
+}
+
 type FieldErrors<T> = Partial<Record<keyof T, { type: string; message: string }>>
 type ResolverResult<T> =
   | { values: T; errors: Record<string, never> }
@@ -65,7 +73,7 @@ function emailError(value: string): string | null {
  * `zodResolver` juga bersifat sinkron untuk schema tanpa transformasi async,
  * jadi bentuk hasilnya sama: `{ values }` bila valid, `{ errors }` bila tidak.
  */
-function makeResolver<T extends Record<string, string>>(
+function makeResolver<T extends Record<string, unknown>>(
   validate: (input: Record<string, unknown>) => FieldErrors<T>,
 ) {
   return async (values: Record<string, unknown>): Promise<ResolverResult<T>> => {
@@ -89,7 +97,7 @@ export const loginResolver = makeResolver<LoginFormData>((values) => {
   return errors
 })
 
-export const registerResolver = makeResolver<RegisterFormData>((values) => {
+function registerErrors(values: Record<string, unknown>): FieldErrors<RegisterFormData> {
   const errors: FieldErrors<RegisterFormData> = {}
   const email = String(values.email ?? '')
   const password = String(values.password ?? '')
@@ -108,5 +116,16 @@ export const registerResolver = makeResolver<RegisterFormData>((values) => {
     errors.fullName = { type: 'validation', message: 'Nama lengkap maksimal 100 karakter' }
   }
 
+  return errors
+}
+
+export const registerResolver = makeResolver<RegisterFormData>(registerErrors)
+
+/** Resolver form daftar di UI: aturan `registerResolver` + `consentFieldErrors`. */
+export const registerWithConsentResolver = makeResolver<RegisterWithConsentFormData>((values) => {
+  const errors: FieldErrors<RegisterWithConsentFormData> = { ...registerErrors(values) }
+  const consent = consentFieldErrors(values)
+  if (consent.acceptTerms) errors.acceptTerms = { type: 'validation', message: consent.acceptTerms }
+  if (consent.ageBasis) errors.ageBasis = { type: 'validation', message: consent.ageBasis }
   return errors
 })

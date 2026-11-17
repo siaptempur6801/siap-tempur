@@ -7,7 +7,10 @@ import { signup } from '@/app/auth/actions'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
-import { registerResolver, type RegisterFormData } from '@/lib/validations/auth-form'
+import {
+  registerWithConsentResolver,
+  type RegisterWithConsentFormData,
+} from '@/lib/validations/auth-form'
 import { sanitizeAuthReturnTo } from '@/lib/auth-redirect'
 import { trackProductEvent } from '@/lib/product-analytics'
 import { acquireSingleFlightLock, releaseSingleFlightLock } from '@/lib/single-flight-lock'
@@ -23,12 +26,12 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: registerResolver,
-    defaultValues: { fullName: '', email: '', password: '' },
+  } = useForm<RegisterWithConsentFormData>({
+    resolver: registerWithConsentResolver,
+    defaultValues: { fullName: '', email: '', password: '', acceptTerms: false, ageBasis: '' },
   })
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: RegisterWithConsentFormData) => {
     if (!acquireSingleFlightLock(authActionLock)) return
 
     trackProductEvent('px_auth_intent', { surface: 'auth', cta: 'register', auth_method: 'email' })
@@ -39,6 +42,8 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
     formData.append('fullName', data.fullName)
     formData.append('email', data.email)
     formData.append('password', data.password)
+    formData.append('acceptTerms', data.acceptTerms ? 'true' : 'false')
+    formData.append('ageBasis', data.ageBasis)
 
     try {
       const result = await signup(formData)
@@ -200,6 +205,79 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
           )}
         </div>
 
+        <fieldset
+          className="space-y-2"
+          aria-describedby={errors.ageBasis ? 'register-age-error' : undefined}
+        >
+          <legend className="mb-1.5 block text-sm font-black">Keterangan usia</legend>
+          <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm font-semibold text-gray-800">
+            <input
+              type="radio"
+              value="adult"
+              {...register('ageBasis')}
+              className="st-focus mt-1 h-4 w-4 shrink-0 accent-blue-600"
+            />
+            <span>Saya berusia 18 tahun atau lebih.</span>
+          </label>
+          <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm font-semibold text-gray-800">
+            <input
+              type="radio"
+              value="guardian_consent"
+              {...register('ageBasis')}
+              className="st-focus mt-1 h-4 w-4 shrink-0 accent-blue-600"
+            />
+            <span>
+              Saya berusia di bawah 18 tahun, dan orang tua/wali saya telah membaca serta menyetujui
+              pendaftaran ini.
+            </span>
+          </label>
+          {errors.ageBasis && (
+            <p id="register-age-error" role="alert" className="text-sm font-bold text-red-700">
+              {errors.ageBasis.message}
+            </p>
+          )}
+        </fieldset>
+
+        <div>
+          <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm font-semibold text-gray-800">
+            <input
+              type="checkbox"
+              {...register('acceptTerms')}
+              aria-invalid={Boolean(errors.acceptTerms)}
+              aria-describedby={errors.acceptTerms ? 'register-terms-error' : undefined}
+              className="st-focus mt-1 h-4 w-4 shrink-0 accent-blue-600"
+            />
+            <span>
+              Saya telah membaca dan menyetujui{' '}
+              <Link
+                href="/syarat-ketentuan"
+                target="_blank"
+                className="font-black text-blue-700 underline"
+              >
+                Syarat &amp; Ketentuan
+              </Link>{' '}
+              serta{' '}
+              <Link
+                href="/kebijakan-privasi"
+                target="_blank"
+                className="font-black text-blue-700 underline"
+              >
+                Kebijakan Privasi
+              </Link>
+              .
+            </span>
+          </label>
+          {errors.acceptTerms && (
+            <p
+              id="register-terms-error"
+              role="alert"
+              className="mt-1.5 text-sm font-bold text-red-700"
+            >
+              {errors.acceptTerms.message}
+            </p>
+          )}
+        </div>
+
         <button
           type="submit"
           disabled={loading}
@@ -241,6 +319,10 @@ export default function RegisterForm({ returnTo }: { returnTo: string }) {
         </svg>
         Daftar dengan Google
       </button>
+      <p className="mt-2 text-center text-xs font-semibold text-gray-500">
+        Pendaftaran lewat Google juga akan meminta persetujuan S&amp;K, Kebijakan Privasi, dan
+        keterangan usia sebelum mulai belajar.
+      </p>
 
       <p className="mt-7 text-center text-sm font-semibold text-gray-600">
         Sudah punya akun?{' '}

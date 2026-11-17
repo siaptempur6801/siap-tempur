@@ -78,6 +78,11 @@ async function main() {
       email_confirm: true,
       user_metadata: {
         full_name: 'CPNS Resume Test',
+        consent: {
+          version: '2026-11-17',
+          accepted_at: new Date().toISOString(),
+          age_basis: 'adult',
+        },
       },
     })
 

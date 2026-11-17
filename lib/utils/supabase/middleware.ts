@@ -2,11 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { env } from '@/lib/env'
 import { resolvePostLoginRedirect } from '@/lib/auth-redirect'
+import { hasCurrentConsent, isConsentGatedPath } from '@/lib/consent'
 
 // Route yang hanya bisa diakses kalau BELUM login
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password']
 // Route yang WAJIB login
-const PROTECTED_ROUTES = ['/onboarding', '/cpns/dashboard', '/cpns/admin']
+const PROTECTED_ROUTES = ['/onboarding', '/cpns/dashboard', '/cpns/admin', '/persetujuan']
 
 function copyCustomHeaders(response: NextResponse, customHeaders?: Headers) {
   if (customHeaders) {
@@ -120,6 +121,23 @@ export async function updateSession(request: NextRequest, customHeaders?: Header
 
   if (!user && PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
     return redirectToLogin(request, customHeaders, supabaseResponse)
+  }
+
+  // Akun tanpa catatan persetujuan S&K/privasi/usia diarahkan ke /persetujuan sebelum
+  // membuka halaman aplikasi. Hanya navigasi GET: server action (POST) dan halaman
+  // pengerjaan ujian tidak pernah dialihkan (lihat `isConsentGatedPath`).
+  if (
+    user &&
+    request.method === 'GET' &&
+    isConsentGatedPath(pathname) &&
+    !hasCurrentConsent(user.user_metadata)
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/persetujuan'
+    url.search = ''
+    url.searchParams.set('next', `${pathname}${request.nextUrl.search}`)
+    const redirect = copyCustomHeaders(NextResponse.redirect(url), customHeaders)
+    return copyResponseCookies(redirect, supabaseResponse)
   }
 
   return supabaseResponse

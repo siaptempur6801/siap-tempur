@@ -98,7 +98,11 @@ async function createUser({ email, password, metadata }) {
     email,
     password,
     email_confirm: true,
-    user_metadata: metadata,
+    // Akun uji sudah menyetujui S&K agar tidak dialihkan ke /persetujuan (lib/consent.ts).
+    user_metadata: {
+      ...metadata,
+      consent: { version: '2026-11-17', accepted_at: new Date().toISOString(), age_basis: 'adult' },
+    },
   })
   if (error || !data.user) throw error ?? new Error('CI_USER_CREATE_FAILED')
   return data.user.id

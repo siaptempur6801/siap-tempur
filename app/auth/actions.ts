@@ -8,7 +8,8 @@ import { validateCsrf } from '@/lib/csrf'
 import { logger } from '@/lib/logger'
 import { env } from '@/lib/env'
 import { resolvePostLogoutRedirect, sanitizeAuthReturnTo } from '@/lib/auth-redirect'
-import { loginSchema, registerSchema } from '@/lib/validations/auth'
+import { buildConsentRecord } from '@/lib/consent'
+import { consentSchema, loginSchema, registerSchema } from '@/lib/validations/auth'
 import { isAuthActionRateLimited } from '@/lib/server-rate-limit'
 import * as z from 'zod'
 
@@ -113,6 +114,12 @@ export async function signup(formData: FormData) {
   })
   if (!parsed.success) return { error: validationMessage(parsed.error) }
 
+  const consent = consentSchema.safeParse({
+    acceptTerms: formString(formData, 'acceptTerms'),
+    ageBasis: formString(formData, 'ageBasis'),
+  })
+  if (!consent.success) return { error: validationMessage(consent.error) }
+
   if (await isAuthActionRateLimited('signup')) {
     return { error: AUTH_RATE_LIMIT_MESSAGE }
   }
@@ -125,7 +132,7 @@ export async function signup(formData: FormData) {
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: { full_name: fullName, consent: buildConsentRecord(consent.data.ageBasis) },
       emailRedirectTo: await callbackUrlForReturnTo(returnTo),
     },
   })
