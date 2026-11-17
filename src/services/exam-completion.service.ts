@@ -72,7 +72,9 @@ class ExamCompletionService {
     // Skor sudah tersimpan di atas. Sinkronisasi turunan (aktivitas, progres, ranking,
     // leaderboard, streak) bersifat best-effort: kegagalannya dicatat dengan kunci
     // alert, bukan dikembalikan sebagai "gagal mengumpulkan" ke peserta (audit A-11).
-    // Ranking event dihitung ulang lagi oleh cron, dan leaderboard oleh admin/cron.
+    // Ranking event dihitung ulang lagi oleh cron. Baris leaderboard nasional peserta
+    // ini baru tersinkron lagi pada submit berikutnya atau saat papan dibangun ulang
+    // (`rebuild_leaderboard`); kegagalannya terlihat lewat kunci alert di atas.
     const [activity, subjectProgress, eventRanking, nationalLeaderboards] = await Promise.all([
       bestEffort('activity', userId, attemptId, () =>
         activityService.syncAttemptDay(userId, attemptId),

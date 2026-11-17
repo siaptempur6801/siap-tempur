@@ -51,15 +51,6 @@ export async function createEventPaymentTransaction(
       return { success: false, message: 'Kamu sudah terdaftar di event ini.' }
     }
 
-    // Tagihan baru hanya boleh dibuat selama pendaftaran buka dan kuota tersedia
-    // (audit A-01). Tagihan pending yang sudah ada tetap boleh dibuka di bawah.
-    try {
-      await eventService.assertTicketPurchaseAllowed(eventId, offer.sessionId)
-    } catch (error) {
-      if (error instanceof EventDomainError) return { success: false, message: error.message }
-      throw error
-    }
-
     const existingOrder = await commerceService.getLatestOrderForProduct(user.id, offer.id)
     if (
       existingOrder?.paymentStatus === 'pending' &&
@@ -74,6 +65,16 @@ export async function createEventPaymentTransaction(
     }
     if (existingOrder && String(existingOrder.status).toLowerCase() === 'paid') {
       return { success: false, message: 'Tiket sudah dibayar. Muat ulang halaman event.' }
+    }
+
+    // Tagihan BARU hanya boleh dibuat selama pendaftaran buka dan kuota tersedia
+    // (audit A-01). Tagihan pending yang sudah ada tetap boleh dibuka di atas
+    // (Snap kedaluwarsa sendiri setelah 15 menit).
+    try {
+      await eventService.assertTicketPurchaseAllowed(eventId, offer.sessionId)
+    } catch (error) {
+      if (error instanceof EventDomainError) return { success: false, message: error.message }
+      throw error
     }
 
     if (existingOrder?.paymentStatus === 'pending' && options.refreshPending) {
