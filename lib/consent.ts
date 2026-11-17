@@ -28,7 +28,7 @@ export const CONSENT_MESSAGES = {
   ageBasis: 'Pilih keterangan usia untuk melanjutkan.',
 } as const
 
-export function isAgeBasis(value: unknown): value is AgeBasis {
+function isAgeBasis(value: unknown): value is AgeBasis {
   return typeof value === 'string' && (AGE_BASES as readonly string[]).includes(value)
 }
 
