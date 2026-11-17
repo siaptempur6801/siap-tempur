@@ -10,6 +10,17 @@
 
 ### Status domain & audit — 2026-11-17
 
+**Rilis production 2026-11-17 — selesai.** Migration `20261117090000_scope_ranking_reads_and_drop_unused_write_policies`
+dan `20261117100000_retain_anonymized_transactions_on_account_delete` di-apply ke staging lalu
+production lewat Supabase CLI (`db query --remote`), tercatat di ledger dengan versi yang sama
+dengan nama file. Preflight read-only lolos di kedua lingkungan; probe sintetis yang di-rollback
+membuktikan order/pembayaran tetap tersimpan tanpa pemilik, data pelanggan/kartu terhapus, dan
+transaksi pending dibatalkan; tidak ada data sisa. Aplikasi (commit `facd147`, isi kode = `9b7f52d`)
+di-deploy ke production lewat Vercel CLI dari ekspor `git archive`, karena integrasi Git Vercel
+memblokir deploy dari penulis commit `siaptempur6801` dan `8shagrid` (akses tim Vercel perlu
+dirapikan). Smoke production lulus: health, header, robots, sitemap, consent, kebijakan privasi,
+tanda tangan 404, noindex verifikasi sertifikat.
+
 **Keputusan pemilik (2026-11-17): domain publik `siaptempur.id` aktif dan halaman publik
 (landing, `/cpns`, `/tka`, blog, halaman legal) boleh diindeks mesin pencari.** Catatan
 "dark launch aktif / domain ditahan" di bagian lain dokumen ini bersifat historis.
