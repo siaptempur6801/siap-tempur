@@ -1,6 +1,19 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+const articles = vi.hoisted(() => ({
+  list: vi.fn(async () => [
+    { slug: 'strategi-twk', published_at: '2026-10-01T00:00:00.000Z' } as {
+      slug: string
+      published_at: string | null
+    },
+  ]),
+}))
+
+vi.mock('@/src/services/article-read.service', () => ({
+  listPublishedArticles: articles.list,
+}))
 
 import robots from '@/app/robots'
 import sitemap from '@/app/sitemap'
@@ -26,12 +39,27 @@ function staticPageRoutes(dir = appDir): string[] {
 }
 
 describe('sitemap', () => {
-  it('hanya mencantumkan route yang benar-benar ada', () => {
+  beforeEach(() => articles.list.mockClear())
+
+  it('hanya mencantumkan route yang benar-benar ada', async () => {
     const routes = new Set(staticPageRoutes())
-    const missing = sitemap()
+    const missing = (await sitemap())
       .map((entry) => new URL(entry.url).pathname.replace(/\/$/, '') || '/')
+      .filter((pathname) => !pathname.startsWith('/blog/'))
       .filter((pathname) => !routes.has(pathname))
     expect(missing).toEqual([])
+  })
+
+  it('memuat artikel terbit dengan tanggal terbit sebagai lastModified', async () => {
+    const entry = (await sitemap()).find((item) => item.url.endsWith('/blog/strategi-twk'))
+    expect(entry?.lastModified).toEqual(new Date('2026-10-01T00:00:00.000Z'))
+  })
+
+  it('tetap mengembalikan halaman statis bila artikel gagal dimuat', async () => {
+    articles.list.mockRejectedValueOnce(new Error('db down'))
+    const entries = await sitemap()
+    expect(entries.length).toBeGreaterThan(5)
+    expect(entries.some((item) => item.url.includes('/blog/'))).toBe(false)
   })
 })
 
